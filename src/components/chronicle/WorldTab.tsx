@@ -1,0 +1,281 @@
+
+import React, { useRef } from 'react';
+import { World, OpeningDialog, CodexEntry, Character, Scene } from '@/types';
+import { Button, Input, TextArea, Card } from './UI';
+import { Icons } from '@/constants';
+import { uid, now, resizeImage } from '@/utils';
+
+interface WorldTabProps {
+  world: World;
+  characters: Character[];
+  openingDialog: OpeningDialog;
+  scenes: Scene[];
+  onUpdateWorld: (patch: Partial<World>) => void;
+  onUpdateOpening: (patch: Partial<OpeningDialog>) => void;
+  onUpdateScenes: (scenes: Scene[]) => void;
+  onNavigateToCharacters: () => void;
+  onSelectCharacter: (id: string) => void;
+}
+
+const CharacterButton: React.FC<{ char: Character; onSelect: (id: string) => void }> = ({ char, onSelect }) => (
+  <button 
+    type="button"
+    onClick={() => onSelect(char.id)}
+    className="w-full text-left group flex items-center gap-4 p-2 rounded-2xl hover:bg-slate-50 transition-all duration-200 border border-transparent hover:border-slate-100 cursor-pointer"
+  >
+    <div className="w-14 h-14 shrink-0 rounded-xl border-2 border-slate-100 overflow-hidden shadow-sm transition-transform duration-300 group-hover:scale-105 bg-slate-50">
+      {char.avatarDataUrl ? (
+        <img src={char.avatarDataUrl} alt={char.name} className="w-full h-full object-cover" />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center font-black text-slate-300 text-lg italic uppercase">
+          {char.name.charAt(0)}
+        </div>
+      )}
+    </div>
+    <div className="min-w-0">
+      <div className="text-sm font-bold text-slate-800 truncate leading-tight group-hover:text-blue-600 transition-colors">{char.name}</div>
+      <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider mt-0.5 truncate">{char.controlledBy}</div>
+    </div>
+  </button>
+);
+
+export const WorldTab: React.FC<WorldTabProps> = ({ 
+  world, 
+  characters, 
+  openingDialog, 
+  scenes,
+  onUpdateWorld, 
+  onUpdateOpening, 
+  onUpdateScenes,
+  onNavigateToCharacters, 
+  onSelectCharacter 
+}) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const updateCore = (patch: any) => {
+    onUpdateWorld({ core: { ...world.core, ...patch } });
+  };
+
+  const handleUpdateEntry = (id: string, patch: Partial<CodexEntry>) => {
+    const next = world.entries.map(e => e.id === id ? { ...e, ...patch, updatedAt: now() } : e);
+    onUpdateWorld({ entries: next });
+  };
+
+  const handleAddScene = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const dataUrl = reader.result as string;
+      const optimized = await resizeImage(dataUrl, 1024, 768, 0.7);
+      const newScene: Scene = {
+        id: uid('scene'),
+        url: optimized,
+        tag: 'New Scene',
+        createdAt: now()
+      };
+      onUpdateScenes([newScene, ...scenes]);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleUpdateSceneTag = (id: string, tag: string) => {
+    onUpdateScenes(scenes.map(s => s.id === id ? { ...s, tag } : s));
+  };
+
+  const handleDeleteScene = (id: string) => {
+    if (confirm('Remove this scene image?')) {
+      onUpdateScenes(scenes.filter(s => s.id !== id));
+    }
+  };
+
+  const mainCharacters = characters.filter(c => c.characterRole === 'Main');
+  const sideCharacters = characters.filter(c => c.characterRole === 'Side');
+
+  const AddCharacterPlaceholder = () => (
+    <button 
+      type="button"
+      onClick={onNavigateToCharacters}
+      className="group/add w-full flex items-center gap-4 p-2 rounded-2xl transition-all duration-300 hover:bg-blue-50/50 cursor-pointer"
+    >
+      <div className="w-14 h-14 shrink-0 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center text-slate-300 transition-all duration-300 group-hover/add:border-blue-400 group-hover/add:bg-blue-50 group-hover/add:text-blue-500">
+         <span className="text-2xl font-light">+</span>
+      </div>
+      <div className="text-left">
+        <div className="text-xs font-bold text-slate-400 group-hover/add:text-blue-600 transition-colors uppercase tracking-tight">Add / Create</div>
+        <div className="text-[9px] font-black text-slate-300 group-hover/add:text-blue-300 uppercase tracking-widest mt-0.5">Character Registry</div>
+      </div>
+    </button>
+  );
+
+  return (
+    <div className="flex flex-1 h-full overflow-hidden">
+      <aside className="w-[260px] flex-shrink-0 bg-white border-r border-slate-200 flex flex-col h-full shadow-[inset_-4px_0_12px_rgba(0,0,0,0.02)]">
+        <div className="p-6 border-b border-slate-100 bg-slate-50/30">
+          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Character Roster</div>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-none pb-20">
+          <section className="space-y-2">
+            <div className="bg-slate-100 px-3 py-1.5 rounded-lg mb-3">
+               <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Main Characters</div>
+            </div>
+            <div className="space-y-2">
+              {mainCharacters.map(char => <CharacterButton key={char.id} char={char} onSelect={onSelectCharacter} />)}
+              <AddCharacterPlaceholder />
+            </div>
+          </section>
+
+          <section className="space-y-2">
+            <div className="bg-slate-100 px-3 py-1.5 rounded-lg mb-3">
+               <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Side Characters</div>
+            </div>
+            <div className="space-y-2">
+              {sideCharacters.map(char => <CharacterButton key={char.id} char={char} onSelect={onSelectCharacter} />)}
+              <AddCharacterPlaceholder />
+            </div>
+          </section>
+        </div>
+      </aside>
+
+      <div className="flex-1 overflow-y-auto scrollbar-thin bg-slate-50/30">
+        <div className="p-10 max-w-4xl mx-auto space-y-12 pb-20">
+          <div className="mb-2">
+            <h1 className="text-4xl font-black text-slate-900 tracking-tight">Scenario Setup</h1>
+            <p className="text-sm font-medium text-slate-500 mt-1">Configure the foundation of your interactive narrative.</p>
+          </div>
+
+          <section>
+            <Card className="p-8 !shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)] border-transparent ring-1 ring-slate-900/5">
+              <h2 className="text-lg font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight mb-8 pb-4 border-b border-slate-100">
+                <Icons.Globe /> World Core
+              </h2>
+              <div className="grid grid-cols-1 gap-8">
+                <Input label="Scenario Name" value={world.core.scenarioName} onChange={(v) => updateCore({ scenarioName: v })} placeholder="e.g. Chronicles of Eldoria" />
+                <TextArea label="Setting Overview" value={world.core.settingOverview} onChange={(v) => updateCore({ settingOverview: v })} rows={4} placeholder="Describe the physical and cultural landscape of your world..." />
+                <TextArea label="Rules of Magic & Technology" value={world.core.rulesOfMagicTech} onChange={(v) => updateCore({ rulesOfMagicTech: v })} rows={3} placeholder="How do supernatural or advanced systems function?" />
+                <TextArea label="Primary Locations" value={world.core.locations} onChange={(v) => updateCore({ locations: v })} rows={3} placeholder="List key cities, landmarks, or regions..." />
+                <TextArea label="Tone & Central Themes" value={world.core.toneThemes} onChange={(v) => updateCore({ toneThemes: v })} rows={3} placeholder="What feelings and ideas should define the story?" />
+              </div>
+            </Card>
+          </section>
+
+          <section>
+            <Card className="p-8 !shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)] border-transparent ring-1 ring-slate-900/5">
+              <h2 className="text-lg font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight mb-8 pb-4 border-b border-slate-100">
+                <Icons.MessageSquare /> Opening Dialog
+              </h2>
+              <div className="space-y-4">
+                <TextArea 
+                  label="First Story Message" 
+                  value={openingDialog.text} 
+                  onChange={(v) => onUpdateOpening({ text: v })} 
+                  rows={8} 
+                  placeholder="Type the first message the user will see when they click Play..."
+                />
+                <p className="text-[10px] text-slate-400 font-medium italic">This message will automatically appear at the start of every new session.</p>
+              </div>
+            </Card>
+          </section>
+
+          <section>
+            <Card className="p-8 !shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)] border-transparent ring-1 ring-slate-900/5">
+              <div className="flex justify-between items-center mb-8 pb-4 border-b border-slate-100">
+                <h2 className="text-lg font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg> Scene Gallery
+                </h2>
+                <Button variant="ghost" className="text-blue-600 font-black text-xs tracking-widest uppercase h-9" onClick={() => fileInputRef.current?.click()}>
+                   + Upload Scene
+                </Button>
+                <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAddScene} />
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                {scenes.map(scene => (
+                  <div key={scene.id} className="group relative aspect-video rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-slate-50">
+                    <img src={scene.url} alt={scene.tag} className="w-full h-full object-cover" />
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Input 
+                        value={scene.tag} 
+                        onChange={(v) => handleUpdateSceneTag(scene.id, v)} 
+                        placeholder="Scene tag..." 
+                        className="!bg-black/40 !border-white/20 !text-white !text-[10px] !h-8 !px-2 focus:!ring-white/10"
+                      />
+                    </div>
+                    <button 
+                      onClick={() => handleDeleteScene(scene.id)}
+                      className="absolute top-2 right-2 p-1.5 bg-rose-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-600"
+                    >
+                      <Icons.Trash />
+                    </button>
+                  </div>
+                ))}
+                {scenes.length === 0 && (
+                  <div className="col-span-full py-12 text-center text-slate-400 border-2 border-dashed border-slate-100 rounded-2xl">
+                     <p className="text-xs font-bold uppercase tracking-widest">No scenes uploaded</p>
+                     <p className="text-[10px] mt-1">Upload images to enable dynamic backgrounds in chat.</p>
+                  </div>
+                )}
+              </div>
+            </Card>
+          </section>
+
+          <section className="space-y-6">
+            <Card className="p-8 !shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)] border-transparent ring-1 ring-slate-900/5">
+              <h2 className="text-lg font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight mb-8 pb-4 border-b border-slate-100">
+                <Icons.Database /> World Codex
+              </h2>
+              
+              <div className="space-y-8">
+                <TextArea 
+                  label="Narrative Style" 
+                  value={world.core.narrativeStyle} 
+                  onChange={(v) => updateCore({ narrativeStyle: v })} 
+                  rows={4} 
+                  placeholder="Detailed descriptions of environments and character actions..."
+                />
+                
+                <TextArea 
+                  label="Dialog Formatting" 
+                  value={world.core.dialogFormatting} 
+                  onChange={(v) => updateCore({ dialogFormatting: v })} 
+                  rows={3} 
+                  placeholder="Enclose all internal thoughts or actions in * *..."
+                />
+
+                {world.entries.length > 0 && (
+                  <div className="space-y-6 pt-6 border-t border-slate-100">
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Additional Entries</h3>
+                    <div className="grid grid-cols-1 gap-6">
+                      {world.entries.map(entry => (
+                        <div key={entry.id} className="p-6 space-y-4 group rounded-2xl bg-slate-50 border border-slate-200">
+                          <div className="flex justify-between items-center">
+                            <div className="flex-1">
+                              <Input 
+                                value={entry.title} 
+                                onChange={(v) => handleUpdateEntry(entry.id, { title: v })} 
+                                placeholder="Entry Title..." 
+                                className="!text-sm font-bold !bg-transparent !border-none !px-0 focus:!ring-0"
+                              />
+                            </div>
+                            <Button variant="ghost" className="text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 !p-0" onClick={() => {
+                              const next = world.entries.filter(e => e.id !== entry.id);
+                              onUpdateWorld({ entries: next });
+                            }}><Icons.Trash /></Button>
+                          </div>
+                          <TextArea value={entry.body} onChange={(v) => handleUpdateEntry(entry.id, { body: v })} placeholder="Detail the specifics..." rows={4} className="!bg-transparent" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
+          </section>
+        </div>
+      </div>
+    </div>
+  );
+};
