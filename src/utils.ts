@@ -248,6 +248,7 @@ export function normalizeScenarioData(raw: any): ScenarioData {
         id: typeof s?.id === "string" ? s.id : uid("scene"),
         url: normStr(s?.url),
         tag: normStr(s?.tag),
+        isStartingScene: s?.isStartingScene === true,
         createdAt: normNum(s?.createdAt, t),
       }))
     : [];
