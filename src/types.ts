@@ -51,6 +51,7 @@ export type Scene = {
   id: string;
   url: string;
   tag: string;
+  isStartingScene?: boolean;
   createdAt: number;
 };
 
