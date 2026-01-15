@@ -1,10 +1,11 @@
 
-import { ScenarioData, Character, CharacterTraitItem, CharacterTraitSection, World, OpeningDialog, Conversation, ScenarioMetadata, Scene } from './types';
+import { ScenarioData, Character, CharacterTraitItem, CharacterTraitSection, World, OpeningDialog, Conversation, ScenarioMetadata, Scene, ConversationMetadata } from './types';
 
 export const REGISTRY_KEY = "rpg_campaign_studio_v3_codex";
 export const STORAGE_KEY = REGISTRY_KEY;
 export const LIBRARY_KEY = "rpg_campaign_studio_v3_char_lib";
 export const SCENARIO_PREFIX = "rpg_scenario_v3_";
+export const CONVERSATION_REGISTRY_KEY = "rpg_conversation_registry_v1";
 export const APP_VERSION = 3;
 
 export function now(): number {
@@ -336,4 +337,59 @@ export function getCharacterLibrary(): Character[] {
 
 export function saveCharacterLibrary(library: Character[]) {
   localStorage.setItem(LIBRARY_KEY, JSON.stringify(library));
+}
+
+// ============ Global Conversation Registry ============
+
+export function getConversationRegistry(): ConversationMetadata[] {
+  const raw = localStorage.getItem(CONVERSATION_REGISTRY_KEY);
+  if (!raw) return [];
+  const parsed = safeJsonParse(raw);
+  return (parsed.ok && Array.isArray(parsed.value)) ? parsed.value : [];
+}
+
+export function saveConversationRegistry(registry: ConversationMetadata[]) {
+  localStorage.setItem(CONVERSATION_REGISTRY_KEY, JSON.stringify(registry));
+}
+
+export function updateConversationRegistry(
+  scenarioId: string, 
+  scenarioTitle: string, 
+  conversations: Conversation[]
+): ConversationMetadata[] {
+  const existing = getConversationRegistry();
+  
+  // Remove old entries for this scenario
+  const filtered = existing.filter(e => e.scenarioId !== scenarioId);
+  
+  // Add updated entries for all conversations in this scenario
+  const newEntries: ConversationMetadata[] = conversations.map(c => {
+    const lastMsg = c.messages[c.messages.length - 1];
+    return {
+      conversationId: c.id,
+      scenarioId,
+      scenarioTitle,
+      conversationTitle: c.title,
+      lastMessage: lastMsg ? truncateLine(lastMsg.text, 100) : "",
+      messageCount: c.messages.length,
+      createdAt: c.createdAt,
+      updatedAt: c.updatedAt,
+    };
+  });
+  
+  // Combine and sort by updatedAt (newest first)
+  const combined = [...newEntries, ...filtered].sort((a, b) => b.updatedAt - a.updatedAt);
+  
+  // Limit to 200 entries to prevent storage bloat
+  const limited = combined.slice(0, 200);
+  
+  saveConversationRegistry(limited);
+  return limited;
+}
+
+export function removeScenarioFromConversationRegistry(scenarioId: string) {
+  const existing = getConversationRegistry();
+  const filtered = existing.filter(e => e.scenarioId !== scenarioId);
+  saveConversationRegistry(filtered);
+  return filtered;
 }
