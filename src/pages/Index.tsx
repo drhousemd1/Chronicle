@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from "react";
-import { ScenarioData, TabKey, Character, ScenarioMetadata, Conversation, Message } from "@/types";
-import { getRegistry, saveRegistry, loadScenario, saveScenario, deleteScenario, createDefaultScenarioData, now, uid, getCharacterLibrary, saveCharacterLibrary, truncateLine } from "@/utils";
+import { ScenarioData, TabKey, Character, ScenarioMetadata, Conversation, Message, ConversationMetadata } from "@/types";
+import { getRegistry, saveRegistry, loadScenario, saveScenario, deleteScenario, createDefaultScenarioData, now, uid, getCharacterLibrary, saveCharacterLibrary, truncateLine, getConversationRegistry, updateConversationRegistry, removeScenarioFromConversationRegistry } from "@/utils";
 import { LLM_MODELS } from "@/constants";
 import { CharactersTab } from "@/components/chronicle/CharactersTab";
 import { WorldTab } from "@/components/chronicle/WorldTab";
@@ -50,6 +50,7 @@ const Index = () => {
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
   const [isBrainstorming, setIsBrainstorming] = useState(false);
   const [isCharacterPickerOpen, setIsCharacterPickerOpen] = useState(false);
+  const [conversationRegistry, setConversationRegistry] = useState<ConversationMetadata[]>([]);
   
   const [globalModelId, setGlobalModelId] = useState<string>(() => localStorage.getItem("rpg_studio_global_model") || 'gemini-3-flash-preview');
 
@@ -61,6 +62,7 @@ const Index = () => {
     try {
       setRegistry(getRegistry());
       setLibrary(getCharacterLibrary());
+      setConversationRegistry(getConversationRegistry());
     } catch (e: any) {
       setFatal("Failed to load data: " + e.message);
     }
@@ -69,6 +71,7 @@ const Index = () => {
   function handlePlayScenario(id: string) {
     try {
       const data = loadScenario(id);
+      const meta = registry.find(r => r.id === id);
       
       const initialMessages: Message[] = [];
       const openingText = data.story?.openingDialog?.text?.trim();
@@ -91,6 +94,12 @@ const Index = () => {
 
       data.conversations = [newConv, ...data.conversations];
       saveScenario(id, data);
+      
+      // Update global conversation registry
+      const scenarioTitle = meta?.title || data.world.core.scenarioName || "Untitled";
+      const updatedRegistry = updateConversationRegistry(id, scenarioTitle, data.conversations);
+      setConversationRegistry(updatedRegistry);
+      
       setActiveId(id);
       setActiveData(data);
       setPlayingConversationId(newConv.id);
@@ -163,6 +172,10 @@ const Index = () => {
       saveScenario(activeId, activeData);
       saveRegistry(nextReg);
       setRegistry(nextReg);
+      
+      // Sync conversation registry
+      const updatedConvRegistry = updateConversationRegistry(activeId, derivedTitle, activeData.conversations);
+      setConversationRegistry(updatedConvRegistry);
       
       try {
         let nextLib = getCharacterLibrary();
@@ -265,6 +278,11 @@ const Index = () => {
     try {
       deleteScenario(id);
       setRegistry(getRegistry());
+      
+      // Remove from conversation registry
+      const updatedConvRegistry = removeScenarioFromConversationRegistry(id);
+      setConversationRegistry(updatedConvRegistry);
+      
       if (activeId === id) {
         setActiveId(null);
         setActiveData(null);
@@ -274,6 +292,64 @@ const Index = () => {
       }
     } catch (e: any) {
       alert("Delete failed: " + e.message);
+    }
+  }
+  
+  function handleResumeFromHistory(scenarioId: string, conversationId: string) {
+    try {
+      const data = loadScenario(scenarioId);
+      setActiveId(scenarioId);
+      setActiveData(data);
+      setPlayingConversationId(conversationId);
+      setTab("chat_interface");
+    } catch (e: any) {
+      alert("Failed to load scenario: " + e.message);
+    }
+  }
+  
+  function handleDeleteConversationFromHistory(scenarioId: string, conversationId: string) {
+    try {
+      const data = loadScenario(scenarioId);
+      const meta = registry.find(r => r.id === scenarioId);
+      const scenarioTitle = meta?.title || data.world.core.scenarioName || "Untitled";
+      
+      data.conversations = data.conversations.filter(c => c.id !== conversationId);
+      saveScenario(scenarioId, data);
+      
+      // Update global registry
+      const updatedConvRegistry = updateConversationRegistry(scenarioId, scenarioTitle, data.conversations);
+      setConversationRegistry(updatedConvRegistry);
+      
+      // If currently viewing this scenario, update state
+      if (activeId === scenarioId) {
+        setActiveData(data);
+      }
+    } catch (e: any) {
+      alert("Failed to delete conversation: " + e.message);
+    }
+  }
+  
+  function handleRenameConversationFromHistory(scenarioId: string, conversationId: string, newTitle: string) {
+    try {
+      const data = loadScenario(scenarioId);
+      const meta = registry.find(r => r.id === scenarioId);
+      const scenarioTitle = meta?.title || data.world.core.scenarioName || "Untitled";
+      
+      data.conversations = data.conversations.map(c => 
+        c.id === conversationId ? { ...c, title: newTitle, updatedAt: now() } : c
+      );
+      saveScenario(scenarioId, data);
+      
+      // Update global registry
+      const updatedConvRegistry = updateConversationRegistry(scenarioId, scenarioTitle, data.conversations);
+      setConversationRegistry(updatedConvRegistry);
+      
+      // If currently viewing this scenario, update state
+      if (activeId === scenarioId) {
+        setActiveData(data);
+      }
+    } catch (e: any) {
+      alert("Failed to rename conversation: " + e.message);
     }
   }
 
@@ -491,10 +567,10 @@ const Index = () => {
           {tab === "conversations" && (
             <div className="p-10 overflow-y-auto h-full">
               <ConversationsTab
-                appData={activeData}
-                onUpdate={(convs) => activeData && handleUpdateActive({ conversations: convs })}
-                onPlayConversation={(id) => { setPlayingConversationId(id); setTab("chat_interface"); }}
-                modelId={globalModelId}
+                globalRegistry={conversationRegistry}
+                onResumeConversation={handleResumeFromHistory}
+                onDeleteConversation={handleDeleteConversationFromHistory}
+                onRenameConversation={handleRenameConversationFromHistory}
               />
             </div>
           )}

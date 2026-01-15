@@ -118,4 +118,15 @@ export type AppState = {
   activeScenarioId: string | null;
 };
 
+export type ConversationMetadata = {
+  conversationId: string;
+  scenarioId: string;
+  scenarioTitle: string;
+  conversationTitle: string;
+  lastMessage: string;
+  messageCount: number;
+  createdAt: number;
+  updatedAt: number;
+};
+
 export type TabKey = "hub" | "characters" | "world" | "conversations" | "import_export" | "model_settings" | "builder" | "chat_interface";
