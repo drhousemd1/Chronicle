@@ -123,7 +123,7 @@ const Index = () => {
     setPlayingConversationId(null);
   }
 
-  const handleSave = (): boolean => {
+  const handleSave = (navigateToHub: boolean = false): boolean => {
     if (!activeId || !activeData) {
       alert("Error: No active scenario found to save.");
       return false;
@@ -184,6 +184,13 @@ const Index = () => {
         }
       } catch (libErr) {
         console.warn("Library sync failed, but scenario was saved:", libErr);
+      }
+
+      if (navigateToHub) {
+        setActiveId(null);
+        setActiveData(null);
+        setSelectedCharacterId(null);
+        setTab("hub");
       }
 
       return true;
@@ -362,8 +369,8 @@ const Index = () => {
           
           <SidebarItem 
             active={tab === "world" || tab === "characters"} 
-            label={activeMeta?.title || (isDraft ? "New Scenario" : "Scenario Builder")}
-            subtitle={activeId ? (isDraft ? "Draft" : "Editing") : "Click to create"}
+            label="Scenario Builder"
+            subtitle={activeId ? (activeMeta?.title || "Unsaved Draft") : "Click to create"}
             icon={<IconsList.Builder />} 
             onClick={() => {
               if (activeId) setTab("world");
@@ -380,7 +387,7 @@ const Index = () => {
         
         {activeId && (tab === "world" || tab === "characters") && (
           <div className="p-4 border-t border-white/10 space-y-2">
-            <Button variant="brand" onClick={handleSave} className="w-full">
+            <Button variant="brand" onClick={() => handleSave(true)} className="w-full">
               💾 Save Scenario
             </Button>
             <Button variant="ghost" onClick={() => { setActiveId(null); setActiveData(null); setTab("hub"); }} className="w-full !text-slate-500">
