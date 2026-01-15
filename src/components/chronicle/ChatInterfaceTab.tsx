@@ -389,11 +389,11 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
             return (
               <div key={msg.id} className="max-w-4xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className={`p-8 rounded-[2rem] border shadow-2xl flex flex-col gap-8 transition-all hover:border-white/20 ${
+                <div className={`p-8 rounded-[2rem] shadow-2xl flex flex-col gap-8 transition-all hover:border-white/20 ${
                   bubblesTransparent
-                    ? 'bg-black/40 backdrop-blur-xl border-white/5'
-                    : 'bg-[#1c1f26] border-white/5'
-                } ${!isAi && !bubblesTransparent ? 'border-blue-500/20 bg-[#232a35]' : ''}`}>
+                    ? 'bg-black/40 backdrop-blur-xl border border-white/5'
+                    : 'bg-[#1c1f26] border border-white/5'
+                } ${!isAi ? 'border-2 border-blue-400' : ''}`}>
                   <div className="flex gap-8 items-start">
                     <div className="flex flex-col items-center gap-2 w-20 flex-shrink-0">
                       <div className={`w-16 h-16 rounded-full border-2 border-white/10 shadow-lg overflow-hidden flex items-center justify-center ${char?.avatarDataUrl ? '' : 'bg-slate-800'}`}>
