@@ -67,11 +67,15 @@ const FormattedMessage: React.FC<{ text: string }> = ({ text }) => {
         }
         if (token.type === 'thought') {
           return (
-            <div key={i} className="my-1 py-1.5 px-3 bg-indigo-500/10 border-l-2 border-indigo-400/30 rounded-r-lg inline-block animate-in fade-in zoom-in-95 duration-500">
-               <span className="text-indigo-200/90 text-sm italic font-light tracking-tight">
-                 {token.content}
-               </span>
-            </div>
+            <span 
+              key={i} 
+              className="text-indigo-200/90 text-sm italic font-light tracking-tight animate-in fade-in zoom-in-95 duration-500"
+              style={{
+                textShadow: '0 0 8px rgba(129, 140, 248, 0.6), 0 0 16px rgba(129, 140, 248, 0.4), 0 0 24px rgba(129, 140, 248, 0.2)'
+              }}
+            >
+              {token.content}
+            </span>
           );
         }
         return <span key={i} className="text-slate-300">{token.content}</span>;
