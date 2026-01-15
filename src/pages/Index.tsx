@@ -9,6 +9,7 @@ import { ConversationsTab } from "@/components/chronicle/ConversationsTab";
 import { ImportExportTab } from "@/components/chronicle/ImportExportTab";
 import { ScenarioHub } from "@/components/chronicle/ScenarioHub";
 import { ModelSettingsTab } from "@/components/chronicle/ModelSettingsTab";
+import { ChatInterfaceTab } from "@/components/chronicle/ChatInterfaceTab";
 import { Button } from "@/components/chronicle/UI";
 import { brainstormCharacterDetails } from "@/services/gemini";
 import { CharacterPicker } from "@/components/chronicle/CharacterPicker";
@@ -93,7 +94,7 @@ const Index = () => {
       setActiveId(id);
       setActiveData(data);
       setPlayingConversationId(newConv.id);
-      setTab("conversations");
+      setTab("chat_interface");
       setSelectedCharacterId(null);
     } catch (e: any) {
       alert("Failed to play scenario: " + e.message);
@@ -492,10 +493,22 @@ const Index = () => {
               <ConversationsTab
                 appData={activeData}
                 onUpdate={(convs) => activeData && handleUpdateActive({ conversations: convs })}
-                onPlayConversation={(id) => { setPlayingConversationId(id); }}
+                onPlayConversation={(id) => { setPlayingConversationId(id); setTab("chat_interface"); }}
                 modelId={globalModelId}
               />
             </div>
+          )}
+
+          {tab === "chat_interface" && activeId && activeData && playingConversationId && (
+            <ChatInterfaceTab
+              scenarioId={activeId}
+              appData={activeData}
+              conversationId={playingConversationId}
+              modelId={globalModelId}
+              onUpdate={(convs) => handleUpdateActive({ conversations: convs })}
+              onBack={() => { setPlayingConversationId(null); setTab("hub"); }}
+              onSaveScenario={() => handleSave()}
+            />
           )}
 
           {tab === "import_export" && activeData && (
