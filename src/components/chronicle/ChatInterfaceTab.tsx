@@ -118,7 +118,16 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   }, [conversation?.messages, streamingContent]);
 
   useEffect(() => {
-    if (!conversation?.messages.length) return;
+    // If no messages yet (new chat), use the starting scene
+    if (!conversation?.messages.length) {
+      const startingScene = appData.scenes.find(s => s.isStartingScene);
+      if (startingScene) {
+        setActiveSceneId(startingScene.id);
+      }
+      return;
+    }
+    
+    // Scan messages for [SCENE: tag] commands
     for (let i = conversation.messages.length - 1; i >= 0; i--) {
       const match = conversation.messages[i].text.match(/\[SCENE:\s*(.*?)\]/);
       if (match) {

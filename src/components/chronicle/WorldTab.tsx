@@ -210,6 +210,31 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                     >
                       <Icons.Trash />
                     </button>
+                    {/* Starting Scene Checkbox */}
+                    <button
+                      onClick={() => {
+                        const updatedScenes = scenes.map(s => ({
+                          ...s,
+                          isStartingScene: s.id === scene.id ? !s.isStartingScene : false
+                        }));
+                        onUpdateScenes(updatedScenes);
+                      }}
+                      className={`absolute top-2 left-2 p-1.5 rounded-lg transition-all ${
+                        scene.isStartingScene 
+                          ? 'bg-amber-500 text-white opacity-100 shadow-lg shadow-amber-500/30' 
+                          : 'bg-black/50 text-white/70 opacity-0 group-hover:opacity-100 hover:bg-black/70'
+                      }`}
+                      title={scene.isStartingScene ? "Starting scene" : "Set as starting scene"}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill={scene.isStartingScene ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                      </svg>
+                    </button>
+                    {scene.isStartingScene && (
+                      <div className="absolute top-2 left-10 bg-amber-500 text-white text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md shadow-lg">
+                        Start
+                      </div>
+                    )}
                   </div>
                 ))}
                 {scenes.length === 0 && (
