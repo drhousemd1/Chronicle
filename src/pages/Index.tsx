@@ -363,10 +363,13 @@ const Index = () => {
           <SidebarItem 
             active={tab === "world" || tab === "characters"} 
             label={activeMeta?.title || (isDraft ? "New Scenario" : "Scenario Builder")}
-            subtitle={activeId ? (isDraft ? "Draft" : "Editing") : "No scenario selected"}
+            subtitle={activeId ? (isDraft ? "Draft" : "Editing") : "Click to create"}
             icon={<IconsList.Builder />} 
-            onClick={() => activeId ? setTab("world") : null}
-            className={!activeId ? "opacity-50 pointer-events-none" : ""}
+            onClick={() => {
+              if (activeId) setTab("world");
+              else handleCreateNewScenario();
+            }}
+            className={!activeId ? "opacity-80" : ""}
           />
 
           <div className="pt-4 mt-4 border-t border-white/10">
