@@ -156,7 +156,8 @@ export function createDefaultScenarioData(): ScenarioData {
     scenes: [],
     uiSettings: {
       showBackgrounds: true,
-      transparentBubbles: false
+      transparentBubbles: false,
+      darkMode: false
     },
     story: { 
       openingDialog: {
@@ -256,6 +257,7 @@ export function normalizeScenarioData(raw: any): ScenarioData {
   const uiSettings = {
     showBackgrounds: typeof raw?.uiSettings?.showBackgrounds === "boolean" ? raw.uiSettings.showBackgrounds : true,
     transparentBubbles: typeof raw?.uiSettings?.transparentBubbles === "boolean" ? raw.uiSettings.transparentBubbles : false,
+    darkMode: typeof raw?.uiSettings?.darkMode === "boolean" ? raw.uiSettings.darkMode : false,
   };
 
   const openingDialog: OpeningDialog = {
