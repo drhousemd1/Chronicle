@@ -97,6 +97,7 @@ export type ScenarioData = {
   uiSettings?: {
     showBackgrounds: boolean;
     transparentBubbles: boolean;
+    darkMode: boolean;
   };
   conversations: Conversation[];
   selectedModel?: string;

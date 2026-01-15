@@ -12,7 +12,7 @@ interface ChatInterfaceTabProps {
   onUpdate: (convs: Conversation[]) => void;
   onBack: () => void;
   onSaveScenario: () => void;
-  onUpdateUiSettings?: (patch: { showBackgrounds?: boolean; transparentBubbles?: boolean }) => void;
+  onUpdateUiSettings?: (patch: { showBackgrounds?: boolean; transparentBubbles?: boolean; darkMode?: boolean }) => void;
 }
 
 const FormattedMessage: React.FC<{ text: string }> = ({ text }) => {
@@ -313,8 +313,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
   const bubblesTransparent = appData.uiSettings?.transparentBubbles;
   const showBackground = appData.uiSettings?.showBackgrounds && activeScene;
+  const darkMode = appData.uiSettings?.darkMode;
 
-  const handleUpdateUiSettings = (patch: { showBackgrounds?: boolean; transparentBubbles?: boolean }) => {
+  const handleUpdateUiSettings = (patch: { showBackgrounds?: boolean; transparentBubbles?: boolean; darkMode?: boolean }) => {
     if (onUpdateUiSettings) {
       onUpdateUiSettings(patch);
     }
@@ -329,7 +330,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   }
 
   return (
-    <div className="flex flex-1 h-full w-full bg-white overflow-hidden relative">
+    <div className={`flex flex-1 h-full w-full overflow-hidden relative ${darkMode ? 'bg-slate-900' : 'bg-white'}`}>
       {showBackground && (
         <div className="absolute inset-0 z-0">
            <img
@@ -487,15 +488,24 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
                            onChange={(e) => handleUpdateUiSettings({ showBackgrounds: e.target.checked })}
                          />
                       </div>
-                      <div className="flex items-center justify-between">
-                         <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Transparent Bubbles</span>
-                         <input
-                           type="checkbox"
-                           checked={bubblesTransparent}
-                           onChange={(e) => handleUpdateUiSettings({ transparentBubbles: e.target.checked })}
-                         />
-                      </div>
-                      <p className="text-[9px] text-slate-400 font-medium leading-relaxed border-t border-slate-100 pt-3">
+                       <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Transparent Bubbles</span>
+                          <input
+                            type="checkbox"
+                            checked={bubblesTransparent}
+                            onChange={(e) => handleUpdateUiSettings({ transparentBubbles: e.target.checked })}
+                          />
+                       </div>
+                       <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Dark Mode</span>
+                          <input
+                            type="checkbox"
+                            checked={appData.uiSettings?.darkMode}
+                            onChange={(e) => handleUpdateUiSettings({ darkMode: e.target.checked })}
+                            className="accent-blue-500"
+                          />
+                       </div>
+                       <p className="text-[9px] text-slate-400 font-medium leading-relaxed border-t border-slate-100 pt-3">
                         Backgrounds will automatically change based on the story context if scene images are tagged in the gallery.
                       </p>
                    </div>
