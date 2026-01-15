@@ -118,25 +118,28 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   }, [conversation?.messages, streamingContent]);
 
   useEffect(() => {
-    // If no messages yet (new chat), use the starting scene
-    if (!conversation?.messages.length) {
+    // First, try to find a [SCENE: tag] command in messages
+    let foundSceneTag = false;
+    if (conversation?.messages.length) {
+      for (let i = conversation.messages.length - 1; i >= 0; i--) {
+        const match = conversation.messages[i].text.match(/\[SCENE:\s*(.*?)\]/);
+        if (match) {
+          const tag = match[1].trim();
+          const scene = appData.scenes.find(s => s.tag.toLowerCase() === tag.toLowerCase());
+          if (scene) {
+            setActiveSceneId(scene.id);
+            foundSceneTag = true;
+            break;
+          }
+        }
+      }
+    }
+    
+    // If no [SCENE:] tag was found, fall back to the starting scene
+    if (!foundSceneTag) {
       const startingScene = appData.scenes.find(s => s.isStartingScene);
       if (startingScene) {
         setActiveSceneId(startingScene.id);
-      }
-      return;
-    }
-    
-    // Scan messages for [SCENE: tag] commands
-    for (let i = conversation.messages.length - 1; i >= 0; i--) {
-      const match = conversation.messages[i].text.match(/\[SCENE:\s*(.*?)\]/);
-      if (match) {
-        const tag = match[1].trim();
-        const scene = appData.scenes.find(s => s.tag.toLowerCase() === tag.toLowerCase());
-        if (scene) {
-          setActiveSceneId(scene.id);
-          break;
-        }
       }
     }
   }, [conversation?.messages, appData.scenes]);

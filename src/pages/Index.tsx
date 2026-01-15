@@ -508,6 +508,7 @@ const Index = () => {
               onUpdate={(convs) => handleUpdateActive({ conversations: convs })}
               onBack={() => { setPlayingConversationId(null); setTab("hub"); }}
               onSaveScenario={() => handleSave()}
+              onUpdateUiSettings={(patch) => handleUpdateActive({ uiSettings: { ...activeData.uiSettings, ...patch } })}
             />
           )}
 
