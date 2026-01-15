@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { ScenarioData, Character, Conversation, Message, CharacterTraitSection, Scene } from '../../types';
 import { Button, TextArea } from './UI';
+import { Badge } from '@/components/ui/badge';
 import { uid, now } from '../../services/storage';
 import { generateRoleplayResponseStream } from '../../services/gemini';
-
 interface ChatInterfaceTabProps {
   scenarioId: string;
   appData: ScenarioData;
@@ -266,14 +266,26 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           onClick={() => toggleCharacterExpand(char.id)}
           className="w-full flex flex-col items-center gap-2 p-3 text-center group"
         >
-          <div className={`w-20 h-20 rounded-full border-2 shadow-sm overflow-hidden bg-slate-50 transition-all duration-300 ${isExpanded ? 'border-blue-400 scale-105 shadow-blue-100' : 'border-slate-100 group-hover:border-blue-200'}`}>
-            {char.avatarDataUrl ? (
-              <img src={char.avatarDataUrl} alt={char.name} className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center font-black text-slate-300 text-xl italic uppercase">
-                {char.name.charAt(0)}
-              </div>
-            )}
+          <div className="relative">
+            <div className={`w-20 h-20 rounded-full border-2 shadow-sm overflow-hidden bg-slate-50 transition-all duration-300 ${isExpanded ? 'border-blue-400 scale-105 shadow-blue-100' : 'border-slate-100 group-hover:border-blue-200'}`}>
+              {char.avatarDataUrl ? (
+                <img src={char.avatarDataUrl} alt={char.name} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center font-black text-slate-300 text-xl italic uppercase">
+                  {char.name.charAt(0)}
+                </div>
+              )}
+            </div>
+            <Badge 
+              variant={char.controlledBy === 'User' ? 'default' : 'secondary'}
+              className={`absolute -bottom-1 -right-1 text-[9px] px-1.5 py-0.5 shadow-sm ${
+                char.controlledBy === 'User' 
+                  ? 'bg-blue-500 hover:bg-blue-500 text-white border-0' 
+                  : 'bg-slate-500 hover:bg-slate-500 text-white border-0'
+              }`}
+            >
+              {char.controlledBy}
+            </Badge>
           </div>
           <div className="flex items-center gap-2">
             <div className={`text-sm font-bold tracking-tight transition-colors ${isExpanded ? 'text-blue-600' : 'text-slate-800'}`}>{char.name}</div>
