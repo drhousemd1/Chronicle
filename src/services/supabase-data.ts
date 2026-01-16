@@ -263,6 +263,7 @@ export async function fetchScenarioById(id: string): Promise<ScenarioData | null
 
   const worldCore: WorldCore = (scenario.world_core as WorldCore) || {
     scenarioName: '',
+    briefDescription: '',
     settingOverview: '',
     rulesOfMagicTech: '',
     factions: '',
