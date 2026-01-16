@@ -1,8 +1,7 @@
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { ScenarioMetadata } from "@/types";
 import { Button } from "./UI";
-import { loadScenario } from "@/utils";
 
 interface ScenarioCardProps {
   scen: ScenarioMetadata;
@@ -12,41 +11,28 @@ interface ScenarioCardProps {
 }
 
 const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDelete }) => {
-  const [coverImage, setCoverImage] = useState<string>("");
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    try {
-      const data = loadScenario(scen.id);
-      if (data.characters?.[0]?.avatarDataUrl) {
-        setCoverImage(data.characters[0].avatarDataUrl);
-      }
-    } catch (e) {
-      console.error("Failed to load cover for", scen.id);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [scen.id]);
-
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onDelete(scen.id);
   };
 
+  const coverPosition = scen.coverImagePosition || { x: 50, y: 50 };
+
   return (
     <div className="group relative cursor-pointer" onClick={() => onPlay(scen.id)}>
       <div className="aspect-[2/3] w-full overflow-hidden rounded-[2rem] bg-slate-200 !shadow-[0_12px_24px_-8px_rgba(0,0,0,0.15)] transition-all duration-300 group-hover:-translate-y-3 group-hover:shadow-2xl border border-slate-200 relative">
         
-        {coverImage ? (
+        {scen.coverImage ? (
           <img
-            src={coverImage}
+            src={scen.coverImage}
             alt={scen.title}
+            style={{ objectPosition: `${coverPosition.x}% ${coverPosition.y}%` }}
             className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-slate-900 p-10 text-center">
              <div className="font-black text-white/10 text-6xl uppercase tracking-tighter italic break-words p-4 text-center">
-               {isLoading ? "..." : (scen.title.charAt(0) || '?')}
+               {scen.title.charAt(0) || '?'}
              </div>
           </div>
         )}
