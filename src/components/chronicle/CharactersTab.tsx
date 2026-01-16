@@ -5,6 +5,9 @@ import { Button, Input, TextArea, Card } from './UI';
 import { Icons } from '@/constants';
 import { uid, now, clamp, resizeImage } from '@/utils';
 import { generateCharacterImage } from '@/services/gemini';
+import { useAuth } from '@/hooks/use-auth';
+import { uploadAvatar, dataUrlToBlob } from '@/services/supabase-data';
+import { toast } from 'sonner';
 
 interface CharactersTabProps {
   appData: ScenarioData;
@@ -21,8 +24,10 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
   onUpdate, 
   onDelete
 }) => {
+  const { user } = useAuth();
   const characters = appData.characters;
   const [isGeneratingImg, setIsGeneratingImg] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [isRepositioning, setIsRepositioning] = useState(false);
   const [dragStart, setDragStart] = useState<{ x: number, y: number, pos: { x: number, y: number } } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -53,12 +58,31 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
 
   const handleAiPortrait = async () => {
     if (!selected) return;
-    setIsGeneratingImg(true);
-    const dataUrl = await generateCharacterImage(selected, appData.world);
-    if (dataUrl) {
-      onUpdate(selected.id, { avatarDataUrl: dataUrl, avatarPosition: { x: 50, y: 50 } });
+    if (!user) {
+      toast.error('Please sign in to generate portraits');
+      return;
     }
-    setIsGeneratingImg(false);
+    
+    setIsGeneratingImg(true);
+    try {
+      const dataUrl = await generateCharacterImage(selected, appData.world);
+      if (dataUrl) {
+        // Convert generated image to blob and upload to storage
+        const blob = dataUrlToBlob(dataUrl);
+        if (!blob) throw new Error('Failed to process generated image');
+        
+        const filename = `avatar-${selected.id}-${Date.now()}.png`;
+        const publicUrl = await uploadAvatar(user.id, blob, filename);
+        
+        onUpdate(selected.id, { avatarDataUrl: publicUrl, avatarPosition: { x: 50, y: 50 } });
+        toast.success('AI portrait generated and saved');
+      }
+    } catch (error) {
+      console.error('AI portrait generation failed:', error);
+      toast.error('Failed to generate portrait');
+    } finally {
+      setIsGeneratingImg(false);
+    }
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -205,7 +229,9 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
 
                 <div className="flex flex-col gap-2 w-full">
                   <div className="flex gap-2 w-full">
-                    <Button variant="secondary" onClick={() => fileInputRef.current?.click()} className="flex-1">Upload</Button>
+                    <Button variant="secondary" onClick={() => fileInputRef.current?.click()} className="flex-1" disabled={isUploading}>
+                      {isUploading ? "Uploading..." : "Upload"}
+                    </Button>
                     {selected.avatarDataUrl && (
                       <Button 
                         variant={isRepositioning ? 'primary' : 'secondary'} 
@@ -228,19 +254,41 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                   accept="image/*" 
                   onChange={async (e) => {
                     const f = e.target.files?.[0];
-                    if (f) {
+                    if (!f || !selected || !user) {
+                      if (!user) toast.error('Please sign in to upload avatars');
+                      return;
+                    }
+                    
+                    setIsUploading(true);
+                    try {
                       const reader = new FileReader();
                       reader.onload = async () => {
-                        if (reader.result && selected) {
+                        try {
                           const optimized = await resizeImage(reader.result as string, 512, 512, 0.7);
+                          const blob = dataUrlToBlob(optimized);
+                          if (!blob) throw new Error('Failed to process image');
+                          
+                          const filename = `avatar-${selected.id}-${Date.now()}.jpg`;
+                          const publicUrl = await uploadAvatar(user.id, blob, filename);
+                          
                           onUpdate(selected.id, { 
-                            avatarDataUrl: optimized,
+                            avatarDataUrl: publicUrl,
                             avatarPosition: { x: 50, y: 50 } 
                           });
                           setIsRepositioning(true);
+                          toast.success('Avatar uploaded');
+                        } catch (error) {
+                          console.error('Avatar upload failed:', error);
+                          toast.error('Failed to upload avatar');
+                        } finally {
+                          setIsUploading(false);
                         }
                       };
                       reader.readAsDataURL(f);
+                    } catch (error) {
+                      console.error('Avatar upload failed:', error);
+                      toast.error('Failed to upload avatar');
+                      setIsUploading(false);
                     }
                   }} 
                 />
