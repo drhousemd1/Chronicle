@@ -1,10 +1,14 @@
 
 export type MessageRole = "system" | "user" | "assistant";
 
+export type TimeOfDay = "sunrise" | "day" | "sunset" | "night";
+
 export type Message = {
   id: string;
   role: MessageRole;
   text: string;
+  day?: number;
+  timeOfDay?: TimeOfDay;
   createdAt: number;
 };
 
@@ -12,6 +16,8 @@ export type Conversation = {
   id: string;
   title: string;
   messages: Message[];
+  currentDay: number;
+  currentTimeOfDay: TimeOfDay;
   createdAt: number;
   updatedAt: number;
 };

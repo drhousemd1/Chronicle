@@ -182,8 +182,12 @@ function dbToConversation(row: any, messages: any[]): Conversation {
       id: m.id,
       role: m.role,
       text: m.content,
+      day: m.day || undefined,
+      timeOfDay: m.time_of_day || undefined,
       createdAt: new Date(m.created_at).getTime()
     })),
+    currentDay: row.current_day || 1,
+    currentTimeOfDay: row.current_time_of_day || 'day',
     createdAt: new Date(row.created_at).getTime(),
     updatedAt: new Date(row.updated_at).getTime()
   };
@@ -512,14 +516,16 @@ export async function saveConversation(
   scenarioId: string,
   userId: string
 ): Promise<void> {
-  // Upsert conversation
+  // Upsert conversation with day/time
   const { error: convError } = await supabase
     .from('conversations')
     .upsert({
       id: conversation.id,
       user_id: userId,
       scenario_id: scenarioId,
-      title: conversation.title
+      title: conversation.title,
+      current_day: conversation.currentDay || 1,
+      current_time_of_day: conversation.currentTimeOfDay || 'day'
     });
 
   if (convError) throw convError;
@@ -534,7 +540,9 @@ export async function saveConversation(
         id: m.id,
         conversation_id: conversation.id,
         role: m.role,
-        content: m.text
+        content: m.text,
+        day: m.day || null,
+        time_of_day: m.timeOfDay || null
       })));
     if (msgError) throw msgError;
   }

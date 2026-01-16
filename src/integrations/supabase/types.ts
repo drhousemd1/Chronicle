@@ -186,6 +186,8 @@ export type Database = {
       conversations: {
         Row: {
           created_at: string | null
+          current_day: number | null
+          current_time_of_day: string | null
           id: string
           scenario_id: string
           title: string
@@ -194,6 +196,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          current_day?: number | null
+          current_time_of_day?: string | null
           id?: string
           scenario_id: string
           title?: string
@@ -202,6 +206,8 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          current_day?: number | null
+          current_time_of_day?: string | null
           id?: string
           scenario_id?: string
           title?: string
@@ -223,22 +229,28 @@ export type Database = {
           content: string
           conversation_id: string
           created_at: string | null
+          day: number | null
           id: string
           role: string
+          time_of_day: string | null
         }
         Insert: {
           content: string
           conversation_id: string
           created_at?: string | null
+          day?: number | null
           id?: string
           role: string
+          time_of_day?: string | null
         }
         Update: {
           content?: string
           conversation_id?: string
           created_at?: string | null
+          day?: number | null
           id?: string
           role?: string
+          time_of_day?: string | null
         }
         Relationships: [
           {

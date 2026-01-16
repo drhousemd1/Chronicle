@@ -260,6 +260,8 @@ const Index = () => {
         id: uuid(), // Use UUID for Supabase
         title: `Story Session ${data.conversations.length + 1}`, 
         messages: initialMessages, 
+        currentDay: 1,
+        currentTimeOfDay: 'day',
         createdAt: now(), 
         updatedAt: now() 
       };
