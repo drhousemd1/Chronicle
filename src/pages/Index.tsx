@@ -1,7 +1,8 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { ScenarioData, TabKey, Character, ScenarioMetadata, Conversation, Message, ConversationMetadata } from "@/types";
-import { getRegistry, saveRegistry, loadScenario, saveScenario, deleteScenario, createDefaultScenarioData, now, uid, getCharacterLibrary, saveCharacterLibrary, truncateLine, getConversationRegistry, updateConversationRegistry, removeScenarioFromConversationRegistry } from "@/utils";
+import { createDefaultScenarioData, now, uid, truncateLine } from "@/utils";
 import { LLM_MODELS } from "@/constants";
 import { CharactersTab } from "@/components/chronicle/CharactersTab";
 import { WorldTab } from "@/components/chronicle/WorldTab";
@@ -13,6 +14,9 @@ import { ChatInterfaceTab } from "@/components/chronicle/ChatInterfaceTab";
 import { Button } from "@/components/chronicle/UI";
 import { brainstormCharacterDetails } from "@/services/gemini";
 import { CharacterPicker } from "@/components/chronicle/CharacterPicker";
+import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+import * as supabaseData from "@/services/supabase-data";
 
 const IconsList = {
   Hub: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>,
@@ -23,7 +27,8 @@ const IconsList = {
   Model: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v10"/><path d="M18.4 4.6a10 10 0 1 1-12.8 0"/></svg>,
   Builder: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>,
   Library: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m16 6 4 14"/><path d="M12 6v14"/><path d="M8 8v12"/><path d="M4 4v16"/></svg>,
-  ChatInterface: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4c0-1.1.9-2 2-2h8a2 2 0 0 1 2 2v5Z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/></svg>
+  ChatInterface: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4c0-1.1.9-2 2-2h8a2 2 0 0 1 2 2v5Z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/></svg>,
+  Logout: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
 };
 
 function SidebarItem({ active, label, onClick, icon, subtitle, className = "" }: { active: boolean; label: string; onClick: () => void; icon: React.ReactNode; subtitle?: string; className?: string; }) {
@@ -40,6 +45,10 @@ function SidebarItem({ active, label, onClick, icon, subtitle, className = "" }:
 }
 
 const Index = () => {
+  const { user, loading: authLoading, signOut, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
   const [registry, setRegistry] = useState<ScenarioMetadata[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeData, setActiveData] = useState<ScenarioData | null>(null);
@@ -51,6 +60,8 @@ const Index = () => {
   const [isBrainstorming, setIsBrainstorming] = useState(false);
   const [isCharacterPickerOpen, setIsCharacterPickerOpen] = useState(false);
   const [conversationRegistry, setConversationRegistry] = useState<ConversationMetadata[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   
   const [globalModelId, setGlobalModelId] = useState<string>(() => localStorage.getItem("rpg_studio_global_model") || 'gemini-3-flash-preview');
 
@@ -58,19 +69,56 @@ const Index = () => {
     localStorage.setItem("rpg_studio_global_model", globalModelId);
   }, [globalModelId]);
 
+  // Redirect to auth if not authenticated
   useEffect(() => {
-    try {
-      setRegistry(getRegistry());
-      setLibrary(getCharacterLibrary());
-      setConversationRegistry(getConversationRegistry());
-    } catch (e: any) {
-      setFatal("Failed to load data: " + e.message);
+    if (!authLoading && !isAuthenticated) {
+      navigate('/auth');
     }
-  }, []);
+  }, [authLoading, isAuthenticated, navigate]);
 
-  function handlePlayScenario(id: string) {
+  // Load data from Supabase when authenticated
+  useEffect(() => {
+    if (!isAuthenticated || !user) return;
+    
+    async function loadData() {
+      setIsLoading(true);
+      try {
+        const [scenarios, characters, conversations] = await Promise.all([
+          supabaseData.fetchScenarios(),
+          supabaseData.fetchCharacterLibrary(),
+          supabaseData.fetchConversationRegistry()
+        ]);
+        setRegistry(scenarios);
+        setLibrary(characters);
+        setConversationRegistry(conversations);
+      } catch (e: any) {
+        console.error("Failed to load data:", e);
+        toast({
+          title: "Failed to load data",
+          description: e.message,
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    loadData();
+  }, [isAuthenticated, user, toast]);
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/auth');
+  };
+
+  async function handlePlayScenario(id: string) {
+    if (!user) return;
     try {
-      const data = loadScenario(id);
+      const data = await supabaseData.fetchScenarioById(id);
+      if (!data) {
+        toast({ title: "Scenario not found", variant: "destructive" });
+        return;
+      }
       const meta = registry.find(r => r.id === id);
       
       const initialMessages: Message[] = [];
@@ -93,12 +141,13 @@ const Index = () => {
       };
 
       data.conversations = [newConv, ...data.conversations];
-      saveScenario(id, data);
       
-      // Update global conversation registry
-      const scenarioTitle = meta?.title || data.world.core.scenarioName || "Untitled";
-      const updatedRegistry = updateConversationRegistry(id, scenarioTitle, data.conversations);
-      setConversationRegistry(updatedRegistry);
+      // Save to Supabase
+      await supabaseData.saveConversation(newConv, id, user.id);
+      
+      // Update conversation registry
+      const updatedConvRegistry = await supabaseData.fetchConversationRegistry();
+      setConversationRegistry(updatedConvRegistry);
       
       setActiveId(id);
       setActiveData(data);
@@ -106,20 +155,24 @@ const Index = () => {
       setTab("chat_interface");
       setSelectedCharacterId(null);
     } catch (e: any) {
-      alert("Failed to play scenario: " + e.message);
+      toast({ title: "Failed to play scenario", description: e.message, variant: "destructive" });
     }
   }
 
-  function handleEditScenario(id: string) {
+  async function handleEditScenario(id: string) {
     try {
-      const data = loadScenario(id);
+      const data = await supabaseData.fetchScenarioById(id);
+      if (!data) {
+        toast({ title: "Scenario not found", variant: "destructive" });
+        return;
+      }
       setActiveId(id);
       setActiveData(data);
       setTab("world"); 
       setSelectedCharacterId(null);
       setPlayingConversationId(null);
     } catch (e: any) {
-      alert("Failed to edit scenario: " + e.message);
+      toast({ title: "Failed to edit scenario", description: e.message, variant: "destructive" });
     }
   }
 
@@ -133,72 +186,44 @@ const Index = () => {
     setPlayingConversationId(null);
   }
 
-  const handleSave = (navigateToHub: boolean = false): boolean => {
-    if (!activeId || !activeData) {
-      alert("Error: No active scenario found to save.");
+  const handleSave = useCallback(async (navigateToHub: boolean = false): Promise<boolean> => {
+    if (!activeId || !activeData || !user) {
+      toast({ title: "Error", description: "No active scenario found to save.", variant: "destructive" });
       return false;
     }
     
+    setIsSaving(true);
     try {
-      const t = now();
-      const currentRegistry = getRegistry();
-      const exists = currentRegistry.some(r => r.id === activeId);
-      
       const derivedTitle = activeData.world.core.scenarioName || 
                            (activeData.characters[0]?.name ? `${activeData.characters[0].name}'s Story` : "New Scenario");
 
-      let nextReg: ScenarioMetadata[];
-      if (!exists) {
-        const meta: ScenarioMetadata = {
-          id: activeId,
-          title: derivedTitle,
-          description: truncateLine(activeData.world.core.settingOverview || "Created via Builder", 120),
-          coverImage: "", 
-          tags: ["Custom"],
-          createdAt: t,
-          updatedAt: t,
-        };
-        nextReg = [meta, ...currentRegistry];
-      } else {
-        nextReg = currentRegistry.map(m => m.id === activeId ? { 
-          ...m, 
-          title: derivedTitle,
-          description: truncateLine(activeData.world.core.settingOverview || m.description, 120),
-          updatedAt: t,
-          coverImage: "" 
-        } : m);
-      }
+      const metadata = {
+        title: derivedTitle,
+        description: truncateLine(activeData.world.core.settingOverview || "Created via Builder", 120),
+        coverImage: "",
+        tags: ["Custom"]
+      };
 
-      saveScenario(activeId, activeData);
-      saveRegistry(nextReg);
-      setRegistry(nextReg);
+      await supabaseData.saveScenario(activeId, activeData, metadata, user.id);
       
-      // Sync conversation registry
-      const updatedConvRegistry = updateConversationRegistry(activeId, derivedTitle, activeData.conversations);
+      // Refresh registry
+      const updatedRegistry = await supabaseData.fetchScenarios();
+      setRegistry(updatedRegistry);
+      
+      // Update conversation registry
+      const updatedConvRegistry = await supabaseData.fetchConversationRegistry();
       setConversationRegistry(updatedConvRegistry);
       
-      try {
-        let nextLib = getCharacterLibrary();
-        if (activeData.characters.length > 0) {
-          activeData.characters.forEach(scenChar => {
-            const idx = nextLib.findIndex(l => l.id === scenChar.id);
-            if (idx !== -1) {
-              const incomingChar = { ...scenChar };
-              if (!incomingChar.avatarDataUrl && nextLib[idx].avatarDataUrl) {
-                incomingChar.avatarDataUrl = nextLib[idx].avatarDataUrl;
-                incomingChar.avatarPosition = nextLib[idx].avatarPosition;
-              }
-              nextLib[idx] = incomingChar;
-            }
-            else nextLib.unshift(scenChar);
-          });
-          if (nextLib.length > 100) nextLib = nextLib.slice(0, 100);
-          saveCharacterLibrary(nextLib);
-          setLibrary(nextLib);
+      // Sync characters to library
+      if (activeData.characters.length > 0) {
+        for (const char of activeData.characters) {
+          await supabaseData.saveCharacterToLibrary(char, user.id);
         }
-      } catch (libErr) {
-        console.warn("Library sync failed, but scenario was saved:", libErr);
+        const updatedLibrary = await supabaseData.fetchCharacterLibrary();
+        setLibrary(updatedLibrary);
       }
+
+      toast({ title: "Saved!", description: "Your scenario has been saved." });
 
       if (navigateToHub) {
         setActiveId(null);
@@ -209,30 +234,30 @@ const Index = () => {
 
       return true;
     } catch (e: any) {
-      console.error("Critical Save Failure:", e);
-      if (e.name === 'QuotaExceededError' || e.message?.toLowerCase().includes('quota')) {
-        alert("Browser storage is full. This scenario is too large. Please delete old stories or use fewer/smaller images.");
-      } else {
-        alert("Save failed: " + (e.message || "An unknown error occurred while accessing local storage."));
-      }
+      console.error("Save failed:", e);
+      toast({ title: "Save failed", description: e.message, variant: "destructive" });
       return false;
+    } finally {
+      setIsSaving(false);
     }
-  };
+  }, [activeId, activeData, user, toast]);
 
-  function handleSaveCharacter() {
+  async function handleSaveCharacter() {
+    if (!user) return;
+    
     if (tab === 'library') {
       try {
-        saveCharacterLibrary(library);
+        const char = library.find(c => c.id === selectedCharacterId);
+        if (char) {
+          await supabaseData.saveCharacterToLibrary(char, user.id);
+          toast({ title: "Character saved!" });
+        }
         setSelectedCharacterId(null);
       } catch (e: any) {
-        if (e.name === 'QuotaExceededError') {
-           alert("Library is full. Try deleting other characters from the library first.");
-        } else {
-           alert("Error saving character to library: " + e.message);
-        }
+        toast({ title: "Error saving character", description: e.message, variant: "destructive" });
       }
     } else {
-      const success = handleSave();
+      const success = await handleSave();
       if (success) {
         setSelectedCharacterId(null);
         setTab("world"); 
@@ -267,20 +292,23 @@ const Index = () => {
 
   function handleImportCharacter(char: Character) {
     if (!activeData) return;
-    if (activeData.characters.some(c => c.id === char.id)) return alert("Character is already in this scenario.");
+    if (activeData.characters.some(c => c.id === char.id)) {
+      toast({ title: "Character already in scenario", variant: "destructive" });
+      return;
+    }
     const copy = JSON.parse(JSON.stringify(char));
     handleUpdateActive({ characters: [copy, ...activeData.characters] });
     setIsCharacterPickerOpen(false);
   }
 
-  function handleDeleteScenario(id: string) {
+  async function handleDeleteScenario(id: string) {
     if (!confirm("Delete this entire scenario? This cannot be undone.")) return;
     try {
-      deleteScenario(id);
-      setRegistry(getRegistry());
+      await supabaseData.deleteScenario(id);
+      const updatedRegistry = await supabaseData.fetchScenarios();
+      setRegistry(updatedRegistry);
       
-      // Remove from conversation registry
-      const updatedConvRegistry = removeScenarioFromConversationRegistry(id);
+      const updatedConvRegistry = await supabaseData.fetchConversationRegistry();
       setConversationRegistry(updatedConvRegistry);
       
       if (activeId === id) {
@@ -290,66 +318,67 @@ const Index = () => {
         setPlayingConversationId(null);
         setTab("hub");
       }
+      
+      toast({ title: "Scenario deleted" });
     } catch (e: any) {
-      alert("Delete failed: " + e.message);
+      toast({ title: "Delete failed", description: e.message, variant: "destructive" });
     }
   }
   
-  function handleResumeFromHistory(scenarioId: string, conversationId: string) {
+  async function handleResumeFromHistory(scenarioId: string, conversationId: string) {
     try {
-      const data = loadScenario(scenarioId);
+      const data = await supabaseData.fetchScenarioById(scenarioId);
+      if (!data) {
+        toast({ title: "Scenario not found", variant: "destructive" });
+        return;
+      }
       setActiveId(scenarioId);
       setActiveData(data);
       setPlayingConversationId(conversationId);
       setTab("chat_interface");
     } catch (e: any) {
-      alert("Failed to load scenario: " + e.message);
+      toast({ title: "Failed to load scenario", description: e.message, variant: "destructive" });
     }
   }
   
-  function handleDeleteConversationFromHistory(scenarioId: string, conversationId: string) {
+  async function handleDeleteConversationFromHistory(scenarioId: string, conversationId: string) {
     try {
-      const data = loadScenario(scenarioId);
-      const meta = registry.find(r => r.id === scenarioId);
-      const scenarioTitle = meta?.title || data.world.core.scenarioName || "Untitled";
+      await supabaseData.deleteConversation(conversationId);
       
-      data.conversations = data.conversations.filter(c => c.id !== conversationId);
-      saveScenario(scenarioId, data);
-      
-      // Update global registry
-      const updatedConvRegistry = updateConversationRegistry(scenarioId, scenarioTitle, data.conversations);
+      const updatedConvRegistry = await supabaseData.fetchConversationRegistry();
       setConversationRegistry(updatedConvRegistry);
       
-      // If currently viewing this scenario, update state
-      if (activeId === scenarioId) {
-        setActiveData(data);
+      if (activeId === scenarioId && activeData) {
+        const updatedData = { ...activeData, conversations: activeData.conversations.filter(c => c.id !== conversationId) };
+        setActiveData(updatedData);
       }
+      
+      toast({ title: "Conversation deleted" });
     } catch (e: any) {
-      alert("Failed to delete conversation: " + e.message);
+      toast({ title: "Failed to delete conversation", description: e.message, variant: "destructive" });
     }
   }
   
-  function handleRenameConversationFromHistory(scenarioId: string, conversationId: string, newTitle: string) {
+  async function handleRenameConversationFromHistory(scenarioId: string, conversationId: string, newTitle: string) {
     try {
-      const data = loadScenario(scenarioId);
-      const meta = registry.find(r => r.id === scenarioId);
-      const scenarioTitle = meta?.title || data.world.core.scenarioName || "Untitled";
+      await supabaseData.renameConversation(conversationId, newTitle);
       
-      data.conversations = data.conversations.map(c => 
-        c.id === conversationId ? { ...c, title: newTitle, updatedAt: now() } : c
-      );
-      saveScenario(scenarioId, data);
-      
-      // Update global registry
-      const updatedConvRegistry = updateConversationRegistry(scenarioId, scenarioTitle, data.conversations);
+      const updatedConvRegistry = await supabaseData.fetchConversationRegistry();
       setConversationRegistry(updatedConvRegistry);
       
-      // If currently viewing this scenario, update state
-      if (activeId === scenarioId) {
-        setActiveData(data);
+      if (activeId === scenarioId && activeData) {
+        const updatedData = { 
+          ...activeData, 
+          conversations: activeData.conversations.map(c => 
+            c.id === conversationId ? { ...c, title: newTitle, updatedAt: now() } : c
+          ) 
+        };
+        setActiveData(updatedData);
       }
+      
+      toast({ title: "Conversation renamed" });
     } catch (e: any) {
-      alert("Failed to rename conversation: " + e.message);
+      toast({ title: "Failed to rename conversation", description: e.message, variant: "destructive" });
     }
   }
 
@@ -368,13 +397,18 @@ const Index = () => {
     }
   }
 
-  function handleDeleteCharacterFromList(id: string) {
+  async function handleDeleteCharacterFromList(id: string) {
     if (tab === "library") {
       if (!confirm("Delete permanently from Global Library?")) return;
-      const nextLib = library.filter(c => c.id !== id);
-      setLibrary(nextLib);
-      if (selectedCharacterId === id) setSelectedCharacterId(null);
-      saveCharacterLibrary(nextLib);
+      try {
+        await supabaseData.deleteCharacterFromLibrary(id);
+        const nextLib = library.filter(c => c.id !== id);
+        setLibrary(nextLib);
+        if (selectedCharacterId === id) setSelectedCharacterId(null);
+        toast({ title: "Character deleted from library" });
+      } catch (e: any) {
+        toast({ title: "Failed to delete character", description: e.message, variant: "destructive" });
+      }
     } else if (activeData) {
       if (!confirm("Remove from this scenario?")) return;
       const nextChars = activeData.characters.filter((c) => c.id !== id);
@@ -406,7 +440,7 @@ const Index = () => {
       }
     } catch (e) {
       console.error(e);
-      alert("Brainstorming failed.");
+      toast({ title: "Brainstorming failed", variant: "destructive" });
     } finally {
       setIsBrainstorming(false);
     }
@@ -420,19 +454,22 @@ const Index = () => {
      handleUpdateCharacter(selected.id, { sections: [...selected.sections, { id: uid('sec'), title: 'New Section', items: [], createdAt: now(), updatedAt: now() }] });
   }
 
-  const selectedModelObj = LLM_MODELS.find(m => m.id === globalModelId);
+  // Show loading state
+  if (authLoading || isLoading) {
+    return (
+      <div className="h-screen bg-slate-900 flex items-center justify-center">
+        <div className="text-white text-center">
+          <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black text-2xl italic shadow-xl shadow-blue-500/30 mx-auto mb-4">C</div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (fatal) return <div className="h-screen bg-slate-900 flex items-center justify-center p-6 text-white text-center"><div><h1 className="text-3xl font-black mb-4 text-rose-500">CRITICAL ERROR</h1><p className="max-w-md mb-8">{fatal}</p><button onClick={() => { localStorage.clear(); location.reload(); }} className="px-6 py-3 bg-white text-slate-900 rounded-2xl font-bold">Clear All Data & Restart</button></div></div>;
 
   const isDraft = activeId ? !registry.some(r => r.id === activeId) : false;
   const activeMeta = registry.find(m => m.id === activeId);
-
-  const getPageTitle = () => {
-    if (tab === 'hub') return 'Your Stories';
-    if (tab === 'library') return 'Global Character Library';
-    if (tab === 'conversations') return 'Chat History';
-    return '';
-  };
 
   return (
     <div className="h-screen flex bg-white overflow-hidden">
@@ -463,14 +500,25 @@ const Index = () => {
         
         {activeId && (tab === "world" || tab === "characters") && (
           <div className="p-4 border-t border-white/10 space-y-2">
-            <Button variant="brand" onClick={() => handleSave(true)} className="w-full">
-              💾 Save Scenario
+            <Button variant="brand" onClick={() => handleSave(true)} className="w-full" disabled={isSaving}>
+              {isSaving ? "Saving..." : "💾 Save Scenario"}
             </Button>
             <Button variant="ghost" onClick={() => { setActiveId(null); setActiveData(null); setTab("hub"); }} className="w-full !text-slate-500">
               ← Back to Stories
             </Button>
           </div>
         )}
+
+        <div className="p-4 border-t border-white/10">
+          <div className="text-xs text-slate-500 mb-2 truncate">{user?.email}</div>
+          <button 
+            onClick={handleSignOut}
+            className="w-full flex items-center gap-2 px-4 py-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors text-sm"
+          >
+            <IconsList.Logout />
+            Sign Out
+          </button>
+        </div>
       </aside>
 
       <main className="flex-1 flex flex-col overflow-hidden bg-slate-50/50">
