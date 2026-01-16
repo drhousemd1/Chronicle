@@ -220,6 +220,8 @@ export function createDefaultScenarioData(): ScenarioData {
         id: uuid(), // Use UUID for Supabase
         title: "Test Session",
         messages: [],
+        currentDay: 1,
+        currentTimeOfDay: 'day',
         createdAt: now(),
         updatedAt: now(),
       }

@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { ScenarioData, Character, World } from "../types";
+import { ScenarioData, Character, World, TimeOfDay } from "../types";
 import { resizeImage } from "../utils";
 
 const MODEL_IMAGE = 'gemini-2.5-flash-image';
@@ -11,7 +11,14 @@ const getApiKey = () => {
   return "";
 };
 
-function getSystemInstruction(appData: ScenarioData): string {
+const TIME_DESCRIPTIONS: Record<TimeOfDay, string> = {
+  sunrise: "early morning (sunrise, around 6-10am)",
+  day: "daytime (mid-morning to afternoon, around 10am-5pm)",
+  sunset: "evening (sunset, around 5-9pm)",
+  night: "nighttime (after dark, around 9pm-6am)"
+};
+
+function getSystemInstruction(appData: ScenarioData, currentDay?: number, currentTimeOfDay?: TimeOfDay): string {
   const worldContext = `
     SETTING OVERVIEW: ${appData.world.core.settingOverview}
     RULES/TECH: ${appData.world.core.rulesOfMagicTech}
@@ -36,6 +43,19 @@ ${traits}`;
   
   const sceneTags = appData.scenes.map(s => s.tag).join(', ');
 
+  // Temporal context section
+  const temporalContext = currentDay && currentTimeOfDay ? `
+    CURRENT TEMPORAL CONTEXT:
+    - Day: ${currentDay} of the story
+    - Time of Day: ${TIME_DESCRIPTIONS[currentTimeOfDay]}
+    
+    TEMPORAL CONSISTENCY RULES:
+    - Generate dialogue and actions appropriate for the current time of day
+    - Characters should reference activities typical for ${currentTimeOfDay} (e.g., breakfast/waking in morning, sleep preparation at night)
+    - Maintain continuity with the current day number
+    - Be consistent with time-appropriate lighting, activities, and character energy levels
+  ` : '';
+
   return `
     You are an expert Game Master and roleplayer for a creative writing/RPG studio.
     
@@ -49,7 +69,7 @@ ${traits}`;
     ${characterContext}
     
     AVAILABLE SCENES: [${sceneTags}]
-    
+    ${temporalContext}
     INSTRUCTIONS:
     - Respond as the narrator or relevant characters.
     - NARRATIVE FOCUS: Prioritize 'ROLE: Main' characters in the narrative.
@@ -73,7 +93,9 @@ export async function* generateRoleplayResponseStream(
   appData: ScenarioData,
   conversationId: string,
   userMessage: string,
-  modelId: string
+  modelId: string,
+  currentDay?: number,
+  currentTimeOfDay?: TimeOfDay
 ) {
   const apiKey = getApiKey();
   if (!apiKey) {
@@ -85,7 +107,7 @@ export async function* generateRoleplayResponseStream(
   const conversation = appData.conversations.find(c => c.id === conversationId);
   if (!conversation) throw new Error("Conversation not found");
 
-  const systemInstruction = getSystemInstruction(appData);
+  const systemInstruction = getSystemInstruction(appData, currentDay, currentTimeOfDay);
   const history = conversation.messages.map(m => ({
     role: m.role === 'assistant' ? 'model' : 'user',
     parts: [{ text: m.text }]

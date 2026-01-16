@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { ScenarioData, Character, Conversation, Message, CharacterTraitSection, Scene } from '../../types';
+import { ScenarioData, Character, Conversation, Message, CharacterTraitSection, Scene, TimeOfDay } from '../../types';
 import { Button, TextArea } from './UI';
 import { Badge } from '@/components/ui/badge';
 import { uid, now, uuid } from '../../services/storage';
 import { generateRoleplayResponseStream } from '../../services/gemini';
-import { RefreshCw, MoreVertical, Copy, Pencil, Trash2 } from 'lucide-react';
+import { RefreshCw, MoreVertical, Copy, Pencil, Trash2, ChevronUp, ChevronDown, Sunrise, Sun, Sunset, Moon } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -120,6 +120,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [editText, setEditText] = useState('');
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [currentDay, setCurrentDay] = useState(1);
+  const [currentTimeOfDay, setCurrentTimeOfDay] = useState<TimeOfDay>('day');
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const conversation = appData.conversations.find(c => c.id === conversationId);
@@ -135,6 +137,14 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [conversation?.messages, streamingContent]);
+
+  // Sync day/time state from conversation
+  useEffect(() => {
+    if (conversation) {
+      setCurrentDay(conversation.currentDay || 1);
+      setCurrentTimeOfDay(conversation.currentTimeOfDay || 'day');
+    }
+  }, [conversation?.id]);
 
   useEffect(() => {
     // First, try to find a [SCENE: tag] command in messages
@@ -163,10 +173,56 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     }
   }, [conversation?.messages, appData.scenes]);
 
+  // Update conversation when day/time changes
+  const handleDayTimeChange = (newDay: number, newTime: TimeOfDay) => {
+    const updatedConvs = appData.conversations.map(c =>
+      c.id === conversationId
+        ? { ...c, currentDay: newDay, currentTimeOfDay: newTime, updatedAt: now() }
+        : c
+    );
+    onUpdate(updatedConvs);
+    onSaveScenario();
+  };
+
+  const incrementDay = () => {
+    const newDay = currentDay + 1;
+    setCurrentDay(newDay);
+    handleDayTimeChange(newDay, currentTimeOfDay);
+  };
+
+  const decrementDay = () => {
+    if (currentDay > 1) {
+      const newDay = currentDay - 1;
+      setCurrentDay(newDay);
+      handleDayTimeChange(newDay, currentTimeOfDay);
+    }
+  };
+
+  const selectTime = (time: TimeOfDay) => {
+    setCurrentTimeOfDay(time);
+    handleDayTimeChange(currentDay, time);
+  };
+
+  const getTimeIcon = (time: TimeOfDay) => {
+    switch (time) {
+      case 'sunrise': return <Sunrise className="w-4 h-4" />;
+      case 'day': return <Sun className="w-4 h-4" />;
+      case 'sunset': return <Sunset className="w-4 h-4" />;
+      case 'night': return <Moon className="w-4 h-4" />;
+    }
+  };
+
   const handleSend = async () => {
     if (!input.trim() || !conversation || isStreaming) return;
 
-    const userMsg: Message = { id: uuid(), role: 'user', text: input, createdAt: now() }; // Use UUID for Supabase
+    const userMsg: Message = { 
+      id: uuid(), 
+      role: 'user', 
+      text: input, 
+      day: currentDay,
+      timeOfDay: currentTimeOfDay,
+      createdAt: now() 
+    };
     const nextConvsWithUser = appData.conversations.map(c =>
       c.id === conversationId ? { ...c, messages: [...c.messages, userMsg], updatedAt: now() } : c
     );
@@ -178,14 +234,21 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
     try {
       let fullText = '';
-      const stream = generateRoleplayResponseStream(appData, conversationId, input, modelId);
+      const stream = generateRoleplayResponseStream(appData, conversationId, input, modelId, currentDay, currentTimeOfDay);
 
       for await (const chunk of stream) {
         fullText += chunk;
         setStreamingContent(fullText);
       }
 
-      const aiMsg: Message = { id: uuid(), role: 'assistant', text: fullText, createdAt: now() }; // Use UUID for Supabase
+      const aiMsg: Message = { 
+        id: uuid(), 
+        role: 'assistant', 
+        text: fullText, 
+        day: currentDay,
+        timeOfDay: currentTimeOfDay,
+        createdAt: now() 
+      };
       const nextConvsWithAi = appData.conversations.map(c =>
         c.id === conversationId ? { ...c, messages: [...c.messages, userMsg, aiMsg], updatedAt: now() } : c
       );
@@ -252,14 +315,21 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     
     try {
       let fullText = '';
-      const stream = generateRoleplayResponseStream(appData, conversationId, userMessage.text, modelId);
+      const stream = generateRoleplayResponseStream(appData, conversationId, userMessage.text, modelId, currentDay, currentTimeOfDay);
       
       for await (const chunk of stream) {
         fullText += chunk;
         setStreamingContent(fullText);
       }
       
-      const newAiMsg: Message = { id: uuid(), role: 'assistant', text: fullText, createdAt: now() }; // Use UUID for Supabase
+      const newAiMsg: Message = { 
+        id: uuid(), 
+        role: 'assistant', 
+        text: fullText, 
+        day: currentDay,
+        timeOfDay: currentTimeOfDay,
+        createdAt: now() 
+      };
       const updatedConvs = appData.conversations.map(c =>
         c.id === conversationId
           ? { ...c, messages: [...messagesBeforeAi, newAiMsg], updatedAt: now() }
@@ -522,6 +592,57 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           </button>
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-8 custom-scrollbar scrollbar-none">
+          {/* Day/Time Control Panel */}
+          <section className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+            <div className="flex gap-4 items-center">
+              {/* Day Counter */}
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Day</span>
+                <div className="flex items-center bg-white rounded-lg border border-slate-200 shadow-sm">
+                  <div className="px-3 py-1.5 min-w-[40px] text-center font-bold text-slate-700 text-sm">
+                    {currentDay}
+                  </div>
+                  <div className="flex flex-col border-l border-slate-200">
+                    <button 
+                      onClick={incrementDay}
+                      className="px-1.5 py-0.5 hover:bg-slate-100 transition-colors text-slate-500 hover:text-blue-600"
+                    >
+                      <ChevronUp className="w-3 h-3" />
+                    </button>
+                    <button 
+                      onClick={decrementDay}
+                      disabled={currentDay <= 1}
+                      className="px-1.5 py-0.5 hover:bg-slate-100 transition-colors text-slate-500 hover:text-blue-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      <ChevronDown className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Time of Day Icons */}
+              <div className="flex flex-col items-center gap-1 flex-1">
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Time</span>
+                <div className="flex gap-1">
+                  {(['sunrise', 'day', 'sunset', 'night'] as TimeOfDay[]).map((time) => (
+                    <button
+                      key={time}
+                      onClick={() => selectTime(time)}
+                      className={`p-2 rounded-lg transition-all ${
+                        currentTimeOfDay === time
+                          ? 'bg-blue-100 border-2 border-blue-400 text-blue-600 shadow-sm'
+                          : 'bg-white border border-slate-200 text-slate-400 hover:bg-slate-100 hover:text-slate-600'
+                      }`}
+                      title={time.charAt(0).toUpperCase() + time.slice(1)}
+                    >
+                      {getTimeIcon(time)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+
           <section>
             <h3 className="text-[11px] font-bold text-slate-500 bg-slate-100 px-4 py-1.5 rounded-lg mb-4 tracking-tight uppercase">Main Characters</h3>
             <div className="space-y-4">
@@ -625,6 +746,21 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
                       <FormattedMessage text={msg.text} />
                     </div>
                   </div>
+                  
+                  {/* Day/Time Badge - bottom left */}
+                  {(msg.day || msg.timeOfDay) && (
+                    <div className="absolute bottom-3 left-4 flex items-center gap-2 text-[9px] text-slate-500/70">
+                      {msg.day && <span>Day: {msg.day}</span>}
+                      {msg.timeOfDay && (
+                        <span className="flex items-center gap-1">
+                          {msg.timeOfDay === 'sunrise' && <Sunrise className="w-3 h-3" />}
+                          {msg.timeOfDay === 'day' && <Sun className="w-3 h-3" />}
+                          {msg.timeOfDay === 'sunset' && <Sunset className="w-3 h-3" />}
+                          {msg.timeOfDay === 'night' && <Moon className="w-3 h-3" />}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             );
