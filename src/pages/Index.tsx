@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { ScenarioData, TabKey, Character, ScenarioMetadata, Conversation, Message, ConversationMetadata } from "@/types";
-import { createDefaultScenarioData, now, uid, truncateLine } from "@/utils";
+import { createDefaultScenarioData, now, uid, uuid, truncateLine } from "@/utils";
 import { LLM_MODELS } from "@/constants";
 import { CharactersTab } from "@/components/chronicle/CharactersTab";
 import { WorldTab } from "@/components/chronicle/WorldTab";
@@ -125,7 +125,7 @@ const Index = () => {
       const openingText = data.story?.openingDialog?.text?.trim();
       if (openingText) {
         initialMessages.push({
-          id: uid("msg"),
+          id: uuid(), // Use UUID for Supabase
           role: "assistant",
           text: openingText,
           createdAt: now()
@@ -133,7 +133,7 @@ const Index = () => {
       }
 
       const newConv: Conversation = { 
-        id: uid("conv"), 
+        id: uuid(), // Use UUID for Supabase
         title: `Story Session ${data.conversations.length + 1}`, 
         messages: initialMessages, 
         createdAt: now(), 
@@ -177,7 +177,7 @@ const Index = () => {
   }
 
   function handleCreateNewScenario() {
-    const id = uid("scen");
+    const id = uuid(); // Use proper UUID for Supabase
     const data = createDefaultScenarioData();
     setActiveId(id);
     setActiveData(data);
@@ -268,7 +268,7 @@ const Index = () => {
   function handleCreateCharacter() {
     const t = now();
     const c: Character = {
-      id: uid("char"),
+      id: uuid(), // Use UUID for Supabase
       name: "New Character",
       sexType: "",
       controlledBy: "AI",
@@ -420,7 +420,7 @@ const Index = () => {
   function handleAddWorldEntry() {
     if (!activeData) return;
     const t = now();
-    const newEntry = { id: uid('codex'), title: '', body: '', createdAt: t, updatedAt: t };
+    const newEntry = { id: uuid(), title: '', body: '', createdAt: t, updatedAt: t }; // Use UUID for Supabase
     handleUpdateActive({ world: { ...activeData.world, entries: [newEntry, ...activeData.world.entries] } });
   }
 

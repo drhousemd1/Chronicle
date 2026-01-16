@@ -12,6 +12,12 @@ export function now(): number {
   return Date.now();
 }
 
+// Generate a proper UUID v4 for Supabase compatibility
+export function uuid(): string {
+  return crypto.randomUUID();
+}
+
+// Legacy function for local-only IDs (not stored in Supabase UUID columns)
 export function uid(prefix: string): string {
   return `${prefix}_${Math.random().toString(16).slice(2)}_${Date.now().toString(16)}`;
 }
@@ -79,7 +85,7 @@ export const getHardcodedTestCharacters = (): Character[] => {
   const t = now();
   return [
     {
-      id: "char_test_ashley",
+      id: uuid(), // Use UUID for Supabase
       name: "Ashley",
       sexType: "Intersex",
       controlledBy: "AI",
@@ -88,25 +94,25 @@ export const getHardcodedTestCharacters = (): Character[] => {
       avatarDataUrl: "",
       avatarPosition: { x: 50, y: 35 },
       sections: [
-        mkTestSection("sec_test_appearance", "Appearance", [
-          mkTestTrait("it_test_eye", "Eye Color", "Blue"),
-          mkTestTrait("it_test_hair_col", "Hair Color", "Blonde"),
-          mkTestTrait("it_test_hair_style", "Hair Style / Length", "Long, pony tail or worn straight."),
-          mkTestTrait("it_test_breasts", "Breasts", "Massive"),
-          mkTestTrait("it_test_penis", "Penis", "Large"),
+        mkTestSection(uid("sec"), "Appearance", [
+          mkTestTrait(uid("item"), "Eye Color", "Blue"),
+          mkTestTrait(uid("item"), "Hair Color", "Blonde"),
+          mkTestTrait(uid("item"), "Hair Style / Length", "Long, pony tail or worn straight."),
+          mkTestTrait(uid("item"), "Breasts", "Massive"),
+          mkTestTrait(uid("item"), "Penis", "Large"),
         ]),
-        mkTestSection("sec_test_clothing", "Clothing Preference", [
-          mkTestTrait("it_test_shirts", "Shirts", "Crop tops, hoodies"),
-          mkTestTrait("it_test_pants", "Pants", "Leggings, short shorts"),
-          mkTestTrait("it_test_under", "Underwear", "Lacy or silky thongs"),
-          mkTestTrait("it_test_bras", "Bras", "Lacy or silky bras"),
+        mkTestSection(uid("sec"), "Clothing Preference", [
+          mkTestTrait(uid("item"), "Shirts", "Crop tops, hoodies"),
+          mkTestTrait(uid("item"), "Pants", "Leggings, short shorts"),
+          mkTestTrait(uid("item"), "Underwear", "Lacy or silky thongs"),
+          mkTestTrait(uid("item"), "Bras", "Lacy or silky bras"),
         ]),
       ],
       createdAt: t,
       updatedAt: t,
     },
     {
-      id: "char_test_player",
+      id: uuid(), // Use UUID for Supabase
       name: "Player",
       sexType: "Male",
       controlledBy: "User",
@@ -115,9 +121,9 @@ export const getHardcodedTestCharacters = (): Character[] => {
       avatarDataUrl: "",
       avatarPosition: { x: 50, y: 50 },
       sections: [
-        mkTestSection("sec_test_player_basics", "Basics", [
-          mkTestTrait("it_test_player_id", "Identity", "Protagonist"),
-          mkTestTrait("it_test_player_status", "Status", "Active"),
+        mkTestSection(uid("sec"), "Basics", [
+          mkTestTrait(uid("item"), "Identity", "Protagonist"),
+          mkTestTrait(uid("item"), "Status", "Active"),
         ]),
       ],
       createdAt: t,
@@ -131,8 +137,8 @@ export function createDefaultScenarioData(): ScenarioData {
   const baseChars = getHardcodedTestCharacters();
   
   const characters = baseChars.map(bc => {
-    const existing = lib.find(l => l.id === bc.id);
-    return existing ? JSON.parse(JSON.stringify(existing)) : bc;
+    const existing = lib.find(l => l.name === bc.name); // Match by name instead of old prefixed ID
+    return existing ? { ...JSON.parse(JSON.stringify(existing)), id: uuid() } : bc;
   });
 
   return {
@@ -168,7 +174,7 @@ export function createDefaultScenarioData(): ScenarioData {
     },
     conversations: [
       {
-        id: "conv_test_default",
+        id: uuid(), // Use UUID for Supabase
         title: "Test Session",
         messages: [],
         createdAt: now(),
@@ -183,10 +189,16 @@ export function normalizeScenarioData(raw: any): ScenarioData {
   const normStr = (x: any) => typeof x === "string" ? x : "";
   const normNum = (x: any, fallback: number) => typeof x === "number" && Number.isFinite(x) ? x : fallback;
 
+  // Check if a string is a valid UUID format
+  const isValidUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+
+  // For Supabase entities, ensure UUID format or generate new one
+  const ensureUuid = (id: any) => typeof id === "string" && isValidUuid(id) ? id : uuid();
+
   function normItems(itemsRaw: any): CharacterTraitItem[] {
     if (!Array.isArray(itemsRaw)) return [];
     return itemsRaw.map((it: any) => ({
-      id: typeof it?.id === "string" ? it.id : uid("item"),
+      id: typeof it?.id === "string" ? it.id : uid("item"), // Items are stored as JSON, can keep prefix
       label: normStr(it?.label),
       value: normStr(it?.value),
       createdAt: normNum(it?.createdAt, t),
@@ -197,7 +209,7 @@ export function normalizeScenarioData(raw: any): ScenarioData {
   function normSections(secsRaw: any): CharacterTraitSection[] {
     if (!Array.isArray(secsRaw)) return [];
     return secsRaw.map((s: any) => ({
-      id: typeof s?.id === "string" ? s.id : uid("sec"),
+      id: typeof s?.id === "string" ? s.id : uid("sec"), // Sections are stored as JSON, can keep prefix
       title: normStr(s?.title),
       items: normItems(s?.items),
       createdAt: normNum(s?.createdAt, t),
@@ -207,7 +219,7 @@ export function normalizeScenarioData(raw: any): ScenarioData {
 
   const characters: Character[] = Array.isArray(raw?.characters)
     ? raw.characters.map((c: any) => ({
-        id: typeof c?.id === "string" ? c.id : uid("char"),
+        id: ensureUuid(c?.id), // Characters need UUID for Supabase
         name: normStr(c?.name),
         sexType: normStr(c?.sexType || c?.pronouns),
         controlledBy: (c?.controlledBy === "User" || c?.controlledBy === "AI") ? c.controlledBy : "AI",
@@ -236,7 +248,7 @@ export function normalizeScenarioData(raw: any): ScenarioData {
     },
     entries: Array.isArray(raw?.world?.entries)
       ? raw.world.entries.map((e: any) => ({
-          id: typeof e?.id === "string" ? e.id : uid("codex"),
+          id: ensureUuid(e?.id), // Codex entries need UUID for Supabase
           title: normStr(e?.title),
           body: normStr(e?.body),
           createdAt: normNum(e?.createdAt, t),
@@ -247,7 +259,7 @@ export function normalizeScenarioData(raw: any): ScenarioData {
 
   const scenes: Scene[] = Array.isArray(raw?.scenes)
     ? raw.scenes.map((s: any) => ({
-        id: typeof s?.id === "string" ? s.id : uid("scene"),
+        id: ensureUuid(s?.id), // Scenes need UUID for Supabase
         url: normStr(s?.url),
         tag: normStr(s?.tag),
         isStartingScene: s?.isStartingScene === true,
@@ -268,11 +280,11 @@ export function normalizeScenarioData(raw: any): ScenarioData {
 
   const conversations: Conversation[] = Array.isArray(raw?.conversations)
     ? raw.conversations.map((c: any) => ({
-        id: typeof c?.id === "string" ? c.id : uid("conv"),
+        id: ensureUuid(c?.id), // Conversations need UUID for Supabase
         title: normStr(c?.title) || "Story",
         messages: Array.isArray(c?.messages)
           ? c.messages.map((m: any) => ({
-              id: typeof m?.id === "string" ? m.id : uid("msg"),
+              id: ensureUuid(m?.id), // Messages need UUID for Supabase
               role: m?.role === "system" || m?.role === "assistant" || m?.role === "user" ? m.role : "user",
               text: normStr(m?.text),
               createdAt: normNum(m?.createdAt, t),
