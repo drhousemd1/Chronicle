@@ -1,9 +1,12 @@
 
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { World, OpeningDialog, CodexEntry, Character, Scene } from '@/types';
 import { Button, Input, TextArea, Card } from './UI';
 import { Icons } from '@/constants';
 import { uid, now, resizeImage } from '@/utils';
+import { useAuth } from '@/hooks/use-auth';
+import { uploadSceneImage, dataUrlToBlob } from '@/services/supabase-data';
+import { toast } from 'sonner';
 
 interface WorldTabProps {
   world: World;
@@ -50,6 +53,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   onNavigateToCharacters, 
   onSelectCharacter 
 }) => {
+  const { user } = useAuth();
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const updateCore = (patch: any) => {
@@ -64,20 +69,48 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   const handleAddScene = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
+    if (!user) {
+      toast.error('Please sign in to upload scenes');
+      return;
+    }
 
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const dataUrl = reader.result as string;
-      const optimized = await resizeImage(dataUrl, 1024, 768, 0.7);
-      const newScene: Scene = {
-        id: uid('scene'),
-        url: optimized,
-        tag: 'New Scene',
-        createdAt: now()
+    setIsUploading(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const dataUrl = reader.result as string;
+          const optimized = await resizeImage(dataUrl, 1024, 768, 0.7);
+          
+          // Convert to blob and upload to Supabase Storage
+          const blob = dataUrlToBlob(optimized);
+          if (!blob) throw new Error('Failed to process image');
+          
+          const filename = `scene-${uid('scene')}-${Date.now()}.jpg`;
+          const publicUrl = await uploadSceneImage(user.id, blob, filename);
+          
+          const newScene: Scene = {
+            id: uid('scene'),
+            url: publicUrl,
+            tag: 'New Scene',
+            createdAt: now()
+          };
+          onUpdateScenes([newScene, ...scenes]);
+          toast.success('Scene uploaded');
+        } catch (error) {
+          console.error('Scene upload failed:', error);
+          toast.error('Failed to upload scene');
+        } finally {
+          setIsUploading(false);
+        }
       };
-      onUpdateScenes([newScene, ...scenes]);
-    };
-    reader.readAsDataURL(file);
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Scene upload failed:', error);
+      toast.error('Failed to upload scene');
+      setIsUploading(false);
+    }
     e.target.value = '';
   };
 
@@ -186,8 +219,13 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                 <h2 className="text-lg font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight">
                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg> Scene Gallery
                 </h2>
-                <Button variant="ghost" className="text-blue-600 font-black text-xs tracking-widest uppercase h-9" onClick={() => fileInputRef.current?.click()}>
-                   + Upload Scene
+                <Button 
+                  variant="ghost" 
+                  className="text-blue-600 font-black text-xs tracking-widest uppercase h-9" 
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                >
+                   {isUploading ? "Uploading..." : "+ Upload Scene"}
                 </Button>
                 <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAddScene} />
               </div>
