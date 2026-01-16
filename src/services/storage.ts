@@ -6,6 +6,12 @@ export function now(): number {
   return Date.now();
 }
 
+// Generate a proper UUID v4 for Supabase compatibility
+export function uuid(): string {
+  return crypto.randomUUID();
+}
+
+// Legacy function for local-only IDs (not stored in Supabase UUID columns)
 export function uid(prefix: string): string {
   return `${prefix}_${Math.random().toString(16).slice(2)}_${Date.now().toString(16)}`;
 }

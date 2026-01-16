@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { ScenarioData, Character, Conversation, Message, CharacterTraitSection, Scene } from '../../types';
 import { Button, TextArea } from './UI';
 import { Badge } from '@/components/ui/badge';
-import { uid, now } from '../../services/storage';
+import { uid, now, uuid } from '../../services/storage';
 import { generateRoleplayResponseStream } from '../../services/gemini';
 import { RefreshCw, MoreVertical, Copy, Pencil, Trash2 } from 'lucide-react';
 import {
@@ -166,7 +166,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const handleSend = async () => {
     if (!input.trim() || !conversation || isStreaming) return;
 
-    const userMsg: Message = { id: uid('msg'), role: 'user', text: input, createdAt: now() };
+    const userMsg: Message = { id: uuid(), role: 'user', text: input, createdAt: now() }; // Use UUID for Supabase
     const nextConvsWithUser = appData.conversations.map(c =>
       c.id === conversationId ? { ...c, messages: [...c.messages, userMsg], updatedAt: now() } : c
     );
@@ -185,7 +185,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         setStreamingContent(fullText);
       }
 
-      const aiMsg: Message = { id: uid('msg'), role: 'assistant', text: fullText, createdAt: now() };
+      const aiMsg: Message = { id: uuid(), role: 'assistant', text: fullText, createdAt: now() }; // Use UUID for Supabase
       const nextConvsWithAi = appData.conversations.map(c =>
         c.id === conversationId ? { ...c, messages: [...c.messages, userMsg, aiMsg], updatedAt: now() } : c
       );
@@ -259,7 +259,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         setStreamingContent(fullText);
       }
       
-      const newAiMsg: Message = { id: uid('msg'), role: 'assistant', text: fullText, createdAt: now() };
+      const newAiMsg: Message = { id: uuid(), role: 'assistant', text: fullText, createdAt: now() }; // Use UUID for Supabase
       const updatedConvs = appData.conversations.map(c =>
         c.id === conversationId
           ? { ...c, messages: [...messagesBeforeAi, newAiMsg], updatedAt: now() }

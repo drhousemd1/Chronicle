@@ -3,7 +3,7 @@ import React, { useRef, useState } from 'react';
 import { World, OpeningDialog, CodexEntry, Character, Scene } from '@/types';
 import { Button, Input, TextArea, Card } from './UI';
 import { Icons } from '@/constants';
-import { uid, now, resizeImage } from '@/utils';
+import { uid, now, resizeImage, uuid } from '@/utils';
 import { useAuth } from '@/hooks/use-auth';
 import { uploadSceneImage, dataUrlToBlob } from '@/services/supabase-data';
 import { toast } from 'sonner';
@@ -87,11 +87,11 @@ export const WorldTab: React.FC<WorldTabProps> = ({
           const blob = dataUrlToBlob(optimized);
           if (!blob) throw new Error('Failed to process image');
           
-          const filename = `scene-${uid('scene')}-${Date.now()}.jpg`;
+          const filename = `scene-${uuid()}-${Date.now()}.jpg`; // Use UUID for unique filename
           const publicUrl = await uploadSceneImage(user.id, blob, filename);
           
           const newScene: Scene = {
-            id: uid('scene'),
+            id: uuid(), // Use UUID for Supabase
             url: publicUrl,
             tag: 'New Scene',
             createdAt: now()
