@@ -14,16 +14,77 @@ export type Database = {
   }
   public: {
     Tables: {
+      character_session_states: {
+        Row: {
+          character_id: string
+          conversation_id: string
+          created_at: string | null
+          current_mood: string | null
+          currently_wearing: Json | null
+          id: string
+          location: string | null
+          physical_appearance: Json | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          character_id: string
+          conversation_id: string
+          created_at?: string | null
+          current_mood?: string | null
+          currently_wearing?: Json | null
+          id?: string
+          location?: string | null
+          physical_appearance?: Json | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          character_id?: string
+          conversation_id?: string
+          created_at?: string | null
+          current_mood?: string | null
+          currently_wearing?: Json | null
+          id?: string
+          location?: string | null
+          physical_appearance?: Json | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "character_session_states_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "character_session_states_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       characters: {
         Row: {
+          age: string | null
           avatar_position: Json | null
           avatar_url: string | null
           character_role: string | null
           controlled_by: string | null
           created_at: string | null
+          current_mood: string | null
+          currently_wearing: Json | null
           id: string
           is_library: boolean | null
+          location: string | null
           name: string
+          physical_appearance: Json | null
+          preferred_clothing: Json | null
+          role_description: string | null
           scenario_id: string | null
           sections: Json | null
           sex_type: string | null
@@ -32,14 +93,21 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          age?: string | null
           avatar_position?: Json | null
           avatar_url?: string | null
           character_role?: string | null
           controlled_by?: string | null
           created_at?: string | null
+          current_mood?: string | null
+          currently_wearing?: Json | null
           id?: string
           is_library?: boolean | null
+          location?: string | null
           name?: string
+          physical_appearance?: Json | null
+          preferred_clothing?: Json | null
+          role_description?: string | null
           scenario_id?: string | null
           sections?: Json | null
           sex_type?: string | null
@@ -48,14 +116,21 @@ export type Database = {
           user_id: string
         }
         Update: {
+          age?: string | null
           avatar_position?: Json | null
           avatar_url?: string | null
           character_role?: string | null
           controlled_by?: string | null
           created_at?: string | null
+          current_mood?: string | null
+          currently_wearing?: Json | null
           id?: string
           is_library?: boolean | null
+          location?: string | null
           name?: string
+          physical_appearance?: Json | null
+          preferred_clothing?: Json | null
+          role_description?: string | null
           scenario_id?: string | null
           sections?: Json | null
           sex_type?: string | null

@@ -8,23 +8,109 @@ import type {
   WorldCore,
   CodexEntry,
   Scene,
-  OpeningDialog
+  OpeningDialog,
+  PhysicalAppearance,
+  CurrentlyWearing,
+  PreferredClothing,
+  CharacterSessionState
+} from '@/types';
+import { 
+  defaultPhysicalAppearance, 
+  defaultCurrentlyWearing, 
+  defaultPreferredClothing 
 } from '@/types';
 
 // =============================================
 // TYPE CONVERTERS
 // =============================================
 
+function dbPhysicalAppearanceToApp(db: any): PhysicalAppearance {
+  return {
+    hairColor: db?.hair_color || '',
+    eyeColor: db?.eye_color || '',
+    build: db?.build || '',
+    bodyHair: db?.body_hair || '',
+    height: db?.height || '',
+    breastSize: db?.breast_size || '',
+    genitalia: db?.genitalia || '',
+    skinTone: db?.skin_tone || '',
+    makeup: db?.makeup || '',
+    bodyMarkings: db?.body_markings || '',
+    temporaryConditions: db?.temporary_conditions || ''
+  };
+}
+
+function appPhysicalAppearanceToDb(app: PhysicalAppearance) {
+  return {
+    hair_color: app.hairColor,
+    eye_color: app.eyeColor,
+    build: app.build,
+    body_hair: app.bodyHair,
+    height: app.height,
+    breast_size: app.breastSize,
+    genitalia: app.genitalia,
+    skin_tone: app.skinTone,
+    makeup: app.makeup,
+    body_markings: app.bodyMarkings,
+    temporary_conditions: app.temporaryConditions
+  };
+}
+
+function dbCurrentlyWearingToApp(db: any): CurrentlyWearing {
+  return {
+    top: db?.top || '',
+    bottom: db?.bottom || '',
+    undergarments: db?.undergarments || '',
+    miscellaneous: db?.miscellaneous || ''
+  };
+}
+
+function appCurrentlyWearingToDb(app: CurrentlyWearing) {
+  return {
+    top: app.top,
+    bottom: app.bottom,
+    undergarments: app.undergarments,
+    miscellaneous: app.miscellaneous
+  };
+}
+
+function dbPreferredClothingToApp(db: any): PreferredClothing {
+  return {
+    casual: db?.casual || '',
+    work: db?.work || '',
+    sleep: db?.sleep || '',
+    underwear: db?.underwear || '',
+    miscellaneous: db?.miscellaneous || ''
+  };
+}
+
+function appPreferredClothingToDb(app: PreferredClothing) {
+  return {
+    casual: app.casual,
+    work: app.work,
+    sleep: app.sleep,
+    underwear: app.underwear,
+    miscellaneous: app.miscellaneous
+  };
+}
+
 function dbToCharacter(row: any): Character {
   return {
     id: row.id,
     name: row.name || '',
+    age: row.age || '',
     sexType: row.sex_type || '',
+    location: row.location || '',
+    currentMood: row.current_mood || '',
     controlledBy: row.controlled_by || 'AI',
     characterRole: row.character_role || 'Main',
+    roleDescription: row.role_description || '',
     tags: row.tags || '',
     avatarDataUrl: row.avatar_url || '',
     avatarPosition: row.avatar_position || { x: 50, y: 50 },
+    physicalAppearance: dbPhysicalAppearanceToApp(row.physical_appearance),
+    currentlyWearing: dbCurrentlyWearingToApp(row.currently_wearing),
+    preferredClothing: dbPreferredClothingToApp(row.preferred_clothing),
     sections: row.sections || [],
     createdAt: new Date(row.created_at).getTime(),
     updatedAt: new Date(row.updated_at).getTime()
@@ -37,12 +123,19 @@ function characterToDb(char: Character, userId: string, scenarioId?: string, isL
     user_id: userId,
     scenario_id: scenarioId || null,
     name: char.name,
+    age: char.age || '',
     sex_type: char.sexType,
+    location: char.location || '',
+    current_mood: char.currentMood || '',
     controlled_by: char.controlledBy,
     character_role: char.characterRole,
+    role_description: char.roleDescription || '',
     tags: char.tags,
     avatar_url: char.avatarDataUrl,
     avatar_position: char.avatarPosition || { x: 50, y: 50 },
+    physical_appearance: appPhysicalAppearanceToDb(char.physicalAppearance || defaultPhysicalAppearance),
+    currently_wearing: appCurrentlyWearingToDb(char.currentlyWearing || defaultCurrentlyWearing),
+    preferred_clothing: appPreferredClothingToDb(char.preferredClothing || defaultPreferredClothing),
     sections: char.sections,
     is_library: isLibrary
   };
@@ -537,4 +630,113 @@ export function dataUrlToBlob(dataUrl: string): Blob | null {
   } catch {
     return null;
   }
+}
+
+// =============================================
+// CHARACTER SESSION STATES
+// =============================================
+
+export async function fetchSessionStates(conversationId: string): Promise<CharacterSessionState[]> {
+  const { data, error } = await supabase
+    .from('character_session_states')
+    .select('*')
+    .eq('conversation_id', conversationId);
+
+  if (error) throw error;
+  
+  return (data || []).map((row: any) => ({
+    id: row.id,
+    characterId: row.character_id,
+    conversationId: row.conversation_id,
+    userId: row.user_id,
+    location: row.location || '',
+    currentMood: row.current_mood || '',
+    physicalAppearance: dbPhysicalAppearanceToApp(row.physical_appearance),
+    currentlyWearing: dbCurrentlyWearingToApp(row.currently_wearing),
+    createdAt: new Date(row.created_at).getTime(),
+    updatedAt: new Date(row.updated_at).getTime()
+  }));
+}
+
+export async function createSessionState(
+  character: Character,
+  conversationId: string,
+  userId: string
+): Promise<CharacterSessionState> {
+  const { data, error } = await supabase
+    .from('character_session_states')
+    .insert({
+      character_id: character.id,
+      conversation_id: conversationId,
+      user_id: userId,
+      location: character.location || '',
+      current_mood: character.currentMood || '',
+      physical_appearance: appPhysicalAppearanceToDb(character.physicalAppearance || defaultPhysicalAppearance),
+      currently_wearing: appCurrentlyWearingToDb(character.currentlyWearing || defaultCurrentlyWearing)
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  return {
+    id: data.id,
+    characterId: data.character_id,
+    conversationId: data.conversation_id,
+    userId: data.user_id,
+    location: data.location || '',
+    currentMood: data.current_mood || '',
+    physicalAppearance: dbPhysicalAppearanceToApp(data.physical_appearance),
+    currentlyWearing: dbCurrentlyWearingToApp(data.currently_wearing),
+    createdAt: new Date(data.created_at).getTime(),
+    updatedAt: new Date(data.updated_at).getTime()
+  };
+}
+
+export async function updateSessionState(
+  id: string,
+  patch: Partial<{
+    location: string;
+    currentMood: string;
+    physicalAppearance: Partial<PhysicalAppearance>;
+    currentlyWearing: CurrentlyWearing;
+  }>
+): Promise<void> {
+  const updateData: any = {};
+  
+  if (patch.location !== undefined) updateData.location = patch.location;
+  if (patch.currentMood !== undefined) updateData.current_mood = patch.currentMood;
+  if (patch.physicalAppearance !== undefined) {
+    updateData.physical_appearance = appPhysicalAppearanceToDb(patch.physicalAppearance as PhysicalAppearance);
+  }
+  if (patch.currentlyWearing !== undefined) {
+    updateData.currently_wearing = appCurrentlyWearingToDb(patch.currentlyWearing);
+  }
+
+  const { error } = await supabase
+    .from('character_session_states')
+    .update(updateData)
+    .eq('id', id);
+
+  if (error) throw error;
+}
+
+export async function initializeSessionStates(
+  characters: Character[],
+  conversationId: string,
+  userId: string
+): Promise<CharacterSessionState[]> {
+  // Check if session states already exist for this conversation
+  const existing = await fetchSessionStates(conversationId);
+  if (existing.length > 0) {
+    return existing;
+  }
+
+  // Create session states for all characters
+  const states: CharacterSessionState[] = [];
+  for (const char of characters) {
+    const state = await createSessionState(char, conversationId, userId);
+    states.push(state);
+  }
+  return states;
 }
