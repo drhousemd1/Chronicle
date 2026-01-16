@@ -368,10 +368,24 @@ const Index = () => {
       const updatedConvRegistry = await supabaseData.fetchConversationRegistry();
       setConversationRegistry(updatedConvRegistry);
       
-      // Sync characters to library
+      // Sync characters to library (create copies with new IDs to avoid overwriting scenario-linked characters)
       if (dataToSave.characters.length > 0) {
         for (const char of dataToSave.characters) {
-          await supabaseData.saveCharacterToLibrary(char, user.id);
+          // Check if this character already exists in the library (by name)
+          const existingLibraryChar = library.find(
+            lc => lc.name === char.name && lc.id !== char.id
+          );
+          
+          if (!existingLibraryChar) {
+            // Create a library copy with a new ID
+            const libraryChar: Character = {
+              ...char,
+              id: uuid(), // New ID for the library copy
+              createdAt: now(),
+              updatedAt: now()
+            };
+            await supabaseData.saveCharacterToLibrary(libraryChar, user.id);
+          }
         }
         const updatedLibrary = await supabaseData.fetchCharacterLibrary();
         setLibrary(updatedLibrary);
