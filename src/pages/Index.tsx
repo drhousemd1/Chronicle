@@ -106,6 +106,78 @@ const Index = () => {
     loadData();
   }, [isAuthenticated, user, toast]);
 
+  const isValidUuid = useCallback(
+    (s: string) =>
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s),
+    [],
+  );
+
+  const migrateScenarioDataIds = useCallback(
+    (data: ScenarioData) => {
+      let didMigrate = false;
+
+      const characterIdMap = new Map<string, string>();
+      const codexEntryIdMap = new Map<string, string>();
+      const sceneIdMap = new Map<string, string>();
+      const conversationIdMap = new Map<string, string>();
+      const messageIdMap = new Map<string, string>();
+
+      const mapId = (id: string, map: Map<string, string>) => {
+        if (isValidUuid(id)) return id;
+        const existing = map.get(id);
+        if (existing) return existing;
+        const next = uuid();
+        map.set(id, next);
+        didMigrate = true;
+        return next;
+      };
+
+      const nextCharacters = data.characters.map((c) => {
+        const nextId = mapId(c.id, characterIdMap);
+        return nextId === c.id ? c : { ...c, id: nextId };
+      });
+
+      const nextEntries = data.world.entries.map((e) => {
+        const nextId = mapId(e.id, codexEntryIdMap);
+        return nextId === e.id ? e : { ...e, id: nextId };
+      });
+
+      const nextScenes = data.scenes.map((s) => {
+        const nextId = mapId(s.id, sceneIdMap);
+        return nextId === s.id ? s : { ...s, id: nextId };
+      });
+
+      const nextConversations = data.conversations.map((c) => {
+        const nextConvId = mapId(c.id, conversationIdMap);
+        const nextMsgs = c.messages.map((m) => {
+          const nextMsgId = mapId(m.id, messageIdMap);
+          return nextMsgId === m.id ? m : { ...m, id: nextMsgId };
+        });
+        return {
+          ...c,
+          id: nextConvId,
+          messages: nextMsgs,
+        };
+      });
+
+      const nextData: ScenarioData = {
+        ...data,
+        characters: nextCharacters,
+        world: { ...data.world, entries: nextEntries },
+        scenes: nextScenes,
+        conversations: nextConversations,
+      };
+
+      return {
+        didMigrate,
+        data: nextData,
+        characterIdMap,
+        conversationIdMap,
+      };
+    },
+    [isValidUuid],
+  );
+
   const handleSignOut = async () => {
     await signOut();
     navigate('/auth');
@@ -191,20 +263,52 @@ const Index = () => {
       toast({ title: "Error", description: "No active scenario found to save.", variant: "destructive" });
       return false;
     }
+
+    // Migrate legacy (non-UUID) IDs in-memory so saves work with the backend UUID schema.
+    let scenarioIdToSave = activeId;
+    let didMigrateScenarioId = false;
+
+    if (!isValidUuid(activeId)) {
+      scenarioIdToSave = uuid();
+      didMigrateScenarioId = true;
+      setActiveId(scenarioIdToSave);
+    }
+
+    const migrated = migrateScenarioDataIds(activeData);
+    const dataToSave = migrated.didMigrate ? migrated.data : activeData;
+
+    if (migrated.didMigrate) {
+      setActiveData(migrated.data);
+      setSelectedCharacterId((prev) => {
+        if (!prev) return prev;
+        return migrated.characterIdMap.get(prev) || prev;
+      });
+      setPlayingConversationId((prev) => {
+        if (!prev) return prev;
+        return migrated.conversationIdMap.get(prev) || prev;
+      });
+    }
+
+    if (didMigrateScenarioId || migrated.didMigrate) {
+      toast({
+        title: "Migrated legacy IDs",
+        description: "This draft used an old ID format. It will be saved as a new scenario compatible with the backend.",
+      });
+    }
     
     setIsSaving(true);
     try {
-      const derivedTitle = activeData.world.core.scenarioName || 
-                           (activeData.characters[0]?.name ? `${activeData.characters[0].name}'s Story` : "New Scenario");
+      const derivedTitle = dataToSave.world.core.scenarioName || 
+                           (dataToSave.characters[0]?.name ? `${dataToSave.characters[0].name}'s Story` : "New Scenario");
 
       const metadata = {
         title: derivedTitle,
-        description: truncateLine(activeData.world.core.settingOverview || "Created via Builder", 120),
+        description: truncateLine(dataToSave.world.core.settingOverview || "Created via Builder", 120),
         coverImage: "",
         tags: ["Custom"]
       };
 
-      await supabaseData.saveScenario(activeId, activeData, metadata, user.id);
+      await supabaseData.saveScenario(scenarioIdToSave, dataToSave, metadata, user.id);
       
       // Refresh registry
       const updatedRegistry = await supabaseData.fetchScenarios();
@@ -215,8 +319,8 @@ const Index = () => {
       setConversationRegistry(updatedConvRegistry);
       
       // Sync characters to library
-      if (activeData.characters.length > 0) {
-        for (const char of activeData.characters) {
+      if (dataToSave.characters.length > 0) {
+        for (const char of dataToSave.characters) {
           await supabaseData.saveCharacterToLibrary(char, user.id);
         }
         const updatedLibrary = await supabaseData.fetchCharacterLibrary();
@@ -240,7 +344,7 @@ const Index = () => {
     } finally {
       setIsSaving(false);
     }
-  }, [activeId, activeData, user, toast]);
+  }, [activeId, activeData, user, toast, isValidUuid, migrateScenarioDataIds]);
 
   async function handleSaveCharacter() {
     if (!user) return;
