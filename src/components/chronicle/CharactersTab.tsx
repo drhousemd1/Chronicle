@@ -1,6 +1,6 @@
 
 import React, { useRef, useState, useCallback } from 'react';
-import { Character, CharacterTraitSection, ScenarioData } from '@/types';
+import { Character, CharacterTraitSection, ScenarioData, PhysicalAppearance, CurrentlyWearing, PreferredClothing } from '@/types';
 import { Button, Input, TextArea, Card } from './UI';
 import { Icons } from '@/constants';
 import { uid, now, clamp, resizeImage } from '@/utils';
@@ -16,6 +16,44 @@ interface CharactersTabProps {
   onUpdate: (id: string, patch: Partial<Character>) => void;
   onDelete: (id: string) => void;
 }
+
+// Hardcoded section component with distinct styling
+const HardcodedSection: React.FC<{
+  title: string;
+  children: React.ReactNode;
+}> = ({ title, children }) => (
+  <Card className="p-6 space-y-4 !shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)] bg-gray-100 border border-black">
+    <div className="flex justify-between items-center bg-emerald-100 rounded-xl px-3 py-2">
+      <span className="text-emerald-900 font-bold text-base">{title}</span>
+    </div>
+    <div className="space-y-4">
+      {children}
+    </div>
+  </Card>
+);
+
+// Reusable input field for hardcoded sections
+const HardcodedInput: React.FC<{
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+}> = ({ label, value, onChange, placeholder }) => (
+  <div className="flex flex-col md:flex-row gap-2 md:gap-4 items-start">
+    <div className="w-full md:w-1/3 shrink-0">
+      <label className="block text-xs font-bold uppercase text-slate-500 mb-1">{label}</label>
+    </div>
+    <div className="w-full md:flex-1">
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+      />
+    </div>
+  </div>
+);
 
 export const CharactersTab: React.FC<CharactersTabProps> = ({ 
   appData, 
@@ -113,6 +151,50 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
     setDragStart(null);
   };
 
+  // Handlers for updating hardcoded sections
+  const handlePhysicalAppearanceChange = (field: keyof PhysicalAppearance, value: string) => {
+    if (!selected) return;
+    onUpdate(selected.id, {
+      physicalAppearance: {
+        ...selected.physicalAppearance,
+        [field]: value
+      }
+    });
+  };
+
+  const handleCurrentlyWearingChange = (field: keyof CurrentlyWearing, value: string) => {
+    if (!selected) return;
+    onUpdate(selected.id, {
+      currentlyWearing: {
+        ...selected.currentlyWearing,
+        [field]: value
+      }
+    });
+  };
+
+  const handlePreferredClothingChange = (field: keyof PreferredClothing, value: string) => {
+    if (!selected) return;
+    onUpdate(selected.id, {
+      preferredClothing: {
+        ...selected.preferredClothing,
+        [field]: value
+      }
+    });
+  };
+
+  // Handle adding a new custom section
+  const handleAddSection = () => {
+    if (!selected) return;
+    const newSection: CharacterTraitSection = {
+      id: uid('sec'),
+      title: 'New Section',
+      items: [{ id: uid('item'), label: '', value: '', createdAt: now(), updatedAt: now() }],
+      createdAt: now(),
+      updatedAt: now()
+    };
+    onUpdate(selected.id, { sections: [...selected.sections, newSection] });
+  };
+
   if (!selectedId || !selected) {
     return (
       <div className="space-y-6">
@@ -151,7 +233,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                   </div>
                   <h3 className="text-xl font-black text-white leading-tight mb-1 tracking-tight group-hover:text-blue-300 transition-colors truncate">{c.name || "Unnamed"}</h3>
                   <p className="text-xs text-white/70 line-clamp-3 leading-relaxed italic">
-                     {c.sections[0]?.items[0]?.value || "No bio available."}
+                     {c.roleDescription || c.sections[0]?.items[0]?.value || "No description available."}
                   </p>
                 </div>
 
@@ -182,6 +264,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column - Avatar Panel */}
         <div className="space-y-6 lg:sticky lg:top-10 h-fit">
           <div className="flex justify-between items-center h-9">
             <h2 className="text-xl font-bold text-slate-900">Avatar</h2>
@@ -294,27 +377,14 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                 />
               </div>
               
+              {/* Avatar Panel Fields */}
               <div className="space-y-4">
                 <Input label="Name" value={selected.name} onChange={(v) => onUpdate(selected.id, { name: v })} />
+                <Input label="Age" value={selected.age || ''} onChange={(v) => onUpdate(selected.id, { age: v })} placeholder="e.g., 25" />
+                <Input label="Sex / Identity" value={selected.sexType} onChange={(v) => onUpdate(selected.id, { sexType: v })} />
+                <Input label="Location" value={selected.location || ''} onChange={(v) => onUpdate(selected.id, { location: v })} placeholder="Current location" />
+                <Input label="Current Mood" value={selected.currentMood || ''} onChange={(v) => onUpdate(selected.id, { currentMood: v })} placeholder="e.g., Happy, Tired" />
                 
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold uppercase text-slate-500">Character Role</label>
-                  <div className="flex p-1 bg-slate-100 rounded-xl">
-                    <button 
-                      onClick={() => onUpdate(selected.id, { characterRole: 'Main' })}
-                      className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.characterRole === 'Main' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                    >
-                      Main
-                    </button>
-                    <button 
-                      onClick={() => onUpdate(selected.id, { characterRole: 'Side' })}
-                      className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.characterRole === 'Side' ? 'bg-white text-slate-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                    >
-                      Side
-                    </button>
-                  </div>
-                </div>
-
                 <div className="space-y-1.5">
                   <label className="block text-xs font-bold uppercase text-slate-500">Controlled By</label>
                   <div className="flex p-1 bg-slate-100 rounded-xl">
@@ -333,20 +403,72 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                   </div>
                 </div>
 
-                <Input label="Sex / Identity" value={selected.sexType} onChange={(v) => onUpdate(selected.id, { sexType: v })} />
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold uppercase text-slate-500">Character Role</label>
+                  <div className="flex p-1 bg-slate-100 rounded-xl">
+                    <button 
+                      onClick={() => onUpdate(selected.id, { characterRole: 'Main' })}
+                      className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.characterRole === 'Main' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                    >
+                      Main
+                    </button>
+                    <button 
+                      onClick={() => onUpdate(selected.id, { characterRole: 'Side' })}
+                      className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.characterRole === 'Side' ? 'bg-white text-slate-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                    >
+                      Side
+                    </button>
+                  </div>
+                </div>
+
+                <Input label="Role Description" value={selected.roleDescription || ''} onChange={(v) => onUpdate(selected.id, { roleDescription: v })} placeholder="Brief description of the character's role" />
                 <Input label="Tags" value={selected.tags} onChange={(v) => onUpdate(selected.id, { tags: v })} placeholder="Separated by commas" />
               </div>
             </div>
           </Card>
         </div>
 
+        {/* Right Column - Trait Sections */}
         <div className="lg:col-span-2 space-y-6">
           <div className="flex justify-between items-center h-9">
-            <h2 className="text-xl font-bold text-slate-900">Profile Traits</h2>
+            <h2 className="text-xl font-bold text-slate-900">Character Traits</h2>
           </div>
-          
+
+          {/* HARDCODED SECTION 1: Physical Appearance */}
+          <HardcodedSection title="Physical Appearance">
+            <HardcodedInput label="Hair Color" value={selected.physicalAppearance?.hairColor || ''} onChange={(v) => handlePhysicalAppearanceChange('hairColor', v)} />
+            <HardcodedInput label="Eye Color" value={selected.physicalAppearance?.eyeColor || ''} onChange={(v) => handlePhysicalAppearanceChange('eyeColor', v)} />
+            <HardcodedInput label="Build" value={selected.physicalAppearance?.build || ''} onChange={(v) => handlePhysicalAppearanceChange('build', v)} placeholder="e.g., Athletic, Slim, Curvy" />
+            <HardcodedInput label="Body Hair" value={selected.physicalAppearance?.bodyHair || ''} onChange={(v) => handlePhysicalAppearanceChange('bodyHair', v)} />
+            <HardcodedInput label="Height" value={selected.physicalAppearance?.height || ''} onChange={(v) => handlePhysicalAppearanceChange('height', v)} placeholder="e.g., 5 foot 8" />
+            <HardcodedInput label="Breast Size" value={selected.physicalAppearance?.breastSize || ''} onChange={(v) => handlePhysicalAppearanceChange('breastSize', v)} />
+            <HardcodedInput label="Genitalia" value={selected.physicalAppearance?.genitalia || ''} onChange={(v) => handlePhysicalAppearanceChange('genitalia', v)} />
+            <HardcodedInput label="Skin Tone" value={selected.physicalAppearance?.skinTone || ''} onChange={(v) => handlePhysicalAppearanceChange('skinTone', v)} />
+            <HardcodedInput label="Makeup" value={selected.physicalAppearance?.makeup || ''} onChange={(v) => handlePhysicalAppearanceChange('makeup', v)} />
+            <HardcodedInput label="Body Markings" value={selected.physicalAppearance?.bodyMarkings || ''} onChange={(v) => handlePhysicalAppearanceChange('bodyMarkings', v)} placeholder="Scars, tattoos, birthmarks, piercings" />
+            <HardcodedInput label="Temporary Conditions" value={selected.physicalAppearance?.temporaryConditions || ''} onChange={(v) => handlePhysicalAppearanceChange('temporaryConditions', v)} placeholder="Injuries, illness, etc." />
+          </HardcodedSection>
+
+          {/* HARDCODED SECTION 2: Currently Wearing */}
+          <HardcodedSection title="Currently Wearing">
+            <HardcodedInput label="Shirt/Top" value={selected.currentlyWearing?.top || ''} onChange={(v) => handleCurrentlyWearingChange('top', v)} />
+            <HardcodedInput label="Pants/Bottoms" value={selected.currentlyWearing?.bottom || ''} onChange={(v) => handleCurrentlyWearingChange('bottom', v)} />
+            <HardcodedInput label="Undergarments" value={selected.currentlyWearing?.undergarments || ''} onChange={(v) => handleCurrentlyWearingChange('undergarments', v)} placeholder="Bras, panties, boxers, etc." />
+            <HardcodedInput label="Miscellaneous" value={selected.currentlyWearing?.miscellaneous || ''} onChange={(v) => handleCurrentlyWearingChange('miscellaneous', v)} placeholder="Outerwear, footwear, accessories" />
+          </HardcodedSection>
+
+          {/* HARDCODED SECTION 3: Preferred Clothing */}
+          <HardcodedSection title="Preferred Clothing">
+            <HardcodedInput label="Casual" value={selected.preferredClothing?.casual || ''} onChange={(v) => handlePreferredClothingChange('casual', v)} />
+            <HardcodedInput label="Work" value={selected.preferredClothing?.work || ''} onChange={(v) => handlePreferredClothingChange('work', v)} />
+            <HardcodedInput label="Sleep" value={selected.preferredClothing?.sleep || ''} onChange={(v) => handlePreferredClothingChange('sleep', v)} />
+            <HardcodedInput label="Underwear" value={selected.preferredClothing?.underwear || ''} onChange={(v) => handlePreferredClothingChange('underwear', v)} />
+            <HardcodedInput label="Miscellaneous" value={selected.preferredClothing?.miscellaneous || ''} onChange={(v) => handlePreferredClothingChange('miscellaneous', v)} placeholder="Formal, athletic, swimwear, etc." />
+          </HardcodedSection>
+
+          {/* USER-CREATED CUSTOM SECTIONS */}
           {selected.sections.map(section => (
-            <Card key={section.id} className="p-6 space-y-4 !shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)] hover:!shadow-[0_16px_40px_-2px_rgba(0,0,0,0.2)] transition-shadow border-transparent ring-1 ring-slate-900/5">
+            <Card key={section.id} className="p-6 space-y-4 !shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)] hover:!shadow-[0_16px_40px_-2px_rgba(0,0,0,0.2)] transition-shadow border-transparent ring-1 ring-slate-900/5 bg-white">
               <div className="flex justify-between items-center bg-emerald-100 rounded-xl px-3 py-2">
                 <Input 
                   value={section.title} 
@@ -398,11 +520,15 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
               <Button variant="ghost" className="w-full border border-dashed border-slate-300 text-slate-500 hover:bg-slate-50 mt-4" onClick={() => handleAddItem(selected.id, section.id)}>+ Add Row</Button>
             </Card>
           ))}
-          {selected.sections.length === 0 && (
-            <Card className="py-12 text-center text-slate-400 border border-dashed border-slate-200 shadow-sm bg-slate-50">
-              No detail sections yet. Use the brainstorm tool or add one manually.
-            </Card>
-          )}
+
+          {/* Add Category Button */}
+          <Button 
+            variant="ghost" 
+            className="w-full border-2 border-dashed border-slate-300 text-slate-500 hover:bg-slate-50 py-4"
+            onClick={handleAddSection}
+          >
+            + Add Category
+          </Button>
         </div>
       </div>
     </div>

@@ -1,5 +1,19 @@
 
-import { ScenarioData, Character, CharacterTraitItem, CharacterTraitSection, World, OpeningDialog, Conversation, ScenarioMetadata, Scene, ConversationMetadata } from './types';
+import { 
+  ScenarioData, 
+  Character, 
+  CharacterTraitItem, 
+  CharacterTraitSection, 
+  World, 
+  OpeningDialog, 
+  Conversation, 
+  ScenarioMetadata, 
+  Scene, 
+  ConversationMetadata,
+  defaultPhysicalAppearance,
+  defaultCurrentlyWearing,
+  defaultPreferredClothing
+} from './types';
 
 export const REGISTRY_KEY = "rpg_campaign_studio_v3_codex";
 export const STORAGE_KEY = REGISTRY_KEY;
@@ -85,41 +99,70 @@ export const getHardcodedTestCharacters = (): Character[] => {
   const t = now();
   return [
     {
-      id: uuid(), // Use UUID for Supabase
+      id: uuid(),
       name: "Ashley",
+      age: "24",
       sexType: "Intersex",
+      location: "Living Room",
+      currentMood: "Relaxed",
       controlledBy: "AI",
       characterRole: "Main",
+      roleDescription: "A caring nurse who lives with the protagonist",
       tags: "sister, nurse, blonde",
       avatarDataUrl: "",
       avatarPosition: { x: 50, y: 35 },
+      physicalAppearance: {
+        hairColor: "Blonde",
+        eyeColor: "Blue",
+        build: "Curvy",
+        bodyHair: "Smooth",
+        height: "5'7\"",
+        breastSize: "Large",
+        genitalia: "Both",
+        skinTone: "Fair",
+        makeup: "Light, natural",
+        bodyMarkings: "",
+        temporaryConditions: ""
+      },
+      currentlyWearing: {
+        top: "White crop top",
+        bottom: "Gray leggings",
+        undergarments: "Lacy white bra and thong",
+        miscellaneous: "Fuzzy slippers"
+      },
+      preferredClothing: {
+        casual: "Crop tops, hoodies, leggings",
+        work: "Nurse scrubs",
+        sleep: "Oversized t-shirt",
+        underwear: "Lacy or silky lingerie",
+        miscellaneous: ""
+      },
       sections: [
-        mkTestSection(uid("sec"), "Appearance", [
-          mkTestTrait(uid("item"), "Eye Color", "Blue"),
-          mkTestTrait(uid("item"), "Hair Color", "Blonde"),
-          mkTestTrait(uid("item"), "Hair Style / Length", "Long, pony tail or worn straight."),
-          mkTestTrait(uid("item"), "Breasts", "Massive"),
-          mkTestTrait(uid("item"), "Penis", "Large"),
-        ]),
-        mkTestSection(uid("sec"), "Clothing Preference", [
-          mkTestTrait(uid("item"), "Shirts", "Crop tops, hoodies"),
-          mkTestTrait(uid("item"), "Pants", "Leggings, short shorts"),
-          mkTestTrait(uid("item"), "Underwear", "Lacy or silky thongs"),
-          mkTestTrait(uid("item"), "Bras", "Lacy or silky bras"),
+        mkTestSection(uid("sec"), "Personality", [
+          mkTestTrait(uid("item"), "Traits", "Caring, playful, slightly mischievous"),
+          mkTestTrait(uid("item"), "Likes", "Cooking, movies, teasing"),
+          mkTestTrait(uid("item"), "Dislikes", "Being ignored, loud noises"),
         ]),
       ],
       createdAt: t,
       updatedAt: t,
     },
     {
-      id: uuid(), // Use UUID for Supabase
+      id: uuid(),
       name: "Player",
+      age: "",
       sexType: "Male",
+      location: "",
+      currentMood: "",
       controlledBy: "User",
       characterRole: "Main",
+      roleDescription: "The protagonist",
       tags: "protagonist",
       avatarDataUrl: "",
       avatarPosition: { x: 50, y: 50 },
+      physicalAppearance: { ...defaultPhysicalAppearance },
+      currentlyWearing: { ...defaultCurrentlyWearing },
+      preferredClothing: { ...defaultPreferredClothing },
       sections: [
         mkTestSection(uid("sec"), "Basics", [
           mkTestTrait(uid("item"), "Identity", "Protagonist"),
@@ -219,14 +262,44 @@ export function normalizeScenarioData(raw: any): ScenarioData {
 
   const characters: Character[] = Array.isArray(raw?.characters)
     ? raw.characters.map((c: any) => ({
-        id: ensureUuid(c?.id), // Characters need UUID for Supabase
+        id: ensureUuid(c?.id),
         name: normStr(c?.name),
+        age: normStr(c?.age),
         sexType: normStr(c?.sexType || c?.pronouns),
+        location: normStr(c?.location),
+        currentMood: normStr(c?.currentMood),
         controlledBy: (c?.controlledBy === "User" || c?.controlledBy === "AI") ? c.controlledBy : "AI",
         characterRole: (c?.characterRole === "Main" || c?.characterRole === "Side") ? c.characterRole : "Main",
+        roleDescription: normStr(c?.roleDescription),
         tags: normStr(c?.tags),
         avatarDataUrl: normStr(c?.avatarDataUrl),
         avatarPosition: c?.avatarPosition || { x: 50, y: 50 },
+        physicalAppearance: {
+          hairColor: normStr(c?.physicalAppearance?.hairColor),
+          eyeColor: normStr(c?.physicalAppearance?.eyeColor),
+          build: normStr(c?.physicalAppearance?.build),
+          bodyHair: normStr(c?.physicalAppearance?.bodyHair),
+          height: normStr(c?.physicalAppearance?.height),
+          breastSize: normStr(c?.physicalAppearance?.breastSize),
+          genitalia: normStr(c?.physicalAppearance?.genitalia),
+          skinTone: normStr(c?.physicalAppearance?.skinTone),
+          makeup: normStr(c?.physicalAppearance?.makeup),
+          bodyMarkings: normStr(c?.physicalAppearance?.bodyMarkings),
+          temporaryConditions: normStr(c?.physicalAppearance?.temporaryConditions)
+        },
+        currentlyWearing: {
+          top: normStr(c?.currentlyWearing?.top),
+          bottom: normStr(c?.currentlyWearing?.bottom),
+          undergarments: normStr(c?.currentlyWearing?.undergarments),
+          miscellaneous: normStr(c?.currentlyWearing?.miscellaneous)
+        },
+        preferredClothing: {
+          casual: normStr(c?.preferredClothing?.casual),
+          work: normStr(c?.preferredClothing?.work),
+          sleep: normStr(c?.preferredClothing?.sleep),
+          underwear: normStr(c?.preferredClothing?.underwear),
+          miscellaneous: normStr(c?.preferredClothing?.miscellaneous)
+        },
         sections: normSections(c?.sections),
         createdAt: normNum(c?.createdAt, t),
         updatedAt: normNum(c?.updatedAt, t),

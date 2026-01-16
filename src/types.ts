@@ -74,16 +74,71 @@ export type CharacterTraitSection = {
 export type CharacterControl = "AI" | "User";
 export type CharacterRole = "Main" | "Side";
 
+// Hardcoded attribute structures
+export type PhysicalAppearance = {
+  hairColor: string;
+  eyeColor: string;
+  build: string;
+  bodyHair: string;
+  height: string;
+  breastSize: string;
+  genitalia: string;
+  skinTone: string;
+  makeup: string;
+  bodyMarkings: string;
+  temporaryConditions: string;
+};
+
+export type CurrentlyWearing = {
+  top: string;
+  bottom: string;
+  undergarments: string;
+  miscellaneous: string;
+};
+
+export type PreferredClothing = {
+  casual: string;
+  work: string;
+  sleep: string;
+  underwear: string;
+  miscellaneous: string;
+};
+
 export type Character = {
   id: string;
   name: string;
+  age: string;
   sexType: string;
+  location: string;
+  currentMood: string;
   controlledBy: CharacterControl;
   characterRole: CharacterRole;
+  roleDescription: string;
   tags: string;
   avatarDataUrl: string;
   avatarPosition?: { x: number; y: number };
+  
+  // Hardcoded attribute sections
+  physicalAppearance: PhysicalAppearance;
+  currentlyWearing: CurrentlyWearing;
+  preferredClothing: PreferredClothing;
+  
+  // User-created custom sections
   sections: CharacterTraitSection[];
+  createdAt: number;
+  updatedAt: number;
+};
+
+// Session state for per-playthrough tracking
+export type CharacterSessionState = {
+  id: string;
+  characterId: string;
+  conversationId: string;
+  userId: string;
+  location: string;
+  currentMood: string;
+  physicalAppearance: Partial<PhysicalAppearance>;
+  currentlyWearing: CurrentlyWearing;
   createdAt: number;
   updatedAt: number;
 };
@@ -131,3 +186,33 @@ export type ConversationMetadata = {
 };
 
 export type TabKey = "hub" | "characters" | "world" | "conversations" | "model_settings" | "builder" | "chat_interface";
+
+// Default empty hardcoded attributes
+export const defaultPhysicalAppearance: PhysicalAppearance = {
+  hairColor: '',
+  eyeColor: '',
+  build: '',
+  bodyHair: '',
+  height: '',
+  breastSize: '',
+  genitalia: '',
+  skinTone: '',
+  makeup: '',
+  bodyMarkings: '',
+  temporaryConditions: ''
+};
+
+export const defaultCurrentlyWearing: CurrentlyWearing = {
+  top: '',
+  bottom: '',
+  undergarments: '',
+  miscellaneous: ''
+};
+
+export const defaultPreferredClothing: PreferredClothing = {
+  casual: '',
+  work: '',
+  sleep: '',
+  underwear: '',
+  miscellaneous: ''
+};

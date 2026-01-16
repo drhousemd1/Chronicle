@@ -450,14 +450,44 @@ const Index = () => {
   function handleCreateCharacter() {
     const t = now();
     const c: Character = {
-      id: uuid(), // Use UUID for Supabase
+      id: uuid(),
       name: "New Character",
+      age: "",
       sexType: "",
+      location: "",
+      currentMood: "",
       controlledBy: "AI",
       characterRole: "Main",
+      roleDescription: "",
       tags: "",
       avatarDataUrl: "",
-      sections: [{ id: uid("sec"), title: "Basics", items: [{ id: uid("item"), label: "", value: "", createdAt: t, updatedAt: t }], createdAt: t, updatedAt: t }],
+      physicalAppearance: {
+        hairColor: '',
+        eyeColor: '',
+        build: '',
+        bodyHair: '',
+        height: '',
+        breastSize: '',
+        genitalia: '',
+        skinTone: '',
+        makeup: '',
+        bodyMarkings: '',
+        temporaryConditions: ''
+      },
+      currentlyWearing: {
+        top: '',
+        bottom: '',
+        undergarments: '',
+        miscellaneous: ''
+      },
+      preferredClothing: {
+        casual: '',
+        work: '',
+        sleep: '',
+        underwear: '',
+        miscellaneous: ''
+      },
+      sections: [{ id: uid("sec"), title: "Custom Section", items: [{ id: uid("item"), label: "", value: "", createdAt: t, updatedAt: t }], createdAt: t, updatedAt: t }],
       createdAt: t,
       updatedAt: t,
     };
