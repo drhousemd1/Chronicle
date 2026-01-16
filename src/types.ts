@@ -108,6 +108,7 @@ export type ScenarioMetadata = {
   title: string;
   description: string;
   coverImage: string;
+  coverImagePosition?: { x: number; y: number };
   tags: string[];
   createdAt: number;
   updatedAt: number;

@@ -95,6 +95,8 @@ const Index = () => {
   const [registry, setRegistry] = useState<ScenarioMetadata[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeData, setActiveData] = useState<ScenarioData | null>(null);
+  const [activeCoverImage, setActiveCoverImage] = useState<string>("");
+  const [activeCoverPosition, setActiveCoverPosition] = useState<{ x: number; y: number }>({ x: 50, y: 50 });
   const [playingConversationId, setPlayingConversationId] = useState<string | null>(null);
   const [library, setLibrary] = useState<Character[]>([]);
   const [tab, setTab] = useState<TabKey | "library">("hub");
@@ -288,6 +290,15 @@ const Index = () => {
         toast({ title: "Scenario not found", variant: "destructive" });
         return;
       }
+      // Load cover image from registry metadata
+      const scenarioMeta = registry.find(r => r.id === id);
+      if (scenarioMeta) {
+        setActiveCoverImage(scenarioMeta.coverImage || "");
+        setActiveCoverPosition(scenarioMeta.coverImagePosition || { x: 50, y: 50 });
+      } else {
+        setActiveCoverImage("");
+        setActiveCoverPosition({ x: 50, y: 50 });
+      }
       setActiveId(id);
       setActiveData(data);
       setTab("world"); 
@@ -303,6 +314,8 @@ const Index = () => {
     const data = createDefaultScenarioData();
     setActiveId(id);
     setActiveData(data);
+    setActiveCoverImage("");
+    setActiveCoverPosition({ x: 50, y: 50 });
     setTab("world"); 
     setSelectedCharacterId(null);
     setPlayingConversationId(null);
@@ -354,7 +367,8 @@ const Index = () => {
       const metadata = {
         title: derivedTitle,
         description: truncateLine(dataToSave.world.core.settingOverview || "Created via Builder", 120),
-        coverImage: "",
+        coverImage: activeCoverImage,
+        coverImagePosition: activeCoverPosition,
         tags: ["Custom"]
       };
 
@@ -834,9 +848,13 @@ const Index = () => {
               characters={activeData.characters}
               openingDialog={activeData.story.openingDialog}
               scenes={activeData.scenes}
+              coverImage={activeCoverImage}
+              coverImagePosition={activeCoverPosition}
               onUpdateWorld={(patch) => handleUpdateActive({ world: { ...activeData.world, ...patch } })}
               onUpdateOpening={(patch) => handleUpdateActive({ story: { openingDialog: { ...activeData.story.openingDialog, ...patch } } })}
               onUpdateScenes={(scenes) => handleUpdateActive({ scenes })}
+              onUpdateCoverImage={setActiveCoverImage}
+              onUpdateCoverPosition={setActiveCoverPosition}
               onNavigateToCharacters={() => { setTab("characters"); setSelectedCharacterId(null); }}
               onSelectCharacter={(id) => { setSelectedCharacterId(id); setTab("characters"); }}
             />

@@ -1,11 +1,11 @@
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import { World, OpeningDialog, CodexEntry, Character, Scene } from '@/types';
 import { Button, Input, TextArea, Card } from './UI';
 import { Icons } from '@/constants';
-import { uid, now, resizeImage, uuid } from '@/utils';
+import { uid, now, resizeImage, uuid, clamp } from '@/utils';
 import { useAuth } from '@/hooks/use-auth';
-import { uploadSceneImage, dataUrlToBlob } from '@/services/supabase-data';
+import { uploadSceneImage, uploadCoverImage, dataUrlToBlob } from '@/services/supabase-data';
 import { toast } from 'sonner';
 
 interface WorldTabProps {
@@ -13,9 +13,13 @@ interface WorldTabProps {
   characters: Character[];
   openingDialog: OpeningDialog;
   scenes: Scene[];
+  coverImage: string;
+  coverImagePosition: { x: number; y: number };
   onUpdateWorld: (patch: Partial<World>) => void;
   onUpdateOpening: (patch: Partial<OpeningDialog>) => void;
   onUpdateScenes: (scenes: Scene[]) => void;
+  onUpdateCoverImage: (url: string) => void;
+  onUpdateCoverPosition: (position: { x: number; y: number }) => void;
   onNavigateToCharacters: () => void;
   onSelectCharacter: (id: string) => void;
 }
@@ -47,15 +51,24 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   characters, 
   openingDialog, 
   scenes,
+  coverImage,
+  coverImagePosition,
   onUpdateWorld, 
   onUpdateOpening, 
   onUpdateScenes,
+  onUpdateCoverImage,
+  onUpdateCoverPosition,
   onNavigateToCharacters, 
   onSelectCharacter 
 }) => {
   const { user } = useAuth();
   const [isUploading, setIsUploading] = useState(false);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [isRepositioningCover, setIsRepositioningCover] = useState(false);
+  const [coverDragStart, setCoverDragStart] = useState<{ x: number; y: number; pos: { x: number; y: number } } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const coverFileInputRef = useRef<HTMLInputElement>(null);
+  const coverContainerRef = useRef<HTMLDivElement>(null);
 
   const updateCore = (patch: any) => {
     onUpdateWorld({ core: { ...world.core, ...patch } });
@@ -64,6 +77,77 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   const handleUpdateEntry = (id: string, patch: Partial<CodexEntry>) => {
     const next = world.entries.map(e => e.id === id ? { ...e, ...patch, updatedAt: now() } : e);
     onUpdateWorld({ entries: next });
+  };
+
+  // Cover image handlers
+  const handleCoverMouseDown = (e: React.MouseEvent) => {
+    if (!isRepositioningCover) return;
+    e.preventDefault();
+    setCoverDragStart({
+      x: e.clientX,
+      y: e.clientY,
+      pos: coverImagePosition || { x: 50, y: 50 }
+    });
+  };
+
+  const handleCoverMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!coverDragStart || !coverContainerRef.current) return;
+    
+    const rect = coverContainerRef.current.getBoundingClientRect();
+    const deltaX = ((e.clientX - coverDragStart.x) / rect.width) * 100;
+    const deltaY = ((e.clientY - coverDragStart.y) / rect.height) * 100;
+
+    onUpdateCoverPosition({
+      x: clamp(coverDragStart.pos.x - deltaX, 0, 100),
+      y: clamp(coverDragStart.pos.y - deltaY, 0, 100)
+    });
+  }, [coverDragStart, onUpdateCoverPosition]);
+
+  const handleCoverMouseUp = () => {
+    setCoverDragStart(null);
+  };
+
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    
+    setIsUploadingCover(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const dataUrl = reader.result as string;
+          const optimized = await resizeImage(dataUrl, 1024, 1536, 0.85);
+          const blob = dataUrlToBlob(optimized);
+          if (!blob) throw new Error('Failed to process image');
+          
+          const filename = `cover-${uuid()}-${Date.now()}.jpg`;
+          const publicUrl = await uploadCoverImage(user.id, blob, filename);
+          
+          onUpdateCoverImage(publicUrl);
+          onUpdateCoverPosition({ x: 50, y: 50 });
+          toast.success('Cover image uploaded');
+        } catch (error) {
+          console.error('Cover upload failed:', error);
+          toast.error('Failed to upload cover');
+        } finally {
+          setIsUploadingCover(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Cover upload failed:', error);
+      toast.error('Failed to upload cover');
+      setIsUploadingCover(false);
+    }
+    e.target.value = '';
+  };
+
+  const handleDeleteCover = () => {
+    if (confirm('Remove the cover image?')) {
+      onUpdateCoverImage('');
+      onUpdateCoverPosition({ x: 50, y: 50 });
+    }
   };
 
   const handleAddScene = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -179,6 +263,103 @@ export const WorldTab: React.FC<WorldTabProps> = ({
             <h1 className="text-4xl font-black text-slate-900 tracking-tight">Scenario Setup</h1>
             <p className="text-sm font-medium text-slate-500 mt-1">Configure the foundation of your interactive narrative.</p>
           </div>
+
+          {/* Cover Image Section */}
+          <section>
+            <Card className="p-8 !shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)] border-transparent ring-1 ring-slate-900/5">
+              <h2 className="text-lg font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight mb-8 pb-4 border-b border-slate-100">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                Cover Image
+              </h2>
+              
+              <div className="flex flex-col md:flex-row gap-8">
+                {/* Preview Container - Portrait aspect ratio for story cards */}
+                <div 
+                  ref={coverContainerRef}
+                  onMouseDown={handleCoverMouseDown}
+                  onMouseMove={handleCoverMouseMove}
+                  onMouseUp={handleCoverMouseUp}
+                  onMouseLeave={handleCoverMouseUp}
+                  className={`relative w-full md:w-48 aspect-[2/3] rounded-2xl overflow-hidden transition-all duration-200 ${
+                    isRepositioningCover 
+                      ? 'ring-4 ring-blue-500 cursor-move shadow-xl shadow-blue-500/20' 
+                      : 'border-2 border-slate-100 shadow-lg'
+                  }`}
+                >
+                  {coverImage ? (
+                    <>
+                      <img 
+                        src={coverImage}
+                        alt="Cover"
+                        style={{ objectPosition: `${coverImagePosition.x}% ${coverImagePosition.y}%` }}
+                        className="w-full h-full object-cover pointer-events-none select-none"
+                        draggable={false}
+                      />
+                      {isRepositioningCover && (
+                        <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                          <div className="w-full h-[1px] bg-blue-500/40 absolute" />
+                          <div className="h-full w-[1px] bg-blue-500/40 absolute" />
+                          <div className="bg-blue-600 text-white text-[9px] font-black uppercase px-3 py-1.5 rounded-lg absolute bottom-3 tracking-widest shadow-xl">
+                            Drag to Refocus
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 gap-3 rounded-2xl">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-slate-300"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No Cover</span>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Controls */}
+                <div className="flex flex-col gap-4 flex-1">
+                  <p className="text-sm text-slate-500 leading-relaxed">
+                    This image appears on your story card in the hub. For best results, use a portrait-oriented image (2:3 aspect ratio).
+                  </p>
+                  
+                  <div className="flex flex-wrap gap-3">
+                    <Button 
+                      variant="secondary" 
+                      onClick={() => coverFileInputRef.current?.click()} 
+                      disabled={isUploadingCover}
+                      className="!px-5"
+                    >
+                      {isUploadingCover ? "Uploading..." : coverImage ? "Change Image" : "Upload Image"}
+                    </Button>
+                    
+                    {coverImage && (
+                      <>
+                        <Button 
+                          variant={isRepositioningCover ? 'primary' : 'secondary'}
+                          onClick={() => setIsRepositioningCover(!isRepositioningCover)}
+                          className="!px-5"
+                        >
+                          {isRepositioningCover ? "Done" : "Reposition"}
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          className="!text-rose-500 hover:!bg-rose-50" 
+                          onClick={handleDeleteCover}
+                        >
+                          Remove
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                  
+                  <input 
+                    type="file" 
+                    ref={coverFileInputRef} 
+                    className="hidden" 
+                    accept="image/*" 
+                    onChange={handleCoverUpload} 
+                  />
+                </div>
+              </div>
+            </Card>
+          </section>
 
           <section>
             <Card className="p-8 !shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)] border-transparent ring-1 ring-slate-900/5">

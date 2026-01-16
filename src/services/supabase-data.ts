@@ -54,6 +54,7 @@ function dbToScenarioMetadata(row: any): ScenarioMetadata {
     title: row.title,
     description: row.description || '',
     coverImage: row.cover_image_url || '',
+    coverImagePosition: row.cover_image_position || { x: 50, y: 50 },
     tags: row.tags || [],
     createdAt: new Date(row.created_at).getTime(),
     updatedAt: new Date(row.updated_at).getTime()
@@ -102,7 +103,7 @@ function dbToConversation(row: any, messages: any[]): Conversation {
 export async function fetchScenarios(): Promise<ScenarioMetadata[]> {
   const { data, error } = await supabase
     .from('scenarios')
-    .select('id, title, description, cover_image_url, tags, created_at, updated_at')
+    .select('id, title, description, cover_image_url, cover_image_position, tags, created_at, updated_at')
     .order('updated_at', { ascending: false });
 
   if (error) throw error;
@@ -204,7 +205,7 @@ export async function fetchScenarioById(id: string): Promise<ScenarioData | null
 export async function saveScenario(
   id: string,
   data: ScenarioData,
-  metadata: { title: string; description: string; coverImage: string; tags: string[] },
+  metadata: { title: string; description: string; coverImage: string; coverImagePosition?: { x: number; y: number }; tags: string[] },
   userId: string
 ): Promise<void> {
   // Upsert scenario
@@ -216,6 +217,7 @@ export async function saveScenario(
       title: metadata.title,
       description: metadata.description,
       cover_image_url: metadata.coverImage,
+      cover_image_position: metadata.coverImagePosition || { x: 50, y: 50 },
       tags: metadata.tags,
       world_core: data.world.core,
       ui_settings: data.uiSettings,
@@ -494,6 +496,22 @@ export async function uploadSceneImage(userId: string, file: Blob, filename: str
 
   const { data } = supabase.storage
     .from('scenes')
+    .getPublicUrl(path);
+
+  return data.publicUrl;
+}
+
+export async function uploadCoverImage(userId: string, file: Blob, filename: string): Promise<string> {
+  const path = `${userId}/${filename}`;
+  
+  const { error: uploadError } = await supabase.storage
+    .from('covers')
+    .upload(path, file, { upsert: true });
+
+  if (uploadError) throw uploadError;
+
+  const { data } = supabase.storage
+    .from('covers')
     .getPublicUrl(path);
 
   return data.publicUrl;

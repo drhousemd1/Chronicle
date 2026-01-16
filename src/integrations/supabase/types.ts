@@ -201,6 +201,7 @@ export type Database = {
       }
       scenarios: {
         Row: {
+          cover_image_position: Json | null
           cover_image_url: string | null
           created_at: string | null
           description: string | null
@@ -216,6 +217,7 @@ export type Database = {
           world_core: Json
         }
         Insert: {
+          cover_image_position?: Json | null
           cover_image_url?: string | null
           created_at?: string | null
           description?: string | null
@@ -231,6 +233,7 @@ export type Database = {
           world_core?: Json
         }
         Update: {
+          cover_image_position?: Json | null
           cover_image_url?: string | null
           created_at?: string | null
           description?: string | null
