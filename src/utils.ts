@@ -191,6 +191,7 @@ export function createDefaultScenarioData(): ScenarioData {
     world: {
       core: {
         scenarioName: "Test story",
+        briefDescription: "",
         settingOverview: "A cozy apartment setting designed for testing character interactions and narrative flow.",
         rulesOfMagicTech: "Modern-day realism.",
         factions: "None",
@@ -313,6 +314,7 @@ export function normalizeScenarioData(raw: any): ScenarioData {
   const world: World = {
     core: {
       scenarioName: normStr(raw?.world?.core?.scenarioName),
+      briefDescription: normStr(raw?.world?.core?.briefDescription),
       settingOverview: normStr(raw?.world?.core?.settingOverview),
       rulesOfMagicTech: normStr(raw?.world?.core?.rulesOfMagicTech),
       factions: normStr(raw?.world?.core?.factions),
