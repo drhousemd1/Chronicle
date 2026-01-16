@@ -129,4 +129,4 @@ export type ConversationMetadata = {
   updatedAt: number;
 };
 
-export type TabKey = "hub" | "characters" | "world" | "conversations" | "import_export" | "model_settings" | "builder" | "chat_interface";
+export type TabKey = "hub" | "characters" | "world" | "conversations" | "model_settings" | "builder" | "chat_interface";

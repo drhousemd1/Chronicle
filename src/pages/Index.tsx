@@ -6,7 +6,7 @@ import { LLM_MODELS } from "@/constants";
 import { CharactersTab } from "@/components/chronicle/CharactersTab";
 import { WorldTab } from "@/components/chronicle/WorldTab";
 import { ConversationsTab } from "@/components/chronicle/ConversationsTab";
-import { ImportExportTab } from "@/components/chronicle/ImportExportTab";
+
 import { ScenarioHub } from "@/components/chronicle/ScenarioHub";
 import { ModelSettingsTab } from "@/components/chronicle/ModelSettingsTab";
 import { ChatInterfaceTab } from "@/components/chronicle/ChatInterfaceTab";
@@ -458,7 +458,6 @@ const Index = () => {
 
           <div className="pt-4 mt-4 border-t border-white/10">
             <SidebarItem active={tab === "model_settings"} label="Model Settings" icon={<IconsList.Model />} onClick={() => setTab("model_settings")} />
-            <SidebarItem active={tab === "import_export"} label="Import / Export" icon={<IconsList.System />} onClick={() => setTab("import_export")} />
           </div>
         </nav>
         
@@ -588,15 +587,6 @@ const Index = () => {
             />
           )}
 
-          {tab === "import_export" && activeData && (
-            <div className="p-10 overflow-y-auto h-full">
-              <ImportExportTab
-                data={activeData}
-                onReplaceAll={(next) => setActiveData(next)}
-                onReset={() => setActiveData(createDefaultScenarioData())}
-              />
-            </div>
-          )}
 
           {tab === "model_settings" && (
             <div className="p-10 overflow-y-auto h-full">
