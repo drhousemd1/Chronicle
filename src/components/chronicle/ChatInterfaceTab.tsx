@@ -4,6 +4,22 @@ import { Button, TextArea } from './UI';
 import { Badge } from '@/components/ui/badge';
 import { uid, now } from '../../services/storage';
 import { generateRoleplayResponseStream } from '../../services/gemini';
+import { RefreshCw, MoreVertical, Copy, Pencil, Trash2 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { toast } from 'sonner';
+
 interface ChatInterfaceTabProps {
   scenarioId: string;
   appData: ScenarioData;
@@ -101,6 +117,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const [streamingContent, setStreamingContent] = useState('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [activeSceneId, setActiveSceneId] = useState<string | null>(null);
+  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
+  const [editText, setEditText] = useState('');
+  const [isRegenerating, setIsRegenerating] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const conversation = appData.conversations.find(c => c.id === conversationId);
@@ -176,6 +195,84 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       console.error(err);
       alert("Dialogue stream failed. Check your connection or model settings.");
     } finally {
+      setIsStreaming(false);
+      setStreamingContent('');
+    }
+  };
+
+  const handleCopyMessage = async (text: string) => {
+    await navigator.clipboard.writeText(text);
+    toast.success('Message copied to clipboard');
+  };
+
+  const handleDeleteMessage = (messageId: string) => {
+    const updatedConvs = appData.conversations.map(c =>
+      c.id === conversationId
+        ? { ...c, messages: c.messages.filter(m => m.id !== messageId), updatedAt: now() }
+        : c
+    );
+    onUpdate(updatedConvs);
+    onSaveScenario();
+    toast.success('Message deleted');
+  };
+
+  const handleEditMessage = () => {
+    if (!editingMessage || !editText.trim()) return;
+    
+    const updatedConvs = appData.conversations.map(c =>
+      c.id === conversationId
+        ? {
+            ...c,
+            messages: c.messages.map(m =>
+              m.id === editingMessage.id ? { ...m, text: editText } : m
+            ),
+            updatedAt: now()
+          }
+        : c
+    );
+    onUpdate(updatedConvs);
+    onSaveScenario();
+    setEditingMessage(null);
+    setEditText('');
+    toast.success('Message updated');
+  };
+
+  const handleRegenerateMessage = async (messageId: string) => {
+    const msgIndex = conversation?.messages.findIndex(m => m.id === messageId);
+    if (msgIndex === undefined || msgIndex < 1) return;
+    
+    const userMessage = conversation?.messages[msgIndex - 1];
+    if (!userMessage || userMessage.role !== 'user') return;
+    
+    const messagesBeforeAi = conversation?.messages.slice(0, msgIndex) || [];
+    
+    setIsRegenerating(true);
+    setIsStreaming(true);
+    setStreamingContent('');
+    
+    try {
+      let fullText = '';
+      const stream = generateRoleplayResponseStream(appData, conversationId, userMessage.text, modelId);
+      
+      for await (const chunk of stream) {
+        fullText += chunk;
+        setStreamingContent(fullText);
+      }
+      
+      const newAiMsg: Message = { id: uid('msg'), role: 'assistant', text: fullText, createdAt: now() };
+      const updatedConvs = appData.conversations.map(c =>
+        c.id === conversationId
+          ? { ...c, messages: [...messagesBeforeAi, newAiMsg], updatedAt: now() }
+          : c
+      );
+      onUpdate(updatedConvs);
+      onSaveScenario();
+      toast.success('Response regenerated');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to regenerate response');
+    } finally {
+      setIsRegenerating(false);
       setIsStreaming(false);
       setStreamingContent('');
     }
@@ -389,12 +486,54 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
             const { char } = identifySpeaker(msg.text, !isAi);
 
             return (
-              <div key={msg.id} className="max-w-4xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className={`p-8 rounded-[2rem] shadow-2xl flex flex-col gap-8 transition-all ${
+              <div key={msg.id} className="max-w-4xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500 group">
+                <div className={`p-8 rounded-[2rem] shadow-2xl flex flex-col gap-8 transition-all relative ${
                   bubblesTransparent
                     ? 'bg-black/40 backdrop-blur-xl'
                     : 'bg-[#1c1f26]'
                 } ${!isAi ? 'border-2 border-blue-400' : 'border border-white/5 hover:border-white/20'}`}>
+                  
+                  {/* Action buttons - top right corner */}
+                  <div className="absolute top-4 right-4 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {/* Regenerate button - AI messages only */}
+                    {isAi && (
+                      <button
+                        onClick={() => handleRegenerateMessage(msg.id)}
+                        disabled={isStreaming || isRegenerating}
+                        className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors disabled:opacity-30"
+                        title="Regenerate response"
+                      >
+                        <RefreshCw className={`w-4 h-4 ${isRegenerating ? 'animate-spin' : ''}`} />
+                      </button>
+                    )}
+                    
+                    {/* Three-dot menu - all messages */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+                          <MoreVertical className="w-4 h-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-40">
+                        <DropdownMenuItem onClick={() => handleCopyMessage(msg.text)}>
+                          <Copy className="w-4 h-4 mr-2" />
+                          Copy
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => { setEditingMessage(msg); setEditText(msg.text); }}>
+                          <Pencil className="w-4 h-4 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => handleDeleteMessage(msg.id)}
+                          className="text-red-500 focus:text-red-500"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                  
                   <div className="flex gap-8 items-start">
                     <div className="flex flex-col items-center gap-2 w-20 flex-shrink-0">
                       <div className={`w-16 h-16 rounded-full border-2 border-white/10 shadow-lg overflow-hidden flex items-center justify-center ${char?.avatarDataUrl ? '' : 'bg-slate-800'}`}>
@@ -518,6 +657,30 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           </div>
         </div>
       </main>
+
+      {/* Edit Message Dialog */}
+      <Dialog open={!!editingMessage} onOpenChange={(open) => !open && setEditingMessage(null)}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Message</DialogTitle>
+          </DialogHeader>
+          <TextArea
+            value={editText}
+            onChange={setEditText}
+            rows={6}
+            className="w-full"
+            placeholder="Edit your message..."
+          />
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setEditingMessage(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditMessage}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
