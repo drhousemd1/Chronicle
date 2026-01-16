@@ -213,6 +213,8 @@ export function createDefaultScenarioData(): ScenarioData {
       openingDialog: {
         enabled: true,
         text: "*Ashley was curled up on the corner of the plush sofa, her legs tucked neatly beneath her.* (I wonder if he had a long day...)\n\n\"Hey,\" *she replied, her voice soft and welcoming.* \"You're back sooner than I expected. How was your day?\"",
+        startingDay: 1,
+        startingTimeOfDay: 'day',
       }
     },
     conversations: [
@@ -348,9 +350,17 @@ export function normalizeScenarioData(raw: any): ScenarioData {
     darkMode: typeof raw?.uiSettings?.darkMode === "boolean" ? raw.uiSettings.darkMode : false,
   };
 
+  // Normalize TimeOfDay value
+  const normTimeOfDay = (val: any): 'sunrise' | 'day' | 'sunset' | 'night' => {
+    if (val === 'sunrise' || val === 'day' || val === 'sunset' || val === 'night') return val;
+    return 'day';
+  };
+
   const openingDialog: OpeningDialog = {
     enabled: typeof raw?.story?.openingDialog?.enabled === "boolean" ? raw.story.openingDialog.enabled : true,
     text: normStr(raw?.story?.openingDialog?.text),
+    startingDay: normNum(raw?.story?.openingDialog?.startingDay, 1),
+    startingTimeOfDay: normTimeOfDay(raw?.story?.openingDialog?.startingTimeOfDay),
   };
 
   const conversations: Conversation[] = Array.isArray(raw?.conversations)

@@ -1,12 +1,13 @@
 
 import React, { useRef, useState, useCallback } from 'react';
-import { World, OpeningDialog, CodexEntry, Character, Scene } from '@/types';
+import { World, OpeningDialog, CodexEntry, Character, Scene, TimeOfDay } from '@/types';
 import { Button, Input, TextArea, Card } from './UI';
 import { Icons } from '@/constants';
 import { uid, now, resizeImage, uuid, clamp } from '@/utils';
 import { useAuth } from '@/hooks/use-auth';
 import { uploadSceneImage, uploadCoverImage, dataUrlToBlob } from '@/services/supabase-data';
 import { toast } from 'sonner';
+import { Sunrise, Sun, Sunset, Moon, ChevronUp, ChevronDown } from 'lucide-react';
 
 interface WorldTabProps {
   world: World;
@@ -381,7 +382,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
               <h2 className="text-lg font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight mb-8 pb-4 border-b border-slate-100">
                 <Icons.MessageSquare /> Opening Dialog
               </h2>
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <TextArea 
                   label="First Story Message" 
                   value={openingDialog.text} 
@@ -389,6 +390,72 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                   rows={8} 
                   placeholder="Type the first message the user will see when they click Play..."
                 />
+                
+                {/* Starting Day & Time Controls */}
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Starting Day & Time</label>
+                  <div className="flex items-center gap-6">
+                    {/* Day Counter */}
+                    <div className="flex items-center gap-2 bg-slate-50 rounded-xl px-4 py-2 border border-slate-200">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mr-1">Day</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const current = openingDialog.startingDay || 1;
+                          if (current > 1) onUpdateOpening({ startingDay: current - 1 });
+                        }}
+                        className="p-1 rounded-md hover:bg-slate-200 text-slate-500 transition-colors disabled:opacity-30"
+                        disabled={(openingDialog.startingDay || 1) <= 1}
+                      >
+                        <ChevronDown size={16} />
+                      </button>
+                      <span className="text-lg font-bold text-slate-700 min-w-[2ch] text-center">
+                        {openingDialog.startingDay || 1}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const current = openingDialog.startingDay || 1;
+                          onUpdateOpening({ startingDay: current + 1 });
+                        }}
+                        className="p-1 rounded-md hover:bg-slate-200 text-slate-500 transition-colors"
+                      >
+                        <ChevronUp size={16} />
+                      </button>
+                    </div>
+
+                    {/* Time of Day Icons */}
+                    <div className="flex items-center gap-1 bg-slate-50 rounded-xl p-1 border border-slate-200">
+                      {([
+                        { key: 'sunrise' as TimeOfDay, icon: Sunrise, label: 'Sunrise' },
+                        { key: 'day' as TimeOfDay, icon: Sun, label: 'Day' },
+                        { key: 'sunset' as TimeOfDay, icon: Sunset, label: 'Sunset' },
+                        { key: 'night' as TimeOfDay, icon: Moon, label: 'Night' },
+                      ] as const).map(({ key, icon: Icon, label }) => {
+                        const isActive = (openingDialog.startingTimeOfDay || 'day') === key;
+                        return (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() => onUpdateOpening({ startingTimeOfDay: key })}
+                            title={label}
+                            className={`p-2 rounded-lg transition-all ${
+                              isActive 
+                                ? 'bg-blue-500 text-white shadow-md' 
+                                : 'text-slate-400 hover:bg-slate-200 hover:text-slate-600'
+                            }`}
+                          >
+                            <Icon size={18} />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-slate-400 font-medium italic">
+                    Set when your story begins. The AI will use this context for time-appropriate responses.
+                  </p>
+                </div>
+                
                 <p className="text-[10px] text-slate-400 font-medium italic">This message will automatically appear at the start of every new session.</p>
               </div>
             </Card>

@@ -245,6 +245,10 @@ const Index = () => {
       }
       const meta = registry.find(r => r.id === id);
       
+      // Get starting day/time from scenario's opening dialog
+      const startingDay = data.story?.openingDialog?.startingDay || 1;
+      const startingTimeOfDay = data.story?.openingDialog?.startingTimeOfDay || 'day';
+      
       const initialMessages: Message[] = [];
       const openingText = data.story?.openingDialog?.text?.trim();
       if (openingText) {
@@ -252,6 +256,8 @@ const Index = () => {
           id: uuid(), // Use UUID for Supabase
           role: "assistant",
           text: openingText,
+          day: startingDay,
+          timeOfDay: startingTimeOfDay,
           createdAt: now()
         });
       }
@@ -260,8 +266,8 @@ const Index = () => {
         id: uuid(), // Use UUID for Supabase
         title: `Story Session ${data.conversations.length + 1}`, 
         messages: initialMessages, 
-        currentDay: 1,
-        currentTimeOfDay: 'day',
+        currentDay: startingDay,
+        currentTimeOfDay: startingTimeOfDay,
         createdAt: now(), 
         updatedAt: now() 
       };
