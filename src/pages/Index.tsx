@@ -422,7 +422,7 @@ const Index = () => {
     } finally {
       setIsSaving(false);
     }
-  }, [activeId, activeData, user, toast, isValidUuid, migrateScenarioDataIds]);
+  }, [activeId, activeData, activeCoverImage, activeCoverPosition, user, toast, isValidUuid, migrateScenarioDataIds, library]);
 
   async function handleSaveCharacter() {
     if (!user) return;
