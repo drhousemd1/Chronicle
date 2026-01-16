@@ -318,6 +318,65 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     setOpenSections(prev => ({ ...prev, [sectionId]: !prev[sectionId] }));
   };
 
+  // Helper functions to convert hardcoded attributes to CharacterTraitSection format
+  const createBasicsSection = (char: Character): CharacterTraitSection => ({
+    id: 'basics',
+    title: 'Basics',
+    items: [
+      { id: 'age', label: 'Age', value: char.age || '', createdAt: 0, updatedAt: 0 },
+      { id: 'role', label: 'Role', value: char.roleDescription || '', createdAt: 0, updatedAt: 0 },
+    ].filter(item => item.value),
+    createdAt: 0,
+    updatedAt: 0,
+  });
+
+  const createPhysicalAppearanceSection = (char: Character): CharacterTraitSection => ({
+    id: 'physical-appearance',
+    title: 'Physical Appearance',
+    items: [
+      { id: 'hair-color', label: 'Hair Color', value: char.physicalAppearance?.hairColor || '', createdAt: 0, updatedAt: 0 },
+      { id: 'eye-color', label: 'Eye Color', value: char.physicalAppearance?.eyeColor || '', createdAt: 0, updatedAt: 0 },
+      { id: 'build', label: 'Build', value: char.physicalAppearance?.build || '', createdAt: 0, updatedAt: 0 },
+      { id: 'body-hair', label: 'Body Hair', value: char.physicalAppearance?.bodyHair || '', createdAt: 0, updatedAt: 0 },
+      { id: 'height', label: 'Height', value: char.physicalAppearance?.height || '', createdAt: 0, updatedAt: 0 },
+      { id: 'breast-size', label: 'Breast Size', value: char.physicalAppearance?.breastSize || '', createdAt: 0, updatedAt: 0 },
+      { id: 'genitalia', label: 'Genitalia', value: char.physicalAppearance?.genitalia || '', createdAt: 0, updatedAt: 0 },
+      { id: 'skin-tone', label: 'Skin Tone', value: char.physicalAppearance?.skinTone || '', createdAt: 0, updatedAt: 0 },
+      { id: 'makeup', label: 'Makeup', value: char.physicalAppearance?.makeup || '', createdAt: 0, updatedAt: 0 },
+      { id: 'body-markings', label: 'Body Markings', value: char.physicalAppearance?.bodyMarkings || '', createdAt: 0, updatedAt: 0 },
+      { id: 'temporary-conditions', label: 'Temporary Conditions', value: char.physicalAppearance?.temporaryConditions || '', createdAt: 0, updatedAt: 0 },
+    ].filter(item => item.value),
+    createdAt: 0,
+    updatedAt: 0,
+  });
+
+  const createCurrentlyWearingSection = (char: Character): CharacterTraitSection => ({
+    id: 'currently-wearing',
+    title: 'Currently Wearing',
+    items: [
+      { id: 'top', label: 'Shirt/Top', value: char.currentlyWearing?.top || '', createdAt: 0, updatedAt: 0 },
+      { id: 'bottom', label: 'Pants/Bottoms', value: char.currentlyWearing?.bottom || '', createdAt: 0, updatedAt: 0 },
+      { id: 'undergarments', label: 'Undergarments', value: char.currentlyWearing?.undergarments || '', createdAt: 0, updatedAt: 0 },
+      { id: 'miscellaneous', label: 'Miscellaneous', value: char.currentlyWearing?.miscellaneous || '', createdAt: 0, updatedAt: 0 },
+    ].filter(item => item.value),
+    createdAt: 0,
+    updatedAt: 0,
+  });
+
+  const createPreferredClothingSection = (char: Character): CharacterTraitSection => ({
+    id: 'preferred-clothing',
+    title: 'Preferred Clothing',
+    items: [
+      { id: 'casual', label: 'Casual', value: char.preferredClothing?.casual || '', createdAt: 0, updatedAt: 0 },
+      { id: 'work', label: 'Work', value: char.preferredClothing?.work || '', createdAt: 0, updatedAt: 0 },
+      { id: 'sleep', label: 'Sleep', value: char.preferredClothing?.sleep || '', createdAt: 0, updatedAt: 0 },
+      { id: 'underwear', label: 'Underwear', value: char.preferredClothing?.underwear || '', createdAt: 0, updatedAt: 0 },
+      { id: 'miscellaneous-pref', label: 'Miscellaneous', value: char.preferredClothing?.miscellaneous || '', createdAt: 0, updatedAt: 0 },
+    ].filter(item => item.value),
+    createdAt: 0,
+    updatedAt: 0,
+  });
+
   const renderSection = (section: CharacterTraitSection) => {
     const isOpen = openSections[section.id] !== false;
     return (
@@ -401,6 +460,19 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
         {isExpanded && (
           <div className="px-5 pb-5 pt-1 space-y-1 animate-in zoom-in-95 duration-300">
+            {/* 1. Basics - Avatar panel data */}
+            {createBasicsSection(char).items.length > 0 && renderSection(createBasicsSection(char))}
+            
+            {/* 2. Physical Appearance - hardcoded */}
+            {createPhysicalAppearanceSection(char).items.length > 0 && renderSection(createPhysicalAppearanceSection(char))}
+            
+            {/* 3. Currently Wearing - hardcoded */}
+            {createCurrentlyWearingSection(char).items.length > 0 && renderSection(createCurrentlyWearingSection(char))}
+            
+            {/* 4. Preferred Clothing - hardcoded */}
+            {createPreferredClothingSection(char).items.length > 0 && renderSection(createPreferredClothingSection(char))}
+            
+            {/* 5. Custom sections */}
             {char.sections.map(section => renderSection(section))}
           </div>
         )}
