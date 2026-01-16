@@ -16,6 +16,8 @@ import { brainstormCharacterDetails } from "@/services/gemini";
 import { CharacterPicker } from "@/components/chronicle/CharacterPicker";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { PanelLeftClose, PanelLeft } from "lucide-react";
 import * as supabaseData from "@/services/supabase-data";
 
 const IconsList = {
@@ -31,17 +33,58 @@ const IconsList = {
   Logout: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
 };
 
-function SidebarItem({ active, label, onClick, icon, subtitle, className = "" }: { active: boolean; label: string; onClick: () => void; icon: React.ReactNode; subtitle?: string; className?: string; }) {
-  const activeClasses = active ? "bg-blue-600 shadow-lg shadow-black/40 text-white" : "text-slate-400 hover:bg-white/10 hover:text-white hover:shadow-md hover:shadow-black/20"; 
-  return (
-    <button type="button" onClick={onClick} className={`w-full flex flex-col rounded-xl px-4 py-3 transition-all duration-200 font-bold text-sm mb-1 cursor-pointer group border border-transparent ${activeClasses} ${className}`}>
-      <div className="flex items-center gap-3 w-full">
+function SidebarItem({ 
+  active, 
+  label, 
+  onClick, 
+  icon, 
+  subtitle, 
+  className = "",
+  collapsed = false 
+}: { 
+  active: boolean; 
+  label: string; 
+  onClick: () => void; 
+  icon: React.ReactNode; 
+  subtitle?: string; 
+  className?: string;
+  collapsed?: boolean;
+}) {
+  const activeClasses = active 
+    ? "bg-blue-600 shadow-lg shadow-black/40 text-white" 
+    : "text-slate-400 hover:bg-white/10 hover:text-white hover:shadow-md hover:shadow-black/20";
+  
+  const content = (
+    <button 
+      type="button" 
+      onClick={onClick} 
+      className={`w-full flex flex-col rounded-xl transition-all duration-200 font-bold text-sm mb-1 cursor-pointer group border border-transparent ${activeClasses} ${className} ${collapsed ? 'px-3 py-3 items-center justify-center' : 'px-4 py-3'}`}
+    >
+      <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3 w-full'}`}>
         <span className="flex-shrink-0 transition-transform duration-200 group-hover:scale-110">{icon}</span>
-        <span className="truncate">{label}</span>
+        {!collapsed && <span className="truncate">{label}</span>}
       </div>
-      {subtitle && <div className={`text-[10px] font-black tracking-wide uppercase mt-1 ml-8 text-left transition-colors duration-200 ${active ? "text-blue-200 opacity-100" : "text-slate-600 opacity-70 group-hover:text-slate-400"}`}>{subtitle}</div>}
+      {!collapsed && subtitle && (
+        <div className={`text-[10px] font-black tracking-wide uppercase mt-1 ml-8 text-left transition-colors duration-200 ${active ? "text-blue-200 opacity-100" : "text-slate-600 opacity-70 group-hover:text-slate-400"}`}>
+          {subtitle}
+        </div>
+      )}
     </button>
   );
+
+  if (collapsed) {
+    return (
+      <Tooltip delayDuration={0}>
+        <TooltipTrigger asChild>{content}</TooltipTrigger>
+        <TooltipContent side="right" className="font-semibold">
+          {label}
+          {subtitle && <span className="block text-xs text-muted-foreground">{subtitle}</span>}
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  return content;
 }
 
 const Index = () => {
@@ -62,12 +105,19 @@ const Index = () => {
   const [conversationRegistry, setConversationRegistry] = useState<ConversationMetadata[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
+    return localStorage.getItem('chronicle_sidebar_collapsed') === 'true';
+  });
   
   const [globalModelId, setGlobalModelId] = useState<string>(() => localStorage.getItem("rpg_studio_global_model") || 'gemini-3-flash-preview');
 
   useEffect(() => {
     localStorage.setItem("rpg_studio_global_model", globalModelId);
   }, [globalModelId]);
+
+  useEffect(() => {
+    localStorage.setItem('chronicle_sidebar_collapsed', String(sidebarCollapsed));
+  }, [sidebarCollapsed]);
 
   // Redirect to auth if not authenticated
   useEffect(() => {
@@ -576,54 +626,117 @@ const Index = () => {
   const activeMeta = registry.find(m => m.id === activeId);
 
   return (
-    <div className="h-screen flex bg-white overflow-hidden">
-      <aside className="w-[280px] flex-shrink-0 bg-[#1a1a1a] flex flex-col border-r border-black shadow-2xl z-50">
-        <div className="p-8"><div className="flex items-center gap-4"><div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black text-2xl italic shadow-xl shadow-blue-500/30">C</div><div className="font-black uppercase tracking-tighter text-2xl leading-none text-white">Chronicle</div></div></div>
-        <nav className="flex-1 overflow-y-auto px-4 pb-4 mt-4 space-y-1">
-          <SidebarItem active={tab === "hub"} label="Your Stories" icon={<IconsList.Hub />} onClick={() => { setActiveId(null); setTab("hub"); setPlayingConversationId(null); }} />
-          <SidebarItem active={tab === "library"} label="Character Library" icon={<IconsList.Library />} onClick={() => { setActiveId(null); setTab("library"); setSelectedCharacterId(null); setPlayingConversationId(null); }} />
-          
-          <SidebarItem active={tab === "conversations"} label="Chat History" icon={<IconsList.Chat />} onClick={() => setTab("conversations")} />
-          
-          <SidebarItem 
-            active={tab === "world" || tab === "characters"} 
-            label="Scenario Builder"
-            subtitle={activeId ? (activeMeta?.title || "Unsaved Draft") : "Click to create"}
-            icon={<IconsList.Builder />} 
-            onClick={() => {
-              if (activeId) setTab("world");
-              else handleCreateNewScenario();
-            }}
-            className={!activeId ? "opacity-80" : ""}
-          />
-
-          <div className="pt-4 mt-4 border-t border-white/10">
-            <SidebarItem active={tab === "model_settings"} label="Model Settings" icon={<IconsList.Model />} onClick={() => setTab("model_settings")} />
+    <TooltipProvider>
+      <div className="h-screen flex bg-white overflow-hidden">
+        <aside className={`flex-shrink-0 bg-[#1a1a1a] flex flex-col border-r border-black shadow-2xl z-50 transition-all duration-300 ${sidebarCollapsed ? 'w-[72px]' : 'w-[280px]'}`}>
+          <div className={`${sidebarCollapsed ? 'p-4' : 'p-8'}`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black text-2xl italic shadow-xl shadow-blue-500/30">C</div>
+                {!sidebarCollapsed && (
+                  <div className="font-black uppercase tracking-tighter text-2xl leading-none text-white">Chronicle</div>
+                )}
+              </div>
+              <Tooltip delayDuration={0}>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                    className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                  >
+                    {sidebarCollapsed ? <PanelLeft className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  {sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                </TooltipContent>
+              </Tooltip>
+            </div>
           </div>
-        </nav>
-        
-        {activeId && (tab === "world" || tab === "characters") && (
-          <div className="p-4 border-t border-white/10 space-y-2">
-            <Button variant="brand" onClick={() => handleSave(true)} className="w-full" disabled={isSaving}>
-              {isSaving ? "Saving..." : "💾 Save Scenario"}
-            </Button>
-            <Button variant="ghost" onClick={() => { setActiveId(null); setActiveData(null); setTab("hub"); }} className="w-full !text-slate-500">
-              ← Back to Stories
-            </Button>
-          </div>
-        )}
+          <nav className={`flex-1 overflow-y-auto pb-4 mt-4 space-y-1 ${sidebarCollapsed ? 'px-2' : 'px-4'}`}>
+            <SidebarItem active={tab === "hub"} label="Your Stories" icon={<IconsList.Hub />} onClick={() => { setActiveId(null); setTab("hub"); setPlayingConversationId(null); }} collapsed={sidebarCollapsed} />
+            <SidebarItem active={tab === "library"} label="Character Library" icon={<IconsList.Library />} onClick={() => { setActiveId(null); setTab("library"); setSelectedCharacterId(null); setPlayingConversationId(null); }} collapsed={sidebarCollapsed} />
+            
+            <SidebarItem active={tab === "conversations"} label="Chat History" icon={<IconsList.Chat />} onClick={() => setTab("conversations")} collapsed={sidebarCollapsed} />
+            
+            <SidebarItem 
+              active={tab === "world" || tab === "characters"} 
+              label="Scenario Builder"
+              subtitle={activeId ? (activeMeta?.title || "Unsaved Draft") : "Click to create"}
+              icon={<IconsList.Builder />} 
+              onClick={() => {
+                if (activeId) setTab("world");
+                else handleCreateNewScenario();
+              }}
+              className={!activeId ? "opacity-80" : ""}
+              collapsed={sidebarCollapsed}
+            />
 
-        <div className="p-4 border-t border-white/10">
-          <div className="text-xs text-slate-500 mb-2 truncate">{user?.email}</div>
-          <button 
-            onClick={handleSignOut}
-            className="w-full flex items-center gap-2 px-4 py-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors text-sm"
-          >
-            <IconsList.Logout />
-            Sign Out
-          </button>
-        </div>
-      </aside>
+            <div className="pt-4 mt-4 border-t border-white/10">
+              <SidebarItem active={tab === "model_settings"} label="Model Settings" icon={<IconsList.Model />} onClick={() => setTab("model_settings")} collapsed={sidebarCollapsed} />
+            </div>
+          </nav>
+          
+          {activeId && (tab === "world" || tab === "characters") && (
+            <div className={`p-4 border-t border-white/10 space-y-2 ${sidebarCollapsed ? 'px-2' : ''}`}>
+              {sidebarCollapsed ? (
+                <>
+                  <Tooltip delayDuration={0}>
+                    <TooltipTrigger asChild>
+                      <Button variant="brand" onClick={() => handleSave(true)} className="w-full px-0" disabled={isSaving}>
+                        💾
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">Save Scenario</TooltipContent>
+                  </Tooltip>
+                  <Tooltip delayDuration={0}>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" onClick={() => { setActiveId(null); setActiveData(null); setTab("hub"); }} className="w-full px-0 !text-slate-500">
+                        ←
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">Back to Stories</TooltipContent>
+                  </Tooltip>
+                </>
+              ) : (
+                <>
+                  <Button variant="brand" onClick={() => handleSave(true)} className="w-full" disabled={isSaving}>
+                    {isSaving ? "Saving..." : "💾 Save Scenario"}
+                  </Button>
+                  <Button variant="ghost" onClick={() => { setActiveId(null); setActiveData(null); setTab("hub"); }} className="w-full !text-slate-500">
+                    ← Back to Stories
+                  </Button>
+                </>
+              )}
+            </div>
+          )}
+
+          <div className={`p-4 border-t border-white/10 ${sidebarCollapsed ? 'px-2' : ''}`}>
+            {!sidebarCollapsed && (
+              <div className="text-xs text-slate-500 mb-2 truncate">{user?.email}</div>
+            )}
+            {sidebarCollapsed ? (
+              <Tooltip delayDuration={0}>
+                <TooltipTrigger asChild>
+                  <button 
+                    onClick={handleSignOut}
+                    className="w-full flex items-center justify-center p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                  >
+                    <IconsList.Logout />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">Sign Out</TooltipContent>
+              </Tooltip>
+            ) : (
+              <button 
+                onClick={handleSignOut}
+                className="w-full flex items-center gap-2 px-4 py-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors text-sm"
+              >
+                <IconsList.Logout />
+                Sign Out
+              </button>
+            )}
+          </div>
+        </aside>
 
       <main className="flex-1 flex flex-col overflow-hidden bg-slate-50/50">
         {(tab === "characters" || tab === "world" || tab === "library") && (
@@ -758,7 +871,8 @@ const Index = () => {
           onClose={() => setIsCharacterPickerOpen(false)}
         />
       )}
-    </div>
+      </div>
+    </TooltipProvider>
   );
 };
 
