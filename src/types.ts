@@ -25,6 +25,8 @@ export type Conversation = {
 export type OpeningDialog = {
   enabled: boolean;
   text: string;
+  startingDay: number;
+  startingTimeOfDay: TimeOfDay;
 };
 
 export type WorldCore = {

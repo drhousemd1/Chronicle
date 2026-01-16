@@ -274,7 +274,13 @@ export async function fetchScenarioById(id: string): Promise<ScenarioData | null
     dialogFormatting: ''
   };
 
-  const openingDialog: OpeningDialog = (scenario.opening_dialog as OpeningDialog) || { enabled: true, text: '' };
+  const rawOpeningDialog = scenario.opening_dialog as Partial<OpeningDialog> | undefined;
+  const openingDialog: OpeningDialog = { 
+    enabled: rawOpeningDialog?.enabled ?? true, 
+    text: rawOpeningDialog?.text ?? '',
+    startingDay: rawOpeningDialog?.startingDay ?? 1,
+    startingTimeOfDay: rawOpeningDialog?.startingTimeOfDay ?? 'day'
+  };
   
   const uiSettings = (scenario.ui_settings as { showBackgrounds: boolean; transparentBubbles: boolean; darkMode: boolean }) || { 
     showBackgrounds: true, 
