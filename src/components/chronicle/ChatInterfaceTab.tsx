@@ -749,14 +749,14 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
                   
                   {/* Day/Time Badge - bottom left */}
                   {(msg.day || msg.timeOfDay) && (
-                          <div className="absolute bottom-3 left-4 flex items-center gap-2 text-lg text-white">
+                          <div className="absolute bottom-3 left-4 flex items-center gap-2 text-sm text-white">
                             {msg.day && <span>Day: {msg.day}</span>}
                             {msg.timeOfDay && (
                               <span className="flex items-center gap-1">
-                                {msg.timeOfDay === 'sunrise' && <Sunrise className="w-6 h-6" />}
-                                {msg.timeOfDay === 'day' && <Sun className="w-6 h-6" />}
-                                {msg.timeOfDay === 'sunset' && <Sunset className="w-6 h-6" />}
-                                {msg.timeOfDay === 'night' && <Moon className="w-6 h-6" />}
+                                {msg.timeOfDay === 'sunrise' && <Sunrise className="w-5 h-5" />}
+                                {msg.timeOfDay === 'day' && <Sun className="w-5 h-5" />}
+                                {msg.timeOfDay === 'sunset' && <Sunset className="w-5 h-5" />}
+                                {msg.timeOfDay === 'night' && <Moon className="w-5 h-5" />}
                               </span>
                             )}
                           </div>
