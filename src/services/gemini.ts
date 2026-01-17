@@ -81,7 +81,11 @@ ${traits}`;
         2. ENCLOSE ALL PHYSICAL ACTIONS OR DESCRIPTIONS IN *ASTERISKS*.
         3. ENCLOSE ALL INTERNAL THOUGHTS OR MENTAL STATES IN (PARENTHESES).
         Example: *He walks toward her, his heart racing.* (I hope she doesn't notice.) "Hey, did you wait long?"
-    
+    - MULTI-CHARACTER RESPONSES:
+        * When multiple characters speak or act in a response, prefix each section with their name followed by a colon: "CharacterName:"
+        * This applies to ALL characters, including new characters not in the CAST list above.
+        * For new characters, include descriptive physical traits in their first appearance using *action* format.
+        * Example: Sarah: *The woman walked in, her long brown hair swaying as she moved.* "Hey everyone!"
     - Maintain consistent tone and continuity.
     - Keep responses immersive, descriptive, and emotionally resonant.
     - Respect character gender/sex and traits.

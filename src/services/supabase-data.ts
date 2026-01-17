@@ -79,7 +79,7 @@ function dbPreferredClothingToApp(db: any): PreferredClothing {
     casual: db?.casual || '',
     work: db?.work || '',
     sleep: db?.sleep || '',
-    underwear: db?.underwear || '',
+    undergarments: db?.underwear || db?.undergarments || '',  // Support both old and new field names
     miscellaneous: db?.miscellaneous || ''
   };
 }
@@ -89,7 +89,7 @@ function appPreferredClothingToDb(app: PreferredClothing) {
     casual: app.casual,
     work: app.work,
     sleep: app.sleep,
-    underwear: app.underwear,
+    underwear: app.undergarments,  // Store as 'underwear' in DB for backward compatibility
     miscellaneous: app.miscellaneous
   };
 }
@@ -292,6 +292,7 @@ export async function fetchScenarioById(id: string): Promise<ScenarioData | null
   return {
     version: scenario.version || 3,
     characters: (characters || []).map(dbToCharacter),
+    sideCharacters: [],  // AI-generated side characters - not persisted in DB yet
     world: {
       core: worldCore,
       entries: (codexEntries || []).map(dbToCodexEntry)

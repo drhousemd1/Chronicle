@@ -134,7 +134,7 @@ export const getHardcodedTestCharacters = (): Character[] => {
         casual: "Crop tops, hoodies, leggings",
         work: "Nurse scrubs",
         sleep: "Oversized t-shirt",
-        underwear: "Lacy or silky lingerie",
+        undergarments: "Lacy or silky lingerie",
         miscellaneous: ""
       },
       sections: [
@@ -188,6 +188,7 @@ export function createDefaultScenarioData(): ScenarioData {
     version: APP_VERSION,
     selectedModel: 'gemini-3-flash-preview',
     characters,
+    sideCharacters: [],  // AI-generated side characters start empty
     world: {
       core: {
         scenarioName: "Test story",
@@ -200,7 +201,19 @@ export function createDefaultScenarioData(): ScenarioData {
         toneThemes: "Casual, Intimate, Slice-of-Life",
         plotHooks: "Ashley is relaxing on the sofa when you walk in.",
         narrativeStyle: "Detailed descriptions of environments and character actions. Maintain character traits strictly.",
-        dialogFormatting: "Enclose all spoken dialogue in \" \".\nEnclose all physical actions or descriptions in * *.\nEnclose all internal thoughts in ( ).",
+        dialogFormatting: `Enclose all spoken dialogue in " ".
+Enclose all physical actions or descriptions in * *.
+Enclose all internal thoughts in ( ).
+
+MULTI-CHARACTER FORMATTING:
+When generating dialog for multiple characters in a single response, prefix each character's section with their name followed by a colon (e.g., "Ashley:").
+This tag is for internal processing and will not be displayed to the user.
+Format: CharacterName: followed by their dialog/actions/thoughts.
+
+Example:
+Ashley: *She smiled warmly.* "It's so good to see you!"
+Sarah: *Walking in, she tied her long brown hair into a ponytail.* "Hey! Sorry I'm late."
+Ashley: "No worries at all." (She seems tired...)`,
       },
       entries: [],
     },
@@ -302,7 +315,7 @@ export function normalizeScenarioData(raw: any): ScenarioData {
           casual: normStr(c?.preferredClothing?.casual),
           work: normStr(c?.preferredClothing?.work),
           sleep: normStr(c?.preferredClothing?.sleep),
-          underwear: normStr(c?.preferredClothing?.underwear),
+          undergarments: normStr(c?.preferredClothing?.undergarments || c?.preferredClothing?.underwear),
           miscellaneous: normStr(c?.preferredClothing?.miscellaneous)
         },
         sections: normSections(c?.sections),
@@ -386,6 +399,7 @@ export function normalizeScenarioData(raw: any): ScenarioData {
     version: APP_VERSION,
     selectedModel: normStr(raw?.selectedModel) || 'gemini-3-flash-preview',
     characters,
+    sideCharacters: Array.isArray(raw?.sideCharacters) ? raw.sideCharacters : [],
     world,
     scenes,
     uiSettings,
