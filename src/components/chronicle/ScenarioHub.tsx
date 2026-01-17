@@ -107,9 +107,9 @@ export function ScenarioHub({
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className="p-2.5 bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-slate-200 hover:bg-white transition-all text-slate-600 hover:text-slate-900"
+              className="p-2.5 rounded-xl transition-all text-white/70 hover:text-white hover:bg-black/20"
             >
-              <Settings className="w-5 h-5" />
+              <Settings className="w-5 h-5 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
