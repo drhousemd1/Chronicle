@@ -1,8 +1,8 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { ScenarioData, TabKey, Character, ScenarioMetadata, Conversation, Message, ConversationMetadata, SideCharacter } from "@/types";
-import { createDefaultScenarioData, now, uid, uuid, truncateLine } from "@/utils";
+import { ScenarioData, TabKey, Character, ScenarioMetadata, Conversation, Message, ConversationMetadata, SideCharacter, UserBackground } from "@/types";
+import { createDefaultScenarioData, now, uid, uuid, truncateLine, resizeImage } from "@/utils";
 import { LLM_MODELS } from "@/constants";
 import { CharactersTab } from "@/components/chronicle/CharactersTab";
 import { WorldTab } from "@/components/chronicle/WorldTab";
@@ -14,6 +14,7 @@ import { ChatInterfaceTab } from "@/components/chronicle/ChatInterfaceTab";
 import { Button } from "@/components/chronicle/UI";
 import { brainstormCharacterDetails } from "@/services/llm";
 import { CharacterPicker } from "@/components/chronicle/CharacterPicker";
+import { BackgroundPickerModal } from "@/components/chronicle/BackgroundPickerModal";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -113,6 +114,12 @@ const Index = () => {
   
   const [globalModelId, setGlobalModelId] = useState<string>(() => localStorage.getItem("rpg_studio_global_model") || LLM_MODELS[0].id);
 
+  // Hub background state
+  const [hubBackgrounds, setHubBackgrounds] = useState<UserBackground[]>([]);
+  const [selectedHubBackgroundId, setSelectedHubBackgroundId] = useState<string | null>(null);
+  const [isBackgroundModalOpen, setIsBackgroundModalOpen] = useState(false);
+  const [isUploadingBackground, setIsUploadingBackground] = useState(false);
+
   useEffect(() => {
     localStorage.setItem("rpg_studio_global_model", globalModelId);
   }, [globalModelId]);
@@ -135,14 +142,22 @@ const Index = () => {
     async function loadData() {
       setIsLoading(true);
       try {
-        const [scenarios, characters, conversations] = await Promise.all([
+        const [scenarios, characters, conversations, backgrounds] = await Promise.all([
           supabaseData.fetchScenarios(),
           supabaseData.fetchCharacterLibrary(),
-          supabaseData.fetchConversationRegistry()
+          supabaseData.fetchConversationRegistry(),
+          supabaseData.fetchUserBackgrounds(user.id)
         ]);
         setRegistry(scenarios);
         setLibrary(characters);
         setConversationRegistry(conversations);
+        setHubBackgrounds(backgrounds);
+        
+        // Set the selected background if one is marked as selected
+        const selectedBg = backgrounds.find(bg => bg.isSelected);
+        if (selectedBg) {
+          setSelectedHubBackgroundId(selectedBg.id);
+        }
       } catch (e: any) {
         console.error("Failed to load data:", e);
         toast({
@@ -234,6 +249,76 @@ const Index = () => {
     await signOut();
     navigate('/auth');
   };
+
+  // Hub Background Handlers
+  const handleUploadBackground = async (file: File) => {
+    if (!user) return;
+    setIsUploadingBackground(true);
+    try {
+      // Read file and compress
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const dataUrl = reader.result as string;
+          const optimized = await resizeImage(dataUrl, 1920, 1080, 0.8);
+          const blob = supabaseData.dataUrlToBlob(optimized);
+          if (!blob) throw new Error('Failed to process image');
+          
+          const filename = `bg-${uuid()}-${Date.now()}.jpg`;
+          const publicUrl = await supabaseData.uploadBackgroundImage(user.id, blob, filename);
+          const newBg = await supabaseData.createUserBackground(user.id, publicUrl);
+          
+          setHubBackgrounds(prev => [newBg, ...prev]);
+          toast({ title: "Background uploaded" });
+        } catch (e: any) {
+          toast({ title: "Upload failed", description: e.message, variant: "destructive" });
+        } finally {
+          setIsUploadingBackground(false);
+        }
+      };
+      reader.onerror = () => {
+        toast({ title: "Failed to read file", variant: "destructive" });
+        setIsUploadingBackground(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (e: any) {
+      toast({ title: "Upload failed", description: e.message, variant: "destructive" });
+      setIsUploadingBackground(false);
+    }
+  };
+
+  const handleSelectBackground = async (id: string | null) => {
+    if (!user) return;
+    try {
+      await supabaseData.setSelectedBackground(user.id, id);
+      setSelectedHubBackgroundId(id);
+      setHubBackgrounds(prev => prev.map(bg => ({
+        ...bg,
+        isSelected: bg.id === id
+      })));
+    } catch (e: any) {
+      toast({ title: "Failed to set background", description: e.message, variant: "destructive" });
+    }
+  };
+
+  const handleDeleteBackground = async (id: string, imageUrl: string) => {
+    if (!user) return;
+    try {
+      await supabaseData.deleteUserBackground(user.id, id, imageUrl);
+      setHubBackgrounds(prev => prev.filter(bg => bg.id !== id));
+      if (selectedHubBackgroundId === id) {
+        setSelectedHubBackgroundId(null);
+      }
+      toast({ title: "Background deleted" });
+    } catch (e: any) {
+      toast({ title: "Failed to delete background", description: e.message, variant: "destructive" });
+    }
+  };
+
+  // Get the selected background URL
+  const selectedBackgroundUrl = selectedHubBackgroundId 
+    ? hubBackgrounds.find(bg => bg.id === selectedHubBackgroundId)?.imageUrl 
+    : null;
 
   async function handlePlayScenario(id: string) {
     if (!user) return;
@@ -848,13 +933,26 @@ const Index = () => {
 
         <div className="flex-1 overflow-hidden">
           {tab === "hub" && (
-            <ScenarioHub
-              registry={registry}
-              onPlay={handlePlayScenario}
-              onEdit={handleEditScenario}
-              onDelete={handleDeleteScenario}
-              onCreate={handleCreateNewScenario}
-            />
+            <div 
+              className="relative w-full h-full"
+              style={selectedBackgroundUrl ? {
+                backgroundImage: `url(${selectedBackgroundUrl})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center'
+              } : undefined}
+            >
+              {selectedBackgroundUrl && (
+                <div className="absolute inset-0 bg-black/10 pointer-events-none" />
+              )}
+              <ScenarioHub
+                registry={registry}
+                onPlay={handlePlayScenario}
+                onEdit={handleEditScenario}
+                onDelete={handleDeleteScenario}
+                onCreate={handleCreateNewScenario}
+                onOpenBackgroundSettings={() => setIsBackgroundModalOpen(true)}
+              />
+            </div>
           )}
 
           {tab === "library" && (
@@ -943,6 +1041,17 @@ const Index = () => {
           onClose={() => setIsCharacterPickerOpen(false)}
         />
       )}
+
+      <BackgroundPickerModal
+        isOpen={isBackgroundModalOpen}
+        onClose={() => setIsBackgroundModalOpen(false)}
+        selectedBackgroundId={selectedHubBackgroundId}
+        backgrounds={hubBackgrounds}
+        onSelectBackground={handleSelectBackground}
+        onUpload={handleUploadBackground}
+        onDelete={handleDeleteBackground}
+        isUploading={isUploadingBackground}
+      />
       </div>
     </TooltipProvider>
   );

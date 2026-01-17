@@ -1,7 +1,14 @@
 
-import React from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { ScenarioMetadata } from "@/types";
 import { Button } from "./UI";
+import { Settings, Image } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface ScenarioCardProps {
   scen: ScenarioMetadata;
@@ -81,6 +88,7 @@ interface ScenarioHubProps {
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
   onCreate: () => void;
+  onOpenBackgroundSettings: () => void;
 }
 
 export function ScenarioHub({
@@ -89,9 +97,30 @@ export function ScenarioHub({
   onEdit,
   onDelete,
   onCreate,
+  onOpenBackgroundSettings,
 }: ScenarioHubProps) {
   return (
-    <div className="w-full h-full p-10 flex flex-col overflow-y-auto">
+    <div className="w-full h-full p-10 flex flex-col overflow-y-auto relative">
+      {/* Settings Cog - Top Right */}
+      <div className="absolute top-4 right-4 z-20">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="p-2.5 bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-slate-200 hover:bg-white transition-all text-slate-600 hover:text-slate-900"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem onClick={onOpenBackgroundSettings} className="cursor-pointer">
+              <Image className="w-4 h-4 mr-2" />
+              Change Background
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-8 w-full">
         {registry.map((scen) => (
           <ScenarioCard 

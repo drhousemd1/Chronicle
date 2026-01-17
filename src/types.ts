@@ -248,6 +248,15 @@ export type ConversationMetadata = {
   updatedAt: number;
 };
 
+// User background for the hub page
+export type UserBackground = {
+  id: string;
+  userId: string;
+  imageUrl: string;
+  isSelected: boolean;
+  createdAt: number;
+};
+
 export type TabKey = "hub" | "characters" | "world" | "conversations" | "model_settings" | "builder" | "chat_interface";
 
 // Default empty hardcoded attributes
