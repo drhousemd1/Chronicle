@@ -16,6 +16,17 @@ type ChatRequest = {
   stream?: boolean;
 };
 
+function normalizeModelId(modelId: string): string {
+  // Handle legacy model IDs that don't have provider prefix
+  if (modelId.startsWith('gemini-')) {
+    return `google/${modelId}`;
+  }
+  if (modelId.startsWith('gpt-')) {
+    return `openai/${modelId}`;
+  }
+  return modelId;
+}
+
 function getGateway(modelId: string): 'lovable' | 'xai' {
   if (modelId.startsWith('grok')) {
     return 'xai';
@@ -29,7 +40,9 @@ async function callLovableAI(messages: Message[], modelId: string, stream: boole
     throw new Error("LOVABLE_API_KEY is not configured");
   }
 
-  console.log(`[chat] Calling Lovable AI with model: ${modelId}, stream: ${stream}`);
+  // Normalize model ID to ensure proper format
+  const normalizedModelId = normalizeModelId(modelId);
+  console.log(`[chat] Calling Lovable AI with model: ${normalizedModelId}, stream: ${stream}`);
 
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
@@ -38,7 +51,7 @@ async function callLovableAI(messages: Message[], modelId: string, stream: boole
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: modelId,
+      model: normalizedModelId,
       messages,
       stream,
     }),
