@@ -954,12 +954,13 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           <div className="max-w-4xl mx-auto space-y-3">
             {/* Quick Actions Bar - Above Input */}
             <div className="flex items-center gap-2 relative">
-              <button
+              <Button
                 onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-                className="px-4 py-2 bg-white border-2 border-black rounded-full text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm"
+                variant="secondary"
+                className="!border-slate-900"
               >
                 Interface
-              </button>
+              </Button>
               {isSettingsOpen && (
                 <div className="absolute bottom-full mb-2 left-0 w-64 bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 space-y-4 animate-in slide-in-from-bottom-2 z-50">
                    <div className="flex items-center justify-between">
