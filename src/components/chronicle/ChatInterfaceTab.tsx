@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { ScenarioData, Character, Conversation, Message, CharacterTraitSection, Scene, TimeOfDay } from '../../types';
+import { ScenarioData, Character, Conversation, Message, CharacterTraitSection, Scene, TimeOfDay, SideCharacter } from '../../types';
 import { Button, TextArea } from './UI';
 import { Badge } from '@/components/ui/badge';
 import { uid, now, uuid } from '../../services/storage';
 import { generateRoleplayResponseStream } from '../../services/gemini';
-import { RefreshCw, MoreVertical, Copy, Pencil, Trash2, ChevronUp, ChevronDown, Sunrise, Sun, Sunset, Moon } from 'lucide-react';
+import { RefreshCw, MoreVertical, Copy, Pencil, Trash2, ChevronUp, ChevronDown, Sunrise, Sun, Sunset, Moon, Loader2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +19,16 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { 
+  parseMessageSegments, 
+  detectNewCharacters, 
+  createSideCharacter, 
+  getKnownCharacterNames,
+  findCharacterByName,
+  MessageSegment
+} from '@/services/side-character-generator';
+import { SideCharacterCard } from './SideCharacterCard';
 
 interface ChatInterfaceTabProps {
   scenarioId: string;
@@ -29,6 +39,7 @@ interface ChatInterfaceTabProps {
   onBack: () => void;
   onSaveScenario: () => void;
   onUpdateUiSettings?: (patch: { showBackgrounds?: boolean; transparentBubbles?: boolean; darkMode?: boolean }) => void;
+  onUpdateSideCharacters?: (sideCharacters: SideCharacter[]) => void;
 }
 
 const FormattedMessage: React.FC<{ text: string }> = ({ text }) => {
@@ -108,7 +119,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   onUpdate,
   onBack,
   onSaveScenario,
-  onUpdateUiSettings
+  onUpdateUiSettings,
+  onUpdateSideCharacters
 }) => {
   const [input, setInput] = useState('');
   const [expandedCharId, setExpandedCharId] = useState<string | null>(null);
@@ -127,6 +139,122 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const conversation = appData.conversations.find(c => c.id === conversationId);
   const mainCharacters = appData.characters.filter(c => c.characterRole === 'Main');
   const sideCharacters = appData.characters.filter(c => c.characterRole === 'Side');
+  const autoSideCharacters = appData.sideCharacters || [];
+
+  // Helper to find any character (main, side, or auto-generated) by name
+  const findAnyCharacterByName = (name: string | null): Character | SideCharacter | null => {
+    return findCharacterByName(name, appData);
+  };
+
+  // Async function to generate side character details via edge function
+  const generateSideCharacterDetailsAsync = async (
+    characterId: string, 
+    name: string, 
+    dialogContext: string
+  ) => {
+    try {
+      console.log(`Generating details for new side character: ${name}`);
+      
+      // 1. Generate detailed profile
+      const { data: profileData, error: profileError } = await supabase.functions.invoke('generate-side-character', {
+        body: { 
+          name, 
+          dialogContext, 
+          extractedTraits: {},
+          worldContext: appData.world.core.settingOverview 
+        }
+      });
+      
+      if (profileError) {
+        console.error('Profile generation failed:', profileError);
+        return;
+      }
+      
+      if (profileData && onUpdateSideCharacters) {
+        // Update character with generated details
+        const updatedSideChars = (appData.sideCharacters || []).map(sc => {
+          if (sc.id === characterId) {
+            return {
+              ...sc,
+              age: profileData.age || sc.age,
+              sexType: profileData.sexType || sc.sexType,
+              roleDescription: profileData.roleDescription || sc.roleDescription,
+              physicalAppearance: { ...sc.physicalAppearance, ...profileData.physicalAppearance },
+              currentlyWearing: { ...sc.currentlyWearing, ...profileData.currentlyWearing },
+              background: { ...sc.background, ...profileData.background },
+              personality: { 
+                ...sc.personality, 
+                ...profileData.personality,
+                traits: profileData.personality?.traits || sc.personality.traits
+              },
+              updatedAt: now()
+            };
+          }
+          return sc;
+        });
+        onUpdateSideCharacters(updatedSideChars);
+        
+        // 2. Generate avatar using the avatarPrompt
+        if (profileData.avatarPrompt) {
+          console.log(`Generating avatar for ${name}...`);
+          const { data: avatarData, error: avatarError } = await supabase.functions.invoke('generate-side-character-avatar', {
+            body: { 
+              avatarPrompt: profileData.avatarPrompt,
+              characterName: name
+            }
+          });
+          
+          if (avatarError) {
+            console.error('Avatar generation failed:', avatarError);
+          } else if (avatarData?.imageUrl) {
+            const finalSideChars = (appData.sideCharacters || []).map(sc => {
+              if (sc.id === characterId) {
+                return {
+                  ...sc,
+                  avatarDataUrl: avatarData.imageUrl,
+                  isAvatarGenerating: false,
+                  updatedAt: now()
+                };
+              }
+              return sc;
+            });
+            onUpdateSideCharacters(finalSideChars);
+            toast.success(`${name} has joined the story!`);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Side character generation failed:', error);
+    }
+  };
+
+  // Process AI response to detect new characters
+  const processResponseForNewCharacters = (responseText: string) => {
+    if (!onUpdateSideCharacters) return;
+    
+    const knownNames = getKnownCharacterNames(appData);
+    const newCharacters = detectNewCharacters(responseText, knownNames);
+    
+    if (newCharacters.length > 0) {
+      console.log(`Detected ${newCharacters.length} new character(s):`, newCharacters.map(c => c.name));
+      
+      const newSideCharacters = newCharacters.map(nc => 
+        createSideCharacter(nc.name, nc.dialogContext, conversationId)
+      );
+      
+      // Add to sideCharacters array
+      const updatedSideChars = [...(appData.sideCharacters || []), ...newSideCharacters];
+      onUpdateSideCharacters(updatedSideChars);
+      
+      // Trigger async profile + avatar generation for each
+      newSideCharacters.forEach(sc => {
+        const nc = newCharacters.find(c => c.name === sc.name);
+        if (nc) {
+          generateSideCharacterDetailsAsync(sc.id, sc.name, nc.dialogContext);
+        }
+      });
+    }
+  };
 
   const activeScene = useMemo(() =>
     appData.scenes.find(s => s.id === activeSceneId) || null
@@ -254,6 +382,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       );
       onUpdate(nextConvsWithAi);
       onSaveScenario();
+      
+      // Process AI response for new character detection
+      processResponseForNewCharacters(fullText);
     } catch (err) {
       console.error(err);
       alert("Dialogue stream failed. Check your connection or model settings.");
@@ -348,7 +479,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     }
   };
 
-  const identifySpeaker = (text: string, isUser: boolean) => {
+  const identifySpeaker = (text: string, isUser: boolean): { char: Character | SideCharacter | null; cleanText: string } => {
     const cleanRaw = text.replace(/\[SCENE:\s*.*?\]/g, '').trim();
 
     if (isUser) {
@@ -364,13 +495,21 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     const colonMatch = cleanRaw.match(/^([^:\n\*]{1,30}):/);
     if (colonMatch) {
       const name = colonMatch[1].trim();
+      // Check main characters first
       const char = appData.characters.find(c => c.name.toLowerCase() === name.toLowerCase());
       if (char) return { char, cleanText: cleanRaw.slice(colonMatch[0].length).trim() };
+      // Then check auto-generated side characters
+      const sideChar = (appData.sideCharacters || []).find(c => c.name.toLowerCase() === name.toLowerCase());
+      if (sideChar) return { char: sideChar, cleanText: cleanRaw.slice(colonMatch[0].length).trim() };
     }
 
     const firstSentence = cleanRaw.split(/[.!?\n]/)[0];
+    // Check main characters
     const foundChar = appData.characters.find(c => firstSentence.includes(c.name));
     if (foundChar) return { char: foundChar, cleanText: cleanRaw };
+    // Check side characters
+    const foundSideChar = (appData.sideCharacters || []).find(c => firstSentence.includes(c.name));
+    if (foundSideChar) return { char: foundSideChar, cleanText: cleanRaw };
 
     const aiChars = appData.characters.filter(c => c.controlledBy === 'AI');
     if (!isUser && aiChars.length > 0) {
@@ -654,11 +793,33 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
             <h3 className="text-[11px] font-bold text-slate-500 bg-slate-100 px-4 py-1.5 rounded-lg mb-4 tracking-tight uppercase">Side Characters</h3>
             <div className="space-y-4">
               {sideCharacters.map(renderCharacterCard)}
-              {sideCharacters.length === 0 && (
+              {sideCharacters.length === 0 && autoSideCharacters.length === 0 && (
                 <p className="text-[10px] text-slate-400 text-center italic">No side characters defined.</p>
               )}
             </div>
           </section>
+
+          {/* AI-Generated Side Characters */}
+          {autoSideCharacters.length > 0 && (
+            <section>
+              <h3 className="text-[11px] font-bold text-purple-500 bg-purple-100 px-4 py-1.5 rounded-lg mb-4 tracking-tight uppercase flex items-center gap-2">
+                <Loader2 className={`w-3 h-3 ${autoSideCharacters.some(c => c.isAvatarGenerating) ? 'animate-spin' : 'hidden'}`} />
+                Auto-Generated Characters
+              </h3>
+              <div className="space-y-4">
+                {autoSideCharacters.map(sc => (
+                  <SideCharacterCard
+                    key={sc.id}
+                    character={sc}
+                    isExpanded={expandedCharId === sc.id}
+                    onToggleExpand={() => toggleCharacterExpand(sc.id)}
+                    openSections={openSections}
+                    onToggleSection={toggleSection}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
         </div>
       </aside>
 

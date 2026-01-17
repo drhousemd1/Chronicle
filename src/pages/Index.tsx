@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { ScenarioData, TabKey, Character, ScenarioMetadata, Conversation, Message, ConversationMetadata } from "@/types";
+import { ScenarioData, TabKey, Character, ScenarioMetadata, Conversation, Message, ConversationMetadata, SideCharacter } from "@/types";
 import { createDefaultScenarioData, now, uid, uuid, truncateLine } from "@/utils";
 import { LLM_MODELS } from "@/constants";
 import { CharactersTab } from "@/components/chronicle/CharactersTab";
@@ -920,6 +920,7 @@ const Index = () => {
               onBack={() => { setPlayingConversationId(null); setTab("hub"); }}
               onSaveScenario={() => handleSave()}
               onUpdateUiSettings={(patch) => handleUpdateActive({ uiSettings: { ...activeData.uiSettings, ...patch } })}
+              onUpdateSideCharacters={(sideCharacters) => handleUpdateActive({ sideCharacters })}
             />
           )}
 
