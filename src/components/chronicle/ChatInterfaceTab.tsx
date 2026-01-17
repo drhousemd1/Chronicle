@@ -950,7 +950,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           )}
         </div>
 
-        <div className={`p-8 border-t border-slate-200 shadow-[0_-4px_12px_rgba(0,0,0,0.03)] transition-colors ${showBackground ? 'bg-white/90 backdrop-blur-md' : 'bg-white'}`}>
+        <div className={`pt-3 pb-8 px-8 border-t border-slate-200 shadow-[0_-4px_12px_rgba(0,0,0,0.03)] transition-colors ${showBackground ? 'bg-white/90 backdrop-blur-md' : 'bg-white'}`}>
           <div className="max-w-4xl mx-auto space-y-3">
             {/* Quick Actions Bar - Above Input */}
             <div className="flex items-center gap-2 relative">
@@ -1002,16 +1002,16 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
                   value={input}
                   onChange={setInput}
                   placeholder="Describe your action or dialogue..."
-                  rows={1}
+                  rows={3}
                   autoResize={true}
-                  className="!py-4 !px-6 !bg-slate-50 !border-slate-200 !text-slate-900 !placeholder-slate-400 focus:!ring-blue-500/10 focus:!border-blue-400 transition-all min-h-[56px] !rounded-2xl shadow-inner"
+                  className="!py-4 !px-6 !bg-slate-50 !border-slate-200 !text-slate-900 !placeholder-slate-400 focus:!ring-blue-500/10 focus:!border-blue-400 transition-all min-h-[112px] !rounded-2xl shadow-inner"
                   onKeyDown={(e: any) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }}}
                 />
               </div>
               <Button
                 onClick={handleSend}
                 disabled={!input.trim() || isStreaming}
-                className="h-[56px] px-10 bg-[#1c1f26] hover:bg-slate-800 text-white shadow-lg font-black uppercase tracking-widest rounded-2xl border-none transition-all active:scale-95 disabled:opacity-30"
+                className="self-end px-10 py-4 bg-[#1c1f26] hover:bg-slate-800 text-white shadow-lg font-black uppercase tracking-widest rounded-2xl border-none transition-all active:scale-95 disabled:opacity-30"
               >
                 {isStreaming ? '...' : 'Send'}
               </Button>
