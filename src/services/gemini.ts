@@ -1,15 +1,6 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
 import { ScenarioData, Character, World, TimeOfDay } from "../types";
-import { resizeImage } from "../utils";
-
-const MODEL_IMAGE = 'gemini-2.5-flash-image';
-
-// Placeholder for API key - will be replaced with Supabase secrets
-const getApiKey = () => {
-  // TODO: This will be fetched from Supabase secrets/edge function
-  return "";
-};
+import { supabase } from "@/integrations/supabase/client";
 
 const TIME_DESCRIPTIONS: Record<TimeOfDay, string> = {
   sunrise: "early morning (sunrise, around 6-10am)",
@@ -100,109 +91,151 @@ export async function* generateRoleplayResponseStream(
   modelId: string,
   currentDay?: number,
   currentTimeOfDay?: TimeOfDay
-) {
-  const apiKey = getApiKey();
-  if (!apiKey) {
-    yield "⚠️ API key not configured. Please set up your Gemini API key in the settings.";
-    return;
-  }
-  
-  const ai = new GoogleGenAI({ apiKey });
+): AsyncGenerator<string, void, unknown> {
   const conversation = appData.conversations.find(c => c.id === conversationId);
   if (!conversation) throw new Error("Conversation not found");
 
   const systemInstruction = getSystemInstruction(appData, currentDay, currentTimeOfDay);
-  const history = conversation.messages.map(m => ({
-    role: m.role === 'assistant' ? 'model' : 'user',
-    parts: [{ text: m.text }]
-  }));
+  
+  // Build messages array for OpenAI-compatible API
+  const messages = [
+    { role: 'system' as const, content: systemInstruction },
+    ...conversation.messages.map(m => ({
+      role: m.role === 'assistant' ? 'assistant' as const : 'user' as const,
+      content: m.text
+    })),
+    { role: 'user' as const, content: userMessage }
+  ];
 
-  const responseStream = await ai.models.generateContentStream({
-    model: modelId,
-    contents: [
-      ...history,
-      { role: 'user', parts: [{ text: userMessage }] }
-    ],
-    config: {
-      systemInstruction: systemInstruction,
-      temperature: 0.9,
-    }
+  console.log(`[gemini.ts] Calling chat edge function with model: ${modelId}`);
+
+  // Call the chat edge function
+  const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+    },
+    body: JSON.stringify({
+      messages,
+      modelId,
+      stream: true
+    })
   });
 
-  for await (const chunk of responseStream) {
-    if (chunk.text) yield chunk.text;
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+    yield `⚠️ ${errorData.error || 'Failed to connect to AI service'}`;
+    return;
+  }
+
+  if (!response.body) {
+    yield "⚠️ No response stream available";
+    return;
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let textBuffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    
+    textBuffer += decoder.decode(value, { stream: true });
+
+    // Process line-by-line as data arrives
+    let newlineIndex: number;
+    while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
+      let line = textBuffer.slice(0, newlineIndex);
+      textBuffer = textBuffer.slice(newlineIndex + 1);
+
+      if (line.endsWith("\r")) line = line.slice(0, -1);
+      if (line.startsWith(":") || line.trim() === "") continue;
+      if (!line.startsWith("data: ")) continue;
+
+      const jsonStr = line.slice(6).trim();
+      if (jsonStr === "[DONE]") break;
+
+      try {
+        const parsed = JSON.parse(jsonStr);
+        const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+        if (content) yield content;
+      } catch {
+        // Incomplete JSON - put back and wait for more
+        textBuffer = line + "\n" + textBuffer;
+        break;
+      }
+    }
+  }
+
+  // Flush remaining buffer
+  if (textBuffer.trim()) {
+    for (let raw of textBuffer.split("\n")) {
+      if (!raw) continue;
+      if (raw.endsWith("\r")) raw = raw.slice(0, -1);
+      if (raw.startsWith(":") || raw.trim() === "") continue;
+      if (!raw.startsWith("data: ")) continue;
+      const jsonStr = raw.slice(6).trim();
+      if (jsonStr === "[DONE]") continue;
+      try {
+        const parsed = JSON.parse(jsonStr);
+        const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+        if (content) yield content;
+      } catch { /* ignore */ }
+    }
   }
 }
 
-export async function generateCharacterImage(character: Partial<Character>, world: World): Promise<string | null> {
-  const apiKey = getApiKey();
-  if (!apiKey) return null;
+export async function brainstormCharacterDetails(
+  name: string, 
+  appData: ScenarioData, 
+  modelId: string
+): Promise<Partial<Character>> {
+  const systemPrompt = `You are a creative writing assistant specialized in character creation for an RPG set in: ${appData.world.core.scenarioName || 'a creative setting'}.
   
-  const ai = new GoogleGenAI({ apiKey });
-  const prompt = `
-    A professional character portrait for a roleplaying game. 
-    Character Name: ${character.name}
-    Sex/Type: ${character.sexType}
-    Tags/Style: ${character.tags}
-    World Context: ${world.core.settingOverview}
-    Visual Description: High quality, digital art style, centered composition, clear features.
-  `;
+Return a JSON object with these fields:
+- sexType: Sex and character archetype (e.g., "Female Human", "Male Elf")
+- tags: Descriptive tags comma-separated
+- bio: Brief background story (2-3 sentences)
+- motivation: Primary goal or drive
+- appearance: Visual description
+
+Respond ONLY with valid JSON.`;
+
+  const userPrompt = `Brainstorm details for a new character named "${name}".`;
 
   try {
-    const response = await ai.models.generateContent({
-      model: MODEL_IMAGE,
-      contents: [{ parts: [{ text: prompt }] }],
-      config: {
-        imageConfig: { aspectRatio: "1:1" }
+    const { data, error } = await supabase.functions.invoke('chat', {
+      body: {
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        modelId,
+        stream: false
       }
     });
 
-    for (const part of response.candidates?.[0]?.content?.parts || []) {
-      if (part.inlineData) {
-        const rawBase64 = `data:image/png;base64,${part.inlineData.data}`;
-        return await resizeImage(rawBase64, 512, 512, 0.75);
-      }
+    if (error) {
+      console.error("Brainstorm error:", error);
+      return {};
     }
-    return null;
-  } catch (err) {
-    console.error("Image generation error:", err);
-    return null;
-  }
-}
 
-export async function brainstormCharacterDetails(name: string, appData: ScenarioData, modelId: string): Promise<Partial<Character>> {
-  const apiKey = getApiKey();
-  if (!apiKey) return {};
-  
-  const ai = new GoogleGenAI({ apiKey });
-  const systemInstruction = `You are a creative writing assistant specialized in character creation for an RPG set in: ${appData.world.core.scenarioName || 'a creative setting'}.`;
-  const prompt = `Brainstorm details for a new character named "${name}".`;
-
-  const response = await ai.models.generateContent({
-    model: modelId,
-    contents: [{ role: 'user', parts: [{ text: prompt }] }],
-    config: { 
-      systemInstruction: systemInstruction,
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          sexType: { type: Type.STRING, description: "Sex and character archetype" },
-          tags: { type: Type.STRING, description: "Descriptive tags" },
-          bio: { type: Type.STRING, description: "Brief background story" },
-          motivation: { type: Type.STRING, description: "Primary goal or drive" },
-          appearance: { type: Type.STRING, description: "Visual description" },
-        },
-        required: ["sexType", "tags", "bio", "motivation", "appearance"]
-      }
+    const content = data?.choices?.[0]?.message?.content || '';
+    
+    // Try to parse JSON from the response
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      return JSON.parse(jsonMatch[0]);
     }
-  });
-
-  try {
-    const data = JSON.parse(response.text || "{}");
-    return data;
+    
+    return {};
   } catch (e) {
     console.error("Brainstorm parsing failed:", e);
     return {};
   }
 }
+
+// Note: generateCharacterImage has been removed as it used the direct Google SDK.
+// Character image generation is now handled by the generate-side-character-avatar edge function.

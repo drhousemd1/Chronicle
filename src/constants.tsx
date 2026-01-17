@@ -4,12 +4,28 @@ import React from 'react';
 export const STORAGE_KEY = "rpg_campaign_studio_v3_codex";
 export const APP_VERSION = 3;
 
-export const LLM_MODELS = [
-  { id: 'gemini-3-flash-preview', name: 'Gemini 3 Flash', provider: 'Google' },
-  { id: 'gemini-3-pro-preview', name: 'Gemini 3 Pro', provider: 'Google' },
-  { id: 'gemini-2.5-flash-native-audio-preview-12-2025', name: 'Gemini 2.5 Native Audio', provider: 'Google' },
-  { id: 'gpt-4o', name: 'GPT-4o (Coming Soon)', provider: 'OpenAI', disabled: true },
-  { id: 'claude-3-5-sonnet', name: 'Claude 3.5 Sonnet (Coming Soon)', provider: 'Anthropic', disabled: true },
+export type LLMModel = {
+  id: string;
+  name: string;
+  provider: string;
+  gateway: 'lovable' | 'xai';
+  requiresKey?: boolean;
+  disabled?: boolean;
+};
+
+export const LLM_MODELS: LLMModel[] = [
+  // Lovable AI Gateway - works out of the box
+  { id: 'google/gemini-3-flash-preview', name: 'Gemini 3 Flash', provider: 'Google', gateway: 'lovable' },
+  { id: 'google/gemini-3-pro-preview', name: 'Gemini 3 Pro', provider: 'Google', gateway: 'lovable' },
+  { id: 'google/gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'Google', gateway: 'lovable' },
+  { id: 'google/gemini-2.5-pro', name: 'Gemini 2.5 Pro', provider: 'Google', gateway: 'lovable' },
+  { id: 'openai/gpt-5', name: 'GPT-5', provider: 'OpenAI', gateway: 'lovable' },
+  { id: 'openai/gpt-5-mini', name: 'GPT-5 Mini', provider: 'OpenAI', gateway: 'lovable' },
+  
+  // X/Grok - requires user API key (BYOK)
+  { id: 'grok-3', name: 'Grok 3', provider: 'xAI', gateway: 'xai', requiresKey: true },
+  { id: 'grok-3-mini', name: 'Grok 3 Mini', provider: 'xAI', gateway: 'xai', requiresKey: true },
+  { id: 'grok-2', name: 'Grok 2', provider: 'xAI', gateway: 'xai', requiresKey: true },
 ];
 
 export const Icons = {
