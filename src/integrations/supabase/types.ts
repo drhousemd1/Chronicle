@@ -372,6 +372,30 @@ export type Database = {
           },
         ]
       }
+      user_backgrounds: {
+        Row: {
+          created_at: string | null
+          id: string
+          image_url: string
+          is_selected: boolean | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          image_url: string
+          is_selected?: boolean | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          image_url?: string
+          is_selected?: boolean | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
