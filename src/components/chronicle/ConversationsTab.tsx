@@ -31,13 +31,6 @@ export function ConversationsTab({
   if (!selectedEntry) {
     return (
       <div className="max-w-4xl mx-auto py-4">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Chat History</h1>
-            <p className="text-slate-500">Your saved game sessions across all stories. Pick up where you left off.</p>
-          </div>
-        </div>
-
         {globalRegistry.length === 0 ? (
           <div className="py-20 text-center opacity-50">
             <div className="text-6xl mb-4">💬</div>
