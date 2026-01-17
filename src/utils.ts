@@ -14,6 +14,7 @@ import {
   defaultCurrentlyWearing,
   defaultPreferredClothing
 } from './types';
+import { LLM_MODELS } from './constants';
 
 export const REGISTRY_KEY = "rpg_campaign_studio_v3_codex";
 export const STORAGE_KEY = REGISTRY_KEY;
@@ -186,7 +187,7 @@ export function createDefaultScenarioData(): ScenarioData {
 
   return {
     version: APP_VERSION,
-    selectedModel: 'gemini-3-flash-preview',
+    selectedModel: LLM_MODELS[0].id,
     characters,
     sideCharacters: [],  // AI-generated side characters start empty
     world: {
@@ -397,7 +398,7 @@ export function normalizeScenarioData(raw: any): ScenarioData {
 
   return {
     version: APP_VERSION,
-    selectedModel: normStr(raw?.selectedModel) || 'gemini-3-flash-preview',
+    selectedModel: normStr(raw?.selectedModel) || LLM_MODELS[0].id,
     characters,
     sideCharacters: Array.isArray(raw?.sideCharacters) ? raw.sideCharacters : [],
     world,

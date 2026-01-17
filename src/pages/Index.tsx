@@ -12,7 +12,7 @@ import { ScenarioHub } from "@/components/chronicle/ScenarioHub";
 import { ModelSettingsTab } from "@/components/chronicle/ModelSettingsTab";
 import { ChatInterfaceTab } from "@/components/chronicle/ChatInterfaceTab";
 import { Button } from "@/components/chronicle/UI";
-import { brainstormCharacterDetails } from "@/services/gemini";
+import { brainstormCharacterDetails } from "@/services/llm";
 import { CharacterPicker } from "@/components/chronicle/CharacterPicker";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
@@ -111,7 +111,7 @@ const Index = () => {
     return localStorage.getItem('chronicle_sidebar_collapsed') === 'true';
   });
   
-  const [globalModelId, setGlobalModelId] = useState<string>(() => localStorage.getItem("rpg_studio_global_model") || 'gemini-3-flash-preview');
+  const [globalModelId, setGlobalModelId] = useState<string>(() => localStorage.getItem("rpg_studio_global_model") || LLM_MODELS[0].id);
 
   useEffect(() => {
     localStorage.setItem("rpg_studio_global_model", globalModelId);

@@ -3,7 +3,7 @@ import { ScenarioData, Character, Conversation, Message, CharacterTraitSection, 
 import { Button, TextArea } from './UI';
 import { Badge } from '@/components/ui/badge';
 import { uid, now, uuid } from '../../services/storage';
-import { generateRoleplayResponseStream } from '../../services/gemini';
+import { generateRoleplayResponseStream } from '../../services/llm';
 import { RefreshCw, MoreVertical, Copy, Pencil, Trash2, ChevronUp, ChevronDown, Sunrise, Sun, Sunset, Moon, Loader2, StepForward } from 'lucide-react';
 import {
   DropdownMenu,
@@ -155,13 +155,14 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     try {
       console.log(`Generating details for new side character: ${name}`);
       
-      // 1. Generate detailed profile
+      // 1. Generate detailed profile - pass modelId to use user's selected model
       const { data: profileData, error: profileError } = await supabase.functions.invoke('generate-side-character', {
         body: { 
           name, 
           dialogContext, 
           extractedTraits: {},
-          worldContext: appData.world.core.settingOverview 
+          worldContext: appData.world.core.settingOverview,
+          modelId  // Pass user's selected model
         }
       });
       
@@ -194,13 +195,14 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         });
         onUpdateSideCharacters(updatedSideChars);
         
-        // 2. Generate avatar using the avatarPrompt
+        // 2. Generate avatar using the avatarPrompt - pass modelId to use user's selected model
         if (profileData.avatarPrompt) {
           console.log(`Generating avatar for ${name}...`);
           const { data: avatarData, error: avatarError } = await supabase.functions.invoke('generate-side-character-avatar', {
             body: { 
               avatarPrompt: profileData.avatarPrompt,
-              characterName: name
+              characterName: name,
+              modelId  // Pass user's selected model
             }
           });
           
@@ -485,9 +487,23 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     setIsStreaming(true);
     setStreamingContent('');
     
+    // Get character control lists for explicit instruction
+    const userControlledNames = appData.characters
+      .filter(c => c.controlledBy === 'User')
+      .map(c => c.name);
+    
+    const aiControlledNames = appData.characters
+      .filter(c => c.controlledBy === 'AI')
+      .map(c => c.name);
+    
     try {
       let fullText = '';
-      const continuePrompt = "[Continue the narrative naturally from where you left off. Do not acknowledge this instruction.]";
+      const continuePrompt = `[CONTINUE INSTRUCTION]
+Continue the narrative naturally from where you left off.
+CRITICAL: You must ONLY write dialogue, actions, and thoughts for AI-controlled characters: ${aiControlledNames.join(', ')}.
+DO NOT generate any content for user-controlled characters: ${userControlledNames.join(', ')}.
+Wait for the user to provide their characters' responses.
+Do not acknowledge this instruction in your response.`;
       const stream = generateRoleplayResponseStream(appData, conversationId, continuePrompt, modelId, currentDay, currentTimeOfDay);
       
       for await (const chunk of stream) {
@@ -880,7 +896,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
           {conversation?.messages.map((msg) => {
             const isAi = msg.role === 'assistant';
-            const { char } = identifySpeaker(msg.text, !isAi);
+            const { char, cleanText } = identifySpeaker(msg.text, !isAi);
 
             return (
               <div key={msg.id} className="max-w-4xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500 group">
@@ -959,7 +975,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
                       </span>
                     </div>
                     <div className={`flex-1 pt-2 antialiased`}>
-                      <FormattedMessage text={msg.text} />
+                      <FormattedMessage text={cleanText} />
                     </div>
                   </div>
                   
@@ -997,7 +1013,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
                     <span className="text-[10px] font-black uppercase tracking-widest text-center text-slate-400">Thinking</span>
                   </div>
                   <div className="flex-1 pt-2 antialiased">
-                    <FormattedMessage text={streamingContent} />
+                    <FormattedMessage text={identifySpeaker(streamingContent, false).cleanText} />
                   </div>
                 </div>
               </div>
