@@ -19,6 +19,7 @@ import {
   defaultCurrentlyWearing, 
   defaultPreferredClothing 
 } from '@/types';
+import { LLM_MODELS } from '@/constants';
 
 // =============================================
 // TYPE CONVERTERS
@@ -303,7 +304,7 @@ export async function fetchScenarioById(id: string): Promise<ScenarioData | null
     scenes: (scenes || []).map(dbToScene),
     uiSettings,
     conversations: conversationsWithMessages,
-    selectedModel: scenario.selected_model || 'gemini-3-flash-preview'
+    selectedModel: scenario.selected_model || LLM_MODELS[0].id
   };
 }
 

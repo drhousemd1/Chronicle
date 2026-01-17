@@ -1,5 +1,5 @@
 // Edge function to generate detailed side character profile
-// Uses Lovable AI to expand on extracted traits
+// Uses the user's selected model for text generation
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -8,17 +8,57 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function getGateway(modelId: string): 'lovable' | 'xai' {
+  if (modelId.startsWith('grok')) {
+    return 'xai';
+  }
+  return 'lovable';
+}
+
+function normalizeModelId(modelId: string): string {
+  // Handle legacy model IDs that don't have provider prefix
+  if (modelId.startsWith('gemini-')) {
+    return `google/${modelId}`;
+  }
+  if (modelId.startsWith('gpt-')) {
+    return `openai/${modelId}`;
+  }
+  return modelId;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { name, dialogContext, extractedTraits, worldContext } = await req.json();
+    const { name, dialogContext, extractedTraits, worldContext, modelId } = await req.json();
     
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY not configured");
+    // Use provided modelId or fall back to default
+    const effectiveModelId = modelId || 'google/gemini-3-flash-preview';
+    const gateway = getGateway(effectiveModelId);
+    
+    console.log(`[generate-side-character] Using model: ${effectiveModelId}, gateway: ${gateway}`);
+
+    // Get the appropriate API key and URL based on gateway
+    let apiKey: string | undefined;
+    let apiUrl: string;
+    let modelForRequest: string;
+
+    if (gateway === 'xai') {
+      apiKey = Deno.env.get("XAI_API_KEY");
+      if (!apiKey) {
+        throw new Error("XAI_API_KEY not configured. Please add your Grok API key in settings.");
+      }
+      apiUrl = "https://api.x.ai/v1/chat/completions";
+      modelForRequest = effectiveModelId;
+    } else {
+      apiKey = Deno.env.get("LOVABLE_API_KEY");
+      if (!apiKey) {
+        throw new Error("LOVABLE_API_KEY not configured");
+      }
+      apiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
+      modelForRequest = normalizeModelId(effectiveModelId);
     }
 
     const prompt = `Based on this character's first appearance in a roleplay scenario, generate a detailed profile.
@@ -64,14 +104,14 @@ Generate a JSON object with these fields (be creative but consistent with the di
 
 Return ONLY valid JSON, no markdown formatting.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: modelForRequest,
         messages: [
           { 
             role: "system", 

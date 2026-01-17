@@ -28,6 +28,34 @@ export const LLM_MODELS: LLMModel[] = [
   { id: 'grok-2', name: 'Grok 2', provider: 'xAI', gateway: 'xai', requiresKey: true },
 ];
 
+// Map text models to their provider's image generation model
+export const IMAGE_MODEL_MAP: Record<string, string> = {
+  // Google models -> Gemini image model
+  'google/gemini-3-flash-preview': 'google/gemini-2.5-flash-image',
+  'google/gemini-3-pro-preview': 'google/gemini-2.5-flash-image',
+  'google/gemini-2.5-flash': 'google/gemini-2.5-flash-image',
+  'google/gemini-2.5-pro': 'google/gemini-2.5-flash-image',
+  // OpenAI models -> Gemini image model (via Lovable gateway)
+  'openai/gpt-5': 'google/gemini-2.5-flash-image',
+  'openai/gpt-5-mini': 'google/gemini-2.5-flash-image',
+  // Grok models -> Grok image model
+  'grok-3': 'grok-2-image',
+  'grok-3-mini': 'grok-2-image',
+  'grok-2': 'grok-2-image',
+};
+
+// Helper to get the corresponding image model for a text model
+export function getImageModelForTextModel(textModelId: string): { imageModel: string; gateway: 'lovable' | 'xai' } {
+  const imageModel = IMAGE_MODEL_MAP[textModelId] || 'google/gemini-2.5-flash-image';
+  const gateway = imageModel.startsWith('grok') ? 'xai' : 'lovable';
+  return { imageModel, gateway };
+}
+
+// Helper to get gateway for any model
+export function getGatewayForModel(modelId: string): 'lovable' | 'xai' {
+  return modelId.startsWith('grok') ? 'xai' : 'lovable';
+}
+
 export const Icons = {
   Users: () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
