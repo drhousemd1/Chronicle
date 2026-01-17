@@ -4,7 +4,6 @@ import { Character, CharacterTraitSection, ScenarioData, PhysicalAppearance, Cur
 import { Button, Input, TextArea, Card } from './UI';
 import { Icons } from '@/constants';
 import { uid, now, clamp, resizeImage } from '@/utils';
-import { generateCharacterImage } from '@/services/gemini';
 import { useAuth } from '@/hooks/use-auth';
 import { uploadAvatar, dataUrlToBlob } from '@/services/supabase-data';
 import { toast } from 'sonner';
@@ -95,32 +94,9 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
   };
 
   const handleAiPortrait = async () => {
-    if (!selected) return;
-    if (!user) {
-      toast.error('Please sign in to generate portraits');
-      return;
-    }
-    
-    setIsGeneratingImg(true);
-    try {
-      const dataUrl = await generateCharacterImage(selected, appData.world);
-      if (dataUrl) {
-        // Convert generated image to blob and upload to storage
-        const blob = dataUrlToBlob(dataUrl);
-        if (!blob) throw new Error('Failed to process generated image');
-        
-        const filename = `avatar-${selected.id}-${Date.now()}.png`;
-        const publicUrl = await uploadAvatar(user.id, blob, filename);
-        
-        onUpdate(selected.id, { avatarDataUrl: publicUrl, avatarPosition: { x: 50, y: 50 } });
-        toast.success('AI portrait generated and saved');
-      }
-    } catch (error) {
-      console.error('AI portrait generation failed:', error);
-      toast.error('Failed to generate portrait');
-    } finally {
-      setIsGeneratingImg(false);
-    }
+    // AI Portrait generation is currently being refactored
+    // Will be available again soon via Lovable AI image generation
+    toast.info('AI Portrait feature coming soon! Use upload for now.');
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
