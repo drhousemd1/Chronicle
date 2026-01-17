@@ -493,7 +493,7 @@ const Index = () => {
         casual: '',
         work: '',
         sleep: '',
-        underwear: '',
+        undergarments: '',
         miscellaneous: ''
       },
       sections: [{ id: uid("sec"), title: "Custom Section", items: [{ id: uid("item"), label: "", value: "", createdAt: t, updatedAt: t }], createdAt: t, updatedAt: t }],

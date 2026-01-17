@@ -440,7 +440,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       { id: 'casual', label: 'Casual', value: char.preferredClothing?.casual || '', createdAt: 0, updatedAt: 0 },
       { id: 'work', label: 'Work', value: char.preferredClothing?.work || '', createdAt: 0, updatedAt: 0 },
       { id: 'sleep', label: 'Sleep', value: char.preferredClothing?.sleep || '', createdAt: 0, updatedAt: 0 },
-      { id: 'underwear', label: 'Underwear', value: char.preferredClothing?.underwear || '', createdAt: 0, updatedAt: 0 },
+      { id: 'undergarments', label: 'Undergarments', value: char.preferredClothing?.undergarments || '', createdAt: 0, updatedAt: 0 },
       { id: 'miscellaneous-pref', label: 'Miscellaneous', value: char.preferredClothing?.miscellaneous || '', createdAt: 0, updatedAt: 0 },
     ].filter(item => item.value),
     createdAt: 0,

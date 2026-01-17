@@ -109,7 +109,7 @@ export type PreferredClothing = {
   casual: string;
   work: string;
   sleep: string;
-  underwear: string;
+  undergarments: string;  // Changed from 'underwear' for consistency
   miscellaneous: string;
 };
 
@@ -152,9 +152,63 @@ export type CharacterSessionState = {
   updatedAt: number;
 };
 
+// =============================================
+// SIDE CHARACTER TYPES (AI-Generated during play)
+// =============================================
+
+// Background info specific to AI-generated side characters
+export type SideCharacterBackground = {
+  relationshipStatus: string;
+  residence: string;
+  educationLevel: string;
+};
+
+// Personality section for side characters
+export type SideCharacterPersonality = {
+  traits: string[];         // 1-2 generated personality traits
+  miscellaneous: string;
+  secrets: string;
+  fears: string;
+  kinksFantasies: string;
+  desires: string;
+};
+
+// Complete AI-generated side character profile
+export type SideCharacter = {
+  id: string;
+  name: string;
+  age: string;
+  sexType: string;
+  location: string;
+  currentMood: string;
+  controlledBy: 'AI';           // Always AI for auto-generated
+  characterRole: 'Side';        // Always Side
+  roleDescription: string;      // Their role in the story
+  
+  // Reused from main Character type
+  physicalAppearance: PhysicalAppearance;
+  currentlyWearing: CurrentlyWearing;
+  preferredClothing: PreferredClothing;
+  
+  // Side-character specific sections
+  background: SideCharacterBackground;
+  personality: SideCharacterPersonality;
+  
+  avatarDataUrl: string;
+  avatarPosition?: { x: number; y: number };
+  isAvatarGenerating?: boolean;  // For async avatar generation UI
+  
+  // Metadata
+  firstMentionedIn: string;     // Conversation ID where first mentioned
+  extractedTraits: string[];    // Traits extracted from dialog for reference
+  createdAt: number;
+  updatedAt: number;
+};
+
 export type ScenarioData = {
   version: number;
   characters: Character[];
+  sideCharacters: SideCharacter[];   // AI-generated during play
   world: World;
   story: { openingDialog: OpeningDialog };
   scenes: Scene[];
@@ -222,6 +276,21 @@ export const defaultPreferredClothing: PreferredClothing = {
   casual: '',
   work: '',
   sleep: '',
-  underwear: '',
+  undergarments: '',  // Changed from 'underwear' for consistency
   miscellaneous: ''
+};
+
+export const defaultSideCharacterBackground: SideCharacterBackground = {
+  relationshipStatus: '',
+  residence: '',
+  educationLevel: ''
+};
+
+export const defaultSideCharacterPersonality: SideCharacterPersonality = {
+  traits: [],
+  miscellaneous: '',
+  secrets: '',
+  fears: '',
+  kinksFantasies: '',
+  desires: ''
 };
