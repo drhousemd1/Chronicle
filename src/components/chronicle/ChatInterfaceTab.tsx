@@ -951,7 +951,50 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         </div>
 
         <div className={`p-8 border-t border-slate-200 shadow-[0_-4px_12px_rgba(0,0,0,0.03)] transition-colors ${showBackground ? 'bg-white/90 backdrop-blur-md' : 'bg-white'}`}>
-          <div className="max-w-4xl mx-auto space-y-4">
+          <div className="max-w-4xl mx-auto space-y-3">
+            {/* Quick Actions Bar - Above Input */}
+            <div className="flex items-center gap-2 relative">
+              <button
+                onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                className="px-4 py-2 bg-white border-2 border-black rounded-full text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm"
+              >
+                Interface
+              </button>
+              {isSettingsOpen && (
+                <div className="absolute bottom-full mb-2 left-0 w-64 bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 space-y-4 animate-in slide-in-from-bottom-2 z-50">
+                   <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Show Backgrounds</span>
+                      <input
+                        type="checkbox"
+                        checked={appData.uiSettings?.showBackgrounds}
+                        onChange={(e) => handleUpdateUiSettings({ showBackgrounds: e.target.checked })}
+                      />
+                   </div>
+                    <div className="flex items-center justify-between">
+                       <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Transparent Bubbles</span>
+                       <input
+                         type="checkbox"
+                         checked={bubblesTransparent}
+                         onChange={(e) => handleUpdateUiSettings({ transparentBubbles: e.target.checked })}
+                       />
+                    </div>
+                    <div className="flex items-center justify-between">
+                       <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Dark Mode</span>
+                       <input
+                         type="checkbox"
+                         checked={appData.uiSettings?.darkMode}
+                         onChange={(e) => handleUpdateUiSettings({ darkMode: e.target.checked })}
+                         className="accent-blue-500"
+                       />
+                    </div>
+                    <p className="text-[9px] text-slate-400 font-medium leading-relaxed border-t border-slate-100 pt-3">
+                     Backgrounds will automatically change based on the story context if scene images are tagged in the gallery.
+                   </p>
+                </div>
+              )}
+            </div>
+            
+            {/* Input Area */}
             <div className="flex gap-4 items-end">
               <div className="flex-1">
                 <TextArea
@@ -971,57 +1014,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
               >
                 {isStreaming ? '...' : 'Send'}
               </Button>
-            </div>
-            <div className="flex justify-between items-center px-2">
-              <div className="flex items-center gap-2">
-                <div className={`w-1.5 h-1.5 rounded-full ${isStreaming ? 'bg-blue-500 animate-pulse' : 'bg-emerald-500'}`} />
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                  {isStreaming ? 'Narrative Engine Active' : 'Story Mode Active'}
-                </p>
-              </div>
-              <div className="flex gap-6 relative">
-                 <button
-                   onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-                   className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-blue-600 transition-colors flex items-center gap-2"
-                 >
-                   <span className="text-blue-500 opacity-70">✨</span> IMMERSIVE INTERFACE
-                 </button>
-                 {isSettingsOpen && (
-                   <div className="absolute bottom-full mb-4 right-0 w-64 bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 space-y-4 animate-in slide-in-from-bottom-2">
-                      <div className="flex items-center justify-between">
-                         <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Show Backgrounds</span>
-                         <input
-                           type="checkbox"
-                           checked={appData.uiSettings?.showBackgrounds}
-                           onChange={(e) => handleUpdateUiSettings({ showBackgrounds: e.target.checked })}
-                         />
-                      </div>
-                       <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Transparent Bubbles</span>
-                          <input
-                            type="checkbox"
-                            checked={bubblesTransparent}
-                            onChange={(e) => handleUpdateUiSettings({ transparentBubbles: e.target.checked })}
-                          />
-                       </div>
-                       <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Dark Mode</span>
-                          <input
-                            type="checkbox"
-                            checked={appData.uiSettings?.darkMode}
-                            onChange={(e) => handleUpdateUiSettings({ darkMode: e.target.checked })}
-                            className="accent-blue-500"
-                          />
-                       </div>
-                       <p className="text-[9px] text-slate-400 font-medium leading-relaxed border-t border-slate-100 pt-3">
-                        Backgrounds will automatically change based on the story context if scene images are tagged in the gallery.
-                      </p>
-                   </div>
-                 )}
-                 <button className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-amber-600 transition-colors flex items-center gap-2">
-                   <span className="text-amber-500 opacity-70">🎲</span> ROLL DICE
-                 </button>
-              </div>
             </div>
           </div>
         </div>
