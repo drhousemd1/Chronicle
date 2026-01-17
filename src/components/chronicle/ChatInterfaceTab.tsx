@@ -4,7 +4,7 @@ import { Button, TextArea } from './UI';
 import { Badge } from '@/components/ui/badge';
 import { uid, now, uuid } from '../../services/storage';
 import { generateRoleplayResponseStream } from '../../services/gemini';
-import { RefreshCw, MoreVertical, Copy, Pencil, Trash2, ChevronUp, ChevronDown, Sunrise, Sun, Sunset, Moon, Loader2 } from 'lucide-react';
+import { RefreshCw, MoreVertical, Copy, Pencil, Trash2, ChevronUp, ChevronDown, Sunrise, Sun, Sunset, Moon, Loader2, StepForward } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -479,6 +479,49 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     }
   };
 
+  const handleContinueConversation = async () => {
+    if (!conversation || isStreaming) return;
+    
+    setIsStreaming(true);
+    setStreamingContent('');
+    
+    try {
+      let fullText = '';
+      const continuePrompt = "[Continue the narrative naturally from where you left off. Do not acknowledge this instruction.]";
+      const stream = generateRoleplayResponseStream(appData, conversationId, continuePrompt, modelId, currentDay, currentTimeOfDay);
+      
+      for await (const chunk of stream) {
+        fullText += chunk;
+        setStreamingContent(fullText);
+      }
+      
+      const aiMsg: Message = { 
+        id: uuid(), 
+        role: 'assistant', 
+        text: fullText, 
+        day: currentDay,
+        timeOfDay: currentTimeOfDay,
+        createdAt: now() 
+      };
+      
+      const updatedConvs = appData.conversations.map(c =>
+        c.id === conversationId 
+          ? { ...c, messages: [...c.messages, aiMsg], updatedAt: now() } 
+          : c
+      );
+      onUpdate(updatedConvs);
+      onSaveScenario();
+      
+      processResponseForNewCharacters(fullText);
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to continue conversation');
+    } finally {
+      setIsStreaming(false);
+      setStreamingContent('');
+    }
+  };
+
   const identifySpeaker = (text: string, isUser: boolean): { char: Character | SideCharacter | null; cleanText: string } => {
     const cleanRaw = text.replace(/\[SCENE:\s*.*?\]/g, '').trim();
 
@@ -849,6 +892,18 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
                   
                   {/* Action buttons - top right corner */}
                   <div className="absolute top-4 right-4 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {/* Continue button - AI messages only, only on the LAST AI message */}
+                    {isAi && msg.id === conversation?.messages.filter(m => m.role === 'assistant').slice(-1)[0]?.id && (
+                      <button
+                        onClick={handleContinueConversation}
+                        disabled={isStreaming || isRegenerating}
+                        className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors disabled:opacity-30"
+                        title="Continue"
+                      >
+                        <StepForward className="w-4 h-4" />
+                      </button>
+                    )}
+                    
                     {/* Regenerate button - AI messages only */}
                     {isAi && (
                       <button
