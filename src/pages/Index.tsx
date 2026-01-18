@@ -3,10 +3,10 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { ScenarioData, TabKey, Character, ScenarioMetadata, Conversation, Message, ConversationMetadata, SideCharacter, UserBackground } from "@/types";
 import { createDefaultScenarioData, now, uid, uuid, truncateLine, resizeImage } from "@/utils";
-import { LLM_MODELS } from "@/constants";
 import { CharactersTab } from "@/components/chronicle/CharactersTab";
 import { WorldTab } from "@/components/chronicle/WorldTab";
 import { ConversationsTab } from "@/components/chronicle/ConversationsTab";
+import { useModelSettings, ModelSettingsProvider } from "@/contexts/ModelSettingsContext";
 
 import { ScenarioHub } from "@/components/chronicle/ScenarioHub";
 import { ModelSettingsTab } from "@/components/chronicle/ModelSettingsTab";
@@ -88,10 +88,11 @@ function SidebarItem({
   return content;
 }
 
-const Index = () => {
+const IndexContent = () => {
   const { user, loading: authLoading, signOut, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { modelId: globalModelId, setModelId: setGlobalModelId } = useModelSettings();
 
   const [registry, setRegistry] = useState<ScenarioMetadata[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -111,18 +112,12 @@ const Index = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     return localStorage.getItem('chronicle_sidebar_collapsed') === 'true';
   });
-  
-  const [globalModelId, setGlobalModelId] = useState<string>(() => localStorage.getItem("rpg_studio_global_model") || LLM_MODELS[0].id);
 
   // Hub background state
   const [hubBackgrounds, setHubBackgrounds] = useState<UserBackground[]>([]);
   const [selectedHubBackgroundId, setSelectedHubBackgroundId] = useState<string | null>(null);
   const [isBackgroundModalOpen, setIsBackgroundModalOpen] = useState(false);
   const [isUploadingBackground, setIsUploadingBackground] = useState(false);
-
-  useEffect(() => {
-    localStorage.setItem("rpg_studio_global_model", globalModelId);
-  }, [globalModelId]);
 
   useEffect(() => {
     localStorage.setItem('chronicle_sidebar_collapsed', String(sidebarCollapsed));
@@ -1062,5 +1057,11 @@ const Index = () => {
     </TooltipProvider>
   );
 };
+
+const Index = () => (
+  <ModelSettingsProvider>
+    <IndexContent />
+  </ModelSettingsProvider>
+);
 
 export default Index;

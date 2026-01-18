@@ -106,7 +106,7 @@ serve(async (req) => {
       });
 
     } else {
-      // Use Lovable AI Gateway (Gemini) for image generation
+      // Use Lovable AI Gateway for image generation
       const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
       if (!LOVABLE_API_KEY) {
         throw new Error("LOVABLE_API_KEY not configured");

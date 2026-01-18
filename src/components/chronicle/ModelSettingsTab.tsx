@@ -4,36 +4,6 @@ import { Card, SectionTitle, Button, Label } from "./UI";
 import { LLM_MODELS, LLMModel } from "@/constants";
 import { Key, Zap, Shield } from "lucide-react";
 
-const MODEL_INFO: Record<string, { description: string }> = {
-  'google/gemini-3-flash-preview': {
-    description: 'Ultra-fast and efficient, perfect for quick roleplay interactions and consistent narrative flow.',
-  },
-  'google/gemini-3-pro-preview': {
-    description: 'High-intelligence model for complex world-building, intricate plot twists, and deep character reasoning.',
-  },
-  'google/gemini-2.5-flash': {
-    description: 'Balanced speed and quality. Great for most roleplay scenarios.',
-  },
-  'google/gemini-2.5-pro': {
-    description: 'Top-tier Gemini model for the most complex narratives and reasoning.',
-  },
-  'openai/gpt-5': {
-    description: 'Powerful all-rounder with excellent reasoning and multimodal capabilities.',
-  },
-  'openai/gpt-5-mini': {
-    description: 'Balanced performance at lower cost. Great for extended sessions.',
-  },
-  'grok-3': {
-    description: 'xAI\'s most capable model. Less content filtering for mature roleplay scenarios.',
-  },
-  'grok-3-mini': {
-    description: 'Fast and efficient Grok variant. Good balance of speed and capability.',
-  },
-  'grok-2': {
-    description: 'Previous generation Grok. Reliable performance with minimal restrictions.',
-  },
-};
-
 // Group models by provider
 function groupModelsByProvider(models: LLMModel[]): Record<string, LLMModel[]> {
   return models.reduce((acc, model) => {
@@ -50,9 +20,7 @@ interface ModelSettingsTabProps {
 
 export function ModelSettingsTab({ selectedModelId, onSelectModel }: ModelSettingsTabProps) {
   const selectedModel = LLM_MODELS.find(m => m.id === selectedModelId);
-  const info = MODEL_INFO[selectedModelId] || { 
-    description: 'Integrating external models for diverse narrative experiences.',
-  };
+  const description = selectedModel?.description || 'Integrating external models for diverse narrative experiences.';
 
   const [connectionStatus, setConnectionStatus] = useState<'idle' | 'checking' | 'connected' | 'error'>('connected');
 
@@ -154,7 +122,7 @@ export function ModelSettingsTab({ selectedModelId, onSelectModel }: ModelSettin
                               {model.name}
                             </div>
                             <div className={`text-xs mt-0.5 ${selectedModelId === model.id ? 'text-slate-400' : 'text-slate-500'}`}>
-                              {MODEL_INFO[model.id]?.description.slice(0, 60)}...
+                              {model.description.slice(0, 60)}...
                             </div>
                           </div>
                         </div>
@@ -198,7 +166,7 @@ export function ModelSettingsTab({ selectedModelId, onSelectModel }: ModelSettin
             </div>
 
             <p className="text-slate-600 text-sm leading-relaxed mb-8">
-              {info.description}
+              {description}
             </p>
 
             <div className="pt-6 border-t border-slate-100">
