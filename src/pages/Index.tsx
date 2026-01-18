@@ -270,7 +270,6 @@ const IndexContent = () => {
           const newBg = await supabaseData.createUserBackground(user.id, publicUrl);
           
           setHubBackgrounds(prev => [newBg, ...prev]);
-          toast({ title: "Background uploaded" });
         } catch (e: any) {
           toast({ title: "Upload failed", description: e.message, variant: "destructive" });
         } finally {
@@ -310,7 +309,6 @@ const IndexContent = () => {
       if (selectedHubBackgroundId === id) {
         setSelectedHubBackgroundId(null);
       }
-      toast({ title: "Background deleted" });
     } catch (e: any) {
       toast({ title: "Failed to delete background", description: e.message, variant: "destructive" });
     }
@@ -448,10 +446,7 @@ const IndexContent = () => {
     }
 
     if (didMigrateScenarioId || migrated.didMigrate) {
-      toast({
-        title: "Migrated legacy IDs",
-        description: "This draft used an old ID format. It will be saved as a new scenario compatible with the backend.",
-      });
+      console.log("Migrated legacy IDs - saving as new scenario compatible with backend");
     }
     
     setIsSaving(true);
@@ -501,7 +496,7 @@ const IndexContent = () => {
         setLibrary(updatedLibrary);
       }
 
-      toast({ title: "Saved!", description: "Your scenario has been saved." });
+      
 
       if (navigateToHub) {
         setActiveId(null);
@@ -528,7 +523,7 @@ const IndexContent = () => {
         const char = library.find(c => c.id === selectedCharacterId);
         if (char) {
           await supabaseData.saveCharacterToLibrary(char, user.id);
-          toast({ title: "Character saved!" });
+          
         }
         setSelectedCharacterId(null);
       } catch (e: any) {
@@ -627,7 +622,7 @@ const IndexContent = () => {
         setTab("hub");
       }
       
-      toast({ title: "Scenario deleted" });
+      
     } catch (e: any) {
       toast({ title: "Delete failed", description: e.message, variant: "destructive" });
     }
@@ -671,7 +666,7 @@ const IndexContent = () => {
         setActiveData(updatedData);
       }
       
-      toast({ title: "Conversation deleted" });
+      
     } catch (e: any) {
       toast({ title: "Failed to delete conversation", description: e.message, variant: "destructive" });
     }
@@ -694,7 +689,7 @@ const IndexContent = () => {
         setActiveData(updatedData);
       }
       
-      toast({ title: "Conversation renamed" });
+      
     } catch (e: any) {
       toast({ title: "Failed to rename conversation", description: e.message, variant: "destructive" });
     }
@@ -723,7 +718,7 @@ const IndexContent = () => {
         const nextLib = library.filter(c => c.id !== id);
         setLibrary(nextLib);
         if (selectedCharacterId === id) setSelectedCharacterId(null);
-        toast({ title: "Character deleted from library" });
+        
       } catch (e: any) {
         toast({ title: "Failed to delete character", description: e.message, variant: "destructive" });
       }
