@@ -445,6 +445,13 @@ export async function saveScenario(
       );
     if (scenesError) throw scenesError;
   }
+
+  // Save all conversations with their messages
+  if (data.conversations.length > 0) {
+    for (const conv of data.conversations) {
+      await saveConversation(conv, id, userId);
+    }
+  }
 }
 
 export async function deleteScenario(id: string): Promise<void> {
