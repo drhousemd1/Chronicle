@@ -275,12 +275,9 @@ export function detectNewCharacters(
       // Skip common false positives
       if (FALSE_POSITIVE_NAMES.has(nameLower)) continue;
       
-      // Must have meaningful dialog context (not just a few words)
-      if (segment.content.length < 15) continue;
-      
-      // Must contain actual dialog markers (quotes, actions, or thoughts)
-      const hasDialogMarkers = /["*()]/.test(segment.content);
-      if (!hasDialogMarkers) continue;
+      // Relaxed: Only require minimal content (5+ chars instead of 15)
+      // The Name: pattern itself is strong enough signal for detection
+      if (segment.content.length < 5) continue;
       
       newCharacters.push({
         name: segment.speakerName,
