@@ -639,6 +639,11 @@ const IndexContent = () => {
         toast({ title: "Scenario not found", variant: "destructive" });
         return;
       }
+      
+      // Fetch side characters for this specific conversation
+      const sideCharacters = await supabaseData.fetchSideCharacters(conversationId);
+      data.sideCharacters = sideCharacters;
+      
       setActiveId(scenarioId);
       setActiveData(data);
       setPlayingConversationId(conversationId);
