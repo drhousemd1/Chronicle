@@ -143,6 +143,14 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const sideCharacters = appData.characters.filter(c => c.characterRole === 'Side');
   const autoSideCharacters = appData.sideCharacters || [];
 
+  // Debug: log conversation state on mount and when it changes
+  useEffect(() => {
+    console.log('[ChatInterfaceTab] conversationId:', conversationId);
+    console.log('[ChatInterfaceTab] conversation found:', !!conversation);
+    console.log('[ChatInterfaceTab] messages count:', conversation?.messages?.length);
+    console.log('[ChatInterfaceTab] messages:', conversation?.messages?.map(m => ({ id: m.id, role: m.role, text: m.text.slice(0, 50) })));
+  }, [conversationId, conversation]);
+
   // Helper to find any character (main, side, or auto-generated) by name
   const findAnyCharacterByName = (name: string | null): Character | SideCharacter | null => {
     return findCharacterByName(name, appData);

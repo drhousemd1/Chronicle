@@ -500,6 +500,33 @@ export async function deleteCharacterFromLibrary(id: string): Promise<void> {
 // CONVERSATIONS
 // =============================================
 
+/**
+ * Fetch a specific conversation with all its messages.
+ * Used for resume to ensure we get the exact thread.
+ */
+export async function fetchConversationThread(conversationId: string): Promise<Conversation | null> {
+  const { data: conv, error: convError } = await supabase
+    .from('conversations')
+    .select('*')
+    .eq('id', conversationId)
+    .maybeSingle();
+
+  if (convError) throw convError;
+  if (!conv) return null;
+
+  const { data: messages, error: msgError } = await supabase
+    .from('messages')
+    .select('*')
+    .eq('conversation_id', conversationId)
+    .order('created_at', { ascending: true });
+
+  if (msgError) throw msgError;
+
+  console.log('[fetchConversationThread] conversationId:', conversationId, 'messages:', messages?.length);
+
+  return dbToConversation(conv, messages || []);
+}
+
 export async function fetchConversationRegistry(): Promise<ConversationMetadata[]> {
   const { data, error } = await supabase
     .from('conversations')
