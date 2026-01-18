@@ -18,7 +18,13 @@ import { BackgroundPickerModal } from "@/components/chronicle/BackgroundPickerMo
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { PanelLeftClose, PanelLeft } from "lucide-react";
+import { PanelLeftClose, PanelLeft, Settings, Image as ImageIcon } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import * as supabaseData from "@/services/supabase-data";
 
 const IconsList = {
@@ -886,7 +892,7 @@ const IndexContent = () => {
         </aside>
 
       <main className="flex-1 flex flex-col overflow-hidden bg-slate-50/50">
-        {(tab === "characters" || tab === "world" || tab === "library" || tab === "conversations") && (
+        {(tab === "characters" || tab === "world" || tab === "library" || tab === "conversations" || tab === "hub") && (
           <header className="flex-shrink-0 h-16 border-b border-slate-200 bg-white flex items-center justify-between px-8 shadow-sm">
             <div className="flex items-center gap-4">
               {tab === "library" && (
@@ -904,6 +910,11 @@ const IndexContent = () => {
                   Chat History
                 </h1>
               )}
+              {tab === "hub" && (
+                <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
+                  Your Stories
+                </h1>
+              )}
               {tab === "characters" && selectedCharacterId && (
                 <button onClick={() => setSelectedCharacterId(null)} className="p-2 hover:bg-slate-100 rounded-full transition-colors mr-2">
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
@@ -911,6 +922,24 @@ const IndexContent = () => {
               )}
             </div>
             <div className="flex items-center gap-3">
+              {tab === "hub" && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="inline-flex items-center justify-center rounded-xl px-3 py-2 bg-slate-900 text-white border border-slate-900 hover:bg-slate-800 shadow-md hover:shadow-lg transition-all active:scale-95"
+                    >
+                      <Settings className="w-5 h-5" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem onClick={() => setIsBackgroundModalOpen(true)} className="cursor-pointer">
+                      <ImageIcon className="w-4 h-4 mr-2" />
+                      Change Background
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
               {(tab === "characters" || tab === "library") && (
                 <>
                   {selectedCharacterId && (
@@ -951,7 +980,6 @@ const IndexContent = () => {
                 onEdit={handleEditScenario}
                 onDelete={handleDeleteScenario}
                 onCreate={handleCreateNewScenario}
-                onOpenBackgroundSettings={() => setIsBackgroundModalOpen(true)}
               />
             </div>
           )}
