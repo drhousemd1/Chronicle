@@ -92,21 +92,20 @@ export function ConversationsTab({
   return (
     <div className="max-w-4xl mx-auto py-4">
       <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center overflow-hidden">
-        {/* Hero image with edge fade using CSS mask */}
-        <div className="relative w-[420px] h-[240px] mx-auto mb-6">
-          <img 
-            src={resumeSessionHero}
-            alt="Resume your adventure" 
-            className="w-full h-full object-contain"
-            style={{
-              maskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%), linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%)',
-              maskComposite: 'intersect',
-              WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%), linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%)',
-              WebkitMaskComposite: 'source-in'
-            }}
-          />
-        </div>
-        
+        {/* Hero image with edge fade (reliable, matches the image rectangle) */}
+        <div
+          className="relative w-[520px] max-w-full aspect-video mx-auto mb-6"
+          style={{
+            backgroundImage: `url(${resumeSessionHero})`,
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
+            backgroundSize: "cover",
+            boxShadow:
+              "inset 0 40px 40px -24px hsl(var(--card)), inset 0 -40px 40px -24px hsl(var(--card)), inset 56px 0 56px -40px hsl(var(--card)), inset -56px 0 56px -40px hsl(var(--card))",
+          }}
+          aria-hidden="true"
+        />
+
         <h3 className="text-xl font-bold text-slate-800 mb-2">Ready to Continue?</h3>
         <p className="text-sm text-slate-500 max-w-md mx-auto mb-6">
           Click "Resume" to jump back into this story session. The scenario will be loaded automatically.
