@@ -26,7 +26,6 @@ export default function ChronicleApp() {
           onEdit={() => {}}
           onDelete={() => {}}
           onCreate={() => {}}
-          onOpenBackgroundSettings={() => {}}
         />
       </main>
     </div>
