@@ -536,7 +536,7 @@ export async function fetchConversationRegistry(): Promise<ConversationMetadata[
       title,
       created_at,
       updated_at,
-      scenarios!inner(title)
+      scenarios!inner(title, cover_image_url)
     `)
     .order('updated_at', { ascending: false });
 
@@ -545,8 +545,14 @@ export async function fetchConversationRegistry(): Promise<ConversationMetadata[
   const result: ConversationMetadata[] = [];
 
   for (const conv of data || []) {
-    // Get message count and last message
-    const { data: messages } = await supabase
+    // Get message count
+    const { count } = await supabase
+      .from('messages')
+      .select('*', { count: 'exact', head: true })
+      .eq('conversation_id', conv.id);
+
+    // Get last message preview
+    const { data: lastMsgData } = await supabase
       .from('messages')
       .select('content')
       .eq('conversation_id', conv.id)
@@ -557,9 +563,10 @@ export async function fetchConversationRegistry(): Promise<ConversationMetadata[
       conversationId: conv.id,
       scenarioId: conv.scenario_id,
       scenarioTitle: (conv.scenarios as any)?.title || 'Unknown',
+      scenarioImageUrl: (conv.scenarios as any)?.cover_image_url || null,
       conversationTitle: conv.title,
-      lastMessage: messages?.[0]?.content || '',
-      messageCount: 0, // Will be calculated if needed
+      lastMessage: lastMsgData?.[0]?.content || '',
+      messageCount: count || 0,
       createdAt: new Date(conv.created_at).getTime(),
       updatedAt: new Date(conv.updated_at).getTime()
     });
