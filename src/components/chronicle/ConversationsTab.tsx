@@ -99,15 +99,15 @@ export function ConversationsTab({
             alt="Resume your adventure" 
             className="w-full h-full object-contain"
           />
-          {/* Edge fade overlays */}
+          {/* Edge fade overlays - z-10 ensures they appear over the image */}
           {/* Top edge */}
-          <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-white to-transparent" />
+          <div className="absolute top-0 left-0 right-0 h-8 z-10 bg-gradient-to-b from-white to-transparent" />
           {/* Bottom edge */}
-          <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 h-8 z-10 bg-gradient-to-t from-white to-transparent" />
           {/* Left edge */}
-          <div className="absolute top-0 bottom-0 left-0 w-8 bg-gradient-to-r from-white to-transparent" />
+          <div className="absolute top-0 bottom-0 left-0 w-12 z-10 bg-gradient-to-r from-white to-transparent" />
           {/* Right edge */}
-          <div className="absolute top-0 bottom-0 right-0 w-8 bg-gradient-to-l from-white to-transparent" />
+          <div className="absolute top-0 bottom-0 right-0 w-12 z-10 bg-gradient-to-l from-white to-transparent" />
         </div>
         
         <h3 className="text-xl font-bold text-slate-800 mb-2">Ready to Continue?</h3>
