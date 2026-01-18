@@ -324,12 +324,16 @@ const IndexContent = () => {
   async function handlePlayScenario(id: string) {
     if (!user) return;
     try {
-      const data = await supabaseData.fetchScenarioById(id);
-      if (!data) {
+      const result = await supabaseData.fetchScenarioById(id);
+      if (!result) {
         toast({ title: "Scenario not found", variant: "destructive" });
         return;
       }
-      const meta = registry.find(r => r.id === id);
+      const { data, coverImage, coverImagePosition } = result;
+      
+      // Set cover image from fetched result
+      setActiveCoverImage(coverImage);
+      setActiveCoverPosition(coverImagePosition);
       
       // Get starting day/time from scenario's opening dialog
       const startingDay = data.story?.openingDialog?.startingDay || 1;
@@ -379,20 +383,17 @@ const IndexContent = () => {
 
   async function handleEditScenario(id: string) {
     try {
-      const data = await supabaseData.fetchScenarioById(id);
-      if (!data) {
+      const result = await supabaseData.fetchScenarioById(id);
+      if (!result) {
         toast({ title: "Scenario not found", variant: "destructive" });
         return;
       }
-      // Load cover image from registry metadata
-      const scenarioMeta = registry.find(r => r.id === id);
-      if (scenarioMeta) {
-        setActiveCoverImage(scenarioMeta.coverImage || "");
-        setActiveCoverPosition(scenarioMeta.coverImagePosition || { x: 50, y: 50 });
-      } else {
-        setActiveCoverImage("");
-        setActiveCoverPosition({ x: 50, y: 50 });
-      }
+      const { data, coverImage, coverImagePosition } = result;
+      
+      // Set cover image from fetched result (not from stale registry)
+      setActiveCoverImage(coverImage);
+      setActiveCoverPosition(coverImagePosition);
+      
       setActiveId(id);
       setActiveData(data);
       setTab("world"); 
@@ -634,15 +635,20 @@ const IndexContent = () => {
   
   async function handleResumeFromHistory(scenarioId: string, conversationId: string) {
     try {
-      const data = await supabaseData.fetchScenarioById(scenarioId);
-      if (!data) {
+      const result = await supabaseData.fetchScenarioById(scenarioId);
+      if (!result) {
         toast({ title: "Scenario not found", variant: "destructive" });
         return;
       }
+      const { data, coverImage, coverImagePosition } = result;
       
       // Fetch side characters for this specific conversation
       const sideCharacters = await supabaseData.fetchSideCharacters(conversationId);
       data.sideCharacters = sideCharacters;
+      
+      // Set cover image from fetched result
+      setActiveCoverImage(coverImage);
+      setActiveCoverPosition(coverImagePosition);
       
       setActiveId(scenarioId);
       setActiveData(data);

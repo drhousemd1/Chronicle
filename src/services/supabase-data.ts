@@ -214,7 +214,11 @@ export async function fetchScenarios(): Promise<ScenarioMetadata[]> {
   return (data || []).map(dbToScenarioMetadata);
 }
 
-export async function fetchScenarioById(id: string): Promise<ScenarioData | null> {
+export async function fetchScenarioById(id: string): Promise<{
+  data: ScenarioData;
+  coverImage: string;
+  coverImagePosition: { x: number; y: number };
+} | null> {
   // Fetch scenario
   const { data: scenario, error: scenarioError } = await supabase
     .from('scenarios')
@@ -297,20 +301,24 @@ export async function fetchScenarioById(id: string): Promise<ScenarioData | null
   };
 
   return {
-    version: scenario.version || 3,
-    characters: (characters || []).map(dbToCharacter),
-    sideCharacters: [],  // Side characters are loaded per-conversation, not per-scenario
-    world: {
-      core: worldCore,
-      entries: (codexEntries || []).map(dbToCodexEntry)
+    data: {
+      version: scenario.version || 3,
+      characters: (characters || []).map(dbToCharacter),
+      sideCharacters: [],  // Side characters are loaded per-conversation, not per-scenario
+      world: {
+        core: worldCore,
+        entries: (codexEntries || []).map(dbToCodexEntry)
+      },
+      story: {
+        openingDialog
+      },
+      scenes: (scenes || []).map(dbToScene),
+      uiSettings,
+      conversations: conversationsWithMessages,
+      selectedModel: scenario.selected_model || LLM_MODELS[0].id
     },
-    story: {
-      openingDialog
-    },
-    scenes: (scenes || []).map(dbToScene),
-    uiSettings,
-    conversations: conversationsWithMessages,
-    selectedModel: scenario.selected_model || LLM_MODELS[0].id
+    coverImage: scenario.cover_image_url || '',
+    coverImagePosition: scenario.cover_image_position as { x: number; y: number } || { x: 50, y: 50 }
   };
 }
 
