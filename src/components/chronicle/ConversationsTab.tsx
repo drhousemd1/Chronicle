@@ -92,22 +92,19 @@ export function ConversationsTab({
   return (
     <div className="max-w-4xl mx-auto py-4">
       <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center overflow-hidden">
-        {/* Hero image with rectangular edge fade */}
+        {/* Hero image with edge fade using CSS mask */}
         <div className="relative w-[420px] h-[240px] mx-auto mb-6">
           <img 
             src={resumeSessionHero}
             alt="Resume your adventure" 
             className="w-full h-full object-contain"
+            style={{
+              maskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%), linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%)',
+              maskComposite: 'intersect',
+              WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%), linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%)',
+              WebkitMaskComposite: 'source-in'
+            }}
           />
-          {/* Edge fade overlays - z-10 ensures they appear over the image */}
-          {/* Top edge */}
-          <div className="absolute top-0 left-0 right-0 h-8 z-10 bg-gradient-to-b from-white to-transparent" />
-          {/* Bottom edge */}
-          <div className="absolute bottom-0 left-0 right-0 h-8 z-10 bg-gradient-to-t from-white to-transparent" />
-          {/* Left edge */}
-          <div className="absolute top-0 bottom-0 left-0 w-12 z-10 bg-gradient-to-r from-white to-transparent" />
-          {/* Right edge */}
-          <div className="absolute top-0 bottom-0 right-0 w-12 z-10 bg-gradient-to-l from-white to-transparent" />
         </div>
         
         <h3 className="text-xl font-bold text-slate-800 mb-2">Ready to Continue?</h3>
