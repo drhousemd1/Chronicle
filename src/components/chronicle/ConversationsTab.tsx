@@ -1,6 +1,7 @@
 
 import React from "react";
 import { ConversationMetadata } from "@/types";
+import resumeSessionHero from "@/assets/resume-session-hero.png";
 
 export function ConversationsTab({
   globalRegistry,
@@ -90,20 +91,23 @@ export function ConversationsTab({
   // Selected conversation detail view - just the body content (header is now in parent)
   return (
     <div className="max-w-4xl mx-auto py-4">
-      <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center">
-        {/* Scenario thumbnail */}
-        {selectedEntry.scenarioImageUrl && (
-          <div className="w-24 h-24 mx-auto mb-4 rounded-xl overflow-hidden border border-slate-200 shadow-sm">
-            <img 
-              src={selectedEntry.scenarioImageUrl} 
-              alt="" 
-              className="w-full h-full object-cover"
-            />
-          </div>
-        )}
-        {!selectedEntry.scenarioImageUrl && (
-          <div className="text-5xl mb-4 opacity-30">🎮</div>
-        )}
+      <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center overflow-hidden">
+        {/* Hero image with fade effect */}
+        <div className="relative w-80 h-48 mx-auto mb-6">
+          {/* Radial gradient mask for fade effect */}
+          <div 
+            className="absolute inset-0 z-10 pointer-events-none"
+            style={{
+              background: 'radial-gradient(ellipse at center, transparent 40%, white 75%)'
+            }}
+          />
+          <img 
+            src={resumeSessionHero}
+            alt="Resume your adventure" 
+            className="w-full h-full object-contain"
+          />
+        </div>
+        
         <h3 className="text-xl font-bold text-slate-800 mb-2">Ready to Continue?</h3>
         <p className="text-sm text-slate-500 max-w-md mx-auto mb-6">
           Click "Resume" to jump back into this story session. The scenario will be loaded automatically.
