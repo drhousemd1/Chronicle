@@ -107,7 +107,7 @@ export async function* generateRoleplayResponseStream(
     { role: 'user' as const, content: userMessage }
   ];
 
-  console.log(`[gemini.ts] Calling chat edge function with model: ${modelId}`);
+  console.log(`[llm.ts] Calling chat edge function with model: ${modelId}`);
 
   // Call the chat edge function
   const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
@@ -237,5 +237,4 @@ Respond ONLY with valid JSON.`;
   }
 }
 
-// Note: generateCharacterImage has been removed as it used the direct Google SDK.
-// Character image generation is now handled by the generate-side-character-avatar edge function.
+// Note: Character image generation is handled by the generate-side-character-avatar edge function.

@@ -11,21 +11,22 @@ export type LLMModel = {
   gateway: 'lovable' | 'xai';
   requiresKey?: boolean;
   disabled?: boolean;
+  description: string;
 };
 
 export const LLM_MODELS: LLMModel[] = [
   // Lovable AI Gateway - works out of the box
-  { id: 'google/gemini-3-flash-preview', name: 'Gemini 3 Flash', provider: 'Google', gateway: 'lovable' },
-  { id: 'google/gemini-3-pro-preview', name: 'Gemini 3 Pro', provider: 'Google', gateway: 'lovable' },
-  { id: 'google/gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'Google', gateway: 'lovable' },
-  { id: 'google/gemini-2.5-pro', name: 'Gemini 2.5 Pro', provider: 'Google', gateway: 'lovable' },
-  { id: 'openai/gpt-5', name: 'GPT-5', provider: 'OpenAI', gateway: 'lovable' },
-  { id: 'openai/gpt-5-mini', name: 'GPT-5 Mini', provider: 'OpenAI', gateway: 'lovable' },
+  { id: 'google/gemini-3-flash-preview', name: 'Gemini 3 Flash', provider: 'Google', gateway: 'lovable', description: 'Ultra-fast and efficient, perfect for quick roleplay interactions and consistent narrative flow.' },
+  { id: 'google/gemini-3-pro-preview', name: 'Gemini 3 Pro', provider: 'Google', gateway: 'lovable', description: 'High-intelligence model for complex world-building, intricate plot twists, and deep character reasoning.' },
+  { id: 'google/gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'Google', gateway: 'lovable', description: 'Balanced speed and quality. Great for most roleplay scenarios.' },
+  { id: 'google/gemini-2.5-pro', name: 'Gemini 2.5 Pro', provider: 'Google', gateway: 'lovable', description: 'Top-tier Gemini model for the most complex narratives and reasoning.' },
+  { id: 'openai/gpt-5', name: 'GPT-5', provider: 'OpenAI', gateway: 'lovable', description: 'Powerful all-rounder with excellent reasoning and multimodal capabilities.' },
+  { id: 'openai/gpt-5-mini', name: 'GPT-5 Mini', provider: 'OpenAI', gateway: 'lovable', description: 'Balanced performance at lower cost. Great for extended sessions.' },
   
   // X/Grok - requires user API key (BYOK)
-  { id: 'grok-3', name: 'Grok 3', provider: 'xAI', gateway: 'xai', requiresKey: true },
-  { id: 'grok-3-mini', name: 'Grok 3 Mini', provider: 'xAI', gateway: 'xai', requiresKey: true },
-  { id: 'grok-2', name: 'Grok 2', provider: 'xAI', gateway: 'xai', requiresKey: true },
+  { id: 'grok-3', name: 'Grok 3', provider: 'xAI', gateway: 'xai', requiresKey: true, description: 'xAI\'s most capable model. Less content filtering for mature roleplay scenarios.' },
+  { id: 'grok-3-mini', name: 'Grok 3 Mini', provider: 'xAI', gateway: 'xai', requiresKey: true, description: 'Fast and efficient Grok variant. Good balance of speed and capability.' },
+  { id: 'grok-2', name: 'Grok 2', provider: 'xAI', gateway: 'xai', requiresKey: true, description: 'Previous generation Grok. Reliable performance with minimal restrictions.' },
 ];
 
 // Map text models to their provider's image generation model
