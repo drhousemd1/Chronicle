@@ -241,6 +241,7 @@ export type ConversationMetadata = {
   conversationId: string;
   scenarioId: string;
   scenarioTitle: string;
+  scenarioImageUrl: string | null;
   conversationTitle: string;
   lastMessage: string;
   messageCount: number;

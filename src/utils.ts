@@ -483,6 +483,7 @@ export function updateConversationRegistry(
       conversationId: c.id,
       scenarioId,
       scenarioTitle,
+      scenarioImageUrl: null, // Local storage doesn't have this, will be fetched from DB
       conversationTitle: c.title,
       lastMessage: lastMsg ? truncateLine(lastMsg.text, 100) : "",
       messageCount: c.messages.length,
