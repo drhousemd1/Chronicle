@@ -372,6 +372,83 @@ export type Database = {
           },
         ]
       }
+      side_characters: {
+        Row: {
+          age: string | null
+          avatar_position: Json | null
+          avatar_url: string | null
+          background: Json | null
+          conversation_id: string
+          created_at: string | null
+          current_mood: string | null
+          currently_wearing: Json | null
+          extracted_traits: Json | null
+          first_mentioned_in: string | null
+          id: string
+          location: string | null
+          name: string
+          personality: Json | null
+          physical_appearance: Json | null
+          preferred_clothing: Json | null
+          role_description: string | null
+          sex_type: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          age?: string | null
+          avatar_position?: Json | null
+          avatar_url?: string | null
+          background?: Json | null
+          conversation_id: string
+          created_at?: string | null
+          current_mood?: string | null
+          currently_wearing?: Json | null
+          extracted_traits?: Json | null
+          first_mentioned_in?: string | null
+          id?: string
+          location?: string | null
+          name: string
+          personality?: Json | null
+          physical_appearance?: Json | null
+          preferred_clothing?: Json | null
+          role_description?: string | null
+          sex_type?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          age?: string | null
+          avatar_position?: Json | null
+          avatar_url?: string | null
+          background?: Json | null
+          conversation_id?: string
+          created_at?: string | null
+          current_mood?: string | null
+          currently_wearing?: Json | null
+          extracted_traits?: Json | null
+          first_mentioned_in?: string | null
+          id?: string
+          location?: string | null
+          name?: string
+          personality?: Json | null
+          physical_appearance?: Json | null
+          preferred_clothing?: Json | null
+          role_description?: string | null
+          sex_type?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "side_characters_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_backgrounds: {
         Row: {
           created_at: string | null

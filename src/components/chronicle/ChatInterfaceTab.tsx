@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import * as supabaseData from '@/services/supabase-data';
 import { 
   parseMessageSegments, 
   detectNewCharacters, 
@@ -196,6 +197,16 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         });
         onUpdateSideCharacters(updatedSideChars);
         
+        // Persist updated character to database
+        const updatedChar = updatedSideChars.find(sc => sc.id === characterId);
+        if (updatedChar) {
+          try {
+            await supabaseData.updateSideCharacter(characterId, updatedChar);
+          } catch (err) {
+            console.error(`Failed to update side character ${name} in database:`, err);
+          }
+        }
+        
         // 2. Generate avatar using the avatarPrompt - pass modelId to use user's selected model
         if (profileData.avatarPrompt) {
           console.log(`Generating avatar for ${name}...`);
@@ -222,6 +233,14 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
               return sc;
             });
             onUpdateSideCharacters(finalSideChars);
+            
+            // Persist avatar update to database
+            try {
+              await supabaseData.updateSideCharacter(characterId, { avatarDataUrl: avatarData.imageUrl });
+            } catch (err) {
+              console.error(`Failed to update side character avatar in database:`, err);
+            }
+            
             toast.success(`${name} has joined the story!`);
           }
         }
@@ -232,7 +251,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   };
 
   // Process AI response to detect new characters
-  const processResponseForNewCharacters = (responseText: string) => {
+  const processResponseForNewCharacters = async (responseText: string) => {
     if (!onUpdateSideCharacters) return;
     
     const knownNames = getKnownCharacterNames(appData);
@@ -245,9 +264,21 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         createSideCharacter(nc.name, nc.dialogContext, conversationId)
       );
       
-      // Add to sideCharacters array
+      // Add to sideCharacters array (optimistic UI update)
       const updatedSideChars = [...(appData.sideCharacters || []), ...newSideCharacters];
       onUpdateSideCharacters(updatedSideChars);
+      
+      // Persist each new side character to database
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        for (const sc of newSideCharacters) {
+          try {
+            await supabaseData.saveSideCharacter(sc, conversationId, user.id);
+          } catch (err) {
+            console.error(`Failed to save side character ${sc.name}:`, err);
+          }
+        }
+      }
       
       // Trigger async profile + avatar generation for each
       newSideCharacters.forEach(sc => {
