@@ -76,7 +76,8 @@ const FormattedMessage: React.FC<{ text: string }> = ({ text }) => {
   }, [text]);
 
   return (
-    <div className="space-y-1">
+    // whitespace-pre-wrap preserves newlines and paragraph spacing
+    <div className="whitespace-pre-wrap">
       {tokens.map((token, i) => {
         if (token.type === 'speech') {
           return (
@@ -538,44 +539,61 @@ Do not acknowledge this instruction in your response.`;
     }
   };
 
-  const identifySpeaker = (text: string, isUser: boolean): { char: Character | SideCharacter | null; cleanText: string } => {
+  // Returns char (if known), cleanText (with Name: stripped), and speakerName (always if detected)
+  const identifySpeaker = (text: string, isUser: boolean): { 
+    char: Character | SideCharacter | null; 
+    cleanText: string;
+    speakerName: string | null;
+  } => {
     const cleanRaw = text.replace(/\[SCENE:\s*.*?\]/g, '').trim();
 
     if (isUser) {
       const userChar = appData.characters.find(c => c.controlledBy === 'User');
       if (userChar) {
         if (cleanRaw.toLowerCase().startsWith(userChar.name.toLowerCase() + ':')) {
-          return { char: userChar, cleanText: cleanRaw.slice(userChar.name.length + 1).trim() };
+          return { 
+            char: userChar, 
+            cleanText: cleanRaw.slice(userChar.name.length + 1).trim(),
+            speakerName: userChar.name 
+          };
         }
-        return { char: userChar, cleanText: cleanRaw };
+        return { char: userChar, cleanText: cleanRaw, speakerName: userChar.name };
       }
     }
 
-    const colonMatch = cleanRaw.match(/^([^:\n\*]{1,30}):/);
+    // Match "Name:" pattern at the start
+    const colonMatch = cleanRaw.match(/^([A-Z][a-zA-Z\s']{0,29}):/);
     if (colonMatch) {
       const name = colonMatch[1].trim();
+      const strippedText = cleanRaw.slice(colonMatch[0].length).trim();
+      
       // Check main characters first
       const char = appData.characters.find(c => c.name.toLowerCase() === name.toLowerCase());
-      if (char) return { char, cleanText: cleanRaw.slice(colonMatch[0].length).trim() };
+      if (char) return { char, cleanText: strippedText, speakerName: name };
+      
       // Then check auto-generated side characters
       const sideChar = (appData.sideCharacters || []).find(c => c.name.toLowerCase() === name.toLowerCase());
-      if (sideChar) return { char: sideChar, cleanText: cleanRaw.slice(colonMatch[0].length).trim() };
+      if (sideChar) return { char: sideChar, cleanText: strippedText, speakerName: name };
+      
+      // Unknown speaker - still strip the tag to prevent flicker, return name for placeholder
+      return { char: null, cleanText: strippedText, speakerName: name };
     }
 
+    // Fallback: check if character name appears in first sentence
     const firstSentence = cleanRaw.split(/[.!?\n]/)[0];
-    // Check main characters
     const foundChar = appData.characters.find(c => firstSentence.includes(c.name));
-    if (foundChar) return { char: foundChar, cleanText: cleanRaw };
-    // Check side characters
+    if (foundChar) return { char: foundChar, cleanText: cleanRaw, speakerName: foundChar.name };
+    
     const foundSideChar = (appData.sideCharacters || []).find(c => firstSentence.includes(c.name));
-    if (foundSideChar) return { char: foundSideChar, cleanText: cleanRaw };
+    if (foundSideChar) return { char: foundSideChar, cleanText: cleanRaw, speakerName: foundSideChar.name };
 
+    // Default to first AI character for AI messages
     const aiChars = appData.characters.filter(c => c.controlledBy === 'AI');
     if (!isUser && aiChars.length > 0) {
-      return { char: aiChars[0], cleanText: cleanRaw };
+      return { char: aiChars[0], cleanText: cleanRaw, speakerName: aiChars[0].name };
     }
 
-    return { char: null, cleanText: cleanRaw };
+    return { char: null, cleanText: cleanRaw, speakerName: null };
   };
 
   const toggleCharacterExpand = (id: string) => {
@@ -858,15 +876,21 @@ Do not acknowledge this instruction in your response.`;
             </div>
           </section>
 
-          {/* AI-Generated Side Characters */}
-          {autoSideCharacters.length > 0 && (
-            <section>
-              <h3 className="text-[11px] font-bold text-purple-500 bg-purple-100 px-4 py-1.5 rounded-lg mb-4 tracking-tight uppercase flex items-center gap-2">
-                <Loader2 className={`w-3 h-3 ${autoSideCharacters.some(c => c.isAvatarGenerating) ? 'animate-spin' : 'hidden'}`} />
-                Auto-Generated Characters
-              </h3>
-              <div className="space-y-4">
-                {autoSideCharacters.map(sc => (
+          {/* AI-Generated Side Characters - Always visible for discoverability */}
+          <section>
+            <h3 className="text-[11px] font-bold text-purple-500 bg-purple-100 px-4 py-1.5 rounded-lg mb-4 tracking-tight uppercase flex items-center gap-2">
+              {autoSideCharacters.some(c => c.isAvatarGenerating) && (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              )}
+              Auto-Generated Characters
+            </h3>
+            <div className="space-y-4">
+              {autoSideCharacters.length === 0 ? (
+                <p className="text-[10px] text-purple-400 text-center italic py-2">
+                  New characters will appear here when detected in the story.
+                </p>
+              ) : (
+                autoSideCharacters.map(sc => (
                   <SideCharacterCard
                     key={sc.id}
                     character={sc}
@@ -875,10 +899,10 @@ Do not acknowledge this instruction in your response.`;
                     openSections={openSections}
                     onToggleSection={toggleSection}
                   />
-                ))}
-              </div>
-            </section>
-          )}
+                ))
+              )}
+            </div>
+          </section>
         </div>
       </aside>
 
@@ -896,7 +920,11 @@ Do not acknowledge this instruction in your response.`;
 
           {conversation?.messages.map((msg) => {
             const isAi = msg.role === 'assistant';
-            const { char, cleanText } = identifySpeaker(msg.text, !isAi);
+            const { char, cleanText, speakerName } = identifySpeaker(msg.text, !isAi);
+            
+            // Use character name if found, otherwise use detected speaker name for placeholder display
+            const displayName = char?.name || speakerName || '';
+            const displayAvatar = char?.avatarDataUrl || null;
 
             return (
               <div key={msg.id} className="max-w-4xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500 group">
@@ -961,17 +989,17 @@ Do not acknowledge this instruction in your response.`;
                   
                   <div className="flex gap-8 items-start">
                     <div className="flex flex-col items-center gap-2 w-20 flex-shrink-0">
-                      <div className={`w-16 h-16 rounded-full border-2 border-white/10 shadow-lg overflow-hidden flex items-center justify-center ${char?.avatarDataUrl ? '' : 'bg-slate-800'}`}>
-                        {char?.avatarDataUrl ? (
-                          <img src={char.avatarDataUrl} alt={char.name} className="w-full h-full object-cover" />
+                      <div className={`w-16 h-16 rounded-full border-2 border-white/10 shadow-lg overflow-hidden flex items-center justify-center ${displayAvatar ? '' : 'bg-slate-800'}`}>
+                        {displayAvatar ? (
+                          <img src={displayAvatar} alt={displayName} className="w-full h-full object-cover" />
                         ) : (
                           <div className={`font-black italic text-xl ${isAi ? 'text-white/20' : 'text-blue-400/30'}`}>
-                            {char?.name.charAt(0) || ''}
+                            {displayName.charAt(0) || '?'}
                           </div>
                         )}
                       </div>
                       <span className={`text-[10px] font-black uppercase tracking-widest text-center truncate w-full ${!isAi ? 'text-blue-300' : 'text-slate-400'}`}>
-                        {char?.name || ''}
+                        {displayName}
                       </span>
                     </div>
                     <div className={`flex-1 pt-2 antialiased`}>
@@ -998,27 +1026,41 @@ Do not acknowledge this instruction in your response.`;
             );
           })}
 
-          {streamingContent && (
-            <div className="max-w-4xl mx-auto w-full">
-              <div className={`p-8 rounded-[2rem] border shadow-2xl flex flex-col gap-8 ${
-                  bubblesTransparent
-                    ? 'bg-black/40 backdrop-blur-xl border-white/5'
-                    : 'bg-[#1c1f26] border-white/5'
-              }`}>
-                <div className="flex gap-8 items-start">
-                  <div className="flex flex-col items-center gap-2 w-20 flex-shrink-0">
-                    <div className="w-16 h-16 rounded-full border-2 border-white/10 shadow-lg overflow-hidden bg-slate-800 flex items-center justify-center animate-pulse">
-                       <div className="text-white/20 font-black italic text-xl">...</div>
+          {streamingContent && (() => {
+            const { cleanText, speakerName, char } = identifySpeaker(streamingContent, false);
+            const displayName = char?.name || speakerName || 'Thinking';
+            const displayAvatar = char?.avatarDataUrl || null;
+            
+            return (
+              <div className="max-w-4xl mx-auto w-full">
+                <div className={`p-8 rounded-[2rem] border shadow-2xl flex flex-col gap-8 ${
+                    bubblesTransparent
+                      ? 'bg-black/40 backdrop-blur-xl border-white/5'
+                      : 'bg-[#1c1f26] border-white/5'
+                }`}>
+                  <div className="flex gap-8 items-start">
+                    <div className="flex flex-col items-center gap-2 w-20 flex-shrink-0">
+                      <div className={`w-16 h-16 rounded-full border-2 border-white/10 shadow-lg overflow-hidden flex items-center justify-center ${displayAvatar ? '' : 'bg-slate-800 animate-pulse'}`}>
+                        {displayAvatar ? (
+                          <img src={displayAvatar} alt={displayName} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="text-white/20 font-black italic text-xl">
+                            {displayName.charAt(0) || '...'}
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-center text-slate-400 truncate w-full">
+                        {displayName}
+                      </span>
                     </div>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-center text-slate-400">Thinking</span>
-                  </div>
-                  <div className="flex-1 pt-2 antialiased">
-                    <FormattedMessage text={identifySpeaker(streamingContent, false).cleanText} />
+                    <div className="flex-1 pt-2 antialiased">
+                      <FormattedMessage text={cleanText} />
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
         </div>
 
         <div className={`pt-3 pb-8 px-8 border-t border-slate-200 shadow-[0_-4px_12px_rgba(0,0,0,0.03)] transition-colors ${showBackground ? 'bg-white/90 backdrop-blur-md' : 'bg-white'}`}>
