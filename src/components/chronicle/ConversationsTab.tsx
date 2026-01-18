@@ -96,12 +96,12 @@ export function ConversationsTab({
         <div
           className="relative w-[520px] max-w-full aspect-video mx-auto mb-6"
           style={{
-            backgroundImage: `url(${resumeSessionHero})`,
+            backgroundImage: `linear-gradient(to right, hsl(var(--background)) 0%, transparent 8%, transparent 92%, hsl(var(--background)) 100%),
+              linear-gradient(to bottom, hsl(var(--background)) 0%, transparent 10%, transparent 90%, hsl(var(--background)) 100%),
+              url(${resumeSessionHero})`,
             backgroundPosition: "center",
             backgroundRepeat: "no-repeat",
             backgroundSize: "cover",
-            boxShadow:
-              "inset 0 40px 40px -24px hsl(var(--card)), inset 0 -40px 40px -24px hsl(var(--card)), inset 56px 0 56px -40px hsl(var(--card)), inset -56px 0 56px -40px hsl(var(--card))",
           }}
           aria-hidden="true"
         />
