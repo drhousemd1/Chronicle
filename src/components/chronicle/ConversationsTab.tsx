@@ -1,21 +1,16 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { ConversationMetadata } from "@/types";
-import { Button } from "./UI";
 
 export function ConversationsTab({
   globalRegistry,
-  onResumeConversation,
-  onDeleteConversation,
-  onRenameConversation,
+  selectedEntry,
+  onSelectEntry,
 }: {
   globalRegistry: ConversationMetadata[];
-  onResumeConversation: (scenarioId: string, conversationId: string) => void;
-  onDeleteConversation: (scenarioId: string, conversationId: string) => void;
-  onRenameConversation: (scenarioId: string, conversationId: string, newTitle: string) => void;
+  selectedEntry: ConversationMetadata | null;
+  onSelectEntry: (entry: ConversationMetadata | null) => void;
 }) {
-  const [selectedEntry, setSelectedEntry] = useState<ConversationMetadata | null>(null);
-
   // Sort by recency (already sorted server-side, but ensure consistency)
   const sortedRegistry = [...globalRegistry].sort((a, b) => b.updatedAt - a.updatedAt);
 
@@ -41,7 +36,7 @@ export function ConversationsTab({
                 return (
                   <button
                     key={entry.conversationId}
-                    onClick={() => setSelectedEntry(entry)}
+                    onClick={() => onSelectEntry(entry)}
                     className="w-full flex items-center gap-4 p-4 hover:bg-slate-50 transition-all group text-left"
                   >
                     {/* Scenario thumbnail */}
@@ -92,55 +87,9 @@ export function ConversationsTab({
     );
   }
 
-  // Selected conversation detail view
+  // Selected conversation detail view - just the body content (header is now in parent)
   return (
     <div className="max-w-4xl mx-auto py-4">
-      <div className="flex items-center justify-between p-4 border-b border-slate-200 bg-white/50 backdrop-blur rounded-t-3xl mb-6">
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={() => setSelectedEntry(null)}
-            className="p-2 hover:bg-slate-100 rounded-full transition-colors"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-          </button>
-          <div>
-            <h2 className="font-black text-slate-900 tracking-tight">{selectedEntry.scenarioTitle}</h2>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <Button 
-            variant="brand" 
-            onClick={() => onResumeConversation(selectedEntry.scenarioId, selectedEntry.conversationId)} 
-            className="px-6 bg-blue-600 hover:bg-blue-500"
-          >
-            ▶ Resume
-          </Button>
-          <Button 
-            variant="secondary" 
-            onClick={() => {
-              const title = prompt("Rename session:", selectedEntry.conversationTitle)?.trim();
-              if (title) {
-                onRenameConversation(selectedEntry.scenarioId, selectedEntry.conversationId, title);
-                setSelectedEntry({ ...selectedEntry, conversationTitle: title });
-              }
-            }}
-          >
-            Rename
-          </Button>
-          <Button 
-            variant="danger" 
-            onClick={() => {
-              if (confirm("Delete this saved session forever?")) {
-                onDeleteConversation(selectedEntry.scenarioId, selectedEntry.conversationId);
-                setSelectedEntry(null);
-              }
-            }}
-          >
-            Delete
-          </Button>
-        </div>
-      </div>
-
       <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center">
         {/* Scenario thumbnail */}
         {selectedEntry.scenarioImageUrl && (

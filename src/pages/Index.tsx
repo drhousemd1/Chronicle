@@ -113,6 +113,7 @@ const IndexContent = () => {
   const [isBrainstorming, setIsBrainstorming] = useState(false);
   const [isCharacterPickerOpen, setIsCharacterPickerOpen] = useState(false);
   const [conversationRegistry, setConversationRegistry] = useState<ConversationMetadata[]>([]);
+  const [selectedConversationEntry, setSelectedConversationEntry] = useState<ConversationMetadata | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
@@ -933,10 +934,23 @@ const IndexContent = () => {
                   Scenario Builder
                 </h1>
               )}
-              {tab === "conversations" && (
+              {tab === "conversations" && !selectedConversationEntry && (
                 <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
                   Chat History
                 </h1>
+              )}
+              {tab === "conversations" && selectedConversationEntry && (
+                <div className="flex items-center gap-3">
+                  <button 
+                    onClick={() => setSelectedConversationEntry(null)}
+                    className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                  </button>
+                  <h1 className="text-lg font-black text-slate-900 tracking-tight">
+                    {selectedConversationEntry.scenarioTitle}
+                  </h1>
+                </div>
               )}
               {tab === "hub" && (
                 <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
@@ -967,6 +981,39 @@ const IndexContent = () => {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+              )}
+              {tab === "conversations" && selectedConversationEntry && (
+                <>
+                  <Button 
+                    variant="primary" 
+                    onClick={() => handleResumeFromHistory(selectedConversationEntry.scenarioId, selectedConversationEntry.conversationId)}
+                  >
+                    ▶ Resume
+                  </Button>
+                  <Button 
+                    variant="primary" 
+                    onClick={() => {
+                      const title = prompt("Rename session:", selectedConversationEntry.conversationTitle)?.trim();
+                      if (title) {
+                        handleRenameConversationFromHistory(selectedConversationEntry.scenarioId, selectedConversationEntry.conversationId, title);
+                        setSelectedConversationEntry({ ...selectedConversationEntry, conversationTitle: title });
+                      }
+                    }}
+                  >
+                    Rename
+                  </Button>
+                  <Button 
+                    variant="primary" 
+                    onClick={() => {
+                      if (confirm("Delete this saved session forever?")) {
+                        handleDeleteConversationFromHistory(selectedConversationEntry.scenarioId, selectedConversationEntry.conversationId);
+                        setSelectedConversationEntry(null);
+                      }
+                    }}
+                  >
+                    Delete
+                  </Button>
+                </>
               )}
               {(tab === "characters" || tab === "library") && (
                 <>
@@ -1058,9 +1105,8 @@ const IndexContent = () => {
             <div className="p-10 overflow-y-auto h-full">
               <ConversationsTab
                 globalRegistry={conversationRegistry}
-                onResumeConversation={handleResumeFromHistory}
-                onDeleteConversation={handleDeleteConversationFromHistory}
-                onRenameConversation={handleRenameConversationFromHistory}
+                selectedEntry={selectedConversationEntry}
+                onSelectEntry={setSelectedConversationEntry}
               />
             </div>
           )}
