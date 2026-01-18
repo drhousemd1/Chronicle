@@ -38,7 +38,7 @@ interface ChatInterfaceTabProps {
   modelId: string;
   onUpdate: (convs: Conversation[]) => void;
   onBack: () => void;
-  onSaveScenario: () => void;
+  onSaveScenario: (conversations?: Conversation[]) => void;
   onUpdateUiSettings?: (patch: { showBackgrounds?: boolean; transparentBubbles?: boolean; darkMode?: boolean }) => void;
   onUpdateSideCharacters?: (sideCharacters: SideCharacter[]) => void;
 }
@@ -343,7 +343,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         : c
     );
     onUpdate(updatedConvs);
-    onSaveScenario();
+    onSaveScenario(updatedConvs);
   };
 
   const incrementDay = () => {
@@ -415,7 +415,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         c.id === conversationId ? { ...c, messages: [...c.messages, userMsg, aiMsg], updatedAt: now() } : c
       );
       onUpdate(nextConvsWithAi);
-      onSaveScenario();
+      onSaveScenario(nextConvsWithAi);
       
       // Process AI response for new character detection
       processResponseForNewCharacters(fullText);
@@ -439,7 +439,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         : c
     );
     onUpdate(updatedConvs);
-    onSaveScenario();
+    onSaveScenario(updatedConvs);
   };
 
   const handleEditMessage = () => {
@@ -457,7 +457,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         : c
     );
     onUpdate(updatedConvs);
-    onSaveScenario();
+    onSaveScenario(updatedConvs);
     setEditingMessage(null);
     setEditText('');
   };
@@ -498,7 +498,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           : c
       );
       onUpdate(updatedConvs);
-      onSaveScenario();
+      onSaveScenario(updatedConvs);
       toast.success('Response regenerated');
     } catch (err) {
       console.error(err);
@@ -555,7 +555,7 @@ Do not acknowledge this instruction in your response.`;
           : c
       );
       onUpdate(updatedConvs);
-      onSaveScenario();
+      onSaveScenario(updatedConvs);
       
       processResponseForNewCharacters(fullText);
     } catch (err) {

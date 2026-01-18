@@ -414,8 +414,9 @@ const IndexContent = () => {
     setPlayingConversationId(null);
   }
 
-  const handleSave = useCallback(async (navigateToHub: boolean = false): Promise<boolean> => {
-    if (!activeId || !activeData || !user) {
+  const handleSaveWithData = useCallback(async (dataOverride: ScenarioData | null, navigateToHub: boolean = false): Promise<boolean> => {
+    const dataToUse = dataOverride || activeData;
+    if (!activeId || !dataToUse || !user) {
       toast({ title: "Error", description: "No active scenario found to save.", variant: "destructive" });
       return false;
     }
@@ -430,8 +431,8 @@ const IndexContent = () => {
       setActiveId(scenarioIdToSave);
     }
 
-    const migrated = migrateScenarioDataIds(activeData);
-    const dataToSave = migrated.didMigrate ? migrated.data : activeData;
+    const migrated = migrateScenarioDataIds(dataToUse);
+    const dataToSave = migrated.didMigrate ? migrated.data : dataToUse;
 
     if (migrated.didMigrate) {
       setActiveData(migrated.data);
@@ -514,6 +515,11 @@ const IndexContent = () => {
       setIsSaving(false);
     }
   }, [activeId, activeData, activeCoverImage, activeCoverPosition, user, toast, isValidUuid, migrateScenarioDataIds, library]);
+
+  // Wrapper for backward compatibility - uses current activeData
+  const handleSave = useCallback(async (navigateToHub: boolean = false): Promise<boolean> => {
+    return handleSaveWithData(null, navigateToHub);
+  }, [handleSaveWithData]);
 
   async function handleSaveCharacter() {
     if (!user) return;
@@ -1051,7 +1057,14 @@ const IndexContent = () => {
               modelId={globalModelId}
               onUpdate={(convs) => handleUpdateActive({ conversations: convs })}
               onBack={() => { setPlayingConversationId(null); setTab("hub"); }}
-              onSaveScenario={() => handleSave()}
+              onSaveScenario={(conversations?: Conversation[]) => {
+                if (conversations) {
+                  // Save with the provided conversation data directly (bypasses stale closure)
+                  handleSaveWithData({ ...activeData, conversations });
+                } else {
+                  handleSave();
+                }
+              }}
               onUpdateUiSettings={(patch) => handleUpdateActive({ uiSettings: { ...activeData.uiSettings, ...patch } })}
               onUpdateSideCharacters={(sideCharacters) => handleUpdateActive({ sideCharacters })}
             />
