@@ -96,7 +96,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
   const handleAiPortrait = async () => {
     // AI Portrait generation is currently being refactored
     // Will be available again soon via Lovable AI image generation
-    toast.info('AI Portrait feature coming soon! Use upload for now.');
+    console.log('AI Portrait feature coming soon!');
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -335,7 +335,6 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                             avatarPosition: { x: 50, y: 50 } 
                           });
                           setIsRepositioning(true);
-                          toast.success('Avatar uploaded');
                         } catch (error) {
                           console.error('Avatar upload failed:', error);
                           toast.error('Failed to upload avatar');

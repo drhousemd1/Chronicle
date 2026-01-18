@@ -241,7 +241,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
               console.error(`Failed to update side character avatar in database:`, err);
             }
             
-            toast.success(`${name} has joined the story!`);
+            console.log(`${name} has joined the story!`);
           }
         }
       }
@@ -430,7 +430,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
   const handleCopyMessage = async (text: string) => {
     await navigator.clipboard.writeText(text);
-    toast.success('Message copied to clipboard');
   };
 
   const handleDeleteMessage = (messageId: string) => {
@@ -441,7 +440,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     );
     onUpdate(updatedConvs);
     onSaveScenario();
-    toast.success('Message deleted');
   };
 
   const handleEditMessage = () => {
@@ -462,7 +460,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     onSaveScenario();
     setEditingMessage(null);
     setEditText('');
-    toast.success('Message updated');
   };
 
   const handleRegenerateMessage = async (messageId: string) => {
