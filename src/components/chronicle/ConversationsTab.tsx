@@ -93,23 +93,21 @@ export function ConversationsTab({
     <div className="max-w-4xl mx-auto py-4">
       <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center overflow-hidden">
         {/* Hero image with rectangular edge fade */}
-        <div className="relative w-80 h-44 mx-auto mb-6">
-          {/* Edge fade overlays */}
-          <div className="absolute inset-0 z-10 pointer-events-none">
-            {/* Top edge */}
-            <div className="absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-white to-transparent" />
-            {/* Bottom edge */}
-            <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-white to-transparent" />
-            {/* Left edge */}
-            <div className="absolute top-0 bottom-0 left-0 w-6 bg-gradient-to-r from-white to-transparent" />
-            {/* Right edge */}
-            <div className="absolute top-0 bottom-0 right-0 w-6 bg-gradient-to-l from-white to-transparent" />
-          </div>
+        <div className="relative w-[420px] h-[240px] mx-auto mb-6">
           <img 
             src={resumeSessionHero}
             alt="Resume your adventure" 
             className="w-full h-full object-contain"
           />
+          {/* Edge fade overlays */}
+          {/* Top edge */}
+          <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-white to-transparent" />
+          {/* Bottom edge */}
+          <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white to-transparent" />
+          {/* Left edge */}
+          <div className="absolute top-0 bottom-0 left-0 w-8 bg-gradient-to-r from-white to-transparent" />
+          {/* Right edge */}
+          <div className="absolute top-0 bottom-0 right-0 w-8 bg-gradient-to-l from-white to-transparent" />
         </div>
         
         <h3 className="text-xl font-bold text-slate-800 mb-2">Ready to Continue?</h3>
