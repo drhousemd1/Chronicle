@@ -643,6 +643,20 @@ const IndexContent = () => {
       }
       const { data, coverImage, coverImagePosition } = result;
       
+      // Explicitly fetch the selected conversation thread to ensure we have all messages
+      const thread = await supabaseData.fetchConversationThread(conversationId);
+      console.log('[handleResumeFromHistory] thread:', thread?.id, 'messages:', thread?.messages.length);
+      
+      if (thread) {
+        // Replace or add the thread in the conversations array
+        const existingIndex = data.conversations.findIndex(c => c.id === conversationId);
+        if (existingIndex >= 0) {
+          data.conversations[existingIndex] = thread;
+        } else {
+          data.conversations = [thread, ...data.conversations];
+        }
+      }
+      
       // Fetch side characters for this specific conversation
       const sideCharacters = await supabaseData.fetchSideCharacters(conversationId);
       data.sideCharacters = sideCharacters;
@@ -655,6 +669,8 @@ const IndexContent = () => {
       setActiveData(data);
       setPlayingConversationId(conversationId);
       setTab("chat_interface");
+      
+      console.log('[handleResumeFromHistory] activeData.conversations:', data.conversations.map(c => ({ id: c.id, msgCount: c.messages.length })));
     } catch (e: any) {
       toast({ title: "Failed to load scenario", description: e.message, variant: "destructive" });
     }
