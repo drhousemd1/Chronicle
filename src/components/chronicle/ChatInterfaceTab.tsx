@@ -1021,7 +1021,7 @@ const updatedChar: SideCharacter = {
     return (
       <div
         key={char.id}
-        className={`rounded-2xl transition-all duration-300 border-2 ${isExpanded ? 'bg-slate-50 border-blue-100 shadow-sm' : 'border-transparent hover:bg-slate-50'}`}
+        className={`rounded-2xl transition-all duration-300 border-2 ${isExpanded ? 'bg-slate-50/50 border-blue-100 shadow-sm' : 'border-transparent hover:bg-slate-50/30'}`}
       >
         <div className="relative">
           <button
