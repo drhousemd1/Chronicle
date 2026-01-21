@@ -157,6 +157,9 @@ export type CharacterSessionState = {
   currentlyWearing: CurrentlyWearing;
   preferredClothing?: Partial<PreferredClothing>;
   customSections?: CharacterTraitSection[];
+  // Avatar overrides (session-scoped)
+  avatarUrl?: string;
+  avatarPosition?: { x: number; y: number };
   createdAt: number;
   updatedAt: number;
 };

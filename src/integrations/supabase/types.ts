@@ -17,6 +17,8 @@ export type Database = {
       character_session_states: {
         Row: {
           age: string | null
+          avatar_position: Json | null
+          avatar_url: string | null
           character_id: string
           conversation_id: string
           created_at: string | null
@@ -35,6 +37,8 @@ export type Database = {
         }
         Insert: {
           age?: string | null
+          avatar_position?: Json | null
+          avatar_url?: string | null
           character_id: string
           conversation_id: string
           created_at?: string | null
@@ -53,6 +57,8 @@ export type Database = {
         }
         Update: {
           age?: string | null
+          avatar_position?: Json | null
+          avatar_url?: string | null
           character_id?: string
           conversation_id?: string
           created_at?: string | null
