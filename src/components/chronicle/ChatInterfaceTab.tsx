@@ -1169,7 +1169,7 @@ const updatedChar: SideCharacter = {
       </aside>
 
       <main className="flex-1 flex flex-col overflow-hidden h-full relative z-10">
-        <div ref={scrollRef} className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar scrollbar-thin">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 md:px-8 lg:px-12 py-8 space-y-6 custom-scrollbar scrollbar-thin">
           {conversation?.messages.length === 0 && !streamingContent && (
              <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-6">
                <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center text-4xl shadow-sm border border-slate-100">✨</div>
@@ -1193,7 +1193,7 @@ const updatedChar: SideCharacter = {
             const userChar = !isAi ? appData.characters.find(c => c.controlledBy === 'User') : null;
 
             return (
-              <div key={msg.id} className="max-w-4xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500 group">
+              <div key={msg.id} className="w-full max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 group">
                 <div className={`p-8 rounded-[2rem] shadow-2xl flex flex-col gap-4 transition-all relative ${
                   bubblesTransparent
                     ? 'bg-black/40 backdrop-blur-xl'
@@ -1329,7 +1329,7 @@ const updatedChar: SideCharacter = {
             const segments = parseMessageSegments(streamingContent);
             
             return (
-              <div className="max-w-4xl mx-auto w-full">
+              <div className="w-full max-w-7xl mx-auto">
                 <div className={`p-8 rounded-[2rem] border shadow-2xl flex flex-col gap-4 ${
                     bubblesTransparent
                       ? 'bg-black/40 backdrop-blur-xl border-white/5'
@@ -1375,7 +1375,7 @@ const updatedChar: SideCharacter = {
         </div>
 
         <div className={`pt-3 pb-8 px-8 border-t border-slate-200 shadow-[0_-4px_12px_rgba(0,0,0,0.03)] transition-colors ${showBackground ? 'bg-white/90 backdrop-blur-md' : 'bg-white'}`}>
-          <div className="max-w-4xl mx-auto space-y-3">
+          <div className="w-full max-w-7xl mx-auto space-y-3">
             {/* Quick Actions Bar - Above Input */}
             <div className="flex items-center gap-2 relative">
               <Button
