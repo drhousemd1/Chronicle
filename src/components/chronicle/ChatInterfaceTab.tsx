@@ -137,6 +137,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const [currentDay, setCurrentDay] = useState(1);
   const [currentTimeOfDay, setCurrentTimeOfDay] = useState<TimeOfDay>('day');
   const scrollRef = useRef<HTMLDivElement>(null);
+  
+  // Ref to always hold current sideCharacters - avoids stale closure in async callbacks
+  const sideCharactersRef = useRef<SideCharacter[]>(appData.sideCharacters || []);
+  useEffect(() => {
+    sideCharactersRef.current = appData.sideCharacters || [];
+  }, [appData.sideCharacters]);
 
   const conversation = appData.conversations.find(c => c.id === conversationId);
   const mainCharacters = appData.characters.filter(c => c.characterRole === 'Main');
@@ -157,6 +163,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   };
 
   // Async function to generate side character details via edge function
+  // Uses sideCharactersRef to avoid stale closure issues
   const generateSideCharacterDetailsAsync = async (
     characterId: string, 
     name: string, 
@@ -182,8 +189,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       }
       
       if (profileData && onUpdateSideCharacters) {
-        // Update character with generated details
-        const updatedSideChars = (appData.sideCharacters || []).map(sc => {
+        // Update character with generated details - use ref to get current state
+        const updatedSideChars = sideCharactersRef.current.map(sc => {
           if (sc.id === characterId) {
             return {
               ...sc,
@@ -229,7 +236,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           if (avatarError) {
             console.error('Avatar generation failed:', avatarError);
           } else if (avatarData?.imageUrl) {
-            const finalSideChars = (appData.sideCharacters || []).map(sc => {
+            // Use ref to get current state - avoids stale closure
+            const finalSideChars = sideCharactersRef.current.map(sc => {
               if (sc.id === characterId) {
                 return {
                   ...sc,
