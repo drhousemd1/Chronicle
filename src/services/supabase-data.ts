@@ -959,6 +959,108 @@ export async function deleteUserBackground(userId: string, backgroundId: string,
 }
 
 // =============================================
+// SIDEBAR BACKGROUNDS (Chat Interface Theme)
+// =============================================
+
+export async function fetchSidebarBackgrounds(userId: string): Promise<UserBackground[]> {
+  const { data, error } = await supabase
+    .from('sidebar_backgrounds')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  
+  return (data || []).map((row: any) => ({
+    id: row.id,
+    userId: row.user_id,
+    imageUrl: row.image_url,
+    isSelected: row.is_selected || false,
+    createdAt: new Date(row.created_at).getTime()
+  }));
+}
+
+export async function uploadSidebarBackgroundImage(userId: string, file: Blob, filename: string): Promise<string> {
+  // Reuse the backgrounds bucket with a sidebar subfolder
+  const path = `${userId}/sidebar/${filename}`;
+  
+  const { error: uploadError } = await supabase.storage
+    .from('backgrounds')
+    .upload(path, file, { upsert: true });
+
+  if (uploadError) throw uploadError;
+
+  const { data } = supabase.storage
+    .from('backgrounds')
+    .getPublicUrl(path);
+
+  return data.publicUrl;
+}
+
+export async function createSidebarBackground(userId: string, imageUrl: string): Promise<UserBackground> {
+  const { data, error } = await supabase
+    .from('sidebar_backgrounds')
+    .insert({
+      user_id: userId,
+      image_url: imageUrl,
+      is_selected: false
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  return {
+    id: data.id,
+    userId: data.user_id,
+    imageUrl: data.image_url,
+    isSelected: data.is_selected || false,
+    createdAt: new Date(data.created_at).getTime()
+  };
+}
+
+export async function setSelectedSidebarBackground(userId: string, backgroundId: string | null): Promise<void> {
+  // First, unselect all sidebar backgrounds for this user
+  const { error: unselectError } = await supabase
+    .from('sidebar_backgrounds')
+    .update({ is_selected: false })
+    .eq('user_id', userId);
+
+  if (unselectError) throw unselectError;
+
+  // If a specific background is selected, mark it as selected
+  if (backgroundId) {
+    const { error: selectError } = await supabase
+      .from('sidebar_backgrounds')
+      .update({ is_selected: true })
+      .eq('id', backgroundId)
+      .eq('user_id', userId);
+
+    if (selectError) throw selectError;
+  }
+}
+
+export async function deleteSidebarBackground(userId: string, backgroundId: string, imageUrl: string): Promise<void> {
+  // Extract the storage path from the URL
+  const urlParts = imageUrl.split('/backgrounds/');
+  if (urlParts.length > 1) {
+    const storagePath = urlParts[1];
+    await supabase.storage
+      .from('backgrounds')
+      .remove([storagePath]);
+  }
+
+  // Delete the database record
+  const { error } = await supabase
+    .from('sidebar_backgrounds')
+    .delete()
+    .eq('id', backgroundId)
+    .eq('user_id', userId);
+
+  if (error) throw error;
+}
+
+// =============================================
 // SIDE CHARACTERS (AI-Generated per conversation)
 // =============================================
 
