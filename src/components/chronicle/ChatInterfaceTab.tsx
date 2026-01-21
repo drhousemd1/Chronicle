@@ -1146,7 +1146,7 @@ const updatedChar: SideCharacter = {
               className="w-full h-full object-cover"
               alt="Sidebar theme"
             />
-            <div className="absolute inset-0 bg-white/80 backdrop-blur-[2px]" />
+            
           </div>
         )}
         
