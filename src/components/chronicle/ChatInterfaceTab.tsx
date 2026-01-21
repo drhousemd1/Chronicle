@@ -956,15 +956,19 @@ Do not acknowledge this instruction in your response.`;
 
           {conversation?.messages.map((msg) => {
             const isAi = msg.role === 'assistant';
-            const { char, cleanText, speakerName } = identifySpeaker(msg.text, !isAi);
             
-            // Use character name if found, otherwise use detected speaker name for placeholder display
-            const displayName = char?.name || speakerName || '';
-            const displayAvatar = char?.avatarDataUrl || null;
+            // For AI messages, parse into segments for multi-speaker rendering
+            // For user messages, use single segment approach
+            const segments = isAi 
+              ? parseMessageSegments(msg.text) 
+              : [{ speakerName: null, content: msg.text.replace(/\[SCENE:\s*.*?\]/g, '').trim() }];
+            
+            // Get the primary speaker for user messages
+            const userChar = !isAi ? appData.characters.find(c => c.controlledBy === 'User') : null;
 
             return (
               <div key={msg.id} className="max-w-4xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500 group">
-                <div className={`p-8 rounded-[2rem] shadow-2xl flex flex-col gap-8 transition-all relative ${
+                <div className={`p-8 rounded-[2rem] shadow-2xl flex flex-col gap-4 transition-all relative ${
                   bubblesTransparent
                     ? 'bg-black/40 backdrop-blur-xl'
                     : 'bg-[#1c1f26]'
@@ -1023,39 +1027,71 @@ Do not acknowledge this instruction in your response.`;
                     </DropdownMenu>
                   </div>
                   
-                  <div className="flex gap-8 items-start">
-                    <div className="flex flex-col items-center gap-2 w-20 flex-shrink-0">
-                      <div className={`w-16 h-16 rounded-full border-2 border-white/10 shadow-lg overflow-hidden flex items-center justify-center ${displayAvatar ? '' : 'bg-slate-800'}`}>
-                        {displayAvatar ? (
-                          <img src={displayAvatar} alt={displayName} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className={`font-black italic text-xl ${isAi ? 'text-white/20' : 'text-blue-400/30'}`}>
-                            {displayName.charAt(0) || '?'}
+                  {/* Render segments - each speaker gets their own avatar block */}
+                  {segments.map((segment, segIndex) => {
+                    // Determine speaker for this segment
+                    let segmentChar: Character | SideCharacter | null = null;
+                    let segmentName = '';
+                    let segmentAvatar: string | null = null;
+                    let isGenerating = false;
+                    
+                    if (!isAi) {
+                      // User message - use user's character
+                      segmentChar = userChar || null;
+                      segmentName = userChar?.name || 'You';
+                      segmentAvatar = userChar?.avatarDataUrl || null;
+                    } else if (segment.speakerName) {
+                      // AI message with speaker label - look up character
+                      segmentChar = findCharacterByName(segment.speakerName, appData);
+                      segmentName = segment.speakerName;
+                      segmentAvatar = segmentChar?.avatarDataUrl || null;
+                      isGenerating = segmentChar && 'isAvatarGenerating' in segmentChar ? segmentChar.isAvatarGenerating : false;
+                    } else {
+                      // AI message without speaker - use first AI character as default
+                      const aiChars = appData.characters.filter(c => c.controlledBy === 'AI');
+                      segmentChar = aiChars.length > 0 ? aiChars[0] : null;
+                      segmentName = segmentChar?.name || 'Narrator';
+                      segmentAvatar = segmentChar?.avatarDataUrl || null;
+                    }
+                    
+                    return (
+                      <div key={segIndex} className={`flex gap-6 items-start ${segIndex > 0 ? 'mt-4 pt-4 border-t border-white/5' : ''}`}>
+                        <div className="flex flex-col items-center gap-1.5 w-16 flex-shrink-0">
+                          <div className={`w-12 h-12 rounded-full border-2 border-white/10 shadow-lg overflow-hidden flex items-center justify-center ${segmentAvatar ? '' : 'bg-slate-800'}`}>
+                            {isGenerating ? (
+                              <Loader2 className="w-5 h-5 text-purple-400 animate-spin" />
+                            ) : segmentAvatar ? (
+                              <img src={segmentAvatar} alt={segmentName} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className={`font-black italic text-lg ${isAi ? 'text-white/30' : 'text-blue-400/50'}`}>
+                                {segmentName.charAt(0) || '?'}
+                              </div>
+                            )}
                           </div>
-                        )}
+                          <span className={`text-[9px] font-black uppercase tracking-widest text-center truncate w-full ${!isAi ? 'text-blue-300' : 'text-slate-500'}`}>
+                            {segmentName}
+                          </span>
+                        </div>
+                        <div className="flex-1 pt-1 antialiased">
+                          <FormattedMessage text={segment.content} />
+                        </div>
                       </div>
-                      <span className={`text-[10px] font-black uppercase tracking-widest text-center truncate w-full ${!isAi ? 'text-blue-300' : 'text-slate-400'}`}>
-                        {displayName}
-                      </span>
-                    </div>
-                    <div className={`flex-1 pt-2 antialiased`}>
-                      <FormattedMessage text={cleanText} />
-                    </div>
-                  </div>
+                    );
+                  })}
                   
                   {/* Day/Time Badge - bottom left */}
                   {(msg.day || msg.timeOfDay) && (
-                          <div className="absolute bottom-3 left-4 flex items-center gap-2 text-sm text-white">
-                            {msg.day && <span>Day: {msg.day}</span>}
-                            {msg.timeOfDay && (
-                              <span className="flex items-center gap-1">
-                                {msg.timeOfDay === 'sunrise' && <Sunrise className="w-5 h-5" />}
-                                {msg.timeOfDay === 'day' && <Sun className="w-5 h-5" />}
-                                {msg.timeOfDay === 'sunset' && <Sunset className="w-5 h-5" />}
-                                {msg.timeOfDay === 'night' && <Moon className="w-5 h-5" />}
-                              </span>
-                            )}
-                          </div>
+                    <div className="absolute bottom-3 left-4 flex items-center gap-2 text-sm text-white">
+                      {msg.day && <span>Day: {msg.day}</span>}
+                      {msg.timeOfDay && (
+                        <span className="flex items-center gap-1">
+                          {msg.timeOfDay === 'sunrise' && <Sunrise className="w-5 h-5" />}
+                          {msg.timeOfDay === 'day' && <Sun className="w-5 h-5" />}
+                          {msg.timeOfDay === 'sunset' && <Sunset className="w-5 h-5" />}
+                          {msg.timeOfDay === 'night' && <Moon className="w-5 h-5" />}
+                        </span>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
@@ -1063,36 +1099,49 @@ Do not acknowledge this instruction in your response.`;
           })}
 
           {streamingContent && (() => {
-            const { cleanText, speakerName, char } = identifySpeaker(streamingContent, false);
-            const displayName = char?.name || speakerName || 'Thinking';
-            const displayAvatar = char?.avatarDataUrl || null;
+            // Parse streaming content into segments for multi-speaker rendering
+            const segments = parseMessageSegments(streamingContent);
             
             return (
               <div className="max-w-4xl mx-auto w-full">
-                <div className={`p-8 rounded-[2rem] border shadow-2xl flex flex-col gap-8 ${
+                <div className={`p-8 rounded-[2rem] border shadow-2xl flex flex-col gap-4 ${
                     bubblesTransparent
                       ? 'bg-black/40 backdrop-blur-xl border-white/5'
                       : 'bg-[#1c1f26] border-white/5'
                 }`}>
-                  <div className="flex gap-8 items-start">
-                    <div className="flex flex-col items-center gap-2 w-20 flex-shrink-0">
-                      <div className={`w-16 h-16 rounded-full border-2 border-white/10 shadow-lg overflow-hidden flex items-center justify-center ${displayAvatar ? '' : 'bg-slate-800 animate-pulse'}`}>
-                        {displayAvatar ? (
-                          <img src={displayAvatar} alt={displayName} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="text-white/20 font-black italic text-xl">
-                            {displayName.charAt(0) || '...'}
+                  {segments.map((segment, segIndex) => {
+                    // Look up character for this segment
+                    const segmentChar = segment.speakerName 
+                      ? findCharacterByName(segment.speakerName, appData)
+                      : appData.characters.find(c => c.controlledBy === 'AI');
+                    const segmentName = segment.speakerName || segmentChar?.name || 'Thinking';
+                    const segmentAvatar = segmentChar?.avatarDataUrl || null;
+                    const isGenerating = segmentChar && 'isAvatarGenerating' in segmentChar ? segmentChar.isAvatarGenerating : false;
+                    
+                    return (
+                      <div key={segIndex} className={`flex gap-6 items-start ${segIndex > 0 ? 'mt-4 pt-4 border-t border-white/5' : ''}`}>
+                        <div className="flex flex-col items-center gap-1.5 w-16 flex-shrink-0">
+                          <div className={`w-12 h-12 rounded-full border-2 border-white/10 shadow-lg overflow-hidden flex items-center justify-center ${segmentAvatar ? '' : 'bg-slate-800 animate-pulse'}`}>
+                            {isGenerating ? (
+                              <Loader2 className="w-5 h-5 text-purple-400 animate-spin" />
+                            ) : segmentAvatar ? (
+                              <img src={segmentAvatar} alt={segmentName} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="text-white/30 font-black italic text-lg">
+                                {segmentName.charAt(0) || '...'}
+                              </div>
+                            )}
                           </div>
-                        )}
+                          <span className="text-[9px] font-black uppercase tracking-widest text-center text-slate-500 truncate w-full">
+                            {segmentName}
+                          </span>
+                        </div>
+                        <div className="flex-1 pt-1 antialiased">
+                          <FormattedMessage text={segment.content} />
+                        </div>
                       </div>
-                      <span className="text-[10px] font-black uppercase tracking-widest text-center text-slate-400 truncate w-full">
-                        {displayName}
-                      </span>
-                    </div>
-                    <div className="flex-1 pt-2 antialiased">
-                      <FormattedMessage text={cleanText} />
-                    </div>
-                  </div>
+                    );
+                  })}
                 </div>
               </div>
             );
