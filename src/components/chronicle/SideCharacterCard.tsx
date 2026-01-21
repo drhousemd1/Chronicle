@@ -11,17 +11,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { CharacterEditForm, CharacterEditDraft } from './CharacterEditForm';
 
 interface SideCharacterCardProps {
   character: SideCharacter;
   isExpanded: boolean;
-  isEditing?: boolean;
-  isSaving?: boolean;
   onToggleExpand: () => void;
   onStartEdit?: () => void;
-  onSaveEdit?: (draft: CharacterEditDraft) => void;
-  onCancelEdit?: () => void;
   openSections: Record<string, boolean>;
   onToggleSection: (sectionId: string) => void;
 }
@@ -29,12 +24,8 @@ interface SideCharacterCardProps {
 export const SideCharacterCard: React.FC<SideCharacterCardProps> = ({
   character,
   isExpanded,
-  isEditing = false,
-  isSaving = false,
   onToggleExpand,
   onStartEdit,
-  onSaveEdit,
-  onCancelEdit,
   openSections,
   onToggleSection
 }) => {
@@ -173,8 +164,8 @@ export const SideCharacterCard: React.FC<SideCharacterCardProps> = ({
           </div>
         </button>
         
-        {/* Edit dropdown menu - visible when expanded and not already editing */}
-        {isExpanded && !isEditing && onStartEdit && (
+        {/* Edit dropdown menu - visible when expanded */}
+        {isExpanded && onStartEdit && (
           <div className="absolute top-2 right-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -195,28 +186,17 @@ export const SideCharacterCard: React.FC<SideCharacterCardProps> = ({
 
       {isExpanded && (
         <div className="px-5 pb-5 pt-1 space-y-1 animate-in zoom-in-95 duration-300">
-          {isEditing && onSaveEdit && onCancelEdit ? (
-            <CharacterEditForm
-              character={character}
-              onSave={onSaveEdit}
-              onCancel={onCancelEdit}
-              isSaving={isSaving}
-            />
-          ) : (
-            <>
-              {/* Quick role description */}
-              {character.roleDescription && (
-                <p className="text-xs text-purple-500 italic text-center pb-2 border-b border-purple-100 mb-2">
-                  {character.roleDescription}
-                </p>
-              )}
-              
-              {renderSection(createBasicsSection())}
-              {renderSection(createPhysicalSection())}
-              {renderSection(createBackgroundSection())}
-              {renderSection(createPersonalitySection())}
-            </>
+          {/* Quick role description */}
+          {character.roleDescription && (
+            <p className="text-xs text-purple-500 italic text-center pb-2 border-b border-purple-100 mb-2">
+              {character.roleDescription}
+            </p>
           )}
+          
+          {renderSection(createBasicsSection())}
+          {renderSection(createPhysicalSection())}
+          {renderSection(createBackgroundSection())}
+          {renderSection(createPersonalitySection())}
         </div>
       )}
     </div>
