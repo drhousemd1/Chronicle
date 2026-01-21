@@ -4,7 +4,7 @@ import { Button, TextArea } from './UI';
 import { Badge } from '@/components/ui/badge';
 import { uid, now, uuid } from '../../services/storage';
 import { generateRoleplayResponseStream } from '../../services/llm';
-import { RefreshCw, MoreVertical, Copy, Pencil, Trash2, ChevronUp, ChevronDown, Sunrise, Sun, Sunset, Moon, Loader2, StepForward } from 'lucide-react';
+import { RefreshCw, MoreVertical, Copy, Pencil, Trash2, ChevronUp, ChevronDown, Sunrise, Sun, Sunset, Moon, Loader2, StepForward, Settings, Image as ImageIcon } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,6 +32,8 @@ import {
 import { SideCharacterCard } from './SideCharacterCard';
 import { CharacterEditModal, CharacterEditDraft } from './CharacterEditModal';
 import { ScrollableSection } from './ScrollableSection';
+import { SidebarThemeModal } from './SidebarThemeModal';
+import { UserBackground } from '@/types';
 
 interface ChatInterfaceTabProps {
   scenarioId: string;
@@ -149,6 +151,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const [sessionStates, setSessionStates] = useState<CharacterSessionState[]>([]);
   const [sessionStatesLoaded, setSessionStatesLoaded] = useState(false);
   
+  // Sidebar theme state
+  const [isSidebarThemeOpen, setIsSidebarThemeOpen] = useState(false);
+  const [sidebarBackgrounds, setSidebarBackgrounds] = useState<UserBackground[]>([]);
+  const [selectedSidebarBgId, setSelectedSidebarBgId] = useState<string | null>(null);
+  const [isUploadingSidebarBg, setIsUploadingSidebarBg] = useState(false);
+  
   // Ref to always hold current sideCharacters - avoids stale closure in async callbacks
   const sideCharactersRef = useRef<SideCharacter[]>(appData.sideCharacters || []);
   useEffect(() => {
@@ -169,6 +177,78 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     }
     loadSessionStates();
   }, [conversationId]);
+  
+  // Load sidebar backgrounds on mount
+  useEffect(() => {
+    async function loadSidebarBackgrounds() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const bgs = await supabaseData.fetchSidebarBackgrounds(user.id);
+          setSidebarBackgrounds(bgs);
+          const selected = bgs.find(bg => bg.isSelected);
+          if (selected) setSelectedSidebarBgId(selected.id);
+        }
+      } catch (err) {
+        console.error('Failed to load sidebar backgrounds:', err);
+      }
+    }
+    loadSidebarBackgrounds();
+  }, []);
+  
+  // Sidebar background handlers
+  const selectedSidebarBgUrl = useMemo(() => {
+    if (!selectedSidebarBgId) return null;
+    return sidebarBackgrounds.find(bg => bg.id === selectedSidebarBgId)?.imageUrl || null;
+  }, [selectedSidebarBgId, sidebarBackgrounds]);
+  
+  const handleUploadSidebarBg = async (file: File) => {
+    try {
+      setIsUploadingSidebarBg(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      const filename = `sidebar-${Date.now()}-${file.name}`;
+      const imageUrl = await supabaseData.uploadSidebarBackgroundImage(user.id, file, filename);
+      const newBg = await supabaseData.createSidebarBackground(user.id, imageUrl);
+      setSidebarBackgrounds(prev => [newBg, ...prev]);
+      toast.success('Background uploaded!');
+    } catch (err) {
+      console.error('Failed to upload sidebar background:', err);
+      toast.error('Failed to upload background');
+    } finally {
+      setIsUploadingSidebarBg(false);
+    }
+  };
+  
+  const handleSelectSidebarBg = async (id: string | null) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      await supabaseData.setSelectedSidebarBackground(user.id, id);
+      setSelectedSidebarBgId(id);
+      setSidebarBackgrounds(prev => prev.map(bg => ({ ...bg, isSelected: bg.id === id })));
+    } catch (err) {
+      console.error('Failed to select sidebar background:', err);
+      toast.error('Failed to update selection');
+    }
+  };
+  
+  const handleDeleteSidebarBg = async (id: string, imageUrl: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      await supabaseData.deleteSidebarBackground(user.id, id, imageUrl);
+      setSidebarBackgrounds(prev => prev.filter(bg => bg.id !== id));
+      if (selectedSidebarBgId === id) setSelectedSidebarBgId(null);
+      toast.success('Background deleted');
+    } catch (err) {
+      console.error('Failed to delete sidebar background:', err);
+      toast.error('Failed to delete background');
+    }
+  };
   
 // Helper to get effective character (base + session overrides merged)
   const getEffectiveCharacter = useCallback((baseChar: Character): Character => {
@@ -1057,17 +1137,46 @@ const updatedChar: SideCharacter = {
         </div>
       )}
 
-      <aside className={`w-[300px] flex-shrink-0 border-r border-slate-200 flex flex-col h-full shadow-[inset_-4px_0_12px_rgba(0,0,0,0.02)] z-10 transition-colors ${showBackground ? 'bg-white/90 backdrop-blur-md' : 'bg-white'}`}>
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-          <button
-            onClick={onBack}
-            className="flex items-center gap-2 text-xs font-black text-slate-500 uppercase tracking-widest hover:text-blue-600 transition-colors"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-            Exit Scenario
-          </button>
-        </div>
-        <div className="flex-1 flex flex-col p-4 gap-4 overflow-hidden">
+      <aside className={`w-[300px] flex-shrink-0 border-r border-slate-200 flex flex-col h-full shadow-[inset_-4px_0_12px_rgba(0,0,0,0.02)] z-10 transition-colors relative overflow-hidden ${showBackground ? 'bg-white/90 backdrop-blur-md' : 'bg-white'}`}>
+        {/* Sidebar background image layer */}
+        {selectedSidebarBgUrl && (
+          <div className="absolute inset-0 z-0">
+            <img
+              src={selectedSidebarBgUrl}
+              className="w-full h-full object-cover"
+              alt="Sidebar theme"
+            />
+            <div className="absolute inset-0 bg-white/80 backdrop-blur-[2px]" />
+          </div>
+        )}
+        
+        {/* All sidebar content in relative z-10 container */}
+        <div className="relative z-10 flex flex-col h-full">
+          <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+            <button
+              onClick={onBack}
+              className="flex items-center gap-2 text-xs font-black text-slate-500 uppercase tracking-widest hover:text-blue-600 transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+              Exit Scenario
+            </button>
+            
+            {/* Settings cog button */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="inline-flex items-center justify-center rounded-xl px-3 py-2 bg-slate-900 text-white border border-slate-900 hover:bg-slate-800 shadow-md hover:shadow-lg transition-all active:scale-95">
+                  <Settings className="w-4 h-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => setIsSidebarThemeOpen(true)} className="cursor-pointer">
+                  <ImageIcon className="w-4 h-4 mr-2" />
+                  Set Theme
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          <div className="flex-1 flex flex-col p-4 gap-4 overflow-hidden">
           {/* Day/Time Control Panel - Fixed at top */}
           <section className="flex-shrink-0 bg-slate-50 rounded-xl p-4 border border-slate-100">
             <div className="flex gap-4 items-center">
@@ -1172,6 +1281,7 @@ const updatedChar: SideCharacter = {
               </div>
             </ScrollableSection>
           </section>
+        </div>
         </div>
       </aside>
 
@@ -1483,6 +1593,18 @@ const updatedChar: SideCharacter = {
         onSave={handleModalSave}
         isSaving={isSavingEdit}
         modelId={modelId}
+      />
+      
+      {/* Sidebar Theme Modal */}
+      <SidebarThemeModal
+        isOpen={isSidebarThemeOpen}
+        onClose={() => setIsSidebarThemeOpen(false)}
+        selectedBackgroundId={selectedSidebarBgId}
+        backgrounds={sidebarBackgrounds}
+        onSelectBackground={handleSelectSidebarBg}
+        onUpload={handleUploadSidebarBg}
+        onDelete={handleDeleteSidebarBg}
+        isUploading={isUploadingSidebarBg}
       />
     </div>
   );
