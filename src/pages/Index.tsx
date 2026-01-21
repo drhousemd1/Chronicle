@@ -475,6 +475,16 @@ const IndexContent = () => {
       const updatedConvRegistry = await supabaseData.fetchConversationRegistry();
       setConversationRegistry(updatedConvRegistry);
       
+      // Sync selectedConversationEntry with fresh data to update message count
+      if (selectedConversationEntry) {
+        const freshEntry = updatedConvRegistry.find(
+          c => c.conversationId === selectedConversationEntry.conversationId
+        );
+        if (freshEntry) {
+          setSelectedConversationEntry(freshEntry);
+        }
+      }
+      
       // Sync characters to library (create copies with new IDs to avoid overwriting scenario-linked characters)
       if (dataToSave.characters.length > 0) {
         for (const char of dataToSave.characters) {
@@ -838,7 +848,7 @@ const IndexContent = () => {
             <SidebarItem active={tab === "hub"} label="Your Stories" icon={<IconsList.Hub />} onClick={() => { setActiveId(null); setTab("hub"); setPlayingConversationId(null); }} collapsed={sidebarCollapsed} />
             <SidebarItem active={tab === "library"} label="Character Library" icon={<IconsList.Library />} onClick={() => { setActiveId(null); setTab("library"); setSelectedCharacterId(null); setPlayingConversationId(null); }} collapsed={sidebarCollapsed} />
             
-            <SidebarItem active={tab === "conversations"} label="Chat History" icon={<IconsList.Chat />} onClick={() => setTab("conversations")} collapsed={sidebarCollapsed} />
+            <SidebarItem active={tab === "conversations"} label="Chat History" icon={<IconsList.Chat />} onClick={() => { setSelectedConversationEntry(null); setTab("conversations"); }} collapsed={sidebarCollapsed} />
             
             <SidebarItem 
               active={tab === "world" || tab === "characters"} 
