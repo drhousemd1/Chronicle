@@ -1,7 +1,7 @@
 // Character Edit Modal - Full-featured modal dialog for editing character details
 // Session-scoped: edits persist only within the active playthrough
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Character, SideCharacter, PhysicalAppearance, CurrentlyWearing, PreferredClothing, CharacterTraitSection } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +15,10 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { X, Save, Loader2 } from 'lucide-react';
+import { X, Save, Loader2, Upload, Wand2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import * as supabaseData from '@/services/supabase-data';
+import { toast } from 'sonner';
 
 // Unified draft type for both Character and SideCharacter
 export interface CharacterEditDraft {
@@ -32,6 +35,9 @@ export interface CharacterEditDraft {
   currentlyWearing?: Partial<CurrentlyWearing>;
   preferredClothing?: Partial<PreferredClothing>;
   sections?: CharacterTraitSection[];
+  // Avatar fields for session-scoped updates
+  avatarDataUrl?: string;
+  avatarPosition?: { x: number; y: number };
   // Side character specific
   background?: {
     relationshipStatus?: string;
@@ -53,6 +59,7 @@ interface CharacterEditModalProps {
   character: Character | SideCharacter | null;
   onSave: (draft: CharacterEditDraft) => void;
   isSaving?: boolean;
+  modelId?: string; // For AI avatar regeneration
 }
 
 // Reusable input field component
@@ -115,9 +122,13 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
   onOpenChange,
   character,
   onSave,
-  isSaving = false
+  isSaving = false,
+  modelId
 }) => {
   const [draft, setDraft] = useState<CharacterEditDraft>({});
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isRegeneratingAvatar, setIsRegeneratingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Determine if this is a side character (auto-generated)
   const isSideCharacter = character && 'background' in character;
@@ -135,6 +146,9 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
         physicalAppearance: { ...character.physicalAppearance },
         currentlyWearing: { ...character.currentlyWearing },
         preferredClothing: { ...character.preferredClothing },
+        // Initialize avatar from character
+        avatarDataUrl: character.avatarDataUrl,
+        avatarPosition: character.avatarPosition || { x: 50, y: 50 },
       };
 
       // Add Character-specific fields
@@ -158,6 +172,114 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
       setDraft(baseDraft);
     }
   }, [character, open]);
+
+  // Helper to resize image to 512x512
+  const resizeImage = (file: File): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 512;
+        canvas.height = 512;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Failed to get canvas context'));
+          return;
+        }
+        // Draw image centered and cropped to square
+        const size = Math.min(img.width, img.height);
+        const x = (img.width - size) / 2;
+        const y = (img.height - size) / 2;
+        ctx.drawImage(img, x, y, size, size, 0, 0, 512, 512);
+        canvas.toBlob((blob) => {
+          if (blob) resolve(blob);
+          else reject(new Error('Failed to create blob'));
+        }, 'image/jpeg', 0.9);
+      };
+      img.onerror = reject;
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  // Handle avatar upload
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setIsUploadingAvatar(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+      
+      const resizedBlob = await resizeImage(file);
+      const filename = `session-avatar-${Date.now()}.jpg`;
+      const publicUrl = await supabaseData.uploadAvatar(user.id, resizedBlob, filename);
+      
+      setDraft(prev => ({
+        ...prev,
+        avatarDataUrl: publicUrl,
+        avatarPosition: { x: 50, y: 50 }
+      }));
+      toast.success('Avatar uploaded');
+    } catch (err) {
+      console.error('Avatar upload failed:', err);
+      toast.error('Failed to upload avatar');
+    } finally {
+      setIsUploadingAvatar(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  // Build avatar prompt from appearance fields
+  const buildAvatarPrompt = (): string => {
+    const appearance = draft.physicalAppearance || character?.physicalAppearance;
+    const name = draft.name || character?.name || 'Character';
+    const parts: string[] = [name];
+    
+    if (appearance?.hairColor) parts.push(`${appearance.hairColor} hair`);
+    if (appearance?.eyeColor) parts.push(`${appearance.eyeColor} eyes`);
+    if (appearance?.build) parts.push(`${appearance.build} build`);
+    if (appearance?.skinTone) parts.push(`${appearance.skinTone} skin`);
+    if (appearance?.height) parts.push(`${appearance.height} tall`);
+    if (draft.sexType || character?.sexType) parts.push(draft.sexType || character?.sexType || '');
+    if (draft.age || character?.age) parts.push(`${draft.age || character?.age} years old`);
+    
+    return parts.filter(Boolean).join(', ');
+  };
+
+  // Handle avatar regeneration via AI
+  const handleRegenerateAvatar = async () => {
+    if (!character) return;
+    
+    setIsRegeneratingAvatar(true);
+    try {
+      const avatarPrompt = buildAvatarPrompt();
+      
+      const { data, error } = await supabase.functions.invoke('generate-side-character-avatar', {
+        body: {
+          avatarPrompt,
+          characterName: draft.name || character.name,
+          modelId: modelId || 'gemini-3-flash-preview'
+        }
+      });
+      
+      if (error) throw error;
+      
+      if (data?.imageUrl) {
+        setDraft(prev => ({
+          ...prev,
+          avatarDataUrl: data.imageUrl,
+          avatarPosition: { x: 50, y: 50 }
+        }));
+        toast.success('Portrait generated');
+      }
+    } catch (err) {
+      console.error('Avatar regeneration failed:', err);
+      toast.error('Failed to generate portrait');
+    } finally {
+      setIsRegeneratingAvatar(false);
+    }
+  };
 
   const updateField = <K extends keyof CharacterEditDraft>(field: K, value: CharacterEditDraft[K]) => {
     setDraft(prev => ({ ...prev, [field]: value }));
@@ -236,26 +358,62 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Left Column - Avatar & Basic Info */}
               <div className="space-y-6">
-                {/* Avatar Display */}
+{/* Avatar Display with Upload/Regenerate */}
                 <div className="flex flex-col items-center gap-3">
-                  <div className="w-32 h-32 rounded-2xl overflow-hidden bg-slate-100 border-2 border-slate-200 shadow-sm">
-                    {character.avatarDataUrl ? (
+                  <div className="w-32 h-32 rounded-2xl overflow-hidden bg-slate-100 border-2 border-slate-200 shadow-sm relative">
+                    {(isUploadingAvatar || isRegeneratingAvatar) ? (
+                      <div className="w-full h-full flex items-center justify-center bg-slate-50">
+                        <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+                      </div>
+                    ) : (draft.avatarDataUrl || character.avatarDataUrl) ? (
                       <img 
-                        src={character.avatarDataUrl} 
-                        alt={character.name} 
+                        src={draft.avatarDataUrl || character.avatarDataUrl} 
+                        alt={draft.name || character.name} 
                         className="w-full h-full object-cover"
                         style={{ 
-                          objectPosition: `${character.avatarPosition?.x ?? 50}% ${character.avatarPosition?.y ?? 50}%` 
+                          objectPosition: `${(draft.avatarPosition?.x ?? character.avatarPosition?.x ?? 50)}% ${(draft.avatarPosition?.y ?? character.avatarPosition?.y ?? 50)}%` 
                         }}
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center font-black text-slate-300 text-3xl italic uppercase">
-                        {character.name?.charAt(0) || '?'}
+                        {(draft.name || character.name)?.charAt(0) || '?'}
                       </div>
                     )}
                   </div>
+                  
+                  {/* Upload/Regenerate Buttons */}
+                  <div className="flex flex-col gap-2 w-full">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleAvatarUpload}
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploadingAvatar || isRegeneratingAvatar}
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      {isUploadingAvatar ? 'Uploading...' : 'Upload Image'}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full text-slate-600"
+                      onClick={handleRegenerateAvatar}
+                      disabled={isUploadingAvatar || isRegeneratingAvatar}
+                    >
+                      <Wand2 className="w-4 h-4 mr-2" />
+                      {isRegeneratingAvatar ? 'Generating...' : 'Regenerate Portrait'}
+                    </Button>
+                  </div>
+                  
                   <p className="text-[10px] text-slate-400 text-center">
-                    Avatar cannot be changed during session
+                    Changes apply to this session only
                   </p>
                 </div>
 

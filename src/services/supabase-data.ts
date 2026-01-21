@@ -732,6 +732,9 @@ export async function fetchSessionStates(conversationId: string): Promise<Charac
     currentlyWearing: dbCurrentlyWearingToApp(row.currently_wearing),
     preferredClothing: row.preferred_clothing ? dbPreferredClothingToApp(row.preferred_clothing) : undefined,
     customSections: row.custom_sections || undefined,
+    // Avatar fields for session-scoped updates
+    avatarUrl: row.avatar_url || undefined,
+    avatarPosition: row.avatar_position || undefined,
     createdAt: new Date(row.created_at).getTime(),
     updatedAt: new Date(row.updated_at).getTime()
   }));
@@ -785,6 +788,8 @@ export async function updateSessionState(
     currentlyWearing: CurrentlyWearing;
     preferredClothing: Partial<PreferredClothing>;
     customSections: any[];
+    avatarUrl: string;
+    avatarPosition: { x: number; y: number };
   }>
 ): Promise<void> {
   const updateData: any = {};
@@ -808,6 +813,9 @@ export async function updateSessionState(
   if (patch.customSections !== undefined) {
     updateData.custom_sections = patch.customSections;
   }
+  // Avatar fields for session-scoped updates
+  if (patch.avatarUrl !== undefined) updateData.avatar_url = patch.avatarUrl;
+  if (patch.avatarPosition !== undefined) updateData.avatar_position = patch.avatarPosition;
 
   const { error } = await supabase
     .from('character_session_states')

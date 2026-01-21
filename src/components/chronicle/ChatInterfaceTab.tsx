@@ -169,7 +169,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     loadSessionStates();
   }, [conversationId]);
   
-  // Helper to get effective character (base + session overrides merged)
+// Helper to get effective character (base + session overrides merged)
   const getEffectiveCharacter = useCallback((baseChar: Character): Character => {
     const sessionState = sessionStates.find(s => s.characterId === baseChar.id);
     if (!sessionState) return baseChar;
@@ -188,6 +188,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         ? { ...baseChar.preferredClothing, ...sessionState.preferredClothing }
         : baseChar.preferredClothing,
       sections: sessionState.customSections || baseChar.sections,
+      // Session-scoped avatar overrides
+      avatarDataUrl: sessionState.avatarUrl || baseChar.avatarDataUrl,
+      avatarPosition: sessionState.avatarPosition || baseChar.avatarPosition,
     };
   }, [sessionStates]);
 
@@ -723,7 +726,7 @@ Do not acknowledge this instruction in your response.`;
         setSessionStates(prev => [...prev, sessionState!]);
       }
       
-      // Update session state with draft changes
+// Update session state with draft changes (including avatar)
       await supabaseData.updateSessionState(sessionState.id, {
         name: draft.name,
         age: draft.age,
@@ -735,6 +738,8 @@ Do not acknowledge this instruction in your response.`;
         currentlyWearing: draft.currentlyWearing as any,
         preferredClothing: draft.preferredClothing,
         customSections: draft.sections,
+        avatarUrl: draft.avatarDataUrl,
+        avatarPosition: draft.avatarPosition,
       });
       
       // Refresh session states
@@ -756,7 +761,7 @@ Do not acknowledge this instruction in your response.`;
     setIsSavingEdit(true);
     
     try {
-      const updatedChar: SideCharacter = {
+const updatedChar: SideCharacter = {
         ...char,
         name: draft.name || char.name,
         age: draft.age || char.age,
@@ -769,6 +774,8 @@ Do not acknowledge this instruction in your response.`;
         preferredClothing: { ...char.preferredClothing, ...draft.preferredClothing },
         background: draft.background ? { ...char.background, ...draft.background } : char.background,
         personality: draft.personality ? { ...char.personality, ...draft.personality } : char.personality,
+        avatarDataUrl: draft.avatarDataUrl || char.avatarDataUrl,
+        avatarPosition: draft.avatarPosition || char.avatarPosition,
         updatedAt: now(),
       };
       
@@ -1439,12 +1446,13 @@ Do not acknowledge this instruction in your response.`;
       </Dialog>
 
       {/* Character Edit Modal */}
-      <CharacterEditModal
+<CharacterEditModal
         open={editModalOpen}
         onOpenChange={setEditModalOpen}
         character={characterToEdit}
         onSave={handleModalSave}
         isSaving={isSavingEdit}
+        modelId={modelId}
       />
     </div>
   );
