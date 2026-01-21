@@ -966,8 +966,8 @@ function dbToSideCharacter(row: any): SideCharacter {
     sexType: row.sex_type || '',
     location: row.location || '',
     currentMood: row.current_mood || '',
-    controlledBy: 'AI',
-    characterRole: 'Side',
+    controlledBy: row.controlled_by || 'AI',
+    characterRole: row.character_role || 'Side',
     roleDescription: row.role_description || '',
     physicalAppearance: dbPhysicalAppearanceToApp(row.physical_appearance),
     currentlyWearing: dbCurrentlyWearingToApp(row.currently_wearing),
@@ -1050,6 +1050,9 @@ export async function updateSideCharacter(
   if (patch.avatarDataUrl !== undefined) updateData.avatar_url = patch.avatarDataUrl;
   if (patch.avatarPosition !== undefined) updateData.avatar_position = patch.avatarPosition;
   if (patch.extractedTraits !== undefined) updateData.extracted_traits = patch.extractedTraits;
+  if (patch.controlledBy !== undefined) updateData.controlled_by = patch.controlledBy;
+  if (patch.characterRole !== undefined) updateData.character_role = patch.characterRole;
+  if (patch.name !== undefined) updateData.name = patch.name;
 
   const { error } = await supabase
     .from('side_characters')
