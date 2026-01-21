@@ -551,13 +551,17 @@ export async function fetchConversationRegistry(): Promise<ConversationMetadata[
       .select('*', { count: 'exact', head: true })
       .eq('conversation_id', conv.id);
 
-    // Get last message preview
-    const { data: lastMsgData } = await supabase
+    // Get last message preview - fetch all messages in order and take the last one
+    // (created_at can be the same for batch-inserted messages, so we get all and take the last)
+    const { data: allMessages } = await supabase
       .from('messages')
       .select('content')
       .eq('conversation_id', conv.id)
-      .order('created_at', { ascending: false })
-      .limit(1);
+      .order('created_at', { ascending: true });
+    
+    const lastMessage = allMessages && allMessages.length > 0 
+      ? allMessages[allMessages.length - 1].content 
+      : '';
 
     result.push({
       conversationId: conv.id,
@@ -565,7 +569,7 @@ export async function fetchConversationRegistry(): Promise<ConversationMetadata[
       scenarioTitle: (conv.scenarios as any)?.title || 'Unknown',
       scenarioImageUrl: (conv.scenarios as any)?.cover_image_url || null,
       conversationTitle: conv.title,
-      lastMessage: lastMsgData?.[0]?.content || '',
+      lastMessage: lastMessage,
       messageCount: count || 0,
       createdAt: new Date(conv.created_at).getTime(),
       updatedAt: new Date(conv.updated_at).getTime()
