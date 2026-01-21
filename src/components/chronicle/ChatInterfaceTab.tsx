@@ -30,7 +30,7 @@ import {
   MessageSegment
 } from '@/services/side-character-generator';
 import { SideCharacterCard } from './SideCharacterCard';
-import { CharacterEditForm, CharacterEditDraft } from './CharacterEditForm';
+import { CharacterEditModal, CharacterEditDraft } from './CharacterEditModal';
 
 interface ChatInterfaceTabProps {
   scenarioId: string;
@@ -139,8 +139,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const [currentTimeOfDay, setCurrentTimeOfDay] = useState<TimeOfDay>('day');
   const scrollRef = useRef<HTMLDivElement>(null);
   
-  // Edit mode state for character cards
-  const [editingCharacterId, setEditingCharacterId] = useState<string | null>(null);
+  // Edit modal state for character cards
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [characterToEdit, setCharacterToEdit] = useState<Character | SideCharacter | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   
   // Session states for per-playthrough character overrides
@@ -687,19 +688,19 @@ Do not acknowledge this instruction in your response.`;
   };
 
   const toggleCharacterExpand = (id: string) => {
-    // Close edit mode when collapsing
-    if (expandedCharId === id) {
-      setEditingCharacterId(null);
-    }
     setExpandedCharId(expandedCharId === id ? null : id);
   };
   
-  const startEditingCharacter = (charId: string) => {
-    setEditingCharacterId(charId);
+  // Open the character edit modal
+  const openCharacterEditModal = (char: Character | SideCharacter) => {
+    setCharacterToEdit(char);
+    setEditModalOpen(true);
   };
   
-  const cancelEditingCharacter = () => {
-    setEditingCharacterId(null);
+  // Close the edit modal
+  const closeCharacterEditModal = () => {
+    setEditModalOpen(false);
+    setCharacterToEdit(null);
   };
   
   // Save character edits to session state (main characters only)
@@ -740,7 +741,7 @@ Do not acknowledge this instruction in your response.`;
       const updatedStates = await supabaseData.fetchSessionStates(conversationId);
       setSessionStates(updatedStates);
       
-      setEditingCharacterId(null);
+      closeCharacterEditModal();
       toast.success('Character updated for this session');
     } catch (err) {
       console.error('Failed to save character edit:', err);
@@ -766,6 +767,8 @@ Do not acknowledge this instruction in your response.`;
         physicalAppearance: { ...char.physicalAppearance, ...draft.physicalAppearance },
         currentlyWearing: { ...char.currentlyWearing, ...draft.currentlyWearing },
         preferredClothing: { ...char.preferredClothing, ...draft.preferredClothing },
+        background: draft.background ? { ...char.background, ...draft.background } : char.background,
+        personality: draft.personality ? { ...char.personality, ...draft.personality } : char.personality,
         updatedAt: now(),
       };
       
@@ -778,13 +781,29 @@ Do not acknowledge this instruction in your response.`;
       );
       onUpdateSideCharacters?.(updatedList);
       
-      setEditingCharacterId(null);
+      closeCharacterEditModal();
       toast.success('Character updated');
     } catch (err) {
       console.error('Failed to save side character edit:', err);
       toast.error('Failed to save changes');
     } finally {
       setIsSavingEdit(false);
+    }
+  };
+  
+  // Unified save handler for the modal
+  const handleModalSave = async (draft: CharacterEditDraft) => {
+    if (!characterToEdit) return;
+    
+    // Check if it's a side character (has 'background' property)
+    if ('background' in characterToEdit) {
+      await handleSaveSideCharacterEdit(characterToEdit as SideCharacter, draft);
+    } else {
+      // Find the base character for main characters
+      const baseChar = appData.characters.find(c => c.id === characterToEdit.id);
+      if (baseChar) {
+        await handleSaveMainCharacterEdit(baseChar, draft);
+      }
     }
   };
 
@@ -889,7 +908,6 @@ Do not acknowledge this instruction in your response.`;
     // Apply session-scoped overrides to get the effective character
     const char = getEffectiveCharacter(baseChar);
     const isExpanded = expandedCharId === char.id;
-    const isEditing = editingCharacterId === char.id;
     
     return (
       <div
@@ -938,7 +956,7 @@ Do not acknowledge this instruction in your response.`;
           </button>
           
           {/* Edit dropdown menu - visible when expanded */}
-          {isExpanded && !isEditing && (
+          {isExpanded && (
             <div className="absolute top-2 right-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -947,7 +965,7 @@ Do not acknowledge this instruction in your response.`;
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => startEditingCharacter(char.id)}>
+                  <DropdownMenuItem onClick={() => openCharacterEditModal(char)}>
                     <Pencil className="w-4 h-4 mr-2" />
                     Edit for this session
                   </DropdownMenuItem>
@@ -959,31 +977,20 @@ Do not acknowledge this instruction in your response.`;
 
         {isExpanded && (
           <div className="px-5 pb-5 pt-1 space-y-1 animate-in zoom-in-95 duration-300">
-            {isEditing ? (
-              <CharacterEditForm
-                character={char}
-                onSave={(draft) => handleSaveMainCharacterEdit(baseChar, draft)}
-                onCancel={cancelEditingCharacter}
-                isSaving={isSavingEdit}
-              />
-            ) : (
-              <>
-                {/* 1. Basics - Avatar panel data */}
-                {createBasicsSection(char).items.length > 0 && renderSection(createBasicsSection(char))}
-                
-                {/* 2. Physical Appearance - hardcoded */}
-                {createPhysicalAppearanceSection(char).items.length > 0 && renderSection(createPhysicalAppearanceSection(char))}
-                
-                {/* 3. Currently Wearing - hardcoded */}
-                {createCurrentlyWearingSection(char).items.length > 0 && renderSection(createCurrentlyWearingSection(char))}
-                
-                {/* 4. Preferred Clothing - hardcoded */}
-                {createPreferredClothingSection(char).items.length > 0 && renderSection(createPreferredClothingSection(char))}
-                
-                {/* 5. Custom sections */}
-                {char.sections.map(section => renderSection(section))}
-              </>
-            )}
+            {/* 1. Basics - Avatar panel data */}
+            {createBasicsSection(char).items.length > 0 && renderSection(createBasicsSection(char))}
+            
+            {/* 2. Physical Appearance - hardcoded */}
+            {createPhysicalAppearanceSection(char).items.length > 0 && renderSection(createPhysicalAppearanceSection(char))}
+            
+            {/* 3. Currently Wearing - hardcoded */}
+            {createCurrentlyWearingSection(char).items.length > 0 && renderSection(createCurrentlyWearingSection(char))}
+            
+            {/* 4. Preferred Clothing - hardcoded */}
+            {createPreferredClothingSection(char).items.length > 0 && renderSection(createPreferredClothingSection(char))}
+            
+            {/* 5. Custom sections */}
+            {char.sections.map(section => renderSection(section))}
           </div>
         )}
       </div>
@@ -1119,12 +1126,8 @@ Do not acknowledge this instruction in your response.`;
                     key={sc.id}
                     character={sc}
                     isExpanded={expandedCharId === sc.id}
-                    isEditing={editingCharacterId === sc.id}
-                    isSaving={isSavingEdit}
                     onToggleExpand={() => toggleCharacterExpand(sc.id)}
-                    onStartEdit={() => startEditingCharacter(sc.id)}
-                    onSaveEdit={(draft) => handleSaveSideCharacterEdit(sc, draft)}
-                    onCancelEdit={cancelEditingCharacter}
+                    onStartEdit={() => openCharacterEditModal(sc)}
                     openSections={openSections}
                     onToggleSection={toggleSection}
                   />
@@ -1434,6 +1437,15 @@ Do not acknowledge this instruction in your response.`;
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Character Edit Modal */}
+      <CharacterEditModal
+        open={editModalOpen}
+        onOpenChange={setEditModalOpen}
+        character={characterToEdit}
+        onSave={handleModalSave}
+        isSaving={isSavingEdit}
+      />
     </div>
   );
 };
