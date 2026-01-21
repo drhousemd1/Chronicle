@@ -31,6 +31,7 @@ import {
 } from '@/services/side-character-generator';
 import { SideCharacterCard } from './SideCharacterCard';
 import { CharacterEditModal, CharacterEditDraft } from './CharacterEditModal';
+import { ScrollableSection } from './ScrollableSection';
 
 interface ChatInterfaceTabProps {
   scenarioId: string;
@@ -1066,9 +1067,9 @@ const updatedChar: SideCharacter = {
             Exit Scenario
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-8 custom-scrollbar scrollbar-none">
-          {/* Day/Time Control Panel */}
-          <section className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+        <div className="flex-1 flex flex-col p-4 gap-4 overflow-hidden">
+          {/* Day/Time Control Panel - Fixed at top */}
+          <section className="flex-shrink-0 bg-slate-50 rounded-xl p-4 border border-slate-100">
             <div className="flex gap-4 items-center">
               {/* Day Counter */}
               <div className="flex flex-col items-center gap-1">
@@ -1118,52 +1119,58 @@ const updatedChar: SideCharacter = {
             </div>
           </section>
 
-          <section>
-            <h3 className="text-[11px] font-bold text-slate-500 bg-slate-100 px-4 py-1.5 rounded-lg mb-4 tracking-tight uppercase">Main Characters</h3>
-            <div className="space-y-4">
-              {mainCharactersForDisplay.map(char => 
-                char._source === 'character' 
-                  ? renderCharacterCard(appData.characters.find(c => c.id === char.id)!)
-                  : (
-                    <SideCharacterCard
-                      key={char.id}
-                      character={char as SideCharacter}
-                      isExpanded={expandedCharId === char.id}
-                      onToggleExpand={() => toggleCharacterExpand(char.id)}
-                      onStartEdit={() => openCharacterEditModal(char as SideCharacter)}
-                      openSections={openSections}
-                      onToggleSection={toggleSection}
-                    />
-                  )
-              )}
-              {mainCharactersForDisplay.length === 0 && (
-                <p className="text-[10px] text-slate-400 text-center italic">No main characters.</p>
-              )}
-            </div>
+          {/* Main Characters - Scrollable section */}
+          <section className="flex flex-col min-h-0 flex-1">
+            <h3 className="flex-shrink-0 text-[11px] font-bold text-slate-500 bg-slate-100 px-4 py-1.5 rounded-lg mb-3 tracking-tight uppercase">Main Characters</h3>
+            <ScrollableSection maxHeight="calc(50vh - 120px)" className="pr-1">
+              <div className="space-y-4 pb-2">
+                {mainCharactersForDisplay.map(char => 
+                  char._source === 'character' 
+                    ? renderCharacterCard(appData.characters.find(c => c.id === char.id)!)
+                    : (
+                      <SideCharacterCard
+                        key={char.id}
+                        character={char as SideCharacter}
+                        isExpanded={expandedCharId === char.id}
+                        onToggleExpand={() => toggleCharacterExpand(char.id)}
+                        onStartEdit={() => openCharacterEditModal(char as SideCharacter)}
+                        openSections={openSections}
+                        onToggleSection={toggleSection}
+                      />
+                    )
+                )}
+                {mainCharactersForDisplay.length === 0 && (
+                  <p className="text-[10px] text-slate-400 text-center italic py-4">No main characters.</p>
+                )}
+              </div>
+            </ScrollableSection>
           </section>
 
-          <section>
-            <h3 className="text-[11px] font-bold text-slate-500 bg-slate-100 px-4 py-1.5 rounded-lg mb-4 tracking-tight uppercase">Side Characters</h3>
-            <div className="space-y-4">
-              {sideCharactersForDisplay.map(char => 
-                char._source === 'character' 
-                  ? renderCharacterCard(appData.characters.find(c => c.id === char.id)!)
-                  : (
-                    <SideCharacterCard
-                      key={char.id}
-                      character={char as SideCharacter}
-                      isExpanded={expandedCharId === char.id}
-                      onToggleExpand={() => toggleCharacterExpand(char.id)}
-                      onStartEdit={() => openCharacterEditModal(char as SideCharacter)}
-                      openSections={openSections}
-                      onToggleSection={toggleSection}
-                    />
-                  )
-              )}
-              {sideCharactersForDisplay.length === 0 && (
-                <p className="text-[10px] text-slate-400 text-center italic">No side characters yet.</p>
-              )}
-            </div>
+          {/* Side Characters - Scrollable section */}
+          <section className="flex flex-col min-h-0 flex-1">
+            <h3 className="flex-shrink-0 text-[11px] font-bold text-slate-500 bg-slate-100 px-4 py-1.5 rounded-lg mb-3 tracking-tight uppercase">Side Characters</h3>
+            <ScrollableSection maxHeight="calc(50vh - 120px)" className="pr-1">
+              <div className="space-y-4 pb-2">
+                {sideCharactersForDisplay.map(char => 
+                  char._source === 'character' 
+                    ? renderCharacterCard(appData.characters.find(c => c.id === char.id)!)
+                    : (
+                      <SideCharacterCard
+                        key={char.id}
+                        character={char as SideCharacter}
+                        isExpanded={expandedCharId === char.id}
+                        onToggleExpand={() => toggleCharacterExpand(char.id)}
+                        onStartEdit={() => openCharacterEditModal(char as SideCharacter)}
+                        openSections={openSections}
+                        onToggleSection={toggleSection}
+                      />
+                    )
+                )}
+                {sideCharactersForDisplay.length === 0 && (
+                  <p className="text-[10px] text-slate-400 text-center italic py-4">No side characters yet.</p>
+                )}
+              </div>
+            </ScrollableSection>
           </section>
         </div>
       </aside>
