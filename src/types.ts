@@ -160,6 +160,9 @@ export type CharacterSessionState = {
   // Avatar overrides (session-scoped)
   avatarUrl?: string;
   avatarPosition?: { x: number; y: number };
+  // Control and role overrides (session-scoped)
+  controlledBy?: CharacterControl;
+  characterRole?: CharacterRole;
   createdAt: number;
   updatedAt: number;
 };
@@ -193,9 +196,9 @@ export type SideCharacter = {
   sexType: string;
   location: string;
   currentMood: string;
-  controlledBy: 'AI';           // Always AI for auto-generated
-  characterRole: 'Side';        // Always Side
-  roleDescription: string;      // Their role in the story
+  controlledBy: CharacterControl;   // Can be changed by user during session
+  characterRole: CharacterRole;     // Can be promoted to Main by user
+  roleDescription: string;          // Their role in the story
   
   // Reused from main Character type
   physicalAppearance: PhysicalAppearance;

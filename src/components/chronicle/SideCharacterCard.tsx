@@ -142,9 +142,14 @@ export const SideCharacterCard: React.FC<SideCharacterCardProps> = ({
               )}
             </div>
             <Badge 
-              className="absolute -bottom-1 -right-1 text-[8px] px-1.5 py-0.5 bg-purple-500 hover:bg-purple-500 text-white border-0 shadow-sm"
+              variant={character.controlledBy === 'User' ? 'default' : 'secondary'}
+              className={`absolute -bottom-1 -right-1 text-[8px] px-1.5 py-0.5 shadow-sm border-0 ${
+                character.controlledBy === 'User' 
+                  ? 'bg-blue-500 hover:bg-blue-500 text-white' 
+                  : 'bg-slate-500 hover:bg-slate-500 text-white'
+              }`}
             >
-              AUTO
+              {character.controlledBy}
             </Badge>
           </div>
           <div className="flex items-center gap-2">
