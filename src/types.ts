@@ -139,15 +139,24 @@ export type Character = {
 };
 
 // Session state for per-playthrough tracking
+// Extended to support full character editing within sessions
 export type CharacterSessionState = {
   id: string;
   characterId: string;
   conversationId: string;
   userId: string;
+  // Basic info overrides
+  name?: string;
+  age?: string;
+  sexType?: string;
+  roleDescription?: string;
   location: string;
   currentMood: string;
+  // Appearance overrides
   physicalAppearance: Partial<PhysicalAppearance>;
   currentlyWearing: CurrentlyWearing;
+  preferredClothing?: Partial<PreferredClothing>;
+  customSections?: CharacterTraitSection[];
   createdAt: number;
   updatedAt: number;
 };
