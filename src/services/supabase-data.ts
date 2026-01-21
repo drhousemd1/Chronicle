@@ -721,10 +721,17 @@ export async function fetchSessionStates(conversationId: string): Promise<Charac
     characterId: row.character_id,
     conversationId: row.conversation_id,
     userId: row.user_id,
+    // Extended fields for session-scoped character editing
+    name: row.name || undefined,
+    age: row.age || undefined,
+    sexType: row.sex_type || undefined,
+    roleDescription: row.role_description || undefined,
     location: row.location || '',
     currentMood: row.current_mood || '',
     physicalAppearance: dbPhysicalAppearanceToApp(row.physical_appearance),
     currentlyWearing: dbCurrentlyWearingToApp(row.currently_wearing),
+    preferredClothing: row.preferred_clothing ? dbPreferredClothingToApp(row.preferred_clothing) : undefined,
+    customSections: row.custom_sections || undefined,
     createdAt: new Date(row.created_at).getTime(),
     updatedAt: new Date(row.updated_at).getTime()
   }));
@@ -768,14 +775,25 @@ export async function createSessionState(
 export async function updateSessionState(
   id: string,
   patch: Partial<{
+    name: string;
+    age: string;
+    sexType: string;
+    roleDescription: string;
     location: string;
     currentMood: string;
     physicalAppearance: Partial<PhysicalAppearance>;
     currentlyWearing: CurrentlyWearing;
+    preferredClothing: Partial<PreferredClothing>;
+    customSections: any[];
   }>
 ): Promise<void> {
   const updateData: any = {};
   
+  // Extended fields for session-scoped character editing
+  if (patch.name !== undefined) updateData.name = patch.name;
+  if (patch.age !== undefined) updateData.age = patch.age;
+  if (patch.sexType !== undefined) updateData.sex_type = patch.sexType;
+  if (patch.roleDescription !== undefined) updateData.role_description = patch.roleDescription;
   if (patch.location !== undefined) updateData.location = patch.location;
   if (patch.currentMood !== undefined) updateData.current_mood = patch.currentMood;
   if (patch.physicalAppearance !== undefined) {
@@ -783,6 +801,12 @@ export async function updateSessionState(
   }
   if (patch.currentlyWearing !== undefined) {
     updateData.currently_wearing = appCurrentlyWearingToDb(patch.currentlyWearing);
+  }
+  if (patch.preferredClothing !== undefined) {
+    updateData.preferred_clothing = appPreferredClothingToDb(patch.preferredClothing as PreferredClothing);
+  }
+  if (patch.customSections !== undefined) {
+    updateData.custom_sections = patch.customSections;
   }
 
   const { error } = await supabase

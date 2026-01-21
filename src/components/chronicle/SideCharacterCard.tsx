@@ -4,12 +4,24 @@
 import React from 'react';
 import { SideCharacter, CharacterTraitSection } from '@/types';
 import { Badge } from '@/components/ui/badge';
-import { Loader2 } from 'lucide-react';
+import { Loader2, MoreVertical, Pencil } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { CharacterEditForm, CharacterEditDraft } from './CharacterEditForm';
 
 interface SideCharacterCardProps {
   character: SideCharacter;
   isExpanded: boolean;
+  isEditing?: boolean;
+  isSaving?: boolean;
   onToggleExpand: () => void;
+  onStartEdit?: () => void;
+  onSaveEdit?: (draft: CharacterEditDraft) => void;
+  onCancelEdit?: () => void;
   openSections: Record<string, boolean>;
   onToggleSection: (sectionId: string) => void;
 }
@@ -17,7 +29,12 @@ interface SideCharacterCardProps {
 export const SideCharacterCard: React.FC<SideCharacterCardProps> = ({
   character,
   isExpanded,
+  isEditing = false,
+  isSaving = false,
   onToggleExpand,
+  onStartEdit,
+  onSaveEdit,
+  onCancelEdit,
   openSections,
   onToggleSection
 }) => {
@@ -112,62 +129,94 @@ export const SideCharacterCard: React.FC<SideCharacterCardProps> = ({
     <div className={`rounded-2xl transition-all duration-300 border-2 ${
       isExpanded ? 'bg-purple-50/50 border-purple-200 shadow-sm' : 'border-transparent hover:bg-purple-50/30'
     }`}>
-      <button
-        onClick={onToggleExpand}
-        className="w-full flex flex-col items-center gap-2 p-3 text-center group"
-      >
-        <div className="relative">
-          <div className={`w-20 h-20 rounded-full border-2 shadow-sm overflow-hidden bg-purple-50 transition-all duration-300 ${
-            isExpanded ? 'border-purple-400 scale-105 shadow-purple-100' : 'border-purple-100 group-hover:border-purple-200'
-          }`}>
-            {character.isAvatarGenerating ? (
-              <div className="w-full h-full flex items-center justify-center bg-purple-100">
-                <Loader2 className="w-6 h-6 text-purple-500 animate-spin" />
-              </div>
-            ) : character.avatarDataUrl ? (
-              <img src={character.avatarDataUrl} alt={character.name} className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center font-black text-purple-300 text-xl italic uppercase">
-                {character.name.charAt(0)}
-              </div>
-            )}
+      <div className="relative">
+        <button
+          onClick={onToggleExpand}
+          className="w-full flex flex-col items-center gap-2 p-3 text-center group"
+        >
+          <div className="relative">
+            <div className={`w-20 h-20 rounded-full border-2 shadow-sm overflow-hidden bg-purple-50 transition-all duration-300 ${
+              isExpanded ? 'border-purple-400 scale-105 shadow-purple-100' : 'border-purple-100 group-hover:border-purple-200'
+            }`}>
+              {character.isAvatarGenerating ? (
+                <div className="w-full h-full flex items-center justify-center bg-purple-100">
+                  <Loader2 className="w-6 h-6 text-purple-500 animate-spin" />
+                </div>
+              ) : character.avatarDataUrl ? (
+                <img src={character.avatarDataUrl} alt={character.name} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center font-black text-purple-300 text-xl italic uppercase">
+                  {character.name.charAt(0)}
+                </div>
+              )}
+            </div>
+            <Badge 
+              className="absolute -bottom-1 -right-1 text-[8px] px-1.5 py-0.5 bg-purple-500 hover:bg-purple-500 text-white border-0 shadow-sm"
+            >
+              AUTO
+            </Badge>
           </div>
-          <Badge 
-            className="absolute -bottom-1 -right-1 text-[8px] px-1.5 py-0.5 bg-purple-500 hover:bg-purple-500 text-white border-0 shadow-sm"
-          >
-            AUTO
-          </Badge>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className={`text-sm font-bold tracking-tight transition-colors ${isExpanded ? 'text-purple-600' : 'text-slate-800'}`}>
-            {character.name}
+          <div className="flex items-center gap-2">
+            <div className={`text-sm font-bold tracking-tight transition-colors ${isExpanded ? 'text-purple-600' : 'text-slate-800'}`}>
+              {character.name}
+            </div>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="14" height="14"
+              viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="3"
+              strokeLinecap="round" strokeLinejoin="round"
+              className={`transition-transform duration-300 text-purple-400 ${isExpanded ? 'rotate-180 text-purple-500' : ''}`}
+            >
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
           </div>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="14" height="14"
-            viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth="3"
-            strokeLinecap="round" strokeLinejoin="round"
-            className={`transition-transform duration-300 text-purple-400 ${isExpanded ? 'rotate-180 text-purple-500' : ''}`}
-          >
-            <polyline points="6 9 12 15 18 9"></polyline>
-          </svg>
-        </div>
-      </button>
+        </button>
+        
+        {/* Edit dropdown menu - visible when expanded and not already editing */}
+        {isExpanded && !isEditing && onStartEdit && (
+          <div className="absolute top-2 right-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="p-1.5 rounded-lg hover:bg-purple-200 text-purple-400 hover:text-purple-600 transition-colors">
+                  <MoreVertical className="w-4 h-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={onStartEdit}>
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Edit character
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
+      </div>
 
       {isExpanded && (
         <div className="px-5 pb-5 pt-1 space-y-1 animate-in zoom-in-95 duration-300">
-          {/* Quick role description */}
-          {character.roleDescription && (
-            <p className="text-xs text-purple-500 italic text-center pb-2 border-b border-purple-100 mb-2">
-              {character.roleDescription}
-            </p>
+          {isEditing && onSaveEdit && onCancelEdit ? (
+            <CharacterEditForm
+              character={character}
+              onSave={onSaveEdit}
+              onCancel={onCancelEdit}
+              isSaving={isSaving}
+            />
+          ) : (
+            <>
+              {/* Quick role description */}
+              {character.roleDescription && (
+                <p className="text-xs text-purple-500 italic text-center pb-2 border-b border-purple-100 mb-2">
+                  {character.roleDescription}
+                </p>
+              )}
+              
+              {renderSection(createBasicsSection())}
+              {renderSection(createPhysicalSection())}
+              {renderSection(createBackgroundSection())}
+              {renderSection(createPersonalitySection())}
+            </>
           )}
-          
-          {renderSection(createBasicsSection())}
-          {renderSection(createPhysicalSection())}
-          {renderSection(createBackgroundSection())}
-          {renderSection(createPersonalitySection())}
         </div>
       )}
     </div>

@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { ScenarioData, Character, Conversation, Message, CharacterTraitSection, Scene, TimeOfDay, SideCharacter } from '../../types';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { ScenarioData, Character, Conversation, Message, CharacterTraitSection, Scene, TimeOfDay, SideCharacter, CharacterSessionState } from '../../types';
 import { Button, TextArea } from './UI';
 import { Badge } from '@/components/ui/badge';
 import { uid, now, uuid } from '../../services/storage';
@@ -30,6 +30,7 @@ import {
   MessageSegment
 } from '@/services/side-character-generator';
 import { SideCharacterCard } from './SideCharacterCard';
+import { CharacterEditForm, CharacterEditDraft } from './CharacterEditForm';
 
 interface ChatInterfaceTabProps {
   scenarioId: string;
@@ -138,11 +139,56 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const [currentTimeOfDay, setCurrentTimeOfDay] = useState<TimeOfDay>('day');
   const scrollRef = useRef<HTMLDivElement>(null);
   
+  // Edit mode state for character cards
+  const [editingCharacterId, setEditingCharacterId] = useState<string | null>(null);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  
+  // Session states for per-playthrough character overrides
+  const [sessionStates, setSessionStates] = useState<CharacterSessionState[]>([]);
+  const [sessionStatesLoaded, setSessionStatesLoaded] = useState(false);
+  
   // Ref to always hold current sideCharacters - avoids stale closure in async callbacks
   const sideCharactersRef = useRef<SideCharacter[]>(appData.sideCharacters || []);
   useEffect(() => {
     sideCharactersRef.current = appData.sideCharacters || [];
   }, [appData.sideCharacters]);
+  
+  // Load session states on mount
+  useEffect(() => {
+    async function loadSessionStates() {
+      try {
+        const states = await supabaseData.fetchSessionStates(conversationId);
+        setSessionStates(states);
+        setSessionStatesLoaded(true);
+      } catch (err) {
+        console.error('Failed to load session states:', err);
+        setSessionStatesLoaded(true);
+      }
+    }
+    loadSessionStates();
+  }, [conversationId]);
+  
+  // Helper to get effective character (base + session overrides merged)
+  const getEffectiveCharacter = useCallback((baseChar: Character): Character => {
+    const sessionState = sessionStates.find(s => s.characterId === baseChar.id);
+    if (!sessionState) return baseChar;
+    
+    return {
+      ...baseChar,
+      name: sessionState.name || baseChar.name,
+      age: sessionState.age || baseChar.age,
+      sexType: sessionState.sexType || baseChar.sexType,
+      roleDescription: sessionState.roleDescription || baseChar.roleDescription,
+      location: sessionState.location || baseChar.location,
+      currentMood: sessionState.currentMood || baseChar.currentMood,
+      physicalAppearance: { ...baseChar.physicalAppearance, ...sessionState.physicalAppearance },
+      currentlyWearing: sessionState.currentlyWearing || baseChar.currentlyWearing,
+      preferredClothing: sessionState.preferredClothing 
+        ? { ...baseChar.preferredClothing, ...sessionState.preferredClothing }
+        : baseChar.preferredClothing,
+      sections: sessionState.customSections || baseChar.sections,
+    };
+  }, [sessionStates]);
 
   const conversation = appData.conversations.find(c => c.id === conversationId);
   const mainCharacters = appData.characters.filter(c => c.characterRole === 'Main');
@@ -641,7 +687,105 @@ Do not acknowledge this instruction in your response.`;
   };
 
   const toggleCharacterExpand = (id: string) => {
+    // Close edit mode when collapsing
+    if (expandedCharId === id) {
+      setEditingCharacterId(null);
+    }
     setExpandedCharId(expandedCharId === id ? null : id);
+  };
+  
+  const startEditingCharacter = (charId: string) => {
+    setEditingCharacterId(charId);
+  };
+  
+  const cancelEditingCharacter = () => {
+    setEditingCharacterId(null);
+  };
+  
+  // Save character edits to session state (main characters only)
+  const handleSaveMainCharacterEdit = async (char: Character, draft: CharacterEditDraft) => {
+    setIsSavingEdit(true);
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Not authenticated');
+        return;
+      }
+      
+      // Find or create session state for this character
+      let sessionState = sessionStates.find(s => s.characterId === char.id);
+      
+      if (!sessionState) {
+        // Create new session state
+        sessionState = await supabaseData.createSessionState(char, conversationId, user.id);
+        setSessionStates(prev => [...prev, sessionState!]);
+      }
+      
+      // Update session state with draft changes
+      await supabaseData.updateSessionState(sessionState.id, {
+        name: draft.name,
+        age: draft.age,
+        sexType: draft.sexType,
+        roleDescription: draft.roleDescription,
+        location: draft.location,
+        currentMood: draft.currentMood,
+        physicalAppearance: draft.physicalAppearance,
+        currentlyWearing: draft.currentlyWearing as any,
+        preferredClothing: draft.preferredClothing,
+        customSections: draft.sections,
+      });
+      
+      // Refresh session states
+      const updatedStates = await supabaseData.fetchSessionStates(conversationId);
+      setSessionStates(updatedStates);
+      
+      setEditingCharacterId(null);
+      toast.success('Character updated for this session');
+    } catch (err) {
+      console.error('Failed to save character edit:', err);
+      toast.error('Failed to save changes');
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+  
+  // Save side character edits (already session-scoped via side_characters table)
+  const handleSaveSideCharacterEdit = async (char: SideCharacter, draft: CharacterEditDraft) => {
+    setIsSavingEdit(true);
+    
+    try {
+      const updatedChar: SideCharacter = {
+        ...char,
+        name: draft.name || char.name,
+        age: draft.age || char.age,
+        sexType: draft.sexType || char.sexType,
+        roleDescription: draft.roleDescription || char.roleDescription,
+        location: draft.location || char.location,
+        currentMood: draft.currentMood || char.currentMood,
+        physicalAppearance: { ...char.physicalAppearance, ...draft.physicalAppearance },
+        currentlyWearing: { ...char.currentlyWearing, ...draft.currentlyWearing },
+        preferredClothing: { ...char.preferredClothing, ...draft.preferredClothing },
+        updatedAt: now(),
+      };
+      
+      // Update in Supabase
+      await supabaseData.updateSideCharacter(char.id, updatedChar);
+      
+      // Update local state
+      const updatedList = sideCharactersRef.current.map(sc => 
+        sc.id === char.id ? updatedChar : sc
+      );
+      onUpdateSideCharacters?.(updatedList);
+      
+      setEditingCharacterId(null);
+      toast.success('Character updated');
+    } catch (err) {
+      console.error('Failed to save side character edit:', err);
+      toast.error('Failed to save changes');
+    } finally {
+      setIsSavingEdit(false);
+    }
   };
 
   const toggleSection = (sectionId: string) => {
@@ -741,69 +885,105 @@ Do not acknowledge this instruction in your response.`;
     );
   };
 
-  const renderCharacterCard = (char: Character) => {
+  const renderCharacterCard = (baseChar: Character) => {
+    // Apply session-scoped overrides to get the effective character
+    const char = getEffectiveCharacter(baseChar);
     const isExpanded = expandedCharId === char.id;
+    const isEditing = editingCharacterId === char.id;
+    
     return (
       <div
         key={char.id}
         className={`rounded-2xl transition-all duration-300 border-2 ${isExpanded ? 'bg-slate-50 border-blue-100 shadow-sm' : 'border-transparent hover:bg-slate-50'}`}
       >
-        <button
-          onClick={() => toggleCharacterExpand(char.id)}
-          className="w-full flex flex-col items-center gap-2 p-3 text-center group"
-        >
-          <div className="relative">
-            <div className={`w-20 h-20 rounded-full border-2 shadow-sm overflow-hidden bg-slate-50 transition-all duration-300 ${isExpanded ? 'border-blue-400 scale-105 shadow-blue-100' : 'border-slate-100 group-hover:border-blue-200'}`}>
-              {char.avatarDataUrl ? (
-                <img src={char.avatarDataUrl} alt={char.name} className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center font-black text-slate-300 text-xl italic uppercase">
-                  {char.name.charAt(0)}
-                </div>
-              )}
+        <div className="relative">
+          <button
+            onClick={() => toggleCharacterExpand(char.id)}
+            className="w-full flex flex-col items-center gap-2 p-3 text-center group"
+          >
+            <div className="relative">
+              <div className={`w-20 h-20 rounded-full border-2 shadow-sm overflow-hidden bg-slate-50 transition-all duration-300 ${isExpanded ? 'border-blue-400 scale-105 shadow-blue-100' : 'border-slate-100 group-hover:border-blue-200'}`}>
+                {char.avatarDataUrl ? (
+                  <img src={char.avatarDataUrl} alt={char.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center font-black text-slate-300 text-xl italic uppercase">
+                    {char.name.charAt(0)}
+                  </div>
+                )}
+              </div>
+              <Badge 
+                variant={char.controlledBy === 'User' ? 'default' : 'secondary'}
+                className={`absolute -bottom-1 -right-1 text-[9px] px-1.5 py-0.5 shadow-sm ${
+                  char.controlledBy === 'User' 
+                    ? 'bg-blue-500 hover:bg-blue-500 text-white border-0' 
+                    : 'bg-slate-500 hover:bg-slate-500 text-white border-0'
+                }`}
+              >
+                {char.controlledBy}
+              </Badge>
             </div>
-            <Badge 
-              variant={char.controlledBy === 'User' ? 'default' : 'secondary'}
-              className={`absolute -bottom-1 -right-1 text-[9px] px-1.5 py-0.5 shadow-sm ${
-                char.controlledBy === 'User' 
-                  ? 'bg-blue-500 hover:bg-blue-500 text-white border-0' 
-                  : 'bg-slate-500 hover:bg-slate-500 text-white border-0'
-              }`}
-            >
-              {char.controlledBy}
-            </Badge>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className={`text-sm font-bold tracking-tight transition-colors ${isExpanded ? 'text-blue-600' : 'text-slate-800'}`}>{char.name}</div>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="14" height="14"
-              viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" strokeWidth="3"
-              strokeLinecap="round" strokeLinejoin="round"
-              className={`transition-transform duration-300 text-slate-400 ${isExpanded ? 'rotate-180 text-blue-500' : ''}`}
-            >
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-          </div>
-        </button>
+            <div className="flex items-center gap-2">
+              <div className={`text-sm font-bold tracking-tight transition-colors ${isExpanded ? 'text-blue-600' : 'text-slate-800'}`}>{char.name}</div>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="14" height="14"
+                viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" strokeWidth="3"
+                strokeLinecap="round" strokeLinejoin="round"
+                className={`transition-transform duration-300 text-slate-400 ${isExpanded ? 'rotate-180 text-blue-500' : ''}`}
+              >
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+          </button>
+          
+          {/* Edit dropdown menu - visible when expanded */}
+          {isExpanded && !isEditing && (
+            <div className="absolute top-2 right-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors">
+                    <MoreVertical className="w-4 h-4" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => startEditingCharacter(char.id)}>
+                    <Pencil className="w-4 h-4 mr-2" />
+                    Edit for this session
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
+        </div>
 
         {isExpanded && (
           <div className="px-5 pb-5 pt-1 space-y-1 animate-in zoom-in-95 duration-300">
-            {/* 1. Basics - Avatar panel data */}
-            {createBasicsSection(char).items.length > 0 && renderSection(createBasicsSection(char))}
-            
-            {/* 2. Physical Appearance - hardcoded */}
-            {createPhysicalAppearanceSection(char).items.length > 0 && renderSection(createPhysicalAppearanceSection(char))}
-            
-            {/* 3. Currently Wearing - hardcoded */}
-            {createCurrentlyWearingSection(char).items.length > 0 && renderSection(createCurrentlyWearingSection(char))}
-            
-            {/* 4. Preferred Clothing - hardcoded */}
-            {createPreferredClothingSection(char).items.length > 0 && renderSection(createPreferredClothingSection(char))}
-            
-            {/* 5. Custom sections */}
-            {char.sections.map(section => renderSection(section))}
+            {isEditing ? (
+              <CharacterEditForm
+                character={char}
+                onSave={(draft) => handleSaveMainCharacterEdit(baseChar, draft)}
+                onCancel={cancelEditingCharacter}
+                isSaving={isSavingEdit}
+              />
+            ) : (
+              <>
+                {/* 1. Basics - Avatar panel data */}
+                {createBasicsSection(char).items.length > 0 && renderSection(createBasicsSection(char))}
+                
+                {/* 2. Physical Appearance - hardcoded */}
+                {createPhysicalAppearanceSection(char).items.length > 0 && renderSection(createPhysicalAppearanceSection(char))}
+                
+                {/* 3. Currently Wearing - hardcoded */}
+                {createCurrentlyWearingSection(char).items.length > 0 && renderSection(createCurrentlyWearingSection(char))}
+                
+                {/* 4. Preferred Clothing - hardcoded */}
+                {createPreferredClothingSection(char).items.length > 0 && renderSection(createPreferredClothingSection(char))}
+                
+                {/* 5. Custom sections */}
+                {char.sections.map(section => renderSection(section))}
+              </>
+            )}
           </div>
         )}
       </div>
@@ -939,7 +1119,12 @@ Do not acknowledge this instruction in your response.`;
                     key={sc.id}
                     character={sc}
                     isExpanded={expandedCharId === sc.id}
+                    isEditing={editingCharacterId === sc.id}
+                    isSaving={isSavingEdit}
                     onToggleExpand={() => toggleCharacterExpand(sc.id)}
+                    onStartEdit={() => startEditingCharacter(sc.id)}
+                    onSaveEdit={(draft) => handleSaveSideCharacterEdit(sc, draft)}
+                    onCancelEdit={cancelEditingCharacter}
                     openSections={openSections}
                     onToggleSection={toggleSection}
                   />

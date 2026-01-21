@@ -16,38 +16,56 @@ export type Database = {
     Tables: {
       character_session_states: {
         Row: {
+          age: string | null
           character_id: string
           conversation_id: string
           created_at: string | null
           current_mood: string | null
           currently_wearing: Json | null
+          custom_sections: Json | null
           id: string
           location: string | null
+          name: string | null
           physical_appearance: Json | null
+          preferred_clothing: Json | null
+          role_description: string | null
+          sex_type: string | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
+          age?: string | null
           character_id: string
           conversation_id: string
           created_at?: string | null
           current_mood?: string | null
           currently_wearing?: Json | null
+          custom_sections?: Json | null
           id?: string
           location?: string | null
+          name?: string | null
           physical_appearance?: Json | null
+          preferred_clothing?: Json | null
+          role_description?: string | null
+          sex_type?: string | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
+          age?: string | null
           character_id?: string
           conversation_id?: string
           created_at?: string | null
           current_mood?: string | null
           currently_wearing?: Json | null
+          custom_sections?: Json | null
           id?: string
           location?: string | null
+          name?: string | null
           physical_appearance?: Json | null
+          preferred_clothing?: Json | null
+          role_description?: string | null
+          sex_type?: string | null
           updated_at?: string | null
           user_id?: string
         }
