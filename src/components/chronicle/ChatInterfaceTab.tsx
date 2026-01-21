@@ -191,13 +191,30 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       // Session-scoped avatar overrides
       avatarDataUrl: sessionState.avatarUrl || baseChar.avatarDataUrl,
       avatarPosition: sessionState.avatarPosition || baseChar.avatarPosition,
+      // Session-scoped control and role overrides
+      controlledBy: sessionState.controlledBy || baseChar.controlledBy,
+      characterRole: sessionState.characterRole || baseChar.characterRole,
     };
   }, [sessionStates]);
 
   const conversation = appData.conversations.find(c => c.id === conversationId);
-  const mainCharacters = appData.characters.filter(c => c.characterRole === 'Main');
-  const sideCharacters = appData.characters.filter(c => c.characterRole === 'Side');
-  const autoSideCharacters = appData.sideCharacters || [];
+  
+  // Merge all characters (main characters with session overrides + side characters)
+  // and dynamically group by their effective characterRole
+  const allCharactersForDisplay = useMemo(() => {
+    const effectiveMainChars = appData.characters.map(c => ({
+      ...getEffectiveCharacter(c),
+      _source: 'character' as const
+    }));
+    const sideChars = (appData.sideCharacters || []).map(sc => ({
+      ...sc,
+      _source: 'sideCharacter' as const
+    }));
+    return [...effectiveMainChars, ...sideChars];
+  }, [appData.characters, appData.sideCharacters, getEffectiveCharacter]);
+  
+  const mainCharactersForDisplay = allCharactersForDisplay.filter(c => c.characterRole === 'Main');
+  const sideCharactersForDisplay = allCharactersForDisplay.filter(c => c.characterRole === 'Side');
 
   // Debug: log conversation state on mount and when it changes
   useEffect(() => {
@@ -726,7 +743,7 @@ Do not acknowledge this instruction in your response.`;
         setSessionStates(prev => [...prev, sessionState!]);
       }
       
-// Update session state with draft changes (including avatar)
+// Update session state with draft changes (including avatar, control, and role)
       await supabaseData.updateSessionState(sessionState.id, {
         name: draft.name,
         age: draft.age,
@@ -740,6 +757,8 @@ Do not acknowledge this instruction in your response.`;
         customSections: draft.sections,
         avatarUrl: draft.avatarDataUrl,
         avatarPosition: draft.avatarPosition,
+        controlledBy: draft.controlledBy,
+        characterRole: draft.characterRole,
       });
       
       // Refresh session states
@@ -769,6 +788,8 @@ const updatedChar: SideCharacter = {
         roleDescription: draft.roleDescription || char.roleDescription,
         location: draft.location || char.location,
         currentMood: draft.currentMood || char.currentMood,
+        controlledBy: draft.controlledBy || char.controlledBy,
+        characterRole: draft.characterRole || char.characterRole,
         physicalAppearance: { ...char.physicalAppearance, ...draft.physicalAppearance },
         currentlyWearing: { ...char.currentlyWearing, ...draft.currentlyWearing },
         preferredClothing: { ...char.preferredClothing, ...draft.preferredClothing },
@@ -1100,45 +1121,47 @@ const updatedChar: SideCharacter = {
           <section>
             <h3 className="text-[11px] font-bold text-slate-500 bg-slate-100 px-4 py-1.5 rounded-lg mb-4 tracking-tight uppercase">Main Characters</h3>
             <div className="space-y-4">
-              {mainCharacters.map(renderCharacterCard)}
+              {mainCharactersForDisplay.map(char => 
+                char._source === 'character' 
+                  ? renderCharacterCard(appData.characters.find(c => c.id === char.id)!)
+                  : (
+                    <SideCharacterCard
+                      key={char.id}
+                      character={char as SideCharacter}
+                      isExpanded={expandedCharId === char.id}
+                      onToggleExpand={() => toggleCharacterExpand(char.id)}
+                      onStartEdit={() => openCharacterEditModal(char as SideCharacter)}
+                      openSections={openSections}
+                      onToggleSection={toggleSection}
+                    />
+                  )
+              )}
+              {mainCharactersForDisplay.length === 0 && (
+                <p className="text-[10px] text-slate-400 text-center italic">No main characters.</p>
+              )}
             </div>
           </section>
 
           <section>
             <h3 className="text-[11px] font-bold text-slate-500 bg-slate-100 px-4 py-1.5 rounded-lg mb-4 tracking-tight uppercase">Side Characters</h3>
             <div className="space-y-4">
-              {sideCharacters.map(renderCharacterCard)}
-              {sideCharacters.length === 0 && autoSideCharacters.length === 0 && (
-                <p className="text-[10px] text-slate-400 text-center italic">No side characters defined.</p>
+              {sideCharactersForDisplay.map(char => 
+                char._source === 'character' 
+                  ? renderCharacterCard(appData.characters.find(c => c.id === char.id)!)
+                  : (
+                    <SideCharacterCard
+                      key={char.id}
+                      character={char as SideCharacter}
+                      isExpanded={expandedCharId === char.id}
+                      onToggleExpand={() => toggleCharacterExpand(char.id)}
+                      onStartEdit={() => openCharacterEditModal(char as SideCharacter)}
+                      openSections={openSections}
+                      onToggleSection={toggleSection}
+                    />
+                  )
               )}
-            </div>
-          </section>
-
-          {/* AI-Generated Side Characters - Always visible for discoverability */}
-          <section>
-            <h3 className="text-[11px] font-bold text-purple-500 bg-purple-100 px-4 py-1.5 rounded-lg mb-4 tracking-tight uppercase flex items-center gap-2">
-              {autoSideCharacters.some(c => c.isAvatarGenerating) && (
-                <Loader2 className="w-3 h-3 animate-spin" />
-              )}
-              Auto-Generated Characters
-            </h3>
-            <div className="space-y-4">
-              {autoSideCharacters.length === 0 ? (
-                <p className="text-[10px] text-purple-400 text-center italic py-2">
-                  New characters will appear here when detected in the story.
-                </p>
-              ) : (
-                autoSideCharacters.map(sc => (
-                  <SideCharacterCard
-                    key={sc.id}
-                    character={sc}
-                    isExpanded={expandedCharId === sc.id}
-                    onToggleExpand={() => toggleCharacterExpand(sc.id)}
-                    onStartEdit={() => openCharacterEditModal(sc)}
-                    openSections={openSections}
-                    onToggleSection={toggleSection}
-                  />
-                ))
+              {sideCharactersForDisplay.length === 0 && (
+                <p className="text-[10px] text-slate-400 text-center italic">No side characters yet.</p>
               )}
             </div>
           </section>

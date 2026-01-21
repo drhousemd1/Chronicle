@@ -130,7 +130,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
   const [isRegeneratingAvatar, setIsRegeneratingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Determine if this is a side character (auto-generated)
+  // Determine if this is a side character (has background property)
   const isSideCharacter = character && 'background' in character;
 
   // Initialize draft from character when modal opens
@@ -167,6 +167,8 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
           ...sc.personality,
           traits: sc.personality?.traits ? [...sc.personality.traits] : []
         };
+        baseDraft.controlledBy = sc.controlledBy;
+        baseDraft.characterRole = sc.characterRole;
       }
 
       setDraft(baseDraft);
@@ -470,40 +472,65 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                   )}
                 </Section>
 
-                {/* Control toggles for main characters */}
-                {!isSideCharacter && (
-                  <Section title="Control">
-                    <div className="space-y-3">
-                      <div className="space-y-1.5">
-                        <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Controlled By</Label>
-                        <div className="flex p-1 bg-slate-100 rounded-lg">
-                          <button 
-                            type="button"
-                            onClick={() => updateField('controlledBy', 'AI')}
-                            className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded transition-all ${
-                              draft.controlledBy === 'AI' 
-                                ? 'bg-white text-blue-600 shadow-sm' 
-                                : 'text-slate-400 hover:text-slate-600'
-                            }`}
-                          >
-                            AI
-                          </button>
-                          <button 
-                            type="button"
-                            onClick={() => updateField('controlledBy', 'User')}
-                            className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded transition-all ${
-                              draft.controlledBy === 'User' 
-                                ? 'bg-white text-amber-600 shadow-sm' 
-                                : 'text-slate-400 hover:text-slate-600'
-                            }`}
-                          >
-                            User
-                          </button>
-                        </div>
+                {/* Control toggles - for all characters */}
+                <Section title="Control">
+                  <div className="space-y-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Controlled By</Label>
+                      <div className="flex p-1 bg-slate-100 rounded-lg">
+                        <button 
+                          type="button"
+                          onClick={() => updateField('controlledBy', 'AI')}
+                          className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded transition-all ${
+                            draft.controlledBy === 'AI' 
+                              ? 'bg-white text-blue-600 shadow-sm' 
+                              : 'text-slate-400 hover:text-slate-600'
+                          }`}
+                        >
+                          AI
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => updateField('controlledBy', 'User')}
+                          className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded transition-all ${
+                            draft.controlledBy === 'User' 
+                              ? 'bg-white text-amber-600 shadow-sm' 
+                              : 'text-slate-400 hover:text-slate-600'
+                          }`}
+                        >
+                          User
+                        </button>
                       </div>
                     </div>
-                  </Section>
-                )}
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Character Type</Label>
+                      <div className="flex p-1 bg-slate-100 rounded-lg">
+                        <button 
+                          type="button"
+                          onClick={() => updateField('characterRole', 'Main')}
+                          className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded transition-all ${
+                            draft.characterRole === 'Main' 
+                              ? 'bg-white text-purple-600 shadow-sm' 
+                              : 'text-slate-400 hover:text-slate-600'
+                          }`}
+                        >
+                          Main
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => updateField('characterRole', 'Side')}
+                          className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded transition-all ${
+                            draft.characterRole === 'Side' 
+                              ? 'bg-white text-green-600 shadow-sm' 
+                              : 'text-slate-400 hover:text-slate-600'
+                          }`}
+                        >
+                          Side
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </Section>
               </div>
 
               {/* Right Column - Trait Sections */}

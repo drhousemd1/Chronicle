@@ -735,6 +735,9 @@ export async function fetchSessionStates(conversationId: string): Promise<Charac
     // Avatar fields for session-scoped updates
     avatarUrl: row.avatar_url || undefined,
     avatarPosition: row.avatar_position || undefined,
+    // Control and role overrides
+    controlledBy: row.controlled_by || undefined,
+    characterRole: row.character_role || undefined,
     createdAt: new Date(row.created_at).getTime(),
     updatedAt: new Date(row.updated_at).getTime()
   }));
@@ -790,6 +793,8 @@ export async function updateSessionState(
     customSections: any[];
     avatarUrl: string;
     avatarPosition: { x: number; y: number };
+    controlledBy: string;
+    characterRole: string;
   }>
 ): Promise<void> {
   const updateData: any = {};
@@ -816,6 +821,9 @@ export async function updateSessionState(
   // Avatar fields for session-scoped updates
   if (patch.avatarUrl !== undefined) updateData.avatar_url = patch.avatarUrl;
   if (patch.avatarPosition !== undefined) updateData.avatar_position = patch.avatarPosition;
+  // Control and role overrides
+  if (patch.controlledBy !== undefined) updateData.controlled_by = patch.controlledBy;
+  if (patch.characterRole !== undefined) updateData.character_role = patch.characterRole;
 
   const { error } = await supabase
     .from('character_session_states')
