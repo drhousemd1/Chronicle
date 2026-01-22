@@ -452,12 +452,12 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                       })}
                     </div>
                   </div>
-                  <p className="text-[10px] text-slate-400 font-medium italic">
+                  <p className="text-sm text-slate-500 leading-relaxed">
                     Set when your story begins. The AI will use this context for time-appropriate responses.
                   </p>
                 </div>
                 
-                <p className="text-[10px] text-slate-400 font-medium italic">This message will automatically appear at the start of every new session.</p>
+                <p className="text-sm text-slate-500 leading-relaxed mt-4">This message will automatically appear at the start of every new session.</p>
               </div>
             </Card>
           </section>
@@ -479,10 +479,10 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                 <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAddScene} />
               </div>
 
-              <p className="text-[10px] text-slate-400 font-medium italic mb-2">
+              <p className="text-sm text-slate-500 leading-relaxed mb-2">
                 Add keywords to each scene. When dialog mentions these keywords, the background will automatically change.
               </p>
-              <p className="text-xs text-slate-400 mb-4">
+              <p className="text-sm text-slate-500 leading-relaxed mb-4">
                 Recommended: 1024px × 768px (landscape orientation, 4:3 aspect ratio)
               </p>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
