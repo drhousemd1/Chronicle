@@ -77,10 +77,13 @@ ${traits}`;
         * This applies to ALL characters, including new characters not in the CAST list above.
         * For new characters, include descriptive physical traits in their first appearance using *action* format.
         * Example: Sarah: *The woman walked in, her long brown hair swaying as she moved.* "Hey everyone!"
+    - SCENE TAGGING (IMPORTANT):
+        * When the scene location changes to one of the AVAILABLE SCENES, you MUST append [SCENE: exact_tag_name] at the very end of your response.
+        * Match the tag exactly as listed in AVAILABLE SCENES: [${sceneTags}]
+        * Example: If someone goes to a location tagged "home", end your response with [SCENE: home]
     - Maintain consistent tone and continuity.
     - Keep responses immersive, descriptive, and emotionally resonant.
     - Respect character gender/sex and traits.
-    - SCENE TAGGING: Append [SCENE: tag_name] at the very end of your response if the visual location changes.
   `;
 }
 
