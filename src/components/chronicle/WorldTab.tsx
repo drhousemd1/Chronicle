@@ -479,17 +479,27 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                 <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAddScene} />
               </div>
 
+              <p className="text-[10px] text-slate-400 font-medium italic mb-4">
+                Add keywords to each scene. When dialog mentions these keywords, the background will automatically change.
+              </p>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                 {scenes.map(scene => (
                   <div key={scene.id} className="group relative aspect-video rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-slate-50">
                     <img src={scene.url} alt={scene.tag} className="w-full h-full object-cover" />
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Input 
-                        value={scene.tag} 
-                        onChange={(v) => handleUpdateSceneTag(scene.id, v)} 
-                        placeholder="Scene tag..." 
-                        className="!bg-black/40 !border-white/20 !text-white !text-[10px] !h-8 !px-2 focus:!ring-white/10"
-                      />
+                    {/* Always visible tag input at bottom */}
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent p-3">
+                      <div className="flex items-center gap-1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/60 flex-shrink-0">
+                          <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                          <line x1="7" y1="7" x2="7.01" y2="7"/>
+                        </svg>
+                        <Input 
+                          value={scene.tag} 
+                          onChange={(v) => handleUpdateSceneTag(scene.id, v)} 
+                          placeholder="Enter keyword (e.g., home, forest)..." 
+                          className="!bg-black/40 !border-white/20 !text-white !text-[10px] !h-7 !px-2 focus:!ring-white/10 placeholder:!text-white/40"
+                        />
+                      </div>
                     </div>
                     <button 
                       onClick={() => handleDeleteScene(scene.id)}

@@ -473,7 +473,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   }, [conversation?.id]);
 
   useEffect(() => {
-    // First, try to find a [SCENE: tag] command in messages
+    // First, try to find a [SCENE: tag] command in messages (highest priority)
     let foundSceneTag = false;
     if (conversation?.messages.length) {
       for (let i = conversation.messages.length - 1; i >= 0; i--) {
@@ -490,7 +490,31 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       }
     }
     
-    // If no [SCENE:] tag was found, fall back to the starting scene
+    // Second pass: Keyword-based detection if no explicit tag found
+    if (!foundSceneTag && conversation?.messages.length && appData.scenes.length > 0) {
+      for (let i = conversation.messages.length - 1; i >= 0; i--) {
+        const messageText = conversation.messages[i].text.toLowerCase();
+        
+        // Check each scene tag as a keyword in the message
+        for (const scene of appData.scenes) {
+          if (scene.tag && scene.tag.trim() !== '') {
+            const tagKeyword = scene.tag.toLowerCase().trim();
+            // Escape special regex characters in the tag
+            const escapedTag = tagKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            // Match whole word boundaries to avoid false positives
+            const wordBoundaryRegex = new RegExp(`\\b${escapedTag}\\b`, 'i');
+            if (wordBoundaryRegex.test(messageText)) {
+              setActiveSceneId(scene.id);
+              foundSceneTag = true;
+              break;
+            }
+          }
+        }
+        if (foundSceneTag) break;
+      }
+    }
+    
+    // If no [SCENE:] tag or keyword was found, fall back to the starting scene
     if (!foundSceneTag) {
       const startingScene = appData.scenes.find(s => s.isStartingScene);
       if (startingScene) {
