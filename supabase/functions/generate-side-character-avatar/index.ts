@@ -36,7 +36,7 @@ serve(async (req) => {
   }
 
   try {
-    const { avatarPrompt, characterName, modelId } = await req.json();
+    const { avatarPrompt, characterName, modelId, stylePrompt, negativePrompt } = await req.json();
     
     if (!avatarPrompt) {
       return new Response(JSON.stringify({ error: "avatarPrompt is required" }), {
@@ -51,7 +51,21 @@ serve(async (req) => {
     
     console.log(`[generate-avatar] Text model: ${effectiveTextModel}, Image model: ${imageModel}, Gateway: ${gateway}`);
 
-    const fullPrompt = `Professional character portrait for a roleplaying game. ${avatarPrompt}. High quality digital art, centered composition, clear facial features, portrait orientation, soft lighting, detailed face.`;
+    // Build the full prompt with style instructions, user prompt, and negative prompt
+    let fullPrompt = "";
+    
+    if (stylePrompt) {
+      // User selected a style - use their style prompt + description
+      fullPrompt = `${stylePrompt}. Character portrait of ${characterName}. ${avatarPrompt}. Centered composition, clear facial features, portrait orientation.`;
+    } else {
+      // Fallback to original behavior if no style provided
+      fullPrompt = `Professional character portrait for a roleplaying game. ${avatarPrompt}. High quality digital art, centered composition, clear facial features, portrait orientation, soft lighting, detailed face.`;
+    }
+    
+    // Add negative prompt if provided
+    if (negativePrompt) {
+      fullPrompt += ` Avoid: ${negativePrompt}.`;
+    }
 
     console.log(`Generating avatar for ${characterName}:`, fullPrompt);
 
