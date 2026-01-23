@@ -16,14 +16,25 @@ interface WorldTabProps {
   scenes: Scene[];
   coverImage: string;
   coverImagePosition: { x: number; y: number };
-  onUpdateWorld: (patch: Partial<World>) => void;
-  onUpdateOpening: (patch: Partial<OpeningDialog>) => void;
+  onUpdateWorld: (world: Partial<World>) => void;
+  onUpdateOpening: (opening: Partial<OpeningDialog>) => void;
   onUpdateScenes: (scenes: Scene[]) => void;
   onUpdateCoverImage: (url: string) => void;
   onUpdateCoverPosition: (position: { x: number; y: number }) => void;
   onNavigateToCharacters: () => void;
   onSelectCharacter: (id: string) => void;
 }
+
+const HintBox: React.FC<{ hints: string[] }> = ({ hints }) => (
+  <div className="bg-slate-900 rounded-xl p-4 space-y-2">
+    {hints.map((hint, index) => (
+      <p key={index} className="text-sm text-white leading-relaxed flex items-start gap-2">
+        <span className="text-white mt-0.5">◆</span>
+        <span>{hint}</span>
+      </p>
+    ))}
+  </div>
+);
 
 const CharacterButton: React.FC<{ char: Character; onSelect: (id: string) => void }> = ({ char, onSelect }) => (
   <button 
@@ -316,9 +327,9 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                 
                 {/* Controls */}
                 <div className="flex flex-col gap-4 flex-1">
-                  <p className="text-sm text-slate-500 leading-relaxed">
-                    This image appears on your story card in the hub. For best results, use a portrait-oriented image (2:3 aspect ratio).
-                  </p>
+              <HintBox hints={[
+                "This image appears on your story card in the hub. For best results, use a portrait-oriented image (2:3 aspect ratio)."
+              ]} />
                   
                   <div className="flex flex-wrap gap-3">
                     <Button 
@@ -452,12 +463,12 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                       })}
                     </div>
                   </div>
-                  <p className="text-sm text-slate-500 leading-relaxed">
-                    Set when your story begins. The AI will use this context for time-appropriate responses.
-                  </p>
                 </div>
                 
-                <p className="text-sm text-slate-500 leading-relaxed mt-4">This message will automatically appear at the start of every new session.</p>
+                <HintBox hints={[
+                  "Set when your story begins. The AI will use this context for time-appropriate responses.",
+                  "This message will automatically appear at the start of every new session."
+                ]} />
               </div>
             </Card>
           </section>
@@ -479,12 +490,10 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                 <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAddScene} />
               </div>
 
-              <p className="text-sm text-slate-500 leading-relaxed mb-2">
-                Add keywords to each scene. When dialog mentions these keywords, the background will automatically change.
-              </p>
-              <p className="text-sm text-slate-500 leading-relaxed mb-4">
-                Recommended: 1024px × 768px (landscape orientation, 4:3 aspect ratio)
-              </p>
+              <HintBox hints={[
+                "Add keywords to each scene. When dialog mentions these keywords, the background will automatically change.",
+                "Recommended: 1024px × 768px (landscape orientation, 4:3 aspect ratio)"
+              ]} />
               <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                 {scenes.map(scene => (
                   <div key={scene.id} className="group relative aspect-video rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-slate-50">
