@@ -219,57 +219,45 @@ export async function fetchScenarioById(id: string): Promise<{
   coverImage: string;
   coverImagePosition: { x: number; y: number };
 } | null> {
-  // Fetch scenario
-  const { data: scenario, error: scenarioError } = await supabase
-    .from('scenarios')
-    .select('*')
-    .eq('id', id)
-    .maybeSingle();
+  // Parallel fetch of scenario + all related data
+  const [scenarioResult, charactersResult, codexResult, scenesResult, conversationsResult] = await Promise.all([
+    supabase.from('scenarios').select('*').eq('id', id).maybeSingle(),
+    supabase.from('characters').select('*').eq('scenario_id', id),
+    supabase.from('codex_entries').select('*').eq('scenario_id', id),
+    supabase.from('scenes').select('*').eq('scenario_id', id),
+    supabase.from('conversations').select('*').eq('scenario_id', id)
+  ]);
 
-  if (scenarioError) throw scenarioError;
-  if (!scenario) return null;
+  if (scenarioResult.error) throw scenarioResult.error;
+  if (!scenarioResult.data) return null;
 
-  // Fetch characters for this scenario
-  const { data: characters, error: charError } = await supabase
-    .from('characters')
-    .select('*')
-    .eq('scenario_id', id);
+  const scenario = scenarioResult.data;
+  const conversations = conversationsResult.data || [];
 
-  if (charError) throw charError;
-
-  // Fetch codex entries
-  const { data: codexEntries, error: codexError } = await supabase
-    .from('codex_entries')
-    .select('*')
-    .eq('scenario_id', id);
-
-  if (codexError) throw codexError;
-
-  // Fetch scenes
-  const { data: scenes, error: scenesError } = await supabase
-    .from('scenes')
-    .select('*')
-    .eq('scenario_id', id);
-
-  if (scenesError) throw scenesError;
-
-  // Fetch conversations with messages
-  const { data: conversations, error: convError } = await supabase
-    .from('conversations')
-    .select('*')
-    .eq('scenario_id', id);
-
-  if (convError) throw convError;
-
-  const conversationsWithMessages: Conversation[] = [];
-  for (const conv of conversations || []) {
-    const { data: messages } = await supabase
+  // OPTIMIZATION: Batch fetch ALL messages for ALL conversations in a single query
+  // instead of N+1 sequential queries
+  let conversationsWithMessages: Conversation[] = [];
+  if (conversations.length > 0) {
+    const conversationIds = conversations.map(c => c.id);
+    const { data: allMessages } = await supabase
       .from('messages')
       .select('*')
-      .eq('conversation_id', conv.id)
+      .in('conversation_id', conversationIds)
       .order('created_at', { ascending: true });
 
-    conversationsWithMessages.push(dbToConversation(conv, messages || []));
+    // Group messages by conversation_id in memory
+    const messagesByConv = new Map<string, any[]>();
+    for (const msg of allMessages || []) {
+      if (!messagesByConv.has(msg.conversation_id)) {
+        messagesByConv.set(msg.conversation_id, []);
+      }
+      messagesByConv.get(msg.conversation_id)!.push(msg);
+    }
+
+    // Build conversations with their messages
+    conversationsWithMessages = conversations.map(conv => 
+      dbToConversation(conv, messagesByConv.get(conv.id) || [])
+    );
   }
 
   const worldCore: WorldCore = (scenario.world_core as WorldCore) || {
@@ -303,16 +291,16 @@ export async function fetchScenarioById(id: string): Promise<{
   return {
     data: {
       version: scenario.version || 3,
-      characters: (characters || []).map(dbToCharacter),
+      characters: (charactersResult.data || []).map(dbToCharacter),
       sideCharacters: [],  // Side characters are loaded per-conversation, not per-scenario
       world: {
         core: worldCore,
-        entries: (codexEntries || []).map(dbToCodexEntry)
+        entries: (codexResult.data || []).map(dbToCodexEntry)
       },
       story: {
         openingDialog
       },
-      scenes: (scenes || []).map(dbToScene),
+      scenes: (scenesResult.data || []).map(dbToScene),
       uiSettings,
       conversations: conversationsWithMessages,
       selectedModel: scenario.selected_model || LLM_MODELS[0].id,
@@ -320,6 +308,83 @@ export async function fetchScenarioById(id: string): Promise<{
     },
     coverImage: scenario.cover_image_url || '',
     coverImagePosition: scenario.cover_image_position as { x: number; y: number } || { x: 50, y: 50 }
+  };
+}
+
+/**
+ * Optimized scenario fetch for PLAY mode - doesn't load all existing conversations.
+ * Creates a new conversation, so we don't need the old message history.
+ * This eliminates the N+1 query problem for the play flow.
+ */
+export async function fetchScenarioForPlay(id: string): Promise<{
+  data: ScenarioData;
+  coverImage: string;
+  coverImagePosition: { x: number; y: number };
+  conversationCount: number;
+} | null> {
+  // Parallel fetch of scenario + related data (but NOT conversation messages)
+  const [scenarioResult, charactersResult, codexResult, scenesResult, convCountResult] = await Promise.all([
+    supabase.from('scenarios').select('*').eq('id', id).maybeSingle(),
+    supabase.from('characters').select('*').eq('scenario_id', id),
+    supabase.from('codex_entries').select('*').eq('scenario_id', id),
+    supabase.from('scenes').select('*').eq('scenario_id', id),
+    supabase.from('conversations').select('id', { count: 'exact', head: true }).eq('scenario_id', id)
+  ]);
+
+  if (scenarioResult.error) throw scenarioResult.error;
+  if (!scenarioResult.data) return null;
+
+  const scenario = scenarioResult.data;
+
+  const worldCore: WorldCore = (scenario.world_core as WorldCore) || {
+    scenarioName: '',
+    briefDescription: '',
+    settingOverview: '',
+    rulesOfMagicTech: '',
+    factions: '',
+    locations: '',
+    historyTimeline: '',
+    toneThemes: '',
+    plotHooks: '',
+    narrativeStyle: '',
+    dialogFormatting: ''
+  };
+
+  const rawOpeningDialog = scenario.opening_dialog as Partial<OpeningDialog> | undefined;
+  const openingDialog: OpeningDialog = { 
+    enabled: rawOpeningDialog?.enabled ?? true, 
+    text: rawOpeningDialog?.text ?? '',
+    startingDay: rawOpeningDialog?.startingDay ?? 1,
+    startingTimeOfDay: rawOpeningDialog?.startingTimeOfDay ?? 'day'
+  };
+  
+  const uiSettings = (scenario.ui_settings as { showBackgrounds: boolean; transparentBubbles: boolean; darkMode: boolean }) || { 
+    showBackgrounds: true, 
+    transparentBubbles: false, 
+    darkMode: false 
+  };
+
+  return {
+    data: {
+      version: scenario.version || 3,
+      characters: (charactersResult.data || []).map(dbToCharacter),
+      sideCharacters: [],
+      world: {
+        core: worldCore,
+        entries: (codexResult.data || []).map(dbToCodexEntry)
+      },
+      story: {
+        openingDialog
+      },
+      scenes: (scenesResult.data || []).map(dbToScene),
+      uiSettings,
+      conversations: [],  // Empty - we'll add the new conversation
+      selectedModel: scenario.selected_model || LLM_MODELS[0].id,
+      selectedArtStyle: scenario.selected_art_style || 'cinematic-2-5d'
+    },
+    coverImage: scenario.cover_image_url || '',
+    coverImagePosition: scenario.cover_image_position as { x: number; y: number } || { x: 50, y: 50 },
+    conversationCount: convCountResult.count || 0
   };
 }
 

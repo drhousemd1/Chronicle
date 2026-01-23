@@ -165,38 +165,48 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     sideCharactersRef.current = appData.sideCharacters || [];
   }, [appData.sideCharacters]);
   
-  // Load session states on mount
+  // Load session states on mount - DEFERRED to not block first render
   useEffect(() => {
-    async function loadSessionStates() {
-      try {
-        const states = await supabaseData.fetchSessionStates(conversationId);
+    // Skip loading if we're in the "loading" state (waiting for scenario data)
+    if (conversationId === "loading") return;
+    
+    // Use requestAnimationFrame to defer non-critical data loading
+    // This allows the UI shell to render first
+    const frameId = requestAnimationFrame(() => {
+      supabaseData.fetchSessionStates(conversationId).then(states => {
         setSessionStates(states);
         setSessionStatesLoaded(true);
-      } catch (err) {
+      }).catch(err => {
         console.error('Failed to load session states:', err);
         setSessionStatesLoaded(true);
-      }
-    }
-    loadSessionStates();
+      });
+    });
+    
+    return () => cancelAnimationFrame(frameId);
   }, [conversationId]);
   
-  // Load sidebar backgrounds on mount
+  // Load sidebar backgrounds on mount - DEFERRED to not block first render
   useEffect(() => {
-    async function loadSidebarBackgrounds() {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
+    // Skip loading if we're in the "loading" state
+    if (conversationId === "loading") return;
+    
+    // Defer sidebar background loading to next frame
+    const frameId = requestAnimationFrame(() => {
+      supabase.auth.getUser().then(({ data: { user } }) => {
         if (user) {
-          const bgs = await supabaseData.fetchSidebarBackgrounds(user.id);
-          setSidebarBackgrounds(bgs);
-          const selected = bgs.find(bg => bg.isSelected);
-          if (selected) setSelectedSidebarBgId(selected.id);
+          supabaseData.fetchSidebarBackgrounds(user.id).then(bgs => {
+            setSidebarBackgrounds(bgs);
+            const selected = bgs.find(bg => bg.isSelected);
+            if (selected) setSelectedSidebarBgId(selected.id);
+          }).catch(err => {
+            console.error('Failed to load sidebar backgrounds:', err);
+          });
         }
-      } catch (err) {
-        console.error('Failed to load sidebar backgrounds:', err);
-      }
-    }
-    loadSidebarBackgrounds();
-  }, []);
+      });
+    });
+    
+    return () => cancelAnimationFrame(frameId);
+  }, [conversationId]);
   
   // Sidebar background handlers
   const selectedSidebarBgUrl = useMemo(() => {
@@ -281,6 +291,19 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   }, [sessionStates]);
 
   const conversation = appData.conversations.find(c => c.id === conversationId);
+  
+  // LOADING STATE: Show skeleton UI while data is being fetched
+  // This enables immediate navigation with progressive data hydration
+  if (conversationId === "loading" || (!conversation && conversationId !== "loading")) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-slate-950">
+        <div className="text-center space-y-4">
+          <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto" />
+          <p className="text-slate-400 text-sm">Loading your story...</p>
+        </div>
+      </div>
+    );
+  }
   
   // Merge all characters (main characters with session overrides + side characters)
   // and dynamically group by their effective characterRole
