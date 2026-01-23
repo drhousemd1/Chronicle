@@ -20,9 +20,9 @@ const IMAGE_MODEL_MAP: Record<string, string> = {
   'openai/gpt-5': 'google/gemini-2.5-flash-image',
   'openai/gpt-5-mini': 'google/gemini-2.5-flash-image',
   // Grok models -> Grok image model
-  'grok-3': 'grok-2-image',
-  'grok-3-mini': 'grok-2-image',
-  'grok-2': 'grok-2-image',
+  'grok-3': 'grok-2-image-1212',
+  'grok-3-mini': 'grok-2-image-1212',
+  'grok-2': 'grok-2-image-1212',
 };
 
 // Map text models to their text API equivalent for scene analysis
@@ -95,8 +95,10 @@ serve(async (req) => {
     ).join('\n');
 
     // Step 1: Use text model to analyze scene and write image prompt
-    const analysisPrompt = `You are an expert at writing image generation prompts for AI art. Analyze this roleplay scene and write a detailed, vivid image generation prompt.
-
+    // xAI has a 1024 char limit for image prompts, so request shorter descriptions
+    const isXaiImage = imageGateway === 'xai';
+    const analysisPrompt = `You are an expert at writing image generation prompts for AI art. Analyze this roleplay scene and write a ${isXaiImage ? 'concise' : 'detailed, vivid'} image generation prompt.
+${isXaiImage ? '\nCRITICAL: Keep your response under 700 characters. Be direct and efficient with descriptions.\n' : ''}
 CHARACTERS IN SCENE:
 ${characterDescriptions || 'No specific character data provided.'}
 
@@ -106,7 +108,7 @@ TIME OF DAY: ${timeOfDay || 'day'}
 RECENT DIALOGUE:
 ${dialogueContext}
 
-Based on the dialogue and actions, write a detailed image prompt that captures this exact moment. Include:
+Based on the dialogue and actions, write ${isXaiImage ? 'a concise' : 'a detailed'} image prompt that captures this exact moment. Include:
 1. The characters present, their positions, poses, and expressions
 2. Their physical features (hair, eyes, build, skin tone)
 3. What they're currently wearing
@@ -115,7 +117,7 @@ Based on the dialogue and actions, write a detailed image prompt that captures t
 6. Lighting appropriate for ${timeOfDay || 'day'}
 7. A suitable camera angle and composition
 
-Write ONLY the image prompt text. Be vivid and specific. Do not include any preamble or explanation.`;
+Write ONLY the image prompt text. ${isXaiImage ? 'Keep it concise.' : 'Be vivid and specific.'} Do not include any preamble or explanation.`;
 
     let sceneDescription = "";
 
@@ -190,6 +192,12 @@ Write ONLY the image prompt text. Be vivid and specific. Do not include any prea
       fullPrompt = `${artStylePrompt}. ${sceneDescription}`;
     } else {
       fullPrompt = `High quality digital art illustration. ${sceneDescription}`;
+    }
+
+    // xAI has 1024 char limit for image prompts - truncate if needed
+    if (imageGateway === 'xai' && fullPrompt.length > 1024) {
+      console.log(`[generate-scene-image] Truncating prompt from ${fullPrompt.length} to 1024 chars for xAI`);
+      fullPrompt = fullPrompt.slice(0, 1020) + "...";
     }
 
     console.log("[generate-scene-image] Full prompt length:", fullPrompt.length);

@@ -40,9 +40,9 @@ export const IMAGE_MODEL_MAP: Record<string, string> = {
   'openai/gpt-5': 'google/gemini-2.5-flash-image',
   'openai/gpt-5-mini': 'google/gemini-2.5-flash-image',
   // Grok models -> Grok image model
-  'grok-3': 'grok-2-image',
-  'grok-3-mini': 'grok-2-image',
-  'grok-2': 'grok-2-image',
+  'grok-3': 'grok-2-image-1212',
+  'grok-3-mini': 'grok-2-image-1212',
+  'grok-2': 'grok-2-image-1212',
 };
 
 // Helper to get the corresponding image model for a text model
