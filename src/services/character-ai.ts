@@ -1,0 +1,508 @@
+
+import { ScenarioData, Character, CharacterTraitSection, PhysicalAppearance, CurrentlyWearing, PreferredClothing, WorldCore } from "@/types";
+import { supabase } from "@/integrations/supabase/client";
+import { uid, now } from "@/utils";
+
+// Analyze story type from world context
+function analyzeStoryType(worldCore: WorldCore) {
+  const text = `${worldCore.toneThemes || ''} ${worldCore.briefDescription || ''} ${worldCore.settingOverview || ''} ${worldCore.plotHooks || ''}`.toLowerCase();
+  
+  return {
+    isNSFW: /nsfw|adult|mature|erotic|sensual|intimate|sexual/.test(text),
+    isFantasy: /fantasy|magic|d&d|dungeons|dragons|medieval|quest|wizard|sorcerer|elf|dwarf/.test(text),
+    isMystery: /mystery|detective|thriller|crime|investigation|noir/.test(text),
+    isSurvival: /survival|apocalypse|wilderness|zombie|post-apocalyptic/.test(text),
+    isRomance: /romance|love|relationship|dating|passion/.test(text),
+    isSciFi: /sci-fi|space|future|cyberpunk|technology|android|robot/.test(text),
+    isAction: /action|combat|war|military|adventure|fight/.test(text),
+  };
+}
+
+// Get empty fields from hardcoded sections
+function getEmptyHardcodedFields(character: Character) {
+  const emptyFields: Record<string, string[]> = {
+    basics: [],
+    physicalAppearance: [],
+    currentlyWearing: [],
+    preferredClothing: [],
+  };
+
+  // Check basic fields
+  if (!character.name || character.name === "New Character") emptyFields.basics.push("name");
+  if (!character.age) emptyFields.basics.push("age");
+  if (!character.sexType) emptyFields.basics.push("sexType");
+  if (!character.roleDescription) emptyFields.basics.push("roleDescription");
+  if (!character.location) emptyFields.basics.push("location");
+  if (!character.currentMood) emptyFields.basics.push("currentMood");
+
+  // Check physical appearance
+  const pa = character.physicalAppearance;
+  if (!pa?.hairColor) emptyFields.physicalAppearance.push("hairColor");
+  if (!pa?.eyeColor) emptyFields.physicalAppearance.push("eyeColor");
+  if (!pa?.build) emptyFields.physicalAppearance.push("build");
+  if (!pa?.bodyHair) emptyFields.physicalAppearance.push("bodyHair");
+  if (!pa?.height) emptyFields.physicalAppearance.push("height");
+  if (!pa?.breastSize) emptyFields.physicalAppearance.push("breastSize");
+  if (!pa?.genitalia) emptyFields.physicalAppearance.push("genitalia");
+  if (!pa?.skinTone) emptyFields.physicalAppearance.push("skinTone");
+  if (!pa?.makeup) emptyFields.physicalAppearance.push("makeup");
+  if (!pa?.bodyMarkings) emptyFields.physicalAppearance.push("bodyMarkings");
+  if (!pa?.temporaryConditions) emptyFields.physicalAppearance.push("temporaryConditions");
+
+  // Check currently wearing
+  const cw = character.currentlyWearing;
+  if (!cw?.top) emptyFields.currentlyWearing.push("top");
+  if (!cw?.bottom) emptyFields.currentlyWearing.push("bottom");
+  if (!cw?.undergarments) emptyFields.currentlyWearing.push("undergarments");
+  if (!cw?.miscellaneous) emptyFields.currentlyWearing.push("miscellaneous");
+
+  // Check preferred clothing
+  const pc = character.preferredClothing;
+  if (!pc?.casual) emptyFields.preferredClothing.push("casual");
+  if (!pc?.work) emptyFields.preferredClothing.push("work");
+  if (!pc?.sleep) emptyFields.preferredClothing.push("sleep");
+  if (!pc?.undergarments) emptyFields.preferredClothing.push("undergarments");
+  if (!pc?.miscellaneous) emptyFields.preferredClothing.push("miscellaneous");
+
+  return emptyFields;
+}
+
+// Get empty items in custom sections
+function getEmptyCustomSectionItems(character: Character) {
+  const emptyItems: { sectionId: string; sectionTitle: string; itemId: string; label: string }[] = [];
+  
+  for (const section of character.sections) {
+    for (const item of section.items) {
+      if (item.label && !item.value) {
+        emptyItems.push({
+          sectionId: section.id,
+          sectionTitle: section.title,
+          itemId: item.id,
+          label: item.label
+        });
+      }
+    }
+  }
+  
+  return emptyItems;
+}
+
+// Build prompt for AI Fill (empty fields only)
+function buildAiFillPrompt(character: Character, emptyFields: Record<string, string[]>, emptyCustomItems: ReturnType<typeof getEmptyCustomSectionItems>, worldContext: string) {
+  const fieldsToFill: string[] = [];
+  
+  if (emptyFields.basics.length > 0) {
+    fieldsToFill.push(`Basics: ${emptyFields.basics.join(", ")}`);
+  }
+  if (emptyFields.physicalAppearance.length > 0) {
+    fieldsToFill.push(`Physical Appearance: ${emptyFields.physicalAppearance.join(", ")}`);
+  }
+  if (emptyFields.currentlyWearing.length > 0) {
+    fieldsToFill.push(`Currently Wearing: ${emptyFields.currentlyWearing.join(", ")}`);
+  }
+  if (emptyFields.preferredClothing.length > 0) {
+    fieldsToFill.push(`Preferred Clothing: ${emptyFields.preferredClothing.join(", ")}`);
+  }
+  if (emptyCustomItems.length > 0) {
+    const customLabels = emptyCustomItems.map(i => `${i.sectionTitle}/${i.label}`).join(", ");
+    fieldsToFill.push(`Custom Fields: ${customLabels}`);
+  }
+
+  return `You are filling in empty character fields for "${character.name || 'a character'}".
+
+WORLD CONTEXT:
+${worldContext}
+
+EXISTING CHARACTER INFO (for context, keep consistency):
+- Name: ${character.name || 'Not set'}
+- Age: ${character.age || 'Not set'}
+- Sex/Identity: ${character.sexType || 'Not set'}
+- Role: ${character.roleDescription || 'Not set'}
+- Tags: ${character.tags || 'None'}
+
+FIELDS THAT NEED TO BE FILLED:
+${fieldsToFill.join("\n")}
+
+Return a JSON object with ONLY the empty fields filled in. Use the exact field names.
+For physical attributes, provide realistic, detailed descriptions.
+For clothing, describe specific items and styles.
+
+Example format:
+{
+  "basics": { "age": "28", "sexType": "Female Human" },
+  "physicalAppearance": { "hairColor": "Auburn waves falling to mid-back", "eyeColor": "Emerald green" },
+  "currentlyWearing": { "top": "Fitted black turtleneck" },
+  "preferredClothing": { "casual": "Comfortable jeans and soft sweaters" },
+  "customFields": { "Biography": "Born in a small coastal town..." }
+}
+
+ONLY include fields that were listed above as needing to be filled. Return valid JSON only.`;
+}
+
+// Build prompt for AI Generate (fill + create sections)
+function buildAiGeneratePrompt(
+  character: Character, 
+  emptyFields: Record<string, string[]>, 
+  existingSectionTitles: string[],
+  storyContext: ReturnType<typeof analyzeStoryType>,
+  worldContext: string
+) {
+  const sectionsToCreate: string[] = [];
+  
+  // Standard sections to recommend
+  const standardSections = [
+    { title: "Background", items: ["Job/Occupation", "Education Level", "Religious Beliefs", "Relationship Status", "Key Life Events", "Residence", "Hobbies", "Secrets"] },
+    { title: "Personality", items: ["Trait 1", "Trait 2", "Trait 3"] },
+    { title: "Tone", items: ["Speaking Style", "Vocabulary", "Mannerisms"] },
+    { title: "Fears", items: ["Primary Fear", "Secondary Fears"] },
+    { title: "Desires", items: ["Goals", "Motivations", "Dreams"] },
+  ];
+
+  // Conditional sections based on story type
+  if (storyContext.isNSFW) {
+    standardSections.push({ title: "Kinks & Fantasies", items: ["Preferences", "Turn-ons", "Boundaries"] });
+  }
+  if (storyContext.isFantasy || storyContext.isSurvival || storyContext.isAction) {
+    standardSections.push({ title: "Abilities & Skills", items: ["Primary Skill", "Secondary Skills", "Special Abilities"] });
+  }
+  if (storyContext.isMystery) {
+    standardSections.push({ title: "Secrets & Connections", items: ["Hidden Agenda", "Key Contacts", "Dark Past"] });
+  }
+  if (storyContext.isSciFi) {
+    standardSections.push({ title: "Tech & Augments", items: ["Equipment", "Cybernetics", "Specializations"] });
+  }
+
+  // Filter out existing sections
+  for (const sec of standardSections) {
+    const exists = existingSectionTitles.some(title => 
+      title.toLowerCase().includes(sec.title.toLowerCase()) || 
+      sec.title.toLowerCase().includes(title.toLowerCase())
+    );
+    if (!exists) {
+      sectionsToCreate.push(`${sec.title}: ${sec.items.join(", ")}`);
+    }
+  }
+
+  return `You are creating a complete, well-rounded character profile for "${character.name || 'a character'}".
+
+WORLD CONTEXT:
+${worldContext}
+
+STORY THEMES DETECTED:
+${storyContext.isNSFW ? "- Adult/Mature content" : ""}
+${storyContext.isFantasy ? "- Fantasy/Magic setting" : ""}
+${storyContext.isMystery ? "- Mystery/Investigation themes" : ""}
+${storyContext.isSurvival ? "- Survival/Apocalyptic setting" : ""}
+${storyContext.isRomance ? "- Romance elements" : ""}
+${storyContext.isSciFi ? "- Sci-Fi/Futuristic setting" : ""}
+${storyContext.isAction ? "- Action/Combat focus" : ""}
+
+EXISTING CHARACTER INFO:
+- Name: ${character.name || 'Not set'}
+- Age: ${character.age || 'Not set'}
+- Sex/Identity: ${character.sexType || 'Not set'}
+- Role: ${character.roleDescription || 'Not set'}
+- Tags: ${character.tags || 'None'}
+
+EXISTING SECTIONS (add to these if relevant, don't duplicate):
+${existingSectionTitles.length > 0 ? existingSectionTitles.join(", ") : "None"}
+
+SECTIONS TO CREATE (create only if not already existing):
+${sectionsToCreate.join("\n")}
+
+Return a JSON object with:
+1. "emptyFieldsFill" - Values for any empty hardcoded fields
+2. "newSections" - Array of new sections to create with their items filled in
+3. "existingSectionAdditions" - Object mapping existing section titles to new items to add
+
+Example format:
+{
+  "emptyFieldsFill": {
+    "basics": { "age": "28" },
+    "physicalAppearance": { "hairColor": "Auburn" }
+  },
+  "newSections": [
+    {
+      "title": "Personality",
+      "items": [
+        { "label": "Primary Trait", "value": "Stubborn but loyal" },
+        { "label": "Secondary Trait", "value": "Quick-witted" }
+      ]
+    }
+  ],
+  "existingSectionAdditions": {
+    "Background": [
+      { "label": "Childhood", "value": "Raised in a merchant family" }
+    ]
+  }
+}
+
+Make all content cohesive, detailed, and appropriate for the detected story themes.
+Return valid JSON only.`;
+}
+
+// AI Fill: Fill only empty existing fields
+export async function aiFillCharacter(
+  character: Character,
+  appData: ScenarioData,
+  modelId: string
+): Promise<Partial<Character>> {
+  const emptyFields = getEmptyHardcodedFields(character);
+  const emptyCustomItems = getEmptyCustomSectionItems(character);
+  
+  // Check if there's anything to fill
+  const totalEmpty = 
+    emptyFields.basics.length + 
+    emptyFields.physicalAppearance.length + 
+    emptyFields.currentlyWearing.length + 
+    emptyFields.preferredClothing.length +
+    emptyCustomItems.length;
+  
+  if (totalEmpty === 0) {
+    return {}; // Nothing to fill
+  }
+
+  const worldContext = `
+Setting: ${appData.world.core.settingOverview || 'Not specified'}
+Tone: ${appData.world.core.toneThemes || 'Not specified'}
+Scenario: ${appData.world.core.scenarioName || 'Not specified'}
+  `.trim();
+
+  const prompt = buildAiFillPrompt(character, emptyFields, emptyCustomItems, worldContext);
+
+  try {
+    const { data, error } = await supabase.functions.invoke('chat', {
+      body: {
+        messages: [
+          { role: 'system', content: 'You are a character creation assistant. Return only valid JSON.' },
+          { role: 'user', content: prompt }
+        ],
+        modelId,
+        stream: false
+      }
+    });
+
+    if (error) {
+      console.error("AI Fill error:", error);
+      return {};
+    }
+
+    const content = data?.choices?.[0]?.message?.content || '';
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return {};
+
+    const result = JSON.parse(jsonMatch[0]);
+    const patch: Partial<Character> = {};
+
+    // Apply basics
+    if (result.basics) {
+      if (result.basics.name && emptyFields.basics.includes("name")) patch.name = result.basics.name;
+      if (result.basics.age && emptyFields.basics.includes("age")) patch.age = result.basics.age;
+      if (result.basics.sexType && emptyFields.basics.includes("sexType")) patch.sexType = result.basics.sexType;
+      if (result.basics.roleDescription && emptyFields.basics.includes("roleDescription")) patch.roleDescription = result.basics.roleDescription;
+      if (result.basics.location && emptyFields.basics.includes("location")) patch.location = result.basics.location;
+      if (result.basics.currentMood && emptyFields.basics.includes("currentMood")) patch.currentMood = result.basics.currentMood;
+    }
+
+    // Apply physical appearance (only empty fields)
+    if (result.physicalAppearance) {
+      patch.physicalAppearance = { ...character.physicalAppearance };
+      for (const [key, value] of Object.entries(result.physicalAppearance)) {
+        if (emptyFields.physicalAppearance.includes(key) && value) {
+          (patch.physicalAppearance as any)[key] = value;
+        }
+      }
+    }
+
+    // Apply currently wearing (only empty fields)
+    if (result.currentlyWearing) {
+      patch.currentlyWearing = { ...character.currentlyWearing };
+      for (const [key, value] of Object.entries(result.currentlyWearing)) {
+        if (emptyFields.currentlyWearing.includes(key) && value) {
+          (patch.currentlyWearing as any)[key] = value;
+        }
+      }
+    }
+
+    // Apply preferred clothing (only empty fields)
+    if (result.preferredClothing) {
+      patch.preferredClothing = { ...character.preferredClothing };
+      for (const [key, value] of Object.entries(result.preferredClothing)) {
+        if (emptyFields.preferredClothing.includes(key) && value) {
+          (patch.preferredClothing as any)[key] = value;
+        }
+      }
+    }
+
+    // Apply custom field values (only empty items)
+    if (result.customFields && emptyCustomItems.length > 0) {
+      patch.sections = character.sections.map(section => {
+        const updatedItems = section.items.map(item => {
+          const emptyItem = emptyCustomItems.find(ei => ei.itemId === item.id);
+          if (emptyItem && result.customFields[item.label]) {
+            return { ...item, value: result.customFields[item.label], updatedAt: now() };
+          }
+          return item;
+        });
+        return { ...section, items: updatedItems, updatedAt: now() };
+      });
+    }
+
+    return patch;
+  } catch (e) {
+    console.error("AI Fill parsing failed:", e);
+    return {};
+  }
+}
+
+// AI Generate: Fill empty fields + create new sections
+export async function aiGenerateCharacter(
+  character: Character,
+  appData: ScenarioData,
+  modelId: string
+): Promise<Partial<Character>> {
+  const emptyFields = getEmptyHardcodedFields(character);
+  const existingSectionTitles = character.sections.map(s => s.title);
+  const storyContext = analyzeStoryType(appData.world.core);
+
+  const worldContext = `
+Setting: ${appData.world.core.settingOverview || 'Not specified'}
+Tone: ${appData.world.core.toneThemes || 'Not specified'}
+Scenario: ${appData.world.core.scenarioName || 'Not specified'}
+Plot: ${appData.world.core.plotHooks || 'Not specified'}
+  `.trim();
+
+  const prompt = buildAiGeneratePrompt(character, emptyFields, existingSectionTitles, storyContext, worldContext);
+
+  try {
+    const { data, error } = await supabase.functions.invoke('chat', {
+      body: {
+        messages: [
+          { role: 'system', content: 'You are a creative character design assistant. Return only valid JSON.' },
+          { role: 'user', content: prompt }
+        ],
+        modelId,
+        stream: false
+      }
+    });
+
+    if (error) {
+      console.error("AI Generate error:", error);
+      return {};
+    }
+
+    const content = data?.choices?.[0]?.message?.content || '';
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return {};
+
+    const result = JSON.parse(jsonMatch[0]);
+    const patch: Partial<Character> = {};
+
+    // Apply empty fields fill (same as AI Fill)
+    if (result.emptyFieldsFill) {
+      const fill = result.emptyFieldsFill;
+      
+      if (fill.basics) {
+        if (fill.basics.name && emptyFields.basics.includes("name")) patch.name = fill.basics.name;
+        if (fill.basics.age && emptyFields.basics.includes("age")) patch.age = fill.basics.age;
+        if (fill.basics.sexType && emptyFields.basics.includes("sexType")) patch.sexType = fill.basics.sexType;
+        if (fill.basics.roleDescription && emptyFields.basics.includes("roleDescription")) patch.roleDescription = fill.basics.roleDescription;
+        if (fill.basics.location && emptyFields.basics.includes("location")) patch.location = fill.basics.location;
+        if (fill.basics.currentMood && emptyFields.basics.includes("currentMood")) patch.currentMood = fill.basics.currentMood;
+      }
+
+      if (fill.physicalAppearance) {
+        patch.physicalAppearance = { ...character.physicalAppearance };
+        for (const [key, value] of Object.entries(fill.physicalAppearance)) {
+          if (emptyFields.physicalAppearance.includes(key) && value) {
+            (patch.physicalAppearance as any)[key] = value;
+          }
+        }
+      }
+
+      if (fill.currentlyWearing) {
+        patch.currentlyWearing = { ...character.currentlyWearing };
+        for (const [key, value] of Object.entries(fill.currentlyWearing)) {
+          if (emptyFields.currentlyWearing.includes(key) && value) {
+            (patch.currentlyWearing as any)[key] = value;
+          }
+        }
+      }
+
+      if (fill.preferredClothing) {
+        patch.preferredClothing = { ...character.preferredClothing };
+        for (const [key, value] of Object.entries(fill.preferredClothing)) {
+          if (emptyFields.preferredClothing.includes(key) && value) {
+            (patch.preferredClothing as any)[key] = value;
+          }
+        }
+      }
+    }
+
+    // Start with existing sections
+    let updatedSections = [...character.sections];
+
+    // Add new items to existing sections
+    if (result.existingSectionAdditions) {
+      for (const [sectionTitle, newItems] of Object.entries(result.existingSectionAdditions)) {
+        const sectionIndex = updatedSections.findIndex(s => 
+          s.title.toLowerCase() === sectionTitle.toLowerCase()
+        );
+        if (sectionIndex >= 0 && Array.isArray(newItems)) {
+          const existingLabels = updatedSections[sectionIndex].items.map(i => i.label.toLowerCase());
+          const itemsToAdd = (newItems as any[])
+            .filter(item => !existingLabels.includes(item.label?.toLowerCase()))
+            .map(item => ({
+              id: uid('item'),
+              label: item.label || '',
+              value: item.value || '',
+              createdAt: now(),
+              updatedAt: now()
+            }));
+          
+          updatedSections[sectionIndex] = {
+            ...updatedSections[sectionIndex],
+            items: [...updatedSections[sectionIndex].items, ...itemsToAdd],
+            updatedAt: now()
+          };
+        }
+      }
+    }
+
+    // Create new sections
+    if (result.newSections && Array.isArray(result.newSections)) {
+      for (const newSection of result.newSections) {
+        if (!newSection.title) continue;
+        
+        // Check if section already exists
+        const exists = updatedSections.some(s => 
+          s.title.toLowerCase() === newSection.title.toLowerCase()
+        );
+        if (exists) continue;
+
+        const section: CharacterTraitSection = {
+          id: uid('sec'),
+          title: newSection.title,
+          items: Array.isArray(newSection.items) 
+            ? newSection.items.map((item: any) => ({
+                id: uid('item'),
+                label: item.label || '',
+                value: item.value || '',
+                createdAt: now(),
+                updatedAt: now()
+              }))
+            : [],
+          createdAt: now(),
+          updatedAt: now()
+        };
+        updatedSections.push(section);
+      }
+    }
+
+    patch.sections = updatedSections;
+    return patch;
+  } catch (e) {
+    console.error("AI Generate parsing failed:", e);
+    return {};
+  }
+}

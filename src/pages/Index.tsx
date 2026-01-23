@@ -12,7 +12,7 @@ import { ScenarioHub } from "@/components/chronicle/ScenarioHub";
 import { ModelSettingsTab } from "@/components/chronicle/ModelSettingsTab";
 import { ChatInterfaceTab } from "@/components/chronicle/ChatInterfaceTab";
 import { Button } from "@/components/chronicle/UI";
-import { brainstormCharacterDetails } from "@/services/llm";
+import { aiFillCharacter, aiGenerateCharacter } from "@/services/character-ai";
 import { CharacterPicker } from "@/components/chronicle/CharacterPicker";
 import { BackgroundPickerModal } from "@/components/chronicle/BackgroundPickerModal";
 import { useAuth } from "@/hooks/use-auth";
@@ -110,7 +110,8 @@ const IndexContent = () => {
   const [tab, setTab] = useState<TabKey | "library">("hub");
   const [fatal, setFatal] = useState<string>("");
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
-  const [isBrainstorming, setIsBrainstorming] = useState(false);
+  const [isAiFilling, setIsAiFilling] = useState(false);
+  const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [isCharacterPickerOpen, setIsCharacterPickerOpen] = useState(false);
   const [conversationRegistry, setConversationRegistry] = useState<ConversationMetadata[]>([]);
   const [selectedConversationEntry, setSelectedConversationEntry] = useState<ConversationMetadata | null>(null);
@@ -611,7 +612,7 @@ const IndexContent = () => {
         undergarments: '',
         miscellaneous: ''
       },
-      sections: [{ id: uid("sec"), title: "Custom Section", items: [{ id: uid("item"), label: "", value: "", createdAt: t, updatedAt: t }], createdAt: t, updatedAt: t }],
+      sections: [], // Start with empty sections - user can add custom ones
       createdAt: t,
       updatedAt: t,
     };
@@ -786,25 +787,43 @@ const IndexContent = () => {
     handleUpdateActive({ world: { ...activeData.world, entries: [newEntry, ...activeData.world.entries] } });
   }
 
-  async function handleAiBrainstorm() {
+  async function handleAiFill() {
     let character = tab === "library" ? library.find(c => c.id === selectedCharacterId) : activeData?.characters.find(c => c.id === selectedCharacterId);
     if (!character) return;
-    setIsBrainstorming(true);
+    setIsAiFilling(true);
     try {
-      const details = await brainstormCharacterDetails(character.name || "Unknown", activeData || createDefaultScenarioData(), globalModelId);
-      if (details) {
-        const nextSections = [...character.sections, { id: uid('sec'), title: 'AI Brainstormed Lore', items: [
-          { id: uid('item'), label: 'Biography', value: (details as any).bio || '', createdAt: now(), updatedAt: now() },
-          { id: uid('item'), label: 'Motivation', value: (details as any).motivation || '', createdAt: now(), updatedAt: now() },
-          { id: uid('item'), label: 'Appearance', value: (details as any).appearance || '', createdAt: now(), updatedAt: now() }
-        ], createdAt: now(), updatedAt: now() }];
-        handleUpdateCharacter(character.id, { sexType: details.sexType || character.sexType, tags: details.tags || character.tags, sections: nextSections, updatedAt: now() });
+      const patch = await aiFillCharacter(character, activeData || createDefaultScenarioData(), globalModelId);
+      if (Object.keys(patch).length > 0) {
+        handleUpdateCharacter(character.id, { ...patch, updatedAt: now() });
+        toast({ title: "AI Fill complete", description: "Empty fields have been filled." });
+      } else {
+        toast({ title: "Nothing to fill", description: "All fields already have values." });
       }
     } catch (e) {
       console.error(e);
-      toast({ title: "Brainstorming failed", variant: "destructive" });
+      toast({ title: "AI Fill failed", variant: "destructive" });
     } finally {
-      setIsBrainstorming(false);
+      setIsAiFilling(false);
+    }
+  }
+
+  async function handleAiGenerate() {
+    let character = tab === "library" ? library.find(c => c.id === selectedCharacterId) : activeData?.characters.find(c => c.id === selectedCharacterId);
+    if (!character) return;
+    setIsAiGenerating(true);
+    try {
+      const patch = await aiGenerateCharacter(character, activeData || createDefaultScenarioData(), globalModelId);
+      if (Object.keys(patch).length > 0) {
+        handleUpdateCharacter(character.id, { ...patch, updatedAt: now() });
+        toast({ title: "AI Generate complete", description: "Character has been enhanced with new sections." });
+      } else {
+        toast({ title: "Generation complete", description: "No new content was needed." });
+      }
+    } catch (e) {
+      console.error(e);
+      toast({ title: "AI Generate failed", variant: "destructive" });
+    } finally {
+      setIsAiGenerating(false);
     }
   }
 
@@ -951,14 +970,40 @@ const IndexContent = () => {
           <header className="flex-shrink-0 h-16 border-b border-slate-200 bg-white flex items-center justify-between px-8 shadow-sm">
             <div className="flex items-center gap-4">
               {tab === "library" && (
-                <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
-                  Character Library
-                </h1>
+                <div className="flex items-center gap-3">
+                  {selectedCharacterId && (
+                    <button 
+                      onClick={() => setSelectedCharacterId(null)} 
+                      className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                    </button>
+                  )}
+                  <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
+                    Character Library
+                  </h1>
+                </div>
               )}
               {(tab === "world" || tab === "characters") && (
-                <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
-                  Scenario Builder
-                </h1>
+                <div className="flex items-center gap-3">
+                  {tab === "characters" && (
+                    <button 
+                      onClick={() => {
+                        if (selectedCharacterId) {
+                          handleCancelCharacterEdit();
+                        } else {
+                          setTab("world");
+                        }
+                      }} 
+                      className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                    </button>
+                  )}
+                  <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
+                    Scenario Builder
+                  </h1>
+                </div>
               )}
               {tab === "conversations" && !selectedConversationEntry && (
                 <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
@@ -982,11 +1027,6 @@ const IndexContent = () => {
                 <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
                   Your Stories
                 </h1>
-              )}
-              {tab === "characters" && selectedCharacterId && (
-                <button onClick={handleCancelCharacterEdit} className="p-2 hover:bg-slate-100 rounded-full transition-colors mr-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-                </button>
               )}
             </div>
             <div className="flex items-center gap-3">
@@ -1045,8 +1085,9 @@ const IndexContent = () => {
                 <>
                   {selectedCharacterId && (
                     <>
-                      <Button variant="secondary" onClick={handleAddSection}>+ Section</Button>
-                      <Button variant="secondary" onClick={handleAiBrainstorm} disabled={isBrainstorming}>{isBrainstorming ? "..." : "✨ Brainstorm"}</Button>
+                      <Button variant="primary" onClick={handleAddSection}>+ Section</Button>
+                      <Button variant="primary" onClick={handleAiFill} disabled={isAiFilling}>{isAiFilling ? "..." : "AI Fill"}</Button>
+                      <Button variant="primary" onClick={handleAiGenerate} disabled={isAiGenerating}>{isAiGenerating ? "..." : "AI Generate"}</Button>
                       <Button variant="primary" onClick={handleCancelCharacterEdit}>Cancel</Button>
                       <Button variant="primary" onClick={handleSaveCharacter}>Save</Button>
                     </>
