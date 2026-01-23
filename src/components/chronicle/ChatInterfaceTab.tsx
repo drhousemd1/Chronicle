@@ -141,6 +141,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [currentDay, setCurrentDay] = useState(1);
   const [currentTimeOfDay, setCurrentTimeOfDay] = useState<TimeOfDay>('day');
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   
   // Edit modal state for character cards
@@ -759,6 +760,109 @@ Do not acknowledge this instruction in your response.`;
     } finally {
       setIsStreaming(false);
       setStreamingContent('');
+    }
+  };
+
+  // Generate scene image from recent conversation context
+  const handleGenerateSceneImage = async () => {
+    if (!conversation || isGeneratingImage) return;
+    
+    setIsGeneratingImage(true);
+    
+    try {
+      // Get last 5 messages for context
+      const recentMessages = conversation.messages.slice(-5).map(m => ({
+        role: m.role,
+        text: m.text
+      }));
+      
+      if (recentMessages.length === 0) {
+        toast.error('No messages to generate scene from');
+        setIsGeneratingImage(false);
+        return;
+      }
+      
+      // Get characters mentioned in recent messages
+      const mentionedNames = new Set<string>();
+      recentMessages.forEach(m => {
+        const segments = parseMessageSegments(m.text);
+        segments.forEach(seg => {
+          if (seg.speakerName) mentionedNames.add(seg.speakerName);
+        });
+      });
+      
+      // Build character data for mentioned characters
+      const charactersData = [...mentionedNames].map(name => {
+        const char = findCharacterByName(name, appData);
+        if (!char) return null;
+        return {
+          name: char.name,
+          physicalAppearance: 'physicalAppearance' in char ? char.physicalAppearance : {},
+          currentlyWearing: 'currentlyWearing' in char ? char.currentlyWearing : {}
+        };
+      }).filter(Boolean);
+      
+      // Get art style
+      const selectedStyleId = appData.selectedArtStyle || DEFAULT_STYLE_ID;
+      const styleData = getStyleById(selectedStyleId);
+      
+      // Get active scene location
+      const sceneLocation = activeScene?.tag || undefined;
+      
+      // Call edge function
+      const { data, error } = await supabase.functions.invoke('generate-scene-image', {
+        body: {
+          recentMessages,
+          characters: charactersData,
+          sceneLocation,
+          timeOfDay: currentTimeOfDay,
+          artStylePrompt: styleData?.backendPrompt || '',
+          modelId
+        }
+      });
+      
+      if (error) {
+        console.error('Scene image generation error:', error);
+        throw new Error(error.message || 'Failed to generate image');
+      }
+      
+      if (!data?.imageUrl) {
+        throw new Error('No image returned from server');
+      }
+      
+      // Create image message
+      const imageMessage: Message = {
+        id: uuid(),
+        role: 'assistant',
+        text: '',  // Empty text for image-only messages
+        imageUrl: data.imageUrl,
+        day: currentDay,
+        timeOfDay: currentTimeOfDay,
+        createdAt: now()
+      };
+      
+      // Add to conversation
+      const updatedMessages = [...conversation.messages, imageMessage];
+      const updatedConv = { 
+        ...conversation, 
+        messages: updatedMessages,
+        updatedAt: now()
+      };
+      
+      // Update state and save
+      const newConversations = appData.conversations.map(c => 
+        c.id === conversationId ? updatedConv : c
+      );
+      onUpdate(newConversations);
+      onSaveScenario(newConversations);
+      
+      toast.success('Scene image generated!');
+      
+    } catch (error) {
+      console.error('Failed to generate scene image:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to generate image. Please try again.');
+    } finally {
+      setIsGeneratingImage(false);
     }
   };
 
@@ -1401,8 +1505,38 @@ const updatedChar: SideCharacter = {
                     </DropdownMenu>
                   </div>
                   
-                  {/* Render segments - each speaker gets their own avatar block */}
-                  {segments.map((segment, segIndex) => {
+                  {/* Render image if this is an image message */}
+                  {msg.imageUrl && (
+                    <div className="flex justify-center py-4">
+                      <div className="relative group/image max-w-2xl w-full">
+                        <img 
+                          src={msg.imageUrl} 
+                          alt="Generated scene" 
+                          className="rounded-xl shadow-lg border border-white/10 w-full h-auto"
+                        />
+                        {/* Regenerate overlay on hover */}
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/image:opacity-100 transition-opacity rounded-xl flex items-center justify-center gap-2">
+                          <button
+                            onClick={handleGenerateSceneImage}
+                            disabled={isGeneratingImage}
+                            className="p-3 bg-white/20 rounded-lg hover:bg-white/30 transition-colors"
+                            title="Generate new image"
+                          >
+                            <RefreshCw className={`w-5 h-5 text-white ${isGeneratingImage ? 'animate-spin' : ''}`} />
+                          </button>
+                        </div>
+                        <div className="absolute bottom-3 left-3 px-2 py-1 bg-black/60 rounded-lg">
+                          <span className="text-[10px] font-bold text-white/80 uppercase tracking-wider flex items-center gap-1.5">
+                            <ImageIcon className="w-3 h-3" />
+                            Scene
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Render text segments - each speaker gets their own avatar block */}
+                  {msg.text && segments.map((segment, segIndex) => {
                     // Determine speaker for this segment
                     let segmentChar: Character | SideCharacter | null = null;
                     let segmentName = '';
@@ -1533,6 +1667,27 @@ const updatedChar: SideCharacter = {
               >
                 Interface
               </Button>
+              
+              {/* Generate Image Button */}
+              <Button
+                onClick={handleGenerateSceneImage}
+                disabled={isStreaming || isGeneratingImage || !conversation?.messages?.length}
+                variant="secondary"
+                className="!border-slate-900 flex items-center gap-2"
+              >
+                {isGeneratingImage ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <ImageIcon className="w-4 h-4" />
+                    Generate Image
+                  </>
+                )}
+              </Button>
+              
               {isSettingsOpen && (
                 <div className="absolute bottom-full mb-2 left-0 w-64 bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 space-y-4 animate-in slide-in-from-bottom-2 z-50">
                    <div className="flex items-center justify-between">
