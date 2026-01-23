@@ -1,5 +1,4 @@
-
-import { ScenarioData, Character, World, TimeOfDay } from "../types";
+import { ScenarioData, Character, World, TimeOfDay, Memory } from "../types";
 import { supabase } from "@/integrations/supabase/client";
 
 const TIME_DESCRIPTIONS: Record<TimeOfDay, string> = {
@@ -14,7 +13,13 @@ const CRITICAL_DIALOG_RULES = `Enclose all spoken dialogue in " ".
 Enclose all physical actions or descriptions in * *.
 Enclose all internal thoughts in ( ).`;
 
-function getSystemInstruction(appData: ScenarioData, currentDay?: number, currentTimeOfDay?: TimeOfDay): string {
+function getSystemInstruction(
+  appData: ScenarioData, 
+  currentDay?: number, 
+  currentTimeOfDay?: TimeOfDay,
+  memories?: Memory[],
+  memoriesEnabled?: boolean
+): string {
   // Combine critical rules with any user-defined additional formatting
   const fullDialogFormatting = CRITICAL_DIALOG_RULES + (appData.world.core.dialogFormatting ? `\n${appData.world.core.dialogFormatting}` : '');
   
@@ -55,6 +60,24 @@ ${traits}`;
     - Be consistent with time-appropriate lighting, activities, and character energy levels
   ` : '';
 
+  // Memories context section
+  const memoriesContext = memoriesEnabled !== false && memories && memories.length > 0 ? `
+    STORY MEMORIES (Established facts and events - DO NOT contradict these):
+    ${memories
+      .sort((a, b) => (a.day || 0) - (b.day || 0))
+      .map(m => {
+        const timeInfo = m.day ? `[Day ${m.day}${m.timeOfDay ? `, ${m.timeOfDay}` : ''}]` : '[Unknown time]';
+        return `• ${timeInfo} ${m.content}`;
+      }).join('\n')}
+    
+    MEMORY RULES:
+    - These events HAVE HAPPENED. Do not write them as new occurrences.
+    - Characters should remember and reference past events appropriately.
+    - Maintain chronological consistency (current day is ${currentDay || 1}).
+    - Events from earlier days should feel like memories, not recent events.
+    - Never contradict or "re-do" events listed in memories.
+  ` : '';
+
   return `
     You are an expert Game Master and roleplayer for a creative writing/RPG studio.
     
@@ -69,6 +92,7 @@ ${traits}`;
     
     AVAILABLE SCENES: [${sceneTags}]
     ${temporalContext}
+    ${memoriesContext}
     INSTRUCTIONS:
     - Respond as the narrator or relevant characters.
     - NARRATIVE FOCUS: Prioritize 'ROLE: Main' characters in the narrative.
@@ -101,12 +125,14 @@ export async function* generateRoleplayResponseStream(
   userMessage: string,
   modelId: string,
   currentDay?: number,
-  currentTimeOfDay?: TimeOfDay
+  currentTimeOfDay?: TimeOfDay,
+  memories?: Memory[],
+  memoriesEnabled?: boolean
 ): AsyncGenerator<string, void, unknown> {
   const conversation = appData.conversations.find(c => c.id === conversationId);
   if (!conversation) throw new Error("Conversation not found");
 
-  const systemInstruction = getSystemInstruction(appData, currentDay, currentTimeOfDay);
+  const systemInstruction = getSystemInstruction(appData, currentDay, currentTimeOfDay, memories, memoriesEnabled);
   
   // Build messages array for OpenAI-compatible API
   const messages = [

@@ -277,6 +277,24 @@ export type UserBackground = {
 
 export type TabKey = "hub" | "characters" | "world" | "conversations" | "model_settings" | "builder" | "chat_interface";
 
+// =============================================
+// MEMORY TYPES (Story continuity tracking)
+// =============================================
+
+export type MemorySource = 'user' | 'message';
+
+export type Memory = {
+  id: string;
+  conversationId: string;
+  content: string;
+  day: number | null;
+  timeOfDay: TimeOfDay | null;
+  source: MemorySource;
+  sourceMessageId?: string;
+  createdAt: number;
+  updatedAt: number;
+};
+
 // Default empty hardcoded attributes
 export const defaultPhysicalAppearance: PhysicalAppearance = {
   hairColor: '',

@@ -254,6 +254,45 @@ export type Database = {
           },
         ]
       }
+      memories: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string | null
+          day: number | null
+          id: string
+          source: string | null
+          source_message_id: string | null
+          time_of_day: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string | null
+          day?: number | null
+          id?: string
+          source?: string | null
+          source_message_id?: string | null
+          time_of_day?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string | null
+          day?: number | null
+          id?: string
+          source?: string | null
+          source_message_id?: string | null
+          time_of_day?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string

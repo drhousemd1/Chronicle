@@ -16,7 +16,10 @@ import type {
   UserBackground,
   SideCharacter,
   SideCharacterBackground,
-  SideCharacterPersonality
+  SideCharacterPersonality,
+  Memory,
+  MemorySource,
+  TimeOfDay
 } from '@/types';
 import { 
   defaultPhysicalAppearance, 
@@ -1240,6 +1243,90 @@ export async function deleteSideCharacter(id: string): Promise<void> {
     .from('side_characters')
     .delete()
     .eq('id', id);
+
+  if (error) throw error;
+}
+
+// =============================================
+// MEMORIES FUNCTIONS
+// =============================================
+
+function dbToMemory(row: any): Memory {
+  return {
+    id: row.id,
+    conversationId: row.conversation_id,
+    content: row.content,
+    day: row.day,
+    timeOfDay: row.time_of_day,
+    source: row.source || 'user',
+    sourceMessageId: row.source_message_id,
+    createdAt: new Date(row.created_at).getTime(),
+    updatedAt: new Date(row.updated_at).getTime()
+  };
+}
+
+export async function fetchMemories(conversationId: string): Promise<Memory[]> {
+  const { data, error } = await supabase
+    .from('memories')
+    .select('*')
+    .eq('conversation_id', conversationId)
+    .order('day', { ascending: true, nullsFirst: true })
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+  return (data || []).map(dbToMemory);
+}
+
+export async function createMemory(
+  conversationId: string,
+  userId: string,
+  content: string,
+  day?: number | null,
+  timeOfDay?: TimeOfDay | null,
+  source: MemorySource = 'user',
+  sourceMessageId?: string
+): Promise<Memory> {
+  const { data, error } = await supabase
+    .from('memories')
+    .insert({
+      conversation_id: conversationId,
+      user_id: userId,
+      content,
+      day: day ?? null,
+      time_of_day: timeOfDay ?? null,
+      source,
+      source_message_id: sourceMessageId ?? null
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return dbToMemory(data);
+}
+
+export async function updateMemory(id: string, content: string): Promise<void> {
+  const { error } = await supabase
+    .from('memories')
+    .update({ content, updated_at: new Date().toISOString() })
+    .eq('id', id);
+
+  if (error) throw error;
+}
+
+export async function deleteMemory(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('memories')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
+}
+
+export async function deleteAllMemories(conversationId: string): Promise<void> {
+  const { error } = await supabase
+    .from('memories')
+    .delete()
+    .eq('conversation_id', conversationId);
 
   if (error) throw error;
 }
