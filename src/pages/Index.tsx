@@ -1085,9 +1085,9 @@ const IndexContent = () => {
                 <>
                   {selectedCharacterId && (
                     <>
-                      <Button variant="primary" onClick={handleAddSection}>+ Section</Button>
-                      <Button variant="primary" onClick={handleAiFill} disabled={isAiFilling}>{isAiFilling ? "..." : "AI Fill"}</Button>
-                      <Button variant="primary" onClick={handleAiGenerate} disabled={isAiGenerating}>{isAiGenerating ? "..." : "AI Generate"}</Button>
+                      <Button variant="primary" onClick={handleAddSection}>+ Category</Button>
+                      <Button variant="primary" onClick={handleAiFill} disabled={isAiFilling} className={isAiFilling ? "cursor-wait" : ""}>AI Fill</Button>
+                      <Button variant="primary" onClick={handleAiGenerate} disabled={isAiGenerating} className={isAiGenerating ? "cursor-wait" : ""}>AI Generate</Button>
                       <Button variant="primary" onClick={handleCancelCharacterEdit}>Cancel</Button>
                       <Button variant="primary" onClick={handleSaveCharacter}>Save</Button>
                     </>
