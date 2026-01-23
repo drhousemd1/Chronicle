@@ -1554,17 +1554,17 @@ const updatedChar: SideCharacter = {
                   
                   {/* Action buttons - top right corner */}
                   <div className="absolute top-4 right-4 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {/* Continue button - AI messages only, only on the LAST AI message */}
-                    {isAi && msg.id === conversation?.messages.filter(m => m.role === 'assistant').slice(-1)[0]?.id && (
-                      <button
-                        onClick={handleContinueConversation}
-                        disabled={isStreaming || isRegenerating}
-                        className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors disabled:opacity-30"
-                        title="Continue"
-                      >
-                        <StepForward className="w-4 h-4" />
-                      </button>
-                    )}
+                      {/* Continue button - show on the LAST message in the conversation (user or AI) */}
+                      {msg.id === conversation?.messages.slice(-1)[0]?.id && (
+                        <button
+                          onClick={handleContinueConversation}
+                          disabled={isStreaming || isRegenerating}
+                          className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors disabled:opacity-30"
+                          title="Continue"
+                        >
+                          <StepForward className="w-4 h-4" />
+                        </button>
+                      )}
                     
                     {/* Regenerate button - AI messages only */}
                     {isAi && (
