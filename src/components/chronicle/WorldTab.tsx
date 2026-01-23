@@ -548,7 +548,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                 {scenes.length === 0 && (
                   <div className="col-span-full py-12 text-center text-slate-400 border-2 border-dashed border-slate-100 rounded-2xl">
                      <p className="text-xs font-bold uppercase tracking-widest">No scenes uploaded</p>
-                     <p className="text-[10px] mt-1">Upload images to enable dynamic backgrounds in chat.</p>
+                     <p className="text-sm mt-1">Upload images to enable dynamic backgrounds in chat.</p>
                   </div>
                 )}
               </div>
