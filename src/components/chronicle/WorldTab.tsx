@@ -401,12 +401,19 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                 <Icons.MessageSquare /> Opening Dialog
               </h2>
               <div className="space-y-6">
+                <HintBox hints={[
+                  "Opening dialog will display at the start of every new session. This should set the scene for where the story begins.",
+                  'Dialog / blocks of dialog should be started with the name of the character followed by ":" i.e., "James:" This triggers avatars to appear by the appropriate dialog.',
+                  'Enclose all spoken dialogue in " ".',
+                  "Enclose all physical actions or descriptions in * *.",
+                  "Enclose all internal thoughts in ( )."
+                ]} />
                 <TextArea 
-                  label="First Story Message" 
+                  label="Opening Dialog" 
                   value={openingDialog.text} 
                   onChange={(v) => onUpdateOpening({ text: v })} 
                   rows={8} 
-                  placeholder="Type the first message the user will see when they click Play..."
+                  placeholder='James: *James looked up from where he sat on the ground* (What was that?) "Hello? Is anyone there?"'
                 />
                 
                 {/* Starting Day & Time Controls */}
