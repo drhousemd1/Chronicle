@@ -288,8 +288,8 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
 
                 <div className="flex flex-col gap-2 w-full">
                   <div className="flex gap-2 w-full">
-                    <Button variant="secondary" onClick={() => fileInputRef.current?.click()} className="flex-1" disabled={isUploading}>
-                      {isUploading ? "Uploading..." : "Upload"}
+                    <Button variant="primary" onClick={() => fileInputRef.current?.click()} className="flex-1" disabled={isUploading}>
+                      {isUploading ? "Uploading..." : "Upload Image"}
                     </Button>
                     {selected.avatarDataUrl && (
                       <Button 
@@ -301,8 +301,8 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                       </Button>
                     )}
                   </div>
-                  <Button variant="primary" onClick={handleAiPortrait} disabled={isGeneratingImg} className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 shadow-blue-500/25">
-                    {isGeneratingImg ? "..." : "AI Portrait"}
+                  <Button variant="primary" onClick={handleAiPortrait} disabled={isGeneratingImg} className="w-full">
+                    {isGeneratingImg ? "..." : "AI Generate"}
                   </Button>
                 </div>
                 
