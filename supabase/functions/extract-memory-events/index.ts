@@ -27,31 +27,45 @@ serve(async (req) => {
     }
 
     // Build system prompt for memory extraction
-    const systemPrompt = `You are extracting key story events from roleplay dialogue for a memory system.
-
-The memory system helps maintain narrative continuity by storing important events that happened in the story.
+    const systemPrompt = `You are extracting story events from roleplay dialogue for a memory system that helps maintain narrative continuity.
 
 CHARACTER NAMES IN STORY: ${characterNames?.join(', ') || 'Unknown characters'}
 
-Focus on extracting:
-- Relationship changes (first kiss, confession, proposal, breakup, becoming friends)
-- Major revelations (secrets revealed, true identity discovered, important information shared)
-- Significant decisions (agreements, promises, plans made)
-- Physical/emotional state changes (injuries, mood shifts, realizations)
-- Location changes or important arrivals/departures
-- Any "first time" events (first meeting, first date, first fight, etc.)
+WHAT TO EXTRACT:
+- Actions taken by characters (physical actions, movements, gestures)
+- Relationship interactions (kisses, hugs, conversations, conflicts)
+- Revelations or information shared
+- Emotional moments or reactions
+- Location or scene changes
+- Decisions or agreements made
+- What characters talked about
+- Mood or atmosphere of the scene
 
-Rules:
-- Return 1-3 bullet points MAXIMUM
-- Each point should be under 100 characters
-- Use past tense, third person
-- Include character names when relevant
-- Exclude mundane dialogue, descriptions, and routine actions
-- If no significant events happened, return an empty array
+CRITICAL RULES:
+1. ALWAYS extract at least one event - never return an empty array
+2. Be LITERAL and FACTUAL - only state what actually happens in the text
+3. DO NOT add "first time", "first ever", "for the first time" unless the text explicitly says it
+4. DO NOT infer relationship history or status
+5. DO NOT add assumptions about what events mean for relationships
+6. DO NOT add emotional interpretations not present in the text
+7. Keep each point under 80 characters
+8. Use past tense, third person
+9. Include character names when relevant
 
-IMPORTANT: Return ONLY a valid JSON array of strings, nothing else. No markdown, no explanation.
-Example: ["They shared their first kiss", "Sarah revealed she is a spy"]
-If nothing significant: []`;
+EXAMPLES OF CORRECT EXTRACTION:
+- Text: "He kissed her softly" → "He kissed her"
+- Text: "She told him she was a spy" → "She revealed she is a spy"
+- Text: "They walked through the garden talking" → "They walked through the garden together"
+- Text: "James placed his hand on her shoulder" → "James touched her shoulder"
+
+INCORRECT (over-interpretation - DO NOT DO THIS):
+- "They shared their first kiss" (when text just says "he kissed her")
+- "She finally confessed her secret" (when text just says "she told him")
+- "He showed his love for the first time" (adding "first time" without evidence)
+
+Return ONLY a valid JSON array of strings. No markdown, no explanation.
+Example: ["James kissed Ashley", "They arrived at the cafe"]
+Maximum 3 events.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
