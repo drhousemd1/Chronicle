@@ -97,27 +97,39 @@ serve(async (req) => {
     // Step 1: Use text model to analyze scene and write image prompt
     // xAI has a 1024 char limit for image prompts, so request shorter descriptions
     const isXaiImage = imageGateway === 'xai';
-    const analysisPrompt = `You are an expert at writing image generation prompts for AI art. Analyze this roleplay scene and write a ${isXaiImage ? 'concise' : 'detailed, vivid'} image generation prompt.
-${isXaiImage ? '\nCRITICAL: Keep your response under 700 characters. Be direct and efficient with descriptions.\n' : ''}
-CHARACTERS IN SCENE:
+    const analysisPrompt = `You are an expert image prompt writer. Your job is to create PRECISE, FAITHFUL image generation prompts that strictly match the provided character data and scene.
+
+${isXaiImage ? 'CRITICAL: Keep response under 700 characters. Prioritize accuracy over detail.\n' : ''}
+===== CHARACTER DATA (USE EXACTLY AS DESCRIBED) =====
 ${characterDescriptions || 'No specific character data provided.'}
 
+===== SCENE CONTEXT =====
 LOCATION: ${sceneLocation || 'An indoor setting'}
-TIME OF DAY: ${timeOfDay || 'day'}
+TIME: ${timeOfDay || 'day'}
 
-RECENT DIALOGUE:
+===== RECENT DIALOGUE =====
 ${dialogueContext}
 
-Based on the dialogue and actions, write ${isXaiImage ? 'a concise' : 'a detailed'} image prompt that captures this exact moment. Include:
-1. The characters present, their positions, poses, and expressions
-2. Their physical features (hair, eyes, build, skin tone)
-3. What they're currently wearing
-4. The action or emotion happening (from the dialogue)
-5. Environment and setting details
-6. Lighting appropriate for ${timeOfDay || 'day'}
-7. A suitable camera angle and composition
+===== STRICT RULES =====
+1. ONLY describe what is explicitly listed in CHARACTER DATA above
+2. DO NOT add any clothing, accessories, armor, weapons, or features not listed
+3. DO NOT hallucinate fantasy elements like robot parts, wings, mechanical limbs, tattoos unless specified
+4. DO NOT add items the character is not wearing or holding
+5. Body positions: Describe exactly where each character is standing/sitting relative to each other
+6. Facial expressions: Match the emotional tone from the dialogue (e.g., blushing, wide-eyed)
+7. Spatial composition: Describe left-to-right arrangement of characters in the frame
 
-Write ONLY the image prompt text. ${isXaiImage ? 'Keep it concise.' : 'Be vivid and specific.'} Do not include any preamble or explanation.`;
+===== OUTPUT FORMAT =====
+Write a single paragraph image prompt covering:
+- Each character's exact appearance (from CHARACTER DATA only)
+- Their current clothing (from CHARACTER DATA only - nothing extra)
+- Body position and pose (infer from dialogue actions like *stared*, *blushed*)
+- Facial expression (infer from dialogue emotion)
+- Camera angle: medium shot showing characters from waist up
+- Background: ${sceneLocation || 'indoor setting'}, ${timeOfDay || 'day'} lighting
+
+${isXaiImage ? 'REMINDER: Under 700 characters. No extras, no embellishments, no fantasy additions.' : ''}
+Write ONLY the image prompt. DO NOT add ANY visual elements not explicitly listed in CHARACTER DATA.`;
 
     let sceneDescription = "";
 
