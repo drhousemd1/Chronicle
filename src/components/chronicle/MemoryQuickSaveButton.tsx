@@ -48,10 +48,18 @@ export const MemoryQuickSaveButton: React.FC<MemoryQuickSaveButtonProps> = ({
 
       const events = data?.extractedEvents || [];
       
-      // Save all extracted events silently
-      for (const content of events) {
-        await onSaveMemory(content, day ?? null, timeOfDay ?? null, messageId);
+      if (events.length === 0) {
+        // Nothing significant found - button returns to normal state
+        setIsProcessing(false);
+        return;
       }
+
+      // Combine all events into single memory with bullet points
+      const combinedContent = events.length === 1 
+        ? events[0]  // Single event - no bullet needed
+        : events.map((e: string) => `• ${e}`).join('\n');  // Multiple events - bullet list
+
+      await onSaveMemory(combinedContent, day ?? null, timeOfDay ?? null, messageId);
     } catch (error) {
       console.error('Memory save failed:', error);
       // Silent failure - no toast to maintain immersion
