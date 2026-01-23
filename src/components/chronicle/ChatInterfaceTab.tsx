@@ -1537,11 +1537,9 @@ const updatedChar: SideCharacter = {
           {conversation?.messages.map((msg) => {
             const isAi = msg.role === 'assistant';
             
-            // For AI messages, parse into segments for multi-speaker rendering
-            // For user messages, use single segment approach
-            const segments = isAi 
-              ? parseMessageSegments(msg.text) 
-              : [{ speakerName: null, content: msg.text.replace(/\[SCENE:\s*.*?\]/g, '').trim() }];
+            // Parse ALL messages into segments for multi-speaker rendering
+            // This allows users to narrate for AI characters with "Name:" tags
+            const segments = parseMessageSegments(msg.text);
             
             // Get the primary speaker for user messages
             const userChar = !isAi ? appData.characters.find(c => c.controlledBy === 'User') : null;
@@ -1645,17 +1643,17 @@ const updatedChar: SideCharacter = {
                     let segmentAvatar: string | null = null;
                     let isGenerating = false;
                     
-                    if (!isAi) {
-                      // User message - use user's character
-                      segmentChar = userChar || null;
-                      segmentName = userChar?.name || 'You';
-                      segmentAvatar = userChar?.avatarDataUrl || null;
-                    } else if (segment.speakerName) {
-                      // AI message with speaker label - look up character
+                    if (segment.speakerName) {
+                      // BOTH user and AI: If there's a speaker tag, use that character
                       segmentChar = findCharacterByName(segment.speakerName, appData);
                       segmentName = segment.speakerName;
                       segmentAvatar = segmentChar?.avatarDataUrl || null;
                       isGenerating = segmentChar && 'isAvatarGenerating' in segmentChar ? segmentChar.isAvatarGenerating : false;
+                    } else if (!isAi) {
+                      // User message WITHOUT speaker tag - default to user's character
+                      segmentChar = userChar || null;
+                      segmentName = userChar?.name || 'You';
+                      segmentAvatar = userChar?.avatarDataUrl || null;
                     } else {
                       // AI message without speaker - use first AI character as default
                       const aiChars = appData.characters.filter(c => c.controlledBy === 'AI');
