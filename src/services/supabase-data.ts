@@ -315,7 +315,8 @@ export async function fetchScenarioById(id: string): Promise<{
       scenes: (scenes || []).map(dbToScene),
       uiSettings,
       conversations: conversationsWithMessages,
-      selectedModel: scenario.selected_model || LLM_MODELS[0].id
+      selectedModel: scenario.selected_model || LLM_MODELS[0].id,
+      selectedArtStyle: scenario.selected_art_style || 'cinematic-2-5d'
     },
     coverImage: scenario.cover_image_url || '',
     coverImagePosition: scenario.cover_image_position as { x: number; y: number } || { x: 50, y: 50 }
@@ -343,6 +344,7 @@ export async function saveScenario(
       ui_settings: data.uiSettings,
       opening_dialog: data.story.openingDialog,
       selected_model: data.selectedModel,
+      selected_art_style: data.selectedArtStyle || 'cinematic-2-5d',
       version: data.version
     });
 

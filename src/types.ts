@@ -234,6 +234,7 @@ export type ScenarioData = {
   };
   conversations: Conversation[];
   selectedModel?: string;
+  selectedArtStyle?: string;  // Art style ID for AI image generation
 };
 
 export type ScenarioMetadata = {

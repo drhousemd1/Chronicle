@@ -34,6 +34,7 @@ import { CharacterEditModal, CharacterEditDraft } from './CharacterEditModal';
 import { ScrollableSection } from './ScrollableSection';
 import { SidebarThemeModal } from './SidebarThemeModal';
 import { UserBackground } from '@/types';
+import { getStyleById, DEFAULT_STYLE_ID } from '@/constants/avatar-styles';
 
 interface ChatInterfaceTabProps {
   scenarioId: string;
@@ -370,14 +371,20 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           }
         }
         
-        // 2. Generate avatar using the avatarPrompt - pass modelId to use user's selected model
+        // 2. Generate avatar using the avatarPrompt - pass modelId and art style
         if (profileData.avatarPrompt) {
           console.log(`Generating avatar for ${name}...`);
+          
+          // Get the art style prompt from the scenario's selected art style
+          const selectedStyleId = appData.selectedArtStyle || DEFAULT_STYLE_ID;
+          const styleData = getStyleById(selectedStyleId);
+          
           const { data: avatarData, error: avatarError } = await supabase.functions.invoke('generate-side-character-avatar', {
             body: { 
               avatarPrompt: profileData.avatarPrompt,
               characterName: name,
-              modelId  // Pass user's selected model
+              modelId,  // Pass user's selected model
+              stylePrompt: styleData?.backendPrompt || ''  // Pass the art style
             }
           });
           
