@@ -7,6 +7,7 @@ export type Message = {
   id: string;
   role: MessageRole;
   text: string;
+  imageUrl?: string;  // For generated scene images
   day?: number;
   timeOfDay?: TimeOfDay;
   createdAt: number;
