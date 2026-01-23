@@ -184,7 +184,7 @@ export const AvatarGenerationModal: React.FC<AvatarGenerationModalProps> = ({
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               placeholder="Describe your character's appearance..."
-              className="min-h-[100px] resize-none"
+              className="min-h-[100px] resize-none bg-slate-50 border-slate-200 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 focus-visible:ring-0 focus-visible:ring-offset-0"
             />
             <p className="text-xs text-muted-foreground">
               Tip: Include physical features like hair color, eye color, clothing, and expression.
@@ -209,7 +209,7 @@ export const AvatarGenerationModal: React.FC<AvatarGenerationModalProps> = ({
                 value={negativePrompt}
                 onChange={(e) => setNegativePrompt(e.target.value)}
                 placeholder="Describe what you want to avoid..."
-                className="min-h-[80px] resize-none"
+                className="min-h-[80px] resize-none bg-slate-50 border-slate-200 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 focus-visible:ring-0 focus-visible:ring-offset-0"
               />
             </CollapsibleContent>
           </Collapsible>
@@ -229,11 +229,12 @@ export const AvatarGenerationModal: React.FC<AvatarGenerationModalProps> = ({
                   type="button"
                   onClick={() => setSelectedStyleId(style.id)}
                   className={cn(
-                    "relative rounded-xl p-2 transition-all duration-200 cursor-pointer",
+                    "relative rounded-xl p-2 transition-all duration-200 cursor-pointer outline-none",
                     "bg-card hover:bg-accent/50",
                     selectedStyleId === style.id
-                      ? "ring-2 ring-primary shadow-md"
-                      : "ring-1 ring-border hover:ring-muted-foreground/50"
+                      ? "ring-2 ring-blue-400 shadow-md"
+                      : "ring-1 ring-border hover:ring-slate-300",
+                    "focus:ring-2 focus:ring-blue-100 focus:ring-offset-0"
                   )}
                 >
                   <div className="aspect-square rounded-lg overflow-hidden bg-muted">
