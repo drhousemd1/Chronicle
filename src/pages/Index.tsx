@@ -555,6 +555,22 @@ const IndexContent = () => {
     }
   }
 
+  function handleCancelCharacterEdit() {
+    if (!selectedCharacterId) return;
+    
+    if (tab === "library") {
+      // Remove the character from the library
+      setLibrary(prev => prev.filter(c => c.id !== selectedCharacterId));
+    } else if (activeData) {
+      // Remove the character from the scenario
+      handleUpdateActive({ 
+        characters: activeData.characters.filter(c => c.id !== selectedCharacterId) 
+      });
+    }
+    
+    setSelectedCharacterId(null);
+  }
+
   function handleCreateCharacter() {
     const t = now();
     const c: Character = {
@@ -968,7 +984,7 @@ const IndexContent = () => {
                 </h1>
               )}
               {tab === "characters" && selectedCharacterId && (
-                <button onClick={() => setSelectedCharacterId(null)} className="p-2 hover:bg-slate-100 rounded-full transition-colors mr-2">
+                <button onClick={handleCancelCharacterEdit} className="p-2 hover:bg-slate-100 rounded-full transition-colors mr-2">
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                 </button>
               )}
@@ -1031,6 +1047,7 @@ const IndexContent = () => {
                     <>
                       <Button variant="secondary" onClick={handleAddSection}>+ Section</Button>
                       <Button variant="secondary" onClick={handleAiBrainstorm} disabled={isBrainstorming}>{isBrainstorming ? "..." : "✨ Brainstorm"}</Button>
+                      <Button variant="primary" onClick={handleCancelCharacterEdit}>Cancel</Button>
                       <Button variant="primary" onClick={handleSaveCharacter}>Save</Button>
                     </>
                   )}
