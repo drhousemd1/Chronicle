@@ -195,6 +195,7 @@ Write ONLY the image prompt text. Be vivid and specific. Do not include any prea
     console.log("[generate-scene-image] Full prompt length:", fullPrompt.length);
 
     let imageUrl = null;
+    let debugResponseData: any = null;
 
     if (imageGateway === 'xai') {
       // Use xAI/Grok for image generation
@@ -224,6 +225,7 @@ Write ONLY the image prompt text. Be vivid and specific. Do not include any prea
       }
 
       const imageData = await imageResponse.json();
+      debugResponseData = imageData;
       imageUrl = imageData.data?.[0]?.url;
 
     } else {
@@ -253,15 +255,45 @@ Write ONLY the image prompt text. Be vivid and specific. Do not include any prea
       }
 
       const imageData = await imageResponse.json();
+      debugResponseData = imageData;
       
-      // Extract image URL from response (same logic as avatar function)
+      console.log("[generate-scene-image] Raw response structure:", JSON.stringify({
+        hasChoices: !!imageData.choices,
+        choicesLength: imageData.choices?.length,
+        messageKeys: imageData.choices?.[0]?.message ? Object.keys(imageData.choices[0].message) : [],
+        contentType: typeof imageData.choices?.[0]?.message?.content,
+        contentIsArray: Array.isArray(imageData.choices?.[0]?.message?.content),
+      }));
+      
+      // Extract image URL from response - handle multiple response formats
       const message = imageData.choices?.[0]?.message;
+      
+      // Format 1: content is a base64 data URL string
       if (message?.content) {
         if (typeof message.content === 'string' && message.content.startsWith('data:image')) {
           imageUrl = message.content;
         }
+        // Format 2: content is an array with image parts (Gemini multimodal format)
+        else if (Array.isArray(message.content)) {
+          for (const part of message.content) {
+            if (part.type === 'image' && part.image_url?.url) {
+              imageUrl = part.image_url.url;
+              break;
+            }
+            if (part.type === 'image_url' && part.image_url?.url) {
+              imageUrl = part.image_url.url;
+              break;
+            }
+            // Gemini may return inline_data format
+            if (part.inline_data?.data && part.inline_data?.mime_type) {
+              imageUrl = `data:${part.inline_data.mime_type};base64,${part.inline_data.data}`;
+              break;
+            }
+          }
+        }
       }
       
+      // Format 3: images array
       if (!imageUrl && message?.images?.[0]) {
         const img = message.images[0];
         if (img.image_url?.url) {
@@ -273,16 +305,27 @@ Write ONLY the image prompt text. Be vivid and specific. Do not include any prea
         }
       }
       
+      // Format 4: attachments array
       if (!imageUrl && message?.attachments?.[0]) {
         const att = message.attachments[0];
         if (att.url) {
           imageUrl = att.url;
         }
       }
+      
+      // Format 5: Check for image in data array at response level (some APIs)
+      if (!imageUrl && imageData.data?.[0]) {
+        const dataItem = imageData.data[0];
+        if (dataItem.url) {
+          imageUrl = dataItem.url;
+        } else if (dataItem.b64_json) {
+          imageUrl = `data:image/png;base64,${dataItem.b64_json}`;
+        }
+      }
     }
 
     if (!imageUrl) {
-      console.error("[generate-scene-image] No image generated");
+      console.error("[generate-scene-image] No image generated. Full response:", JSON.stringify(debugResponseData, null, 2));
       throw new Error("No image generated");
     }
 
