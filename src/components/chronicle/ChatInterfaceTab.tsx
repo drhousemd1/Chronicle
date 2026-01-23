@@ -1689,7 +1689,7 @@ const updatedChar: SideCharacter = {
                   
                   {/* Day/Time Badge - bottom left */}
                   {(msg.day || msg.timeOfDay) && (
-                    <div className="absolute bottom-3 left-24 flex items-center gap-2 text-sm text-white">
+                    <div className="absolute bottom-3 left-4 flex items-center gap-2 text-sm text-white">
                       {msg.day && <span>Day: {msg.day}</span>}
                       {msg.timeOfDay && (
                         <span className="flex items-center gap-1">
