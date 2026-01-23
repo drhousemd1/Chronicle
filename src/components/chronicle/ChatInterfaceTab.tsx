@@ -1546,7 +1546,7 @@ const updatedChar: SideCharacter = {
 
             return (
               <div key={msg.id} className="w-full max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 group">
-                <div className={`p-8 rounded-[2rem] shadow-2xl flex flex-col gap-4 transition-all relative ${
+                <div className={`p-8 pb-12 rounded-[2rem] shadow-2xl flex flex-col gap-4 transition-all relative ${
                   bubblesTransparent
                     ? 'bg-black/40 backdrop-blur-xl'
                     : 'bg-[#1c1f26]'
@@ -1663,7 +1663,7 @@ const updatedChar: SideCharacter = {
                     }
                     
                     return (
-                      <div key={segIndex} className={`flex gap-6 items-start ${segIndex > 0 ? 'mt-4 pt-4 border-t border-white/5' : ''}`}>
+                      <div key={segIndex} className={`flex gap-6 items-start ${segIndex > 0 ? 'mt-2.5 pt-2.5 border-t border-white/5' : ''}`}>
                         <div className="flex flex-col items-center gap-1.5 w-16 flex-shrink-0">
                           <div className={`w-12 h-12 rounded-full border-2 border-white/10 shadow-lg overflow-hidden flex items-center justify-center ${segmentAvatar ? '' : 'bg-slate-800'}`}>
                             {isGenerating ? (
@@ -1689,7 +1689,7 @@ const updatedChar: SideCharacter = {
                   
                   {/* Day/Time Badge - bottom left */}
                   {(msg.day || msg.timeOfDay) && (
-                    <div className="absolute bottom-3 left-4 flex items-center gap-2 text-sm text-white">
+                    <div className="absolute bottom-3 left-24 flex items-center gap-2 text-sm text-white">
                       {msg.day && <span>Day: {msg.day}</span>}
                       {msg.timeOfDay && (
                         <span className="flex items-center gap-1">
@@ -1726,7 +1726,7 @@ const updatedChar: SideCharacter = {
             
             return (
               <div className="w-full max-w-7xl mx-auto">
-                <div className={`p-8 rounded-[2rem] border shadow-2xl flex flex-col gap-4 ${
+                <div className={`p-8 pb-12 rounded-[2rem] border shadow-2xl flex flex-col gap-4 ${
                     bubblesTransparent
                       ? 'bg-black/40 backdrop-blur-xl border-white/5'
                       : 'bg-[#1c1f26] border-white/5'
@@ -1741,7 +1741,7 @@ const updatedChar: SideCharacter = {
                     const isGenerating = segmentChar && 'isAvatarGenerating' in segmentChar ? segmentChar.isAvatarGenerating : false;
                     
                     return (
-                      <div key={segIndex} className={`flex gap-6 items-start ${segIndex > 0 ? 'mt-4 pt-4 border-t border-white/5' : ''}`}>
+                      <div key={segIndex} className={`flex gap-6 items-start ${segIndex > 0 ? 'mt-2.5 pt-2.5 border-t border-white/5' : ''}`}>
                         <div className="flex flex-col items-center gap-1.5 w-16 flex-shrink-0">
                           <div className={`w-12 h-12 rounded-full border-2 border-white/10 shadow-lg overflow-hidden flex items-center justify-center ${segmentAvatar ? '' : 'bg-slate-800 animate-pulse'}`}>
                             {isGenerating ? (
