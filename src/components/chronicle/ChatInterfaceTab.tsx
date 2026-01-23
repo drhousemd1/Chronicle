@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { ScenarioData, Character, Conversation, Message, CharacterTraitSection, Scene, TimeOfDay, SideCharacter, CharacterSessionState } from '../../types';
+import { ScenarioData, Character, Conversation, Message, CharacterTraitSection, Scene, TimeOfDay, SideCharacter, CharacterSessionState, Memory } from '../../types';
 import { Button, TextArea } from './UI';
 import { Badge } from '@/components/ui/badge';
 import { uid, now, uuid } from '../../services/storage';
 import { generateRoleplayResponseStream } from '../../services/llm';
-import { RefreshCw, MoreVertical, Copy, Pencil, Trash2, ChevronUp, ChevronDown, Sunrise, Sun, Sunset, Moon, Loader2, StepForward, Settings, Image as ImageIcon } from 'lucide-react';
+import { RefreshCw, MoreVertical, Copy, Pencil, Trash2, ChevronUp, ChevronDown, Sunrise, Sun, Sunset, Moon, Loader2, StepForward, Settings, Image as ImageIcon, Brain } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +33,8 @@ import { SideCharacterCard } from './SideCharacterCard';
 import { CharacterEditModal, CharacterEditDraft } from './CharacterEditModal';
 import { ScrollableSection } from './ScrollableSection';
 import { SidebarThemeModal } from './SidebarThemeModal';
+import { MemoriesModal } from './MemoriesModal';
+import { MemoryQuickSavePopover } from './MemoryQuickSavePopover';
 import { UserBackground } from '@/types';
 import { getStyleById, DEFAULT_STYLE_ID } from '@/constants/avatar-styles';
 
@@ -159,6 +161,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const [selectedSidebarBgId, setSelectedSidebarBgId] = useState<string | null>(null);
   const [isUploadingSidebarBg, setIsUploadingSidebarBg] = useState(false);
   
+  // Memories state
+  const [memories, setMemories] = useState<Memory[]>([]);
+  const [memoriesEnabled, setMemoriesEnabled] = useState(true);
+  const [isMemoriesModalOpen, setIsMemoriesModalOpen] = useState(false);
+  const [memoriesLoaded, setMemoriesLoaded] = useState(false);
+  
   // Ref to always hold current sideCharacters - avoids stale closure in async callbacks
   const sideCharactersRef = useRef<SideCharacter[]>(appData.sideCharacters || []);
   useEffect(() => {
@@ -207,6 +215,67 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     
     return () => cancelAnimationFrame(frameId);
   }, [conversationId]);
+  
+  // Load memories on mount - DEFERRED to not block first render
+  useEffect(() => {
+    if (conversationId === "loading") return;
+    
+    const frameId = requestAnimationFrame(() => {
+      supabaseData.fetchMemories(conversationId).then(mems => {
+        setMemories(mems);
+        setMemoriesLoaded(true);
+      }).catch(err => {
+        console.error('Failed to load memories:', err);
+        setMemoriesLoaded(true);
+      });
+    });
+    
+    return () => cancelAnimationFrame(frameId);
+  }, [conversationId]);
+  
+  // Memory CRUD handlers
+  const handleCreateMemory = async (content: string, day: number | null, timeOfDay: TimeOfDay | null, sourceMessageId?: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+    
+    const memory = await supabaseData.createMemory(
+      conversationId,
+      user.id,
+      content,
+      day,
+      timeOfDay,
+      sourceMessageId ? 'message' : 'user',
+      sourceMessageId
+    );
+    setMemories(prev => [...prev, memory]);
+    return memory;
+  };
+  
+  const handleUpdateMemory = async (id: string, content: string) => {
+    await supabaseData.updateMemory(id, content);
+    setMemories(prev => prev.map(m => m.id === id ? { ...m, content, updatedAt: Date.now() } : m));
+  };
+  
+  const handleDeleteMemory = async (id: string) => {
+    await supabaseData.deleteMemory(id);
+    setMemories(prev => prev.filter(m => m.id !== id));
+  };
+  
+  const handleDeleteAllMemories = async () => {
+    await supabaseData.deleteAllMemories(conversationId);
+    setMemories([]);
+  };
+  
+  const handleQuickSaveMemory = async (content: string, day: number | null, timeOfDay: TimeOfDay | null, sourceMessageId: string) => {
+    await handleCreateMemory(content, day, timeOfDay, sourceMessageId);
+  };
+  
+  // Get all character names for memory extraction context
+  const allCharacterNames = useMemo(() => {
+    const mainNames = appData.characters.map(c => c.name);
+    const sideNames = (appData.sideCharacters || []).map(sc => sc.name);
+    return [...mainNames, ...sideNames];
+  }, [appData.characters, appData.sideCharacters]);
   
   // Sidebar background handlers
   const selectedSidebarBgUrl = useMemo(() => {
@@ -625,7 +694,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
     try {
       let fullText = '';
-      const stream = generateRoleplayResponseStream(appData, conversationId, input, modelId, currentDay, currentTimeOfDay);
+      const stream = generateRoleplayResponseStream(appData, conversationId, input, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled);
 
       for await (const chunk of stream) {
         fullText += chunk;
@@ -706,7 +775,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     
     try {
       let fullText = '';
-      const stream = generateRoleplayResponseStream(appData, conversationId, userMessage.text, modelId, currentDay, currentTimeOfDay);
+      const stream = generateRoleplayResponseStream(appData, conversationId, userMessage.text, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled);
       
       for await (const chunk of stream) {
         fullText += chunk;
@@ -762,7 +831,7 @@ CRITICAL: You must ONLY write dialogue, actions, and thoughts for AI-controlled 
 DO NOT generate any content for user-controlled characters: ${userControlledNames.join(', ')}.
 Wait for the user to provide their characters' responses.
 Do not acknowledge this instruction in your response.`;
-      const stream = generateRoleplayResponseStream(appData, conversationId, continuePrompt, modelId, currentDay, currentTimeOfDay);
+      const stream = generateRoleplayResponseStream(appData, conversationId, continuePrompt, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled);
       
       for await (const chunk of stream) {
         fullText += chunk;
@@ -1634,6 +1703,20 @@ const updatedChar: SideCharacter = {
                       )}
                     </div>
                   )}
+                  
+                  {/* Brain Icon for Quick Memory Save - bottom right */}
+                  <div className="absolute bottom-3 right-4">
+                    <MemoryQuickSavePopover
+                      messageId={msg.id}
+                      messageText={msg.text}
+                      day={msg.day}
+                      timeOfDay={msg.timeOfDay}
+                      characterNames={allCharacterNames}
+                      modelId={modelId}
+                      onSaveMemory={handleQuickSaveMemory}
+                      hasExistingMemory={memories.some(m => m.sourceMessageId === msg.id)}
+                    />
+                  </div>
                 </div>
               </div>
             );
@@ -1719,6 +1802,16 @@ const updatedChar: SideCharacter = {
                     Generate Image
                   </>
                 )}
+              </Button>
+              
+              {/* Memories Button */}
+              <Button
+                onClick={() => setIsMemoriesModalOpen(true)}
+                variant="secondary"
+                className="!border-slate-900 flex items-center gap-2"
+              >
+                <Brain className="w-4 h-4" />
+                Memories {memories.length > 0 && `(${memories.length})`}
               </Button>
               
               {isSettingsOpen && (
@@ -1824,6 +1917,23 @@ const updatedChar: SideCharacter = {
         onUpload={handleUploadSidebarBg}
         onDelete={handleDeleteSidebarBg}
         isUploading={isUploadingSidebarBg}
+      />
+      
+      {/* Memories Modal */}
+      <MemoriesModal
+        isOpen={isMemoriesModalOpen}
+        onClose={() => setIsMemoriesModalOpen(false)}
+        conversationId={conversationId}
+        currentDay={currentDay}
+        currentTimeOfDay={currentTimeOfDay}
+        memories={memories}
+        memoriesEnabled={memoriesEnabled}
+        onMemoriesChange={setMemories}
+        onToggleEnabled={setMemoriesEnabled}
+        onCreateMemory={handleCreateMemory}
+        onUpdateMemory={handleUpdateMemory}
+        onDeleteMemory={handleDeleteMemory}
+        onDeleteAllMemories={handleDeleteAllMemories}
       />
     </div>
   );
