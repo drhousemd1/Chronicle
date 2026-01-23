@@ -323,13 +323,24 @@ const IndexContent = () => {
 
   async function handlePlayScenario(id: string) {
     if (!user) return;
+    
+    // OPTIMIZATION: Immediately switch to chat tab and show loading state
+    // This gives instant visual feedback while data loads in background
+    setActiveId(id);
+    setPlayingConversationId("loading"); // Special loading flag
+    setTab("chat_interface");
+    setSelectedCharacterId(null);
+    
     try {
-      const result = await supabaseData.fetchScenarioById(id);
+      // Use optimized fetch that skips loading all existing conversation messages
+      const result = await supabaseData.fetchScenarioForPlay(id);
       if (!result) {
         toast({ title: "Scenario not found", variant: "destructive" });
+        setTab("hub");
+        setPlayingConversationId(null);
         return;
       }
-      const { data, coverImage, coverImagePosition } = result;
+      const { data, coverImage, coverImagePosition, conversationCount } = result;
       
       // Set cover image from fetched result
       setActiveCoverImage(coverImage);
@@ -343,7 +354,7 @@ const IndexContent = () => {
       const openingText = data.story?.openingDialog?.text?.trim();
       if (openingText) {
         initialMessages.push({
-          id: uuid(), // Use UUID for Supabase
+          id: uuid(),
           role: "assistant",
           text: openingText,
           day: startingDay,
@@ -353,8 +364,8 @@ const IndexContent = () => {
       }
 
       const newConv: Conversation = { 
-        id: uuid(), // Use UUID for Supabase
-        title: `Story Session ${data.conversations.length + 1}`, 
+        id: uuid(),
+        title: `Story Session ${conversationCount + 1}`, 
         messages: initialMessages, 
         currentDay: startingDay,
         currentTimeOfDay: startingTimeOfDay,
@@ -362,22 +373,33 @@ const IndexContent = () => {
         updatedAt: now() 
       };
 
-      data.conversations = [newConv, ...data.conversations];
+      data.conversations = [newConv];
       
-      // Save to Supabase
-      await supabaseData.saveConversation(newConv, id, user.id);
+      // Save to Supabase (in background, don't block UI)
+      supabaseData.saveConversation(newConv, id, user.id).catch(err => {
+        console.error('Failed to save conversation:', err);
+      });
       
-      // Update conversation registry
-      const updatedConvRegistry = await supabaseData.fetchConversationRegistry();
-      setConversationRegistry(updatedConvRegistry);
+      // OPTIMIZATION: Update conversation registry optimistically instead of refetching
+      const scenarioMeta = registry.find(r => r.id === id);
+      setConversationRegistry(prev => [{
+        conversationId: newConv.id,
+        scenarioId: id,
+        scenarioTitle: scenarioMeta?.title || 'Story',
+        scenarioImageUrl: coverImage || null,
+        conversationTitle: newConv.title,
+        lastMessage: openingText || '',
+        messageCount: initialMessages.length,
+        createdAt: newConv.createdAt,
+        updatedAt: newConv.updatedAt
+      }, ...prev]);
       
-      setActiveId(id);
       setActiveData(data);
       setPlayingConversationId(newConv.id);
-      setTab("chat_interface");
-      setSelectedCharacterId(null);
     } catch (e: any) {
       toast({ title: "Failed to play scenario", description: e.message, variant: "destructive" });
+      setTab("hub");
+      setPlayingConversationId(null);
     }
   }
 
