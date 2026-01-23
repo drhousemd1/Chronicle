@@ -7,6 +7,7 @@ import { uid, now, clamp, resizeImage } from '@/utils';
 import { useAuth } from '@/hooks/use-auth';
 import { uploadAvatar, dataUrlToBlob } from '@/services/supabase-data';
 import { toast } from 'sonner';
+import { AvatarGenerationModal } from './AvatarGenerationModal';
 
 interface CharactersTabProps {
   appData: ScenarioData;
@@ -67,6 +68,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const [isRepositioning, setIsRepositioning] = useState(false);
   const [dragStart, setDragStart] = useState<{ x: number, y: number, pos: { x: number, y: number } } | null>(null);
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const avatarContainerRef = useRef<HTMLDivElement>(null);
 
@@ -93,10 +95,19 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
     onUpdate(charId, { sections: nextSections });
   };
 
-  const handleAiPortrait = async () => {
-    // AI Portrait generation is currently being refactored
-    // Will be available again soon via Lovable AI image generation
-    console.log('AI Portrait feature coming soon!');
+  const handleAiPortrait = () => {
+    setShowAvatarModal(true);
+  };
+
+  const handleAvatarGenerated = (imageUrl: string) => {
+    if (selected) {
+      onUpdate(selected.id, {
+        avatarDataUrl: imageUrl,
+        avatarPosition: { x: 50, y: 50 }
+      });
+      toast.success('Avatar generated successfully!');
+    }
+    setShowAvatarModal(false);
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -502,10 +513,25 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
             className="w-full border-2 border-dashed border-slate-300 text-slate-500 hover:bg-slate-50 py-4"
             onClick={handleAddSection}
           >
-            + Add Category
+          + Add Category
           </Button>
         </div>
       </div>
+
+      {/* Avatar Generation Modal */}
+      <AvatarGenerationModal
+        isOpen={showAvatarModal}
+        onClose={() => setShowAvatarModal(false)}
+        onGenerated={handleAvatarGenerated}
+        characterName={selected?.name || "Character"}
+        characterData={{
+          physicalAppearance: selected?.physicalAppearance,
+          currentlyWearing: selected?.currentlyWearing,
+          sexType: selected?.sexType,
+          age: selected?.age
+        }}
+        modelId={appData.selectedModel || "google/gemini-3-flash-preview"}
+      />
     </div>
   );
 };
