@@ -570,6 +570,11 @@ const IndexContent = () => {
     }
     
     setSelectedCharacterId(null);
+    
+    // Navigate back to world tab (Scenario Builder main page)
+    if (tab === "characters") {
+      setTab("world");
+    }
   }
 
   function handleCreateCharacter() {

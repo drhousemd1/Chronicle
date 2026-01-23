@@ -226,8 +226,8 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
           {characters.length === 0 && (
             <div className="col-span-full py-20 text-center text-slate-400 select-none">
               <div className="text-6xl mb-4 font-thin opacity-30">✦</div>
-              <p className="font-bold text-lg text-slate-500">The stage is empty.</p>
-              <p className="text-sm">Create a character to begin.</p>
+              <p className="font-bold text-lg text-slate-500">Character Creation</p>
+              <p className="text-sm">Select import a character from Library or Create New</p>
             </div>
           )}
         </div>
@@ -354,9 +354,9 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
               
               {/* Avatar Panel Fields */}
               <div className="space-y-4">
-                <Input label="Name" value={selected.name} onChange={(v) => onUpdate(selected.id, { name: v })} />
+                <Input label="Name" value={selected.name === "New Character" ? "" : selected.name} onChange={(v) => onUpdate(selected.id, { name: v })} placeholder="Character name" />
                 <Input label="Age" value={selected.age || ''} onChange={(v) => onUpdate(selected.id, { age: v })} placeholder="e.g., 25" />
-                <Input label="Sex / Identity" value={selected.sexType} onChange={(v) => onUpdate(selected.id, { sexType: v })} />
+                <Input label="Sex / Identity" value={selected.sexType} onChange={(v) => onUpdate(selected.id, { sexType: v })} placeholder="e.g., Female, Male, Non-binary" />
                 <Input label="Location" value={selected.location || ''} onChange={(v) => onUpdate(selected.id, { location: v })} placeholder="Current location" />
                 <Input label="Current Mood" value={selected.currentMood || ''} onChange={(v) => onUpdate(selected.id, { currentMood: v })} placeholder="e.g., Happy, Tired" />
                 
@@ -411,33 +411,33 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
 
           {/* HARDCODED SECTION 1: Physical Appearance */}
           <HardcodedSection title="Physical Appearance">
-            <HardcodedInput label="Hair Color" value={selected.physicalAppearance?.hairColor || ''} onChange={(v) => handlePhysicalAppearanceChange('hairColor', v)} />
-            <HardcodedInput label="Eye Color" value={selected.physicalAppearance?.eyeColor || ''} onChange={(v) => handlePhysicalAppearanceChange('eyeColor', v)} />
+            <HardcodedInput label="Hair Color" value={selected.physicalAppearance?.hairColor || ''} onChange={(v) => handlePhysicalAppearanceChange('hairColor', v)} placeholder="e.g., Brunette, Blonde, Black" />
+            <HardcodedInput label="Eye Color" value={selected.physicalAppearance?.eyeColor || ''} onChange={(v) => handlePhysicalAppearanceChange('eyeColor', v)} placeholder="e.g., Blue, Brown, Green" />
             <HardcodedInput label="Build" value={selected.physicalAppearance?.build || ''} onChange={(v) => handlePhysicalAppearanceChange('build', v)} placeholder="e.g., Athletic, Slim, Curvy" />
-            <HardcodedInput label="Body Hair" value={selected.physicalAppearance?.bodyHair || ''} onChange={(v) => handlePhysicalAppearanceChange('bodyHair', v)} />
+            <HardcodedInput label="Body Hair" value={selected.physicalAppearance?.bodyHair || ''} onChange={(v) => handlePhysicalAppearanceChange('bodyHair', v)} placeholder="e.g., Smooth, Light, Natural" />
             <HardcodedInput label="Height" value={selected.physicalAppearance?.height || ''} onChange={(v) => handlePhysicalAppearanceChange('height', v)} placeholder="e.g., 5 foot 8" />
-            <HardcodedInput label="Breast Size" value={selected.physicalAppearance?.breastSize || ''} onChange={(v) => handlePhysicalAppearanceChange('breastSize', v)} />
-            <HardcodedInput label="Genitalia" value={selected.physicalAppearance?.genitalia || ''} onChange={(v) => handlePhysicalAppearanceChange('genitalia', v)} />
-            <HardcodedInput label="Skin Tone" value={selected.physicalAppearance?.skinTone || ''} onChange={(v) => handlePhysicalAppearanceChange('skinTone', v)} />
-            <HardcodedInput label="Makeup" value={selected.physicalAppearance?.makeup || ''} onChange={(v) => handlePhysicalAppearanceChange('makeup', v)} />
+            <HardcodedInput label="Breast Size" value={selected.physicalAppearance?.breastSize || ''} onChange={(v) => handlePhysicalAppearanceChange('breastSize', v)} placeholder="e.g., C-cup / N/A" />
+            <HardcodedInput label="Genitalia" value={selected.physicalAppearance?.genitalia || ''} onChange={(v) => handlePhysicalAppearanceChange('genitalia', v)} placeholder="e.g., Male, Female / N/A" />
+            <HardcodedInput label="Skin Tone" value={selected.physicalAppearance?.skinTone || ''} onChange={(v) => handlePhysicalAppearanceChange('skinTone', v)} placeholder="e.g., Fair, Olive, Dark" />
+            <HardcodedInput label="Makeup" value={selected.physicalAppearance?.makeup || ''} onChange={(v) => handlePhysicalAppearanceChange('makeup', v)} placeholder="e.g., Light, Heavy, None" />
             <HardcodedInput label="Body Markings" value={selected.physicalAppearance?.bodyMarkings || ''} onChange={(v) => handlePhysicalAppearanceChange('bodyMarkings', v)} placeholder="Scars, tattoos, birthmarks, piercings" />
             <HardcodedInput label="Temporary Conditions" value={selected.physicalAppearance?.temporaryConditions || ''} onChange={(v) => handlePhysicalAppearanceChange('temporaryConditions', v)} placeholder="Injuries, illness, etc." />
           </HardcodedSection>
 
           {/* HARDCODED SECTION 2: Currently Wearing */}
           <HardcodedSection title="Currently Wearing">
-            <HardcodedInput label="Shirt/Top" value={selected.currentlyWearing?.top || ''} onChange={(v) => handleCurrentlyWearingChange('top', v)} />
-            <HardcodedInput label="Pants/Bottoms" value={selected.currentlyWearing?.bottom || ''} onChange={(v) => handleCurrentlyWearingChange('bottom', v)} />
+            <HardcodedInput label="Shirt/Top" value={selected.currentlyWearing?.top || ''} onChange={(v) => handleCurrentlyWearingChange('top', v)} placeholder="e.g., White blouse, T-shirt" />
+            <HardcodedInput label="Pants/Bottoms" value={selected.currentlyWearing?.bottom || ''} onChange={(v) => handleCurrentlyWearingChange('bottom', v)} placeholder="e.g., Jeans, Skirt, Shorts" />
             <HardcodedInput label="Undergarments" value={selected.currentlyWearing?.undergarments || ''} onChange={(v) => handleCurrentlyWearingChange('undergarments', v)} placeholder="Bras, panties, boxers, etc." />
             <HardcodedInput label="Miscellaneous" value={selected.currentlyWearing?.miscellaneous || ''} onChange={(v) => handleCurrentlyWearingChange('miscellaneous', v)} placeholder="Outerwear, footwear, accessories" />
           </HardcodedSection>
 
           {/* HARDCODED SECTION 3: Preferred Clothing */}
           <HardcodedSection title="Preferred Clothing">
-            <HardcodedInput label="Casual" value={selected.preferredClothing?.casual || ''} onChange={(v) => handlePreferredClothingChange('casual', v)} />
-            <HardcodedInput label="Work" value={selected.preferredClothing?.work || ''} onChange={(v) => handlePreferredClothingChange('work', v)} />
-            <HardcodedInput label="Sleep" value={selected.preferredClothing?.sleep || ''} onChange={(v) => handlePreferredClothingChange('sleep', v)} />
-            <HardcodedInput label="Undergarments" value={selected.preferredClothing?.undergarments || ''} onChange={(v) => handlePreferredClothingChange('undergarments', v)} />
+            <HardcodedInput label="Casual" value={selected.preferredClothing?.casual || ''} onChange={(v) => handlePreferredClothingChange('casual', v)} placeholder="e.g., Jeans and t-shirts" />
+            <HardcodedInput label="Work" value={selected.preferredClothing?.work || ''} onChange={(v) => handlePreferredClothingChange('work', v)} placeholder="e.g., Business casual, Uniform" />
+            <HardcodedInput label="Sleep" value={selected.preferredClothing?.sleep || ''} onChange={(v) => handlePreferredClothingChange('sleep', v)} placeholder="e.g., Pajamas, Nightgown" />
+            <HardcodedInput label="Undergarments" value={selected.preferredClothing?.undergarments || ''} onChange={(v) => handlePreferredClothingChange('undergarments', v)} placeholder="e.g., Cotton basics, Lace" />
             <HardcodedInput label="Miscellaneous" value={selected.preferredClothing?.miscellaneous || ''} onChange={(v) => handlePreferredClothingChange('miscellaneous', v)} placeholder="Formal, athletic, swimwear, etc." />
           </HardcodedSection>
 
