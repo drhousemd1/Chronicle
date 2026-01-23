@@ -1164,11 +1164,13 @@ const IndexContent = () => {
               scenes={activeData.scenes}
               coverImage={activeCoverImage}
               coverImagePosition={activeCoverPosition}
+              selectedArtStyle={activeData.selectedArtStyle || 'cinematic-2-5d'}
               onUpdateWorld={(patch) => handleUpdateActive({ world: { ...activeData.world, ...patch } })}
               onUpdateOpening={(patch) => handleUpdateActive({ story: { openingDialog: { ...activeData.story.openingDialog, ...patch } } })}
               onUpdateScenes={(scenes) => handleUpdateActive({ scenes })}
               onUpdateCoverImage={setActiveCoverImage}
               onUpdateCoverPosition={setActiveCoverPosition}
+              onUpdateArtStyle={(styleId) => handleUpdateActive({ selectedArtStyle: styleId })}
               onNavigateToCharacters={() => { setTab("characters"); setSelectedCharacterId(null); }}
               onSelectCharacter={(id) => { setSelectedCharacterId(id); setTab("characters"); }}
             />

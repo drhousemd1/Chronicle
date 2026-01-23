@@ -324,6 +324,7 @@ export type Database = {
           description: string | null
           id: string
           opening_dialog: Json | null
+          selected_art_style: string | null
           selected_model: string | null
           tags: string[] | null
           title: string
@@ -340,6 +341,7 @@ export type Database = {
           description?: string | null
           id?: string
           opening_dialog?: Json | null
+          selected_art_style?: string | null
           selected_model?: string | null
           tags?: string[] | null
           title?: string
@@ -356,6 +358,7 @@ export type Database = {
           description?: string | null
           id?: string
           opening_dialog?: Json | null
+          selected_art_style?: string | null
           selected_model?: string | null
           tags?: string[] | null
           title?: string

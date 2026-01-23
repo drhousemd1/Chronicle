@@ -8,6 +8,8 @@ import { useAuth } from '@/hooks/use-auth';
 import { uploadSceneImage, uploadCoverImage, dataUrlToBlob } from '@/services/supabase-data';
 import { toast } from 'sonner';
 import { Sunrise, Sun, Sunset, Moon, ChevronUp, ChevronDown } from 'lucide-react';
+import { AVATAR_STYLES, DEFAULT_STYLE_ID } from '@/constants/avatar-styles';
+import { cn } from '@/lib/utils';
 
 interface WorldTabProps {
   world: World;
@@ -16,11 +18,13 @@ interface WorldTabProps {
   scenes: Scene[];
   coverImage: string;
   coverImagePosition: { x: number; y: number };
+  selectedArtStyle: string;
   onUpdateWorld: (world: Partial<World>) => void;
   onUpdateOpening: (opening: Partial<OpeningDialog>) => void;
   onUpdateScenes: (scenes: Scene[]) => void;
   onUpdateCoverImage: (url: string) => void;
   onUpdateCoverPosition: (position: { x: number; y: number }) => void;
+  onUpdateArtStyle: (styleId: string) => void;
   onNavigateToCharacters: () => void;
   onSelectCharacter: (id: string) => void;
 }
@@ -65,11 +69,13 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   scenes,
   coverImage,
   coverImagePosition,
+  selectedArtStyle,
   onUpdateWorld, 
   onUpdateOpening, 
   onUpdateScenes,
   onUpdateCoverImage,
   onUpdateCoverPosition,
+  onUpdateArtStyle,
   onNavigateToCharacters, 
   onSelectCharacter 
 }) => {
@@ -551,6 +557,63 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                      <p className="text-sm mt-1">Upload images to enable dynamic backgrounds in chat.</p>
                   </div>
                 )}
+              </div>
+            </Card>
+          </section>
+
+          {/* Art Style Preference Section */}
+          <section className="space-y-6">
+            <Card className="p-8 !shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)] border-transparent ring-1 ring-slate-900/5">
+              <h2 className="text-lg font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight mb-8 pb-4 border-b border-slate-100">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="13.5" cy="6.5" r="2.5"/>
+                  <circle cx="6" cy="12" r="2.5"/>
+                  <circle cx="18" cy="12" r="2.5"/>
+                  <circle cx="9" cy="18.5" r="2.5"/>
+                  <circle cx="17" cy="18.5" r="2.5"/>
+                  <path d="M12 2v1"/>
+                </svg>
+                Art Style Preference
+              </h2>
+              
+              <HintBox hints={[
+                "Select an art style you would like the AI to use when generating character avatars or images during your playthrough."
+              ]} />
+              
+              <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                {AVATAR_STYLES.map((style) => (
+                  <button
+                    key={style.id}
+                    type="button"
+                    onClick={() => onUpdateArtStyle(style.id)}
+                    className={cn(
+                      "relative rounded-xl p-2 transition-all duration-200 cursor-pointer outline-none",
+                      "bg-white hover:bg-slate-50",
+                      selectedArtStyle === style.id
+                        ? "ring-2 ring-blue-400 shadow-md"
+                        : "ring-1 ring-slate-200 hover:ring-slate-300",
+                      "focus:ring-2 focus:ring-blue-100 focus:ring-offset-0"
+                    )}
+                  >
+                    <div className="aspect-square rounded-lg overflow-hidden bg-slate-100">
+                      <img
+                        src={style.thumbnailUrl}
+                        alt={style.displayName}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <p className="text-xs font-semibold text-slate-700 text-center mt-2 truncate">
+                      {style.displayName}
+                    </p>
+                    {selectedArtStyle === style.id && (
+                      <div className="absolute top-3 right-3 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                    )}
+                  </button>
+                ))}
               </div>
             </Card>
           </section>
