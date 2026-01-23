@@ -292,8 +292,43 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
   const conversation = appData.conversations.find(c => c.id === conversationId);
   
+  // Merge all characters (main characters with session overrides + side characters)
+  // and dynamically group by their effective characterRole
+  // NOTE: Must be called before any early returns to maintain hooks order
+  const allCharactersForDisplay = useMemo(() => {
+    if (conversationId === "loading") return [];
+    const effectiveMainChars = appData.characters.map(c => ({
+      ...getEffectiveCharacter(c),
+      _source: 'character' as const
+    }));
+    const sideChars = (appData.sideCharacters || []).map(sc => ({
+      ...sc,
+      _source: 'sideCharacter' as const
+    }));
+    return [...effectiveMainChars, ...sideChars];
+  }, [appData.characters, appData.sideCharacters, getEffectiveCharacter, conversationId]);
+  
+  const mainCharactersForDisplay = useMemo(() => 
+    allCharactersForDisplay.filter(c => c.characterRole === 'Main'),
+    [allCharactersForDisplay]
+  );
+  const sideCharactersForDisplay = useMemo(() => 
+    allCharactersForDisplay.filter(c => c.characterRole === 'Side'),
+    [allCharactersForDisplay]
+  );
+
+  // Debug: log conversation state on mount and when it changes
+  useEffect(() => {
+    if (conversationId === "loading") return;
+    console.log('[ChatInterfaceTab] conversationId:', conversationId);
+    console.log('[ChatInterfaceTab] conversation found:', !!conversation);
+    console.log('[ChatInterfaceTab] messages count:', conversation?.messages?.length);
+    console.log('[ChatInterfaceTab] messages:', conversation?.messages?.map(m => ({ id: m.id, role: m.role, text: m.text.slice(0, 50) })));
+  }, [conversationId, conversation]);
+  
   // LOADING STATE: Show skeleton UI while data is being fetched
   // This enables immediate navigation with progressive data hydration
+  // NOTE: This check is placed AFTER all hooks to comply with React rules
   if (conversationId === "loading" || (!conversation && conversationId !== "loading")) {
     return (
       <div className="flex-1 flex items-center justify-center bg-slate-950">
@@ -304,31 +339,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       </div>
     );
   }
-  
-  // Merge all characters (main characters with session overrides + side characters)
-  // and dynamically group by their effective characterRole
-  const allCharactersForDisplay = useMemo(() => {
-    const effectiveMainChars = appData.characters.map(c => ({
-      ...getEffectiveCharacter(c),
-      _source: 'character' as const
-    }));
-    const sideChars = (appData.sideCharacters || []).map(sc => ({
-      ...sc,
-      _source: 'sideCharacter' as const
-    }));
-    return [...effectiveMainChars, ...sideChars];
-  }, [appData.characters, appData.sideCharacters, getEffectiveCharacter]);
-  
-  const mainCharactersForDisplay = allCharactersForDisplay.filter(c => c.characterRole === 'Main');
-  const sideCharactersForDisplay = allCharactersForDisplay.filter(c => c.characterRole === 'Side');
-
-  // Debug: log conversation state on mount and when it changes
-  useEffect(() => {
-    console.log('[ChatInterfaceTab] conversationId:', conversationId);
-    console.log('[ChatInterfaceTab] conversation found:', !!conversation);
-    console.log('[ChatInterfaceTab] messages count:', conversation?.messages?.length);
-    console.log('[ChatInterfaceTab] messages:', conversation?.messages?.map(m => ({ id: m.id, role: m.role, text: m.text.slice(0, 50) })));
-  }, [conversationId, conversation]);
 
   // Helper to find any character (main, side, or auto-generated) by name
   const findAnyCharacterByName = (name: string | null): Character | SideCharacter | null => {
