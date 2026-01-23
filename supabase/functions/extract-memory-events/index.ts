@@ -27,45 +27,66 @@ serve(async (req) => {
     }
 
     // Build system prompt for memory extraction
-    const systemPrompt = `You are extracting story events from roleplay dialogue for a memory system that helps maintain narrative continuity.
+    const systemPrompt = `You are a story memory curator for an adult roleplay. Your job is to identify ONLY events that will affect future scenes and that the AI must remember for narrative consistency.
 
-CHARACTER NAMES IN STORY: ${characterNames?.join(', ') || 'Unknown characters'}
+CHARACTERS: ${characterNames?.join(', ') || 'Unknown'}
 
-WHAT TO EXTRACT:
-- Actions taken by characters (physical actions, movements, gestures)
-- Relationship interactions (kisses, hugs, conversations, conflicts)
-- Revelations or information shared
-- Emotional moments or reactions
-- Location or scene changes
-- Decisions or agreements made
-- What characters talked about
-- Mood or atmosphere of the scene
+WHAT TO EXTRACT (events with lasting consequences):
 
-CRITICAL RULES:
-1. ALWAYS extract at least one event - never return an empty array
-2. Be LITERAL and FACTUAL - only state what actually happens in the text
-3. DO NOT add "first time", "first ever", "for the first time" unless the text explicitly says it
-4. DO NOT infer relationship history or status
-5. DO NOT add assumptions about what events mean for relationships
-6. DO NOT add emotional interpretations not present in the text
-7. Keep each point under 80 characters
-8. Use past tense, third person
-9. Include character names when relevant
+RELATIONSHIP & INTIMACY:
+✓ Relationship milestones (first kiss, confession of love, becoming exclusive, breakup, proposal)
+✓ Sexual acts that occurred (not just flirting or buildup)
+✓ Changes in relationship dynamics (power shifts, one becoming dominant/submissive)
+✓ Rules established between characters ("You will call me X", "No doing Y without permission")
 
-EXAMPLES OF CORRECT EXTRACTION:
-- Text: "He kissed her softly" → "He kissed her"
-- Text: "She told him she was a spy" → "She revealed she is a spy"
-- Text: "They walked through the garden talking" → "They walked through the garden together"
-- Text: "James placed his hand on her shoulder" → "James touched her shoulder"
+REVELATIONS & SECRETS:
+✓ Secrets revealed or discovered ("I'm actually a spy", "I have a twin sister")
+✓ Revealed preferences - kinks, desires, turn-ons disclosed by a character
+✓ New information about characters (backstory, true identity, hidden traits)
 
-INCORRECT (over-interpretation - DO NOT DO THIS):
-- "They shared their first kiss" (when text just says "he kissed her")
-- "She finally confessed her secret" (when text just says "she told him")
-- "He showed his love for the first time" (adding "first time" without evidence)
+INTENTIONS & COMMITMENTS:
+✓ Stated intentions - when a character declares what they want to do or their plan
+✓ Promises or commitments made ("I'll meet you at midnight", "I promise to protect you")
+✓ Major decisions or agreements (agreeing to elope, refusing a job offer)
 
-Return ONLY a valid JSON array of strings. No markdown, no explanation.
-Example: ["James kissed Ashley", "They arrived at the cafe"]
-Maximum 3 events.`;
+PHYSICAL & STATUS CHANGES:
+✓ Physical changes (injuries, illness, discovering pregnancy, transformations)
+✓ Location changes that persist (moved cities, arrived at new home)
+✓ Appearance changes (new haircut, costume, etc.)
+
+WHAT TO IGNORE (scene flavor with no lasting impact):
+✗ Minor gestures (touched shoulder, pulled closer, smiled, nodded)
+✗ Invitations fulfilled immediately ("sit down" followed by sitting)
+✗ Mood or atmosphere descriptions
+✗ Dialogue that doesn't reveal new information
+✗ Buildup/teasing without conclusion
+✗ Routine actions (drinking coffee, looking out window)
+
+KEY QUESTION: "If the AI forgot this, would it cause a plot hole or inconsistency later?"
+- If YES → include it
+- If NO → skip it
+
+RULES:
+1. Return 0-2 events MAXIMUM (only truly significant ones)
+2. It's OKAY to return an empty array if nothing significant happened
+3. Be extremely selective - less is more
+4. Use past tense, include character names
+5. Keep each point under 60 characters
+6. For preferences/intentions, note WHO has them
+
+EXAMPLES OF GOOD EXTRACTIONS:
+✓ "James confessed his love for Ashley"
+✓ "Ashley revealed she is a spy"
+✓ "James promised to meet Ashley at midnight"
+✓ "Ashley established a rule: James must ask permission first"
+✓ "James revealed he has a feminization kink"
+✓ "Ashley declared her plan to train James as her submissive"
+✓ "James was injured in the fight"
+✓ "Ashley discovered she is pregnant"
+✓ "They agreed to elope next week"
+
+Return ONLY a JSON array. Example: ["James confessed his love", "Ashley revealed her secret identity"]
+Empty array is acceptable: []`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
