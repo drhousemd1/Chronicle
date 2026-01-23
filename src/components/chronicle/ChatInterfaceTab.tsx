@@ -34,7 +34,7 @@ import { CharacterEditModal, CharacterEditDraft } from './CharacterEditModal';
 import { ScrollableSection } from './ScrollableSection';
 import { SidebarThemeModal } from './SidebarThemeModal';
 import { MemoriesModal } from './MemoriesModal';
-import { MemoryQuickSavePopover } from './MemoryQuickSavePopover';
+import { MemoryQuickSaveButton } from './MemoryQuickSaveButton';
 import { UserBackground } from '@/types';
 import { getStyleById, DEFAULT_STYLE_ID } from '@/constants/avatar-styles';
 
@@ -1706,7 +1706,7 @@ const updatedChar: SideCharacter = {
                   
                   {/* Brain Icon for Quick Memory Save - bottom right */}
                   <div className="absolute bottom-3 right-4">
-                    <MemoryQuickSavePopover
+                    <MemoryQuickSaveButton
                       messageId={msg.id}
                       messageText={msg.text}
                       day={msg.day}
