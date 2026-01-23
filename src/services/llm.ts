@@ -9,7 +9,15 @@ const TIME_DESCRIPTIONS: Record<TimeOfDay, string> = {
   night: "nighttime (after dark, around 9pm-6am)"
 };
 
+// Critical dialog formatting rules that are always included
+const CRITICAL_DIALOG_RULES = `Enclose all spoken dialogue in " ".
+Enclose all physical actions or descriptions in * *.
+Enclose all internal thoughts in ( ).`;
+
 function getSystemInstruction(appData: ScenarioData, currentDay?: number, currentTimeOfDay?: TimeOfDay): string {
+  // Combine critical rules with any user-defined additional formatting
+  const fullDialogFormatting = CRITICAL_DIALOG_RULES + (appData.world.core.dialogFormatting ? `\n${appData.world.core.dialogFormatting}` : '');
+  
   const worldContext = `
     SETTING OVERVIEW: ${appData.world.core.settingOverview}
     RULES/TECH: ${appData.world.core.rulesOfMagicTech}
@@ -17,7 +25,7 @@ function getSystemInstruction(appData: ScenarioData, currentDay?: number, curren
     LOCATIONS: ${appData.world.core.locations}
     TONE & THEMES: ${appData.world.core.toneThemes}
     NARRATIVE STYLE: ${appData.world.core.narrativeStyle}
-    DIALOG FORMATTING: ${appData.world.core.dialogFormatting}
+    DIALOG FORMATTING: ${fullDialogFormatting}
   `;
 
   const characterContext = appData.characters.map(c => {
