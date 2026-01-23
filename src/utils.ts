@@ -177,44 +177,24 @@ export const getHardcodedTestCharacters = (): Character[] => {
 };
 
 export function createDefaultScenarioData(): ScenarioData {
-  const lib = getCharacterLibrary();
-  const baseChars = getHardcodedTestCharacters();
-  
-  const characters = baseChars.map(bc => {
-    const existing = lib.find(l => l.name === bc.name); // Match by name instead of old prefixed ID
-    return existing ? { ...JSON.parse(JSON.stringify(existing)), id: uuid() } : bc;
-  });
-
   return {
     version: APP_VERSION,
     selectedModel: LLM_MODELS[0].id,
-    characters,
+    characters: [],  // Start with no characters - user will add their own
     sideCharacters: [],  // AI-generated side characters start empty
     world: {
       core: {
-        scenarioName: "Test story",
+        scenarioName: "",
         briefDescription: "",
-        settingOverview: "A cozy apartment setting designed for testing character interactions and narrative flow.",
-        rulesOfMagicTech: "Modern-day realism.",
-        factions: "None",
-        locations: "Living Room, Kitchen, Bedroom",
-        historyTimeline: "Current Day",
-        toneThemes: "Casual, Intimate, Slice-of-Life",
-        plotHooks: "Ashley is relaxing on the sofa when you walk in.",
-        narrativeStyle: "Detailed descriptions of environments and character actions. Maintain character traits strictly.",
-        dialogFormatting: `Enclose all spoken dialogue in " ".
-Enclose all physical actions or descriptions in * *.
-Enclose all internal thoughts in ( ).
-
-MULTI-CHARACTER FORMATTING:
-When generating dialog for multiple characters in a single response, prefix each character's section with their name followed by a colon (e.g., "Ashley:").
-This tag is for internal processing and will not be displayed to the user.
-Format: CharacterName: followed by their dialog/actions/thoughts.
-
-Example:
-Ashley: *She smiled warmly.* "It's so good to see you!"
-Sarah: *Walking in, she tied her long brown hair into a ponytail.* "Hey! Sorry I'm late."
-Ashley: "No worries at all." (She seems tired...)`,
+        settingOverview: "",
+        rulesOfMagicTech: "",
+        factions: "",
+        locations: "",
+        historyTimeline: "",
+        toneThemes: "",
+        plotHooks: "",
+        narrativeStyle: "",
+        dialogFormatting: "",  // Critical rules are now handled in llm.ts
       },
       entries: [],
     },
@@ -227,22 +207,12 @@ Ashley: "No worries at all." (She seems tired...)`,
     story: { 
       openingDialog: {
         enabled: true,
-        text: "*Ashley was curled up on the corner of the plush sofa, her legs tucked neatly beneath her.* (I wonder if he had a long day...)\n\n\"Hey,\" *she replied, her voice soft and welcoming.* \"You're back sooner than I expected. How was your day?\"",
+        text: "",  // Empty - placeholder will guide users
         startingDay: 1,
         startingTimeOfDay: 'day',
       }
     },
-    conversations: [
-      {
-        id: uuid(), // Use UUID for Supabase
-        title: "Test Session",
-        messages: [],
-        currentDay: 1,
-        currentTimeOfDay: 'day',
-        createdAt: now(),
-        updatedAt: now(),
-      }
-    ],
+    conversations: [],  // Start with no conversations
   };
 }
 
