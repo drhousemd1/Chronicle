@@ -516,12 +516,10 @@ export async function saveScenario(
     if (scenesError) throw scenesError;
   }
 
-  // Save all conversations with their messages
-  if (data.conversations.length > 0) {
-    for (const conv of data.conversations) {
-      await saveConversation(conv, id, userId);
-    }
-  }
+  // NOTE: Conversations are saved individually via saveConversation() 
+  // when they are modified (e.g., in ChatInterfaceTab). We do NOT bulk-save 
+  // all conversations here because it updates their timestamps simultaneously,
+  // which breaks the Chat History chronological sorting.
 }
 
 export async function deleteScenario(id: string): Promise<void> {
