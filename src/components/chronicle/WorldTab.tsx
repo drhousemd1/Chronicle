@@ -333,7 +333,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                   
                   <div className="flex flex-wrap gap-3">
                     <Button 
-                      variant="secondary" 
+                      variant="primary" 
                       onClick={() => coverFileInputRef.current?.click()} 
                       disabled={isUploadingCover}
                       className="!px-5"
@@ -480,8 +480,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg> Scene Gallery
                 </h2>
                 <Button 
-                  variant="ghost" 
-                  className="text-blue-600 font-black text-xs tracking-widest uppercase h-9" 
+                  variant="primary" 
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isUploading}
                 >
@@ -494,7 +493,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                 "Add keywords to each scene. When dialog mentions these keywords, the background will automatically change.",
                 "Recommended: 1024px × 768px (landscape orientation, 4:3 aspect ratio)"
               ]} />
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+              <div className="mt-6 grid grid-cols-2 md:grid-cols-3 gap-6">
                 {scenes.map(scene => (
                   <div key={scene.id} className="group relative aspect-video rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-slate-50">
                     <img src={scene.url} alt={scene.tag} className="w-full h-full object-cover" />
@@ -571,13 +570,25 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                   placeholder="Detailed descriptions of environments and character actions..."
                 />
                 
-                <TextArea 
-                  label="Dialog Formatting" 
-                  value={world.core.dialogFormatting} 
-                  onChange={(v) => updateCore({ dialogFormatting: v })} 
-                  rows={3} 
-                  placeholder="Enclose all internal thoughts or actions in * *..."
-                />
+                <div className="space-y-4">
+                  <label className="block text-xs font-bold uppercase text-slate-500">Dialog Formatting</label>
+                  
+                  {/* Critical rules - always present, read-only */}
+                  <HintBox hints={[
+                    'Enclose all spoken dialogue in " ".',
+                    'Enclose all physical actions or descriptions in * *.',
+                    'Enclose all internal thoughts in ( ).'
+                  ]} />
+                  
+                  {/* User's additional formatting preferences - editable */}
+                  <TextArea 
+                    label="Additional Formatting Rules (Optional)"
+                    value={world.core.dialogFormatting} 
+                    onChange={(v) => updateCore({ dialogFormatting: v })} 
+                    rows={3} 
+                    placeholder="Add any custom formatting preferences here..."
+                  />
+                </div>
 
                 {world.entries.length > 0 && (
                   <div className="space-y-6 pt-6 border-t border-slate-100">
