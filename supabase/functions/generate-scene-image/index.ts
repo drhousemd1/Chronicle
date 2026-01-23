@@ -206,10 +206,21 @@ Write ONLY the image prompt. DO NOT add ANY visual elements not explicitly liste
       fullPrompt = `High quality digital art illustration. ${sceneDescription}`;
     }
 
-    // xAI has 1024 char limit for image prompts - truncate if needed
-    if (imageGateway === 'xai' && fullPrompt.length > 1024) {
-      console.log(`[generate-scene-image] Truncating prompt from ${fullPrompt.length} to 1024 chars for xAI`);
-      fullPrompt = fullPrompt.slice(0, 1020) + "...";
+    // xAI has 1024 byte limit for image prompts - truncate aggressively 
+    // to account for multi-byte characters (UTF-8 encoding)
+    if (imageGateway === 'xai') {
+      const encoder = new TextEncoder();
+      const byteLength = encoder.encode(fullPrompt).length;
+      if (byteLength > 1000) {
+        console.log(`[generate-scene-image] Prompt bytes: ${byteLength}, truncating for xAI limit`);
+        // Truncate by chars, then verify bytes - aim for ~900 bytes to be safe
+        let truncated = fullPrompt.slice(0, 850);
+        while (encoder.encode(truncated).length > 950 && truncated.length > 100) {
+          truncated = truncated.slice(0, -50);
+        }
+        fullPrompt = truncated + "...";
+        console.log(`[generate-scene-image] Final prompt bytes: ${encoder.encode(fullPrompt).length}`);
+      }
     }
 
     console.log("[generate-scene-image] Full prompt length:", fullPrompt.length);
