@@ -64,6 +64,9 @@ export interface MessageSegment {
 /**
  * Parse a message for CharacterName: tags
  * Returns segments that can be rendered with individual avatars
+ * 
+ * SIMPLIFIED: Each paragraph with a Name: tag gets that speaker.
+ * Content before first tag or without tags gets null speaker.
  */
 export function parseMessageSegments(text: string): MessageSegment[] {
   // Remove ALL system tags first (SCENE, UPDATE, ADDROW, NEWCAT)
@@ -76,9 +79,9 @@ export function parseMessageSegments(text: string): MessageSegment[] {
   
   // Regex to find "Name:" at start of line or after newline
   // Name must start with capital letter, be 1-30 chars, followed by colon
-  // Supports hyphens for names like "Mary-Jane"
+  // Supports hyphens and apostrophes for names like "Mary-Jane" or "O'Brien"
   const segments: MessageSegment[] = [];
-  const regex = /(?:^|\n)([A-Z][a-zA-Z\s']{0,29}):\s*/g;
+  const regex = /(?:^|\n)([A-Z][a-zA-Z\s'-]{0,29}):\s*/g;
   
   // Find all speaker tags
   const matches: Array<{ name: string; index: number; length: number }> = [];
@@ -93,68 +96,27 @@ export function parseMessageSegments(text: string): MessageSegment[] {
   }
   
   if (matches.length === 0) {
-    // No speaker tags, return whole message
+    // No speaker tags - return whole message as null speaker
     return [{ speakerName: null, content: cleanText }];
   }
   
-  // Pattern to detect narrative transitions (third-person or POV thoughts)
-  // More flexible whitespace, expanded trigger words including character names
-  const narrativeBreakPattern = /\n\s*\n+(?=The |She |He |Her |His |It |A |An |They |Outside |Inside |Suddenly |Meanwhile |After |Before |\(|[A-Z][a-z]+['']s |[A-Z][a-z]+ could |[A-Z][a-z]+ felt |[A-Z][a-z]+ was |[A-Z][a-z]+ had |[A-Z][a-z]+ didn)/g;
-  
-  // Build segments
-  let lastIndex = 0;
-  
-  matches.forEach((m, i) => {
-    // Content before first tag (if any)
-    if (i === 0 && m.index > 0) {
-      const before = cleanText.slice(0, m.index).trim();
-      if (before) {
-        segments.push({ speakerName: null, content: before });
-      }
+  // Content before first tag (if any)
+  if (matches[0].index > 0) {
+    const before = cleanText.slice(0, matches[0].index).trim();
+    if (before) {
+      segments.push({ speakerName: null, content: before });
     }
-    
-    // Content for this speaker (until next tag or end)
+  }
+  
+  // Build segments - each tag gets all content until next tag
+  matches.forEach((m, i) => {
     const contentStart = m.index + m.length;
     const contentEnd = i < matches.length - 1 ? matches[i + 1].index : cleanText.length;
     const content = cleanText.slice(contentStart, contentEnd).trim();
     
     if (content) {
-      // Find ALL narrative breaks within this speaker's content using matchAll
-      const allBreaks = [...content.matchAll(narrativeBreakPattern)];
-      
-      console.log('[Segment Parser] Speaker:', m.name, '| Content length:', content.length, '| Breaks found:', allBreaks.length);
-      
-      if (allBreaks.length > 0) {
-        let splitLastEnd = 0;
-        let isFirstPart = true;
-        
-        for (const breakMatch of allBreaks) {
-          const partBeforeBreak = content.slice(splitLastEnd, breakMatch.index).trim();
-          
-          if (partBeforeBreak) {
-            segments.push({
-              speakerName: isFirstPart ? m.name : null,
-              content: partBeforeBreak
-            });
-            console.log('[Segment Parser] Added segment:', isFirstPart ? m.name : 'null (POV)', '| Length:', partBeforeBreak.length);
-          }
-          
-          isFirstPart = false;
-          splitLastEnd = breakMatch.index;
-        }
-        
-        // Remaining content after last break (this is the narrative part)
-        const remaining = content.slice(splitLastEnd).trim();
-        if (remaining) {
-          segments.push({ speakerName: null, content: remaining });
-          console.log('[Segment Parser] Added narrative segment (null/POV) | Length:', remaining.length);
-        }
-      } else {
-        segments.push({ speakerName: m.name, content });
-      }
+      segments.push({ speakerName: m.name, content });
     }
-    
-    lastIndex = contentEnd;
   });
   
   return segments.filter(s => s.content.length > 0);
