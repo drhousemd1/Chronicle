@@ -83,9 +83,15 @@ const FormattedMessage: React.FC<{ text: string; transparentMode?: boolean }> = 
     return parts;
   }, [text]);
 
-  // Dark text shadow for transparent mode - creates halo effect for readability
-  const transparentTextShadow = transparentMode 
-    ? { textShadow: '0 1px 3px rgba(0,0,0,0.8)' } 
+  // Adaptive blur behind text for transparent mode - creates subtle frosted effect for readability
+  const transparentBlurStyle: React.CSSProperties = transparentMode 
+    ? { 
+        backdropFilter: 'blur(4px)',
+        WebkitBackdropFilter: 'blur(4px)',
+        backgroundColor: 'rgba(0,0,0,0.15)',
+        padding: '0 2px',
+        borderRadius: '2px',
+      } 
     : {};
 
   return (
@@ -93,12 +99,9 @@ const FormattedMessage: React.FC<{ text: string; transparentMode?: boolean }> = 
     <div className="whitespace-pre-wrap">
       {tokens.map((token, i) => {
         if (token.type === 'speech') {
+          // Speech text - no blur needed, already white and readable
           return (
-            <span 
-              key={i} 
-              className="text-white font-medium"
-              style={transparentTextShadow}
-            >
+            <span key={i} className="text-white font-medium">
               "{token.content}"
             </span>
           );
@@ -107,8 +110,8 @@ const FormattedMessage: React.FC<{ text: string; transparentMode?: boolean }> = 
           return (
             <span 
               key={i} 
-              className={`italic ${transparentMode ? 'text-slate-200' : 'text-slate-400'}`}
-              style={transparentTextShadow}
+              className="text-slate-400 italic"
+              style={transparentMode ? transparentBlurStyle : undefined}
             >
                {token.content}
             </span>
@@ -118,24 +121,22 @@ const FormattedMessage: React.FC<{ text: string; transparentMode?: boolean }> = 
           return (
             <span 
               key={i} 
-              className={`text-sm italic font-light tracking-tight animate-in fade-in zoom-in-95 duration-500 ${
-                transparentMode ? 'text-indigo-100' : 'text-indigo-200/90'
-              }`}
+              className="text-indigo-200/90 text-sm italic font-light tracking-tight animate-in fade-in zoom-in-95 duration-500"
               style={{
-                textShadow: transparentMode
-                  ? '0 1px 3px rgba(0,0,0,0.8), 0 0 8px rgba(129, 140, 248, 0.6), 0 0 16px rgba(129, 140, 248, 0.4)'
-                  : '0 0 8px rgba(129, 140, 248, 0.6), 0 0 16px rgba(129, 140, 248, 0.4), 0 0 24px rgba(129, 140, 248, 0.2)'
+                textShadow: '0 0 8px rgba(129, 140, 248, 0.6), 0 0 16px rgba(129, 140, 248, 0.4), 0 0 24px rgba(129, 140, 248, 0.2)',
+                ...(transparentMode ? transparentBlurStyle : {})
               }}
             >
               {token.content}
             </span>
           );
         }
+        // Plain text
         return (
           <span 
             key={i} 
-            className={transparentMode ? 'text-slate-100' : 'text-slate-300'}
-            style={transparentTextShadow}
+            className="text-slate-300"
+            style={transparentMode ? transparentBlurStyle : undefined}
           >
             {token.content}
           </span>
