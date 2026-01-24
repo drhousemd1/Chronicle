@@ -5,6 +5,23 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+function getGateway(modelId: string): 'lovable' | 'xai' {
+  if (modelId.startsWith('grok')) {
+    return 'xai';
+  }
+  return 'lovable';
+}
+
+function normalizeModelId(modelId: string): string {
+  if (modelId.startsWith('gemini-')) {
+    return `google/${modelId}`;
+  }
+  if (modelId.startsWith('gpt-')) {
+    return `openai/${modelId}`;
+  }
+  return modelId;
+}
+
 interface CharacterData {
   name: string;
   physicalAppearance?: Record<string, string>;
@@ -101,23 +118,46 @@ Return ONLY valid JSON. No explanations.`;
       aiResponse ? `AI RESPONSE:\n${aiResponse}` : ''
     ].filter(Boolean).join('\n\n');
 
-    // Always use a fast, supported model for extraction (ignore user's narrative model)
-    // This is an analytical task, not creative writing, so we use a cheap/fast model
-    const extractionModel = "google/gemini-2.5-flash-lite";
+    // Use provided modelId to route to correct gateway (respects BYOK)
+    const effectiveModelId = modelId || 'google/gemini-2.5-flash-lite';
+    const gateway = getGateway(effectiveModelId);
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    let apiKey: string | undefined;
+    let apiUrl: string;
+    let modelForRequest: string;
+
+    if (gateway === 'xai') {
+      apiKey = Deno.env.get("XAI_API_KEY");
+      if (!apiKey) {
+        return new Response(
+          JSON.stringify({ error: "XAI_API_KEY not configured. Please add your Grok API key in settings.", updates: [] }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      apiUrl = "https://api.x.ai/v1/chat/completions";
+      modelForRequest = effectiveModelId;
+    } else {
+      apiKey = Deno.env.get("LOVABLE_API_KEY");
+      if (!apiKey) {
+        throw new Error("LOVABLE_API_KEY is not configured");
+      }
+      apiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
+      modelForRequest = normalizeModelId(effectiveModelId);
+    }
+
+    const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: extractionModel,
+        model: modelForRequest,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: `Extract character state changes from this dialogue:\n\n${combinedText}` }
         ],
-        temperature: 0.2, // Low temperature for consistent, analytical output
+        temperature: 0.2,
       }),
     });
 
