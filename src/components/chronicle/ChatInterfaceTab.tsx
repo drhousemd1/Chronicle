@@ -2343,7 +2343,11 @@ const updatedChar: SideCharacter = {
               <Button
                 onClick={handleSend}
                 disabled={!input.trim() || isStreaming}
-                className="self-end px-10 py-4 bg-[#1c1f26] hover:bg-slate-800 text-white shadow-lg font-black uppercase tracking-widest rounded-2xl border-none transition-all active:scale-95 disabled:opacity-30"
+                className={`self-end px-10 py-4 text-white shadow-lg font-black uppercase tracking-widest rounded-2xl border-none transition-all active:scale-95 ${
+                  !input.trim() || isStreaming
+                    ? 'bg-slate-500 opacity-70 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-500'
+                }`}
               >
                 {isStreaming ? '...' : 'Send'}
               </Button>
