@@ -232,6 +232,7 @@ export type ScenarioData = {
     showBackgrounds: boolean;
     transparentBubbles: boolean;
     darkMode: boolean;
+    offsetBubbles?: boolean;
   };
   conversations: Conversation[];
   selectedModel?: string;
