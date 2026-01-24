@@ -741,6 +741,33 @@ const IndexContent = () => {
     }
   }
   
+  async function handleDeleteAllConversations() {
+    if (conversationRegistry.length === 0) {
+      toast({ title: "No sessions to delete", description: "Your chat history is already empty." });
+      return;
+    }
+    
+    if (!confirm(`Delete all ${conversationRegistry.length} saved session${conversationRegistry.length > 1 ? 's' : ''} forever? This cannot be undone.`)) {
+      return;
+    }
+    
+    try {
+      for (const entry of conversationRegistry) {
+        await supabaseData.deleteConversation(entry.conversationId);
+      }
+      
+      setConversationRegistry([]);
+      
+      if (activeData) {
+        setActiveData({ ...activeData, conversations: [] });
+      }
+      
+      toast({ title: "All sessions deleted", description: "Your chat history has been cleared." });
+    } catch (e: any) {
+      toast({ title: "Failed to delete sessions", description: e.message, variant: "destructive" });
+    }
+  }
+  
   async function handleRenameConversationFromHistory(scenarioId: string, conversationId: string, newTitle: string) {
     try {
       await supabaseData.renameConversation(conversationId, newTitle);
@@ -1036,6 +1063,11 @@ const IndexContent = () => {
               )}
             </div>
             <div className="flex items-center gap-3">
+              {tab === "conversations" && conversationRegistry.length > 0 && (
+                <Button variant="primary" onClick={handleDeleteAllConversations}>
+                  Delete All
+                </Button>
+              )}
               {tab === "hub" && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
