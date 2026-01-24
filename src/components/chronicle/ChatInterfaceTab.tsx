@@ -1735,7 +1735,7 @@ const updatedChar: SideCharacter = {
                 className="w-full h-full object-cover transition-opacity duration-1000 animate-in fade-in fill-mode-forwards"
                 alt="Scene background"
               />
-              <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
+              <div className="absolute inset-0 bg-black/20" />
             </div>
           )}
           
@@ -1764,7 +1764,7 @@ const updatedChar: SideCharacter = {
               <div key={msg.id} className="w-full max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 group">
                 <div className={`p-8 pb-12 rounded-[2rem] shadow-2xl flex flex-col gap-4 transition-all relative ${
                   bubblesTransparent
-                    ? 'bg-black/40 backdrop-blur-xl'
+                    ? 'bg-black/50'
                     : 'bg-[#1c1f26]'
                 } ${!isAi ? 'border-2 border-blue-400' : 'border border-white/5 hover:border-white/20'}`}>
                   
@@ -2030,7 +2030,7 @@ const updatedChar: SideCharacter = {
               </Button>
               
               {isSettingsOpen && (
-                <div className="absolute bottom-full mb-2 left-0 w-64 bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 space-y-4 animate-in slide-in-from-bottom-2 z-50">
+                <div className="absolute bottom-full mb-2 left-0 w-64 bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 space-y-4 animate-in slide-in-from-bottom-2 z-[100]">
                    <div className="flex items-center justify-between">
                       <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Show Backgrounds</span>
                       <input
