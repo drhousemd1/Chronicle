@@ -101,6 +101,10 @@ Return ONLY valid JSON. No explanations.`;
       aiResponse ? `AI RESPONSE:\n${aiResponse}` : ''
     ].filter(Boolean).join('\n\n');
 
+    // Always use a fast, supported model for extraction (ignore user's narrative model)
+    // This is an analytical task, not creative writing, so we use a cheap/fast model
+    const extractionModel = "google/gemini-2.5-flash-lite";
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -108,7 +112,7 @@ Return ONLY valid JSON. No explanations.`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: modelId || "google/gemini-2.5-flash-lite",
+        model: extractionModel,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: `Extract character state changes from this dialogue:\n\n${combinedText}` }
