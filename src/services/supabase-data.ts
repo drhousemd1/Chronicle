@@ -175,10 +175,18 @@ function dbToCodexEntry(row: any): CodexEntry {
 }
 
 function dbToScene(row: any): Scene {
+  // Handle legacy single tag migration to tags array
+  let tags: string[] = [];
+  if (row.tags && Array.isArray(row.tags)) {
+    tags = row.tags;
+  } else if (row.tag && typeof row.tag === 'string' && row.tag.trim() !== '') {
+    tags = [row.tag];
+  }
+  
   return {
     id: row.id,
     url: row.image_url,
-    tag: row.tag || '',
+    tags,
     isStartingScene: row.is_starting_scene || false,
     createdAt: new Date(row.created_at).getTime()
   };
@@ -508,7 +516,7 @@ export async function saveScenario(
           id: s.id,
           scenario_id: id,
           image_url: s.url,
-          tag: s.tag,
+          tags: s.tags ?? [],
           is_starting_scene: s.isStartingScene || false
         })),
         { onConflict: 'id' }

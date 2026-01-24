@@ -45,7 +45,7 @@ ${traits}`;
 
   const codexContext = appData.world.entries.map(e => `CODEX [${e.title}]: ${e.body}`).join('\n');
   
-  const sceneTags = appData.scenes.map(s => s.tag).join(', ');
+  const sceneTags = appData.scenes.flatMap(s => s.tags ?? []).join(', ');
 
   // Temporal context section
   const temporalContext = currentDay && currentTimeOfDay ? `
