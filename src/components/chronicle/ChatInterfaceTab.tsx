@@ -210,6 +210,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [editText, setEditText] = useState('');
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [regeneratingMessageId, setRegeneratingMessageId] = useState<string | null>(null);
   const [currentDay, setCurrentDay] = useState(1);
   const [currentTimeOfDay, setCurrentTimeOfDay] = useState<TimeOfDay>('day');
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
@@ -1286,8 +1287,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     const userMessage = conversation?.messages[msgIndex - 1];
     if (!userMessage || userMessage.role !== 'user') return;
     
-    const messagesBeforeAi = conversation?.messages.slice(0, msgIndex) || [];
-    
+    // Track which specific message is being regenerated (for in-place streaming)
+    setRegeneratingMessageId(messageId);
     setIsRegenerating(true);
     setIsStreaming(true);
     setStreamingContent('');
@@ -1326,17 +1327,18 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       const { normalizedText } = normalizePlaceholderNames(cleanedText, existingNames, placeholderMapRef.current);
       cleanedText = normalizedText;
       
-      const newAiMsg: Message = { 
-        id: uuid(), 
-        role: 'assistant', 
-        text: cleanedText, 
-        day: currentDay,
-        timeOfDay: currentTimeOfDay,
-        createdAt: now() 
-      };
+      // UPDATE IN-PLACE: Replace the existing message instead of creating a new one
       const updatedConvs = appData.conversations.map(c =>
         c.id === conversationId
-          ? { ...c, messages: [...messagesBeforeAi, newAiMsg], updatedAt: now() }
+          ? {
+              ...c,
+              messages: c.messages.map(m =>
+                m.id === messageId
+                  ? { ...m, text: cleanedText, day: currentDay, timeOfDay: currentTimeOfDay, createdAt: now() }
+                  : m
+              ),
+              updatedAt: now()
+            }
           : c
       );
       onUpdate(updatedConvs);
@@ -1349,6 +1351,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       console.error(err);
       toast.error('Failed to regenerate response');
     } finally {
+      setRegeneratingMessageId(null);
       setIsRegenerating(false);
       setIsStreaming(false);
       setStreamingContent('');
@@ -2211,7 +2214,7 @@ const updatedChar: SideCharacter = {
                         className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors disabled:opacity-30"
                         title="Regenerate response"
                       >
-                        <RefreshCw className={`w-4 h-4 ${isRegenerating ? 'animate-spin' : ''}`} />
+                        <RefreshCw className={`w-4 h-4 ${regeneratingMessageId === msg.id ? 'animate-spin' : ''}`} />
                       </button>
                     )}
                     
@@ -2273,46 +2276,53 @@ const updatedChar: SideCharacter = {
                   )}
                   
                   {/* Render text segments - avatar only shows when speaker changes */}
-                  {msg.text && segments.map((segment, segIndex) => {
-                    // Determine speaker for this segment
-                    let segmentChar: Character | SideCharacter | null = null;
-                    let segmentName = '';
-                    let segmentAvatar: string | null = null;
-                    let isGenerating = false;
+                  {/* If this message is being regenerated, show streaming content instead */}
+                  {msg.text && (() => {
+                    // If this message is being regenerated, use streaming content
+                    const displaySegments = regeneratingMessageId === msg.id && formattedStreamingContent
+                      ? mergeByRenderedSpeaker(parseMessageSegments(formattedStreamingContent), isAi, appData, userChar)
+                      : segments;
                     
-                    if (segment.speakerName) {
-                      // BOTH user and AI: If there's a speaker tag, use that character
-                      segmentChar = findCharacterByName(segment.speakerName, appData);
-                      segmentName = segment.speakerName;
-                      segmentAvatar = segmentChar?.avatarDataUrl || null;
-                      isGenerating = segmentChar && 'isAvatarGenerating' in segmentChar ? segmentChar.isAvatarGenerating : false;
-                    } else if (!isAi) {
-                      // User message WITHOUT speaker tag - default to user's character
-                      segmentChar = userChar || null;
-                      segmentName = userChar?.name || 'You';
-                      segmentAvatar = userChar?.avatarDataUrl || null;
-                    } else {
-                      // AI message without speaker - use first AI character as default
-                      const aiChars = appData.characters.filter(c => c.controlledBy === 'AI');
-                      segmentChar = aiChars.length > 0 ? aiChars[0] : null;
-                      segmentName = segmentChar?.name || 'Narrator';
-                      segmentAvatar = segmentChar?.avatarDataUrl || null;
-                    }
-                    
-                    // Check if this is a different speaker than the previous segment
-                    const prevSegment = segIndex > 0 ? segments[segIndex - 1] : null;
-                    let prevSpeakerName = '';
-                    if (prevSegment) {
-                      if (prevSegment.speakerName) {
-                        prevSpeakerName = prevSegment.speakerName;
+                    return displaySegments.map((segment, segIndex) => {
+                      // Determine speaker for this segment
+                      let segmentChar: Character | SideCharacter | null = null;
+                      let segmentName = '';
+                      let segmentAvatar: string | null = null;
+                      let isGenerating = false;
+                      
+                      if (segment.speakerName) {
+                        // BOTH user and AI: If there's a speaker tag, use that character
+                        segmentChar = findCharacterByName(segment.speakerName, appData);
+                        segmentName = segment.speakerName;
+                        segmentAvatar = segmentChar?.avatarDataUrl || null;
+                        isGenerating = segmentChar && 'isAvatarGenerating' in segmentChar ? segmentChar.isAvatarGenerating : false;
                       } else if (!isAi) {
-                        prevSpeakerName = userChar?.name || 'You';
+                        // User message WITHOUT speaker tag - default to user's character
+                        segmentChar = userChar || null;
+                        segmentName = userChar?.name || 'You';
+                        segmentAvatar = userChar?.avatarDataUrl || null;
                       } else {
+                        // AI message without speaker - use first AI character as default
                         const aiChars = appData.characters.filter(c => c.controlledBy === 'AI');
-                        prevSpeakerName = aiChars.length > 0 ? aiChars[0]?.name || 'Narrator' : 'Narrator';
+                        segmentChar = aiChars.length > 0 ? aiChars[0] : null;
+                        segmentName = segmentChar?.name || 'Narrator';
+                        segmentAvatar = segmentChar?.avatarDataUrl || null;
                       }
-                    }
-                    const showAvatar = segIndex === 0 || prevSpeakerName !== segmentName;
+                      
+                      // Check if this is a different speaker than the previous segment
+                      const prevSegment = segIndex > 0 ? displaySegments[segIndex - 1] : null;
+                      let prevSpeakerName = '';
+                      if (prevSegment) {
+                        if (prevSegment.speakerName) {
+                          prevSpeakerName = prevSegment.speakerName;
+                        } else if (!isAi) {
+                          prevSpeakerName = userChar?.name || 'You';
+                        } else {
+                          const aiChars = appData.characters.filter(c => c.controlledBy === 'AI');
+                          prevSpeakerName = aiChars.length > 0 ? aiChars[0]?.name || 'Narrator' : 'Narrator';
+                        }
+                      }
+                      const showAvatar = segIndex === 0 || prevSpeakerName !== segmentName;
                     
                     return (
                       <div key={segIndex} className={`relative ${segIndex > 0 && showAvatar ? 'mt-2.5 pt-2.5 border-t border-white/5' : ''}`}>
@@ -2339,8 +2349,9 @@ const updatedChar: SideCharacter = {
                         </div>
                         {showAvatar && <div className="clear-both" />}
                       </div>
-                    );
-                  })}
+                     );
+                    });
+                  })()}
                   
                   {/* Day/Time Badge - bottom left */}
                   {(msg.day || msg.timeOfDay) && (
@@ -2375,8 +2386,8 @@ const updatedChar: SideCharacter = {
             );
           })}
 
-          {formattedStreamingContent && (() => {
-            // Parse formatted streaming content into segments for multi-speaker rendering
+          {formattedStreamingContent && !regeneratingMessageId && (() => {
+            // Parse formatted streaming content into segments for multi-speaker rendering (only for NEW messages, not regeneration)
             // Using formattedStreamingContent to prevent flickering from system tags and placeholder names
             const userChar = appData.characters.find(c => c.controlledBy === 'User') || null;
             const rawSegments = parseMessageSegments(formattedStreamingContent);

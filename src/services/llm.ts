@@ -14,10 +14,11 @@ Enclose all physical actions or descriptions in * *.
 Enclose all internal thoughts in ( ).
 
 **NARRATIVE POV RULES (MANDATORY):**
-- All narration and descriptions MUST be written in third-person
-- Use character names (e.g., "Ashley felt..." or "Her heart raced...") instead of "I felt..."
-- Thoughts in parentheses should use third-person or the character's name (e.g., "(Ashley couldn't believe it)" not "(I couldn't believe it)")
-- This ensures clear speaker attribution for multi-character scenes`;
+- All narration, actions (*...*), and descriptions MUST be written in third-person
+- Thoughts in parentheses MUST be third-person (e.g., "(She couldn't believe it)" NOT "(I couldn't believe it)")
+- Spoken dialogue in quotes MAY use first-person naturally ("I think..." is fine in speech)
+- CORRECT: Ashley: *She felt her heart race.* (She wondered if he noticed.) "I'm fine."
+- WRONG: Ashley: *I felt my heart race.* (I wonder if he noticed.) "I'm fine."`;
 
 function getSystemInstruction(
   appData: ScenarioData, 
@@ -113,7 +114,18 @@ ${traits}`;
         1. ENCLOSE ALL OUTSPOKEN DIALOGUE IN "DOUBLE QUOTES".
         2. ENCLOSE ALL PHYSICAL ACTIONS OR DESCRIPTIONS IN *ASTERISKS*.
         3. ENCLOSE ALL INTERNAL THOUGHTS OR MENTAL STATES IN (PARENTHESES).
-        Example: *He walks toward her, his heart racing.* (I hope she doesn't notice.) "Hey, did you wait long?"
+        Example: *He walks toward her, his heart racing.* (He hoped she wouldn't notice.) "Hey, did you wait long?"
+    - PARAGRAPH TAGGING (MANDATORY - NEVER OMIT):
+        * EVERY paragraph of your response MUST begin with a speaker tag: "CharacterName:"
+        * This applies to ALL paragraphs including narration, action descriptions, and dialogue.
+        * If a paragraph describes or focuses on a character, tag it with that character's name.
+        * Example of a properly tagged scene:
+          Ashley: *She glanced around the room nervously.*
+          
+          Caleb: "What's wrong?"
+          
+          Ashley: *The question caught her off guard.* (She wasn't sure how to answer.) "Nothing."
+        * NEVER write an untagged paragraph. Every single paragraph needs a speaker tag.
     - MULTI-CHARACTER RESPONSES:
         * When multiple characters speak or act in a response, prefix each section with their name followed by a colon: "CharacterName:"
         * This applies to ALL characters, including new characters not in the CAST list above.
