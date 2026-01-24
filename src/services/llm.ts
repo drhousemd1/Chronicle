@@ -120,8 +120,9 @@ ${traits}`;
           - "Person", "Person 1", "Someone"
           - Role-based labels: "Cashier", "Doctor", "Nurse", "Guard", "Bartender", "Waiter", "Waitress", "Driver", "Officer", "Clerk", "Customer", "Patron"
         * When introducing ANY new character, you MUST immediately invent a realistic first name.
-        * Format for new characters: "InventedName (role): dialogue" on first appearance, then just "InventedName:" thereafter.
-        * Example: Instead of "Cashier: *rings up items*", write "Marcus (the cashier): *rings up the items* "That'll be $12.50.""
+        * WRONG FORMAT (FORBIDDEN): "Ethan Man 1:", "Sarah Woman Two:", "Marcus Stranger:", "Name + placeholder"
+        * CORRECT FORMAT: "Ethan:", "Sarah:", "Marcus:" (name ONLY, no role or number suffix)
+        * On first appearance, put role info in the action text: "Marcus: *The cashier rings up the items.* "That'll be $12.50.""
         * Keep invented names CONSISTENT throughout the entire conversation.
         * This rule applies to ALL characters, even minor ones who only appear briefly.
     - SCENE TAGGING (IMPORTANT):

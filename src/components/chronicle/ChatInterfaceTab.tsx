@@ -1084,10 +1084,13 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       }
       
       // Debug logging (console only, no UI)
-      console.log('[Scene Detection] Recent messages:', recentMessages.map(m => m.text.substring(0, 80) + '...'));
+      // Debug logging (console only, no UI)
+      console.log('[Scene Detection] === RUNNING ===');
+      console.log('[Scene Detection] Most recent message text:', mostRecentMessageText.substring(0, 150));
+      console.log('[Scene Detection] All scenes with tags:', appData.scenes.map(s => ({ id: s.id, tags: s.tags, isStarting: s.isStartingScene })));
       console.log('[Scene Detection] Scene scores:', sceneScores.map(s => {
         const scene = appData.scenes.find(sc => sc.id === s.sceneId);
-        return { tags: scene?.tags, score: s.score, matchedInMostRecent: s.matchedInMostRecent };
+        return { id: s.sceneId, tags: scene?.tags, score: s.score, matchedInMostRecent: s.matchedInMostRecent };
       }));
       
       // CRITICAL: Only consider scenes that matched in the most recent message
@@ -1117,7 +1120,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         }
       }
     }
-  }, [conversation?.messages, appData.scenes]);
+  // Add message count and last message ID as dependencies for more reliable triggering
+  }, [conversation?.messages, appData.scenes, conversation?.messages?.length, conversation?.messages?.[conversation.messages.length - 1]?.id]);
 
   // Update conversation when day/time changes
   const handleDayTimeChange = (newDay: number, newTime: TimeOfDay) => {
