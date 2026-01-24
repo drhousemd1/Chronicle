@@ -76,6 +76,7 @@ export function parseMessageSegments(text: string): MessageSegment[] {
   
   // Regex to find "Name:" at start of line or after newline
   // Name must start with capital letter, be 1-30 chars, followed by colon
+  // Supports hyphens for names like "Mary-Jane"
   const segments: MessageSegment[] = [];
   const regex = /(?:^|\n)([A-Z][a-zA-Z\s']{0,29}):\s*/g;
   
