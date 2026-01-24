@@ -2345,8 +2345,8 @@ const updatedChar: SideCharacter = {
                 disabled={!input.trim() || isStreaming}
                 className={`self-end px-10 py-4 text-white shadow-lg font-black uppercase tracking-widest rounded-2xl border-none transition-all active:scale-95 ${
                   !input.trim() || isStreaming
-                    ? 'bg-slate-500 opacity-70 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-500'
+                    ? '!bg-slate-500 opacity-70 cursor-not-allowed'
+                    : '!bg-blue-600 hover:!bg-blue-500'
                 }`}
               >
                 {isStreaming ? '...' : 'Send'}
