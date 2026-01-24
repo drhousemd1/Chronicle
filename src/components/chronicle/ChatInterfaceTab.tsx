@@ -794,6 +794,152 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     }
   };
 
+  // ============================================================================
+  // DEDICATED CHARACTER UPDATE EXTRACTION (runs in parallel with narrative)
+  // ============================================================================
+  
+  interface ExtractedUpdate {
+    character: string;
+    field: string;
+    value: string;
+  }
+
+  // Call the dedicated extraction edge function
+  const extractCharacterUpdatesFromDialogue = async (
+    userMessage: string, 
+    aiResponse: string
+  ): Promise<ExtractedUpdate[]> => {
+    try {
+      // Build character data for context
+      const charactersData = appData.characters.map(c => {
+        const effective = getEffectiveCharacter(c);
+        return {
+          name: effective.name,
+          physicalAppearance: effective.physicalAppearance,
+          currentlyWearing: effective.currentlyWearing,
+          location: effective.location,
+          currentMood: effective.currentMood
+        };
+      });
+      
+      // Also include side characters
+      const sideCharsData = (appData.sideCharacters || []).map(sc => ({
+        name: sc.name,
+        physicalAppearance: sc.physicalAppearance,
+        currentlyWearing: sc.currentlyWearing,
+        location: sc.location,
+        currentMood: sc.currentMood
+      }));
+      
+      const allCharacters = [...charactersData, ...sideCharsData];
+      
+      const { data, error } = await supabase.functions.invoke('extract-character-updates', {
+        body: {
+          userMessage,
+          aiResponse,
+          characters: allCharacters,
+          modelId
+        }
+      });
+      
+      if (error) {
+        console.error('[extractCharacterUpdates] Edge function error:', error);
+        return [];
+      }
+      
+      return data?.updates || [];
+    } catch (err) {
+      console.error('[extractCharacterUpdates] Failed:', err);
+      return [];
+    }
+  };
+
+  // Apply extracted updates to session state (simplified version for new format)
+  const applyExtractedUpdates = async (updates: ExtractedUpdate[]) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user || updates.length === 0) return;
+    
+    // Group updates by character
+    const updatesByCharacter = new Map<string, ExtractedUpdate[]>();
+    for (const update of updates) {
+      const existing = updatesByCharacter.get(update.character.toLowerCase()) || [];
+      existing.push(update);
+      updatesByCharacter.set(update.character.toLowerCase(), existing);
+    }
+    
+    for (const [charNameLower, charUpdates] of updatesByCharacter) {
+      // Find the character
+      const mainChar = appData.characters.find(c => c.name.toLowerCase() === charNameLower);
+      const sideChar = (appData.sideCharacters || []).find(sc => sc.name.toLowerCase() === charNameLower);
+      
+      if (mainChar) {
+        // Show updating indicator
+        showCharacterUpdateIndicator(mainChar.id);
+        
+        // Find or create session state
+        let sessionState = sessionStates.find(s => s.characterId === mainChar.id);
+        if (!sessionState) {
+          sessionState = await supabaseData.createSessionState(mainChar, conversationId, user.id);
+          setSessionStates(prev => [...prev, sessionState!]);
+        }
+        
+        // Build patch from updates
+        const patch: Record<string, any> = {};
+        for (const update of charUpdates) {
+          const { field, value } = update;
+          if (field.includes('.')) {
+            const [parent, child] = field.split('.');
+            if (parent === 'physicalAppearance') {
+              patch.physicalAppearance = { ...(sessionState.physicalAppearance || {}), ...(patch.physicalAppearance || {}), [child]: value };
+            } else if (parent === 'currentlyWearing') {
+              patch.currentlyWearing = { ...(sessionState.currentlyWearing || {}), ...(patch.currentlyWearing || {}), [child]: value };
+            } else if (parent === 'preferredClothing') {
+              patch.preferredClothing = { ...(sessionState.preferredClothing || {}), ...(patch.preferredClothing || {}), [child]: value };
+            }
+          } else {
+            patch[field] = value;
+          }
+        }
+        
+        if (Object.keys(patch).length > 0) {
+          await supabaseData.updateSessionState(sessionState.id, patch);
+          setSessionStates(prev => prev.map(s => s.id === sessionState!.id ? { ...s, ...patch } : s));
+          console.log(`[applyExtractedUpdates] Updated ${mainChar.name}:`, patch);
+        }
+      } else if (sideChar) {
+        // Show updating indicator
+        showCharacterUpdateIndicator(sideChar.id);
+        
+        // Build patch from updates
+        const patch: Record<string, any> = {};
+        for (const update of charUpdates) {
+          const { field, value } = update;
+          if (field.includes('.')) {
+            const [parent, child] = field.split('.');
+            if (parent === 'physicalAppearance') {
+              patch.physicalAppearance = { ...(sideChar.physicalAppearance || {}), ...(patch.physicalAppearance || {}), [child]: value };
+            } else if (parent === 'currentlyWearing') {
+              patch.currentlyWearing = { ...(sideChar.currentlyWearing || {}), ...(patch.currentlyWearing || {}), [child]: value };
+            }
+          } else {
+            patch[field] = value;
+          }
+        }
+        
+        if (Object.keys(patch).length > 0) {
+          await supabaseData.updateSideCharacter(sideChar.id, patch);
+          if (onUpdateSideCharacters) {
+            const updated = (appData.sideCharacters || []).map(sc => 
+              sc.id === sideChar.id ? { ...sc, ...patch } : sc
+            );
+            onUpdateSideCharacters(updated);
+          }
+          console.log(`[applyExtractedUpdates] Updated side character ${sideChar.name}:`, patch);
+        }
+      }
+    }
+  };
+
   const activeScene = useMemo(() =>
     appData.scenes.find(s => s.id === activeSceneId) || null
   , [appData.scenes, activeSceneId]);
@@ -958,13 +1104,19 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         setStreamingContent(fullText);
       }
 
-      // Parse and apply character updates from AI response
-      const characterUpdates = parseCharacterUpdates(fullText);
-      if (characterUpdates.length > 0) {
-        applyCharacterUpdates(characterUpdates);
-      }
-      
-      // Strip update tags from the displayed message
+      // Use dedicated extraction service (runs in parallel, non-blocking)
+      // This replaces the old parseCharacterUpdates + applyCharacterUpdates flow
+      const userInput = input; // Capture before clearing
+      extractCharacterUpdatesFromDialogue(userInput, fullText).then(updates => {
+        if (updates.length > 0) {
+          console.log(`[handleSend] Extracted ${updates.length} character updates:`, updates);
+          applyExtractedUpdates(updates);
+        }
+      }).catch(err => {
+        console.error('[handleSend] Character extraction failed:', err);
+      });
+
+      // Strip any legacy update tags that might still be in response (fallback)
       const cleanedText = stripUpdateTags(fullText);
 
       const aiMsg: Message = { 
@@ -1048,10 +1200,23 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         setStreamingContent(fullText);
       }
       
+      // Extract character updates from regenerated response
+      extractCharacterUpdatesFromDialogue(userMessage.text, fullText).then(updates => {
+        if (updates.length > 0) {
+          console.log(`[handleRegenerate] Extracted ${updates.length} character updates:`, updates);
+          applyExtractedUpdates(updates);
+        }
+      }).catch(err => {
+        console.error('[handleRegenerate] Character extraction failed:', err);
+      });
+
+      // Strip any legacy update tags
+      const cleanedText = stripUpdateTags(fullText);
+      
       const newAiMsg: Message = { 
         id: uuid(), 
         role: 'assistant', 
-        text: fullText, 
+        text: cleanedText, 
         day: currentDay,
         timeOfDay: currentTimeOfDay,
         createdAt: now() 
@@ -1104,10 +1269,23 @@ Do not acknowledge this instruction in your response.`;
         setStreamingContent(fullText);
       }
       
+      // Extract character updates from continuation
+      extractCharacterUpdatesFromDialogue('', fullText).then(updates => {
+        if (updates.length > 0) {
+          console.log(`[handleContinue] Extracted ${updates.length} character updates:`, updates);
+          applyExtractedUpdates(updates);
+        }
+      }).catch(err => {
+        console.error('[handleContinue] Character extraction failed:', err);
+      });
+
+      // Strip any legacy update tags
+      const cleanedText = stripUpdateTags(fullText);
+      
       const aiMsg: Message = { 
         id: uuid(), 
         role: 'assistant', 
-        text: fullText, 
+        text: cleanedText, 
         day: currentDay,
         timeOfDay: currentTimeOfDay,
         createdAt: now() 
@@ -1121,7 +1299,7 @@ Do not acknowledge this instruction in your response.`;
       onUpdate(updatedConvs);
       onSaveScenario(updatedConvs);
       
-      processResponseForNewCharacters(fullText);
+      processResponseForNewCharacters(cleanedText);
     } catch (err) {
       console.error(err);
       toast.error('Failed to continue conversation');
