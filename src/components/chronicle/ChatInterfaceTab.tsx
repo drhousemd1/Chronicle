@@ -204,6 +204,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
+  const [formattedStreamingContent, setFormattedStreamingContent] = useState('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [activeSceneId, setActiveSceneId] = useState<string | null>(null);
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
@@ -1181,6 +1182,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     setInput('');
     setIsStreaming(true);
     setStreamingContent('');
+    setFormattedStreamingContent('');
 
     try {
       let fullText = '';
@@ -1189,6 +1191,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       for await (const chunk of stream) {
         fullText += chunk;
         setStreamingContent(fullText);
+        
+        // Format streaming content on-the-fly to prevent flickering
+        const existingNamesForStream = getKnownCharacterNames(appData);
+        let formatted = stripUpdateTags(fullText);
+        const { normalizedText } = normalizePlaceholderNames(formatted, existingNamesForStream, placeholderMapRef.current);
+        setFormattedStreamingContent(normalizedText);
       }
 
       // Use dedicated extraction service (runs in parallel, non-blocking)
@@ -1233,6 +1241,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     } finally {
       setIsStreaming(false);
       setStreamingContent('');
+      setFormattedStreamingContent('');
     }
   };
 
@@ -1282,6 +1291,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     setIsRegenerating(true);
     setIsStreaming(true);
     setStreamingContent('');
+    setFormattedStreamingContent('');
     
     try {
       let fullText = '';
@@ -1290,6 +1300,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       for await (const chunk of stream) {
         fullText += chunk;
         setStreamingContent(fullText);
+        
+        // Format streaming content on-the-fly
+        const existingNamesForStream = getKnownCharacterNames(appData);
+        let formatted = stripUpdateTags(fullText);
+        const { normalizedText } = normalizePlaceholderNames(formatted, existingNamesForStream, placeholderMapRef.current);
+        setFormattedStreamingContent(normalizedText);
       }
       
       // Extract character updates from regenerated response
@@ -1336,6 +1352,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       setIsRegenerating(false);
       setIsStreaming(false);
       setStreamingContent('');
+      setFormattedStreamingContent('');
     }
   };
 
@@ -1344,6 +1361,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     
     setIsStreaming(true);
     setStreamingContent('');
+    setFormattedStreamingContent('');
     
     // Get character control lists for explicit instruction
     const userControlledNames = appData.characters
@@ -1367,6 +1385,12 @@ Do not acknowledge this instruction in your response.`;
       for await (const chunk of stream) {
         fullText += chunk;
         setStreamingContent(fullText);
+        
+        // Format streaming content on-the-fly
+        const existingNamesForStream = getKnownCharacterNames(appData);
+        let formatted = stripUpdateTags(fullText);
+        const { normalizedText } = normalizePlaceholderNames(formatted, existingNamesForStream, placeholderMapRef.current);
+        setFormattedStreamingContent(normalizedText);
       }
       
       // Extract character updates from continuation
@@ -1411,6 +1435,7 @@ Do not acknowledge this instruction in your response.`;
     } finally {
       setIsStreaming(false);
       setStreamingContent('');
+      setFormattedStreamingContent('');
     }
   };
 
@@ -2307,10 +2332,11 @@ const updatedChar: SideCharacter = {
             );
           })}
 
-          {streamingContent && (() => {
-            // Parse streaming content into segments for multi-speaker rendering
+          {formattedStreamingContent && (() => {
+            // Parse formatted streaming content into segments for multi-speaker rendering
+            // Using formattedStreamingContent to prevent flickering from system tags and placeholder names
             const userChar = appData.characters.find(c => c.controlledBy === 'User') || null;
-            const rawSegments = parseMessageSegments(streamingContent);
+            const rawSegments = parseMessageSegments(formattedStreamingContent);
             const segments = mergeByRenderedSpeaker(rawSegments, true, appData, userChar);
             
             return (
