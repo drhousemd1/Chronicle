@@ -121,12 +121,17 @@ export const SideCharacterCard: React.FC<SideCharacterCardProps> = ({
   return (
     <div className={`rounded-2xl transition-all duration-300 border-2 backdrop-blur-sm relative ${
       isExpanded ? 'bg-white border-purple-200 shadow-sm' : 'bg-white/30 border-transparent hover:bg-white'
-    } ${isUpdating ? 'animate-character-update-glow' : ''}`}>
-      {/* "Updating" text overlay */}
+    } ${isUpdating ? 'ring-2 ring-blue-400/60' : ''}`}>
+      {/* "Updating..." text overlay - top-left with ethereal glow */}
       {isUpdating && (
-        <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
-          <span className="text-[10px] font-bold text-blue-600 bg-white/90 px-2 py-1 rounded-full shadow-sm tracking-wider uppercase">
-            Updating
+        <div className="absolute top-3 left-3 z-20 pointer-events-none">
+          <span 
+            className="text-indigo-200/90 text-xs italic font-light tracking-tight animate-in fade-in zoom-in-95 duration-500"
+            style={{
+              textShadow: '0 0 8px rgba(129, 140, 248, 0.6), 0 0 16px rgba(129, 140, 248, 0.4), 0 0 24px rgba(129, 140, 248, 0.2)'
+            }}
+          >
+            Updating...
           </span>
         </div>
       )}

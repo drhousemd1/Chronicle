@@ -91,11 +91,20 @@ export default {
             boxShadow: "0 0 0 3px rgba(59, 130, 246, 0.8), 0 0 12px 3px rgba(59, 130, 246, 0.6)",
           },
         },
+        "vignette-pulse": {
+          "0%, 100%": {
+            opacity: "1",
+          },
+          "50%": {
+            opacity: "0.6",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "character-update-glow": "character-update-glow 1.4s ease-in-out infinite",
+        "vignette-pulse": "vignette-pulse 2s ease-in-out infinite",
       },
     },
   },
