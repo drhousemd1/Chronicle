@@ -1021,12 +1021,33 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           for (const tag of sceneTags) {
             if (tag && tag.trim() !== '') {
               const tagKeyword = tag.toLowerCase().trim();
-              // Escape special regex characters in the tag
-              const escapedTag = tagKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-              // Match whole word boundaries to avoid false positives
-              const wordBoundaryRegex = new RegExp(`\\b${escapedTag}\\b`, 'i');
-              if (wordBoundaryRegex.test(messageText)) {
-                score += messageWeight;
+              
+              // Split tag into individual words (ignoring common stop words)
+              const stopWords = ['a', 'an', 'the', 'with', 'in', 'on', 'at', 'to', 'for', 'of', 'and', 'or'];
+              const tagWords = tagKeyword.split(/\s+/).filter(word => 
+                word.length > 1 && !stopWords.includes(word)
+              );
+              
+              if (tagWords.length === 0) continue;
+              
+              // Count how many tag words appear in the message
+              let matchedWords = 0;
+              for (const word of tagWords) {
+                const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const wordRegex = new RegExp(`\\b${escapedWord}\\b`, 'i');
+                if (wordRegex.test(messageText)) {
+                  matchedWords++;
+                }
+              }
+              
+              // Calculate match percentage
+              const matchPercentage = matchedWords / tagWords.length;
+              
+              // Require at least 60% of keywords to match
+              if (matchPercentage >= 0.6) {
+                // Score higher for more complete matches
+                const matchBonus = 1 + matchPercentage;
+                score += messageWeight * matchBonus;
               }
             }
           }
