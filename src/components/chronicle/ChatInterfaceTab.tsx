@@ -23,7 +23,6 @@ import { supabase } from '@/integrations/supabase/client';
 import * as supabaseData from '@/services/supabase-data';
 import { 
   parseMessageSegments, 
-  mergeConsecutiveSpeakerSegments,
   detectNewCharacters, 
   createSideCharacter, 
   getKnownCharacterNames,
@@ -119,6 +118,69 @@ const FormattedMessage: React.FC<{ text: string }> = ({ text }) => {
       })}
     </div>
   );
+};
+
+/**
+ * Resolve a segment's speaker to the identity that will actually be rendered.
+ * This normalizes null (default speaker) to the actual character name.
+ */
+const resolveRenderedSpeakerName = (
+  segment: MessageSegment, 
+  isAi: boolean, 
+  appData: ScenarioData,
+  userChar: Character | null
+): string => {
+  if (segment.speakerName) {
+    // Has explicit speaker tag - use it
+    return segment.speakerName.toLowerCase();
+  } else if (!isAi) {
+    // User message without tag - defaults to user's character
+    return (userChar?.name || 'You').toLowerCase();
+  } else {
+    // AI message without tag - defaults to first AI character
+    const aiChars = appData.characters.filter(c => c.controlledBy === 'AI');
+    return (aiChars[0]?.name || 'Narrator').toLowerCase();
+  }
+};
+
+/**
+ * Merge consecutive segments by RESOLVED speaker identity.
+ * This ensures that a null speaker (renders as Ashley) merges with an explicit "Ashley:" tag.
+ */
+const mergeByRenderedSpeaker = (
+  rawSegments: MessageSegment[], 
+  isAi: boolean,
+  appData: ScenarioData,
+  userChar: Character | null
+): MessageSegment[] => {
+  if (rawSegments.length <= 1) return rawSegments;
+  
+  // Resolve speaker names first (lowercased for comparison)
+  const withResolvedNames = rawSegments.map(seg => ({
+    ...seg,
+    resolvedName: resolveRenderedSpeakerName(seg, isAi, appData, userChar)
+  }));
+  
+  // Merge consecutive segments with same resolved name
+  const merged: MessageSegment[] = [];
+  let current = withResolvedNames[0];
+  
+  for (let i = 1; i < withResolvedNames.length; i++) {
+    const next = withResolvedNames[i];
+    if (current.resolvedName === next.resolvedName) {
+      current = {
+        ...current,
+        content: current.content + '\n\n' + next.content
+      };
+    } else {
+      // Use the original speakerName (preserve casing) for rendering
+      merged.push({ speakerName: current.speakerName, content: current.content });
+      current = next;
+    }
+  }
+  merged.push({ speakerName: current.speakerName, content: current.content });
+  
+  return merged;
 };
 
 export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
@@ -1757,13 +1819,13 @@ const updatedChar: SideCharacter = {
           {conversation?.messages.map((msg) => {
             const isAi = msg.role === 'assistant';
             
-            // Parse ALL messages into segments for multi-speaker rendering
-            // This allows users to narrate for AI characters with "Name:" tags
-            const rawSegments = parseMessageSegments(msg.text);
-            const segments = mergeConsecutiveSpeakerSegments(rawSegments);
-            
             // Get the primary speaker for user messages
-            const userChar = !isAi ? appData.characters.find(c => c.controlledBy === 'User') : null;
+            const userChar = appData.characters.find(c => c.controlledBy === 'User') || null;
+            
+            // Parse segments and merge by RESOLVED speaker identity
+            // This ensures null (default AI) and explicit "Ashley:" merge correctly
+            const rawSegments = parseMessageSegments(msg.text);
+            const segments = mergeByRenderedSpeaker(rawSegments, isAi, appData, userChar);
 
             return (
               <div key={msg.id} className="w-full max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 group">
@@ -1943,8 +2005,9 @@ const updatedChar: SideCharacter = {
 
           {streamingContent && (() => {
             // Parse streaming content into segments for multi-speaker rendering
+            const userChar = appData.characters.find(c => c.controlledBy === 'User') || null;
             const rawSegments = parseMessageSegments(streamingContent);
-            const segments = mergeConsecutiveSpeakerSegments(rawSegments);
+            const segments = mergeByRenderedSpeaker(rawSegments, true, appData, userChar);
             
             return (
               <div className="w-full max-w-7xl mx-auto">
@@ -1993,7 +2056,7 @@ const updatedChar: SideCharacter = {
           </div>
         </div>
 
-        <div className={`pt-3 pb-8 px-8 border-t border-slate-200 shadow-[0_-4px_12px_rgba(0,0,0,0.03)] transition-colors ${showBackground ? 'bg-white/90 backdrop-blur-md' : 'bg-white'}`}>
+        <div className={`pt-3 pb-8 px-8 border-t border-slate-200 shadow-[0_-4px_12px_rgba(0,0,0,0.03)] transition-colors relative z-20 ${showBackground ? 'bg-white/90 backdrop-blur-md' : 'bg-white'}`}>
           <div className="w-full max-w-7xl mx-auto space-y-3">
             {/* Quick Actions Bar - Above Input */}
             <div className="flex items-center gap-2 relative">
