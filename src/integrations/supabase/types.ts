@@ -417,6 +417,7 @@ export type Database = {
           is_starting_scene: boolean | null
           scenario_id: string
           tag: string | null
+          tags: string[] | null
         }
         Insert: {
           created_at?: string | null
@@ -425,6 +426,7 @@ export type Database = {
           is_starting_scene?: boolean | null
           scenario_id: string
           tag?: string | null
+          tags?: string[] | null
         }
         Update: {
           created_at?: string | null
@@ -433,6 +435,7 @@ export type Database = {
           is_starting_scene?: boolean | null
           scenario_id?: string
           tag?: string | null
+          tags?: string[] | null
         }
         Relationships: [
           {
