@@ -3,10 +3,20 @@
  * 
  * Detects and replaces generic placeholder speaker labels (e.g., "Man 1:", "Cashier:")
  * with generated proper names to ensure side character detection works correctly.
+ * Also handles hybrid names like "Ethan Man 1:" → "Ethan:"
  */
 
-// Patterns that match placeholder speaker labels at line starts
-const PLACEHOLDER_PATTERNS = [
+// Patterns that match HYBRID placeholder speaker labels (Name + Placeholder)
+// e.g., "Ethan Man 1:", "Sarah Woman Two:", "Marcus Stranger:"
+const HYBRID_PLACEHOLDER_PATTERNS = [
+  // Name + generic person label: "Ethan Man 1:", "Sarah Woman Two:"
+  /^([A-Z][a-z]+)\s+(Man|Woman|Guy|Girl|Person|Someone|Stranger|Visitor|Patron|Customer)\s*(One|Two|Three|Four|Five|\d+)?\s*:/gim,
+  // Name + role label: "Marcus Cashier:", "Emma Waitress:"
+  /^([A-Z][a-z]+)\s+(Cashier|Doctor|Nurse|Guard|Bartender|Waiter|Waitress|Driver|Officer|Clerk|Receptionist|Manager|Boss|Worker|Employee|Attendant|Host|Hostess|Chef|Cook|Server|Bouncer|Doorman|Security|Paramedic|Firefighter|Police|Cop|Detective|Agent|Lawyer|Judge|Teacher|Professor|Student|Coach|Trainer|Therapist|Counselor|Priest|Pastor|Minister|Monk|Nun)\s*(\d+)?\s*:/gim,
+];
+
+// Patterns that match STANDALONE placeholder speaker labels at line starts
+const STANDALONE_PLACEHOLDER_PATTERNS = [
   // Generic person labels: Man 1, Woman Two, Guy, Girl, Person, Someone
   /^(Man|Woman|Guy|Girl|Person|Someone|Stranger|Visitor|Patron|Customer)\s*(One|Two|Three|Four|Five|\d+)?\s*:/gim,
   // Role-based labels: Cashier, Doctor, Guard, etc.
@@ -95,6 +105,7 @@ function generateUniqueName(
 
 /**
  * Normalizes placeholder speaker labels in AI response text, replacing them with proper names.
+ * Also cleans hybrid patterns like "Ethan Man 1:" → "Ethan:"
  * 
  * @param text - The AI response text to process
  * @param existingNames - Set of character names already in use (lowercase)
@@ -115,7 +126,25 @@ export function normalizePlaceholderNames(
   const processedLines = lines.map(line => {
     let processedLine = line;
     
-    for (const pattern of PLACEHOLDER_PATTERNS) {
+    // STEP 1: Clean hybrid patterns first (e.g., "Ethan Man 1:" → "Ethan:")
+    for (const pattern of HYBRID_PLACEHOLDER_PATTERNS) {
+      // Reset regex state
+      pattern.lastIndex = 0;
+      
+      processedLine = processedLine.replace(pattern, (match, realName) => {
+        console.log(`[Placeholder Guard] Cleaned hybrid "${match.trim()}" → "${realName}:"`);
+        // Keep the real name, strip the placeholder suffix
+        // Also register the real name so we don't generate duplicates
+        existingNames.add(realName.toLowerCase());
+        if (!newNames.includes(realName)) {
+          newNames.push(realName);
+        }
+        return realName + ':';
+      });
+    }
+    
+    // STEP 2: Replace standalone placeholders (e.g., "Man 1:" → "Marcus:")
+    for (const pattern of STANDALONE_PLACEHOLDER_PATTERNS) {
       // Reset regex state
       pattern.lastIndex = 0;
       
@@ -136,7 +165,7 @@ export function normalizePlaceholderNames(
         newNames.push(newName);
         existingNames.add(newName.toLowerCase());
         
-        console.log(`[Placeholder Guard] Replaced "${match.trim()}" with "${newName}:"`);
+        console.log(`[Placeholder Guard] Replaced "${match.trim()}" → "${newName}:"`);
         
         return newName + ':';
       });
@@ -155,7 +184,15 @@ export function normalizePlaceholderNames(
  * Checks if text contains any placeholder patterns that need normalization
  */
 export function hasPlaceholderNames(text: string): boolean {
-  for (const pattern of PLACEHOLDER_PATTERNS) {
+  // Check hybrid patterns
+  for (const pattern of HYBRID_PLACEHOLDER_PATTERNS) {
+    pattern.lastIndex = 0;
+    if (pattern.test(text)) {
+      return true;
+    }
+  }
+  // Check standalone patterns
+  for (const pattern of STANDALONE_PLACEHOLDER_PATTERNS) {
     pattern.lastIndex = 0;
     if (pattern.test(text)) {
       return true;
