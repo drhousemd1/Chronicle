@@ -998,19 +998,26 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     // Second pass: Keyword-based detection if no explicit tag found
     // Skip the first message (opening dialog) to preserve starting scene
     if (!foundSceneTag && conversation?.messages.length && appData.scenes.length > 0) {
-      // Start from the end, but skip keyword detection in the opening dialog (index 0)
-      for (let i = conversation.messages.length - 1; i >= 0; i--) {
-        // For the first message, only detect if we're past initial state (more than 1 message)
-        if (i === 0 && conversation.messages.length > 1) {
-          // Skip keyword detection in opening dialog when other messages exist
-          continue;
-        }
+      // Weighted scoring: count ALL matching tags for EVERY scene, pick highest score
+      const sceneScores: { sceneId: string; score: number }[] = [];
+      
+      // Get recent messages for tag matching (last 5, excluding opening dialog if more messages exist)
+      const allMessages = conversation.messages;
+      const recentMessages = allMessages.slice(-5).filter((_, idx, arr) => {
+        // Skip opening dialog (index 0 in full array) when other messages exist
+        const originalIndex = allMessages.length - arr.length + idx;
+        return !(originalIndex === 0 && allMessages.length > 1);
+      });
+      
+      for (const scene of appData.scenes) {
+        let score = 0;
+        const sceneTags = scene.tags ?? [];
         
-        const messageText = conversation.messages[i].text.toLowerCase();
-        
-        // Check each scene's tags as keywords in the message
-        for (const scene of appData.scenes) {
-          const sceneTags = scene.tags ?? [];
+        for (let msgIdx = 0; msgIdx < recentMessages.length; msgIdx++) {
+          const messageText = recentMessages[msgIdx].text.toLowerCase();
+          // Weight more recent messages higher (most recent = 3x, second = 2x, others = 1x)
+          const messageWeight = msgIdx === recentMessages.length - 1 ? 3 : (msgIdx === recentMessages.length - 2 ? 2 : 1);
+          
           for (const tag of sceneTags) {
             if (tag && tag.trim() !== '') {
               const tagKeyword = tag.toLowerCase().trim();
@@ -1019,15 +1026,22 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
               // Match whole word boundaries to avoid false positives
               const wordBoundaryRegex = new RegExp(`\\b${escapedTag}\\b`, 'i');
               if (wordBoundaryRegex.test(messageText)) {
-                setActiveSceneId(scene.id);
-                foundSceneTag = true;
-                break;
+                score += messageWeight;
               }
             }
           }
-          if (foundSceneTag) break;
         }
-        if (foundSceneTag) break;
+        
+        if (score > 0) {
+          sceneScores.push({ sceneId: scene.id, score });
+        }
+      }
+      
+      // Sort by score (highest first) and select the winner
+      if (sceneScores.length > 0) {
+        sceneScores.sort((a, b) => b.score - a.score);
+        setActiveSceneId(sceneScores[0].sceneId);
+        foundSceneTag = true;
       }
     }
     
