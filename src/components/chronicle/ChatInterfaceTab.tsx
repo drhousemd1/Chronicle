@@ -23,6 +23,7 @@ import { supabase } from '@/integrations/supabase/client';
 import * as supabaseData from '@/services/supabase-data';
 import { 
   parseMessageSegments, 
+  mergeConsecutiveSpeakerSegments,
   detectNewCharacters, 
   createSideCharacter, 
   getKnownCharacterNames,
@@ -591,12 +592,13 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const parseCharacterUpdates = (responseText: string): CharacterUpdate[] => {
     const results: CharacterUpdate[] = [];
     
-    // Parse [UPDATE:...] tags
-    const updateRegex = /\[UPDATE:([^|]+)\|([^\]]+)\]/g;
+    // Parse [UPDATE:...] tags - allow | or \ as field separators for flexibility
+    const updateRegex = /\[UPDATE:([^|\\\]]+)[|\\]([^\]]+)\]/g;
     let match;
     while ((match = updateRegex.exec(responseText)) !== null) {
       const updates: Record<string, string> = {};
-      for (const pair of match[2].split('|')) {
+      // Split by | or \ for field pairs
+      for (const pair of match[2].split(/[|\\]/)) {
         const colonIndex = pair.indexOf(':');
         if (colonIndex > 0) {
           const field = pair.slice(0, colonIndex).trim();
@@ -604,7 +606,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           if (field && value) updates[field] = value;
         }
       }
-      results.push({ characterName: match[1].trim(), type: 'update', updates });
+      if (Object.keys(updates).length > 0) {
+        results.push({ characterName: match[1].trim(), type: 'update', updates });
+      }
     }
     
     // Parse [ADDROW:...] tags
@@ -1755,7 +1759,8 @@ const updatedChar: SideCharacter = {
             
             // Parse ALL messages into segments for multi-speaker rendering
             // This allows users to narrate for AI characters with "Name:" tags
-            const segments = parseMessageSegments(msg.text);
+            const rawSegments = parseMessageSegments(msg.text);
+            const segments = mergeConsecutiveSpeakerSegments(rawSegments);
             
             // Get the primary speaker for user messages
             const userChar = !isAi ? appData.characters.find(c => c.controlledBy === 'User') : null;
@@ -1938,13 +1943,14 @@ const updatedChar: SideCharacter = {
 
           {streamingContent && (() => {
             // Parse streaming content into segments for multi-speaker rendering
-            const segments = parseMessageSegments(streamingContent);
+            const rawSegments = parseMessageSegments(streamingContent);
+            const segments = mergeConsecutiveSpeakerSegments(rawSegments);
             
             return (
               <div className="w-full max-w-7xl mx-auto">
                 <div className={`p-8 pb-12 rounded-[2rem] border shadow-2xl flex flex-col gap-4 ${
                     bubblesTransparent
-                      ? 'bg-black/40 backdrop-blur-xl border-white/5'
+                      ? 'bg-black/50 border-white/5'
                       : 'bg-[#1c1f26] border-white/5'
                 }`}>
                   {segments.map((segment, segIndex) => {

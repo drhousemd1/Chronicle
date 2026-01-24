@@ -66,8 +66,13 @@ export interface MessageSegment {
  * Returns segments that can be rendered with individual avatars
  */
 export function parseMessageSegments(text: string): MessageSegment[] {
-  // Remove [SCENE:] tags first
-  const cleanText = text.replace(/\[SCENE:\s*.*?\]/g, '').trim();
+  // Remove ALL system tags first (SCENE, UPDATE, ADDROW, NEWCAT)
+  const cleanText = text
+    .replace(/\[SCENE:\s*.*?\]/g, '')
+    .replace(/\[UPDATE:[^\]]*\]/g, '')
+    .replace(/\[ADDROW:[^\]]*\]/g, '')
+    .replace(/\[NEWCAT:[^\]]*\]/g, '')
+    .trim();
   
   // Regex to find "Name:" at start of line or after newline
   // Name must start with capital letter, be 1-30 chars, followed by colon
@@ -116,6 +121,34 @@ export function parseMessageSegments(text: string): MessageSegment[] {
   });
   
   return segments.filter(s => s.content.length > 0);
+}
+
+/**
+ * Merge consecutive segments from the same speaker into one
+ * Prevents duplicate avatars for multi-paragraph responses
+ */
+export function mergeConsecutiveSpeakerSegments(segments: MessageSegment[]): MessageSegment[] {
+  if (segments.length <= 1) return segments;
+  
+  const merged: MessageSegment[] = [];
+  let current = segments[0];
+  
+  for (let i = 1; i < segments.length; i++) {
+    const next = segments[i];
+    // If same speaker (including both null), merge the content
+    if (current.speakerName === next.speakerName) {
+      current = {
+        speakerName: current.speakerName,
+        content: current.content + '\n\n' + next.content
+      };
+    } else {
+      merged.push(current);
+      current = next;
+    }
+  }
+  merged.push(current);
+  
+  return merged;
 }
 
 // =============================================
