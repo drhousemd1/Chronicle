@@ -196,8 +196,8 @@ export const SideCharacterCard: React.FC<SideCharacterCardProps> = ({
           </div>
         </button>
         
-        {/* Edit dropdown menu - visible when expanded */}
-        {isExpanded && onStartEdit && (
+        {/* Edit dropdown menu - always visible */}
+        {onStartEdit && (
           <div className="absolute top-2 right-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
