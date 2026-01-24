@@ -639,7 +639,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         next.delete(characterId);
         return next;
       });
-    }, 5000); // 5 second duration
+    }, 10000); // 10 second duration for better visibility
   }, []);
 
   // Parse [UPDATE:], [ADDROW:], and [NEWCAT:] tags from AI response
@@ -1712,7 +1712,7 @@ const updatedChar: SideCharacter = {
           <div 
             className="absolute inset-0 z-[1] pointer-events-none rounded-2xl overflow-hidden animate-vignette-pulse"
             style={{
-              background: 'radial-gradient(ellipse 120% 100% at center 30%, transparent 25%, rgba(59, 130, 246, 0.12) 50%, rgba(59, 130, 246, 0.3) 80%, rgba(59, 130, 246, 0.5) 100%)'
+              background: 'radial-gradient(ellipse 120% 100% at center 30%, transparent 25%, rgba(59, 130, 246, 0.25) 50%, rgba(59, 130, 246, 0.5) 80%, rgba(59, 130, 246, 0.7) 100%)'
             }}
           />
         )}
