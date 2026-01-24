@@ -29,6 +29,7 @@ import {
   findCharacterByName,
   MessageSegment
 } from '@/services/side-character-generator';
+import { normalizePlaceholderNames, PlaceholderNameMap } from '@/services/placeholder-name-guard';
 import { SideCharacterCard } from './SideCharacterCard';
 import { CharacterEditModal, CharacterEditDraft } from './CharacterEditModal';
 import { ScrollableSection } from './ScrollableSection';
@@ -236,6 +237,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   
   // Track which characters are showing the "updating" indicator
   const [updatingCharacterIds, setUpdatingCharacterIds] = useState<Set<string>>(new Set());
+  
+  // Persistent map for placeholder name replacements (ensures consistency across the conversation)
+  const placeholderMapRef = useRef<PlaceholderNameMap>({});
   
   // Ref to always hold current sideCharacters - avoids stale closure in async callbacks
   const sideCharactersRef = useRef<SideCharacter[]>(appData.sideCharacters || []);
@@ -999,7 +1003,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     // Skip the first message (opening dialog) to preserve starting scene
     if (!foundSceneTag && conversation?.messages.length && appData.scenes.length > 0) {
       // Weighted scoring: count ALL matching tags for EVERY scene, pick highest score
-      const sceneScores: { sceneId: string; score: number }[] = [];
+      const sceneScores: { sceneId: string; score: number; matchedInMostRecent: boolean }[] = [];
       
       // Get recent messages for tag matching (last 5, excluding opening dialog if more messages exist)
       const allMessages = conversation.messages;
@@ -1009,10 +1013,52 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         return !(originalIndex === 0 && allMessages.length > 1);
       });
       
+      // Get the most recent message text for the "must match most recent" check
+      const mostRecentMessageText = recentMessages.length > 0 
+        ? recentMessages[recentMessages.length - 1].text.toLowerCase() 
+        : '';
+      
+      // Helper to check if tag matches text
+      const checkTagMatch = (tagKeyword: string, messageText: string): { matched: boolean; percentage: number } => {
+        const stopWords = ['a', 'an', 'the', 'with', 'in', 'on', 'at', 'to', 'for', 'of', 'and', 'or'];
+        const tagWords = tagKeyword.split(/\s+/).filter(word => 
+          word.length > 1 && !stopWords.includes(word)
+        );
+        
+        if (tagWords.length === 0) return { matched: false, percentage: 0 };
+        
+        let matchedWords = 0;
+        for (const word of tagWords) {
+          const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const wordRegex = new RegExp(`\\b${escapedWord}\\b`, 'i');
+          if (wordRegex.test(messageText)) {
+            matchedWords++;
+          }
+        }
+        
+        const matchPercentage = matchedWords / tagWords.length;
+        // Lower threshold to 50% for more flexible matching
+        return { matched: matchPercentage >= 0.5, percentage: matchPercentage };
+      };
+      
       for (const scene of appData.scenes) {
         let score = 0;
+        let matchedInMostRecent = false;
         const sceneTags = scene.tags ?? [];
         
+        // First check if ANY tag matches the most recent message
+        for (const tag of sceneTags) {
+          if (tag && tag.trim() !== '') {
+            const tagKeyword = tag.toLowerCase().trim();
+            const { matched } = checkTagMatch(tagKeyword, mostRecentMessageText);
+            if (matched) {
+              matchedInMostRecent = true;
+              break;
+            }
+          }
+        }
+        
+        // Calculate full score across recent messages
         for (let msgIdx = 0; msgIdx < recentMessages.length; msgIdx++) {
           const messageText = recentMessages[msgIdx].text.toLowerCase();
           // Weight more recent messages higher (most recent = 3x, second = 2x, others = 1x)
@@ -1021,32 +1067,11 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           for (const tag of sceneTags) {
             if (tag && tag.trim() !== '') {
               const tagKeyword = tag.toLowerCase().trim();
+              const { matched, percentage } = checkTagMatch(tagKeyword, messageText);
               
-              // Split tag into individual words (ignoring common stop words)
-              const stopWords = ['a', 'an', 'the', 'with', 'in', 'on', 'at', 'to', 'for', 'of', 'and', 'or'];
-              const tagWords = tagKeyword.split(/\s+/).filter(word => 
-                word.length > 1 && !stopWords.includes(word)
-              );
-              
-              if (tagWords.length === 0) continue;
-              
-              // Count how many tag words appear in the message
-              let matchedWords = 0;
-              for (const word of tagWords) {
-                const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                const wordRegex = new RegExp(`\\b${escapedWord}\\b`, 'i');
-                if (wordRegex.test(messageText)) {
-                  matchedWords++;
-                }
-              }
-              
-              // Calculate match percentage
-              const matchPercentage = matchedWords / tagWords.length;
-              
-              // Require at least 60% of keywords to match
-              if (matchPercentage >= 0.6) {
+              if (matched) {
                 // Score higher for more complete matches
-                const matchBonus = 1 + matchPercentage;
+                const matchBonus = 1 + percentage;
                 score += messageWeight * matchBonus;
               }
             }
@@ -1054,23 +1079,42 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         }
         
         if (score > 0) {
-          sceneScores.push({ sceneId: scene.id, score });
+          sceneScores.push({ sceneId: scene.id, score, matchedInMostRecent });
         }
       }
       
-      // Sort by score (highest first) and select the winner
-      if (sceneScores.length > 0) {
-        sceneScores.sort((a, b) => b.score - a.score);
-        setActiveSceneId(sceneScores[0].sceneId);
+      // Debug logging (console only, no UI)
+      console.log('[Scene Detection] Recent messages:', recentMessages.map(m => m.text.substring(0, 80) + '...'));
+      console.log('[Scene Detection] Scene scores:', sceneScores.map(s => {
+        const scene = appData.scenes.find(sc => sc.id === s.sceneId);
+        return { tags: scene?.tags, score: s.score, matchedInMostRecent: s.matchedInMostRecent };
+      }));
+      
+      // CRITICAL: Only consider scenes that matched in the most recent message
+      const validScenes = sceneScores.filter(s => s.matchedInMostRecent);
+      
+      if (validScenes.length > 0) {
+        // Sort by score (highest first) and select the winner
+        validScenes.sort((a, b) => b.score - a.score);
+        console.log('[Scene Detection] Winner (matched most recent):', validScenes[0]);
+        setActiveSceneId(validScenes[0].sceneId);
         foundSceneTag = true;
+      } else {
+        console.log('[Scene Detection] No scene matched most recent message, keeping current scene');
+        // STICKY BEHAVIOR: Don't change the scene if nothing matched the most recent message
+        // Only set to starting scene on initial load (when activeSceneId is null)
+        foundSceneTag = true; // Prevent fallback to starting scene below
       }
     }
     
-    // If no [SCENE:] tag or keyword was found, fall back to the starting scene
+    // If no [SCENE:] tag or keyword was found, fall back to the starting scene ONLY on initial load
     if (!foundSceneTag) {
-      const startingScene = appData.scenes.find(s => s.isStartingScene);
-      if (startingScene) {
-        setActiveSceneId(startingScene.id);
+      // Only set starting scene if we don't have an active scene yet
+      if (!activeSceneId) {
+        const startingScene = appData.scenes.find(s => s.isStartingScene);
+        if (startingScene) {
+          setActiveSceneId(startingScene.id);
+        }
       }
     }
   }, [conversation?.messages, appData.scenes]);
@@ -1156,7 +1200,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       });
 
       // Strip any legacy update tags that might still be in response (fallback)
-      const cleanedText = stripUpdateTags(fullText);
+      let cleanedText = stripUpdateTags(fullText);
+      
+      // Apply placeholder name guard to replace "Man 1:", "Cashier:", etc. with proper names
+      const existingNames = getKnownCharacterNames(appData);
+      const { normalizedText } = normalizePlaceholderNames(cleanedText, existingNames, placeholderMapRef.current);
+      cleanedText = normalizedText;
 
       const aiMsg: Message = { 
         id: uuid(), 
@@ -1250,7 +1299,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       });
 
       // Strip any legacy update tags
-      const cleanedText = stripUpdateTags(fullText);
+      let cleanedText = stripUpdateTags(fullText);
+      
+      // Apply placeholder name guard
+      const existingNames = getKnownCharacterNames(appData);
+      const { normalizedText } = normalizePlaceholderNames(cleanedText, existingNames, placeholderMapRef.current);
+      cleanedText = normalizedText;
       
       const newAiMsg: Message = { 
         id: uuid(), 
@@ -1267,6 +1321,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       );
       onUpdate(updatedConvs);
       onSaveScenario(updatedConvs);
+      
+      // Process for new characters after normalization
+      processResponseForNewCharacters(cleanedText);
       toast.success('Response regenerated');
     } catch (err) {
       console.error(err);
@@ -1319,7 +1376,12 @@ Do not acknowledge this instruction in your response.`;
       });
 
       // Strip any legacy update tags
-      const cleanedText = stripUpdateTags(fullText);
+      let cleanedText = stripUpdateTags(fullText);
+      
+      // Apply placeholder name guard
+      const existingNames = getKnownCharacterNames(appData);
+      const { normalizedText } = normalizePlaceholderNames(cleanedText, existingNames, placeholderMapRef.current);
+      cleanedText = normalizedText;
       
       const aiMsg: Message = { 
         id: uuid(), 

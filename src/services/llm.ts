@@ -113,6 +113,17 @@ ${traits}`;
         * This applies to ALL characters, including new characters not in the CAST list above.
         * For new characters, include descriptive physical traits in their first appearance using *action* format.
         * Example: Sarah: *The woman walked in, her long brown hair swaying as she moved.* "Hey everyone!"
+    - CHARACTER NAMING RULES (MANDATORY - NEVER VIOLATE):
+        * NEVER use generic placeholder labels as speaker names. Forbidden labels include but are not limited to:
+          - "Man 1", "Man 2", "Woman 1", "Woman 2", "Guy", "Girl"
+          - "Stranger", "Stranger 1", "Stranger 2"
+          - "Person", "Person 1", "Someone"
+          - Role-based labels: "Cashier", "Doctor", "Nurse", "Guard", "Bartender", "Waiter", "Waitress", "Driver", "Officer", "Clerk", "Customer", "Patron"
+        * When introducing ANY new character, you MUST immediately invent a realistic first name.
+        * Format for new characters: "InventedName (role): dialogue" on first appearance, then just "InventedName:" thereafter.
+        * Example: Instead of "Cashier: *rings up items*", write "Marcus (the cashier): *rings up the items* "That'll be $12.50.""
+        * Keep invented names CONSISTENT throughout the entire conversation.
+        * This rule applies to ALL characters, even minor ones who only appear briefly.
     - SCENE TAGGING (IMPORTANT):
         * When the scene location changes to one of the AVAILABLE SCENES, you MUST append [SCENE: exact_tag_name] at the very end of your response.
         * Match the tag exactly as listed in AVAILABLE SCENES: [${sceneTags}]
