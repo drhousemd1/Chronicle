@@ -62,11 +62,13 @@ export interface MessageSegment {
 }
 
 /**
- * Parse a message for CharacterName: tags
- * Returns segments that can be rendered with individual avatars
+ * Parse a message for CharacterName: tags using PARAGRAPH-BASED splitting.
  * 
- * SIMPLIFIED: Each paragraph with a Name: tag gets that speaker.
- * Content before first tag or without tags gets null speaker.
+ * Each paragraph (separated by blank lines) is evaluated individually:
+ * - If it starts with a Name: tag, that speaker is used
+ * - If NO tag is found, the paragraph gets `speakerName: null` (resolves to default character)
+ * 
+ * This ensures that untagged narrative paragraphs are NOT absorbed into the previous speaker.
  */
 export function parseMessageSegments(text: string): MessageSegment[] {
   // Remove ALL system tags first (SCENE, UPDATE, ADDROW, NEWCAT)
@@ -77,47 +79,40 @@ export function parseMessageSegments(text: string): MessageSegment[] {
     .replace(/\[NEWCAT:[^\]]*\]/g, '')
     .trim();
   
-  // Regex to find "Name:" at start of line or after newline
-  // Name must start with capital letter, be 1-30 chars, followed by colon
-  // Supports hyphens and apostrophes for names like "Mary-Jane" or "O'Brien"
+  if (!cleanText) return [];
+  
+  // Split by blank lines (one or more empty lines)
+  const paragraphs = cleanText.split(/\n\s*\n+/);
+  
   const segments: MessageSegment[] = [];
-  const regex = /(?:^|\n)([A-Z][a-zA-Z\s'-]{0,29}):\s*/g;
   
-  // Find all speaker tags
-  const matches: Array<{ name: string; index: number; length: number }> = [];
-  let match;
+  // Robust tag detection regex:
+  // - Optional leading whitespace
+  // - Optional markdown bold (**) before name
+  // - Name: capital letter, 1-30 chars, allows hyphens/apostrophes/spaces
+  // - Optional markdown bold (**) after name
+  // - Colon followed by optional whitespace
+  const tagRegex = /^\s*(?:\*\*)?([A-Z][a-zA-Z\s'-]{0,29})(?:\*\*)?:\s*/;
   
-  while ((match = regex.exec(cleanText)) !== null) {
-    matches.push({
-      name: match[1].trim(),
-      index: match.index,
-      length: match[0].length
-    });
-  }
-  
-  if (matches.length === 0) {
-    // No speaker tags - return whole message as null speaker
-    return [{ speakerName: null, content: cleanText }];
-  }
-  
-  // Content before first tag (if any)
-  if (matches[0].index > 0) {
-    const before = cleanText.slice(0, matches[0].index).trim();
-    if (before) {
-      segments.push({ speakerName: null, content: before });
-    }
-  }
-  
-  // Build segments - each tag gets all content until next tag
-  matches.forEach((m, i) => {
-    const contentStart = m.index + m.length;
-    const contentEnd = i < matches.length - 1 ? matches[i + 1].index : cleanText.length;
-    const content = cleanText.slice(contentStart, contentEnd).trim();
+  for (const paragraph of paragraphs) {
+    const trimmed = paragraph.trim();
+    if (!trimmed) continue;
     
-    if (content) {
-      segments.push({ speakerName: m.name, content });
+    const tagMatch = trimmed.match(tagRegex);
+    
+    if (tagMatch) {
+      // Paragraph starts with a speaker tag
+      const speakerName = tagMatch[1].trim();
+      const content = trimmed.slice(tagMatch[0].length).trim();
+      
+      if (content) {
+        segments.push({ speakerName, content });
+      }
+    } else {
+      // No tag found - assign null speaker (will resolve to default character)
+      segments.push({ speakerName: null, content: trimmed });
     }
-  });
+  }
   
   return segments.filter(s => s.content.length > 0);
 }
