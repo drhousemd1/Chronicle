@@ -1946,8 +1946,8 @@ const updatedChar: SideCharacter = {
                     }
                     
                     return (
-                      <div key={segIndex} className={`flex gap-6 items-start ${segIndex > 0 ? 'mt-2.5 pt-2.5 border-t border-white/5' : ''}`}>
-                        <div className="flex flex-col items-center gap-1.5 w-16 flex-shrink-0">
+                      <div key={segIndex} className={`relative ${segIndex > 0 ? 'mt-2.5 pt-2.5 border-t border-white/5' : ''}`}>
+                        <div className="float-left mr-4 mb-2 flex flex-col items-center gap-1.5 w-16">
                           <div className={`w-12 h-12 rounded-full border-2 border-white/10 shadow-lg overflow-hidden flex items-center justify-center ${segmentAvatar ? '' : 'bg-slate-800'}`}>
                             {isGenerating ? (
                               <Loader2 className="w-5 h-5 text-purple-400 animate-spin" />
@@ -1963,9 +1963,10 @@ const updatedChar: SideCharacter = {
                             {segmentName}
                           </span>
                         </div>
-                        <div className="flex-1 pt-1 antialiased">
+                        <div className="pt-1 antialiased">
                           <FormattedMessage text={segment.content} />
                         </div>
+                        <div className="clear-both" />
                       </div>
                     );
                   })}
@@ -2026,8 +2027,8 @@ const updatedChar: SideCharacter = {
                     const isGenerating = segmentChar && 'isAvatarGenerating' in segmentChar ? segmentChar.isAvatarGenerating : false;
                     
                     return (
-                      <div key={segIndex} className={`flex gap-6 items-start ${segIndex > 0 ? 'mt-2.5 pt-2.5 border-t border-white/5' : ''}`}>
-                        <div className="flex flex-col items-center gap-1.5 w-16 flex-shrink-0">
+                      <div key={segIndex} className={`relative ${segIndex > 0 ? 'mt-2.5 pt-2.5 border-t border-white/5' : ''}`}>
+                        <div className="float-left mr-4 mb-2 flex flex-col items-center gap-1.5 w-16">
                           <div className={`w-12 h-12 rounded-full border-2 border-white/10 shadow-lg overflow-hidden flex items-center justify-center ${segmentAvatar ? '' : 'bg-slate-800 animate-pulse'}`}>
                             {isGenerating ? (
                               <Loader2 className="w-5 h-5 text-purple-400 animate-spin" />
@@ -2043,9 +2044,10 @@ const updatedChar: SideCharacter = {
                             {segmentName}
                           </span>
                         </div>
-                        <div className="flex-1 pt-1 antialiased">
+                        <div className="pt-1 antialiased">
                           <FormattedMessage text={segment.content} />
                         </div>
+                        <div className="clear-both" />
                       </div>
                     );
                   })}
