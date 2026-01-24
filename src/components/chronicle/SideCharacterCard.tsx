@@ -201,7 +201,7 @@ export const SideCharacterCard: React.FC<SideCharacterCardProps> = ({
           <div className="absolute top-2 right-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="p-1.5 rounded-lg hover:bg-purple-200 text-purple-400 hover:text-purple-600 transition-colors">
+                <button className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-700 hover:text-slate-900 transition-colors">
                   <MoreVertical className="w-4 h-4" />
                 </button>
               </DropdownMenuTrigger>
