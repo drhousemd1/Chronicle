@@ -2251,7 +2251,7 @@ const updatedChar: SideCharacter = {
           </div>
         </div>
 
-        <div className={`pt-3 pb-8 px-8 border-t border-slate-200 shadow-[0_-4px_12px_rgba(0,0,0,0.03)] transition-colors relative z-20 ${showBackground ? 'bg-white/90 backdrop-blur-md' : 'bg-white'}`}>
+        <div className={`pt-3 pb-8 px-8 border-t border-slate-700 shadow-[0_-4px_12px_rgba(0,0,0,0.15)] transition-colors relative z-20 bg-[#1a1a1a]`}>
           <div className="w-full max-w-7xl mx-auto space-y-3">
             {/* Quick Actions Bar - Above Input */}
             <div className="flex items-center gap-2 relative">
