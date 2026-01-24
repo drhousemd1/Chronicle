@@ -15,7 +15,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { X, Save, Loader2, Upload, Wand2 } from 'lucide-react';
+import { Loader2, Plus, Trash2, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import * as supabaseData from '@/services/supabase-data';
 import { toast } from 'sonner';
@@ -337,6 +337,70 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
     }));
   };
 
+  // Add a new empty row to an existing section
+  const addItemToSection = (sectionId: string) => {
+    setDraft(prev => ({
+      ...prev,
+      sections: prev.sections?.map(s => {
+        if (s.id !== sectionId) return s;
+        return {
+          ...s,
+          items: [...s.items, {
+            id: `item-${Date.now()}`,
+            label: '',
+            value: '',
+            createdAt: Date.now(),
+            updatedAt: Date.now()
+          }]
+        };
+      })
+    }));
+  };
+
+  // Remove an item from a section
+  const removeItemFromSection = (sectionId: string, itemId: string) => {
+    setDraft(prev => ({
+      ...prev,
+      sections: prev.sections?.map(s => {
+        if (s.id !== sectionId) return s;
+        return { ...s, items: s.items.filter(item => item.id !== itemId) };
+      })
+    }));
+  };
+
+  // Add a new custom category/section
+  const addNewSection = () => {
+    const newSection: CharacterTraitSection = {
+      id: `section-${Date.now()}`,
+      title: 'New Category',
+      items: [{ id: `item-${Date.now()}`, label: '', value: '', createdAt: Date.now(), updatedAt: Date.now() }],
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+    setDraft(prev => ({
+      ...prev,
+      sections: [...(prev.sections || []), newSection]
+    }));
+  };
+
+  // Update section title
+  const updateSectionTitle = (sectionId: string, newTitle: string) => {
+    setDraft(prev => ({
+      ...prev,
+      sections: prev.sections?.map(s => 
+        s.id === sectionId ? { ...s, title: newTitle } : s
+      )
+    }));
+  };
+
+  // Delete a section
+  const deleteSection = (sectionId: string) => {
+    setDraft(prev => ({
+      ...prev,
+      sections: prev.sections?.filter(s => s.id !== sectionId)
+    }));
+  };
+
   const handleSave = () => {
     onSave(draft);
   };
@@ -393,24 +457,20 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                       onChange={handleAvatarUpload}
                     />
                     <Button
-                      variant="outline"
                       size="sm"
-                      className="w-full"
+                      className="w-full bg-slate-900 hover:bg-slate-800 text-white"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={isUploadingAvatar || isRegeneratingAvatar}
                     >
-                      <Upload className="w-4 h-4 mr-2" />
                       {isUploadingAvatar ? 'Uploading...' : 'Upload Image'}
                     </Button>
                     <Button
-                      variant="ghost"
                       size="sm"
-                      className="w-full text-slate-600"
+                      className="w-full bg-slate-900 hover:bg-slate-800 text-white"
                       onClick={handleRegenerateAvatar}
                       disabled={isUploadingAvatar || isRegeneratingAvatar}
                     >
-                      <Wand2 className="w-4 h-4 mr-2" />
-                      {isRegeneratingAvatar ? 'Generating...' : 'Regenerate Portrait'}
+                      {isRegeneratingAvatar ? 'Generating...' : 'AI Generate'}
                     </Button>
                   </div>
                   
@@ -741,34 +801,69 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                   </Section>
                 )}
 
-                {/* Custom Sections (Main characters only) */}
-                {!isSideCharacter && draft.sections && draft.sections.length > 0 && (
-                  <Section title="Custom Sections" className="p-4 bg-blue-50 rounded-xl border border-blue-200">
-                    <div className="space-y-4">
-                      {draft.sections.map((section) => (
-                        <div key={section.id} className="space-y-2">
-                          <h5 className="text-xs font-bold text-blue-700">{section.title}</h5>
-                          <div className="space-y-2">
-                            {section.items.map((item) => (
-                              <div key={item.id} className="grid grid-cols-3 gap-2">
-                                <Input
-                                  value={item.label}
-                                  onChange={(e) => updateSectionItem(section.id, item.id, 'label', e.target.value)}
-                                  placeholder="Label"
-                                  className="h-8 text-xs"
-                                />
-                                <Input
-                                  value={item.value}
-                                  onChange={(e) => updateSectionItem(section.id, item.id, 'value', e.target.value)}
-                                  placeholder="Value"
-                                  className="h-8 text-xs col-span-2"
-                                />
-                              </div>
-                            ))}
-                          </div>
+                {/* Custom Sections (Main characters only) - with add/remove controls */}
+                {!isSideCharacter && (
+                  <Section title="Custom Categories" className="space-y-4">
+                    {draft.sections && draft.sections.map((section) => (
+                      <div key={section.id} className="p-4 bg-blue-50 rounded-xl border border-blue-200 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <Input
+                            value={section.title}
+                            onChange={(e) => updateSectionTitle(section.id, e.target.value)}
+                            placeholder="Category name"
+                            className="h-8 text-sm font-bold flex-1"
+                          />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteSection(section.id)}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </div>
-                      ))}
-                    </div>
+                        <div className="space-y-2">
+                          {section.items.map((item) => (
+                            <div key={item.id} className="flex items-center gap-2">
+                              <Input
+                                value={item.label}
+                                onChange={(e) => updateSectionItem(section.id, item.id, 'label', e.target.value)}
+                                placeholder="Label"
+                                className="h-8 text-xs w-1/3"
+                              />
+                              <Input
+                                value={item.value}
+                                onChange={(e) => updateSectionItem(section.id, item.id, 'value', e.target.value)}
+                                placeholder="Value"
+                                className="h-8 text-xs flex-1"
+                              />
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeItemFromSection(section.id, item.id)}
+                                className="text-red-400 hover:text-red-600 p-1"
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          ))}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => addItemToSection(section.id)}
+                            className="text-blue-600 hover:text-blue-800 w-full"
+                          >
+                            <Plus className="w-4 h-4 mr-1" /> Add Row
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                    <Button
+                      onClick={addNewSection}
+                      className="w-full bg-slate-900 hover:bg-slate-800 text-white"
+                    >
+                      <Plus className="w-4 h-4 mr-2" /> Add Category
+                    </Button>
                   </Section>
                 )}
               </div>
@@ -776,31 +871,21 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
           </div>
         </ScrollArea>
 
-        <DialogFooter className="px-6 py-4 border-t bg-slate-50">
+        <DialogFooter className="px-6 py-5 border-t bg-slate-50 gap-3">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={isSaving}
+            className="bg-slate-900 hover:bg-slate-800 text-white border-0"
           >
-            <X className="w-4 h-4 mr-2" />
             Cancel
           </Button>
           <Button
             onClick={handleSave}
             disabled={isSaving}
-            className="bg-blue-600 hover:bg-blue-700"
+            className="bg-slate-900 hover:bg-slate-800 text-white"
           >
-            {isSaving ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4 mr-2" />
-                Save Changes
-              </>
-            )}
+            {isSaving ? 'Saving...' : 'Save Changes'}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -167,6 +167,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const [isMemoriesModalOpen, setIsMemoriesModalOpen] = useState(false);
   const [memoriesLoaded, setMemoriesLoaded] = useState(false);
   
+  // Track which characters are showing the "updating" indicator
+  const [updatingCharacterIds, setUpdatingCharacterIds] = useState<Set<string>>(new Set());
+  
   // Ref to always hold current sideCharacters - avoids stale closure in async callbacks
   const sideCharactersRef = useRef<SideCharacter[]>(appData.sideCharacters || []);
   useEffect(() => {
@@ -563,6 +566,167 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       });
     }
   };
+  
+  // Trigger update indicator for a character (5-second duration)
+  const showCharacterUpdateIndicator = useCallback((characterId: string) => {
+    setUpdatingCharacterIds(prev => new Set(prev).add(characterId));
+    setTimeout(() => {
+      setUpdatingCharacterIds(prev => {
+        const next = new Set(prev);
+        next.delete(characterId);
+        return next;
+      });
+    }, 5000); // 5 second duration
+  }, []);
+
+  // Parse [UPDATE:], [ADDROW:], and [NEWCAT:] tags from AI response
+  interface CharacterUpdate {
+    characterName: string;
+    type: 'update' | 'addrow' | 'newcat';
+    updates?: Record<string, string>;
+    categoryTitle?: string;
+    items?: Array<{label: string; value: string}>;
+  }
+
+  const parseCharacterUpdates = (responseText: string): CharacterUpdate[] => {
+    const results: CharacterUpdate[] = [];
+    
+    // Parse [UPDATE:...] tags
+    const updateRegex = /\[UPDATE:([^|]+)\|([^\]]+)\]/g;
+    let match;
+    while ((match = updateRegex.exec(responseText)) !== null) {
+      const updates: Record<string, string> = {};
+      for (const pair of match[2].split('|')) {
+        const colonIndex = pair.indexOf(':');
+        if (colonIndex > 0) {
+          const field = pair.slice(0, colonIndex).trim();
+          const value = pair.slice(colonIndex + 1).trim();
+          if (field && value) updates[field] = value;
+        }
+      }
+      results.push({ characterName: match[1].trim(), type: 'update', updates });
+    }
+    
+    // Parse [ADDROW:...] tags
+    const addRowRegex = /\[ADDROW:([^|]+)\|([^|]+)\|([^\]]+)\]/g;
+    while ((match = addRowRegex.exec(responseText)) !== null) {
+      const colonIndex = match[3].indexOf(':');
+      if (colonIndex > 0) {
+        const label = match[3].slice(0, colonIndex).trim();
+        const value = match[3].slice(colonIndex + 1).trim();
+        results.push({
+          characterName: match[1].trim(),
+          type: 'addrow',
+          categoryTitle: match[2].trim(),
+          items: [{label, value}]
+        });
+      }
+    }
+    
+    // Parse [NEWCAT:...] tags
+    const newCatRegex = /\[NEWCAT:([^|]+)\|([^|]+)\|([^\]]+)\]/g;
+    while ((match = newCatRegex.exec(responseText)) !== null) {
+      const items = match[3].split('|').map(pair => {
+        const colonIndex = pair.indexOf(':');
+        if (colonIndex > 0) {
+          return {
+            label: pair.slice(0, colonIndex).trim(),
+            value: pair.slice(colonIndex + 1).trim()
+          };
+        }
+        return { label: '', value: '' };
+      }).filter(i => i.label);
+      results.push({
+        characterName: match[1].trim(),
+        type: 'newcat',
+        categoryTitle: match[2].trim(),
+        items
+      });
+    }
+    
+    return results;
+  };
+
+  // Strip update tags from displayed message
+  const stripUpdateTags = (text: string): string => {
+    return text
+      .replace(/\[UPDATE:[^\]]+\]/g, '')
+      .replace(/\[ADDROW:[^\]]+\]/g, '')
+      .replace(/\[NEWCAT:[^\]]+\]/g, '')
+      .trim();
+  };
+
+  // Apply parsed updates to session state
+  const applyCharacterUpdates = async (updates: CharacterUpdate[]) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    for (const update of updates) {
+      // Find the character by name
+      const mainChar = appData.characters.find(c => c.name.toLowerCase() === update.characterName.toLowerCase());
+      const sideChar = (appData.sideCharacters || []).find(sc => sc.name.toLowerCase() === update.characterName.toLowerCase());
+      
+      if (mainChar) {
+        // Show updating indicator
+        showCharacterUpdateIndicator(mainChar.id);
+        
+        // Find or create session state
+        let sessionState = sessionStates.find(s => s.characterId === mainChar.id);
+        if (!sessionState) {
+          sessionState = await supabaseData.createSessionState(mainChar, conversationId, user.id);
+          setSessionStates(prev => [...prev, sessionState!]);
+        }
+        
+        if (update.type === 'update' && update.updates) {
+          // Apply field updates
+          const patch: Record<string, any> = {};
+          for (const [field, value] of Object.entries(update.updates)) {
+            if (field.includes('.')) {
+              // Nested field like physicalAppearance.hairColor
+              const [parent, child] = field.split('.');
+              if (parent === 'physicalAppearance') {
+                patch.physicalAppearance = { ...(sessionState.physicalAppearance || {}), [child]: value };
+              } else if (parent === 'currentlyWearing') {
+                patch.currentlyWearing = { ...(sessionState.currentlyWearing || {}), [child]: value };
+              } else if (parent === 'preferredClothing') {
+                patch.preferredClothing = { ...(sessionState.preferredClothing || {}), [child]: value };
+              }
+            } else {
+              patch[field] = value;
+            }
+          }
+          await supabaseData.updateSessionState(sessionState.id, patch);
+          setSessionStates(prev => prev.map(s => s.id === sessionState!.id ? { ...s, ...patch } : s));
+        }
+      } else if (sideChar) {
+        // Show updating indicator
+        showCharacterUpdateIndicator(sideChar.id);
+        
+        if (update.type === 'update' && update.updates) {
+          const patch: Record<string, any> = {};
+          for (const [field, value] of Object.entries(update.updates)) {
+            if (field.includes('.')) {
+              const [parent, child] = field.split('.');
+              if (parent === 'physicalAppearance') {
+                patch.physicalAppearance = { ...(sideChar.physicalAppearance || {}), [child]: value };
+              } else if (parent === 'currentlyWearing') {
+                patch.currentlyWearing = { ...(sideChar.currentlyWearing || {}), [child]: value };
+              }
+            } else {
+              patch[field] = value;
+            }
+          }
+          await supabaseData.updateSideCharacter(sideChar.id, patch);
+          if (onUpdateSideCharacters) {
+            const updated = (appData.sideCharacters || []).map(sc => 
+              sc.id === sideChar.id ? { ...sc, ...patch } : sc
+            );
+            onUpdateSideCharacters(updated);
+          }
+        }
+      }
+    }
+  };
 
   const activeScene = useMemo(() =>
     appData.scenes.find(s => s.id === activeSceneId) || null
@@ -701,10 +865,19 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         setStreamingContent(fullText);
       }
 
+      // Parse and apply character updates from AI response
+      const characterUpdates = parseCharacterUpdates(fullText);
+      if (characterUpdates.length > 0) {
+        applyCharacterUpdates(characterUpdates);
+      }
+      
+      // Strip update tags from the displayed message
+      const cleanedText = stripUpdateTags(fullText);
+
       const aiMsg: Message = { 
         id: uuid(), 
         role: 'assistant', 
-        text: fullText, 
+        text: cleanedText, 
         day: currentDay,
         timeOfDay: currentTimeOfDay,
         createdAt: now() 
@@ -716,7 +889,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       onSaveScenario(nextConvsWithAi);
       
       // Process AI response for new character detection
-      processResponseForNewCharacters(fullText);
+      processResponseForNewCharacters(cleanedText);
     } catch (err) {
       console.error(err);
       alert("Dialogue stream failed. Check your connection or model settings.");
@@ -1254,12 +1427,23 @@ const updatedChar: SideCharacter = {
     // Apply session-scoped overrides to get the effective character
     const char = getEffectiveCharacter(baseChar);
     const isExpanded = expandedCharId === char.id;
+    const isUpdating = updatingCharacterIds.has(char.id);
     
     return (
       <div
         key={char.id}
-        className={`rounded-2xl transition-all duration-300 border-2 ${isExpanded ? 'bg-slate-50/50 border-blue-100 shadow-sm' : 'border-transparent hover:bg-slate-50/30'}`}
+        className={`rounded-2xl transition-all duration-300 border-2 bg-white/30 backdrop-blur-sm relative ${
+          isExpanded ? 'bg-white border-blue-100 shadow-sm' : 'border-transparent hover:bg-white'
+        } ${isUpdating ? 'animate-character-update-glow' : ''}`}
       >
+        {/* "Updating" text overlay */}
+        {isUpdating && (
+          <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+            <span className="text-[10px] font-bold text-blue-600 bg-white/90 px-2 py-1 rounded-full shadow-sm tracking-wider uppercase">
+              Updating
+            </span>
+          </div>
+        )}
         <div className="relative">
           <button
             onClick={() => toggleCharacterExpand(char.id)}
@@ -1310,7 +1494,7 @@ const updatedChar: SideCharacter = {
                     <MoreVertical className="w-4 h-4" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" className="bg-white border-slate-200 shadow-lg">
                   <DropdownMenuItem onClick={() => openCharacterEditModal(char)}>
                     <Pencil className="w-4 h-4 mr-2" />
                     Edit for this session
@@ -1509,6 +1693,7 @@ const updatedChar: SideCharacter = {
                         onStartEdit={() => openCharacterEditModal(char as SideCharacter)}
                         openSections={openSections}
                         onToggleSection={toggleSection}
+                        isUpdating={updatingCharacterIds.has(char.id)}
                       />
                     )
                 )}

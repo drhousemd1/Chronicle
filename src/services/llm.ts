@@ -78,6 +78,48 @@ ${traits}`;
     - Never contradict or "re-do" events listed in memories.
   ` : '';
 
+  // Character state tracking instructions
+  const characterUpdateInstructions = `
+    CHARACTER STATE TRACKING (CRITICAL - Track and Update All Character Details):
+    
+    During the narrative, you MUST track and update character state when changes occur.
+    Review the FULL character sheet for each character, including all hardcoded fields and custom categories.
+    
+    TRACKABLE HARDCODED FIELDS:
+    - Physical Appearance: hairColor, eyeColor, build, height, skinTone, bodyHair, breastSize, genitalia, makeup, bodyMarkings, temporaryConditions
+    - Currently Wearing: top, bottom, undergarments, miscellaneous
+    - Preferred Clothing: casual, work, sleep, undergarments, miscellaneous
+    - Basic Info: location, currentMood
+    
+    CUSTOM CATEGORIES: Any user-created sections with label:value items (e.g., "Abilities", "Relationships", "Secrets", "Inventory")
+    
+    OUTPUT FORMAT (append at END of response, after [SCENE:] tags):
+    
+    1. UPDATE EXISTING FIELDS:
+       [UPDATE:CharacterName|field:newValue|field2:newValue2]
+       For nested fields use dot notation: [UPDATE:CharacterName|physicalAppearance.temporaryConditions:Bruised arm]
+       
+    2. ADD NEW ROW TO EXISTING CATEGORY:
+       [ADDROW:CharacterName|categoryTitle|label:value]
+       
+    3. CREATE NEW CATEGORY (use sparingly, only when truly needed):
+       [NEWCAT:CharacterName|categoryTitle|label1:value1|label2:value2]
+    
+    EXAMPLES:
+    - Clothing change: [UPDATE:Ashley|currentlyWearing.top:Red cocktail dress|currentlyWearing.bottom:None]
+    - Mood/location: [UPDATE:James|location:Kitchen|currentMood:Nervous]
+    - Injury: [UPDATE:Ashley|physicalAppearance.temporaryConditions:Bruised left arm]
+    - New ability discovered: [ADDROW:James|Abilities|Fire Magic:Can summon small flames]
+    - New relationship: [NEWCAT:Ashley|Relationships|James:Romantic interest|Sarah:Best friend]
+    
+    RULES:
+    - Only emit tags when changes ACTUALLY occur in the narrative
+    - Match character names EXACTLY from the CAST list
+    - For custom categories, match the categoryTitle exactly (case-sensitive)
+    - Keep values concise but descriptive
+    - Changes are session-scoped (apply to this playthrough only)
+  `;
+
   return `
     You are an expert Game Master and roleplayer for a creative writing/RPG studio.
     
@@ -93,6 +135,7 @@ ${traits}`;
     AVAILABLE SCENES: [${sceneTags}]
     ${temporalContext}
     ${memoriesContext}
+    ${characterUpdateInstructions}
     INSTRUCTIONS:
     - Respond as the narrator or relevant characters.
     - NARRATIVE FOCUS: Prioritize 'ROLE: Main' characters in the narrative.

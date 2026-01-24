@@ -19,6 +19,7 @@ interface SideCharacterCardProps {
   onStartEdit?: () => void;
   openSections: Record<string, boolean>;
   onToggleSection: (sectionId: string) => void;
+  isUpdating?: boolean;
 }
 
 export const SideCharacterCard: React.FC<SideCharacterCardProps> = ({
@@ -27,7 +28,8 @@ export const SideCharacterCard: React.FC<SideCharacterCardProps> = ({
   onToggleExpand,
   onStartEdit,
   openSections,
-  onToggleSection
+  onToggleSection,
+  isUpdating = false
 }) => {
   // Convert side character data to trait sections for display
   const createBasicsSection = (): CharacterTraitSection => ({
@@ -117,9 +119,17 @@ export const SideCharacterCard: React.FC<SideCharacterCardProps> = ({
   };
 
   return (
-    <div className={`rounded-2xl transition-all duration-300 border-2 ${
-      isExpanded ? 'bg-purple-50/50 border-purple-200 shadow-sm' : 'border-transparent hover:bg-purple-50/30'
-    }`}>
+    <div className={`rounded-2xl transition-all duration-300 border-2 bg-white/30 backdrop-blur-sm relative ${
+      isExpanded ? 'bg-white border-purple-200 shadow-sm' : 'border-transparent hover:bg-white'
+    } ${isUpdating ? 'animate-character-update-glow' : ''}`}>
+      {/* "Updating" text overlay */}
+      {isUpdating && (
+        <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+          <span className="text-[10px] font-bold text-blue-600 bg-white/90 px-2 py-1 rounded-full shadow-sm tracking-wider uppercase">
+            Updating
+          </span>
+        </div>
+      )}
       <div className="relative">
         <button
           onClick={onToggleExpand}
@@ -178,7 +188,7 @@ export const SideCharacterCard: React.FC<SideCharacterCardProps> = ({
                   <MoreVertical className="w-4 h-4" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="bg-white border-slate-200 shadow-lg">
                 <DropdownMenuItem onClick={onStartEdit}>
                   <Pencil className="w-4 h-4 mr-2" />
                   Edit character
