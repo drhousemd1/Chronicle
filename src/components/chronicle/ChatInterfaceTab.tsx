@@ -1707,6 +1707,16 @@ const updatedChar: SideCharacter = {
           isExpanded ? 'bg-white border-blue-100 shadow-sm' : 'bg-white/30 border-transparent hover:bg-white'
         } ${isUpdating ? 'ring-2 ring-blue-400/60' : ''}`}
       >
+        {/* Blue vignette overlay - scoped to this card */}
+        {isUpdating && (
+          <div 
+            className="absolute inset-0 z-[1] pointer-events-none rounded-2xl overflow-hidden animate-vignette-pulse"
+            style={{
+              background: 'radial-gradient(ellipse 120% 100% at center 30%, transparent 25%, rgba(59, 130, 246, 0.12) 50%, rgba(59, 130, 246, 0.3) 80%, rgba(59, 130, 246, 0.5) 100%)'
+            }}
+          />
+        )}
+        
         {/* "Updating..." text overlay - top-left with ethereal glow */}
         {isUpdating && (
           <div className="absolute top-3 left-3 z-20 pointer-events-none">
@@ -1836,15 +1846,6 @@ const updatedChar: SideCharacter = {
           </div>
         )}
         
-        {/* Blue vignette overlay - appears when any character is updating */}
-        {updatingCharacterIds.size > 0 && (
-          <div 
-            className="absolute inset-0 z-[5] pointer-events-none animate-vignette-pulse"
-            style={{
-              background: 'radial-gradient(ellipse 80% 70% at center, transparent 20%, rgba(59, 130, 246, 0.08) 40%, rgba(59, 130, 246, 0.2) 70%, rgba(59, 130, 246, 0.35) 100%)'
-            }}
-          />
-        )}
         
         {/* All sidebar content in relative z-10 container */}
         <div className="relative z-10 flex flex-col h-full">
