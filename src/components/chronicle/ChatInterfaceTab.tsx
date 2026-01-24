@@ -2272,7 +2272,7 @@ const updatedChar: SideCharacter = {
                     </div>
                   )}
                   
-                  {/* Render text segments - each speaker gets their own avatar block */}
+                  {/* Render text segments - avatar only shows when speaker changes */}
                   {msg.text && segments.map((segment, segIndex) => {
                     // Determine speaker for this segment
                     let segmentChar: Character | SideCharacter | null = null;
@@ -2299,28 +2299,45 @@ const updatedChar: SideCharacter = {
                       segmentAvatar = segmentChar?.avatarDataUrl || null;
                     }
                     
+                    // Check if this is a different speaker than the previous segment
+                    const prevSegment = segIndex > 0 ? segments[segIndex - 1] : null;
+                    let prevSpeakerName = '';
+                    if (prevSegment) {
+                      if (prevSegment.speakerName) {
+                        prevSpeakerName = prevSegment.speakerName;
+                      } else if (!isAi) {
+                        prevSpeakerName = userChar?.name || 'You';
+                      } else {
+                        const aiChars = appData.characters.filter(c => c.controlledBy === 'AI');
+                        prevSpeakerName = aiChars.length > 0 ? aiChars[0]?.name || 'Narrator' : 'Narrator';
+                      }
+                    }
+                    const showAvatar = segIndex === 0 || prevSpeakerName !== segmentName;
+                    
                     return (
-                      <div key={segIndex} className={`relative ${segIndex > 0 ? 'mt-2.5 pt-2.5 border-t border-white/5' : ''}`}>
-                        <div className="float-left mr-4 mb-2 flex flex-col items-center gap-1.5 w-16">
-                          <div className={`w-12 h-12 rounded-full border-2 border-white/10 shadow-lg overflow-hidden flex items-center justify-center ${segmentAvatar ? '' : 'bg-slate-800'}`}>
-                            {isGenerating ? (
-                              <Loader2 className="w-5 h-5 text-purple-400 animate-spin" />
-                            ) : segmentAvatar ? (
-                              <img src={segmentAvatar} alt={segmentName} className="w-full h-full object-cover" />
-                            ) : (
-                              <div className={`font-black italic text-lg ${isAi ? 'text-white/30' : 'text-blue-400/50'}`}>
-                                {segmentName.charAt(0) || '?'}
-                              </div>
-                            )}
+                      <div key={segIndex} className={`relative ${segIndex > 0 && showAvatar ? 'mt-2.5 pt-2.5 border-t border-white/5' : ''}`}>
+                        {showAvatar && (
+                          <div className="float-left mr-4 mb-2 flex flex-col items-center gap-1.5 w-16">
+                            <div className={`w-12 h-12 rounded-full border-2 border-white/10 shadow-lg overflow-hidden flex items-center justify-center ${segmentAvatar ? '' : 'bg-slate-800'}`}>
+                              {isGenerating ? (
+                                <Loader2 className="w-5 h-5 text-purple-400 animate-spin" />
+                              ) : segmentAvatar ? (
+                                <img src={segmentAvatar} alt={segmentName} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className={`font-black italic text-lg ${isAi ? 'text-white/30' : 'text-blue-400/50'}`}>
+                                  {segmentName.charAt(0) || '?'}
+                                </div>
+                              )}
+                            </div>
+                            <span className={`text-[9px] font-black uppercase tracking-widest text-center truncate w-full ${!isAi ? 'text-blue-300' : 'text-slate-500'}`}>
+                              {segmentName}
+                            </span>
                           </div>
-                          <span className={`text-[9px] font-black uppercase tracking-widest text-center truncate w-full ${!isAi ? 'text-blue-300' : 'text-slate-500'}`}>
-                            {segmentName}
-                          </span>
-                        </div>
-                        <div className="pt-1 antialiased">
+                        )}
+                        <div className={showAvatar ? "pt-1 antialiased" : "antialiased"}>
                           <FormattedMessage text={segment.content} />
                         </div>
-                        <div className="clear-both" />
+                        {showAvatar && <div className="clear-both" />}
                       </div>
                     );
                   })}
@@ -2381,28 +2398,41 @@ const updatedChar: SideCharacter = {
                     const segmentAvatar = segmentChar?.avatarDataUrl || null;
                     const isGenerating = segmentChar && 'isAvatarGenerating' in segmentChar ? segmentChar.isAvatarGenerating : false;
                     
+                    // Check if this is a different speaker than the previous segment
+                    const prevSegment = segIndex > 0 ? segments[segIndex - 1] : null;
+                    let prevSpeakerName = '';
+                    if (prevSegment) {
+                      const prevChar = prevSegment.speakerName 
+                        ? findCharacterByName(prevSegment.speakerName, appData)
+                        : appData.characters.find(c => c.controlledBy === 'AI');
+                      prevSpeakerName = prevSegment.speakerName || prevChar?.name || 'Thinking';
+                    }
+                    const showAvatar = segIndex === 0 || prevSpeakerName !== segmentName;
+                    
                     return (
-                      <div key={segIndex} className={`relative ${segIndex > 0 ? 'mt-2.5 pt-2.5 border-t border-white/5' : ''}`}>
-                        <div className="float-left mr-4 mb-2 flex flex-col items-center gap-1.5 w-16">
-                          <div className={`w-12 h-12 rounded-full border-2 border-white/10 shadow-lg overflow-hidden flex items-center justify-center ${segmentAvatar ? '' : 'bg-slate-800 animate-pulse'}`}>
-                            {isGenerating ? (
-                              <Loader2 className="w-5 h-5 text-purple-400 animate-spin" />
-                            ) : segmentAvatar ? (
-                              <img src={segmentAvatar} alt={segmentName} className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="text-white/30 font-black italic text-lg">
-                                {segmentName.charAt(0) || '...'}
-                              </div>
-                            )}
+                      <div key={segIndex} className={`relative ${segIndex > 0 && showAvatar ? 'mt-2.5 pt-2.5 border-t border-white/5' : ''}`}>
+                        {showAvatar && (
+                          <div className="float-left mr-4 mb-2 flex flex-col items-center gap-1.5 w-16">
+                            <div className={`w-12 h-12 rounded-full border-2 border-white/10 shadow-lg overflow-hidden flex items-center justify-center ${segmentAvatar ? '' : 'bg-slate-800 animate-pulse'}`}>
+                              {isGenerating ? (
+                                <Loader2 className="w-5 h-5 text-purple-400 animate-spin" />
+                              ) : segmentAvatar ? (
+                                <img src={segmentAvatar} alt={segmentName} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="text-white/30 font-black italic text-lg">
+                                  {segmentName.charAt(0) || '...'}
+                                </div>
+                              )}
+                            </div>
+                            <span className="text-[9px] font-black uppercase tracking-widest text-center text-slate-500 truncate w-full">
+                              {segmentName}
+                            </span>
                           </div>
-                          <span className="text-[9px] font-black uppercase tracking-widest text-center text-slate-500 truncate w-full">
-                            {segmentName}
-                          </span>
-                        </div>
-                        <div className="pt-1 antialiased">
+                        )}
+                        <div className={showAvatar ? "pt-1 antialiased" : "antialiased"}>
                           <FormattedMessage text={segment.content} />
                         </div>
-                        <div className="clear-both" />
+                        {showAvatar && <div className="clear-both" />}
                       </div>
                     );
                   })}
