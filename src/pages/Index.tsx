@@ -724,20 +724,24 @@ const IndexContent = () => {
   }
   
   async function handleDeleteConversationFromHistory(scenarioId: string, conversationId: string) {
+    // Optimistic UI update - remove immediately
+    const previousRegistry = [...conversationRegistry];
+    setConversationRegistry(prev => prev.filter(c => c.conversationId !== conversationId));
+    
+    if (activeId === scenarioId && activeData) {
+      setActiveData(prev => prev ? { 
+        ...prev, 
+        conversations: prev.conversations.filter(c => c.id !== conversationId) 
+      } : prev);
+    }
+    
+    // Delete from database in background
     try {
       await supabaseData.deleteConversation(conversationId);
-      
-      const updatedConvRegistry = await supabaseData.fetchConversationRegistry();
-      setConversationRegistry(updatedConvRegistry);
-      
-      if (activeId === scenarioId && activeData) {
-        const updatedData = { ...activeData, conversations: activeData.conversations.filter(c => c.id !== conversationId) };
-        setActiveData(updatedData);
-      }
-      
-      
     } catch (e: any) {
+      // On error, restore previous state
       toast({ title: "Failed to delete conversation", description: e.message, variant: "destructive" });
+      setConversationRegistry(previousRegistry);
     }
   }
   
@@ -751,20 +755,25 @@ const IndexContent = () => {
       return;
     }
     
+    // Store for potential rollback
+    const previousRegistry = [...conversationRegistry];
+    
+    // Optimistic UI update - clear immediately
+    setConversationRegistry([]);
+    if (activeData) {
+      setActiveData(prev => prev ? { ...prev, conversations: [] } : prev);
+    }
+    
+    // Delete from database in background
     try {
-      for (const entry of conversationRegistry) {
+      for (const entry of previousRegistry) {
         await supabaseData.deleteConversation(entry.conversationId);
       }
-      
-      setConversationRegistry([]);
-      
-      if (activeData) {
-        setActiveData({ ...activeData, conversations: [] });
-      }
-      
       toast({ title: "All sessions deleted", description: "Your chat history has been cleared." });
     } catch (e: any) {
+      // On error, restore previous state
       toast({ title: "Failed to delete sessions", description: e.message, variant: "destructive" });
+      setConversationRegistry(previousRegistry);
     }
   }
   
