@@ -747,6 +747,18 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   }, [conversation?.id]);
 
   useEffect(() => {
+    // For the FIRST message (opening dialog), always use starting scene
+    // This ensures the starred "default" scene takes priority over any keyword detection
+    const isInitialState = conversation?.messages.length === 1;
+    
+    if (isInitialState) {
+      const startingScene = appData.scenes.find(s => s.isStartingScene);
+      if (startingScene) {
+        setActiveSceneId(startingScene.id);
+        return; // Skip keyword detection for opening
+      }
+    }
+    
     // First, try to find a [SCENE: tag] command in messages (highest priority)
     let foundSceneTag = false;
     if (conversation?.messages.length) {
@@ -768,8 +780,16 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     }
     
     // Second pass: Keyword-based detection if no explicit tag found
+    // Skip the first message (opening dialog) to preserve starting scene
     if (!foundSceneTag && conversation?.messages.length && appData.scenes.length > 0) {
+      // Start from the end, but skip keyword detection in the opening dialog (index 0)
       for (let i = conversation.messages.length - 1; i >= 0; i--) {
+        // For the first message, only detect if we're past initial state (more than 1 message)
+        if (i === 0 && conversation.messages.length > 1) {
+          // Skip keyword detection in opening dialog when other messages exist
+          continue;
+        }
+        
         const messageText = conversation.messages[i].text.toLowerCase();
         
         // Check each scene's tags as keywords in the message
@@ -1554,16 +1574,6 @@ const updatedChar: SideCharacter = {
 
   return (
     <div className={`flex flex-1 h-full w-full overflow-hidden relative ${darkMode ? 'bg-slate-900' : 'bg-white'}`}>
-      {showBackground && (
-        <div className="absolute inset-0 z-0">
-           <img
-             src={activeScene?.url}
-             className="w-full h-full object-cover transition-opacity duration-1000 animate-in fade-in fill-mode-forwards"
-             alt="Scene background"
-           />
-           <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
-        </div>
-      )}
 
       <aside className={`w-[300px] flex-shrink-0 border-r border-slate-200 flex flex-col h-full shadow-[inset_-4px_0_12px_rgba(0,0,0,0.02)] z-10 transition-colors relative overflow-hidden ${showBackground ? 'bg-white/90 backdrop-blur-md' : 'bg-white'}`}>
         {/* Sidebar background image layer */}
@@ -1715,7 +1725,21 @@ const updatedChar: SideCharacter = {
       </aside>
 
       <main className="flex-1 flex flex-col overflow-hidden h-full relative z-10">
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 md:px-8 lg:px-12 py-8 space-y-6 custom-scrollbar scrollbar-thin">
+        {/* Chat scroll area with background contained inside */}
+        <div className="flex-1 relative overflow-hidden">
+          {/* Background layer - contained to chat area only, not input bar */}
+          {showBackground && (
+            <div className="absolute inset-0 z-0">
+              <img
+                src={activeScene?.url}
+                className="w-full h-full object-cover transition-opacity duration-1000 animate-in fade-in fill-mode-forwards"
+                alt="Scene background"
+              />
+              <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
+            </div>
+          )}
+          
+          <div ref={scrollRef} className="relative z-10 h-full overflow-y-auto px-4 md:px-8 lg:px-12 py-8 space-y-6 custom-scrollbar scrollbar-thin">
           {conversation?.messages.length === 0 && !streamingContent && (
              <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-6">
                <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center text-4xl shadow-sm border border-slate-100">✨</div>
@@ -1960,6 +1984,7 @@ const updatedChar: SideCharacter = {
               </div>
             );
           })()}
+          </div>
         </div>
 
         <div className={`pt-3 pb-8 px-8 border-t border-slate-200 shadow-[0_-4px_12px_rgba(0,0,0,0.03)] transition-colors ${showBackground ? 'bg-white/90 backdrop-blur-md' : 'bg-white'}`}>

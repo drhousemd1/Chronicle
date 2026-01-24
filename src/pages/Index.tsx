@@ -1215,8 +1215,24 @@ const IndexContent = () => {
               onUpdate={(convs) => handleUpdateActive({ conversations: convs })}
               onBack={() => { setPlayingConversationId(null); setTab("hub"); }}
               onSaveScenario={(conversations?: Conversation[]) => {
-                if (conversations) {
-                  // Save with the provided conversation data directly (bypasses stale closure)
+                if (conversations && user && activeId) {
+                  // Find the specific conversation that was modified
+                  const modifiedConv = conversations.find(c => c.id === playingConversationId);
+                  
+                  if (modifiedConv) {
+                    // Explicitly save the conversation with its messages to the database
+                    supabaseData.saveConversation(modifiedConv, activeId, user.id)
+                      .catch(err => {
+                        console.error('Failed to save conversation:', err);
+                        toast({ 
+                          title: "Save failed", 
+                          description: "Your messages may not be saved.", 
+                          variant: "destructive" 
+                        });
+                      });
+                  }
+                  
+                  // Update local state with the provided conversation data
                   handleSaveWithData({ ...activeData, conversations });
                 } else {
                   handleSave();
