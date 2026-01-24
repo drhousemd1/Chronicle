@@ -20,9 +20,9 @@ export const ScrollableSection: React.FC<ScrollableSectionProps> = ({
     const el = scrollRef.current;
     if (!el) return;
     
-    const hasOverflow = el.scrollHeight > el.clientHeight;
-    setCanScrollUp(el.scrollTop > 2);
-    setCanScrollDown(hasOverflow && el.scrollTop < el.scrollHeight - el.clientHeight - 2);
+    const hasOverflow = el.scrollHeight > el.clientHeight + 8;
+    setCanScrollUp(el.scrollTop > 10);
+    setCanScrollDown(hasOverflow && el.scrollTop < el.scrollHeight - el.clientHeight - 10);
   }, []);
 
   useEffect(() => {
