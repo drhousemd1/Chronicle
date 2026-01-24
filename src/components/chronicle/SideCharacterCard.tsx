@@ -119,8 +119,8 @@ export const SideCharacterCard: React.FC<SideCharacterCardProps> = ({
   };
 
   return (
-    <div className={`rounded-2xl transition-all duration-300 border-2 bg-white/30 backdrop-blur-sm relative ${
-      isExpanded ? 'bg-white border-purple-200 shadow-sm' : 'border-transparent hover:bg-white'
+    <div className={`rounded-2xl transition-all duration-300 border-2 backdrop-blur-sm relative ${
+      isExpanded ? 'bg-white border-purple-200 shadow-sm' : 'bg-white/30 border-transparent hover:bg-white'
     } ${isUpdating ? 'animate-character-update-glow' : ''}`}>
       {/* "Updating" text overlay */}
       {isUpdating && (

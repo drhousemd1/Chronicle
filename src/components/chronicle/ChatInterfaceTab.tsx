@@ -1525,8 +1525,8 @@ const updatedChar: SideCharacter = {
     return (
       <div
         key={char.id}
-        className={`rounded-2xl transition-all duration-300 border-2 bg-white/30 backdrop-blur-sm relative ${
-          isExpanded ? 'bg-white border-blue-100 shadow-sm' : 'border-transparent hover:bg-white'
+        className={`rounded-2xl transition-all duration-300 border-2 backdrop-blur-sm relative ${
+          isExpanded ? 'bg-white border-blue-100 shadow-sm' : 'bg-white/30 border-transparent hover:bg-white'
         } ${isUpdating ? 'animate-character-update-glow' : ''}`}
       >
         {/* "Updating" text overlay */}
