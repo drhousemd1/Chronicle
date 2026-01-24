@@ -7,9 +7,10 @@ import { uid, now, resizeImage, uuid, clamp } from '@/utils';
 import { useAuth } from '@/hooks/use-auth';
 import { uploadSceneImage, uploadCoverImage, dataUrlToBlob } from '@/services/supabase-data';
 import { toast } from 'sonner';
-import { Sunrise, Sun, Sunset, Moon, ChevronUp, ChevronDown } from 'lucide-react';
+import { Sunrise, Sun, Sunset, Moon, ChevronUp, ChevronDown, Pencil } from 'lucide-react';
 import { AVATAR_STYLES, DEFAULT_STYLE_ID } from '@/constants/avatar-styles';
 import { cn } from '@/lib/utils';
+import { SceneTagEditorModal } from './SceneTagEditorModal';
 
 interface WorldTabProps {
   world: World;
@@ -84,6 +85,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [isRepositioningCover, setIsRepositioningCover] = useState(false);
   const [coverDragStart, setCoverDragStart] = useState<{ x: number; y: number; pos: { x: number; y: number } } | null>(null);
+  const [editingScene, setEditingScene] = useState<Scene | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverFileInputRef = useRef<HTMLInputElement>(null);
   const coverContainerRef = useRef<HTMLDivElement>(null);
@@ -195,10 +197,11 @@ export const WorldTab: React.FC<WorldTabProps> = ({
           const newScene: Scene = {
             id: uuid(), // Use UUID for Supabase
             url: publicUrl,
-            tag: 'New Scene',
+            tags: [],
             createdAt: now()
           };
           onUpdateScenes([newScene, ...scenes]);
+          setEditingScene(newScene); // Open editor immediately for new scenes
           toast.success('Scene uploaded');
         } catch (error) {
           console.error('Scene upload failed:', error);
@@ -216,8 +219,13 @@ export const WorldTab: React.FC<WorldTabProps> = ({
     e.target.value = '';
   };
 
-  const handleUpdateSceneTag = (id: string, tag: string) => {
-    onUpdateScenes(scenes.map(s => s.id === id ? { ...s, tag } : s));
+  const handleUpdateSceneTags = (id: string, tags: string[]) => {
+    const updatedScenes = scenes.map(s => s.id === id ? { ...s, tags } : s);
+    onUpdateScenes(updatedScenes);
+    // Also update the editing scene state so modal reflects changes
+    if (editingScene?.id === id) {
+      setEditingScene({ ...editingScene, tags });
+    }
   };
 
   const handleDeleteScene = (id: string) => {
@@ -507,57 +515,76 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                 "Recommended: 1024px × 768px (landscape orientation, 4:3 aspect ratio)"
               ]} />
               <div className="mt-6 grid grid-cols-2 md:grid-cols-3 gap-6">
-                {scenes.map(scene => (
-                  <div key={scene.id} className="group relative aspect-video rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-slate-50">
-                    <img src={scene.url} alt={scene.tag} className="w-full h-full object-cover" />
-                    {/* Always visible tag input at bottom */}
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent p-3">
-                      <div className="flex items-center gap-1.5">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/60 flex-shrink-0">
-                          <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
-                          <line x1="7" y1="7" x2="7.01" y2="7"/>
+                {scenes.map(scene => {
+                  // Migration: handle legacy single tag
+                  const sceneTags = scene.tags ?? ((scene as any).tag ? [(scene as any).tag] : []);
+                  const tagCount = sceneTags.length;
+                  
+                  return (
+                    <div key={scene.id} className="group relative aspect-video rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-slate-50">
+                      <img src={scene.url} alt={sceneTags[0] || 'Scene'} className="w-full h-full object-cover" />
+                      
+                      {/* Bottom bar with tag count and edit button */}
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent p-3">
+                        <div className="flex items-center justify-between">
+                          {/* Tag count indicator */}
+                          <div className="flex items-center gap-1.5">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/60 flex-shrink-0">
+                              <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                              <line x1="7" y1="7" x2="7.01" y2="7"/>
+                            </svg>
+                            <span className="text-white/80 text-[11px] font-medium">
+                              {tagCount === 0 ? 'No tags' : `${tagCount} tag${tagCount !== 1 ? 's' : ''}`}
+                            </span>
+                          </div>
+                          
+                          {/* Edit button - always visible */}
+                          <button
+                            onClick={() => setEditingScene({ ...scene, tags: sceneTags })}
+                            className="p-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all"
+                            title="Edit tags"
+                          >
+                            <Pencil size={14} />
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {/* Delete button */}
+                      <button 
+                        onClick={() => handleDeleteScene(scene.id)}
+                        className="absolute top-2 right-2 p-1.5 bg-rose-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-600"
+                      >
+                        <Icons.Trash />
+                      </button>
+                      
+                      {/* Starting Scene Checkbox */}
+                      <button
+                        onClick={() => {
+                          const updatedScenes = scenes.map(s => ({
+                            ...s,
+                            isStartingScene: s.id === scene.id ? !s.isStartingScene : false
+                          }));
+                          onUpdateScenes(updatedScenes);
+                        }}
+                        className={`absolute top-2 left-2 p-1.5 rounded-lg transition-all ${
+                          scene.isStartingScene 
+                            ? 'bg-amber-500 text-white opacity-100 shadow-lg shadow-amber-500/30' 
+                            : 'bg-black/50 text-white/70 opacity-0 group-hover:opacity-100 hover:bg-black/70'
+                        }`}
+                        title={scene.isStartingScene ? "Starting scene" : "Set as starting scene"}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill={scene.isStartingScene ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
                         </svg>
-                        <Input 
-                          value={scene.tag} 
-                          onChange={(v) => handleUpdateSceneTag(scene.id, v)} 
-                          placeholder="Enter keyword (e.g., home, forest)..." 
-                          className="!bg-black/40 !border-white/20 !text-white !text-[10px] !h-7 !px-2 focus:!ring-white/10 placeholder:!text-white/40"
-                        />
-                      </div>
+                      </button>
+                      {scene.isStartingScene && (
+                        <div className="absolute top-2 left-10 bg-amber-500 text-white text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md shadow-lg">
+                          Start
+                        </div>
+                      )}
                     </div>
-                    <button 
-                      onClick={() => handleDeleteScene(scene.id)}
-                      className="absolute top-2 right-2 p-1.5 bg-rose-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-600"
-                    >
-                      <Icons.Trash />
-                    </button>
-                    {/* Starting Scene Checkbox */}
-                    <button
-                      onClick={() => {
-                        const updatedScenes = scenes.map(s => ({
-                          ...s,
-                          isStartingScene: s.id === scene.id ? !s.isStartingScene : false
-                        }));
-                        onUpdateScenes(updatedScenes);
-                      }}
-                      className={`absolute top-2 left-2 p-1.5 rounded-lg transition-all ${
-                        scene.isStartingScene 
-                          ? 'bg-amber-500 text-white opacity-100 shadow-lg shadow-amber-500/30' 
-                          : 'bg-black/50 text-white/70 opacity-0 group-hover:opacity-100 hover:bg-black/70'
-                      }`}
-                      title={scene.isStartingScene ? "Starting scene" : "Set as starting scene"}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill={scene.isStartingScene ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                      </svg>
-                    </button>
-                    {scene.isStartingScene && (
-                      <div className="absolute top-2 left-10 bg-amber-500 text-white text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md shadow-lg">
-                        Start
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
                 {scenes.length === 0 && (
                   <div className="col-span-full py-12 text-center text-slate-400 border-2 border-dashed border-slate-100 rounded-2xl">
                      <p className="text-xs font-bold uppercase tracking-widest">No scenes uploaded</p>
@@ -691,6 +718,14 @@ export const WorldTab: React.FC<WorldTabProps> = ({
           </section>
         </div>
       </div>
+      
+      {/* Scene Tag Editor Modal */}
+      <SceneTagEditorModal
+        isOpen={!!editingScene}
+        onClose={() => setEditingScene(null)}
+        scene={editingScene}
+        onUpdateTags={handleUpdateSceneTags}
+      />
     </div>
   );
 };

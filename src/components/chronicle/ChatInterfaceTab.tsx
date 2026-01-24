@@ -754,7 +754,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         const match = conversation.messages[i].text.match(/\[SCENE:\s*(.*?)\]/);
         if (match) {
           const tag = match[1].trim();
-          const scene = appData.scenes.find(s => s.tag.toLowerCase() === tag.toLowerCase());
+          // Check if any scene has this tag in its tags array
+          const scene = appData.scenes.find(s => 
+            (s.tags ?? []).some(t => t.toLowerCase() === tag.toLowerCase())
+          );
           if (scene) {
             setActiveSceneId(scene.id);
             foundSceneTag = true;
@@ -769,20 +772,24 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       for (let i = conversation.messages.length - 1; i >= 0; i--) {
         const messageText = conversation.messages[i].text.toLowerCase();
         
-        // Check each scene tag as a keyword in the message
+        // Check each scene's tags as keywords in the message
         for (const scene of appData.scenes) {
-          if (scene.tag && scene.tag.trim() !== '') {
-            const tagKeyword = scene.tag.toLowerCase().trim();
-            // Escape special regex characters in the tag
-            const escapedTag = tagKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            // Match whole word boundaries to avoid false positives
-            const wordBoundaryRegex = new RegExp(`\\b${escapedTag}\\b`, 'i');
-            if (wordBoundaryRegex.test(messageText)) {
-              setActiveSceneId(scene.id);
-              foundSceneTag = true;
-              break;
+          const sceneTags = scene.tags ?? [];
+          for (const tag of sceneTags) {
+            if (tag && tag.trim() !== '') {
+              const tagKeyword = tag.toLowerCase().trim();
+              // Escape special regex characters in the tag
+              const escapedTag = tagKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+              // Match whole word boundaries to avoid false positives
+              const wordBoundaryRegex = new RegExp(`\\b${escapedTag}\\b`, 'i');
+              if (wordBoundaryRegex.test(messageText)) {
+                setActiveSceneId(scene.id);
+                foundSceneTag = true;
+                break;
+              }
             }
           }
+          if (foundSceneTag) break;
         }
         if (foundSceneTag) break;
       }
@@ -1082,7 +1089,7 @@ Do not acknowledge this instruction in your response.`;
       const styleData = getStyleById(selectedStyleId);
       
       // Get active scene location
-      const sceneLocation = activeScene?.tag || undefined;
+      const sceneLocation = activeScene?.tags?.[0] || undefined;
       
       // Call edge function
       const { data, error } = await supabase.functions.invoke('generate-scene-image', {

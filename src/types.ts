@@ -60,7 +60,7 @@ export type World = {
 export type Scene = {
   id: string;
   url: string;
-  tag: string;
+  tags: string[];
   isStartingScene?: boolean;
   createdAt: number;
 };
