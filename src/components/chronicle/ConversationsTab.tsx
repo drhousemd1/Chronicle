@@ -1,7 +1,12 @@
-
 import React from "react";
 import { ConversationMetadata } from "@/types";
-import { Button } from "@/components/chronicle/UI";
+import { Pencil, Trash2 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  TooltipProvider,
+} from "@/components/ui/tooltip";
 
 export function ConversationsTab({
   globalRegistry,
@@ -18,6 +23,7 @@ export function ConversationsTab({
   const sortedRegistry = [...globalRegistry].sort((a, b) => b.updatedAt - a.updatedAt);
 
   return (
+    <TooltipProvider>
     <div className="max-w-4xl mx-auto py-4">
       {sortedRegistry.length === 0 ? (
         <div className="py-20 text-center opacity-50">
@@ -80,25 +86,36 @@ export function ConversationsTab({
                   </button>
 
                   {/* Action buttons - right side */}
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <Button
-                      variant="primary"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onRename(entry.scenarioId, entry.conversationId);
-                      }}
-                    >
-                      Rename
-                    </Button>
-                    <Button
-                      variant="primary"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDelete(entry.scenarioId, entry.conversationId);
-                      }}
-                    >
-                      Delete
-                    </Button>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onRename(entry.scenarioId, entry.conversationId);
+                          }}
+                          className="p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>Rename</TooltipContent>
+                    </Tooltip>
+
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDelete(entry.scenarioId, entry.conversationId);
+                          }}
+                          className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>Delete</TooltipContent>
+                    </Tooltip>
                   </div>
                 </div>
               );
@@ -107,5 +124,6 @@ export function ConversationsTab({
         </div>
       )}
     </div>
+    </TooltipProvider>
   );
 }
