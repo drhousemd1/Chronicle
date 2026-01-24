@@ -4,7 +4,7 @@
 import React from 'react';
 import { SideCharacter, CharacterTraitSection } from '@/types';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, MoreVertical, Pencil } from 'lucide-react';
+import { Loader2, MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +17,7 @@ interface SideCharacterCardProps {
   isExpanded: boolean;
   onToggleExpand: () => void;
   onStartEdit?: () => void;
+  onDelete?: () => void;
   openSections: Record<string, boolean>;
   onToggleSection: (sectionId: string) => void;
   isUpdating?: boolean;
@@ -27,6 +28,7 @@ export const SideCharacterCard: React.FC<SideCharacterCardProps> = ({
   isExpanded,
   onToggleExpand,
   onStartEdit,
+  onDelete,
   openSections,
   onToggleSection,
   isUpdating = false
@@ -203,11 +205,20 @@ export const SideCharacterCard: React.FC<SideCharacterCardProps> = ({
                   <MoreVertical className="w-4 h-4" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-white border-slate-200 shadow-lg">
+              <DropdownMenuContent align="end" className="bg-white border-slate-200 shadow-lg z-50">
                 <DropdownMenuItem onClick={onStartEdit}>
                   <Pencil className="w-4 h-4 mr-2" />
                   Edit character
                 </DropdownMenuItem>
+                {onDelete && (
+                  <DropdownMenuItem 
+                    onClick={onDelete}
+                    className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete character
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

@@ -1615,6 +1615,30 @@ Do not acknowledge this instruction in your response.`;
     setCharacterToEdit(null);
   };
   
+  // Delete a side character
+  const handleDeleteSideCharacter = async (charId: string) => {
+    if (!confirm('Delete this character? This cannot be undone.')) return;
+    
+    try {
+      await supabaseData.deleteSideCharacter(charId);
+      
+      // Update local ref and propagate to parent
+      const updatedList = sideCharactersRef.current.filter(sc => sc.id !== charId);
+      sideCharactersRef.current = updatedList;
+      onUpdateSideCharacters?.(updatedList);
+      
+      // Close expanded state if this was the expanded character
+      if (expandedCharId === charId) {
+        setExpandedCharId(null);
+      }
+      
+      toast.success('Character deleted');
+    } catch (error) {
+      console.error('Failed to delete side character:', error);
+      toast.error('Failed to delete character');
+    }
+  };
+  
   // Save character edits to session state (main characters only)
   const handleSaveMainCharacterEdit = async (char: Character, draft: CharacterEditDraft) => {
     setIsSavingEdit(true);
@@ -2071,6 +2095,7 @@ const updatedChar: SideCharacter = {
                         isExpanded={expandedCharId === char.id}
                         onToggleExpand={() => toggleCharacterExpand(char.id)}
                         onStartEdit={() => openCharacterEditModal(char as SideCharacter)}
+                        onDelete={() => handleDeleteSideCharacter(char.id)}
                         openSections={openSections}
                         onToggleSection={toggleSection}
                       />
@@ -2098,6 +2123,7 @@ const updatedChar: SideCharacter = {
                         isExpanded={expandedCharId === char.id}
                         onToggleExpand={() => toggleCharacterExpand(char.id)}
                         onStartEdit={() => openCharacterEditModal(char as SideCharacter)}
+                        onDelete={() => handleDeleteSideCharacter(char.id)}
                         openSections={openSections}
                         onToggleSection={toggleSection}
                         isUpdating={updatingCharacterIds.has(char.id)}
