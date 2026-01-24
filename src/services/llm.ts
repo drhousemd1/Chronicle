@@ -11,7 +11,13 @@ const TIME_DESCRIPTIONS: Record<TimeOfDay, string> = {
 // Critical dialog formatting rules that are always included
 const CRITICAL_DIALOG_RULES = `Enclose all spoken dialogue in " ".
 Enclose all physical actions or descriptions in * *.
-Enclose all internal thoughts in ( ).`;
+Enclose all internal thoughts in ( ).
+
+**NARRATIVE POV RULES (MANDATORY):**
+- All narration and descriptions MUST be written in third-person
+- Use character names (e.g., "Ashley felt..." or "Her heart raced...") instead of "I felt..."
+- Thoughts in parentheses should use third-person or the character's name (e.g., "(Ashley couldn't believe it)" not "(I couldn't believe it)")
+- This ensures clear speaker attribution for multi-character scenes`;
 
 function getSystemInstruction(
   appData: ScenarioData, 
