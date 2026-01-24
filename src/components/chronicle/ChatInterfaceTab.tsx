@@ -50,7 +50,7 @@ interface ChatInterfaceTabProps {
   onUpdateSideCharacters?: (sideCharacters: SideCharacter[]) => void;
 }
 
-const FormattedMessage: React.FC<{ text: string; transparentMode?: boolean }> = ({ text, transparentMode = false }) => {
+const FormattedMessage: React.FC<{ text: string }> = ({ text }) => {
   const tokens = useMemo(() => {
     const cleanRaw = text.replace(/\[SCENE:\s*.*?\]/g, '').trim();
     const regex = /(\*.*?\*)|(".*?")|(\(.*?\))/g;
@@ -83,23 +83,11 @@ const FormattedMessage: React.FC<{ text: string; transparentMode?: boolean }> = 
     return parts;
   }, [text]);
 
-  // Adaptive blur behind text for transparent mode - creates subtle frosted effect for readability
-  const transparentBlurStyle: React.CSSProperties = transparentMode 
-    ? { 
-        backdropFilter: 'blur(4px)',
-        WebkitBackdropFilter: 'blur(4px)',
-        backgroundColor: 'rgba(0,0,0,0.15)',
-        padding: '0 2px',
-        borderRadius: '2px',
-      } 
-    : {};
-
   return (
     // whitespace-pre-wrap preserves newlines and paragraph spacing
     <div className="whitespace-pre-wrap">
       {tokens.map((token, i) => {
         if (token.type === 'speech') {
-          // Speech text - no blur needed, already white and readable
           return (
             <span key={i} className="text-white font-medium">
               "{token.content}"
@@ -108,11 +96,7 @@ const FormattedMessage: React.FC<{ text: string; transparentMode?: boolean }> = 
         }
         if (token.type === 'action') {
           return (
-            <span 
-              key={i} 
-              className="text-slate-400 italic"
-              style={transparentMode ? transparentBlurStyle : undefined}
-            >
+            <span key={i} className="text-slate-400 italic">
                {token.content}
             </span>
           );
@@ -123,21 +107,15 @@ const FormattedMessage: React.FC<{ text: string; transparentMode?: boolean }> = 
               key={i} 
               className="text-indigo-200/90 text-sm italic font-light tracking-tight animate-in fade-in zoom-in-95 duration-500"
               style={{
-                textShadow: '0 0 8px rgba(129, 140, 248, 0.6), 0 0 16px rgba(129, 140, 248, 0.4), 0 0 24px rgba(129, 140, 248, 0.2)',
-                ...(transparentMode ? transparentBlurStyle : {})
+                textShadow: '0 0 8px rgba(129, 140, 248, 0.6), 0 0 16px rgba(129, 140, 248, 0.4), 0 0 24px rgba(129, 140, 248, 0.2)'
               }}
             >
               {token.content}
             </span>
           );
         }
-        // Plain text
         return (
-          <span 
-            key={i} 
-            className="text-slate-300"
-            style={transparentMode ? transparentBlurStyle : undefined}
-          >
+          <span key={i} className="text-slate-300">
             {token.content}
           </span>
         );
@@ -2183,7 +2161,7 @@ const updatedChar: SideCharacter = {
                           </span>
                         </div>
                         <div className="pt-1 antialiased">
-                          <FormattedMessage text={segment.content} transparentMode={bubblesTransparent} />
+                          <FormattedMessage text={segment.content} />
                         </div>
                         <div className="clear-both" />
                       </div>
@@ -2264,7 +2242,7 @@ const updatedChar: SideCharacter = {
                           </span>
                         </div>
                         <div className="pt-1 antialiased">
-                          <FormattedMessage text={segment.content} transparentMode={bubblesTransparent} />
+                          <FormattedMessage text={segment.content} />
                         </div>
                         <div className="clear-both" />
                       </div>
