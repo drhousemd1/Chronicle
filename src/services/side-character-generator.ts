@@ -98,8 +98,8 @@ export function parseMessageSegments(text: string): MessageSegment[] {
   }
   
   // Pattern to detect narrative transitions (third-person or POV thoughts)
-  // Matches double newline followed by narrative indicators
-  const narrativeBreakPattern = /\n\n+(?=The |She |He |Her |His |It |A |An |They |\(|[A-Z][a-z]+ could |[A-Z][a-z]+ felt |[A-Z][a-z]+ was |[A-Z][a-z]+ had )/;
+  // More flexible whitespace, expanded trigger words including character names
+  const narrativeBreakPattern = /\n\s*\n+(?=The |She |He |Her |His |It |A |An |They |Outside |Inside |Suddenly |Meanwhile |After |Before |\(|[A-Z][a-z]+['']s |[A-Z][a-z]+ could |[A-Z][a-z]+ felt |[A-Z][a-z]+ was |[A-Z][a-z]+ had |[A-Z][a-z]+ didn)/g;
   
   // Build segments
   let lastIndex = 0;
@@ -119,20 +119,35 @@ export function parseMessageSegments(text: string): MessageSegment[] {
     const content = cleanText.slice(contentStart, contentEnd).trim();
     
     if (content) {
-      // Check for narrative breaks within this speaker's content
-      const breakMatch = narrativeBreakPattern.exec(content);
+      // Find ALL narrative breaks within this speaker's content using matchAll
+      const allBreaks = [...content.matchAll(narrativeBreakPattern)];
       
-      if (breakMatch) {
-        // Split: first part stays with named speaker
-        const speakerPart = content.slice(0, breakMatch.index).trim();
-        // Second part becomes narrative (null speaker → will resolve to POV character)
-        const narrativePart = content.slice(breakMatch.index).trim();
+      console.log('[Segment Parser] Speaker:', m.name, '| Content length:', content.length, '| Breaks found:', allBreaks.length);
+      
+      if (allBreaks.length > 0) {
+        let splitLastEnd = 0;
+        let isFirstPart = true;
         
-        if (speakerPart) {
-          segments.push({ speakerName: m.name, content: speakerPart });
+        for (const breakMatch of allBreaks) {
+          const partBeforeBreak = content.slice(splitLastEnd, breakMatch.index).trim();
+          
+          if (partBeforeBreak) {
+            segments.push({
+              speakerName: isFirstPart ? m.name : null,
+              content: partBeforeBreak
+            });
+            console.log('[Segment Parser] Added segment:', isFirstPart ? m.name : 'null (POV)', '| Length:', partBeforeBreak.length);
+          }
+          
+          isFirstPart = false;
+          splitLastEnd = breakMatch.index;
         }
-        if (narrativePart) {
-          segments.push({ speakerName: null, content: narrativePart });
+        
+        // Remaining content after last break (this is the narrative part)
+        const remaining = content.slice(splitLastEnd).trim();
+        if (remaining) {
+          segments.push({ speakerName: null, content: remaining });
+          console.log('[Segment Parser] Added narrative segment (null/POV) | Length:', remaining.length);
         }
       } else {
         segments.push({ speakerName: m.name, content });
