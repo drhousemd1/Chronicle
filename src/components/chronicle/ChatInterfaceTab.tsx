@@ -46,7 +46,7 @@ interface ChatInterfaceTabProps {
   onUpdate: (convs: Conversation[]) => void;
   onBack: () => void;
   onSaveScenario: (conversations?: Conversation[]) => void;
-  onUpdateUiSettings?: (patch: { showBackgrounds?: boolean; transparentBubbles?: boolean; darkMode?: boolean }) => void;
+  onUpdateUiSettings?: (patch: { showBackgrounds?: boolean; transparentBubbles?: boolean; darkMode?: boolean; offsetBubbles?: boolean }) => void;
   onUpdateSideCharacters?: (sideCharacters: SideCharacter[]) => void;
 }
 
@@ -1820,8 +1820,9 @@ const updatedChar: SideCharacter = {
   const bubblesTransparent = appData.uiSettings?.transparentBubbles;
   const showBackground = appData.uiSettings?.showBackgrounds && activeScene;
   const darkMode = appData.uiSettings?.darkMode;
+  const offsetBubbles = appData.uiSettings?.offsetBubbles;
 
-  const handleUpdateUiSettings = (patch: { showBackgrounds?: boolean; transparentBubbles?: boolean; darkMode?: boolean }) => {
+  const handleUpdateUiSettings = (patch: { showBackgrounds?: boolean; transparentBubbles?: boolean; darkMode?: boolean; offsetBubbles?: boolean }) => {
     if (onUpdateUiSettings) {
       onUpdateUiSettings(patch);
     }
@@ -2025,7 +2026,11 @@ const updatedChar: SideCharacter = {
             const segments = mergeByRenderedSpeaker(rawSegments, isAi, appData, userChar);
 
             return (
-              <div key={msg.id} className="w-full max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 group">
+              <div key={msg.id} className={`w-full animate-in fade-in slide-in-from-bottom-4 duration-500 group ${
+                offsetBubbles 
+                  ? `max-w-4xl ${isAi ? 'mr-auto' : 'ml-auto'}` 
+                  : 'max-w-7xl mx-auto'
+              }`}>
                 <div className={`p-8 pb-12 rounded-[2rem] shadow-2xl flex flex-col gap-4 transition-all relative ${
                   bubblesTransparent
                     ? 'bg-black/50'
@@ -2208,7 +2213,7 @@ const updatedChar: SideCharacter = {
             const segments = mergeByRenderedSpeaker(rawSegments, true, appData, userChar);
             
             return (
-              <div className="w-full max-w-7xl mx-auto">
+              <div className={`w-full ${offsetBubbles ? 'max-w-4xl mr-auto' : 'max-w-7xl mx-auto'}`}>
                 <div className={`p-8 pb-12 rounded-[2rem] border shadow-2xl flex flex-col gap-4 ${
                     bubblesTransparent
                       ? 'bg-black/50 border-white/5'
@@ -2321,6 +2326,15 @@ const updatedChar: SideCharacter = {
                          type="checkbox"
                          checked={appData.uiSettings?.darkMode}
                          onChange={(e) => handleUpdateUiSettings({ darkMode: e.target.checked })}
+                         className="accent-blue-500"
+                       />
+                    </div>
+                    <div className="flex items-center justify-between">
+                       <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Offset Bubbles</span>
+                       <input
+                         type="checkbox"
+                         checked={offsetBubbles}
+                         onChange={(e) => handleUpdateUiSettings({ offsetBubbles: e.target.checked })}
                          className="accent-blue-500"
                        />
                     </div>
