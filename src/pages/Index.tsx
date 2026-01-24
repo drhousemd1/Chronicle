@@ -114,7 +114,7 @@ const IndexContent = () => {
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [isCharacterPickerOpen, setIsCharacterPickerOpen] = useState(false);
   const [conversationRegistry, setConversationRegistry] = useState<ConversationMetadata[]>([]);
-  const [selectedConversationEntry, setSelectedConversationEntry] = useState<ConversationMetadata | null>(null);
+  // Removed: selectedConversationEntry state - sessions now open directly
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
@@ -498,15 +498,7 @@ const IndexContent = () => {
       const updatedConvRegistry = await supabaseData.fetchConversationRegistry();
       setConversationRegistry(updatedConvRegistry);
       
-      // Sync selectedConversationEntry with fresh data to update message count
-      if (selectedConversationEntry) {
-        const freshEntry = updatedConvRegistry.find(
-          c => c.conversationId === selectedConversationEntry.conversationId
-        );
-        if (freshEntry) {
-          setSelectedConversationEntry(freshEntry);
-        }
-      }
+      // Removed: selectedConversationEntry sync - no longer needed
       
       // Sync characters to library (create copies with new IDs to avoid overwriting scenario-linked characters)
       if (dataToSave.characters.length > 0) {
@@ -910,7 +902,7 @@ const IndexContent = () => {
             <SidebarItem active={tab === "hub"} label="Your Stories" icon={<IconsList.Hub />} onClick={() => { setActiveId(null); setTab("hub"); setPlayingConversationId(null); }} collapsed={sidebarCollapsed} />
             <SidebarItem active={tab === "library"} label="Character Library" icon={<IconsList.Library />} onClick={() => { setActiveId(null); setTab("library"); setSelectedCharacterId(null); setPlayingConversationId(null); }} collapsed={sidebarCollapsed} />
             
-            <SidebarItem active={tab === "conversations"} label="Chat History" icon={<IconsList.Chat />} onClick={() => { setSelectedConversationEntry(null); setTab("conversations"); }} collapsed={sidebarCollapsed} />
+            <SidebarItem active={tab === "conversations"} label="Chat History" icon={<IconsList.Chat />} onClick={() => { setTab("conversations"); }} collapsed={sidebarCollapsed} />
             
             <SidebarItem 
               active={tab === "world" || tab === "characters"} 
@@ -1032,23 +1024,10 @@ const IndexContent = () => {
                   </h1>
                 </div>
               )}
-              {tab === "conversations" && !selectedConversationEntry && (
+              {tab === "conversations" && (
                 <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
                   Chat History
                 </h1>
-              )}
-              {tab === "conversations" && selectedConversationEntry && (
-                <div className="flex items-center gap-3">
-                  <button 
-                    onClick={() => setSelectedConversationEntry(null)}
-                    className="p-2 hover:bg-slate-100 rounded-full transition-colors"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-                  </button>
-                  <h1 className="text-lg font-black text-slate-900 tracking-tight">
-                    {selectedConversationEntry.scenarioTitle}
-                  </h1>
-                </div>
               )}
               {tab === "hub" && (
                 <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
@@ -1074,39 +1053,6 @@ const IndexContent = () => {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-              )}
-              {tab === "conversations" && selectedConversationEntry && (
-                <>
-                  <Button 
-                    variant="primary" 
-                    onClick={() => handleResumeFromHistory(selectedConversationEntry.scenarioId, selectedConversationEntry.conversationId)}
-                  >
-                    ▶ Resume
-                  </Button>
-                  <Button 
-                    variant="primary" 
-                    onClick={() => {
-                      const title = prompt("Rename session:", selectedConversationEntry.conversationTitle)?.trim();
-                      if (title) {
-                        handleRenameConversationFromHistory(selectedConversationEntry.scenarioId, selectedConversationEntry.conversationId, title);
-                        setSelectedConversationEntry({ ...selectedConversationEntry, conversationTitle: title });
-                      }
-                    }}
-                  >
-                    Rename
-                  </Button>
-                  <Button 
-                    variant="primary" 
-                    onClick={() => {
-                      if (confirm("Delete this saved session forever?")) {
-                        handleDeleteConversationFromHistory(selectedConversationEntry.scenarioId, selectedConversationEntry.conversationId);
-                        setSelectedConversationEntry(null);
-                      }
-                    }}
-                  >
-                    Delete
-                  </Button>
-                </>
               )}
               {(tab === "characters" || tab === "library") && (
                 <>
@@ -1202,8 +1148,19 @@ const IndexContent = () => {
             <div className="p-10 overflow-y-auto h-full">
               <ConversationsTab
                 globalRegistry={conversationRegistry}
-                selectedEntry={selectedConversationEntry}
-                onSelectEntry={setSelectedConversationEntry}
+                onResume={handleResumeFromHistory}
+                onRename={(scenarioId, conversationId) => {
+                  const entry = conversationRegistry.find(e => e.conversationId === conversationId);
+                  const title = prompt("Rename session:", entry?.conversationTitle || "")?.trim();
+                  if (title) {
+                    handleRenameConversationFromHistory(scenarioId, conversationId, title);
+                  }
+                }}
+                onDelete={(scenarioId, conversationId) => {
+                  if (confirm("Delete this saved session forever?")) {
+                    handleDeleteConversationFromHistory(scenarioId, conversationId);
+                  }
+                }}
               />
             </div>
           )}
