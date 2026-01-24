@@ -50,7 +50,7 @@ interface ChatInterfaceTabProps {
   onUpdateSideCharacters?: (sideCharacters: SideCharacter[]) => void;
 }
 
-const FormattedMessage: React.FC<{ text: string }> = ({ text }) => {
+const FormattedMessage: React.FC<{ text: string; transparentMode?: boolean }> = ({ text, transparentMode = false }) => {
   const tokens = useMemo(() => {
     const cleanRaw = text.replace(/\[SCENE:\s*.*?\]/g, '').trim();
     const regex = /(\*.*?\*)|(".*?")|(\(.*?\))/g;
@@ -83,20 +83,33 @@ const FormattedMessage: React.FC<{ text: string }> = ({ text }) => {
     return parts;
   }, [text]);
 
+  // Dark text shadow for transparent mode - creates halo effect for readability
+  const transparentTextShadow = transparentMode 
+    ? { textShadow: '0 1px 3px rgba(0,0,0,0.8)' } 
+    : {};
+
   return (
     // whitespace-pre-wrap preserves newlines and paragraph spacing
     <div className="whitespace-pre-wrap">
       {tokens.map((token, i) => {
         if (token.type === 'speech') {
           return (
-            <span key={i} className="text-white font-medium">
+            <span 
+              key={i} 
+              className="text-white font-medium"
+              style={transparentTextShadow}
+            >
               "{token.content}"
             </span>
           );
         }
         if (token.type === 'action') {
           return (
-            <span key={i} className="text-slate-400 italic">
+            <span 
+              key={i} 
+              className={`italic ${transparentMode ? 'text-slate-200' : 'text-slate-400'}`}
+              style={transparentTextShadow}
+            >
                {token.content}
             </span>
           );
@@ -105,16 +118,28 @@ const FormattedMessage: React.FC<{ text: string }> = ({ text }) => {
           return (
             <span 
               key={i} 
-              className="text-indigo-200/90 text-sm italic font-light tracking-tight animate-in fade-in zoom-in-95 duration-500"
+              className={`text-sm italic font-light tracking-tight animate-in fade-in zoom-in-95 duration-500 ${
+                transparentMode ? 'text-indigo-100' : 'text-indigo-200/90'
+              }`}
               style={{
-                textShadow: '0 0 8px rgba(129, 140, 248, 0.6), 0 0 16px rgba(129, 140, 248, 0.4), 0 0 24px rgba(129, 140, 248, 0.2)'
+                textShadow: transparentMode
+                  ? '0 1px 3px rgba(0,0,0,0.8), 0 0 8px rgba(129, 140, 248, 0.6), 0 0 16px rgba(129, 140, 248, 0.4)'
+                  : '0 0 8px rgba(129, 140, 248, 0.6), 0 0 16px rgba(129, 140, 248, 0.4), 0 0 24px rgba(129, 140, 248, 0.2)'
               }}
             >
               {token.content}
             </span>
           );
         }
-        return <span key={i} className="text-slate-300">{token.content}</span>;
+        return (
+          <span 
+            key={i} 
+            className={transparentMode ? 'text-slate-100' : 'text-slate-300'}
+            style={transparentTextShadow}
+          >
+            {token.content}
+          </span>
+        );
       })}
     </div>
   );
@@ -2157,7 +2182,7 @@ const updatedChar: SideCharacter = {
                           </span>
                         </div>
                         <div className="pt-1 antialiased">
-                          <FormattedMessage text={segment.content} />
+                          <FormattedMessage text={segment.content} transparentMode={bubblesTransparent} />
                         </div>
                         <div className="clear-both" />
                       </div>
@@ -2238,7 +2263,7 @@ const updatedChar: SideCharacter = {
                           </span>
                         </div>
                         <div className="pt-1 antialiased">
-                          <FormattedMessage text={segment.content} />
+                          <FormattedMessage text={segment.content} transparentMode={bubblesTransparent} />
                         </div>
                         <div className="clear-both" />
                       </div>
