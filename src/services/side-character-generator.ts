@@ -97,6 +97,10 @@ export function parseMessageSegments(text: string): MessageSegment[] {
     return [{ speakerName: null, content: cleanText }];
   }
   
+  // Pattern to detect narrative transitions (third-person or POV thoughts)
+  // Matches double newline followed by narrative indicators
+  const narrativeBreakPattern = /\n\n+(?=The |She |He |Her |His |It |A |An |They |\(|[A-Z][a-z]+ could |[A-Z][a-z]+ felt |[A-Z][a-z]+ was |[A-Z][a-z]+ had )/;
+  
   // Build segments
   let lastIndex = 0;
   
@@ -115,7 +119,24 @@ export function parseMessageSegments(text: string): MessageSegment[] {
     const content = cleanText.slice(contentStart, contentEnd).trim();
     
     if (content) {
-      segments.push({ speakerName: m.name, content });
+      // Check for narrative breaks within this speaker's content
+      const breakMatch = narrativeBreakPattern.exec(content);
+      
+      if (breakMatch) {
+        // Split: first part stays with named speaker
+        const speakerPart = content.slice(0, breakMatch.index).trim();
+        // Second part becomes narrative (null speaker → will resolve to POV character)
+        const narrativePart = content.slice(breakMatch.index).trim();
+        
+        if (speakerPart) {
+          segments.push({ speakerName: m.name, content: speakerPart });
+        }
+        if (narrativePart) {
+          segments.push({ speakerName: null, content: narrativePart });
+        }
+      } else {
+        segments.push({ speakerName: m.name, content });
+      }
     }
     
     lastIndex = contentEnd;
