@@ -2,15 +2,24 @@ export interface AvatarStyle {
   id: string;
   displayName: string;
   thumbnailUrl: string;
-  backendPrompt: string; // Hidden from user, sent to AI
+  backendPrompt: string; // Default/feminine variant
+  backendPromptMasculine?: string;
+  backendPromptAndrogynous?: string;
 }
+
+export type GenderPresentation = 'feminine' | 'masculine' | 'androgynous';
 
 export const AVATAR_STYLES: AvatarStyle[] = [
   {
     id: "cinematic-2-5d",
     displayName: "Cinematic 2.5D",
     thumbnailUrl: "/images/styles/cinematic-2-5d.png",
-    backendPrompt: "Masterpiece, best quality, polished 2.5D digital illustration aesthetic. Semi-realistic rendering with a focus on depth and volume. Smooth airbrushed textures with soft subsurface scattering effect. High-gloss specular highlights giving surfaces a polished sheen. Cinematic lighting, dramatic HDR backlighting with gentle rim light glow, global illumination. High contrast, rich saturation palette. Soft-focus depth of field, blurred background for subject isolation. Clean composition, visual harmony, ultra-high resolution 8K rendering."
+    // Revision 17 - Feminine variant
+    backendPrompt: "Polished 2.5-D semi-realistic digital illustration, clean digital paintover, smooth airbrushed skin textures, airbrushed gradients and seamless clean transitions, simplified textures with no photographic microtexture, illustrative highlight shapes on metal and skin, refined feminine features with realistic facial proportions and natural eye size, consistent warm skin tone, no lineart, no cel shading, clean high-detail finish, soft background blur, warm rim light glow, high contrast soft pastel palette.",
+    // Revision 17 - Masculine variant
+    backendPromptMasculine: "Polished 2.5-D semi-realistic digital illustration, clean digital paintover, smooth airbrushed skin textures, airbrushed gradients and seamless clean transitions, simplified textures with no photographic microtexture, illustrative highlight shapes on metal and skin, refined masculine features with realistic facial proportions and defined jawline, consistent skin tone, no lineart, no cel shading, clean high-detail finish, soft background blur, warm rim light glow, high contrast palette.",
+    // Revision 17 - Androgynous variant
+    backendPromptAndrogynous: "Polished 2.5-D semi-realistic digital illustration, clean digital paintover, smooth airbrushed skin textures, airbrushed gradients and seamless clean transitions, simplified textures with no photographic microtexture, illustrative highlight shapes on metal and skin, refined features with realistic facial proportions and natural eye size, consistent skin tone, no lineart, no cel shading, clean high-detail finish, soft background blur, warm rim light glow, high contrast soft palette."
   },
   {
     id: "comic-book",
@@ -43,3 +52,20 @@ export const DEFAULT_STYLE_ID = "cinematic-2-5d";
 export const getStyleById = (id: string): AvatarStyle | undefined => {
   return AVATAR_STYLES.find(style => style.id === id);
 };
+
+/**
+ * Get the appropriate style prompt based on character's gender presentation.
+ * Falls back to default (feminine) prompt if variant doesn't exist.
+ */
+export function getStylePromptForGender(
+  style: AvatarStyle, 
+  gender: GenderPresentation
+): string {
+  if (gender === 'masculine' && style.backendPromptMasculine) {
+    return style.backendPromptMasculine;
+  }
+  if (gender === 'androgynous' && style.backendPromptAndrogynous) {
+    return style.backendPromptAndrogynous;
+  }
+  return style.backendPrompt; // Default to feminine
+}
