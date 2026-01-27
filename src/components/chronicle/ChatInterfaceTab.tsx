@@ -471,6 +471,171 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     console.log('[ChatInterfaceTab] messages:', conversation?.messages?.map(m => ({ id: m.id, role: m.role, text: m.text.slice(0, 50) })));
   }, [conversationId, conversation]);
   
+  // Trigger update indicator for a character (10-second duration)
+  // MUST be defined before early return to maintain hooks order
+  const showCharacterUpdateIndicator = useCallback((characterId: string) => {
+    setUpdatingCharacterIds(prev => new Set(prev).add(characterId));
+    setTimeout(() => {
+      setUpdatingCharacterIds(prev => {
+        const next = new Set(prev);
+        next.delete(characterId);
+        return next;
+      });
+    }, 10000); // 10 second duration for better visibility
+  }, []);
+  
+  // Active scene computed from scene ID
+  // MUST be defined before early return to maintain hooks order
+  const activeScene = useMemo(() =>
+    appData.scenes.find(s => s.id === activeSceneId) || null
+  , [appData.scenes, activeSceneId]);
+  
+  // Auto-scroll effect
+  // MUST be defined before early return to maintain hooks order
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [conversation?.messages, streamingContent]);
+
+  // Sync day/time state from conversation
+  // MUST be defined before early return to maintain hooks order
+  useEffect(() => {
+    if (conversation) {
+      setCurrentDay(conversation.currentDay || 1);
+      setCurrentTimeOfDay(conversation.currentTimeOfDay || 'day');
+    }
+  }, [conversation?.id]);
+  
+  // Scene detection effect - detects which background scene to show based on conversation
+  // MUST be defined before early return to maintain hooks order
+  useEffect(() => {
+    // Skip processing if in loading state
+    if (conversationId === "loading" || !conversation) return;
+    
+    // For the FIRST message (opening dialog), always use starting scene
+    const isInitialState = conversation?.messages.length === 1;
+    
+    if (isInitialState) {
+      const startingScene = appData.scenes.find(s => s.isStartingScene);
+      if (startingScene) {
+        setActiveSceneId(startingScene.id);
+        return;
+      }
+    }
+    
+    // First, try to find a [SCENE: tag] command in messages (highest priority)
+    let foundSceneTag = false;
+    if (conversation?.messages.length) {
+      for (let i = conversation.messages.length - 1; i >= 0; i--) {
+        const match = conversation.messages[i].text.match(/\[SCENE:\s*(.*?)\]/);
+        if (match) {
+          const tag = match[1].trim();
+          const scene = appData.scenes.find(s => 
+            (s.tags ?? []).some(t => t.toLowerCase() === tag.toLowerCase())
+          );
+          if (scene) {
+            setActiveSceneId(scene.id);
+            foundSceneTag = true;
+            break;
+          }
+        }
+      }
+    }
+    
+    // Second pass: Keyword-based detection if no explicit tag found
+    if (!foundSceneTag && conversation?.messages.length && appData.scenes.length > 0) {
+      const sceneScores: { sceneId: string; score: number; matchedInMostRecent: boolean }[] = [];
+      const allMessages = conversation.messages;
+      const recentMessages = allMessages.slice(-5).filter((_, idx, arr) => {
+        const originalIndex = allMessages.length - arr.length + idx;
+        return !(originalIndex === 0 && allMessages.length > 1);
+      });
+      
+      const mostRecentMessageText = recentMessages.length > 0 
+        ? recentMessages[recentMessages.length - 1].text.toLowerCase() 
+        : '';
+      
+      const checkTagMatch = (tagKeyword: string, messageText: string): { matched: boolean; percentage: number } => {
+        const stopWords = ['a', 'an', 'the', 'with', 'in', 'on', 'at', 'to', 'for', 'of', 'and', 'or'];
+        const tagWords = tagKeyword.split(/\s+/).filter(word => 
+          word.length > 1 && !stopWords.includes(word)
+        );
+        
+        if (tagWords.length === 0) return { matched: false, percentage: 0 };
+        
+        let matchedWords = 0;
+        for (const word of tagWords) {
+          const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const wordRegex = new RegExp(`\\b${escapedWord}\\b`, 'i');
+          if (wordRegex.test(messageText)) {
+            matchedWords++;
+          }
+        }
+        
+        const matchPercentage = matchedWords / tagWords.length;
+        return { matched: matchPercentage >= 0.5, percentage: matchPercentage };
+      };
+      
+      for (const scene of appData.scenes) {
+        let score = 0;
+        let matchedInMostRecent = false;
+        const sceneTags = scene.tags ?? [];
+        
+        for (const tag of sceneTags) {
+          if (tag && tag.trim() !== '') {
+            const tagKeyword = tag.toLowerCase().trim();
+            const { matched } = checkTagMatch(tagKeyword, mostRecentMessageText);
+            if (matched) {
+              matchedInMostRecent = true;
+              break;
+            }
+          }
+        }
+        
+        for (let msgIdx = 0; msgIdx < recentMessages.length; msgIdx++) {
+          const messageText = recentMessages[msgIdx].text.toLowerCase();
+          const messageWeight = msgIdx === recentMessages.length - 1 ? 3 : (msgIdx === recentMessages.length - 2 ? 2 : 1);
+          
+          for (const tag of sceneTags) {
+            if (tag && tag.trim() !== '') {
+              const tagKeyword = tag.toLowerCase().trim();
+              const { matched, percentage } = checkTagMatch(tagKeyword, messageText);
+              
+              if (matched) {
+                const matchBonus = 1 + percentage;
+                score += messageWeight * matchBonus;
+              }
+            }
+          }
+        }
+        
+        if (score > 0) {
+          sceneScores.push({ sceneId: scene.id, score, matchedInMostRecent });
+        }
+      }
+      
+      const validScenes = sceneScores.filter(s => s.matchedInMostRecent);
+      
+      if (validScenes.length > 0) {
+        validScenes.sort((a, b) => b.score - a.score);
+        setActiveSceneId(validScenes[0].sceneId);
+        foundSceneTag = true;
+      } else {
+        foundSceneTag = true; // Prevent fallback to starting scene
+      }
+    }
+    
+    if (!foundSceneTag) {
+      if (!activeSceneId) {
+        const startingScene = appData.scenes.find(s => s.isStartingScene);
+        if (startingScene) {
+          setActiveSceneId(startingScene.id);
+        }
+      }
+    }
+  }, [conversationId, conversation, conversation?.messages, appData.scenes, activeSceneId]);
+
   // LOADING STATE: Show skeleton UI while data is being fetched
   // This enables immediate navigation with progressive data hydration
   // NOTE: This check is placed AFTER all hooks to comply with React rules
@@ -639,18 +804,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       });
     }
   };
-  
-  // Trigger update indicator for a character (5-second duration)
-  const showCharacterUpdateIndicator = useCallback((characterId: string) => {
-    setUpdatingCharacterIds(prev => new Set(prev).add(characterId));
-    setTimeout(() => {
-      setUpdatingCharacterIds(prev => {
-        const next = new Set(prev);
-        next.delete(characterId);
-        return next;
-      });
-    }, 10000); // 10 second duration for better visibility
-  }, []);
 
   // Parse [UPDATE:], [ADDROW:], and [NEWCAT:] tags from AI response
   interface CharacterUpdate {
@@ -949,182 +1102,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       }
     }
   };
-
-  const activeScene = useMemo(() =>
-    appData.scenes.find(s => s.id === activeSceneId) || null
-  , [appData.scenes, activeSceneId]);
-
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [conversation?.messages, streamingContent]);
-
-  // Sync day/time state from conversation
-  useEffect(() => {
-    if (conversation) {
-      setCurrentDay(conversation.currentDay || 1);
-      setCurrentTimeOfDay(conversation.currentTimeOfDay || 'day');
-    }
-  }, [conversation?.id]);
-
-  useEffect(() => {
-    // For the FIRST message (opening dialog), always use starting scene
-    // This ensures the starred "default" scene takes priority over any keyword detection
-    const isInitialState = conversation?.messages.length === 1;
-    
-    if (isInitialState) {
-      const startingScene = appData.scenes.find(s => s.isStartingScene);
-      if (startingScene) {
-        setActiveSceneId(startingScene.id);
-        return; // Skip keyword detection for opening
-      }
-    }
-    
-    // First, try to find a [SCENE: tag] command in messages (highest priority)
-    let foundSceneTag = false;
-    if (conversation?.messages.length) {
-      for (let i = conversation.messages.length - 1; i >= 0; i--) {
-        const match = conversation.messages[i].text.match(/\[SCENE:\s*(.*?)\]/);
-        if (match) {
-          const tag = match[1].trim();
-          // Check if any scene has this tag in its tags array
-          const scene = appData.scenes.find(s => 
-            (s.tags ?? []).some(t => t.toLowerCase() === tag.toLowerCase())
-          );
-          if (scene) {
-            setActiveSceneId(scene.id);
-            foundSceneTag = true;
-            break;
-          }
-        }
-      }
-    }
-    
-    // Second pass: Keyword-based detection if no explicit tag found
-    // Skip the first message (opening dialog) to preserve starting scene
-    if (!foundSceneTag && conversation?.messages.length && appData.scenes.length > 0) {
-      // Weighted scoring: count ALL matching tags for EVERY scene, pick highest score
-      const sceneScores: { sceneId: string; score: number; matchedInMostRecent: boolean }[] = [];
-      
-      // Get recent messages for tag matching (last 5, excluding opening dialog if more messages exist)
-      const allMessages = conversation.messages;
-      const recentMessages = allMessages.slice(-5).filter((_, idx, arr) => {
-        // Skip opening dialog (index 0 in full array) when other messages exist
-        const originalIndex = allMessages.length - arr.length + idx;
-        return !(originalIndex === 0 && allMessages.length > 1);
-      });
-      
-      // Get the most recent message text for the "must match most recent" check
-      const mostRecentMessageText = recentMessages.length > 0 
-        ? recentMessages[recentMessages.length - 1].text.toLowerCase() 
-        : '';
-      
-      // Helper to check if tag matches text
-      const checkTagMatch = (tagKeyword: string, messageText: string): { matched: boolean; percentage: number } => {
-        const stopWords = ['a', 'an', 'the', 'with', 'in', 'on', 'at', 'to', 'for', 'of', 'and', 'or'];
-        const tagWords = tagKeyword.split(/\s+/).filter(word => 
-          word.length > 1 && !stopWords.includes(word)
-        );
-        
-        if (tagWords.length === 0) return { matched: false, percentage: 0 };
-        
-        let matchedWords = 0;
-        for (const word of tagWords) {
-          const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          const wordRegex = new RegExp(`\\b${escapedWord}\\b`, 'i');
-          if (wordRegex.test(messageText)) {
-            matchedWords++;
-          }
-        }
-        
-        const matchPercentage = matchedWords / tagWords.length;
-        // Lower threshold to 50% for more flexible matching
-        return { matched: matchPercentage >= 0.5, percentage: matchPercentage };
-      };
-      
-      for (const scene of appData.scenes) {
-        let score = 0;
-        let matchedInMostRecent = false;
-        const sceneTags = scene.tags ?? [];
-        
-        // First check if ANY tag matches the most recent message
-        for (const tag of sceneTags) {
-          if (tag && tag.trim() !== '') {
-            const tagKeyword = tag.toLowerCase().trim();
-            const { matched } = checkTagMatch(tagKeyword, mostRecentMessageText);
-            if (matched) {
-              matchedInMostRecent = true;
-              break;
-            }
-          }
-        }
-        
-        // Calculate full score across recent messages
-        for (let msgIdx = 0; msgIdx < recentMessages.length; msgIdx++) {
-          const messageText = recentMessages[msgIdx].text.toLowerCase();
-          // Weight more recent messages higher (most recent = 3x, second = 2x, others = 1x)
-          const messageWeight = msgIdx === recentMessages.length - 1 ? 3 : (msgIdx === recentMessages.length - 2 ? 2 : 1);
-          
-          for (const tag of sceneTags) {
-            if (tag && tag.trim() !== '') {
-              const tagKeyword = tag.toLowerCase().trim();
-              const { matched, percentage } = checkTagMatch(tagKeyword, messageText);
-              
-              if (matched) {
-                // Score higher for more complete matches
-                const matchBonus = 1 + percentage;
-                score += messageWeight * matchBonus;
-              }
-            }
-          }
-        }
-        
-        if (score > 0) {
-          sceneScores.push({ sceneId: scene.id, score, matchedInMostRecent });
-        }
-      }
-      
-      // Debug logging (console only, no UI)
-      // Debug logging (console only, no UI)
-      console.log('[Scene Detection] === RUNNING ===');
-      console.log('[Scene Detection] Most recent message text:', mostRecentMessageText.substring(0, 150));
-      console.log('[Scene Detection] All scenes with tags:', appData.scenes.map(s => ({ id: s.id, tags: s.tags, isStarting: s.isStartingScene })));
-      console.log('[Scene Detection] Scene scores:', sceneScores.map(s => {
-        const scene = appData.scenes.find(sc => sc.id === s.sceneId);
-        return { id: s.sceneId, tags: scene?.tags, score: s.score, matchedInMostRecent: s.matchedInMostRecent };
-      }));
-      
-      // CRITICAL: Only consider scenes that matched in the most recent message
-      const validScenes = sceneScores.filter(s => s.matchedInMostRecent);
-      
-      if (validScenes.length > 0) {
-        // Sort by score (highest first) and select the winner
-        validScenes.sort((a, b) => b.score - a.score);
-        console.log('[Scene Detection] Winner (matched most recent):', validScenes[0]);
-        setActiveSceneId(validScenes[0].sceneId);
-        foundSceneTag = true;
-      } else {
-        console.log('[Scene Detection] No scene matched most recent message, keeping current scene');
-        // STICKY BEHAVIOR: Don't change the scene if nothing matched the most recent message
-        // Only set to starting scene on initial load (when activeSceneId is null)
-        foundSceneTag = true; // Prevent fallback to starting scene below
-      }
-    }
-    
-    // If no [SCENE:] tag or keyword was found, fall back to the starting scene ONLY on initial load
-    if (!foundSceneTag) {
-      // Only set starting scene if we don't have an active scene yet
-      if (!activeSceneId) {
-        const startingScene = appData.scenes.find(s => s.isStartingScene);
-        if (startingScene) {
-          setActiveSceneId(startingScene.id);
-        }
-      }
-    }
-  // Add message count and last message ID as dependencies for more reliable triggering
-  }, [conversation?.messages, appData.scenes, conversation?.messages?.length, conversation?.messages?.[conversation.messages.length - 1]?.id]);
-
   // Update conversation when day/time changes
   const handleDayTimeChange = (newDay: number, newTime: TimeOfDay) => {
     const updatedConvs = appData.conversations.map(c =>
