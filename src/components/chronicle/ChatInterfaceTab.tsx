@@ -47,11 +47,11 @@ interface ChatInterfaceTabProps {
   onUpdate: (convs: Conversation[]) => void;
   onBack: () => void;
   onSaveScenario: (conversations?: Conversation[]) => void;
-  onUpdateUiSettings?: (patch: { showBackgrounds?: boolean; transparentBubbles?: boolean; darkMode?: boolean; offsetBubbles?: boolean; proactiveCharacterDiscovery?: boolean }) => void;
+  onUpdateUiSettings?: (patch: { showBackgrounds?: boolean; transparentBubbles?: boolean; darkMode?: boolean; offsetBubbles?: boolean; proactiveCharacterDiscovery?: boolean; dynamicText?: boolean }) => void;
   onUpdateSideCharacters?: (sideCharacters: SideCharacter[]) => void;
 }
 
-const FormattedMessage: React.FC<{ text: string }> = ({ text }) => {
+const FormattedMessage: React.FC<{ text: string; dynamicText?: boolean }> = ({ text, dynamicText = true }) => {
   const tokens = useMemo(() => {
     const cleanRaw = text.replace(/\[SCENE:\s*.*?\]/g, '').trim();
     const regex = /(\*.*?\*)|(".*?")|(\(.*?\))/g;
@@ -88,6 +88,16 @@ const FormattedMessage: React.FC<{ text: string }> = ({ text }) => {
     // whitespace-pre-wrap preserves newlines and paragraph spacing
     <div className="whitespace-pre-wrap">
       {tokens.map((token, i) => {
+        // Book-style: all white, consistent font, symbols already stripped by tokenizer
+        if (!dynamicText) {
+          return (
+            <span key={i} className="text-white font-medium">
+              {token.content}
+            </span>
+          );
+        }
+        
+        // Dynamic text styling (default)
         if (token.type === 'speech') {
           return (
             <span key={i} className="text-white font-medium">
@@ -1951,8 +1961,9 @@ const updatedChar: SideCharacter = {
   const showBackground = appData.uiSettings?.showBackgrounds && activeScene;
   const darkMode = appData.uiSettings?.darkMode;
   const offsetBubbles = appData.uiSettings?.offsetBubbles;
+  const dynamicText = appData.uiSettings?.dynamicText !== false;
 
-  const handleUpdateUiSettings = (patch: { showBackgrounds?: boolean; transparentBubbles?: boolean; darkMode?: boolean; offsetBubbles?: boolean; proactiveCharacterDiscovery?: boolean }) => {
+  const handleUpdateUiSettings = (patch: { showBackgrounds?: boolean; transparentBubbles?: boolean; darkMode?: boolean; offsetBubbles?: boolean; proactiveCharacterDiscovery?: boolean; dynamicText?: boolean }) => {
     if (onUpdateUiSettings) {
       onUpdateUiSettings(patch);
     }
@@ -2322,7 +2333,7 @@ const updatedChar: SideCharacter = {
                           </div>
                         )}
                         <div className={showAvatar ? "pt-1 antialiased" : "antialiased"}>
-                          <FormattedMessage text={segment.content} />
+                          <FormattedMessage text={segment.content} dynamicText={dynamicText} />
                         </div>
                         {showAvatar && <div className="clear-both" />}
                       </div>
@@ -2418,7 +2429,7 @@ const updatedChar: SideCharacter = {
                           </div>
                         )}
                         <div className={showAvatar ? "pt-1 antialiased" : "antialiased"}>
-                          <FormattedMessage text={segment.content} />
+                          <FormattedMessage text={segment.content} dynamicText={dynamicText} />
                         </div>
                         {showAvatar && <div className="clear-both" />}
                       </div>
@@ -2473,61 +2484,6 @@ const updatedChar: SideCharacter = {
                 Memories {memories.length > 0 && `(${memories.length})`}
               </Button>
               
-              {isSettingsOpen && (
-                <div className="absolute bottom-full mb-2 left-0 w-64 bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 space-y-4 animate-in slide-in-from-bottom-2 z-[100]">
-                   <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Show Backgrounds</span>
-                      <input
-                        type="checkbox"
-                        checked={appData.uiSettings?.showBackgrounds}
-                        onChange={(e) => handleUpdateUiSettings({ showBackgrounds: e.target.checked })}
-                      />
-                   </div>
-                    <div className="flex items-center justify-between">
-                       <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Transparent Bubbles</span>
-                       <input
-                         type="checkbox"
-                         checked={bubblesTransparent}
-                         onChange={(e) => handleUpdateUiSettings({ transparentBubbles: e.target.checked })}
-                       />
-                    </div>
-                    <div className="flex items-center justify-between">
-                       <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Dark Mode</span>
-                       <input
-                         type="checkbox"
-                         checked={appData.uiSettings?.darkMode}
-                         onChange={(e) => handleUpdateUiSettings({ darkMode: e.target.checked })}
-                         className="accent-blue-500"
-                       />
-                    </div>
-                    <div className="flex items-center justify-between">
-                       <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Offset Bubbles</span>
-                       <input
-                         type="checkbox"
-                         checked={offsetBubbles}
-                         onChange={(e) => handleUpdateUiSettings({ offsetBubbles: e.target.checked })}
-                         className="accent-blue-500"
-                       />
-                    </div>
-                    <div className="border-t border-slate-100 pt-3 space-y-2">
-                       <div className="flex items-center justify-between">
-                         <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Proactive Characters</span>
-                         <input
-                           type="checkbox"
-                           checked={appData.uiSettings?.proactiveCharacterDiscovery !== false}
-                           onChange={(e) => handleUpdateUiSettings({ proactiveCharacterDiscovery: e.target.checked })}
-                           className="accent-blue-500"
-                         />
-                       </div>
-                       <p className="text-[9px] text-slate-400 font-medium leading-relaxed">
-                         When enabled, the AI may introduce characters from established media (books, movies) at story-appropriate moments.
-                       </p>
-                    </div>
-                    <p className="text-[9px] text-slate-400 font-medium leading-relaxed border-t border-slate-100 pt-3">
-                     Backgrounds will automatically change based on the story context if scene images are tagged in the gallery.
-                   </p>
-                </div>
-              )}
             </div>
             
             {/* Input Area */}
@@ -2621,6 +2577,131 @@ const updatedChar: SideCharacter = {
         onDeleteMemory={handleDeleteMemory}
         onDeleteAllMemories={handleDeleteAllMemories}
       />
+      
+      {/* Interface Settings Modal */}
+      <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+        <DialogContent className="sm:max-w-md bg-white border-slate-200 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)]">
+          <DialogHeader className="border-b border-slate-100 pb-4">
+            <DialogTitle className="flex items-center gap-2 text-lg font-black text-slate-900 uppercase tracking-tight">
+              <Settings className="w-5 h-5" />
+              Interface Settings
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-6 py-4">
+            {/* Display Section */}
+            <div className="space-y-4">
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Display</h3>
+              
+              {/* Show Backgrounds */}
+              <div className="flex items-start justify-between gap-4 py-2 border-b border-slate-50">
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-slate-900">Show Backgrounds</p>
+                  <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                    Display scene images behind the chat.
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={appData.uiSettings?.showBackgrounds}
+                  onChange={(e) => handleUpdateUiSettings({ showBackgrounds: e.target.checked })}
+                  className="accent-blue-500 w-4 h-4 mt-0.5"
+                />
+              </div>
+              
+              {/* Transparent Bubbles */}
+              <div className="flex items-start justify-between gap-4 py-2 border-b border-slate-50">
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-slate-900">Transparent Bubbles</p>
+                  <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                    Make message bubbles semi-transparent to see backgrounds through them.
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={bubblesTransparent}
+                  onChange={(e) => handleUpdateUiSettings({ transparentBubbles: e.target.checked })}
+                  className="accent-blue-500 w-4 h-4 mt-0.5"
+                />
+              </div>
+              
+              {/* Dark Mode */}
+              <div className="flex items-start justify-between gap-4 py-2 border-b border-slate-50">
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-slate-900">Dark Mode</p>
+                  <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                    Use a darker color scheme for the chat interface.
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={appData.uiSettings?.darkMode}
+                  onChange={(e) => handleUpdateUiSettings({ darkMode: e.target.checked })}
+                  className="accent-blue-500 w-4 h-4 mt-0.5"
+                />
+              </div>
+              
+              {/* Offset Bubbles */}
+              <div className="flex items-start justify-between gap-4 py-2 border-b border-slate-50">
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-slate-900">Offset Bubbles</p>
+                  <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                    Align user messages to the right like a messaging app.
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={offsetBubbles}
+                  onChange={(e) => handleUpdateUiSettings({ offsetBubbles: e.target.checked })}
+                  className="accent-blue-500 w-4 h-4 mt-0.5"
+                />
+              </div>
+              
+              {/* Dynamic Text */}
+              <div className="flex items-start justify-between gap-4 py-2">
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-slate-900">Dynamic Text</p>
+                  <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                    Apply visual styling to different text types (dialogue, actions, thoughts). When off, all text appears in a consistent white style like a book.
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={dynamicText}
+                  onChange={(e) => handleUpdateUiSettings({ dynamicText: e.target.checked })}
+                  className="accent-blue-500 w-4 h-4 mt-0.5"
+                />
+              </div>
+            </div>
+            
+            {/* AI Behavior Section */}
+            <div className="space-y-4 border-t border-slate-100 pt-6">
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">AI Behavior</h3>
+              
+              {/* Proactive Character Discovery */}
+              <div className="flex items-start justify-between gap-4 py-2">
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-slate-900">Proactive Character Discovery</p>
+                  <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                    When enabled, the AI may introduce characters from established media (books, movies) at story-appropriate moments.
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={appData.uiSettings?.proactiveCharacterDiscovery !== false}
+                  onChange={(e) => handleUpdateUiSettings({ proactiveCharacterDiscovery: e.target.checked })}
+                  className="accent-blue-500 w-4 h-4 mt-0.5"
+                />
+              </div>
+            </div>
+            
+            {/* Footer Note */}
+            <p className="text-xs text-slate-400 border-t border-slate-100 pt-4">
+              Backgrounds will automatically change based on the story context if scene images are tagged in the gallery.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

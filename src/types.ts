@@ -234,6 +234,7 @@ export type ScenarioData = {
     darkMode: boolean;
     offsetBubbles?: boolean;
     proactiveCharacterDiscovery?: boolean;  // When enabled, AI may introduce characters from established media
+    dynamicText?: boolean;  // When enabled, applies color styling to dialogue/actions/thoughts. When off, all text is white like a book.
   };
   conversations: Conversation[];
   selectedModel?: string;
