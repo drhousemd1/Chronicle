@@ -85,6 +85,23 @@ ${traits}`;
     - Never contradict or "re-do" events listed in memories.
   ` : '';
 
+  // Conditional character introduction rules based on user preference
+  const proactiveDiscovery = appData.uiSettings?.proactiveCharacterDiscovery !== false;
+  
+  const characterIntroductionRules = proactiveDiscovery 
+    ? `- NEW CHARACTER INTRODUCTION:
+        * You may introduce new characters when narratively appropriate.
+        * For stories based on established media, you may introduce canonical characters at fitting moments.
+        * Always use proper CharacterName: tagging when introducing new characters.
+        * Include descriptive physical traits in their first appearance using *action* format.`
+    : `- NEW CHARACTER INTRODUCTION RULES (STRICT MODE):
+        * DO NOT proactively introduce characters from source material or your training data.
+        * Only introduce NEW named characters when:
+          1. The user has explicitly mentioned or described them, OR
+          2. The scene absolutely requires an NPC interaction (e.g., ordering at a restaurant needs a server)
+        * For required NPCs, invent a simple first name - do not use known characters from books, movies, or other media unless the user has established them.
+        * Wait for the user to introduce major characters they want in the story.`;
+
   // Note: Character state tracking is now handled by a dedicated extraction service
   // (extract-character-updates edge function) that runs in parallel after the narrative response.
   // This separation of concerns allows the narrative AI to focus purely on creative storytelling.
@@ -143,6 +160,7 @@ ${traits}`;
         * On first appearance, put role info in the action text: "Marcus: *The cashier rings up the items.* "That'll be $12.50.""
         * Keep invented names CONSISTENT throughout the entire conversation.
         * This rule applies to ALL characters, even minor ones who only appear briefly.
+    ${characterIntroductionRules}
     - SCENE TAGGING (IMPORTANT):
         * When the scene location changes to one of the AVAILABLE SCENES, you MUST append [SCENE: exact_tag_name] at the very end of your response.
         * Match the tag exactly as listed in AVAILABLE SCENES: [${sceneTags}]

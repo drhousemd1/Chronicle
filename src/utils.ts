@@ -202,7 +202,8 @@ export function createDefaultScenarioData(): ScenarioData {
     uiSettings: {
       showBackgrounds: true,
       transparentBubbles: false,
-      darkMode: false
+      darkMode: false,
+      proactiveCharacterDiscovery: true  // Default enabled for creative freedom
     },
     story: { 
       openingDialog: {
@@ -334,6 +335,7 @@ export function normalizeScenarioData(raw: any): ScenarioData {
     showBackgrounds: typeof raw?.uiSettings?.showBackgrounds === "boolean" ? raw.uiSettings.showBackgrounds : true,
     transparentBubbles: typeof raw?.uiSettings?.transparentBubbles === "boolean" ? raw.uiSettings.transparentBubbles : false,
     darkMode: typeof raw?.uiSettings?.darkMode === "boolean" ? raw.uiSettings.darkMode : false,
+    proactiveCharacterDiscovery: typeof raw?.uiSettings?.proactiveCharacterDiscovery === "boolean" ? raw.uiSettings.proactiveCharacterDiscovery : true,
   };
 
   // Normalize TimeOfDay value

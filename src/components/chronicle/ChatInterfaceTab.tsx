@@ -47,7 +47,7 @@ interface ChatInterfaceTabProps {
   onUpdate: (convs: Conversation[]) => void;
   onBack: () => void;
   onSaveScenario: (conversations?: Conversation[]) => void;
-  onUpdateUiSettings?: (patch: { showBackgrounds?: boolean; transparentBubbles?: boolean; darkMode?: boolean; offsetBubbles?: boolean }) => void;
+  onUpdateUiSettings?: (patch: { showBackgrounds?: boolean; transparentBubbles?: boolean; darkMode?: boolean; offsetBubbles?: boolean; proactiveCharacterDiscovery?: boolean }) => void;
   onUpdateSideCharacters?: (sideCharacters: SideCharacter[]) => void;
 }
 
@@ -1952,7 +1952,7 @@ const updatedChar: SideCharacter = {
   const darkMode = appData.uiSettings?.darkMode;
   const offsetBubbles = appData.uiSettings?.offsetBubbles;
 
-  const handleUpdateUiSettings = (patch: { showBackgrounds?: boolean; transparentBubbles?: boolean; darkMode?: boolean; offsetBubbles?: boolean }) => {
+  const handleUpdateUiSettings = (patch: { showBackgrounds?: boolean; transparentBubbles?: boolean; darkMode?: boolean; offsetBubbles?: boolean; proactiveCharacterDiscovery?: boolean }) => {
     if (onUpdateUiSettings) {
       onUpdateUiSettings(patch);
     }
@@ -2508,6 +2508,20 @@ const updatedChar: SideCharacter = {
                          onChange={(e) => handleUpdateUiSettings({ offsetBubbles: e.target.checked })}
                          className="accent-blue-500"
                        />
+                    </div>
+                    <div className="border-t border-slate-100 pt-3 space-y-2">
+                       <div className="flex items-center justify-between">
+                         <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Proactive Characters</span>
+                         <input
+                           type="checkbox"
+                           checked={appData.uiSettings?.proactiveCharacterDiscovery !== false}
+                           onChange={(e) => handleUpdateUiSettings({ proactiveCharacterDiscovery: e.target.checked })}
+                           className="accent-blue-500"
+                         />
+                       </div>
+                       <p className="text-[9px] text-slate-400 font-medium leading-relaxed">
+                         When enabled, the AI may introduce characters from established media (books, movies) at story-appropriate moments.
+                       </p>
                     </div>
                     <p className="text-[9px] text-slate-400 font-medium leading-relaxed border-t border-slate-100 pt-3">
                      Backgrounds will automatically change based on the story context if scene images are tagged in the gallery.

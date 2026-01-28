@@ -233,6 +233,7 @@ export type ScenarioData = {
     transparentBubbles: boolean;
     darkMode: boolean;
     offsetBubbles?: boolean;
+    proactiveCharacterDiscovery?: boolean;  // When enabled, AI may introduce characters from established media
   };
   conversations: Conversation[];
   selectedModel?: string;
