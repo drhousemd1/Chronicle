@@ -88,8 +88,17 @@ const FormattedMessage: React.FC<{ text: string; dynamicText?: boolean }> = ({ t
     // whitespace-pre-wrap preserves newlines and paragraph spacing
     <div className="whitespace-pre-wrap">
       {tokens.map((token, i) => {
-        // Book-style: all white, consistent font, symbols already stripped by tokenizer
+        // Book-style: all white, consistent font
         if (!dynamicText) {
+          // For speech, add quotes back (standard in books)
+          if (token.type === 'speech') {
+            return (
+              <span key={i} className="text-white font-medium">
+                "{token.content}"
+              </span>
+            );
+          }
+          // For actions and thoughts, no symbols (not standard in books)
           return (
             <span key={i} className="text-white font-medium">
               {token.content}
