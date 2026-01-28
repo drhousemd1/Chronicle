@@ -1,66 +1,106 @@
 
+# Enable Global Spell Check for All Text Inputs
 
-# Fix: Preserve Quotation Marks in Book-Style Mode
+## Overview
 
-## Problem
+This plan enables browser spell checking globally across all text input fields in the application by updating the core UI components. This means any current and future text inputs will automatically have spell checking enabled.
 
-When "Dynamic Text" is turned off (book-style mode), the current implementation hides ALL symbols including quotation marks (`" "`). However, quotation marks around dialogue are standard in books and should be preserved.
+## Components to Update
 
-**Current behavior (incorrect):**
-- Dynamic Text OFF: Hides `* *`, `( )`, AND `" "`
+The application uses two sets of text input components:
 
-**Desired behavior:**
-- Dynamic Text OFF: Hide only `* *` and `( )`, keep `" "` visible
+| Component | Location | Usage |
+|-----------|----------|-------|
+| `Input` | `src/components/chronicle/UI.tsx` | Character names, scenario titles, custom inputs throughout the Chronicle app |
+| `TextArea` | `src/components/chronicle/UI.tsx` | Chat input, character descriptions, backstories, world details |
+| `Input` | `src/components/ui/input.tsx` | Auth forms, general form inputs |
+| `Textarea` | `src/components/ui/textarea.tsx` | General multiline text inputs |
 
----
+## Implementation
 
-## Root Cause
+### File 1: `src/components/chronicle/UI.tsx`
 
-In the `FormattedMessage` component, the tokenizer strips all symbols during parsing (lines 70-74), storing only the inner content. Then in book-style mode (lines 92-98), it renders all tokens the same way without adding back quotation marks for speech.
-
----
-
-## Solution
-
-Update the book-style rendering block to check the token type and add quotation marks back for speech tokens only:
-
-**File: `src/components/chronicle/ChatInterfaceTab.tsx`**
+**Input component** - Add `spellCheck={true}` to the native input element:
 
 ```typescript
-// Book-style: all white, consistent font
-if (!dynamicText) {
-  // For speech, add quotes back (standard in books)
-  if (token.type === 'speech') {
-    return (
-      <span key={i} className="text-white font-medium">
-        "{token.content}"
-      </span>
-    );
-  }
-  // For actions and thoughts, no symbols (not standard in books)
-  return (
-    <span key={i} className="text-white font-medium">
-      {token.content}
-    </span>
-  );
-}
+<input
+  value={value}
+  onChange={(e) => onChange(e.target.value)}
+  placeholder={placeholder}
+  spellCheck={true}  // NEW
+  className={...}
+/>
 ```
 
----
+**TextArea component** - Add `spellCheck={true}` to the native textarea element:
+
+```typescript
+<textarea
+  ref={ref}
+  value={value}
+  onChange={(e) => onChange(e.target.value)}
+  onKeyDown={onKeyDown}
+  placeholder={placeholder}
+  rows={rows}
+  spellCheck={true}  // NEW
+  className={...}
+/>
+```
+
+### File 2: `src/components/ui/input.tsx`
+
+Add `spellCheck={true}` to the native input element (before spreading props so it can be overridden if needed):
+
+```typescript
+<input
+  type={type}
+  spellCheck={true}  // NEW - default enabled
+  className={cn(...)}
+  ref={ref}
+  {...props}
+/>
+```
+
+### File 3: `src/components/ui/textarea.tsx`
+
+Add `spellCheck={true}` to the native textarea element:
+
+```typescript
+<textarea
+  spellCheck={true}  // NEW - default enabled
+  className={cn(...)}
+  ref={ref}
+  {...props}
+/>
+```
+
+## Why This Works
+
+By adding `spellCheck={true}` directly in the component definitions:
+
+- All existing usages automatically get spell checking
+- Any new inputs added in the future will have spell checking by default
+- No need to update individual component usages throughout the codebase
+- For the shadcn components, placing it before `{...props}` allows override if ever needed
 
 ## Expected Result
 
-| Text Type | Dynamic Text ON | Dynamic Text OFF |
-|-----------|-----------------|------------------|
-| Speech (`"Hello"`) | `"Hello"` (white) | `"Hello"` (white) |
-| Action (`*waves*`) | `waves` (gray italic) | `waves` (white, no asterisks) |
-| Thought (`(thinking)`) | `thinking` (indigo glow) | `thinking` (white, no parens) |
+All text input fields across the entire application will show:
+- Red squiggly underline on misspelled words
+- Right-click context menu with spelling suggestions
+- Ability to add words to personal dictionary
 
----
+This applies to:
+- Chat input box
+- Character name and description fields
+- World/scenario text areas
+- Auth form inputs
+- Any other text fields in the app
 
-## File to Modify
+## Files to Modify
 
 | File | Change |
 |------|--------|
-| `src/components/chronicle/ChatInterfaceTab.tsx` | Update lines 92-98 to conditionally add quotes for speech tokens |
-
+| `src/components/chronicle/UI.tsx` | Add `spellCheck={true}` to Input and TextArea |
+| `src/components/ui/input.tsx` | Add `spellCheck={true}` to Input |
+| `src/components/ui/textarea.tsx` | Add `spellCheck={true}` to Textarea |
