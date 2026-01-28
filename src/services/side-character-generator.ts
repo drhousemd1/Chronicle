@@ -278,6 +278,33 @@ const FALSE_POSITIVE_NAMES = new Set([
 ]);
 
 /**
+ * Check if a new name is potentially an alias/nickname of an existing name.
+ * Prevents duplicate character cards for names like "Mor" and "Morrigan".
+ */
+export function isPotentialAlias(newName: string, existingName: string): boolean {
+  const newLower = newName.toLowerCase().trim();
+  const existingLower = existingName.toLowerCase().trim();
+  
+  // Exact match
+  if (newLower === existingLower) return true;
+  
+  // One is contained in the other (Mor ↔ Morrigan)
+  if (existingLower.includes(newLower) || newLower.includes(existingLower)) {
+    return true;
+  }
+  
+  // First N characters match where N >= 3 (common nickname pattern)
+  // e.g., "Mor" matches "Morrigan", "Kat" matches "Katherine"
+  const minLength = Math.min(newLower.length, existingLower.length);
+  if (minLength >= 3) {
+    const prefix = newLower.slice(0, minLength);
+    if (existingLower.startsWith(prefix)) return true;
+  }
+  
+  return false;
+}
+
+/**
  * Detect new characters mentioned in a message
  * Returns array of new character info with their dialog context
  */
@@ -293,8 +320,19 @@ export function detectNewCharacters(
     if (segment.speakerName) {
       const nameLower = segment.speakerName.toLowerCase();
       
-      // Skip if already known
+      // Skip if already known (exact match)
       if (knownNames.has(nameLower)) continue;
+      
+      // Skip if potential alias of known character (prevents "Mor" + "Morrigan" duplicates)
+      let isAlias = false;
+      for (const known of knownNames) {
+        if (isPotentialAlias(nameLower, known)) {
+          console.log(`[detectNewCharacters] Skipping "${segment.speakerName}" - potential alias of "${known}"`);
+          isAlias = true;
+          break;
+        }
+      }
+      if (isAlias) continue;
       
       // Skip if already detected in this message
       if (seenInThisMessage.has(nameLower)) continue;
