@@ -1,64 +1,85 @@
 
-
-# Proactive Side Character Generation Toggle
+# Interface Settings Modal - Light Theme Implementation
 
 ## Overview
 
-This plan adds a user-controlled toggle that allows players to choose whether the AI proactively generates side characters from its trained knowledge of established media (books, movies, etc.) or only generates characters when explicitly prompted by the user.
+This plan implements the Interface Settings modal and Dynamic Text toggle as previously planned, but styles the modal to match the Scenario Builder's light, clean aesthetic rather than the dark/bluish theme of the Memories modal.
 
 ---
 
-## How It Works
+## Styling Comparison
 
-When **enabled** (default ON for creative freedom):
-- The AI behaves as it currently does - recognizing story contexts and proactively introducing canonical characters at appropriate moments
-- Great for stories based on established media like ACOTAR, where the AI can accurately introduce characters like Ianthe, Nala, and Mor at narrative-appropriate times
+### Memories Modal (current dark style - NOT using)
+- Background: `bg-slate-900 border-slate-700`
+- Text: `text-white`, `text-slate-400`
+- Accents: `text-purple-400`, `bg-purple-600`
+- Containers: `bg-slate-800/50`
 
-When **disabled**:
-- The AI will only create new named characters when:
-  1. The user explicitly mentions them by name, OR
-  2. The scene absolutely requires a minor NPC (e.g., a waiter taking an order)
-- Characters from source material will NOT be proactively introduced
+### Scenario Builder (target style - USING)
+- Background: `bg-white`
+- Shadows: `shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)]`
+- Borders: `ring-1 ring-slate-900/5`, `border-slate-100`
+- Headings: `text-slate-900 font-black uppercase tracking-tight`
+- Labels: `text-xs font-bold uppercase text-slate-500`
+- Descriptions: `text-sm text-slate-500`
+- Section dividers: `border-b border-slate-100`
 
 ---
 
-## User Interface
-
-### Toggle Location: Chat Interface Settings Menu
-
-The toggle will be added to the existing settings popover in the chat interface (alongside Show Backgrounds, Transparent Bubbles, Dark Mode, and Offset Bubbles). This is the ideal location because:
-
-1. It's a **session-level preference** - users might want proactive generation for one story but not another
-2. It's **contextually relevant** during active play when the behavior would be noticed
-3. It follows the existing UI pattern for chat display options
-
-### Toggle Design
+## Visual Design
 
 ```text
-┌─────────────────────────────────────────────┐
-│ Show Backgrounds                      [✓]   │
-│ Transparent Bubbles                   [ ]   │
-│ Dark Mode                             [ ]   │
-│ Offset Bubbles                        [ ]   │
-├─────────────────────────────────────────────┤
-│ Proactive Character Discovery         [✓]   │
-│ ─────────────────────────────────────────── │
-│ When enabled, the AI may introduce          │
-│ characters from established media           │
-│ (books, movies) at story-appropriate        │
-│ moments.                                    │
-└─────────────────────────────────────────────┘
++-------------------------------------------------------+
+|  [Settings Icon] Interface Settings              [X]  |
++-------------------------------------------------------+
+|                                                       |
+|  DISPLAY                                              |
+|  ---------------------------------------------------- |
+|                                                       |
+|  Show Backgrounds                              [ON]   |
+|  Display scene images behind the chat.                |
+|                                                       |
+|  Transparent Bubbles                           [OFF]  |
+|  Make message bubbles semi-transparent to see         |
+|  backgrounds through them.                            |
+|                                                       |
+|  Dark Mode                                     [OFF]  |
+|  Use a darker color scheme for the chat               |
+|  interface.                                           |
+|                                                       |
+|  Offset Bubbles                                [OFF]  |
+|  Align user messages to the right like a              |
+|  messaging app.                                       |
+|                                                       |
+|  Dynamic Text                                  [ON]   |
+|  Apply visual styling to different text types         |
+|  (dialogue, actions, thoughts). When off, all text    |
+|  appears in a consistent white style like a book.     |
+|                                                       |
+|  AI BEHAVIOR                                          |
+|  ---------------------------------------------------- |
+|                                                       |
+|  Proactive Character Discovery                 [ON]   |
+|  When enabled, the AI may introduce characters        |
+|  from established media (books, movies) at            |
+|  story-appropriate moments.                           |
+|                                                       |
+|  ---------------------------------------------------- |
+|  Backgrounds will automatically change based on       |
+|  the story context if scene images are tagged.        |
+|                                                       |
++-------------------------------------------------------+
 ```
 
 ---
 
 ## Technical Implementation
 
-### Step 1: Extend the Type Definitions
+### Step 1: Update Type Definitions
 
 **File: `src/types.ts`**
 
-Add `proactiveCharacterDiscovery` to the `uiSettings` type within `ScenarioData`:
+Add `dynamicText` to the uiSettings type:
 
 ```typescript
 uiSettings?: {
@@ -66,178 +87,130 @@ uiSettings?: {
   transparentBubbles: boolean;
   darkMode: boolean;
   offsetBubbles?: boolean;
-  proactiveCharacterDiscovery?: boolean;  // NEW - defaults to true
+  proactiveCharacterDiscovery?: boolean;
+  dynamicText?: boolean;  // NEW - defaults to true
 };
 ```
 
-### Step 2: Update Data Parsing/Defaults
+### Step 2: Update Data Defaults
 
 **File: `src/utils.ts`**
 
-Ensure the new setting has a default value when parsing scenario data:
+Add default value for `dynamicText` in both `createDefaultScenarioData` and `normalizeScenarioData`:
 
 ```typescript
-const uiSettings = {
-  showBackgrounds: ...,
-  transparentBubbles: ...,
-  darkMode: ...,
-  proactiveCharacterDiscovery: typeof raw?.uiSettings?.proactiveCharacterDiscovery === "boolean" 
-    ? raw.uiSettings.proactiveCharacterDiscovery 
-    : true,  // Default to enabled for creative freedom
-};
+uiSettings: {
+  showBackgrounds: true,
+  transparentBubbles: false,
+  darkMode: false,
+  proactiveCharacterDiscovery: true,
+  dynamicText: true  // NEW - defaults to enabled
+}
 ```
 
-### Step 3: Add Toggle to Chat Interface Settings
+### Step 3: Create Interface Settings Modal
 
 **File: `src/components/chronicle/ChatInterfaceTab.tsx`**
 
-Add the toggle to the existing settings popover (around line 2510):
+Replace the current popover with a Dialog modal using Scenario Builder styling:
 
+**Modal Container:**
 ```typescript
-<div className="flex items-center justify-between">
-  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-    Proactive Character Discovery
-  </span>
-  <input
-    type="checkbox"
-    checked={appData.uiSettings?.proactiveCharacterDiscovery !== false}
-    onChange={(e) => handleUpdateUiSettings({ proactiveCharacterDiscovery: e.target.checked })}
-    className="accent-blue-500"
-  />
+<DialogContent className="sm:max-w-md bg-white border-slate-200 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)]">
+```
+
+**Header:**
+```typescript
+<DialogHeader className="border-b border-slate-100 pb-4">
+  <DialogTitle className="flex items-center gap-2 text-lg font-black text-slate-900 uppercase tracking-tight">
+    <Settings className="w-5 h-5" />
+    Interface Settings
+  </DialogTitle>
+</DialogHeader>
+```
+
+**Section Headers:**
+```typescript
+<h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Display</h3>
+```
+
+**Setting Rows:**
+```typescript
+<div className="flex items-start justify-between gap-4 py-3 border-b border-slate-50">
+  <div className="flex-1">
+    <p className="text-sm font-bold text-slate-900">Show Backgrounds</p>
+    <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+      Display scene images behind the chat.
+    </p>
+  </div>
+  <input type="checkbox" className="accent-blue-500 w-4 h-4 mt-0.5" />
 </div>
-<p className="text-[9px] text-slate-400 font-medium leading-relaxed">
-  When enabled, the AI may introduce characters from established media (books, movies) at story-appropriate moments.
+```
+
+**Footer Note:**
+```typescript
+<p className="text-xs text-slate-400 border-t border-slate-100 pt-4 mt-4">
+  Backgrounds will automatically change based on the story context if scene images are tagged in the gallery.
 </p>
 ```
 
-### Step 4: Modify System Prompt Based on Setting
+### Step 4: Update FormattedMessage Component
 
-**File: `src/services/llm.ts`**
+**File: `src/components/chronicle/ChatInterfaceTab.tsx`**
 
-Add conditional instructions in the `getSystemInstruction` function:
-
-```typescript
-function getSystemInstruction(
-  appData: ScenarioData, 
-  currentDay?: number, 
-  currentTimeOfDay?: TimeOfDay,
-  memories?: Memory[],
-  memoriesEnabled?: boolean
-): string {
-  // ... existing code ...
-
-  // NEW: Conditional character introduction rules based on setting
-  const proactiveDiscovery = appData.uiSettings?.proactiveCharacterDiscovery !== false;
-  
-  const characterIntroductionRules = proactiveDiscovery 
-    ? `- NEW CHARACTER INTRODUCTION:
-        * You may introduce new characters when narratively appropriate.
-        * For stories based on established media, you may introduce canonical characters at fitting moments.
-        * Always use proper CharacterName: tagging when introducing new characters.`
-    : `- NEW CHARACTER INTRODUCTION RULES (STRICT MODE):
-        * DO NOT proactively introduce characters from source material or your training data.
-        * Only introduce NEW named characters when:
-          1. The user has explicitly mentioned or described them, OR
-          2. The scene absolutely requires an NPC interaction (e.g., ordering at a restaurant needs a server)
-        * For required NPCs, invent a simple first name - do not use known characters from books, movies, or other media unless the user has established them.
-        * Wait for the user to introduce major characters they want in the story.`;
-
-  return `
-    You are an expert Game Master and roleplayer...
-    
-    ${characterIntroductionRules}
-    
-    ... rest of existing instructions ...
-  `;
-}
-```
-
-### Step 5: Update Function Signature
-
-**File: `src/services/llm.ts`**
-
-The `generateRoleplayResponseStream` function already receives `appData` which contains `uiSettings`, so no signature change is needed. The `getSystemInstruction` function already has access to `appData`.
-
-### Step 6: Database Persistence
-
-**File: `src/services/supabase-data.ts`**
-
-The `uiSettings` object is already persisted as JSON in the database, so the new field will automatically be saved and loaded with existing scenarios.
-
----
-
-## Implementation Flow
-
-```text
-┌─────────────────────────────────────────────────────────────────────┐
-│                        User toggles setting                          │
-└─────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│  ChatInterfaceTab calls handleUpdateUiSettings()                     │
-│  { proactiveCharacterDiscovery: true/false }                         │
-└─────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│  Index.tsx updates appData.uiSettings via handleUpdateActive()       │
-│  Setting persists to Supabase via saveScenarioData()                 │
-└─────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│  Next message: generateRoleplayResponseStream() builds system        │
-│  prompt with appropriate character introduction rules                │
-└─────────────────────────────────────────────────────────────────────┘
-                                    │
-                    ┌───────────────┴───────────────┐
-                    ▼                               ▼
-         ┌─────────────────────┐        ┌─────────────────────────────┐
-         │  ENABLED (default)  │        │        DISABLED             │
-         │                     │        │                             │
-         │ AI may introduce    │        │ AI only introduces          │
-         │ canonical chars     │        │ characters when user        │
-         │ from media          │        │ mentions them or scene      │
-         │                     │        │ requires minor NPC          │
-         └─────────────────────┘        └─────────────────────────────┘
-```
-
----
-
-## Additional Enhancement: Alias Detection
-
-While not strictly part of the toggle feature, adding alias detection will prevent duplicate character cards (like "Mor" and "Morrigan") regardless of the toggle state:
-
-**File: `src/services/side-character-generator.ts`**
-
-Add a helper function:
+Update `FormattedMessage` to accept a `dynamicText` prop:
 
 ```typescript
-function isPotentialAlias(newName: string, existingName: string): boolean {
-  const newLower = newName.toLowerCase().trim();
-  const existingLower = existingName.toLowerCase().trim();
-  
-  // Exact match
-  if (newLower === existingLower) return true;
-  
-  // One is contained in the other (Mor ↔ Morrigan)
-  if (existingLower.includes(newLower) || newLower.includes(existingLower)) {
-    return true;
-  }
-  
-  // First 3+ characters match
-  const minLength = Math.min(newLower.length, existingLower.length);
-  if (minLength >= 3) {
-    const prefix = newLower.slice(0, minLength);
-    if (existingLower.startsWith(prefix)) return true;
-  }
-  
-  return false;
-}
+const FormattedMessage: React.FC<{ text: string; dynamicText?: boolean }> = ({ 
+  text, 
+  dynamicText = true 
+}) => {
+  // ... existing token parsing logic ...
+
+  return (
+    <div className="whitespace-pre-wrap">
+      {tokens.map((token, i) => {
+        if (!dynamicText) {
+          // Book-style: all white, consistent font, symbols hidden
+          return (
+            <span key={i} className="text-white font-medium">
+              {token.content}
+            </span>
+          );
+        }
+        
+        // Current dynamic styling behavior
+        if (token.type === 'speech') {
+          return <span key={i} className="text-white font-medium">"{token.content}"</span>;
+        }
+        if (token.type === 'action') {
+          return <span key={i} className="text-slate-400 italic">{token.content}</span>;
+        }
+        if (token.type === 'thought') {
+          return (
+            <span key={i} className="text-indigo-200/90 text-sm italic font-light" 
+              style={{ textShadow: '...' }}>
+              {token.content}
+            </span>
+          );
+        }
+        return <span key={i} className="text-slate-300">{token.content}</span>;
+      })}
+    </div>
+  );
+};
 ```
 
-Then integrate into `detectNewCharacters()` to skip creating new characters when a potential alias is found.
+### Step 5: Pass dynamicText Setting to FormattedMessage
+
+Update all instances where `FormattedMessage` is called to pass the setting:
+
+```typescript
+<FormattedMessage 
+  text={segment.content} 
+  dynamicText={appData.uiSettings?.dynamicText !== false} 
+/>
+```
 
 ---
 
@@ -245,24 +218,36 @@ Then integrate into `detectNewCharacters()` to skip creating new characters when
 
 | File | Changes |
 |------|---------|
-| `src/types.ts` | Add `proactiveCharacterDiscovery` to `uiSettings` type |
-| `src/utils.ts` | Add default value for new setting |
-| `src/components/chronicle/ChatInterfaceTab.tsx` | Add toggle UI to settings popover |
-| `src/services/llm.ts` | Add conditional character introduction rules to system prompt |
-| `src/services/side-character-generator.ts` | Add alias detection to prevent duplicates |
+| `src/types.ts` | Add `dynamicText?: boolean` to uiSettings |
+| `src/utils.ts` | Add default value for `dynamicText` in both functions |
+| `src/components/chronicle/ChatInterfaceTab.tsx` | Replace popover with light-themed modal, update FormattedMessage, update props interface |
 
 ---
 
-## Testing Scenarios
+## Color Palette Reference (Scenario Builder Style)
 
-1. **Toggle OFF + ACOTAR scenario**: AI should NOT introduce Ianthe, Nala, Mor unprompted
-2. **Toggle ON + ACOTAR scenario**: AI may introduce canonical characters at appropriate moments
-3. **Toggle OFF + generic NPC needed**: AI should still invent a name for required NPCs (waiter, guard)
-4. **Alias detection**: "Mor:" and "Morrigan:" should not create duplicate cards
+| Element | Class |
+|---------|-------|
+| Modal background | `bg-white` |
+| Modal shadow | `shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)]` |
+| Modal border | `border-slate-200` or `ring-1 ring-slate-900/5` |
+| Section header | `text-xs font-black text-slate-400 uppercase tracking-widest` |
+| Setting label | `text-sm font-bold text-slate-900` |
+| Description text | `text-xs text-slate-500` |
+| Divider lines | `border-slate-100` or `border-slate-50` |
+| Checkbox accent | `accent-blue-500` |
+| Footer note | `text-xs text-slate-400` |
 
 ---
 
-## Default Behavior
+## Expected Behavior
 
-The toggle defaults to **ON** (enabled) to preserve the creative experience your wife enjoyed. Users who prefer stricter control can turn it off.
-
+1. Clicking "Interface" opens a clean, light-themed modal matching the Scenario Builder aesthetic
+2. All existing settings function identically
+3. New "Dynamic Text" toggle defaults to ON (current styling preserved)
+4. When Dynamic Text is OFF:
+   - All text renders in white with consistent font weight
+   - Symbols (asterisks, quotes, parentheses) are hidden
+   - No color variation or glow effects
+   - Clean, book-like reading experience
+5. Settings persist to database with other uiSettings
