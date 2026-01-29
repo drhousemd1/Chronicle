@@ -40,6 +40,8 @@ export const ImageLibraryTab: React.FC = () => {
   const [isLoadingImages, setIsLoadingImages] = useState(false);
   const [editingFolder, setEditingFolder] = useState<ImageFolder | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [previewImage, setPreviewImage] = useState<LibraryImage | null>(null);
+  const [previewPosition, setPreviewPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch folders on mount
@@ -580,6 +582,15 @@ export const ImageLibraryTab: React.FC = () => {
               <div
                 key={image.id}
                 className="group relative aspect-square rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shadow-sm hover:shadow-lg transition-all cursor-pointer"
+                onMouseEnter={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  setPreviewImage(image);
+                  setPreviewPosition({
+                    x: rect.left + rect.width / 2,
+                    y: rect.top
+                  });
+                }}
+                onMouseLeave={() => setPreviewImage(null)}
               >
                 <img
                   src={image.imageUrl}
@@ -629,6 +640,25 @@ export const ImageLibraryTab: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Floating preview overlay */}
+      {previewImage && (
+        <div 
+          className="fixed z-50 pointer-events-none transform -translate-x-1/2 -translate-y-full"
+          style={{ left: previewPosition.x, top: previewPosition.y - 12 }}
+        >
+          <div className="bg-white rounded-xl shadow-2xl border border-slate-200 p-2 max-w-[400px] animate-in fade-in zoom-in-95 duration-150">
+            <img
+              src={previewImage.imageUrl}
+              alt={previewImage.filename}
+              className="w-full h-auto max-h-[60vh] object-contain rounded-lg"
+            />
+            <p className="text-xs text-slate-500 text-center mt-2 truncate px-2">
+              {previewImage.filename}
+            </p>
+          </div>
+        </div>
+      )}
 
       <FolderEditModal
         isOpen={!!editingFolder}
