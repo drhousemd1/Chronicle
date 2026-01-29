@@ -150,19 +150,19 @@ export const CoverImageGenerationModal: React.FC<CoverImageGenerationModalProps>
             <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
               Style
             </Label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 px-1">
               {AVATAR_STYLES.map((style) => (
                 <button
                   key={style.id}
                   type="button"
                   onClick={() => setSelectedStyleId(style.id)}
                   className={cn(
-                    "relative rounded-xl p-2 transition-all duration-200 cursor-pointer outline-none",
+                    "relative rounded-xl p-2 transition-all duration-200 cursor-pointer",
                     "bg-card hover:bg-accent/50",
                     selectedStyleId === style.id
                       ? "ring-2 ring-blue-400 shadow-md"
                       : "ring-1 ring-border hover:ring-slate-300",
-                    "focus:ring-2 focus:ring-blue-100 focus:ring-offset-0"
+                    "focus-visible:outline-none"
                   )}
                 >
                   <div className="aspect-square rounded-lg overflow-hidden bg-muted">
