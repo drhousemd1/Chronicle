@@ -1,90 +1,48 @@
 
-## What’s actually broken (root cause)
+# Update Image Library Picker Modal - Folder Card Styling
 
-All the “Upload Image” / “Upload Scene” dropdown buttons use Radix UI’s `DropdownMenuTrigger` with `asChild`.
+## Problem
 
-When `asChild` is used, Radix injects important props into the child element (things like `onPointerDown`, `onKeyDown`, `aria-expanded`, etc.) so it can open/close the menu.
+When clicking "Upload from Library", the popup modal displays folder cards using a simple, cropped thumbnail style that doesn't match the premium card design used in the actual Image Library page.
 
-Your custom `Button` component in `src/components/chronicle/UI.tsx` currently **does not forward unknown props to the underlying `<button>`**, because it only accepts `children/onClick/variant/disabled/className` and ignores everything else.
+## Current vs Target
 
-So Radix is trying to pass “open the menu” handlers into `<Button />`, but `<Button />` drops them, which makes the dropdown appear completely unresponsive (no menu, no errors).
+| Current (Picker Modal) | Target (Image Library Page) |
+|------------------------|----------------------------|
+| Cropped 4:3 aspect ratio | Tall 2:3 portrait cards |
+| Small rounded corners | Large `rounded-[2rem]` corners |
+| Minimal shadow | Premium shadow effect |
+| Simple gradient overlay | Rich gradient from bottom |
+| Small plain text | Bold typography with blue badge |
+| No hover effects | Lift animation on hover |
 
-This matches your symptom perfectly: “nothing happens when clicking any of them on any page”.
+## Solution
 
----
+Update the folder card rendering in `ImageLibraryPickerModal.tsx` to match the card style from `ImageLibraryTab.tsx`.
 
-## Fix strategy
+## Changes to Implement
 
-### Goal
-Make the custom `Button` behave like a real HTML `<button>` from Radix’s perspective:
+**File: `src/components/chronicle/ImageLibraryPickerModal.tsx`**
 
-- supports `ref` (already done)
-- supports “all normal button props” and **spreads them onto the real `<button>`**
-- keeps your existing `variant` styling
+Replace the folder grid (lines 183-208) with the premium card design:
 
----
+### Key styling changes:
+- Change `aspect-[4/3]` to `aspect-[2/3]` for portrait orientation
+- Change `rounded-xl` to `rounded-[2rem]` for larger corners
+- Add premium shadow: `shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]`
+- Add hover lift animation: `group-hover:-translate-y-2 group-hover:shadow-2xl`
+- Update gradient overlay: `bg-gradient-to-t from-slate-950 via-slate-900/20 to-transparent`
+- Add blue image count badge
+- Use larger, bolder typography for folder name
+- Show folder description if available
 
-## Changes to implement
+### Grid layout adjustment:
+- Change from `grid-cols-2 sm:grid-cols-3` to `grid-cols-2 sm:grid-cols-3 lg:grid-cols-4`
+- Add appropriate gap: `gap-6`
 
-### 1) Update `ButtonProps` to accept native button props
-**File:** `src/components/chronicle/UI.tsx`
+### Empty folder state:
+- Match the dark background with centered icon style
 
-- Change `ButtonProps` so it extends `React.ButtonHTMLAttributes<HTMLButtonElement>`
-- Keep your custom `variant?: ButtonVariant` prop
+## Summary
 
-This ensures `Button` can receive Radix-injected props like `onPointerDown`, `onKeyDown`, `aria-*`, `data-*`, etc.
-
-### 2) Spread the remaining props onto the `<button>`
-**File:** `src/components/chronicle/UI.tsx`
-
-- In the `forwardRef` component, destructure:
-  - `variant`, `className`, `disabled`, `type`, `children`
-  - and collect the rest into `...props`
-- Render:
-  - `<button ref={ref} {...props} disabled={disabled} type={type ?? "button"} className={...}>`
-
-Key detail: **the spread must actually reach the DOM `<button>`**, not be swallowed by the component.
-
-### 3) (Optional but recommended) Restore `Button.displayName`
-**File:** `src/components/chronicle/UI.tsx`
-
-- Add `Button.displayName = "Button";`
-This helps debugging and avoids some confusing stack traces.
-
----
-
-## Why this will fix all 3 broken upload areas at once
-
-Once `Button` correctly forwards Radix’s injected event handlers:
-
-- `UploadSourceMenu` will open its dropdown again (Cover Image, Scene Gallery, Character Builder)
-- Any other Radix “asChild + Button” usage (like BackgroundPickerModal, SidebarThemeModal) will also work reliably
-
-No changes should be needed inside `UploadSourceMenu`, `WorldTab`, or `CharactersTab` beyond this (unless we uncover a second issue after the dropdowns work again).
-
----
-
-## Testing checklist (end-to-end)
-
-After implementing the above, verify in the UI:
-
-1. Scenario Builder → Cover Image → click “Upload Image” → dropdown opens
-2. Choose “From Device” → file picker opens
-3. Choose “From Library” → ImageLibraryPickerModal opens
-4. Scenario Builder → Scene Gallery → “+ Upload Scene” → dropdown opens → both options work
-5. Character Builder → Avatar → “Upload Image” → dropdown opens → both options work
-
----
-
-## Files involved
-
-- **Modify:** `src/components/chronicle/UI.tsx` (primary fix)
-- **No changes expected:** `src/components/chronicle/UploadSourceMenu.tsx`, `src/components/chronicle/WorldTab.tsx`, `src/components/chronicle/CharactersTab.tsx` (unless testing shows an additional issue)
-
----
-
-## Notes / edge cases to watch for
-
-- If any place relies on the Button always being `type="button"`, keeping the default `type="button"` is important to avoid accidental form submits.
-- If any buttons pass `className` via props, we must merge it (not overwrite).
-- If something still “does nothing” after this, the next likely culprit would be a parent overlay with `pointer-events: none/auto` or a disabled state always being true—but first we should restore Radix triggers properly, because right now they can’t work by design.
+This change ensures visual consistency between the Image Library Picker modal and the main Image Library page, providing users with the same premium folder card experience in both places.
