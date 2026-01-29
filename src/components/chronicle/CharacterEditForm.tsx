@@ -12,6 +12,7 @@ import { X, Save } from 'lucide-react';
 // Unified draft type for both Character and SideCharacter
 export interface CharacterEditDraft {
   name?: string;
+  nicknames?: string;
   age?: string;
   sexType?: string;
   roleDescription?: string;
@@ -42,6 +43,7 @@ export const CharacterEditForm: React.FC<CharacterEditFormProps> = ({
   useEffect(() => {
     setDraft({
       name: character.name,
+      nicknames: character.nicknames || '',
       age: character.age,
       sexType: character.sexType,
       roleDescription: character.roleDescription,
@@ -93,7 +95,17 @@ export const CharacterEditForm: React.FC<CharacterEditFormProps> = ({
               value={draft.name || ''}
               onChange={(e) => updateField('name', e.target.value)}
               className="h-8 text-xs"
-              placeholder="Character name"
+            placeholder="Character name"
+            />
+          </div>
+          
+          <div>
+            <Label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Nicknames</Label>
+            <Input
+              value={draft.nicknames || ''}
+              onChange={(e) => updateField('nicknames', e.target.value)}
+              className="h-8 text-xs"
+              placeholder="e.g., Mom, Mother (comma-separated)"
             />
           </div>
           

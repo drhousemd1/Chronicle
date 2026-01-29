@@ -23,13 +23,25 @@ import { uuid, now } from './storage';
 // =============================================
 
 /**
- * Get all known character names (both main and side characters)
+ * Get all known character names and nicknames (both main and side characters)
  * Used to prevent duplicate character creation
  */
 export function getKnownCharacterNames(appData: ScenarioData): Set<string> {
   const names = new Set<string>();
-  appData.characters.forEach(c => names.add(c.name.toLowerCase()));
-  appData.sideCharacters?.forEach(c => names.add(c.name.toLowerCase()));
+  appData.characters.forEach(c => {
+    names.add(c.name.toLowerCase());
+    // Add nicknames to known names set
+    if (c.nicknames) {
+      c.nicknames.split(',').forEach(n => names.add(n.trim().toLowerCase()));
+    }
+  });
+  appData.sideCharacters?.forEach(c => {
+    names.add(c.name.toLowerCase());
+    // Add nicknames to known names set
+    if (c.nicknames) {
+      c.nicknames.split(',').forEach(n => names.add(n.trim().toLowerCase()));
+    }
+  });
   return names;
 }
 
@@ -234,6 +246,7 @@ export function createSideCharacter(
   return {
     id: uuid(),
     name,
+    nicknames: '',
     age: '',
     sexType: '',
     location: '',
@@ -281,7 +294,11 @@ const FALSE_POSITIVE_NAMES = new Set([
  * Check if a new name is potentially an alias/nickname of an existing name.
  * Prevents duplicate character cards for names like "Mor" and "Morrigan".
  */
-export function isPotentialAlias(newName: string, existingName: string): boolean {
+export function isPotentialAlias(
+  newName: string, 
+  existingName: string,
+  existingNicknames?: string
+): boolean {
   const newLower = newName.toLowerCase().trim();
   const existingLower = existingName.toLowerCase().trim();
   
@@ -291,6 +308,14 @@ export function isPotentialAlias(newName: string, existingName: string): boolean
   // One is contained in the other (Mor ↔ Morrigan)
   if (existingLower.includes(newLower) || newLower.includes(existingLower)) {
     return true;
+  }
+  
+  // Check against explicit nicknames list
+  if (existingNicknames) {
+    const nicknameList = existingNicknames.split(',').map(n => n.trim().toLowerCase());
+    if (nicknameList.includes(newLower)) {
+      return true;
+    }
   }
   
   // First N characters match where N >= 3 (common nickname pattern)

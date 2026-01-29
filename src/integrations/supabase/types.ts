@@ -30,6 +30,7 @@ export type Database = {
           id: string
           location: string | null
           name: string | null
+          nicknames: string | null
           physical_appearance: Json | null
           preferred_clothing: Json | null
           role_description: string | null
@@ -52,6 +53,7 @@ export type Database = {
           id?: string
           location?: string | null
           name?: string | null
+          nicknames?: string | null
           physical_appearance?: Json | null
           preferred_clothing?: Json | null
           role_description?: string | null
@@ -74,6 +76,7 @@ export type Database = {
           id?: string
           location?: string | null
           name?: string | null
+          nicknames?: string | null
           physical_appearance?: Json | null
           preferred_clothing?: Json | null
           role_description?: string | null
@@ -112,6 +115,7 @@ export type Database = {
           is_library: boolean | null
           location: string | null
           name: string
+          nicknames: string | null
           physical_appearance: Json | null
           preferred_clothing: Json | null
           role_description: string | null
@@ -135,6 +139,7 @@ export type Database = {
           is_library?: boolean | null
           location?: string | null
           name?: string
+          nicknames?: string | null
           physical_appearance?: Json | null
           preferred_clothing?: Json | null
           role_description?: string | null
@@ -158,6 +163,7 @@ export type Database = {
           is_library?: boolean | null
           location?: string | null
           name?: string
+          nicknames?: string | null
           physical_appearance?: Json | null
           preferred_clothing?: Json | null
           role_description?: string | null
@@ -464,6 +470,7 @@ export type Database = {
           id: string
           location: string | null
           name: string
+          nicknames: string | null
           personality: Json | null
           physical_appearance: Json | null
           preferred_clothing: Json | null
@@ -488,6 +495,7 @@ export type Database = {
           id?: string
           location?: string | null
           name: string
+          nicknames?: string | null
           personality?: Json | null
           physical_appearance?: Json | null
           preferred_clothing?: Json | null
@@ -512,6 +520,7 @@ export type Database = {
           id?: string
           location?: string | null
           name?: string
+          nicknames?: string | null
           personality?: Json | null
           physical_appearance?: Json | null
           preferred_clothing?: Json | null

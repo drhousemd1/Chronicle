@@ -366,6 +366,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
               {/* Avatar Panel Fields */}
               <div className="space-y-4">
                 <Input label="Name" value={selected.name === "New Character" ? "" : selected.name} onChange={(v) => onUpdate(selected.id, { name: v })} placeholder="Character name" />
+                <Input label="Nicknames" value={selected.nicknames || ''} onChange={(v) => onUpdate(selected.id, { nicknames: v })} placeholder="e.g., Mom, Mother (comma-separated)" />
                 <Input label="Age" value={selected.age || ''} onChange={(v) => onUpdate(selected.id, { age: v })} placeholder="e.g., 25" />
                 <Input label="Sex / Identity" value={selected.sexType} onChange={(v) => onUpdate(selected.id, { sexType: v })} placeholder="e.g., Female, Male, Non-binary" />
                 <Input label="Location" value={selected.location || ''} onChange={(v) => onUpdate(selected.id, { location: v })} placeholder="Current location" />

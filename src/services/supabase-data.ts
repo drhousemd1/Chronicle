@@ -108,6 +108,7 @@ function dbToCharacter(row: any): Character {
   return {
     id: row.id,
     name: row.name || '',
+    nicknames: row.nicknames || '',
     age: row.age || '',
     sexType: row.sex_type || '',
     location: row.location || '',
@@ -133,6 +134,7 @@ function characterToDb(char: Character, userId: string, scenarioId?: string, isL
     user_id: userId,
     scenario_id: scenarioId || null,
     name: char.name,
+    nicknames: char.nicknames || '',
     age: char.age || '',
     sex_type: char.sexType,
     location: char.location || '',
@@ -803,6 +805,7 @@ export async function fetchSessionStates(conversationId: string): Promise<Charac
     userId: row.user_id,
     // Extended fields for session-scoped character editing
     name: row.name || undefined,
+    nicknames: row.nicknames || undefined,
     age: row.age || undefined,
     sexType: row.sex_type || undefined,
     roleDescription: row.role_description || undefined,
@@ -862,6 +865,7 @@ export async function updateSessionState(
   id: string,
   patch: Partial<{
     name: string;
+    nicknames: string;
     age: string;
     sexType: string;
     roleDescription: string;
@@ -881,6 +885,7 @@ export async function updateSessionState(
   
   // Extended fields for session-scoped character editing
   if (patch.name !== undefined) updateData.name = patch.name;
+  if (patch.nicknames !== undefined) updateData.nicknames = patch.nicknames;
   if (patch.age !== undefined) updateData.age = patch.age;
   if (patch.sexType !== undefined) updateData.sex_type = patch.sexType;
   if (patch.roleDescription !== undefined) updateData.role_description = patch.roleDescription;
@@ -1144,6 +1149,7 @@ function dbToSideCharacter(row: any): SideCharacter {
   return {
     id: row.id,
     name: row.name || '',
+    nicknames: row.nicknames || '',
     age: row.age || '',
     sexType: row.sex_type || '',
     location: row.location || '',
@@ -1188,6 +1194,7 @@ export async function saveSideCharacter(
       conversation_id: conversationId,
       user_id: userId,
       name: sideChar.name,
+      nicknames: sideChar.nicknames || '',
       age: sideChar.age,
       sex_type: sideChar.sexType,
       location: sideChar.location,
@@ -1213,6 +1220,7 @@ export async function updateSideCharacter(
 ): Promise<void> {
   const updateData: any = {};
   
+  if (patch.nicknames !== undefined) updateData.nicknames = patch.nicknames;
   if (patch.age !== undefined) updateData.age = patch.age;
   if (patch.sexType !== undefined) updateData.sex_type = patch.sexType;
   if (patch.location !== undefined) updateData.location = patch.location;
