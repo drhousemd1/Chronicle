@@ -947,7 +947,7 @@ const IndexContent = () => {
             <SidebarItem 
               active={tab === "world" || tab === "characters"} 
               label="Scenario Builder"
-              subtitle={activeId ? (activeMeta?.title || "Unsaved Draft") : "Click to create"}
+              subtitle={activeId ? (activeMeta?.title || "Unsaved Draft") : undefined}
               icon={<IconsList.Builder />} 
               onClick={() => {
                 if (activeId) setTab("world");
@@ -1087,6 +1087,24 @@ const IndexContent = () => {
                 </Button>
               )}
               {tab === "hub" && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="inline-flex items-center justify-center rounded-xl px-3 py-2 bg-slate-900 text-white border border-slate-900 hover:bg-slate-800 shadow-md hover:shadow-lg transition-all active:scale-95"
+                    >
+                      <Settings className="w-5 h-5" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem onClick={() => setIsBackgroundModalOpen(true)} className="cursor-pointer">
+                      <ImageIcon className="w-4 h-4 mr-2" />
+                      Change Background
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+              {tab === "image_library" && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button

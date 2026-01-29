@@ -6,12 +6,14 @@ import { Icons } from '@/constants';
 import { uid, now, resizeImage, uuid, clamp } from '@/utils';
 import { useAuth } from '@/hooks/use-auth';
 import { uploadSceneImage, uploadCoverImage, dataUrlToBlob } from '@/services/supabase-data';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Sunrise, Sun, Sunset, Moon, ChevronUp, ChevronDown, Pencil } from 'lucide-react';
 import { AVATAR_STYLES, DEFAULT_STYLE_ID } from '@/constants/avatar-styles';
 import { cn } from '@/lib/utils';
 import { SceneTagEditorModal } from './SceneTagEditorModal';
 import { CoverImageGenerationModal } from './CoverImageGenerationModal';
+import { SceneImageGenerationModal } from './SceneImageGenerationModal';
 import { UploadSourceMenu } from './UploadSourceMenu';
 
 interface WorldTabProps {
@@ -90,6 +92,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   const [editingScene, setEditingScene] = useState<Scene | null>(null);
   const [showCoverGenModal, setShowCoverGenModal] = useState(false);
   const [isGeneratingCover, setIsGeneratingCover] = useState(false);
+  const [showSceneGenModal, setShowSceneGenModal] = useState(false);
+  const [isGeneratingScene, setIsGeneratingScene] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverFileInputRef = useRef<HTMLInputElement>(null);
   const coverContainerRef = useRef<HTMLDivElement>(null);
@@ -517,24 +521,34 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                 <h2 className="text-lg font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight">
                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg> Scene Gallery
                 </h2>
-                <UploadSourceMenu
-                  onUploadFromDevice={() => fileInputRef.current?.click()}
-                  onSelectFromLibrary={(imageUrl) => {
-                    const newScene: Scene = {
-                      id: uuid(),
-                      url: imageUrl,
-                      tags: [],
-                      createdAt: now()
-                    };
-                    onUpdateScenes([newScene, ...scenes]);
-                    setEditingScene(newScene);
-                    toast.success('Scene added from library');
-                  }}
-                  disabled={isUploading}
-                  isUploading={isUploading}
-                  label="+ Upload Scene"
-                  variant="primary"
-                />
+                <div className="flex items-center gap-3">
+                  <UploadSourceMenu
+                    onUploadFromDevice={() => fileInputRef.current?.click()}
+                    onSelectFromLibrary={(imageUrl) => {
+                      const newScene: Scene = {
+                        id: uuid(),
+                        url: imageUrl,
+                        tags: [],
+                        createdAt: now()
+                      };
+                      onUpdateScenes([newScene, ...scenes]);
+                      setEditingScene(newScene);
+                      toast.success('Scene added from library');
+                    }}
+                    disabled={isUploading || isGeneratingScene}
+                    isUploading={isUploading}
+                    label="+ Upload Scene"
+                    variant="primary"
+                  />
+                  <Button 
+                    variant="primary" 
+                    onClick={() => setShowSceneGenModal(true)} 
+                    disabled={isUploading || isGeneratingScene}
+                    className="!px-5"
+                  >
+                    {isGeneratingScene ? "Generating..." : "AI Generate"}
+                  </Button>
+                </div>
                 <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAddScene} />
               </div>
 
@@ -766,6 +780,57 @@ export const WorldTab: React.FC<WorldTabProps> = ({
           toast.success('Cover image generated!');
         }}
         scenarioTitle={world.core.scenarioName}
+      />
+      
+      {/* Scene Image Generation Modal */}
+      <SceneImageGenerationModal
+        isOpen={showSceneGenModal}
+        onClose={() => setShowSceneGenModal(false)}
+        onGenerate={async (prompt, styleId) => {
+          if (!user) {
+            toast.error('Please sign in to generate scenes');
+            return;
+          }
+          
+          setIsGeneratingScene(true);
+          try {
+            const style = AVATAR_STYLES.find(s => s.id === styleId);
+            const artStylePrompt = style?.backendPrompt || '';
+            
+            const { data, error } = await supabase.functions.invoke('generate-cover-image', {
+              body: {
+                prompt: `Scene: ${prompt}. Landscape composition, 4:3 aspect ratio environment background.`,
+                artStylePrompt,
+                scenarioTitle: world.core.scenarioName
+              }
+            });
+            
+            if (error) throw error;
+            
+            if (data?.imageUrl) {
+              // Create new scene with the generated image
+              const newScene: Scene = {
+                id: uuid(),
+                url: data.imageUrl,
+                tags: [],
+                createdAt: now()
+              };
+              onUpdateScenes([newScene, ...scenes]);
+              setEditingScene(newScene);
+              setShowSceneGenModal(false);
+              toast.success('Scene generated!');
+            } else {
+              throw new Error('No image URL returned');
+            }
+          } catch (err) {
+            console.error('Scene generation failed:', err);
+            toast.error('Failed to generate scene');
+          } finally {
+            setIsGeneratingScene(false);
+          }
+        }}
+        isGenerating={isGeneratingScene}
+        selectedArtStyle={selectedArtStyle}
       />
     </div>
   );

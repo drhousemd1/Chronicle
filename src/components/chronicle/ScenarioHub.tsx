@@ -110,7 +110,7 @@ export function ScenarioHub({
             <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-3xl text-slate-400 group-hover:bg-blue-100 group-hover:text-blue-500 transition-colors">
                +
             </div>
-            <span className="text-sm font-black uppercase tracking-widest text-slate-400 group-hover:text-blue-600">New Story</span>
+            <span className="text-sm font-black uppercase tracking-widest text-black group-hover:text-blue-600">New Story</span>
           </button>
         )}
       </div>
