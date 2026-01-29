@@ -260,6 +260,82 @@ export type Database = {
           },
         ]
       }
+      image_folders: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          thumbnail_image_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          thumbnail_image_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          thumbnail_image_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_thumbnail_image"
+            columns: ["thumbnail_image_id"]
+            isOneToOne: false
+            referencedRelation: "library_images"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      library_images: {
+        Row: {
+          created_at: string | null
+          filename: string | null
+          folder_id: string
+          id: string
+          image_url: string
+          is_thumbnail: boolean | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          filename?: string | null
+          folder_id: string
+          id?: string
+          image_url: string
+          is_thumbnail?: boolean | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          filename?: string | null
+          folder_id?: string
+          id?: string
+          image_url?: string
+          is_thumbnail?: boolean | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "library_images_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "image_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       memories: {
         Row: {
           content: string

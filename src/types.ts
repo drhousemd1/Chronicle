@@ -281,7 +281,7 @@ export type UserBackground = {
   createdAt: number;
 };
 
-export type TabKey = "hub" | "characters" | "world" | "conversations" | "model_settings" | "builder" | "chat_interface";
+export type TabKey = "hub" | "characters" | "world" | "conversations" | "model_settings" | "builder" | "chat_interface" | "image_library";
 
 // =============================================
 // MEMORY TYPES (Story continuity tracking)

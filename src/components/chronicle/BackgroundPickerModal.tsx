@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { UserBackground } from "@/types";
 import {
   Dialog,
@@ -6,7 +6,14 @@ import {
 } from "@/components/ui/dialog";
 import { Card, Button } from "./UI";
 import { Icons } from "@/constants";
-import { Check, Image } from "lucide-react";
+import { Check, Image, ChevronDown, Upload } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ImageLibraryPickerModal } from "./ImageLibraryPickerModal";
 
 interface BackgroundPickerModalProps {
   isOpen: boolean;
@@ -30,6 +37,7 @@ export function BackgroundPickerModal({
   isUploading,
 }: BackgroundPickerModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -55,21 +63,23 @@ export function BackgroundPickerModal({
               </svg>
               Your Stories Background
             </h2>
-            <Button 
-              variant="ghost" 
-              className="text-blue-600 font-black text-xs tracking-widest uppercase h-9" 
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
-            >
-              {isUploading ? "Uploading..." : "+ Upload Background"}
-            </Button>
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              className="hidden" 
-              accept="image/jpeg,image/png,image/webp" 
-              onChange={handleFileChange} 
-            />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="text-blue-600 font-black text-xs tracking-widest uppercase h-9 gap-1" disabled={isUploading}>
+                  {isUploading ? "Uploading..." : "+ Upload Background"} <ChevronDown className="w-3 h-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44 bg-white z-50">
+                <DropdownMenuItem onClick={() => fileInputRef.current?.click()} className="cursor-pointer">
+                  <Upload className="w-4 h-4 mr-2" /> From Device
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setIsPickerOpen(true)} className="cursor-pointer">
+                  <Image className="w-4 h-4 mr-2" /> From Library
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <input type="file" ref={fileInputRef} className="hidden" accept="image/jpeg,image/png,image/webp" onChange={handleFileChange} />
+            <ImageLibraryPickerModal isOpen={isPickerOpen} onClose={() => setIsPickerOpen(false)} onSelect={(url) => { onSelectBackground(url as any); setIsPickerOpen(false); }} />
           </div>
 
           {/* Grid - matches Scene Gallery layout */}

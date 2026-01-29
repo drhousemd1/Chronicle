@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { uploadAvatar, dataUrlToBlob } from '@/services/supabase-data';
 import { toast } from 'sonner';
 import { AvatarGenerationModal } from './AvatarGenerationModal';
+import { UploadSourceMenu } from './UploadSourceMenu';
 
 interface CharactersTabProps {
   appData: ScenarioData;
@@ -299,9 +300,22 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
 
                 <div className="flex flex-col gap-2 w-full">
                   <div className="flex gap-2 w-full">
-                    <Button variant="primary" onClick={() => fileInputRef.current?.click()} className="flex-1" disabled={isUploading}>
-                      {isUploading ? "Uploading..." : "Upload Image"}
-                    </Button>
+                    <UploadSourceMenu
+                      onUploadFromDevice={() => fileInputRef.current?.click()}
+                      onSelectFromLibrary={(imageUrl) => {
+                        if (selected) {
+                          onUpdate(selected.id, {
+                            avatarDataUrl: imageUrl,
+                            avatarPosition: { x: 50, y: 50 }
+                          });
+                        }
+                      }}
+                      disabled={isUploading}
+                      isUploading={isUploading}
+                      label="Upload Image"
+                      variant="primary"
+                      className="flex-1"
+                    />
                     {selected.avatarDataUrl && (
                       <Button 
                         variant={isRepositioning ? 'primary' : 'secondary'} 
