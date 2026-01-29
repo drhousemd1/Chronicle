@@ -102,6 +102,7 @@ export const getHardcodedTestCharacters = (): Character[] => {
     {
       id: uuid(),
       name: "Ashley",
+      nicknames: "",
       age: "24",
       sexType: "Intersex",
       location: "Living Room",
@@ -151,6 +152,7 @@ export const getHardcodedTestCharacters = (): Character[] => {
     {
       id: uuid(),
       name: "Player",
+      nicknames: "",
       age: "",
       sexType: "Male",
       location: "",
@@ -255,6 +257,7 @@ export function normalizeScenarioData(raw: any): ScenarioData {
     ? raw.characters.map((c: any) => ({
         id: ensureUuid(c?.id),
         name: normStr(c?.name),
+        nicknames: normStr(c?.nicknames),
         age: normStr(c?.age),
         sexType: normStr(c?.sexType || c?.pronouns),
         location: normStr(c?.location),

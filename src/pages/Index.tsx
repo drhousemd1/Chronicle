@@ -596,6 +596,7 @@ const IndexContent = () => {
     const c: Character = {
       id: uuid(),
       name: "New Character",
+      nicknames: "",
       age: "",
       sexType: "",
       location: "",

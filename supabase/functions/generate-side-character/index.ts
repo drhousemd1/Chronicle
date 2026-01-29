@@ -69,6 +69,7 @@ EXTRACTED TRAITS: ${JSON.stringify(extractedTraits || {})}
 WORLD CONTEXT: ${worldContext || 'Modern setting'}
 
 Generate a JSON object with these fields (be creative but consistent with the dialog context):
+- nicknames: comma-separated string of alternative names, pet names, or aliases this character might be called (can be empty if none)
 - age: estimated age as string (e.g., "25", "mid-30s")
 - sexType: sex/gender identity (e.g., "Female", "Male", "Non-binary")
 - roleDescription: their role in the story - what they do or their relationship to other characters (1 sentence)

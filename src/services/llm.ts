@@ -42,7 +42,8 @@ function getSystemInstruction(
 
   const characterContext = appData.characters.map(c => {
     const traits = c.sections.map(s => `${s.title}: ${s.items.map(it => `${it.label}=${it.value}`).join(', ')}`).join('\n');
-    return `CHARACTER: ${c.name} (${c.sexType})
+    const nicknameInfo = c.nicknames ? `\nNICKNAMES: ${c.nicknames}` : '';
+    return `CHARACTER: ${c.name} (${c.sexType})${nicknameInfo}
 ROLE: ${c.characterRole}
 CONTROL: ${c.controlledBy}
 TAGS: ${c.tags}

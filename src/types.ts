@@ -117,6 +117,7 @@ export type PreferredClothing = {
 export type Character = {
   id: string;
   name: string;
+  nicknames: string;  // Comma-separated aliases (e.g., "Mom, Mother, Ma")
   age: string;
   sexType: string;
   location: string;
@@ -148,6 +149,7 @@ export type CharacterSessionState = {
   userId: string;
   // Basic info overrides
   name?: string;
+  nicknames?: string;  // Session-scoped nickname overrides
   age?: string;
   sexType?: string;
   roleDescription?: string;
@@ -193,6 +195,7 @@ export type SideCharacterPersonality = {
 export type SideCharacter = {
   id: string;
   name: string;
+  nicknames: string;  // Comma-separated aliases (e.g., "Mor" for Morrigan)
   age: string;
   sexType: string;
   location: string;

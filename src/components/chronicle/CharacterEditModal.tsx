@@ -23,6 +23,7 @@ import { toast } from 'sonner';
 // Unified draft type for both Character and SideCharacter
 export interface CharacterEditDraft {
   name?: string;
+  nicknames?: string;
   age?: string;
   sexType?: string;
   roleDescription?: string;
@@ -138,6 +139,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
     if (character && open) {
       const baseDraft: CharacterEditDraft = {
         name: character.name,
+        nicknames: character.nicknames || '',
         age: character.age || '',
         sexType: character.sexType || '',
         roleDescription: character.roleDescription || '',
@@ -486,6 +488,12 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     value={draft.name || ''}
                     onChange={(v) => updateField('name', v)}
                     placeholder="Character name"
+                  />
+                  <FieldInput
+                    label="Nicknames"
+                    value={draft.nicknames || ''}
+                    onChange={(v) => updateField('nicknames', v)}
+                    placeholder="e.g., Mom, Mother (comma-separated)"
                   />
                   <div className="grid grid-cols-2 gap-3">
                     <FieldInput

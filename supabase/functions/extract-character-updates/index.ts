@@ -86,6 +86,7 @@ CHARACTERS IN THIS SCENE:
 ${characterContext || 'No character data provided'}
 
 TRACKABLE FIELDS:
+- nicknames (comma-separated alternative names, aliases, pet names the character is called)
 - physicalAppearance.hairColor, physicalAppearance.eyeColor, physicalAppearance.build, physicalAppearance.height, physicalAppearance.skinTone, physicalAppearance.bodyHair, physicalAppearance.breastSize, physicalAppearance.genitalia, physicalAppearance.makeup, physicalAppearance.bodyMarkings, physicalAppearance.temporaryConditions
 - currentlyWearing.top, currentlyWearing.bottom, currentlyWearing.undergarments, currentlyWearing.miscellaneous
 - location (current location/place)
@@ -100,7 +101,8 @@ EXTRACTION RULES:
 6. For appearance details described in action text like "*runs hand through short brown hair*", extract the trait
 7. For clothing described like "wearing navy blue scrubs", extract to currentlyWearing fields
 8. For mood/emotion indicators like "(God I love her)" or described feelings, update currentMood
-9. Return empty updates array if nothing clearly changed
+9. For new nicknames/aliases (e.g., "call me Rhy" or user says "Mom" to refer to Sarah), add to nicknames as comma-separated
+10. Return empty updates array if nothing clearly changed
 
 RESPONSE FORMAT (JSON only):
 {
