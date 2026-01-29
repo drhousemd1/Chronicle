@@ -67,7 +67,7 @@ export function BackgroundPickerModal({
             </h2>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="text-blue-600 font-black text-xs tracking-widest uppercase h-9 gap-1" disabled={isUploading}>
+                <Button variant="ghost" className="bg-slate-900 text-white hover:bg-slate-800 font-black text-xs tracking-widest uppercase h-9 gap-1 px-3" disabled={isUploading}>
                   {isUploading ? "Uploading..." : "+ Upload Background"} <ChevronDown className="w-3 h-3" />
                 </Button>
               </DropdownMenuTrigger>
