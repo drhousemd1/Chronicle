@@ -3,39 +3,39 @@ import React from "react";
 
 export type ButtonVariant = "primary" | "secondary" | "danger" | "ghost" | "brand";
 
-export function Button({
-  children,
-  onClick,
-  variant = "primary",
-  disabled,
-  className = "",
-}: {
+interface ButtonProps {
   children?: React.ReactNode;
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
   variant?: ButtonVariant;
   disabled?: boolean;
   className?: string;
-}) {
-  const base = "inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold transition-all border active:scale-95 cursor-pointer duration-200";
-  const styles: Record<ButtonVariant, string> = {
-    primary: "bg-slate-900 text-white border-slate-900 hover:bg-slate-800 shadow-md hover:shadow-lg",
-    secondary: "bg-white text-slate-900 border-slate-200 hover:bg-slate-50 shadow-sm",
-    danger: "bg-rose-600 text-white border-rose-600 hover:bg-rose-500 shadow-md",
-    ghost: "bg-transparent text-slate-500 border-transparent hover:bg-slate-100 hover:text-slate-900",
-    brand: "bg-blue-600 text-white border-blue-600 hover:bg-blue-500 shadow-md hover:shadow-lg",
-  };
-  const dis = disabled ? "opacity-50 pointer-events-none" : "";
-  return (
-    <button 
-      type="button" 
-      className={`${base} ${styles[variant]} ${dis} ${className}`} 
-      onClick={onClick}
-      disabled={disabled}
-    >
-      {children}
-    </button>
-  );
 }
+
+export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ children, onClick, variant = "primary", disabled, className = "" }, ref) => {
+    const base = "inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold transition-all border active:scale-95 cursor-pointer duration-200";
+    const styles: Record<ButtonVariant, string> = {
+      primary: "bg-slate-900 text-white border-slate-900 hover:bg-slate-800 shadow-md hover:shadow-lg",
+      secondary: "bg-white text-slate-900 border-slate-200 hover:bg-slate-50 shadow-sm",
+      danger: "bg-rose-600 text-white border-rose-600 hover:bg-rose-500 shadow-md",
+      ghost: "bg-transparent text-slate-500 border-transparent hover:bg-slate-100 hover:text-slate-900",
+      brand: "bg-blue-600 text-white border-blue-600 hover:bg-blue-500 shadow-md hover:shadow-lg",
+    };
+    const dis = disabled ? "opacity-50 pointer-events-none" : "";
+    return (
+      <button 
+        ref={ref}
+        type="button" 
+        className={`${base} ${styles[variant]} ${dis} ${className}`} 
+        onClick={onClick}
+        disabled={disabled}
+      >
+        {children}
+      </button>
+    );
+  }
+);
+Button.displayName = 'Button';
 
 export function SmallButton({
   children,
