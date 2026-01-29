@@ -1,130 +1,73 @@
 
 
-# Fix Plan: Standardize All AI Generation Modals
+# Fix Plan: Style Selection Button Ring/Focus Issues
 
-## Problem Summary
+## Problem Analysis
 
-The application has **3 AI image generation modals**, but they have inconsistent styling:
+Based on the screenshots and code review, there are **two distinct issues** causing the inconsistent blue ring behavior:
 
-1. **CoverImageGenerationModal** - Correct styling (the gold standard)
-2. **AvatarGenerationModal** - Correct styling (matches Cover)
-3. **SceneImageGenerationModal** - Incorrect styling (inconsistent with the others)
+### Issue 1: Ring Clipping on Left/Right Edges
 
-Additionally, the **BackgroundPickerModal** has a "+ Upload Background" button that uses light blue text instead of the dark button style used throughout the app.
+The grid container for style buttons has no padding:
+```tsx
+<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+```
+
+The parent container has `overflow-y-auto`, which clips content outside its bounds. CSS rings render **outside** the element, so when the first button in a row has a ring, the left edge gets clipped against the scrollable container.
+
+### Issue 2: Focus Styling Overrides Selection Ring
+
+The current button styling has a conflict:
+```tsx
+className={cn(
+  selectedStyleId === style.id
+    ? "ring-2 ring-blue-400 shadow-md"     // Selected = blue ring
+    : "ring-1 ring-border",                 // Unselected = gray ring
+  "focus:ring-2 focus:ring-blue-100"        // Focus = light blue ring (OVERRIDES!)
+)}
+```
+
+**What happens:**
+1. Modal opens → first button is selected with `ring-2 ring-blue-400`
+2. User clicks a button → button receives focus
+3. Focus state applies `focus:ring-blue-100` which **overrides** the selected blue ring
+4. Ring appears much lighter (almost invisible)
+5. User clicks textarea → focus leaves button → blue ring returns
 
 ---
 
-## Fix #1: Upload Background Button Styling
+## Solution
 
-**File:** `src/components/chronicle/BackgroundPickerModal.tsx`
+### Fix 1: Add Padding to Grid Container
 
-**Current (line 70):**
+Add horizontal padding to the grid container wrapper to give rings room to render without clipping:
+
+**All 3 modals:** Wrap the grid in a container with `-mx-1` margin and `px-1` padding, or simply add `px-1` padding to allow rings to render.
+
 ```tsx
-<Button variant="ghost" className="text-blue-600 font-black text-xs tracking-widest uppercase h-9 gap-1" disabled={isUploading}>
-```
-
-**Fixed:**
-```tsx
-<Button variant="ghost" className="bg-slate-900 text-white hover:bg-slate-800 font-black text-xs tracking-widest uppercase h-9 gap-1 px-3" disabled={isUploading}>
-```
-
----
-
-## Fix #2: Standardize SceneImageGenerationModal
-
-**File:** `src/components/chronicle/SceneImageGenerationModal.tsx`
-
-This modal needs to be updated to match the exact styling of CoverImageGenerationModal and AvatarGenerationModal.
-
-### Changes Required:
-
-#### 2a. Update Dialog Header
-Add the Wand2 icon and border styling like the other modals:
-```tsx
-<DialogHeader className="pb-4 border-b border-border">
-  <DialogTitle className="flex items-center gap-2 text-lg font-bold">
-    <Wand2 className="w-5 h-5" />
-    Generate Scene Image
-  </DialogTitle>
-</DialogHeader>
-```
-
-Move the description text into the prompt section as a tip.
-
-#### 2b. Update Textarea Styling
-Add the blue focus ring and slate background:
-```tsx
-<Textarea
-  value={prompt}
-  onChange={(e) => setPrompt(e.target.value)}
-  placeholder="..."
-  className="min-h-[100px] resize-none bg-slate-50 border-slate-200 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 focus-visible:ring-0 focus-visible:ring-offset-0"
-  disabled={isGenerating}
-/>
-```
-
-#### 2c. Update Label Styling
-Change from `text-slate-500` to `text-muted-foreground` to match:
-```tsx
-<Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-```
-
-#### 2d. Restructure Style Selection Buttons
-Replace the current border-based styling with ring-based styling that includes checkmarks:
-
-**Current structure (causes clipping issues):**
-```tsx
-<button
-  className={cn(
-    "relative aspect-square rounded-xl overflow-hidden border-2 transition-all duration-200",
-    selectedStyle === style.id
-      ? "border-blue-500 ring-2 ring-blue-500/30 scale-105"
-      : "border-slate-200 hover:border-slate-300"
-  )}
->
-  <img ... />
-  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 ...">
-    <span>...</span>
+<div className="space-y-3">
+  <Label>Style</Label>
+  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 px-1">
+    {/* buttons */}
   </div>
-</button>
+</div>
 ```
 
-**New structure (matches Cover & Avatar modals):**
+### Fix 2: Remove Focus Ring Override
+
+Remove the conflicting `focus:ring-*` classes from the button. The selected state already shows a ring, and we don't want focus to change it. Instead, keep only `outline-none` to remove browser default:
+
+**Before:**
 ```tsx
-<button
-  className={cn(
-    "relative rounded-xl p-2 transition-all duration-200 cursor-pointer outline-none",
-    "bg-card hover:bg-accent/50",
-    selectedStyle === style.id
-      ? "ring-2 ring-blue-400 shadow-md"
-      : "ring-1 ring-border hover:ring-slate-300",
-    "focus:ring-2 focus:ring-blue-100 focus:ring-offset-0"
-  )}
->
-  <div className="aspect-square rounded-lg overflow-hidden bg-muted">
-    <img src={style.thumbnailUrl} alt={style.displayName} className="w-full h-full object-cover" />
-  </div>
-  <p className="text-xs font-semibold text-center mt-2 text-foreground">
-    {style.displayName}
-  </p>
-  {selectedStyle === style.id && (
-    <div className="absolute top-1 right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-      <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-      </svg>
-    </div>
-  )}
-</button>
+"focus:ring-2 focus:ring-blue-100 focus:ring-offset-0"
 ```
 
-#### 2e. Update Grid Layout
-Change from `grid-cols-3 sm:grid-cols-5` to `grid-cols-2 sm:grid-cols-3 lg:grid-cols-5` for consistency.
+**After:**
+```tsx
+"focus-visible:outline-none"
+```
 
-#### 2f. Add Separator and Spacing
-Add the separator div and proper spacing between sections like the other modals.
-
-#### 2g. Update Footer Styling
-Add border-top and use consistent button styling.
+Or alternatively, make focus styling **additive** rather than replacing the ring - but removing it entirely is cleaner since we already have visual selection indication via the ring and checkmark.
 
 ---
 
@@ -132,21 +75,89 @@ Add border-top and use consistent button styling.
 
 | File | Changes |
 |------|---------|
-| `src/components/chronicle/BackgroundPickerModal.tsx` | Dark button styling for "+ Upload Background" |
-| `src/components/chronicle/SceneImageGenerationModal.tsx` | Complete restyling to match CoverImageGenerationModal |
+| `src/components/chronicle/SceneImageGenerationModal.tsx` | Add `px-1` to grid, remove focus:ring classes |
+| `src/components/chronicle/CoverImageGenerationModal.tsx` | Add `px-1` to grid, remove focus:ring classes |
+| `src/components/chronicle/AvatarGenerationModal.tsx` | Add `px-1` to grid, remove focus:ring classes |
 
 ---
 
-## Why This Fixes Everything
+## Detailed Changes
 
-By standardizing SceneImageGenerationModal to match CoverImageGenerationModal and AvatarGenerationModal, all 3 AI generation modals will have:
+### SceneImageGenerationModal.tsx
 
-- Consistent blue focus rings on text inputs
-- Consistent ring-based selection (not border-based) that doesn't clip
-- Checkmark indicators on selected styles
-- Proper padding that prevents edge clipping
-- Same typography and spacing
-- Same header/footer styling
+**Line 86:** Add `px-1` to grid container
+```tsx
+<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 px-1">
+```
 
-This is a complete fix for all AI generation interfaces in the application.
+**Lines 93-100:** Remove conflicting focus styling
+```tsx
+className={cn(
+  "relative rounded-xl p-2 transition-all duration-200 cursor-pointer",
+  "bg-card hover:bg-accent/50",
+  selectedStyle === style.id
+    ? "ring-2 ring-blue-400 shadow-md"
+    : "ring-1 ring-border hover:ring-slate-300",
+  "focus-visible:outline-none"
+)}
+```
+
+### CoverImageGenerationModal.tsx
+
+**Line 153:** Add `px-1` to grid container
+```tsx
+<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 px-1">
+```
+
+**Lines 159-166:** Remove conflicting focus styling
+```tsx
+className={cn(
+  "relative rounded-xl p-2 transition-all duration-200 cursor-pointer",
+  "bg-card hover:bg-accent/50",
+  selectedStyleId === style.id
+    ? "ring-2 ring-blue-400 shadow-md"
+    : "ring-1 ring-border hover:ring-slate-300",
+  "focus-visible:outline-none"
+)}
+```
+
+### AvatarGenerationModal.tsx
+
+**Line 225:** Add `px-1` to grid container
+```tsx
+<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 px-1">
+```
+
+**Lines 231-238:** Remove conflicting focus styling
+```tsx
+className={cn(
+  "relative rounded-xl p-2 transition-all duration-200 cursor-pointer",
+  "bg-card hover:bg-accent/50",
+  selectedStyleId === style.id
+    ? "ring-2 ring-blue-400 shadow-md"
+    : "ring-1 ring-border hover:ring-slate-300",
+  "focus-visible:outline-none"
+)}
+```
+
+---
+
+## Expected Result After Fix
+
+| Behavior | Before | After |
+|----------|--------|-------|
+| Initial load | Blue ring clipped on left edge | Full blue ring visible |
+| Click thumbnail | Blue ring disappears | Blue ring stays visible |
+| Click textarea | Blue ring reappears | Blue ring unchanged |
+| Edge items (first/last column) | Rings clipped | Rings fully visible |
+
+---
+
+## Why This Works
+
+1. **`px-1` padding**: Creates 4px of horizontal space inside the grid container, giving rings room to render without being clipped by the parent's overflow
+
+2. **Removing `focus:ring-*`**: Stops the focus state from overriding the selection ring. The checkmark badge provides sufficient visual feedback that the item is selected, so we don't need additional focus indication
+
+3. **`focus-visible:outline-none`**: Removes the browser's default focus outline while maintaining accessibility (focus-visible only triggers for keyboard navigation, not mouse clicks)
 
