@@ -129,6 +129,10 @@ const IndexContent = () => {
   const [isBackgroundModalOpen, setIsBackgroundModalOpen] = useState(false);
   const [isUploadingBackground, setIsUploadingBackground] = useState(false);
 
+  // Image Library background state (separate selection, shared pool)
+  const [selectedImageLibraryBackgroundId, setSelectedImageLibraryBackgroundId] = useState<string | null>(null);
+  const [isImageLibraryBackgroundModalOpen, setIsImageLibraryBackgroundModalOpen] = useState(false);
+
   useEffect(() => {
     localStorage.setItem('chronicle_sidebar_collapsed', String(sidebarCollapsed));
   }, [sidebarCollapsed]);
@@ -318,10 +322,20 @@ const IndexContent = () => {
     }
   };
 
-  // Get the selected background URL
+  // Get the selected background URL for hub
   const selectedBackgroundUrl = selectedHubBackgroundId 
     ? hubBackgrounds.find(bg => bg.id === selectedHubBackgroundId)?.imageUrl 
     : null;
+
+  // Get the selected background URL for Image Library
+  const selectedImageLibraryBackgroundUrl = selectedImageLibraryBackgroundId
+    ? hubBackgrounds.find(bg => bg.id === selectedImageLibraryBackgroundId)?.imageUrl
+    : null;
+
+  // Handler for Image Library background selection (local state only, not persisted to DB)
+  const handleSelectImageLibraryBackground = (id: string | null) => {
+    setSelectedImageLibraryBackgroundId(id);
+  };
 
   async function handlePlayScenario(id: string) {
     if (!user) return;
@@ -1115,7 +1129,7 @@ const IndexContent = () => {
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem onClick={() => setIsBackgroundModalOpen(true)} className="cursor-pointer">
+                    <DropdownMenuItem onClick={() => setIsImageLibraryBackgroundModalOpen(true)} className="cursor-pointer">
                       <ImageIcon className="w-4 h-4 mr-2" />
                       Change Background
                     </DropdownMenuItem>
@@ -1169,7 +1183,19 @@ const IndexContent = () => {
           )}
 
           {tab === "image_library" && (
-            <ImageLibraryTab />
+            <div 
+              className="relative w-full h-full"
+              style={selectedImageLibraryBackgroundUrl ? {
+                backgroundImage: `url(${selectedImageLibraryBackgroundUrl})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center'
+              } : undefined}
+            >
+              {selectedImageLibraryBackgroundUrl && (
+                <div className="absolute inset-0 bg-black/10 pointer-events-none" />
+              )}
+              <ImageLibraryTab />
+            </div>
           )}
 
           {tab === "library" && (
@@ -1297,9 +1323,22 @@ const IndexContent = () => {
       <BackgroundPickerModal
         isOpen={isBackgroundModalOpen}
         onClose={() => setIsBackgroundModalOpen(false)}
+        title="Your Stories Background"
         selectedBackgroundId={selectedHubBackgroundId}
         backgrounds={hubBackgrounds}
         onSelectBackground={handleSelectBackground}
+        onUpload={handleUploadBackground}
+        onDelete={handleDeleteBackground}
+        isUploading={isUploadingBackground}
+      />
+
+      <BackgroundPickerModal
+        isOpen={isImageLibraryBackgroundModalOpen}
+        onClose={() => setIsImageLibraryBackgroundModalOpen(false)}
+        title="Image Library Background"
+        selectedBackgroundId={selectedImageLibraryBackgroundId}
+        backgrounds={hubBackgrounds}
+        onSelectBackground={handleSelectImageLibraryBackground}
         onUpload={handleUploadBackground}
         onDelete={handleDeleteBackground}
         isUploading={isUploadingBackground}
