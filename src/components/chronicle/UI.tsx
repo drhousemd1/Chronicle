@@ -1,4 +1,4 @@
-import React from "react";
+import React, { forwardRef } from "react";
 
 export type ButtonVariant = "primary" | "secondary" | "danger" | "ghost" | "brand";
 
@@ -10,8 +10,8 @@ interface ButtonProps {
   className?: string;
 }
 
-export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ children, onClick, variant = "primary", disabled, className = "" }, ref) => {
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  function Button({ children, onClick, variant = "primary", disabled, className = "" }, ref) {
     const base = "inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold transition-all border active:scale-95 cursor-pointer duration-200";
     const styles: Record<ButtonVariant, string> = {
       primary: "bg-slate-900 text-white border-slate-900 hover:bg-slate-800 shadow-md hover:shadow-lg",
@@ -34,7 +34,6 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     );
   }
 );
-Button.displayName = 'Button';
 
 export function SmallButton({
   children,
