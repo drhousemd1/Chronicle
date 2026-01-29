@@ -32,7 +32,7 @@ export function ConversationsTab({
           <p className="text-sm text-slate-500 mt-1">Start playing a scenario to create your first save.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)] ring-1 ring-slate-900/5">
           <div className="divide-y divide-slate-100">
             {sortedRegistry.map((entry) => {
               const dateStr = new Date(entry.updatedAt).toLocaleDateString([], { 
