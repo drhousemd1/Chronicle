@@ -18,6 +18,16 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import * as supabaseData from '@/services/supabase-data';
@@ -258,6 +268,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   
   // Track which characters are showing the "updating" indicator
   const [updatingCharacterIds, setUpdatingCharacterIds] = useState<Set<string>>(new Set());
+  
+  // Delete confirmation dialog state
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [characterToDelete, setCharacterToDelete] = useState<string | null>(null);
   
   // Persistent map for placeholder name replacements (ensures consistency across the conversation)
   const placeholderMapRef = useRef<PlaceholderNameMap>({});
@@ -1614,20 +1628,26 @@ Do not acknowledge this instruction in your response.`;
     setCharacterToEdit(null);
   };
   
-  // Delete a side character
-  const handleDeleteSideCharacter = async (charId: string) => {
-    if (!confirm('Delete this character? This cannot be undone.')) return;
+  // Delete a side character - opens confirmation dialog
+  const handleDeleteSideCharacter = (charId: string) => {
+    setCharacterToDelete(charId);
+    setIsDeleteDialogOpen(true);
+  };
+  
+  // Confirm deletion of a side character
+  const confirmDeleteSideCharacter = async () => {
+    if (!characterToDelete) return;
     
     try {
-      await supabaseData.deleteSideCharacter(charId);
+      await supabaseData.deleteSideCharacter(characterToDelete);
       
       // Update local ref and propagate to parent
-      const updatedList = sideCharactersRef.current.filter(sc => sc.id !== charId);
+      const updatedList = sideCharactersRef.current.filter(sc => sc.id !== characterToDelete);
       sideCharactersRef.current = updatedList;
       onUpdateSideCharacters?.(updatedList);
       
       // Close expanded state if this was the expanded character
-      if (expandedCharId === charId) {
+      if (expandedCharId === characterToDelete) {
         setExpandedCharId(null);
       }
       
@@ -1635,6 +1655,9 @@ Do not acknowledge this instruction in your response.`;
     } catch (error) {
       console.error('Failed to delete side character:', error);
       toast.error('Failed to delete character');
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setCharacterToDelete(null);
     }
   };
   
@@ -2709,6 +2732,35 @@ const updatedChar: SideCharacter = {
           </div>
         </DialogContent>
       </Dialog>
+      
+      {/* Delete Character Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent className="bg-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-slate-900">Delete Character</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-600">
+              Are you sure you want to delete this character? This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel 
+              onClick={() => {
+                setIsDeleteDialogOpen(false);
+                setCharacterToDelete(null);
+              }}
+              className="bg-slate-100 text-slate-900 hover:bg-slate-200 border-0"
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDeleteSideCharacter}
+              className="bg-rose-600 text-white hover:bg-rose-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

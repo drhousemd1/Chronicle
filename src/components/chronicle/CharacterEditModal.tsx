@@ -19,6 +19,7 @@ import { Loader2, Plus, Trash2, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import * as supabaseData from '@/services/supabase-data';
 import { toast } from 'sonner';
+import { UploadSourceMenu } from './UploadSourceMenu';
 
 // Unified draft type for both Character and SideCharacter
 export interface CharacterEditDraft {
@@ -458,14 +459,22 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                       className="hidden"
                       onChange={handleAvatarUpload}
                     />
-                    <Button
-                      size="sm"
-                      className="w-full bg-slate-900 hover:bg-slate-800 text-white"
-                      onClick={() => fileInputRef.current?.click()}
+                    <UploadSourceMenu
+                      onUploadFromDevice={() => fileInputRef.current?.click()}
+                      onSelectFromLibrary={(imageUrl) => {
+                        setDraft(prev => ({
+                          ...prev,
+                          avatarDataUrl: imageUrl,
+                          avatarPosition: { x: 50, y: 50 }
+                        }));
+                        toast.success('Avatar selected from library');
+                      }}
                       disabled={isUploadingAvatar || isRegeneratingAvatar}
-                    >
-                      {isUploadingAvatar ? 'Uploading...' : 'Upload Image'}
-                    </Button>
+                      isUploading={isUploadingAvatar}
+                      label="Upload Image"
+                      variant="primary"
+                      className="w-full bg-slate-900 hover:bg-slate-800 text-white"
+                    />
                     <Button
                       size="sm"
                       className="w-full bg-slate-900 hover:bg-slate-800 text-white"
