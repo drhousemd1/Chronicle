@@ -12,6 +12,7 @@ import { AVATAR_STYLES, DEFAULT_STYLE_ID } from '@/constants/avatar-styles';
 import { cn } from '@/lib/utils';
 import { SceneTagEditorModal } from './SceneTagEditorModal';
 import { CoverImageGenerationModal } from './CoverImageGenerationModal';
+import { UploadSourceMenu } from './UploadSourceMenu';
 
 interface WorldTabProps {
   world: World;
@@ -349,14 +350,18 @@ export const WorldTab: React.FC<WorldTabProps> = ({
               ]} />
                   
                   <div className="flex flex-wrap gap-3">
-                    <Button 
-                      variant="primary" 
-                      onClick={() => coverFileInputRef.current?.click()} 
+                    <UploadSourceMenu
+                      onUploadFromDevice={() => coverFileInputRef.current?.click()}
+                      onSelectFromLibrary={(imageUrl) => {
+                        onUpdateCoverImage(imageUrl);
+                        onUpdateCoverPosition({ x: 50, y: 50 });
+                      }}
                       disabled={isUploadingCover || isGeneratingCover}
+                      isUploading={isUploadingCover}
+                      label={coverImage ? "Change Image" : "Upload Image"}
+                      variant="primary"
                       className="!px-5"
-                    >
-                      {isUploadingCover ? "Uploading..." : coverImage ? "Change Image" : "Upload Image"}
-                    </Button>
+                    />
                     
                     <Button 
                       variant="primary" 

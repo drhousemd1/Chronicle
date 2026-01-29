@@ -11,6 +11,7 @@ import { useModelSettings, ModelSettingsProvider } from "@/contexts/ModelSetting
 import { ScenarioHub } from "@/components/chronicle/ScenarioHub";
 import { ModelSettingsTab } from "@/components/chronicle/ModelSettingsTab";
 import { ChatInterfaceTab } from "@/components/chronicle/ChatInterfaceTab";
+import { ImageLibraryTab } from "@/components/chronicle/ImageLibraryTab";
 import { Button } from "@/components/chronicle/UI";
 import { aiFillCharacter, aiGenerateCharacter } from "@/services/character-ai";
 import { CharacterPicker } from "@/components/chronicle/CharacterPicker";
@@ -36,6 +37,7 @@ const IconsList = {
   Model: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v10"/><path d="M18.4 4.6a10 10 0 1 1-12.8 0"/></svg>,
   Builder: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>,
   Library: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m16 6 4 14"/><path d="M12 6v14"/><path d="M8 8v12"/><path d="M4 4v16"/></svg>,
+  ImageLibrary: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>,
   ChatInterface: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4c0-1.1.9-2 2-2h8a2 2 0 0 1 2 2v5Z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/></svg>,
   Logout: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
 };
@@ -938,6 +940,7 @@ const IndexContent = () => {
           <nav className={`flex-1 overflow-y-auto pb-4 mt-4 space-y-1 ${sidebarCollapsed ? 'px-2' : 'px-4'}`}>
             <SidebarItem active={tab === "hub"} label="Your Stories" icon={<IconsList.Hub />} onClick={() => { setActiveId(null); setTab("hub"); setPlayingConversationId(null); }} collapsed={sidebarCollapsed} />
             <SidebarItem active={tab === "library"} label="Character Library" icon={<IconsList.Library />} onClick={() => { setActiveId(null); setTab("library"); setSelectedCharacterId(null); setPlayingConversationId(null); }} collapsed={sidebarCollapsed} />
+            <SidebarItem active={tab === "image_library"} label="Image Library" icon={<IconsList.ImageLibrary />} onClick={() => { setActiveId(null); setTab("image_library"); setPlayingConversationId(null); }} collapsed={sidebarCollapsed} />
             
             <SidebarItem active={tab === "conversations"} label="Chat History" icon={<IconsList.Chat />} onClick={() => { setTab("conversations"); }} collapsed={sidebarCollapsed} />
             
@@ -1022,7 +1025,7 @@ const IndexContent = () => {
         </aside>
 
       <main className="flex-1 flex flex-col overflow-hidden bg-slate-50/50">
-        {(tab === "characters" || tab === "world" || tab === "library" || tab === "conversations" || tab === "hub") && (
+        {(tab === "characters" || tab === "world" || tab === "library" || tab === "conversations" || tab === "hub" || tab === "image_library") && (
           <header className="flex-shrink-0 h-16 border-b border-slate-200 bg-white flex items-center justify-between px-8 shadow-sm">
             <div className="flex items-center gap-4">
               {tab === "library" && (
@@ -1069,6 +1072,11 @@ const IndexContent = () => {
               {tab === "hub" && (
                 <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
                   Your Stories
+                </h1>
+              )}
+              {tab === "image_library" && (
+                <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
+                  Image Library
                 </h1>
               )}
             </div>
@@ -1140,6 +1148,10 @@ const IndexContent = () => {
                 onCreate={handleCreateNewScenario}
               />
             </div>
+          )}
+
+          {tab === "image_library" && (
+            <ImageLibraryTab />
           )}
 
           {tab === "library" && (
