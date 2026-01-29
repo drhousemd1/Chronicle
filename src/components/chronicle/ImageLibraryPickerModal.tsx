@@ -180,28 +180,36 @@ export const ImageLibraryPickerModal: React.FC<ImageLibraryPickerModalProps> = (
                     <p className="text-sm">Create folders in the Image Library first</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
                     {folders.map((folder) => (
                       <button
                         key={folder.id}
                         onClick={() => handleSelectFolder(folder)}
-                        className="group relative aspect-[4/3] rounded-xl overflow-hidden bg-slate-100 border border-slate-200 hover:border-blue-400 transition-all cursor-pointer text-left"
+                        className="group relative aspect-[2/3] rounded-[2rem] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)] transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl cursor-pointer text-left"
                       >
                         {folder.thumbnailUrl ? (
                           <img
                             src={folder.thumbnailUrl}
                             alt={folder.name}
-                            className="w-full h-full object-cover"
+                            className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-slate-200">
-                            <FolderOpen className="w-10 h-10 text-slate-400" />
+                          <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-slate-800">
+                            <FolderOpen className="w-12 h-12 text-slate-500" />
                           </div>
                         )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                        <div className="absolute inset-x-0 bottom-0 p-3">
-                          <p className="text-sm font-bold text-white truncate">{folder.name}</p>
-                          <p className="text-xs text-white/70">{folder.imageCount} images</p>
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/20 to-transparent" />
+                        <div className="absolute inset-x-0 bottom-0 p-5 flex flex-col gap-1">
+                          <span className="inline-flex self-start items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-500/90 text-white text-[11px] font-semibold tracking-wide shadow">
+                            <ImageIcon className="w-3 h-3" />
+                            {folder.imageCount}
+                          </span>
+                          <h3 className="text-lg font-extrabold text-white leading-tight line-clamp-2 drop-shadow-md">
+                            {folder.name}
+                          </h3>
+                          {folder.description && (
+                            <p className="text-xs text-white/70 line-clamp-2">{folder.description}</p>
+                          )}
                         </div>
                       </button>
                     ))}
