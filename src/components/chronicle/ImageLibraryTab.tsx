@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button, Card } from './UI';
 import { Icons } from '@/constants';
-import { Star, ArrowLeft, Trash2, Pencil, FolderOpen, Plus, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { Star, ArrowLeft, Trash2, Pencil, FolderOpen, Plus, Image as ImageIcon, Loader2, X } from 'lucide-react';
 import { FolderEditModal } from './FolderEditModal';
 import { useAuth } from '@/hooks/use-auth';
 import { toast } from 'sonner';
@@ -40,7 +40,7 @@ export const ImageLibraryTab: React.FC = () => {
   const [isLoadingImages, setIsLoadingImages] = useState(false);
   const [editingFolder, setEditingFolder] = useState<ImageFolder | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [previewImage, setPreviewImage] = useState<LibraryImage | null>(null);
+  const [lightboxImage, setLightboxImage] = useState<LibraryImage | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch folders on mount
@@ -48,6 +48,17 @@ export const ImageLibraryTab: React.FC = () => {
     if (!user) return;
     loadFolders();
   }, [user]);
+
+  // Escape key handler for lightbox
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && lightboxImage) {
+        setLightboxImage(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [lightboxImage]);
 
   const loadFolders = async () => {
     if (!user) return;
@@ -580,24 +591,27 @@ export const ImageLibraryTab: React.FC = () => {
             {folderImages.map((image) => (
               <div
                 key={image.id}
-                className="group relative aspect-square rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shadow-sm hover:shadow-lg transition-all cursor-pointer"
-                onMouseEnter={() => setPreviewImage(image)}
-                onMouseLeave={() => setPreviewImage(null)}
+                className="group relative aspect-square rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shadow-sm hover:shadow-lg transition-all"
               >
+                {/* Clickable image to open lightbox */}
                 <img
                   src={image.imageUrl}
                   alt={image.filename}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover cursor-pointer"
+                  onClick={() => setLightboxImage(image)}
                 />
 
                 {/* Hover overlay */}
-                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
 
                 {/* Set as thumbnail button */}
                 <button
                   type="button"
-                  onClick={() => handleSetThumbnail(image)}
-                  className={`absolute top-2 left-2 p-2 rounded-lg transition-all ${
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSetThumbnail(image);
+                  }}
+                  className={`absolute top-2 left-2 p-2 rounded-lg transition-all z-10 ${
                     selectedFolder.thumbnailImageId === image.id
                       ? 'bg-amber-500 text-white'
                       : 'bg-white/80 text-slate-600 opacity-0 group-hover:opacity-100 hover:bg-amber-500 hover:text-white'
@@ -609,14 +623,17 @@ export const ImageLibraryTab: React.FC = () => {
                 {/* Delete button */}
                 <button
                   type="button"
-                  onClick={() => handleDeleteImage(image)}
-                  className="absolute top-2 right-2 p-2 bg-rose-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-600"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteImage(image);
+                  }}
+                  className="absolute top-2 right-2 p-2 bg-rose-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-600 z-10"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
 
                 {/* Filename */}
-                <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                   <p className="text-xs text-white truncate">{image.filename}</p>
                 </div>
               </div>
@@ -633,17 +650,31 @@ export const ImageLibraryTab: React.FC = () => {
         )}
       </div>
 
-      {/* Viewport-centered preview overlay */}
-      {previewImage && (
-        <div className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center p-8">
-          <div className="bg-white rounded-xl shadow-2xl border border-slate-200 p-3 max-w-[500px] animate-in fade-in zoom-in-95 duration-150">
+      {/* Click-based lightbox */}
+      {lightboxImage && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-8 bg-black/60"
+          onClick={() => setLightboxImage(null)}
+        >
+          <div 
+            className="relative bg-white rounded-xl shadow-2xl border border-slate-200 p-3 max-w-[600px] animate-in fade-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setLightboxImage(null)}
+              className="absolute -top-3 -right-3 p-2 bg-white rounded-full shadow-lg hover:bg-slate-100 transition-colors z-10"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            
             <img
-              src={previewImage.imageUrl}
-              alt={previewImage.filename}
-              className="w-full h-auto max-h-[70vh] object-contain rounded-lg"
+              src={lightboxImage.imageUrl}
+              alt={lightboxImage.filename}
+              className="w-full h-auto max-h-[75vh] object-contain rounded-lg"
             />
-            <p className="text-sm text-slate-500 text-center mt-2 truncate px-2">
-              {previewImage.filename}
+            <p className="text-sm text-slate-500 text-center mt-3 truncate px-2">
+              {lightboxImage.filename}
             </p>
           </div>
         </div>
