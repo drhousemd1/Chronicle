@@ -1,147 +1,152 @@
 
 
-# Fix: Image Library Background Picker
+# Fix Plan: Standardize All AI Generation Modals
 
 ## Problem Summary
 
-When clicking the gear icon on the "Image Library" page, the background picker modal shows:
-1. Title says "Your Stories Background" (incorrect for Image Library page)
-2. Cannot select the same image for both pages (selections are shared instead of independent)
+The application has **3 AI image generation modals**, but they have inconsistent styling:
 
-Currently both pages share:
-- Same modal open state (`isBackgroundModalOpen`)
-- Same selection state (`selectedHubBackgroundId`)
-- Same hardcoded title in the modal
+1. **CoverImageGenerationModal** - Correct styling (the gold standard)
+2. **AvatarGenerationModal** - Correct styling (matches Cover)
+3. **SceneImageGenerationModal** - Incorrect styling (inconsistent with the others)
 
-## Recommended Solution: Shared Library, Separate Selections
-
-Keep a **shared pool** of uploaded backgrounds but allow **independent selection per page**. This means:
-- Users upload once, backgrounds appear in both pickers
-- Each page (Your Stories, Image Library) maintains its own active background selection
-- Modal title changes based on which page opened it
-
-This approach is cleaner than duplicating the entire background system.
+Additionally, the **BackgroundPickerModal** has a "+ Upload Background" button that uses light blue text instead of the dark button style used throughout the app.
 
 ---
 
-## Changes to Implement
-
-### 1. Add title prop to BackgroundPickerModal
+## Fix #1: Upload Background Button Styling
 
 **File:** `src/components/chronicle/BackgroundPickerModal.tsx`
 
-Add a `title` prop to the component:
-- Update `BackgroundPickerModalProps` interface to include `title?: string`
-- Use the prop with a default value: `title = "Your Backgrounds"`
-- Replace hardcoded "Your Stories Background" with the `title` prop
-
-### 2. Add separate state for Image Library in Index.tsx
-
-**File:** `src/pages/Index.tsx`
-
-Add new state variables:
-- `selectedImageLibraryBackgroundId: string | null` (default: `null`)
-- `isImageLibraryBackgroundModalOpen: boolean` (default: `false`)
-
-### 3. Create separate handlers for Image Library background selection
-
-**File:** `src/pages/Index.tsx`
-
-Add new handler:
-- `handleSelectImageLibraryBackground(id: string | null)` - sets the Image Library page's selected background
-
-### 4. Update gear button for Image Library to use its own modal state
-
-**File:** `src/pages/Index.tsx`
-
-Change the Image Library gear button (around line 1118):
-- From: `onClick={() => setIsBackgroundModalOpen(true)}`
-- To: `onClick={() => setIsImageLibraryBackgroundModalOpen(true)}`
-
-### 5. Render a second BackgroundPickerModal for Image Library
-
-**File:** `src/pages/Index.tsx`
-
-Add a second modal instance specifically for Image Library:
-```jsx
-<BackgroundPickerModal
-  isOpen={isImageLibraryBackgroundModalOpen}
-  onClose={() => setIsImageLibraryBackgroundModalOpen(false)}
-  title="Image Library Background"
-  selectedBackgroundId={selectedImageLibraryBackgroundId}
-  backgrounds={hubBackgrounds}  // Shared pool
-  onSelectBackground={handleSelectImageLibraryBackground}
-  onUpload={handleUploadBackground}  // Shared upload
-  onDelete={handleDeleteBackground}  // Shared delete
-  isUploading={isUploadingBackground}
-/>
+**Current (line 70):**
+```tsx
+<Button variant="ghost" className="text-blue-600 font-black text-xs tracking-widest uppercase h-9 gap-1" disabled={isUploading}>
 ```
 
-### 6. Update existing modal to pass title prop
-
-**File:** `src/pages/Index.tsx`
-
-Update the existing BackgroundPickerModal (around line 1297):
-- Add: `title="Your Stories Background"`
-
-### 7. Apply background to Image Library page
-
-**File:** `src/pages/Index.tsx`
-
-Currently Image Library tab (line 1171-1173) has no background styling. Update to:
-```jsx
-{tab === "image_library" && (
-  <div 
-    className="relative w-full h-full"
-    style={selectedImageLibraryBackgroundUrl ? {
-      backgroundImage: `url(${selectedImageLibraryBackgroundUrl})`,
-      backgroundSize: 'cover',
-      backgroundPosition: 'center'
-    } : undefined}
-  >
-    {selectedImageLibraryBackgroundUrl && (
-      <div className="absolute inset-0 bg-black/10 pointer-events-none" />
-    )}
-    <ImageLibraryTab />
-  </div>
-)}
-```
-
-### 8. Add computed value for Image Library background URL
-
-**File:** `src/pages/Index.tsx`
-
-Add a computed variable similar to `selectedBackgroundUrl`:
-```jsx
-const selectedImageLibraryBackgroundUrl = selectedImageLibraryBackgroundId
-  ? hubBackgrounds.find(bg => bg.id === selectedImageLibraryBackgroundId)?.imageUrl
-  : null;
+**Fixed:**
+```tsx
+<Button variant="ghost" className="bg-slate-900 text-white hover:bg-slate-800 font-black text-xs tracking-widest uppercase h-9 gap-1 px-3" disabled={isUploading}>
 ```
 
 ---
 
-## Result After Implementation
+## Fix #2: Standardize SceneImageGenerationModal
 
-| Feature | Before | After |
-|---------|--------|-------|
-| Modal title | Always "Your Stories Background" | Context-aware ("Your Stories Background" or "Image Library Background") |
-| Selection behavior | Shared selection for both pages | Independent selection per page |
-| Background library | Shared | Shared (unchanged) |
-| Can use same image on both pages | No (blocked) | Yes (independent selections) |
+**File:** `src/components/chronicle/SceneImageGenerationModal.tsx`
+
+This modal needs to be updated to match the exact styling of CoverImageGenerationModal and AvatarGenerationModal.
+
+### Changes Required:
+
+#### 2a. Update Dialog Header
+Add the Wand2 icon and border styling like the other modals:
+```tsx
+<DialogHeader className="pb-4 border-b border-border">
+  <DialogTitle className="flex items-center gap-2 text-lg font-bold">
+    <Wand2 className="w-5 h-5" />
+    Generate Scene Image
+  </DialogTitle>
+</DialogHeader>
+```
+
+Move the description text into the prompt section as a tip.
+
+#### 2b. Update Textarea Styling
+Add the blue focus ring and slate background:
+```tsx
+<Textarea
+  value={prompt}
+  onChange={(e) => setPrompt(e.target.value)}
+  placeholder="..."
+  className="min-h-[100px] resize-none bg-slate-50 border-slate-200 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 focus-visible:ring-0 focus-visible:ring-offset-0"
+  disabled={isGenerating}
+/>
+```
+
+#### 2c. Update Label Styling
+Change from `text-slate-500` to `text-muted-foreground` to match:
+```tsx
+<Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+```
+
+#### 2d. Restructure Style Selection Buttons
+Replace the current border-based styling with ring-based styling that includes checkmarks:
+
+**Current structure (causes clipping issues):**
+```tsx
+<button
+  className={cn(
+    "relative aspect-square rounded-xl overflow-hidden border-2 transition-all duration-200",
+    selectedStyle === style.id
+      ? "border-blue-500 ring-2 ring-blue-500/30 scale-105"
+      : "border-slate-200 hover:border-slate-300"
+  )}
+>
+  <img ... />
+  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 ...">
+    <span>...</span>
+  </div>
+</button>
+```
+
+**New structure (matches Cover & Avatar modals):**
+```tsx
+<button
+  className={cn(
+    "relative rounded-xl p-2 transition-all duration-200 cursor-pointer outline-none",
+    "bg-card hover:bg-accent/50",
+    selectedStyle === style.id
+      ? "ring-2 ring-blue-400 shadow-md"
+      : "ring-1 ring-border hover:ring-slate-300",
+    "focus:ring-2 focus:ring-blue-100 focus:ring-offset-0"
+  )}
+>
+  <div className="aspect-square rounded-lg overflow-hidden bg-muted">
+    <img src={style.thumbnailUrl} alt={style.displayName} className="w-full h-full object-cover" />
+  </div>
+  <p className="text-xs font-semibold text-center mt-2 text-foreground">
+    {style.displayName}
+  </p>
+  {selectedStyle === style.id && (
+    <div className="absolute top-1 right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+      <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+      </svg>
+    </div>
+  )}
+</button>
+```
+
+#### 2e. Update Grid Layout
+Change from `grid-cols-3 sm:grid-cols-5` to `grid-cols-2 sm:grid-cols-3 lg:grid-cols-5` for consistency.
+
+#### 2f. Add Separator and Spacing
+Add the separator div and proper spacing between sections like the other modals.
+
+#### 2g. Update Footer Styling
+Add border-top and use consistent button styling.
 
 ---
 
 ## Files to Modify
 
-1. `src/components/chronicle/BackgroundPickerModal.tsx` - Add `title` prop
-2. `src/pages/Index.tsx` - Add Image Library background state, handlers, and second modal
+| File | Changes |
+|------|---------|
+| `src/components/chronicle/BackgroundPickerModal.tsx` | Dark button styling for "+ Upload Background" |
+| `src/components/chronicle/SceneImageGenerationModal.tsx` | Complete restyling to match CoverImageGenerationModal |
 
 ---
 
-## Technical Notes
+## Why This Fixes Everything
 
-- The shared `hubBackgrounds` array is still used for both modals - uploads and deletes affect both
-- Each page has its own selection state so the same image can be "selected" on both pages simultaneously
-- No database changes needed - we're only adding client-side selection state
-- The empty state text in the modal ("Upload images to customize your hub background") should also be updated to be generic
+By standardizing SceneImageGenerationModal to match CoverImageGenerationModal and AvatarGenerationModal, all 3 AI generation modals will have:
+
+- Consistent blue focus rings on text inputs
+- Consistent ring-based selection (not border-based) that doesn't clip
+- Checkmark indicators on selected styles
+- Proper padding that prevents edge clipping
+- Same typography and spacing
+- Same header/footer styling
+
+This is a complete fix for all AI generation interfaces in the application.
 
