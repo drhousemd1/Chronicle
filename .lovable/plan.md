@@ -1,260 +1,194 @@
 
-# Add Nicknames Field to Characters
+# Implementation Plan: Four UI Fixes
 
 ## Overview
 
-This plan adds a "Nicknames" field to all character types (main characters, side characters, and session states). The field stores comma-separated aliases that help the system correctly identify when different names refer to the same character.
+This plan addresses four distinct UI issues across the application:
 
-## Problem Being Solved
-
-Currently, the alias detection in `isPotentialAlias()` only catches substring matches (e.g., "Mor" for "Morrigan"). It cannot detect:
-- Relational nicknames: "Mom" for Sarah, "Sis" for Jessica
-- Pet names: "Babe", "Honey", "Love" for a romantic partner
-- Shortened forms that aren't substrings: "Rhy" might work, but "Prick" (a nickname Feyre uses for Rhys) wouldn't
+1. **Scenario Builder - Cover Image AI Generate button**: Add an "AI Generate" button with a modal for generating cover images
+2. **Chat History - Drop shadow**: Apply drop shadow styling to the session tiles container
+3. **Chat Interface - Main character three dots visibility**: Make the three-dot menu visible on main character cards (not just side characters)
+4. **Chat Interface - Message action button spacing**: Add spacing between action buttons and text content to prevent click collision
 
 ---
 
-## Technical Changes
+## Fix 1: Cover Image AI Generate Button
 
-### 1. Type Definitions
+### Current State
+The Cover Image section in the Scenario Builder (`WorldTab.tsx`) only has an "Upload Image" button. Users cannot generate AI cover images.
 
-**File: `src/types.ts`**
+### Solution
+Create a new `CoverImageGenerationModal` component (similar to `AvatarGenerationModal`) that:
+- Accepts a prompt for the cover image
+- Shows art style selection thumbnails (reusing `AVATAR_STYLES`)
+- Requests images in portrait 2:3 aspect ratio (matching cover image requirements)
+- Calls an edge function to generate the image
 
-Add `nicknames` field to Character, SideCharacter, and CharacterSessionState types:
-
-```typescript
-export type Character = {
-  // ... existing fields ...
-  name: string;
-  nicknames: string;  // NEW - comma-separated aliases (e.g., "Mom, Mother, Ma")
-  // ...
-};
-
-export type SideCharacter = {
-  // ... existing fields ...
-  name: string;
-  nicknames: string;  // NEW
-  // ...
-};
-
-export type CharacterSessionState = {
-  // ... existing fields ...
-  nicknames?: string;  // NEW - session-scoped nickname overrides
-  // ...
-};
-```
-
-### 2. Database Schema
-
-**Migration: Add `nicknames` column**
-
-```sql
--- Add nicknames column to characters table
-ALTER TABLE characters ADD COLUMN nicknames text DEFAULT '';
-
--- Add nicknames column to side_characters table
-ALTER TABLE side_characters ADD COLUMN nicknames text DEFAULT '';
-
--- Add nicknames column to character_session_states table
-ALTER TABLE character_session_states ADD COLUMN nicknames text DEFAULT '';
-```
-
-### 3. Data Service Updates
-
-**File: `src/services/supabase-data.ts`**
-
-Update converters to include nicknames:
-
-```typescript
-function dbToCharacter(row: any): Character {
-  return {
-    // ... existing fields ...
-    nicknames: row.nicknames || '',
-    // ...
-  };
-}
-
-function characterToDb(char: Character, userId: string, scenarioId?: string) {
-  return {
-    // ... existing fields ...
-    nicknames: char.nicknames || '',
-    // ...
-  };
-}
-```
-
-Similar updates for side character and session state converters.
-
-### 4. UI Components
-
-**File: `src/components/chronicle/CharactersTab.tsx`**
-
-Add Nicknames input below the Name field in the character editor:
-
-```typescript
-<Input 
-  label="Name" 
-  value={selected.name} 
-  onChange={(v) => onUpdate(selected.id, { name: v })} 
-  placeholder="Character name" 
-/>
-<Input 
-  label="Nicknames" 
-  value={selected.nicknames || ''} 
-  onChange={(v) => onUpdate(selected.id, { nicknames: v })} 
-  placeholder="e.g., Mom, Mother (comma-separated)" 
-/>
-```
-
-**File: `src/components/chronicle/CharacterEditModal.tsx`**
-
-Add Nicknames field to the session edit modal (for both main and side characters).
-
-**File: `src/components/chronicle/CharacterEditForm.tsx`**
-
-Add nicknames to the inline edit form if used.
-
-### 5. Alias Detection Enhancement
-
-**File: `src/services/side-character-generator.ts`**
-
-Update `isPotentialAlias()` and related functions to check nicknames:
-
-```typescript
-export function isPotentialAlias(
-  newName: string, 
-  existingName: string,
-  existingNicknames?: string
-): boolean {
-  const newLower = newName.toLowerCase().trim();
-  const existingLower = existingName.toLowerCase().trim();
-  
-  // Existing substring checks...
-  if (newLower === existingLower) return true;
-  if (existingLower.includes(newLower) || newLower.includes(existingLower)) return true;
-  
-  // NEW: Check against nicknames
-  if (existingNicknames) {
-    const nicknameList = existingNicknames.split(',').map(n => n.trim().toLowerCase());
-    if (nicknameList.includes(newLower)) {
-      return true;
-    }
-  }
-  
-  // Existing prefix check...
-  return false;
-}
-```
-
-Update `getKnownCharacterNames()` to include nicknames in the registry:
-
-```typescript
-export function getKnownCharacterNames(appData: ScenarioData): Set<string> {
-  const names = new Set<string>();
-  appData.characters.forEach(c => {
-    names.add(c.name.toLowerCase());
-    // Add nicknames to known names set
-    if (c.nicknames) {
-      c.nicknames.split(',').forEach(n => names.add(n.trim().toLowerCase()));
-    }
-  });
-  appData.sideCharacters?.forEach(c => {
-    names.add(c.name.toLowerCase());
-    if (c.nicknames) {
-      c.nicknames.split(',').forEach(n => names.add(n.trim().toLowerCase()));
-    }
-  });
-  return names;
-}
-```
-
-### 6. AI Context Integration
-
-**File: `src/services/llm.ts`**
-
-Include nicknames in the character context sent to the AI:
-
-```typescript
-const characterContext = appData.characters.map(c => {
-  const traits = c.sections.map(s => `${s.title}: ...`).join('\n');
-  const nicknameInfo = c.nicknames ? `\nNICKNAMES: ${c.nicknames}` : '';
-  return `CHARACTER: ${c.name} (${c.sexType})${nicknameInfo}
-ROLE: ${c.characterRole}
-...`;
-}).join('\n\n');
-```
-
-### 7. Character Update Extraction
-
-**File: `supabase/functions/extract-character-updates/index.ts`**
-
-Add `nicknames` to trackable fields so the AI can discover and record new nicknames during play:
-
-```typescript
-const systemPrompt = `...
-TRACKABLE FIELDS:
-- nicknames (comma-separated alternative names, aliases, pet names)
-- physicalAppearance.hairColor, ...
-...`;
-```
-
----
-
-## UI Layout (Scenario Builder)
-
-The Nicknames field appears directly below Name in the left column:
-
-```text
-+---------------------------+
-|         [Avatar]          |
-|   [Upload] [Reposition]   |
-|       [AI Generate]       |
-+---------------------------+
-| NAME                      |
-| [Rhys                   ] |
-+---------------------------+
-| NICKNAMES                 |
-| [Rhysand, Prick         ] |
-+---------------------------+
-| AGE                       |
-| [535                    ] |
-+---------------------------+
-```
-
----
-
-## Files to Modify
+### Files to Modify/Create
 
 | File | Changes |
 |------|---------|
-| `src/types.ts` | Add `nicknames` field to Character, SideCharacter, CharacterSessionState |
-| `src/utils.ts` | Add default empty string for nicknames in createDefaultCharacter |
-| `src/services/supabase-data.ts` | Update converters to include nicknames field |
-| `src/services/side-character-generator.ts` | Enhance alias detection with nickname checking |
-| `src/services/llm.ts` | Include nicknames in AI character context |
-| `src/components/chronicle/CharactersTab.tsx` | Add Nicknames input field |
-| `src/components/chronicle/CharacterEditModal.tsx` | Add Nicknames field to modal |
-| `src/components/chronicle/CharacterEditForm.tsx` | Add Nicknames to inline form |
-| `supabase/functions/extract-character-updates/index.ts` | Add nicknames to trackable fields |
-| `supabase/functions/generate-side-character/index.ts` | Include nicknames in generated profile |
-| **Database Migration** | Add `nicknames` column to 3 tables |
+| `src/components/chronicle/CoverImageGenerationModal.tsx` | **NEW** - Modal component for AI cover image generation |
+| `src/components/chronicle/WorldTab.tsx` | Add "AI Generate" button and modal state |
+| `supabase/functions/generate-cover-image/index.ts` | **NEW** - Edge function for cover image generation |
+| `supabase/config.toml` | Register the new edge function |
+
+### UI Changes in WorldTab.tsx
+
+Add button after "Upload Image" in the Cover Image section (around line 355):
+
+```tsx
+<Button 
+  variant="primary" 
+  onClick={() => setShowCoverGenModal(true)} 
+  disabled={isGeneratingCover}
+  className="!px-5"
+>
+  AI Generate
+</Button>
+```
+
+### Modal Structure
+
+The new modal will mirror `AvatarGenerationModal` with:
+- Prompt text input
+- Optional negative prompt (collapsible)
+- Art style grid (5 styles with thumbnails)
+- Generate button that calls the edge function
 
 ---
 
-## Expected Behavior
+## Fix 2: Chat History Drop Shadow
 
-1. **Scenario Builder**: Users can add comma-separated nicknames below the character name
-2. **Chat Interface**: When the AI or user refers to a character by nickname, the system correctly maps it to the existing character instead of creating a new one
-3. **Automatic Updates**: The AI can discover new nicknames during play (e.g., if a character says "call me Rhy") and add them to the character's profile
-4. **Session Persistence**: Nicknames added during a playthrough persist for that session
+### Current State
+The session tiles container in `ConversationsTab.tsx` uses `shadow-sm` which is very subtle (line 35).
+
+### Solution
+Update the container styling to match the premium shadow used in Scenario Builder cards:
+```
+!shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)]
+```
+
+### File to Modify
+
+| File | Changes |
+|------|---------|
+| `src/components/chronicle/ConversationsTab.tsx` | Update container shadow styling on line 35 |
+
+### Code Change
+
+Line 35, change:
+```tsx
+<div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+```
+
+To:
+```tsx
+<div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)] ring-1 ring-slate-900/5">
+```
 
 ---
 
-## Edge Cases Handled
+## Fix 3: Main Character Three Dots Visibility
 
-| Scenario | Current Behavior | With Nicknames |
-|----------|------------------|----------------|
-| Sarah called "Mom" | Creates new "Mom" character card | Matches to Sarah |
-| Morrigan called "Mor" | Works (substring match) | Still works + explicit support |
-| Partner called "Babe" | Creates new "Babe" character | Matches if "Babe" is in nicknames |
-| New pet name emerges | No tracking | AI can add to nicknames field |
+### Current State
+In `ChatInterfaceTab.tsx`, the three-dot menu for main characters (around line 1927-1944) is only rendered when the card is expanded (`isExpanded`), and uses light colors (`text-slate-400`).
+
+In contrast, `SideCharacterCard.tsx` (lines 199-225) always renders the menu and uses darker colors (`text-slate-700`).
+
+### Solution
+Make the main character card menu:
+1. Always visible (not just when expanded)
+2. Use the same dark slate styling as side character cards
+
+### File to Modify
+
+| File | Changes |
+|------|---------|
+| `src/components/chronicle/ChatInterfaceTab.tsx` | Update `renderCharacterCard` function (lines 1927-1944) |
+
+### Code Change
+
+Move the dropdown menu outside the `{isExpanded && ...}` conditional and update styling:
+
+```tsx
+{/* Edit dropdown menu - always visible */}
+<div className="absolute top-2 right-2">
+  <DropdownMenu>
+    <DropdownMenuTrigger asChild>
+      <button className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-700 hover:text-slate-900 transition-colors">
+        <MoreVertical className="w-4 h-4" />
+      </button>
+    </DropdownMenuTrigger>
+    <DropdownMenuContent align="end" className="bg-white border-slate-200 shadow-lg z-50">
+      <DropdownMenuItem onClick={() => openCharacterEditModal(char)}>
+        <Pencil className="w-4 h-4 mr-2" />
+        Edit for this session
+      </DropdownMenuItem>
+    </DropdownMenuContent>
+  </DropdownMenu>
+</div>
+```
+
+---
+
+## Fix 4: Message Action Button Spacing
+
+### Current State
+The action buttons (Continue, Refresh, Edit menu) in message bubbles are positioned at `top-4 right-4` (line 2193), but there's no explicit spacing between them and the text content below. The text can flow too close to the buttons, causing click interference.
+
+### Solution
+Add a top padding/margin to the text content area to create clear separation from the action buttons. This mirrors the approach used for the Day/Time badge at the bottom (which uses absolute positioning with explicit bottom spacing).
+
+### File to Modify
+
+| File | Changes |
+|------|---------|
+| `src/components/chronicle/ChatInterfaceTab.tsx` | Add top padding to message content area |
+
+### Code Changes
+
+1. Add a spacer/padding below the action buttons area by updating the message bubble's content wrapper. Around line 2186, modify the bubble div to include padding at the top:
+
+```tsx
+<div className={`p-8 pt-14 pb-12 rounded-[2rem] shadow-2xl flex flex-col gap-4 transition-all relative ${
+```
+
+This changes `p-8` to `p-8 pt-14`, creating 56px of top padding (compared to 32px previously) to ensure the action buttons (positioned at `top-4`) have clear separation from the content.
+
+2. Apply the same change to the streaming message bubble (around line 2395):
+
+```tsx
+<div className={`p-8 pt-14 pb-12 rounded-[2rem] border shadow-2xl flex flex-col gap-4 ${
+```
+
+---
+
+## Summary of Changes
+
+| Issue | File(s) | Type of Change |
+|-------|---------|----------------|
+| Cover Image AI Generate | `WorldTab.tsx`, new modal, new edge function | Feature addition |
+| Chat History drop shadow | `ConversationsTab.tsx` | Styling update |
+| Main character three dots | `ChatInterfaceTab.tsx` | Visibility + styling fix |
+| Button spacing in bubbles | `ChatInterfaceTab.tsx` | Padding adjustment |
+
+---
+
+## Technical Notes
+
+### Cover Image Generation Edge Function
+
+The new edge function will:
+- Accept a prompt and style selection
+- Use the same image generation infrastructure as avatar generation
+- Request portrait aspect ratio (2:3) for cover images
+- Return a URL to the generated image stored in Supabase Storage
+
+### Testing Recommendations
+
+After implementation:
+1. Test AI cover image generation with different styles
+2. Verify Chat History page shows enhanced shadows
+3. Confirm three dots menu visible on main character cards in chat
+4. Check that message action buttons don't overlap with text content
