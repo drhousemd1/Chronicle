@@ -18,6 +18,7 @@ import { ImageLibraryPickerModal } from "./ImageLibraryPickerModal";
 interface BackgroundPickerModalProps {
   isOpen: boolean;
   onClose: () => void;
+  title?: string;
   selectedBackgroundId: string | null; // null = default
   backgrounds: UserBackground[];
   onSelectBackground: (id: string | null) => void;
@@ -29,6 +30,7 @@ interface BackgroundPickerModalProps {
 export function BackgroundPickerModal({
   isOpen,
   onClose,
+  title = "Your Backgrounds",
   selectedBackgroundId,
   backgrounds,
   onSelectBackground,
@@ -61,7 +63,7 @@ export function BackgroundPickerModal({
                 <circle cx="9" cy="9" r="2"/>
                 <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
               </svg>
-              Your Stories Background
+              {title}
             </h2>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -153,7 +155,7 @@ export function BackgroundPickerModal({
           {backgrounds.length === 0 && (
             <div className="mt-6 py-12 text-center text-slate-400 border-2 border-dashed border-slate-100 rounded-2xl">
               <p className="text-xs font-bold uppercase tracking-widest">No backgrounds uploaded</p>
-              <p className="text-[10px] mt-1">Upload images to customize your hub background.</p>
+              <p className="text-[10px] mt-1">Upload images to customize your page background.</p>
             </div>
           )}
         </Card>
