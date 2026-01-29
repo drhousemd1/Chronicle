@@ -1924,24 +1924,22 @@ const updatedChar: SideCharacter = {
             </div>
           </button>
           
-          {/* Edit dropdown menu - visible when expanded */}
-          {isExpanded && (
-            <div className="absolute top-2 right-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors">
-                    <MoreVertical className="w-4 h-4" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-white border-slate-200 shadow-lg">
-                  <DropdownMenuItem onClick={() => openCharacterEditModal(char)}>
-                    <Pencil className="w-4 h-4 mr-2" />
-                    Edit for this session
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          )}
+          {/* Edit dropdown menu - always visible */}
+          <div className="absolute top-2 right-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-700 hover:text-slate-900 transition-colors">
+                  <MoreVertical className="w-4 h-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-white border-slate-200 shadow-lg z-50">
+                <DropdownMenuItem onClick={() => openCharacterEditModal(char)}>
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Edit for this session
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
 
         {isExpanded && (
@@ -2183,7 +2181,7 @@ const updatedChar: SideCharacter = {
                   ? `max-w-4xl ${isAi ? 'mr-auto' : 'ml-auto'}` 
                   : 'max-w-7xl mx-auto'
               }`}>
-                <div className={`p-8 pb-12 rounded-[2rem] shadow-2xl flex flex-col gap-4 transition-all relative ${
+                <div className={`p-8 pt-14 pb-12 rounded-[2rem] shadow-2xl flex flex-col gap-4 transition-all relative ${
                   bubblesTransparent
                     ? 'bg-black/50'
                     : 'bg-[#1c1f26]'
@@ -2392,7 +2390,7 @@ const updatedChar: SideCharacter = {
             
             return (
               <div className={`w-full ${offsetBubbles ? 'max-w-4xl mr-auto' : 'max-w-7xl mx-auto'}`}>
-                <div className={`p-8 pb-12 rounded-[2rem] border shadow-2xl flex flex-col gap-4 ${
+                <div className={`p-8 pt-14 pb-12 rounded-[2rem] border shadow-2xl flex flex-col gap-4 ${
                     bubblesTransparent
                       ? 'bg-black/50 border-white/5'
                       : 'bg-[#1c1f26] border-white/5'

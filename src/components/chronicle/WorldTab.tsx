@@ -11,6 +11,7 @@ import { Sunrise, Sun, Sunset, Moon, ChevronUp, ChevronDown, Pencil } from 'luci
 import { AVATAR_STYLES, DEFAULT_STYLE_ID } from '@/constants/avatar-styles';
 import { cn } from '@/lib/utils';
 import { SceneTagEditorModal } from './SceneTagEditorModal';
+import { CoverImageGenerationModal } from './CoverImageGenerationModal';
 
 interface WorldTabProps {
   world: World;
@@ -86,6 +87,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   const [isRepositioningCover, setIsRepositioningCover] = useState(false);
   const [coverDragStart, setCoverDragStart] = useState<{ x: number; y: number; pos: { x: number; y: number } } | null>(null);
   const [editingScene, setEditingScene] = useState<Scene | null>(null);
+  const [showCoverGenModal, setShowCoverGenModal] = useState(false);
+  const [isGeneratingCover, setIsGeneratingCover] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverFileInputRef = useRef<HTMLInputElement>(null);
   const coverContainerRef = useRef<HTMLDivElement>(null);
@@ -349,10 +352,19 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                     <Button 
                       variant="primary" 
                       onClick={() => coverFileInputRef.current?.click()} 
-                      disabled={isUploadingCover}
+                      disabled={isUploadingCover || isGeneratingCover}
                       className="!px-5"
                     >
                       {isUploadingCover ? "Uploading..." : coverImage ? "Change Image" : "Upload Image"}
+                    </Button>
+                    
+                    <Button 
+                      variant="primary" 
+                      onClick={() => setShowCoverGenModal(true)} 
+                      disabled={isUploadingCover || isGeneratingCover}
+                      className="!px-5"
+                    >
+                      {isGeneratingCover ? "Generating..." : "AI Generate"}
                     </Button>
                     
                     {coverImage && (
@@ -725,6 +737,19 @@ export const WorldTab: React.FC<WorldTabProps> = ({
         onClose={() => setEditingScene(null)}
         scene={editingScene}
         onUpdateTags={handleUpdateSceneTags}
+      />
+      
+      {/* Cover Image Generation Modal */}
+      <CoverImageGenerationModal
+        isOpen={showCoverGenModal}
+        onClose={() => setShowCoverGenModal(false)}
+        onGenerated={(imageUrl) => {
+          onUpdateCoverImage(imageUrl);
+          onUpdateCoverPosition({ x: 50, y: 50 });
+          setShowCoverGenModal(false);
+          toast.success('Cover image generated!');
+        }}
+        scenarioTitle={world.core.scenarioName}
       />
     </div>
   );
