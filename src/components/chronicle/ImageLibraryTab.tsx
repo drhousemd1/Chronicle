@@ -414,7 +414,7 @@ export const ImageLibraryTab: React.FC = () => {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-8">
                 {folders.map((folder) => (
                   <div
                     key={folder.id}
@@ -494,12 +494,12 @@ export const ImageLibraryTab: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleCreateFolder}
-                  className="group aspect-[2/3] w-full overflow-hidden rounded-[2rem] bg-slate-100 border-2 border-dashed border-slate-300 transition-all duration-300 hover:border-blue-400 hover:bg-blue-50 flex flex-col items-center justify-center gap-4 cursor-pointer"
+                  className="group aspect-[2/3] w-full overflow-hidden rounded-[2rem] bg-slate-50/50 border-2 border-dashed border-slate-200 transition-all duration-300 hover:border-blue-400 hover:bg-blue-50 flex flex-col items-center justify-center gap-4 cursor-pointer"
                 >
-                  <div className="w-16 h-16 rounded-full bg-slate-200 flex items-center justify-center group-hover:bg-blue-100 transition-colors">
+                  <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-blue-100 transition-colors">
                     <Plus className="w-8 h-8 text-slate-400 group-hover:text-blue-500" />
                   </div>
-                  <span className="text-sm font-bold text-slate-400 group-hover:text-blue-600 uppercase tracking-wider">
+                  <span className="text-sm font-black text-black group-hover:text-blue-600 uppercase tracking-widest">
                     New Folder
                   </span>
                 </button>
