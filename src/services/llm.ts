@@ -32,6 +32,7 @@ function getSystemInstruction(
   
   const worldContext = `
     SETTING OVERVIEW: ${appData.world.core.settingOverview}
+    STORY PREMISE: ${appData.world.core.storyPremise || 'Not specified'}
     RULES/TECH: ${appData.world.core.rulesOfMagicTech}
     FACTIONS: ${appData.world.core.factions}
     LOCATIONS: ${appData.world.core.locations}

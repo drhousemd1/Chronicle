@@ -416,6 +416,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
               <div className="grid grid-cols-1 gap-8">
                 <Input label="Scenario Name" value={world.core.scenarioName} onChange={(v) => updateCore({ scenarioName: v })} placeholder="e.g. Chronicles of Eldoria" />
                 <TextArea label="Brief Description" value={world.core.briefDescription || ''} onChange={(v) => updateCore({ briefDescription: v })} rows={2} placeholder="A short summary that appears on your story card (1-2 sentences)..." />
+                <TextArea label="Story Premise" value={world.core.storyPremise || ''} onChange={(v) => updateCore({ storyPremise: v })} rows={4} placeholder="What's the central situation or conflict? What's at stake? Describe the overall narrative the AI should understand..." />
                 <TextArea label="Setting Overview" value={world.core.settingOverview} onChange={(v) => updateCore({ settingOverview: v })} rows={4} placeholder="Describe the physical and cultural landscape of your world..." />
                 <TextArea label="Rules of Magic & Technology" value={world.core.rulesOfMagicTech} onChange={(v) => updateCore({ rulesOfMagicTech: v })} rows={3} placeholder="How do supernatural or advanced systems function?" />
                 <TextArea label="Primary Locations" value={world.core.locations} onChange={(v) => updateCore({ locations: v })} rows={3} placeholder="List key cities, landmarks, or regions..." />

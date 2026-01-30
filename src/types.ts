@@ -33,6 +33,7 @@ export type OpeningDialog = {
 export type WorldCore = {
   scenarioName: string;
   briefDescription: string;
+  storyPremise: string;  // Central conflict/plot/situation
   settingOverview: string;
   rulesOfMagicTech: string;
   factions: string;
