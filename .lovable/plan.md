@@ -1,93 +1,122 @@
 
 
-# Plan: Add "Story Premise" Field to World Core
+# Fix Plan: Image Library Background Persistence and Tile Size Matching
 
 ## Overview
 
-Add a new "Story Premise" field to the World Core section that allows users to describe the overall plot, central conflict, or narrative situation. This field fills the gap between world-building (settings, locations, rules) and the Opening Dialog (first scene).
+This plan addresses two issues on the Image Library page:
+1. Background selection doesn't persist after page refresh
+2. Tiles are smaller than Your Stories tiles and there's a gap before the first tile
 
 ---
 
-## Changes Required
+## Problem 1: Background Persistence
 
-### 1. Update Type Definition
+### Root Cause
 
-**File:** `src/types.ts`
-
-Add a new `storyPremise` field to the `WorldCore` type:
+Looking at the code in Index.tsx:
 
 ```typescript
-export type WorldCore = {
-  scenarioName: string;
-  briefDescription: string;
-  storyPremise: string;           // NEW: Central conflict/plot/situation
-  settingOverview: string;
-  rulesOfMagicTech: string;
-  factions: string;
-  locations: string;
-  historyTimeline: string;
-  toneThemes: string;
-  plotHooks: string;
-  narrativeStyle: string;
-  dialogFormatting: string;
+// Line 335-338 - Current (broken) implementation
+const handleSelectImageLibraryBackground = (id: string | null) => {
+  setSelectedImageLibraryBackgroundId(id);  // Only updates React state
 };
 ```
 
----
-
-### 2. Update Default Scenario Factory
-
-**File:** `src/utils.ts` (or wherever `createDefaultScenarioData` is located)
-
-Add `storyPremise: ''` to the default WorldCore object.
-
----
-
-### 3. Add UI Field to World Tab
-
-**File:** `src/components/chronicle/WorldTab.tsx`
-
-Add the new TextArea between "Brief Description" and "Setting Overview" (around line 418-419):
-
-```tsx
-<TextArea 
-  label="Story Premise" 
-  value={world.core.storyPremise || ''} 
-  onChange={(v) => updateCore({ storyPremise: v })} 
-  rows={4} 
-  placeholder="What's the central situation or conflict? What's at stake? Describe the overall narrative the AI should understand..." 
-/>
-```
-
-Position: After Brief Description, before Setting Overview. This makes logical sense:
-1. Scenario Name (what's it called)
-2. Brief Description (short summary for card)
-3. **Story Premise** (the actual plot/conflict)
-4. Setting Overview (where it takes place)
-5. Rules of Magic & Technology
-6. Primary Locations
-7. Tone & Central Themes
-
----
-
-### 4. Include in AI System Prompt
-
-**File:** `src/services/llm.ts`
-
-Update the `worldContext` section (around line 33-41) to include the new field:
+The Image Library background handler only updates local React state. Compare this to the Your Stories (hub) handler:
 
 ```typescript
-const worldContext = `
-  SETTING OVERVIEW: ${appData.world.core.settingOverview}
-  STORY PREMISE: ${appData.world.core.storyPremise || 'Not specified'}
-  RULES/TECH: ${appData.world.core.rulesOfMagicTech}
-  FACTIONS: ${appData.world.core.factions}
-  LOCATIONS: ${appData.world.core.locations}
-  TONE & THEMES: ${appData.world.core.toneThemes}
-  NARRATIVE STYLE: ${appData.world.core.narrativeStyle}
-  DIALOG FORMATTING: ${fullDialogFormatting}
-`;
+// Line 298-309 - Working implementation
+const handleSelectBackground = async (id: string | null) => {
+  await supabaseData.setSelectedBackground(user.id, id);  // Persists to database
+  setSelectedHubBackgroundId(id);
+  // ...
+};
 ```
+
+The hub version calls `supabaseData.setSelectedBackground()` to save to the database. The Image Library version does not.
+
+### Solution
+
+1. **Update the database schema** to support separate background selections for hub vs. image library (add an `image_library_background_id` column or a `context` field to track which page the selection belongs to)
+
+2. **Create persistence functions** in supabase-data.ts:
+   - `setImageLibraryBackground(userId, backgroundId)`
+   - `getImageLibraryBackground(userId)`
+
+3. **Update Index.tsx** to:
+   - Load the Image Library background on mount
+   - Persist selection when changed
+
+### Implementation Details
+
+**File: src/services/supabase-data.ts**
+
+Add a new function to save/retrieve the image library background selection. We can use a separate column or a simple user_preferences approach.
+
+**File: src/pages/Index.tsx**
+
+Update the `handleSelectImageLibraryBackground` function to persist the selection:
+
+```typescript
+const handleSelectImageLibraryBackground = async (id: string | null) => {
+  if (!user) return;
+  try {
+    await supabaseData.setImageLibraryBackground(user.id, id);
+    setSelectedImageLibraryBackgroundId(id);
+  } catch (e: any) {
+    toast({ title: "Failed to set background", description: e.message, variant: "destructive" });
+  }
+};
+```
+
+Also update the `loadData` function to fetch the saved Image Library background.
+
+---
+
+## Problem 2: Tile Size Discrepancy
+
+### Root Cause
+
+Comparing the container styling between the two pages:
+
+**ScenarioHub.tsx (Your Stories)**:
+```tsx
+<div className="w-full h-full p-10 flex flex-col overflow-y-auto">
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-8 w-full">
+```
+
+**ImageLibraryTab.tsx (Image Library)**:
+```tsx
+<div className="h-full overflow-y-auto p-10">
+  <div className="max-w-6xl mx-auto space-y-8">  // <-- This constrains width!
+    ...
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-8">
+```
+
+The `max-w-6xl mx-auto` wrapper in ImageLibraryTab constrains the maximum width to 72rem (1152px), which:
+1. Makes tiles smaller on wider screens
+2. Centers the content, creating the visible gap on the left side
+
+### Solution
+
+Remove the `max-w-6xl mx-auto` constraint from the ImageLibraryTab grid wrapper to match ScenarioHub's full-width layout.
+
+**File: src/components/chronicle/ImageLibraryTab.tsx**
+
+Change line 409-410 from:
+```tsx
+<div className="h-full overflow-y-auto p-10">
+  <div className="max-w-6xl mx-auto space-y-8">
+```
+
+To:
+```tsx
+<div className="w-full h-full p-10 flex flex-col overflow-y-auto">
+  <div className="w-full">
+```
+
+This matches the ScenarioHub container structure exactly.
 
 ---
 
@@ -95,37 +124,31 @@ const worldContext = `
 
 | File | Changes |
 |------|---------|
-| `src/types.ts` | Add `storyPremise: string` to WorldCore type |
-| `src/utils.ts` | Add `storyPremise: ''` to default WorldCore in factory |
-| `src/components/chronicle/WorldTab.tsx` | Add TextArea for Story Premise field |
-| `src/services/llm.ts` | Include storyPremise in AI context |
+| `src/services/supabase-data.ts` | Add `setImageLibraryBackground()` and `getImageLibraryBackground()` functions |
+| `src/pages/Index.tsx` | Update background handlers to persist Image Library selection; load on mount |
+| `src/components/chronicle/ImageLibraryTab.tsx` | Remove `max-w-6xl mx-auto` constraint to match Your Stories layout |
 
 ---
 
-## Field Design Details
+## Database Consideration
 
-| Aspect | Value |
-|--------|-------|
-| **Label** | "Story Premise" |
-| **Rows** | 4 (allows substantial content) |
-| **Placeholder** | "What's the central situation or conflict? What's at stake? Describe the overall narrative the AI should understand..." |
-| **Position** | After Brief Description, before Setting Overview |
+Since we're already storing `isSelected` on background records, we have two options:
 
----
+**Option A: Add a new field to backgrounds table**
+Add an `image_library_selected` boolean column to track the Image Library selection separately.
 
-## Why "Story Premise"?
+**Option B: Use a user preferences approach**
+Store user preferences as JSON or add an `image_library_background_id` column to a user settings table.
 
-This term was chosen because:
-- **"Background"** sounds like past history (which `historyTimeline` already covers)
-- **"Plot"** implies predetermined outcomes, which may not fit emergent roleplay
-- **"Premise"** captures the starting situation and central tension without dictating endings
-- It's familiar to writers and storytellers
+I recommend **Option A** as it keeps the logic simple and consistent with the existing `isSelected` approach.
 
 ---
 
-## Technical Notes
+## Expected Results
 
-- The field is optional (uses `|| ''` fallback) so existing scenarios won't break
-- Adding `|| 'Not specified'` in the LLM context ensures the AI doesn't see undefined values
-- No database migration needed - this is stored in the scenario's JSON data structure
+| Issue | Before | After |
+|-------|--------|-------|
+| Image Library background | Resets on page refresh | Persists across sessions |
+| Tile sizes | Smaller, constrained to 1152px | Same size as Your Stories |
+| Left gap | Visible offset due to centering | Tiles start from left edge like Your Stories |
 
