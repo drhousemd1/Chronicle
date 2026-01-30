@@ -151,21 +151,27 @@ const IndexContent = () => {
     async function loadData() {
       setIsLoading(true);
       try {
-        const [scenarios, characters, conversations, backgrounds] = await Promise.all([
+        const [scenarios, characters, conversations, backgrounds, imageLibraryBgId] = await Promise.all([
           supabaseData.fetchScenarios(),
           supabaseData.fetchCharacterLibrary(),
           supabaseData.fetchConversationRegistry(),
-          supabaseData.fetchUserBackgrounds(user.id)
+          supabaseData.fetchUserBackgrounds(user.id),
+          supabaseData.getImageLibraryBackground(user.id)
         ]);
         setRegistry(scenarios);
         setLibrary(characters);
         setConversationRegistry(conversations);
         setHubBackgrounds(backgrounds);
         
-        // Set the selected background if one is marked as selected
+        // Set the selected background if one is marked as selected (Hub)
         const selectedBg = backgrounds.find(bg => bg.isSelected);
         if (selectedBg) {
           setSelectedHubBackgroundId(selectedBg.id);
+        }
+        
+        // Set the selected background for Image Library
+        if (imageLibraryBgId) {
+          setSelectedImageLibraryBackgroundId(imageLibraryBgId);
         }
       } catch (e: any) {
         console.error("Failed to load data:", e);
@@ -332,9 +338,15 @@ const IndexContent = () => {
     ? hubBackgrounds.find(bg => bg.id === selectedImageLibraryBackgroundId)?.imageUrl
     : null;
 
-  // Handler for Image Library background selection (local state only, not persisted to DB)
-  const handleSelectImageLibraryBackground = (id: string | null) => {
-    setSelectedImageLibraryBackgroundId(id);
+  // Handler for Image Library background selection (persisted to DB)
+  const handleSelectImageLibraryBackground = async (id: string | null) => {
+    if (!user) return;
+    try {
+      await supabaseData.setImageLibraryBackground(user.id, id);
+      setSelectedImageLibraryBackgroundId(id);
+    } catch (e: any) {
+      toast({ title: "Failed to set background", description: e.message, variant: "destructive" });
+    }
   };
 
   async function handlePlayScenario(id: string) {

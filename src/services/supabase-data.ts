@@ -1001,7 +1001,7 @@ export async function createUserBackground(userId: string, imageUrl: string): Pr
 }
 
 export async function setSelectedBackground(userId: string, backgroundId: string | null): Promise<void> {
-  // First, unselect all backgrounds for this user
+  // First, unselect all backgrounds for this user (Hub selection)
   const { error: unselectError } = await supabase
     .from('user_backgrounds')
     .update({ is_selected: false })
@@ -1019,6 +1019,39 @@ export async function setSelectedBackground(userId: string, backgroundId: string
 
     if (selectError) throw selectError;
   }
+}
+
+export async function setImageLibraryBackground(userId: string, backgroundId: string | null): Promise<void> {
+  // First, unselect all Image Library backgrounds for this user
+  const { error: unselectError } = await supabase
+    .from('user_backgrounds')
+    .update({ image_library_selected: false })
+    .eq('user_id', userId);
+
+  if (unselectError) throw unselectError;
+
+  // If a specific background is selected, mark it as selected for Image Library
+  if (backgroundId) {
+    const { error: selectError } = await supabase
+      .from('user_backgrounds')
+      .update({ image_library_selected: true })
+      .eq('id', backgroundId)
+      .eq('user_id', userId);
+
+    if (selectError) throw selectError;
+  }
+}
+
+export async function getImageLibraryBackground(userId: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('user_backgrounds')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('image_library_selected', true)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data?.id || null;
 }
 
 export async function deleteUserBackground(userId: string, backgroundId: string, imageUrl: string): Promise<void> {

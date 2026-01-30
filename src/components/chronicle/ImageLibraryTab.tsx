@@ -406,8 +406,8 @@ export const ImageLibraryTab: React.FC = () => {
   // Folder Grid View
   if (!selectedFolder) {
     return (
-      <div className="h-full overflow-y-auto p-10">
-        <div className="max-w-6xl mx-auto space-y-8">
+      <div className="w-full h-full p-10 flex flex-col overflow-y-auto">
+        <div className="w-full">
           {isLoading ? (
             <div className="flex items-center justify-center py-20">
               <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
