@@ -1,6 +1,6 @@
 
 import React, { useRef, useState, useCallback } from 'react';
-import { World, OpeningDialog, CodexEntry, Character, Scene, TimeOfDay } from '@/types';
+import { World, OpeningDialog, CodexEntry, Character, Scene, TimeOfDay, WorldCore } from '@/types';
 import { Button, Input, TextArea, Card } from './UI';
 import { Icons } from '@/constants';
 import { uid, now, resizeImage, uuid, clamp } from '@/utils';
@@ -8,13 +8,15 @@ import { useAuth } from '@/hooks/use-auth';
 import { uploadSceneImage, uploadCoverImage, dataUrlToBlob } from '@/services/supabase-data';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Sunrise, Sun, Sunset, Moon, ChevronUp, ChevronDown, Pencil } from 'lucide-react';
+import { Sunrise, Sun, Sunset, Moon, ChevronUp, ChevronDown, Pencil, Sparkles } from 'lucide-react';
 import { AVATAR_STYLES, DEFAULT_STYLE_ID } from '@/constants/avatar-styles';
 import { cn } from '@/lib/utils';
 import { SceneTagEditorModal } from './SceneTagEditorModal';
 import { CoverImageGenerationModal } from './CoverImageGenerationModal';
 import { SceneImageGenerationModal } from './SceneImageGenerationModal';
 import { UploadSourceMenu } from './UploadSourceMenu';
+import { aiEnhanceWorldField } from '@/services/world-ai';
+import { useModelSettings } from '@/contexts/ModelSettingsContext';
 
 interface WorldTabProps {
   world: World;
@@ -85,6 +87,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   onSelectCharacter 
 }) => {
   const { user } = useAuth();
+  const { modelId } = useModelSettings();
   const [isUploading, setIsUploading] = useState(false);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [isRepositioningCover, setIsRepositioningCover] = useState(false);
@@ -94,12 +97,69 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   const [isGeneratingCover, setIsGeneratingCover] = useState(false);
   const [showSceneGenModal, setShowSceneGenModal] = useState(false);
   const [isGeneratingScene, setIsGeneratingScene] = useState(false);
+  const [enhancingField, setEnhancingField] = useState<keyof WorldCore | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverFileInputRef = useRef<HTMLInputElement>(null);
   const coverContainerRef = useRef<HTMLDivElement>(null);
 
   const updateCore = (patch: any) => {
     onUpdateWorld({ core: { ...world.core, ...patch } });
+  };
+
+  // AI enhancement handler for World Core fields
+  const handleEnhanceField = async (fieldName: keyof WorldCore) => {
+    if (!modelId) {
+      toast.error("No model selected. Please select a model in settings.");
+      return;
+    }
+    
+    setEnhancingField(fieldName);
+    try {
+      const enhanced = await aiEnhanceWorldField(
+        fieldName,
+        world.core[fieldName] || '',
+        world.core,
+        modelId
+      );
+      updateCore({ [fieldName]: enhanced });
+      toast.success(`${fieldName.replace(/([A-Z])/g, ' $1').trim()} enhanced`);
+    } catch (error: any) {
+      console.error('Enhancement failed:', error);
+      toast.error(error.message || "Enhancement failed");
+    } finally {
+      setEnhancingField(null);
+    }
+  };
+
+  // Reusable field label with AI enhance button
+  const FieldLabel: React.FC<{
+    label: string;
+    fieldName: keyof WorldCore;
+  }> = ({ label, fieldName }) => {
+    const isLoading = enhancingField === fieldName;
+    return (
+      <div className="flex items-center gap-2 mb-1">
+        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+          {label}
+        </label>
+        <button
+          type="button"
+          onClick={() => handleEnhanceField(fieldName)}
+          disabled={isLoading || enhancingField !== null}
+          title="Enhance with AI"
+          className={cn(
+            "p-1 rounded-md transition-all",
+            isLoading 
+              ? "text-blue-500 animate-pulse cursor-wait" 
+              : enhancingField !== null
+              ? "text-slate-200 cursor-not-allowed"
+              : "text-slate-300 hover:text-blue-500 hover:bg-blue-50"
+          )}
+        >
+          <Sparkles size={14} />
+        </button>
+      </div>
+    );
   };
 
   const handleUpdateEntry = (id: string, patch: Partial<CodexEntry>) => {
@@ -414,13 +474,34 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                 <Icons.Globe /> World Core
               </h2>
               <div className="grid grid-cols-1 gap-8">
-                <Input label="Scenario Name" value={world.core.scenarioName} onChange={(v) => updateCore({ scenarioName: v })} placeholder="e.g. Chronicles of Eldoria" />
-                <TextArea label="Brief Description" value={world.core.briefDescription || ''} onChange={(v) => updateCore({ briefDescription: v })} rows={2} placeholder="A short summary that appears on your story card (1-2 sentences)..." />
-                <TextArea label="Story Premise" value={world.core.storyPremise || ''} onChange={(v) => updateCore({ storyPremise: v })} rows={4} placeholder="What's the central situation or conflict? What's at stake? Describe the overall narrative the AI should understand..." />
-                <TextArea label="Setting Overview" value={world.core.settingOverview} onChange={(v) => updateCore({ settingOverview: v })} rows={4} placeholder="Describe the physical and cultural landscape of your world..." />
-                <TextArea label="Rules of Magic & Technology" value={world.core.rulesOfMagicTech} onChange={(v) => updateCore({ rulesOfMagicTech: v })} rows={3} placeholder="How do supernatural or advanced systems function?" />
-                <TextArea label="Primary Locations" value={world.core.locations} onChange={(v) => updateCore({ locations: v })} rows={3} placeholder="List key cities, landmarks, or regions..." />
-                <TextArea label="Tone & Central Themes" value={world.core.toneThemes} onChange={(v) => updateCore({ toneThemes: v })} rows={3} placeholder="What feelings and ideas should define the story?" />
+                <div>
+                  <FieldLabel label="Scenario Name" fieldName="scenarioName" />
+                  <Input value={world.core.scenarioName} onChange={(v) => updateCore({ scenarioName: v })} placeholder="e.g. Chronicles of Eldoria" />
+                </div>
+                <div>
+                  <FieldLabel label="Brief Description" fieldName="briefDescription" />
+                  <TextArea value={world.core.briefDescription || ''} onChange={(v) => updateCore({ briefDescription: v })} rows={2} placeholder="A short summary that appears on your story card (1-2 sentences)..." />
+                </div>
+                <div>
+                  <FieldLabel label="Story Premise" fieldName="storyPremise" />
+                  <TextArea value={world.core.storyPremise || ''} onChange={(v) => updateCore({ storyPremise: v })} rows={4} placeholder="What's the central situation or conflict? What's at stake? Describe the overall narrative the AI should understand..." />
+                </div>
+                <div>
+                  <FieldLabel label="Setting Overview" fieldName="settingOverview" />
+                  <TextArea value={world.core.settingOverview} onChange={(v) => updateCore({ settingOverview: v })} rows={4} placeholder="Describe the physical and cultural landscape of your world..." />
+                </div>
+                <div>
+                  <FieldLabel label="Rules of Magic & Technology" fieldName="rulesOfMagicTech" />
+                  <TextArea value={world.core.rulesOfMagicTech} onChange={(v) => updateCore({ rulesOfMagicTech: v })} rows={3} placeholder="How do supernatural or advanced systems function?" />
+                </div>
+                <div>
+                  <FieldLabel label="Primary Locations" fieldName="locations" />
+                  <TextArea value={world.core.locations} onChange={(v) => updateCore({ locations: v })} rows={3} placeholder="List key cities, landmarks, or regions..." />
+                </div>
+                <div>
+                  <FieldLabel label="Tone & Central Themes" fieldName="toneThemes" />
+                  <TextArea value={world.core.toneThemes} onChange={(v) => updateCore({ toneThemes: v })} rows={3} placeholder="What feelings and ideas should define the story?" />
+                </div>
               </div>
             </Card>
           </section>
