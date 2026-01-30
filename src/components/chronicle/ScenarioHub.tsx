@@ -54,11 +54,11 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDel
           </button>
         </div>
         
-        <div className="absolute inset-x-0 bottom-0 p-6 pointer-events-none">
-          <h3 className="text-xl font-black text-white leading-tight mb-1 tracking-tight group-hover:text-blue-300 transition-colors truncate">
+        <div className="absolute inset-x-0 bottom-0 h-28 p-6 pointer-events-none flex flex-col">
+          <h3 className="text-xl font-black text-white leading-tight tracking-tight group-hover:text-blue-300 transition-colors truncate flex-shrink-0">
             {scen.title || "Unnamed Story"}
           </h3>
-          <p className="text-xs text-white/70 line-clamp-3 leading-relaxed italic">
+          <p className="text-xs text-white/70 line-clamp-3 leading-relaxed italic mt-1">
             {scen.description || "No summary provided."}
           </p>
         </div>
