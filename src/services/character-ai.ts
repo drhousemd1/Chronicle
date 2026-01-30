@@ -3,6 +3,141 @@ import { ScenarioData, Character, CharacterTraitSection, PhysicalAppearance, Cur
 import { supabase } from "@/integrations/supabase/client";
 import { uid, now } from "@/utils";
 
+// ============================================================
+// Per-Field AI Enhancement (Structured Expansion)
+// ============================================================
+
+// Field-specific prompts that enforce structured expansion
+const CHARACTER_FIELD_PROMPTS: Record<string, { label: string; instruction: string; maxSentences: number }> = {
+  // Physical Appearance
+  hairColor: { label: "Hair Color", instruction: "Describe hair color, style, and length concisely. Format: Color + Style + Notable features.", maxSentences: 2 },
+  eyeColor: { label: "Eye Color", instruction: "Describe eye color and any notable characteristics. Format: Color + Quality/Expression.", maxSentences: 1 },
+  build: { label: "Build", instruction: "Describe body type and physique. Format: Type + Defining features.", maxSentences: 2 },
+  bodyHair: { label: "Body Hair", instruction: "Describe body hair amount and pattern. Format: Amount + Location/Pattern.", maxSentences: 1 },
+  height: { label: "Height", instruction: "Provide height (with measurement) and how they carry themselves.", maxSentences: 1 },
+  breastSize: { label: "Breast Size", instruction: "Describe size and relevant details if applicable.", maxSentences: 1 },
+  genitalia: { label: "Genitalia", instruction: "Describe relevant anatomical details if applicable.", maxSentences: 1 },
+  skinTone: { label: "Skin Tone", instruction: "Describe skin tone and any notable texture or qualities.", maxSentences: 1 },
+  makeup: { label: "Makeup", instruction: "Describe makeup style, colors, and intensity.", maxSentences: 2 },
+  bodyMarkings: { label: "Body Markings", instruction: "Describe type, location, and significance of any markings (scars, tattoos, birthmarks).", maxSentences: 2 },
+  temporaryConditions: { label: "Temporary Conditions", instruction: "Describe any temporary physical conditions (injuries, illness, etc.) and their visibility.", maxSentences: 2 },
+  
+  // Currently Wearing
+  top: { label: "Shirt/Top", instruction: "Describe the top/shirt being worn. Include garment type, color, fit, and style.", maxSentences: 2 },
+  bottom: { label: "Pants/Bottoms", instruction: "Describe pants/skirt/shorts being worn. Include garment type, color, fit, and style.", maxSentences: 2 },
+  undergarments: { label: "Undergarments", instruction: "Describe undergarments being worn. Include type, color, and style.", maxSentences: 2 },
+  miscellaneous: { label: "Miscellaneous", instruction: "Describe additional items (outerwear, footwear, accessories). List each item briefly.", maxSentences: 3 },
+  
+  // Preferred Clothing
+  casual: { label: "Casual", instruction: "Describe preferred casual clothing style. Include typical pieces and aesthetic.", maxSentences: 2 },
+  work: { label: "Work", instruction: "Describe preferred work/professional attire. Include typical pieces and aesthetic.", maxSentences: 2 },
+  sleep: { label: "Sleep", instruction: "Describe preferred sleepwear. Include style and comfort preferences.", maxSentences: 2 },
+  
+  // Custom fields (fallback)
+  custom: { label: "Custom", instruction: "Provide relevant details for this character trait. Be concise and story-relevant.", maxSentences: 3 }
+};
+
+/**
+ * Build a structured expansion prompt for character field enhancement
+ */
+function buildCharacterFieldPrompt(
+  fieldName: string,
+  currentValue: string,
+  characterContext: Partial<Character>,
+  worldContext: string,
+  customLabel?: string
+): string {
+  const fieldConfig = CHARACTER_FIELD_PROMPTS[fieldName] || CHARACTER_FIELD_PROMPTS.custom;
+  const label = customLabel || fieldConfig.label;
+  
+  // Build context from character data
+  const contextParts: string[] = [];
+  if (characterContext.name && characterContext.name !== "New Character") {
+    contextParts.push(`- Name: ${characterContext.name}`);
+  }
+  if (characterContext.age) {
+    contextParts.push(`- Age: ${characterContext.age}`);
+  }
+  if (characterContext.sexType) {
+    contextParts.push(`- Sex/Identity: ${characterContext.sexType}`);
+  }
+  if (characterContext.roleDescription) {
+    contextParts.push(`- Role: ${characterContext.roleDescription}`);
+  }
+  if (characterContext.tags) {
+    contextParts.push(`- Tags: ${characterContext.tags}`);
+  }
+
+  const characterSection = contextParts.length > 0 
+    ? `CHARACTER CONTEXT:\n${contextParts.join('\n')}\n\n` 
+    : '';
+
+  const currentValueSection = currentValue.trim()
+    ? `CURRENT VALUE (enhance while preserving intent):\n${currentValue}\n\n`
+    : 'CURRENT VALUE: Empty - generate appropriate content based on context.\n\n';
+
+  return `You are enhancing a character field for an interactive roleplay. Use STRUCTURED EXPANSION:
+
+RULES:
+1. Be concise and factual (max ${fieldConfig.maxSentences} sentences)
+2. Focus on narrative-relevant details - what matters for the story
+3. NO purple prose or flowery language
+4. Format: State the fact, then its implication if relevant
+5. ${currentValue.trim() ? 'Preserve the existing content\'s intent while enhancing it' : 'Generate appropriate content from available context'}
+
+WORLD CONTEXT:
+${worldContext}
+
+${characterSection}${currentValueSection}FIELD: ${label}
+INSTRUCTION: ${fieldConfig.instruction}
+
+Return ONLY the enhanced text. No explanations, no prefixes, no markdown formatting.`;
+}
+
+/**
+ * Enhance a single character field using AI
+ */
+export async function aiEnhanceCharacterField(
+  fieldName: string,
+  currentValue: string,
+  characterContext: Partial<Character>,
+  worldContext: string,
+  modelId: string,
+  customLabel?: string
+): Promise<string> {
+  const prompt = buildCharacterFieldPrompt(fieldName, currentValue, characterContext, worldContext, customLabel);
+
+  console.log(`[character-ai] Enhancing field: ${fieldName} with model: ${modelId}`);
+
+  const { data, error } = await supabase.functions.invoke('chat', {
+    body: {
+      messages: [
+        { role: 'system', content: 'You are a concise character creation assistant. Return only the requested content, no explanations.' },
+        { role: 'user', content: prompt }
+      ],
+      modelId,
+      stream: false
+    }
+  });
+
+  if (error) {
+    console.error('[character-ai] Enhancement error:', error);
+    throw new Error(error.message || 'Failed to enhance field');
+  }
+
+  const content = data?.choices?.[0]?.message?.content;
+  if (!content) {
+    throw new Error('No content returned from AI');
+  }
+
+  // Clean up response - remove any accidental markdown or quotes
+  return content.trim().replace(/^["']|["']$/g, '');
+}
+
+// ============================================================
+// Existing AI Fill / AI Generate Functions
+// ============================================================
+
 // Analyze story type from world context
 function analyzeStoryType(worldCore: WorldCore) {
   const text = `${worldCore.toneThemes || ''} ${worldCore.briefDescription || ''} ${worldCore.settingOverview || ''} ${worldCore.plotHooks || ''}`.toLowerCase();
