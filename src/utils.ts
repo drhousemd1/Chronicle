@@ -188,6 +188,7 @@ export function createDefaultScenarioData(): ScenarioData {
       core: {
         scenarioName: "",
         briefDescription: "",
+        storyPremise: "",
         settingOverview: "",
         rulesOfMagicTech: "",
         factions: "",
@@ -304,6 +305,7 @@ export function normalizeScenarioData(raw: any): ScenarioData {
     core: {
       scenarioName: normStr(raw?.world?.core?.scenarioName),
       briefDescription: normStr(raw?.world?.core?.briefDescription),
+      storyPremise: normStr(raw?.world?.core?.storyPremise),
       settingOverview: normStr(raw?.world?.core?.settingOverview),
       rulesOfMagicTech: normStr(raw?.world?.core?.rulesOfMagicTech),
       factions: normStr(raw?.world?.core?.factions),

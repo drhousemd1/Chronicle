@@ -276,6 +276,7 @@ export async function fetchScenarioById(id: string): Promise<{
   const worldCore: WorldCore = (scenario.world_core as WorldCore) || {
     scenarioName: '',
     briefDescription: '',
+    storyPremise: '',
     settingOverview: '',
     rulesOfMagicTech: '',
     factions: '',
@@ -352,6 +353,7 @@ export async function fetchScenarioForPlay(id: string): Promise<{
   const worldCore: WorldCore = (scenario.world_core as WorldCore) || {
     scenarioName: '',
     briefDescription: '',
+    storyPremise: '',
     settingOverview: '',
     rulesOfMagicTech: '',
     factions: '',
