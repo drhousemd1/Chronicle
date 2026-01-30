@@ -9,6 +9,9 @@ import { uploadAvatar, dataUrlToBlob } from '@/services/supabase-data';
 import { toast } from 'sonner';
 import { AvatarGenerationModal } from './AvatarGenerationModal';
 import { UploadSourceMenu } from './UploadSourceMenu';
+import { Sparkles } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { aiEnhanceCharacterField } from '@/services/character-ai';
 
 interface CharactersTabProps {
   appData: ScenarioData;
@@ -33,16 +36,36 @@ const HardcodedSection: React.FC<{
   </Card>
 );
 
-// Reusable input field for hardcoded sections
+// Reusable input field for hardcoded sections with AI enhance button
 const HardcodedInput: React.FC<{
   label: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
-}> = ({ label, value, onChange, placeholder }) => (
+  onEnhance?: () => void;
+  isEnhancing?: boolean;
+}> = ({ label, value, onChange, placeholder, onEnhance, isEnhancing }) => (
   <div className="flex flex-col md:flex-row gap-2 md:gap-4 items-start">
     <div className="w-full md:w-1/3 shrink-0">
-      <label className="block text-xs font-bold uppercase text-slate-500 mb-1">{label}</label>
+      <div className="flex items-center gap-1.5 mb-1">
+        <label className="block text-xs font-bold uppercase text-slate-500">{label}</label>
+        {onEnhance && (
+          <button
+            type="button"
+            onClick={onEnhance}
+            disabled={isEnhancing}
+            title="Enhance with AI"
+            className={cn(
+              "p-1 rounded-md transition-all",
+              isEnhancing
+                ? "text-blue-500 animate-pulse cursor-wait"
+                : "text-black hover:text-blue-500 hover:bg-blue-50"
+            )}
+          >
+            <Sparkles size={14} />
+          </button>
+        )}
+      </div>
     </div>
     <div className="w-full md:flex-1">
       <input
@@ -70,10 +93,52 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
   const [isRepositioning, setIsRepositioning] = useState(false);
   const [dragStart, setDragStart] = useState<{ x: number, y: number, pos: { x: number, y: number } } | null>(null);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const [enhancingField, setEnhancingField] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const avatarContainerRef = useRef<HTMLDivElement>(null);
 
   const selected = characters.find(c => c.id === selectedId);
+
+  // Build world context for AI enhancement
+  const buildWorldContext = () => {
+    return `Setting: ${appData.world.core.settingOverview || 'Not specified'}
+Tone: ${appData.world.core.toneThemes || 'Not specified'}
+Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
+  };
+
+  // Handler for per-field AI enhancement
+  const handleEnhanceField = async (
+    fieldKey: string,
+    section: 'physicalAppearance' | 'currentlyWearing' | 'preferredClothing' | 'custom',
+    getCurrentValue: () => string,
+    setValue: (value: string) => void,
+    customLabel?: string
+  ) => {
+    if (!selected || enhancingField) return;
+    
+    setEnhancingField(fieldKey);
+    try {
+      const currentValue = getCurrentValue();
+      const worldContext = buildWorldContext();
+      
+      const enhanced = await aiEnhanceCharacterField(
+        fieldKey,
+        currentValue,
+        selected,
+        worldContext,
+        appData.selectedModel || 'google/gemini-3-flash-preview',
+        customLabel
+      );
+      
+      setValue(enhanced);
+      toast.success('Field enhanced');
+    } catch (error) {
+      console.error('Enhancement failed:', error);
+      toast.error('Enhancement failed');
+    } finally {
+      setEnhancingField(null);
+    }
+  };
 
   const handleUpdateSection = (charId: string, sectionId: string, patch: Partial<CharacterTraitSection>) => {
     const char = characters.find(c => c.id === charId);
@@ -437,34 +502,34 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
 
           {/* HARDCODED SECTION 1: Physical Appearance */}
           <HardcodedSection title="Physical Appearance">
-            <HardcodedInput label="Hair Color" value={selected.physicalAppearance?.hairColor || ''} onChange={(v) => handlePhysicalAppearanceChange('hairColor', v)} placeholder="e.g., Brunette, Blonde, Black" />
-            <HardcodedInput label="Eye Color" value={selected.physicalAppearance?.eyeColor || ''} onChange={(v) => handlePhysicalAppearanceChange('eyeColor', v)} placeholder="e.g., Blue, Brown, Green" />
-            <HardcodedInput label="Build" value={selected.physicalAppearance?.build || ''} onChange={(v) => handlePhysicalAppearanceChange('build', v)} placeholder="e.g., Athletic, Slim, Curvy" />
-            <HardcodedInput label="Body Hair" value={selected.physicalAppearance?.bodyHair || ''} onChange={(v) => handlePhysicalAppearanceChange('bodyHair', v)} placeholder="e.g., Smooth, Light, Natural" />
-            <HardcodedInput label="Height" value={selected.physicalAppearance?.height || ''} onChange={(v) => handlePhysicalAppearanceChange('height', v)} placeholder="e.g., 5 foot 8" />
-            <HardcodedInput label="Breast Size" value={selected.physicalAppearance?.breastSize || ''} onChange={(v) => handlePhysicalAppearanceChange('breastSize', v)} placeholder="e.g., C-cup / N/A" />
-            <HardcodedInput label="Genitalia" value={selected.physicalAppearance?.genitalia || ''} onChange={(v) => handlePhysicalAppearanceChange('genitalia', v)} placeholder="e.g., Male, Female / N/A" />
-            <HardcodedInput label="Skin Tone" value={selected.physicalAppearance?.skinTone || ''} onChange={(v) => handlePhysicalAppearanceChange('skinTone', v)} placeholder="e.g., Fair, Olive, Dark" />
-            <HardcodedInput label="Makeup" value={selected.physicalAppearance?.makeup || ''} onChange={(v) => handlePhysicalAppearanceChange('makeup', v)} placeholder="e.g., Light, Heavy, None" />
-            <HardcodedInput label="Body Markings" value={selected.physicalAppearance?.bodyMarkings || ''} onChange={(v) => handlePhysicalAppearanceChange('bodyMarkings', v)} placeholder="Scars, tattoos, birthmarks, piercings" />
-            <HardcodedInput label="Temporary Conditions" value={selected.physicalAppearance?.temporaryConditions || ''} onChange={(v) => handlePhysicalAppearanceChange('temporaryConditions', v)} placeholder="Injuries, illness, etc." />
+            <HardcodedInput label="Hair Color" value={selected.physicalAppearance?.hairColor || ''} onChange={(v) => handlePhysicalAppearanceChange('hairColor', v)} placeholder="e.g., Brunette, Blonde, Black" onEnhance={() => handleEnhanceField('hairColor', 'physicalAppearance', () => selected.physicalAppearance?.hairColor || '', (v) => handlePhysicalAppearanceChange('hairColor', v))} isEnhancing={enhancingField === 'hairColor'} />
+            <HardcodedInput label="Eye Color" value={selected.physicalAppearance?.eyeColor || ''} onChange={(v) => handlePhysicalAppearanceChange('eyeColor', v)} placeholder="e.g., Blue, Brown, Green" onEnhance={() => handleEnhanceField('eyeColor', 'physicalAppearance', () => selected.physicalAppearance?.eyeColor || '', (v) => handlePhysicalAppearanceChange('eyeColor', v))} isEnhancing={enhancingField === 'eyeColor'} />
+            <HardcodedInput label="Build" value={selected.physicalAppearance?.build || ''} onChange={(v) => handlePhysicalAppearanceChange('build', v)} placeholder="e.g., Athletic, Slim, Curvy" onEnhance={() => handleEnhanceField('build', 'physicalAppearance', () => selected.physicalAppearance?.build || '', (v) => handlePhysicalAppearanceChange('build', v))} isEnhancing={enhancingField === 'build'} />
+            <HardcodedInput label="Body Hair" value={selected.physicalAppearance?.bodyHair || ''} onChange={(v) => handlePhysicalAppearanceChange('bodyHair', v)} placeholder="e.g., Smooth, Light, Natural" onEnhance={() => handleEnhanceField('bodyHair', 'physicalAppearance', () => selected.physicalAppearance?.bodyHair || '', (v) => handlePhysicalAppearanceChange('bodyHair', v))} isEnhancing={enhancingField === 'bodyHair'} />
+            <HardcodedInput label="Height" value={selected.physicalAppearance?.height || ''} onChange={(v) => handlePhysicalAppearanceChange('height', v)} placeholder="e.g., 5 foot 8" onEnhance={() => handleEnhanceField('height', 'physicalAppearance', () => selected.physicalAppearance?.height || '', (v) => handlePhysicalAppearanceChange('height', v))} isEnhancing={enhancingField === 'height'} />
+            <HardcodedInput label="Breast Size" value={selected.physicalAppearance?.breastSize || ''} onChange={(v) => handlePhysicalAppearanceChange('breastSize', v)} placeholder="e.g., C-cup / N/A" onEnhance={() => handleEnhanceField('breastSize', 'physicalAppearance', () => selected.physicalAppearance?.breastSize || '', (v) => handlePhysicalAppearanceChange('breastSize', v))} isEnhancing={enhancingField === 'breastSize'} />
+            <HardcodedInput label="Genitalia" value={selected.physicalAppearance?.genitalia || ''} onChange={(v) => handlePhysicalAppearanceChange('genitalia', v)} placeholder="e.g., Male, Female / N/A" onEnhance={() => handleEnhanceField('genitalia', 'physicalAppearance', () => selected.physicalAppearance?.genitalia || '', (v) => handlePhysicalAppearanceChange('genitalia', v))} isEnhancing={enhancingField === 'genitalia'} />
+            <HardcodedInput label="Skin Tone" value={selected.physicalAppearance?.skinTone || ''} onChange={(v) => handlePhysicalAppearanceChange('skinTone', v)} placeholder="e.g., Fair, Olive, Dark" onEnhance={() => handleEnhanceField('skinTone', 'physicalAppearance', () => selected.physicalAppearance?.skinTone || '', (v) => handlePhysicalAppearanceChange('skinTone', v))} isEnhancing={enhancingField === 'skinTone'} />
+            <HardcodedInput label="Makeup" value={selected.physicalAppearance?.makeup || ''} onChange={(v) => handlePhysicalAppearanceChange('makeup', v)} placeholder="e.g., Light, Heavy, None" onEnhance={() => handleEnhanceField('makeup', 'physicalAppearance', () => selected.physicalAppearance?.makeup || '', (v) => handlePhysicalAppearanceChange('makeup', v))} isEnhancing={enhancingField === 'makeup'} />
+            <HardcodedInput label="Body Markings" value={selected.physicalAppearance?.bodyMarkings || ''} onChange={(v) => handlePhysicalAppearanceChange('bodyMarkings', v)} placeholder="Scars, tattoos, birthmarks, piercings" onEnhance={() => handleEnhanceField('bodyMarkings', 'physicalAppearance', () => selected.physicalAppearance?.bodyMarkings || '', (v) => handlePhysicalAppearanceChange('bodyMarkings', v))} isEnhancing={enhancingField === 'bodyMarkings'} />
+            <HardcodedInput label="Temporary Conditions" value={selected.physicalAppearance?.temporaryConditions || ''} onChange={(v) => handlePhysicalAppearanceChange('temporaryConditions', v)} placeholder="Injuries, illness, etc." onEnhance={() => handleEnhanceField('temporaryConditions', 'physicalAppearance', () => selected.physicalAppearance?.temporaryConditions || '', (v) => handlePhysicalAppearanceChange('temporaryConditions', v))} isEnhancing={enhancingField === 'temporaryConditions'} />
           </HardcodedSection>
 
           {/* HARDCODED SECTION 2: Currently Wearing */}
           <HardcodedSection title="Currently Wearing">
-            <HardcodedInput label="Shirt/Top" value={selected.currentlyWearing?.top || ''} onChange={(v) => handleCurrentlyWearingChange('top', v)} placeholder="e.g., White blouse, T-shirt" />
-            <HardcodedInput label="Pants/Bottoms" value={selected.currentlyWearing?.bottom || ''} onChange={(v) => handleCurrentlyWearingChange('bottom', v)} placeholder="e.g., Jeans, Skirt, Shorts" />
-            <HardcodedInput label="Undergarments" value={selected.currentlyWearing?.undergarments || ''} onChange={(v) => handleCurrentlyWearingChange('undergarments', v)} placeholder="Bras, panties, boxers, etc." />
-            <HardcodedInput label="Miscellaneous" value={selected.currentlyWearing?.miscellaneous || ''} onChange={(v) => handleCurrentlyWearingChange('miscellaneous', v)} placeholder="Outerwear, footwear, accessories" />
+            <HardcodedInput label="Shirt/Top" value={selected.currentlyWearing?.top || ''} onChange={(v) => handleCurrentlyWearingChange('top', v)} placeholder="e.g., White blouse, T-shirt" onEnhance={() => handleEnhanceField('top', 'currentlyWearing', () => selected.currentlyWearing?.top || '', (v) => handleCurrentlyWearingChange('top', v))} isEnhancing={enhancingField === 'top'} />
+            <HardcodedInput label="Pants/Bottoms" value={selected.currentlyWearing?.bottom || ''} onChange={(v) => handleCurrentlyWearingChange('bottom', v)} placeholder="e.g., Jeans, Skirt, Shorts" onEnhance={() => handleEnhanceField('bottom', 'currentlyWearing', () => selected.currentlyWearing?.bottom || '', (v) => handleCurrentlyWearingChange('bottom', v))} isEnhancing={enhancingField === 'bottom'} />
+            <HardcodedInput label="Undergarments" value={selected.currentlyWearing?.undergarments || ''} onChange={(v) => handleCurrentlyWearingChange('undergarments', v)} placeholder="Bras, panties, boxers, etc." onEnhance={() => handleEnhanceField('undergarments', 'currentlyWearing', () => selected.currentlyWearing?.undergarments || '', (v) => handleCurrentlyWearingChange('undergarments', v))} isEnhancing={enhancingField === 'undergarments'} />
+            <HardcodedInput label="Miscellaneous" value={selected.currentlyWearing?.miscellaneous || ''} onChange={(v) => handleCurrentlyWearingChange('miscellaneous', v)} placeholder="Outerwear, footwear, accessories" onEnhance={() => handleEnhanceField('cw_miscellaneous', 'currentlyWearing', () => selected.currentlyWearing?.miscellaneous || '', (v) => handleCurrentlyWearingChange('miscellaneous', v))} isEnhancing={enhancingField === 'cw_miscellaneous'} />
           </HardcodedSection>
 
           {/* HARDCODED SECTION 3: Preferred Clothing */}
           <HardcodedSection title="Preferred Clothing">
-            <HardcodedInput label="Casual" value={selected.preferredClothing?.casual || ''} onChange={(v) => handlePreferredClothingChange('casual', v)} placeholder="e.g., Jeans and t-shirts" />
-            <HardcodedInput label="Work" value={selected.preferredClothing?.work || ''} onChange={(v) => handlePreferredClothingChange('work', v)} placeholder="e.g., Business casual, Uniform" />
-            <HardcodedInput label="Sleep" value={selected.preferredClothing?.sleep || ''} onChange={(v) => handlePreferredClothingChange('sleep', v)} placeholder="e.g., Pajamas, Nightgown" />
-            <HardcodedInput label="Undergarments" value={selected.preferredClothing?.undergarments || ''} onChange={(v) => handlePreferredClothingChange('undergarments', v)} placeholder="e.g., Cotton basics, Lace" />
-            <HardcodedInput label="Miscellaneous" value={selected.preferredClothing?.miscellaneous || ''} onChange={(v) => handlePreferredClothingChange('miscellaneous', v)} placeholder="Formal, athletic, swimwear, etc." />
+            <HardcodedInput label="Casual" value={selected.preferredClothing?.casual || ''} onChange={(v) => handlePreferredClothingChange('casual', v)} placeholder="e.g., Jeans and t-shirts" onEnhance={() => handleEnhanceField('casual', 'preferredClothing', () => selected.preferredClothing?.casual || '', (v) => handlePreferredClothingChange('casual', v))} isEnhancing={enhancingField === 'casual'} />
+            <HardcodedInput label="Work" value={selected.preferredClothing?.work || ''} onChange={(v) => handlePreferredClothingChange('work', v)} placeholder="e.g., Business casual, Uniform" onEnhance={() => handleEnhanceField('work', 'preferredClothing', () => selected.preferredClothing?.work || '', (v) => handlePreferredClothingChange('work', v))} isEnhancing={enhancingField === 'work'} />
+            <HardcodedInput label="Sleep" value={selected.preferredClothing?.sleep || ''} onChange={(v) => handlePreferredClothingChange('sleep', v)} placeholder="e.g., Pajamas, Nightgown" onEnhance={() => handleEnhanceField('sleep', 'preferredClothing', () => selected.preferredClothing?.sleep || '', (v) => handlePreferredClothingChange('sleep', v))} isEnhancing={enhancingField === 'sleep'} />
+            <HardcodedInput label="Undergarments" value={selected.preferredClothing?.undergarments || ''} onChange={(v) => handlePreferredClothingChange('undergarments', v)} placeholder="e.g., Cotton basics, Lace" onEnhance={() => handleEnhanceField('pc_undergarments', 'preferredClothing', () => selected.preferredClothing?.undergarments || '', (v) => handlePreferredClothingChange('undergarments', v))} isEnhancing={enhancingField === 'pc_undergarments'} />
+            <HardcodedInput label="Miscellaneous" value={selected.preferredClothing?.miscellaneous || ''} onChange={(v) => handlePreferredClothingChange('miscellaneous', v)} placeholder="Formal, athletic, swimwear, etc." onEnhance={() => handleEnhanceField('pc_miscellaneous', 'preferredClothing', () => selected.preferredClothing?.miscellaneous || '', (v) => handlePreferredClothingChange('miscellaneous', v))} isEnhancing={enhancingField === 'pc_miscellaneous'} />
           </HardcodedSection>
 
           {/* USER-CREATED CUSTOM SECTIONS */}
@@ -487,14 +552,42 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                 {section.items.map(item => (
                   <div key={item.id} className="group relative flex flex-col md:flex-row gap-4 items-start pt-2">
                     <div className="w-full md:w-1/3 shrink-0">
-                      <Input 
-                        value={item.label} 
-                        onChange={(v) => {
-                          const nextItems = section.items.map(it => it.id === item.id ? { ...it, label: v } : it);
-                          handleUpdateSection(selected.id, section.id, { items: nextItems });
-                        }} 
-                        placeholder="Label (e.g. Bio)" 
-                      />
+                      <div className="flex items-center gap-1.5">
+                        <Input 
+                          value={item.label} 
+                          onChange={(v) => {
+                            const nextItems = section.items.map(it => it.id === item.id ? { ...it, label: v } : it);
+                            handleUpdateSection(selected.id, section.id, { items: nextItems });
+                          }} 
+                          placeholder="Label (e.g. Bio)" 
+                          className="flex-1"
+                        />
+                        {item.label && (
+                          <button
+                            type="button"
+                            onClick={() => handleEnhanceField(
+                              `custom_${item.id}`,
+                              'custom',
+                              () => item.value,
+                              (v) => {
+                                const nextItems = section.items.map(it => it.id === item.id ? { ...it, value: v } : it);
+                                handleUpdateSection(selected.id, section.id, { items: nextItems });
+                              },
+                              item.label
+                            )}
+                            disabled={enhancingField !== null}
+                            title="Enhance with AI"
+                            className={cn(
+                              "p-1.5 rounded-md transition-all flex-shrink-0",
+                              enhancingField === `custom_${item.id}`
+                                ? "text-blue-500 animate-pulse cursor-wait"
+                                : "text-black hover:text-blue-500 hover:bg-blue-50"
+                            )}
+                          >
+                            <Sparkles size={14} />
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <div className="w-full md:flex-1 relative">
                       <TextArea 
