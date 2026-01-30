@@ -1,85 +1,93 @@
 
-# Fix Plan: UI Consistency Between Your Stories and Image Library
+
+# Plan: Add "Story Premise" Field to World Core
 
 ## Overview
 
-This plan addresses three UI consistency issues between the "Your Stories" page and the "Image Library" page, plus a title positioning fix for story cards.
+Add a new "Story Premise" field to the World Core section that allows users to describe the overall plot, central conflict, or narrative situation. This field fills the gap between world-building (settings, locations, rules) and the Opening Dialog (first scene).
 
 ---
 
-## Fix #1: Skeleton Card Styling Consistency
+## Changes Required
 
-**Problem:** The "New Story" skeleton card on Your Stories has a transparent background (`bg-slate-50/50`) with black text, while the "New Folder" card on Image Library has a solid gray background (`bg-slate-100`) with gray text (`text-slate-400`).
+### 1. Update Type Definition
 
-**Solution:** Update the Image Library "New Folder" card to match Your Stories styling - use the same semi-transparent background and black text.
+**File:** `src/types.ts`
 
-**File:** `src/components/chronicle/ImageLibraryTab.tsx`
+Add a new `storyPremise` field to the `WorldCore` type:
 
-**Changes at line 497:**
-- Change `bg-slate-100` to `bg-slate-50/50`
-- Keep the same styling patterns otherwise
-
-**Changes at line 502:**
-- Change `text-slate-400` to `text-black` for the "New Folder" text
-
----
-
-## Fix #2: Tile Dimensions Consistency
-
-**Problem:** Image Library tiles appear smaller because the grid starts at 2 columns on mobile, while Your Stories starts at 1 column.
-
-**Solution:** Update Image Library grid to match Your Stories grid settings exactly.
-
-**File:** `src/components/chronicle/ImageLibraryTab.tsx`
-
-**Changes at line 417:**
-- Current: `grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8`
-- Updated: `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-8`
-
-This makes the tiles the same size across both pages at all screen widths.
-
----
-
-## Fix #3: Fixed Title Height on Story Cards
-
-**Problem:** Story card titles ("Acotar", "Test Story") are at different vertical positions because the text block aligns to the bottom and flows upward. When there's more description text, the title gets pushed higher.
-
-**Solution:** Change the text container to use flexbox with a fixed-height structure where titles are always at the same position, and descriptions flow downward from the title with overflow handling.
-
-**File:** `src/components/chronicle/ScenarioHub.tsx`
-
-**Changes at lines 57-64:**
-
-Before:
-```tsx
-<div className="absolute inset-x-0 bottom-0 p-6 pointer-events-none">
-  <h3 className="text-xl font-black text-white leading-tight mb-1 tracking-tight group-hover:text-blue-300 transition-colors truncate">
-    {scen.title || "Unnamed Story"}
-  </h3>
-  <p className="text-xs text-white/70 line-clamp-3 leading-relaxed italic">
-    {scen.description || "No summary provided."}
-  </p>
-</div>
+```typescript
+export type WorldCore = {
+  scenarioName: string;
+  briefDescription: string;
+  storyPremise: string;           // NEW: Central conflict/plot/situation
+  settingOverview: string;
+  rulesOfMagicTech: string;
+  factions: string;
+  locations: string;
+  historyTimeline: string;
+  toneThemes: string;
+  plotHooks: string;
+  narrativeStyle: string;
+  dialogFormatting: string;
+};
 ```
 
-After:
+---
+
+### 2. Update Default Scenario Factory
+
+**File:** `src/utils.ts` (or wherever `createDefaultScenarioData` is located)
+
+Add `storyPremise: ''` to the default WorldCore object.
+
+---
+
+### 3. Add UI Field to World Tab
+
+**File:** `src/components/chronicle/WorldTab.tsx`
+
+Add the new TextArea between "Brief Description" and "Setting Overview" (around line 418-419):
+
 ```tsx
-<div className="absolute inset-x-0 bottom-0 h-28 p-6 pointer-events-none flex flex-col">
-  <h3 className="text-xl font-black text-white leading-tight tracking-tight group-hover:text-blue-300 transition-colors truncate flex-shrink-0">
-    {scen.title || "Unnamed Story"}
-  </h3>
-  <p className="text-xs text-white/70 line-clamp-3 leading-relaxed italic mt-1">
-    {scen.description || "No summary provided."}
-  </p>
-</div>
+<TextArea 
+  label="Story Premise" 
+  value={world.core.storyPremise || ''} 
+  onChange={(v) => updateCore({ storyPremise: v })} 
+  rows={4} 
+  placeholder="What's the central situation or conflict? What's at stake? Describe the overall narrative the AI should understand..." 
+/>
 ```
 
-Key changes:
-- Add `h-28` to set a fixed height for the text container (this positions the title consistently)
-- Change to `flex flex-col` layout
-- Add `flex-shrink-0` to the title so it doesn't compress
-- Change `mb-1` to `mt-1` on description so it flows down from title
-- Remove the bottom alignment - the container is now anchored to bottom but has fixed height
+Position: After Brief Description, before Setting Overview. This makes logical sense:
+1. Scenario Name (what's it called)
+2. Brief Description (short summary for card)
+3. **Story Premise** (the actual plot/conflict)
+4. Setting Overview (where it takes place)
+5. Rules of Magic & Technology
+6. Primary Locations
+7. Tone & Central Themes
+
+---
+
+### 4. Include in AI System Prompt
+
+**File:** `src/services/llm.ts`
+
+Update the `worldContext` section (around line 33-41) to include the new field:
+
+```typescript
+const worldContext = `
+  SETTING OVERVIEW: ${appData.world.core.settingOverview}
+  STORY PREMISE: ${appData.world.core.storyPremise || 'Not specified'}
+  RULES/TECH: ${appData.world.core.rulesOfMagicTech}
+  FACTIONS: ${appData.world.core.factions}
+  LOCATIONS: ${appData.world.core.locations}
+  TONE & THEMES: ${appData.world.core.toneThemes}
+  NARRATIVE STYLE: ${appData.world.core.narrativeStyle}
+  DIALOG FORMATTING: ${fullDialogFormatting}
+`;
+```
 
 ---
 
@@ -87,15 +95,37 @@ Key changes:
 
 | File | Changes |
 |------|---------|
-| `src/components/chronicle/ImageLibraryTab.tsx` | Update "New Folder" card to semi-transparent with black text; update grid to match Your Stories |
-| `src/components/chronicle/ScenarioHub.tsx` | Fixed-height text container with title at consistent position |
+| `src/types.ts` | Add `storyPremise: string` to WorldCore type |
+| `src/utils.ts` | Add `storyPremise: ''` to default WorldCore in factory |
+| `src/components/chronicle/WorldTab.tsx` | Add TextArea for Story Premise field |
+| `src/services/llm.ts` | Include storyPremise in AI context |
 
 ---
 
-## Expected Results
+## Field Design Details
 
-| Issue | Before | After |
-|-------|--------|-------|
-| New Folder text | Gray text on solid gray background | Black text on semi-transparent background |
-| Tile sizes | Smaller on Image Library | Same size as Your Stories |
-| Title positions | Varies based on description length | All titles at the same height from bottom |
+| Aspect | Value |
+|--------|-------|
+| **Label** | "Story Premise" |
+| **Rows** | 4 (allows substantial content) |
+| **Placeholder** | "What's the central situation or conflict? What's at stake? Describe the overall narrative the AI should understand..." |
+| **Position** | After Brief Description, before Setting Overview |
+
+---
+
+## Why "Story Premise"?
+
+This term was chosen because:
+- **"Background"** sounds like past history (which `historyTimeline` already covers)
+- **"Plot"** implies predetermined outcomes, which may not fit emergent roleplay
+- **"Premise"** captures the starting situation and central tension without dictating endings
+- It's familiar to writers and storytellers
+
+---
+
+## Technical Notes
+
+- The field is optional (uses `|| ''` fallback) so existing scenarios won't break
+- Adding `|| 'Not specified'` in the LLM context ensures the AI doesn't see undefined values
+- No database migration needed - this is stored in the scenario's JSON data structure
+
