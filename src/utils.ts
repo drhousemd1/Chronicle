@@ -210,6 +210,8 @@ export function createDefaultScenarioData(): ScenarioData {
       dynamicText: true,  // Default enabled for visual text styling
       proactiveNarrative: true,  // Default ON - AI drives story forward
       narrativePov: 'third' as const,  // Default third-person narration
+      nsfwIntensity: 'normal' as const,  // Default natural flow for mature content
+      realismMode: false,  // Default flexible mode for narrative flow
     },
     story: { 
       openingDialog: {
@@ -347,6 +349,8 @@ export function normalizeScenarioData(raw: any): ScenarioData {
     dynamicText: typeof raw?.uiSettings?.dynamicText === "boolean" ? raw.uiSettings.dynamicText : true,
     proactiveNarrative: typeof raw?.uiSettings?.proactiveNarrative === "boolean" ? raw.uiSettings.proactiveNarrative : true,
     narrativePov: (raw?.uiSettings?.narrativePov === 'first' || raw?.uiSettings?.narrativePov === 'third') ? raw.uiSettings.narrativePov : 'third' as const,
+    nsfwIntensity: (raw?.uiSettings?.nsfwIntensity === 'normal' || raw?.uiSettings?.nsfwIntensity === 'high') ? raw.uiSettings.nsfwIntensity : 'normal' as const,
+    realismMode: typeof raw?.uiSettings?.realismMode === "boolean" ? raw.uiSettings.realismMode : false,
   };
 
   // Normalize TimeOfDay value

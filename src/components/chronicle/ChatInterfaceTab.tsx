@@ -59,7 +59,7 @@ interface ChatInterfaceTabProps {
   onUpdate: (convs: Conversation[]) => void;
   onBack: () => void;
   onSaveScenario: (conversations?: Conversation[]) => void;
-  onUpdateUiSettings?: (patch: { showBackgrounds?: boolean; transparentBubbles?: boolean; darkMode?: boolean; offsetBubbles?: boolean; proactiveCharacterDiscovery?: boolean; dynamicText?: boolean; proactiveNarrative?: boolean; narrativePov?: 'first' | 'third' }) => void;
+  onUpdateUiSettings?: (patch: { showBackgrounds?: boolean; transparentBubbles?: boolean; darkMode?: boolean; offsetBubbles?: boolean; proactiveCharacterDiscovery?: boolean; dynamicText?: boolean; proactiveNarrative?: boolean; narrativePov?: 'first' | 'third'; nsfwIntensity?: 'normal' | 'high'; realismMode?: boolean }) => void;
   onUpdateSideCharacters?: (sideCharacters: SideCharacter[]) => void;
 }
 
@@ -1995,7 +1995,7 @@ const updatedChar: SideCharacter = {
   const offsetBubbles = appData.uiSettings?.offsetBubbles;
   const dynamicText = appData.uiSettings?.dynamicText !== false;
 
-  const handleUpdateUiSettings = (patch: { showBackgrounds?: boolean; transparentBubbles?: boolean; darkMode?: boolean; offsetBubbles?: boolean; proactiveCharacterDiscovery?: boolean; dynamicText?: boolean; proactiveNarrative?: boolean; narrativePov?: 'first' | 'third' }) => {
+  const handleUpdateUiSettings = (patch: { showBackgrounds?: boolean; transparentBubbles?: boolean; darkMode?: boolean; offsetBubbles?: boolean; proactiveCharacterDiscovery?: boolean; dynamicText?: boolean; proactiveNarrative?: boolean; narrativePov?: 'first' | 'third'; nsfwIntensity?: 'normal' | 'high'; realismMode?: boolean }) => {
     if (onUpdateUiSettings) {
       onUpdateUiSettings(patch);
     }
@@ -2748,6 +2748,36 @@ const updatedChar: SideCharacter = {
                     3rd Person
                   </button>
                 </div>
+              </div>
+              
+              {/* NSFW Intensity */}
+              <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 rounded-xl">
+                <div className="flex-1">
+                  <span className="text-sm font-semibold text-slate-700">NSFW Intensity</span>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    How proactively AI engages in mature content
+                  </p>
+                </div>
+                <LabeledToggle
+                  checked={appData.uiSettings?.nsfwIntensity === 'high'}
+                  onCheckedChange={(v) => handleUpdateUiSettings({ nsfwIntensity: v ? 'high' : 'normal' })}
+                  offLabel="Normal"
+                  onLabel="High"
+                />
+              </div>
+              
+              {/* Realism Mode */}
+              <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 rounded-xl">
+                <div className="flex-1">
+                  <span className="text-sm font-semibold text-slate-700">Realism Mode</span>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Physical actions have realistic consequences
+                  </p>
+                </div>
+                <LabeledToggle
+                  checked={appData.uiSettings?.realismMode === true}
+                  onCheckedChange={(v) => handleUpdateUiSettings({ realismMode: v })}
+                />
               </div>
             </div>
             
