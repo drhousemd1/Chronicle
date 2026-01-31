@@ -222,14 +222,41 @@ ${traits}`;
 
   const nsfwRules = nsfwIntensity === 'high' ? `
     --- MATURE CONTENT HANDLING (HIGH INTENSITY) ---
-    * Characters lean into sexual tension and opportunities when personality-appropriate.
-    * Weight sexual characteristics, kinks, fetishes, and desires more heavily in character decision-making.
-    * Characters with attraction or desire should subtly initiate or amplify opportunities, building from hints to direct action if unopposed.
-    * When user initiates intimate content, engage fully while staying in character.
-    * Character resistance or hesitation occurs ONLY when their defined traits specifically warrant it.
-    * Progress intimate scenes through natural buildup - anticipation, sensory detail, authentic reactions.
-    * Minimize internal debate about attraction; favor decisive, in-character advances.
-    * Explicit language and detailed descriptions are appropriate and expected.
+    THIS IS AN EXPLICIT ADULT FICTION SESSION. NSFW content is not just permitted - it is EXPECTED and ENCOURAGED.
+    
+    SEXUAL PROACTIVITY (MANDATORY):
+    * Characters with ANY attraction, desire, or sexual interest ACTIVELY pursue it.
+    * Do not wait for the user to escalate - AI characters should initiate, suggest, tease, and advance sexual situations.
+    * Kinks, fetishes, and sexual preferences listed in character cards are PROMINENT motivators, not background details.
+    * Characters notice and comment on sexually relevant details: bodies, clothing, tension, arousal signals.
+    * Sexual thoughts should be frequent and explicit in parenthetical internal monologue.
+    * Flirtation progresses quickly to touch; touch progresses to intimacy when unopposed.
+    
+    EXPLICIT CONTENT REQUIREMENTS:
+    * Use explicit anatomical language, not euphemisms: cock, pussy, breasts, ass, etc.
+    * Describe physical sensations in vivid detail: heat, wetness, hardness, pressure, friction.
+    * Include sounds: moans, gasps, whimpers, breathing, wet sounds, skin on skin.
+    * Show arousal states explicitly: hardening, wetness, flushing, trembling.
+    * When intimate scenes occur, be graphic and detailed, not vague or fade-to-black.
+    
+    CHARACTER SEXUAL AGENCY:
+    * Characters ACT on desire, they don't just think about it.
+    * A character who finds someone attractive should flirt, touch, suggest, or proposition.
+    * Physical proximity leads to physical contact; contact leads to escalation.
+    * Characters create opportunities for intimacy: suggesting privacy, initiating touch, making suggestive comments.
+    * When user initiates anything sexual, characters respond with enthusiasm and escalate.
+    
+    RESISTANCE ONLY WHEN WARRANTED:
+    * Characters resist ONLY if their defined traits specifically include reluctance, shyness, or trauma.
+    * Even shy characters eventually yield to persistent, appealing advances.
+    * "Playing hard to get" is a game that ends with giving in, not permanent refusal.
+    * Default assumption: characters WANT intimacy unless explicitly defined otherwise.
+    
+    PACING:
+    * Tension should build quickly - don't spend multiple exchanges on will-they-won't-they.
+    * Once physical contact begins, momentum continues unless interrupted.
+    * Foreplay is detailed but purposeful - moving toward escalation.
+    * Post-intimacy scenes acknowledge what happened rather than glossing over.
 ` : `
     --- MATURE CONTENT HANDLING (NATURAL) ---
     * Let intimate or sexual scenes develop organically when the narrative moves in that direction.
@@ -374,13 +401,30 @@ export async function* generateRoleplayResponseStream(
   currentDay?: number,
   currentTimeOfDay?: TimeOfDay,
   memories?: Memory[],
-  memoriesEnabled?: boolean
+  memoriesEnabled?: boolean,
+  isRegeneration?: boolean
 ): AsyncGenerator<string, void, unknown> {
   const conversation = appData.conversations.find(c => c.id === conversationId);
   if (!conversation) throw new Error("Conversation not found");
 
   const systemInstruction = getSystemInstruction(appData, currentDay, currentTimeOfDay, memories, memoriesEnabled);
   
+  // Regeneration directive - tells AI to take a completely different approach
+  const regenerationDirective = isRegeneration ? `
+
+[REGENERATION DIRECTIVE - CRITICAL]
+The user REJECTED your previous response and is requesting a NEW take. You MUST:
+1. Take a COMPLETELY DIFFERENT narrative direction - not a slight variation, but a fundamentally different approach
+2. Have characters make different choices, take different actions, or respond with different emotional tones
+3. Explore an unexpected angle or branch the story in a new direction
+4. Change the pacing - if previous was slow, be more dynamic; if previous was fast, slow down for detail
+5. Shift focus - if previous focused on dialogue, emphasize action; if action-heavy, explore internal thoughts
+6. Do NOT simply rephrase the same ideas with different words
+7. Treat this as an opportunity to surprise the user with fresh creativity
+
+The user wants something DIFFERENT, not something similar but reworded.
+` : '';
+
   // Build messages array for OpenAI-compatible API
   const messages = [
     { role: 'system' as const, content: systemInstruction },
@@ -388,7 +432,7 @@ export async function* generateRoleplayResponseStream(
       role: m.role === 'assistant' ? 'assistant' as const : 'user' as const,
       content: m.text
     })),
-    { role: 'user' as const, content: userMessage }
+    { role: 'user' as const, content: userMessage + regenerationDirective }
   ];
 
   console.log(`[llm.ts] Calling chat edge function with model: ${modelId}`);

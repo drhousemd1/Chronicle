@@ -1308,7 +1308,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     
     try {
       let fullText = '';
-      const stream = generateRoleplayResponseStream(appData, conversationId, userMessage.text, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled);
+      const stream = generateRoleplayResponseStream(appData, conversationId, userMessage.text, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled, true);
       
       for await (const chunk of stream) {
         fullText += chunk;
