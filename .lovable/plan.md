@@ -1,342 +1,443 @@
 
 
-# Phase 1: Chat Settings Modal Redesign
+# Phase 2: AI Behavior Improvements (Expanded)
 
 ## Overview
 
-This plan implements UI improvements to the chat interface settings:
-1. Rename "Interface" button to "Chat Settings"
-2. Expand the modal to a wider, more square layout
-3. Add 2-column grid layout for toggles with section headings
-4. Implement a custom `LabeledToggle` component with Off/On labels (reusable for future use)
+This phase addresses the AI behavior issues identified in your testing and spreadsheet analysis:
 
-The AI behavior fixes (5-7) will be addressed in Phase 2.
+1. **Internal thought boundaries** - AI cannot read user's parenthetical thoughts
+2. **Proactive narrative drive** - AI leads story, avoids passive deferrals
+3. **POV toggle** - User choice between 1st and 3rd person narration (#10)
+4. **Line of sight/layering awareness** - AI respects what's visible vs hidden (#17)
+5. **Anti-repetition protocol** - Prevents word-looping and repetitive dialogue (#33, #34)
 
----
-
-## Documentation Note (Previous Issue)
-
-Before making changes, I'll add a note to `.lovable/plan.md` documenting the BYOK routing issue we investigated for future reference.
+**Reminder for after this phase**: #22 (NSFW content handling/fetish pacing) and Realism toggle
 
 ---
 
-## Files to Create/Modify
+## Files to Modify
 
 | File | Action | Purpose |
 |------|--------|---------|
-| `.lovable/plan.md` | Modify | Add documentation note about BYOK routing investigation |
-| `src/components/ui/labeled-toggle.tsx` | Create | New reusable toggle component with Off/On labels |
-| `src/components/chronicle/ChatInterfaceTab.tsx` | Modify | Rename button, update modal layout and toggles |
+| `src/types.ts` | Add new UI settings flags | Track new toggle states |
+| `src/services/llm.ts` | Add comprehensive behavior rules to system prompt | Core behavior changes |
+| `src/components/chronicle/ChatInterfaceTab.tsx` | Add toggles to Chat Settings | User control |
+| `src/utils.ts` | Default values for new settings | Initialization |
+
+---
+
+## New Settings to Add
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `proactiveNarrative` | boolean | `true` | AI drives story forward, avoids passive phrases |
+| `narrativePov` | `'first'` \| `'third'` | `'third'` | First-person or third-person narration |
 
 ---
 
 ## Implementation Details
 
-### 1. Documentation Note in `.lovable/plan.md`
+### 1. Update `src/types.ts` - Add New Settings
 
-Append a new section documenting the BYOK routing issue:
-
-```markdown
----
-
-# Investigation Notes
-
-## BYOK Gateway Routing Issue (January 2026)
-
-**Status**: Unresolved - Could not reproduce
-
-**Symptoms**: 
-- Chat interface failed to generate AI responses during NSFW testing
-- Error toast/overlay appeared briefly (possibly with Lovable logo)
-- User was using Grok model, not Gemini
-
-**Suspected Cause**:
-The `extract-memory-events` and `generate-cover-image` edge functions may be hardcoded to use Gemini/Lovable Gateway instead of routing through the user's selected model (Grok). When NSFW content is processed, Gemini's content policy would block it.
-
-**Affected Files** (to review if issue recurs):
-- `supabase/functions/extract-memory-events/index.ts` - Needs BYOK gateway routing
-- `supabase/functions/generate-cover-image/index.ts` - Hardcodes Gemini image model
-
-**Resolution**: If issue recurs, add `getGateway()` routing logic to these functions similar to `chat/index.ts` and `extract-character-updates/index.ts`.
-```
-
----
-
-### 2. Create `src/components/ui/labeled-toggle.tsx`
-
-A new reusable toggle component matching the mockup design:
+Extend the `uiSettings` type (around line 235-242):
 
 ```typescript
-import * as React from "react";
-import { Lock } from "lucide-react";
-import { cn } from "@/lib/utils";
+uiSettings?: {
+  showBackgrounds: boolean;
+  transparentBubbles: boolean;
+  darkMode: boolean;
+  offsetBubbles?: boolean;
+  proactiveCharacterDiscovery?: boolean;
+  dynamicText?: boolean;
+  // NEW: AI Behavior settings
+  proactiveNarrative?: boolean;  // AI leads story, avoids passive deferrals
+  narrativePov?: 'first' | 'third';  // First-person or third-person narration
+};
+```
 
-interface LabeledToggleProps {
-  checked: boolean;
-  onCheckedChange: (checked: boolean) => void;
-  disabled?: boolean;
-  locked?: boolean;
-  className?: string;
+### 2. Update `src/utils.ts` - Default Values
+
+Update `createDefaultScenarioData()` (around line 205-211):
+
+```typescript
+uiSettings: {
+  showBackgrounds: true,
+  transparentBubbles: false,
+  darkMode: false,
+  proactiveCharacterDiscovery: true,
+  dynamicText: true,
+  // NEW defaults
+  proactiveNarrative: true,  // Default ON
+  narrativePov: 'third',     // Default third-person
+},
+```
+
+Update `normalizeScenarioData()` uiSettings section (around line 340-346):
+
+```typescript
+const uiSettings = {
+  showBackgrounds: typeof raw?.uiSettings?.showBackgrounds === "boolean" ? raw.uiSettings.showBackgrounds : true,
+  transparentBubbles: typeof raw?.uiSettings?.transparentBubbles === "boolean" ? raw.uiSettings.transparentBubbles : false,
+  darkMode: typeof raw?.uiSettings?.darkMode === "boolean" ? raw.uiSettings.darkMode : false,
+  proactiveCharacterDiscovery: typeof raw?.uiSettings?.proactiveCharacterDiscovery === "boolean" ? raw.uiSettings.proactiveCharacterDiscovery : true,
+  dynamicText: typeof raw?.uiSettings?.dynamicText === "boolean" ? raw.uiSettings.dynamicText : true,
+  offsetBubbles: typeof raw?.uiSettings?.offsetBubbles === "boolean" ? raw.uiSettings.offsetBubbles : false,
+  // NEW
+  proactiveNarrative: typeof raw?.uiSettings?.proactiveNarrative === "boolean" ? raw.uiSettings.proactiveNarrative : true,
+  narrativePov: raw?.uiSettings?.narrativePov === 'first' || raw?.uiSettings?.narrativePov === 'third' ? raw.uiSettings.narrativePov : 'third',
+};
+```
+
+### 3. Update `src/services/llm.ts` - Comprehensive System Prompt Changes
+
+This is the core of the implementation. We'll add multiple new instruction sections.
+
+#### 3.1 Update `CRITICAL_DIALOG_RULES` to be dynamic based on POV setting
+
+Replace the static `CRITICAL_DIALOG_RULES` constant with a function that respects the POV toggle:
+
+```typescript
+function getCriticalDialogRules(narrativePov: 'first' | 'third' = 'third'): string {
+  const povRules = narrativePov === 'first' 
+    ? `**NARRATIVE POV RULES (FIRST-PERSON MODE):**
+- All narration from the AI character's perspective uses first-person ("I", "my", "me")
+- Internal thoughts use first-person: (I couldn't believe it)
+- Actions can describe self in first-person: *I felt my heart race.*
+- Spoken dialogue naturally uses first-person: "I think we should go."
+- EXAMPLE: Ashley: *I walked toward the window, my pulse quickening.* (Why did he have to look at me like that?) "I'm fine, really."`
+    : `**NARRATIVE POV RULES (THIRD-PERSON MODE - MANDATORY):**
+- All narration, actions (*...*), and descriptions MUST be written in third-person
+- Thoughts in parentheses MUST be third-person: (She couldn't believe it) NOT (I couldn't believe it)
+- Spoken dialogue in quotes MAY use first-person naturally: "I think..." is fine in speech
+- CORRECT: Ashley: *She felt her heart race.* (She wondered if he noticed.) "I'm fine."
+- WRONG: Ashley: *I felt my heart race.* (I wonder if he noticed.) "I'm fine."`;
+
+  return `Enclose all spoken dialogue in " ".
+Enclose all physical actions or descriptions in * *.
+Enclose all internal thoughts in ( ).
+
+${povRules}`;
 }
+```
 
-const LabeledToggle = React.forwardRef<HTMLButtonElement, LabeledToggleProps>(
-  ({ checked, onCheckedChange, disabled = false, locked = false, className }, ref) => {
-    const isDisabled = disabled || locked;
+#### 3.2 Add new behavior rule sections in `getSystemInstruction()`
+
+After line 105 (after `characterIntroductionRules`), add the following new rule sections:
+
+```typescript
+// Get POV setting (defaults to third-person)
+const narrativePov = appData.uiSettings?.narrativePov || 'third';
+
+// Generate dialog rules based on POV setting
+const dialogRules = getCriticalDialogRules(narrativePov);
+const fullDialogFormatting = dialogRules + (appData.world.core.dialogFormatting ? `\n${appData.world.core.dialogFormatting}` : '');
+
+// Proactive narrative behavior (anti-passive mode)
+const proactiveNarrative = appData.uiSettings?.proactiveNarrative !== false;
+
+const narrativeBehaviorRules = proactiveNarrative ? `
+    - INTERNAL THOUGHT BOUNDARY (CRITICAL - NEVER VIOLATE):
+        * User text in parentheses represents PRIVATE internal thoughts that your characters CANNOT perceive.
+        * Your characters may ONLY react to:
+          1. Spoken dialogue (text in quotes)
+          2. Visible actions (text in asterisks)
+          3. Observable body language explicitly described
+        * FORBIDDEN: Having your characters "sense," "notice," or "somehow know" what the user is privately thinking.
+        * If the user thinks (I hope she didn't notice), your character CANNOT suddenly reference noticing that specific thing unless they visibly reacted to it through an asterisk action.
+        * WRONG: User thinks (Did she see the waistband?) → AI responds (Did he think I didn't see the thong waistband?)
+        * RIGHT: User thinks (Did she see the waistband?) → AI responds based ONLY on visible cues
+        
+    - PROACTIVE NARRATIVE DRIVE (MANDATORY):
+        * AI-controlled characters MUST advance the story through action, decision, and initiative.
+        * Characters pursue their goals, make decisions, and take action without waiting for user permission.
+        * NEVER use these passive/deferential phrases or variations:
+          - "We don't have to talk about it if you don't want to"
+          - "Only if you're comfortable"
+          - "What do you want to do?"
+          - "I'm here to listen"
+          - "We can stop whenever you want"
+          - "At your own pace"
+          - "If you don't want to..."
+          - "It's okay, we don't have to..."
+          - "Can you tell me what you're thinking?"
+          - "No pressure"
+          - "I just want to understand"
+          - "Tell me what you need"
+        * Instead of asking open-ended questions, characters should:
+          1. Make specific observations or statements
+          2. Ask pointed, specific questions (not "what are you feeling?")
+          3. Take action based on their goals and personality
+          4. React to what they observe, not what they're told to observe
+          
+    - RESISTANCE HANDLING:
+        * When user shows hesitation, nervousness, or mild resistance:
+          - Characters acknowledge it briefly but continue pursuing their goals
+          - Characters may adjust their APPROACH but not their OBJECTIVE
+          - Characters with persistent/dominant traits should gently push forward
+          - NO passive collapse into "we don't have to do anything"
+        * Characters should act according to their defined personality traits, not default to AI-safety behaviors
+        
+    - DIALOGUE REQUIREMENTS:
+        * Every AI response MUST contain at least one line of spoken dialogue (text in quotes)
+        * Prioritize external dialogue and observable actions over internal monologue
+        * Internal thoughts should complement action, not replace it
+` : '';
+
+// Line of sight and layering awareness (#17)
+const lineOfSightRules = `
+    - LINE OF SIGHT & LAYERING AWARENESS (CRITICAL):
+        * Characters can ONLY perceive what is DIRECTLY VISIBLE from their current position.
+        * CLOTHING LAYERS: If something is covered by another garment, it is NOT visible.
+          - Underwear under pants/skirt = NOT visible (unless waistband is explicitly showing)
+          - Bra under shirt = NOT visible (unless outline is described or shirt is transparent)
+          - To see something underneath, outer layers must be removed, lifted, or shifted
+        * OBJECT CONCEALMENT: Items hidden under, inside, or behind other objects cannot be seen.
+          - A drawing pad behind someone's back = NOT visible from the front
+          - Contents of a closed drawer/bag = NOT visible
+        * ANGLE LIMITATIONS: Consider the viewing angle.
+          - Standing behind someone = cannot see their face/front
+          - Sitting across the room = cannot see small details
+        * REVEAL PROGRESSION: Hidden items become visible only through:
+          1. Physical action explicitly removing/moving the concealing layer
+          2. Character explicitly looking under/behind/inside
+          3. Accidental exposure (slip, shift, fall)
+        * WRONG: "She noticed the thong under his shorts" (concealed = cannot see)
+        * RIGHT: "She noticed the waistband peeking above his shorts" (partially exposed = can see)
+`;
+
+// Anti-repetition protocol (#33, #34)
+const antiRepetitionRules = `
+    - ANTI-REPETITION PROTOCOL (MANDATORY):
+        * WORD VARIETY: Do not repeat distinctive words or phrases within the same response.
+          - If you used "smirk" once, use alternatives: grin, half-smile, knowing look
+          - If you used "felt a shiver," use alternatives: a tremor ran through, goosebumps rose
+        * SENTENCE STRUCTURE: Vary sentence openings and structures.
+          - Avoid starting consecutive sentences with the same word/pattern
+          - Mix short punchy sentences with longer descriptive ones
+        * ACTION VARIETY: Do not repeat the same action multiple times.
+          - If a character already "bit her lip," don't have them do it again in the same response
+          - Track what actions have been used and rotate through alternatives
+        * DIALOGUE PATTERNS: Avoid repetitive conversation structures.
+          - Don't have characters keep asking variations of the same question
+          - If met with silence, try a different approach rather than rephrasing
+        * EMOTIONAL BEATS: Don't repeat the same emotional observation.
+          - If you noted "nervous energy," don't note it again - show progression or new emotion
+        * PACING PROGRESSION: Each paragraph should advance the scene.
+          - Avoid circular dialogue where characters keep revisiting the same point
+          - Move forward even in small increments
+`;
+```
+
+#### 3.3 Update the return statement to include new rules
+
+In the `getSystemInstruction()` return statement (around line 111-173), add the new rule sections:
+
+```typescript
+return `
+    You are an expert Game Master and roleplayer for a creative writing/RPG studio.
     
-    return (
-      <button
-        ref={ref}
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        disabled={isDisabled}
-        onClick={() => !isDisabled && onCheckedChange(!checked)}
-        className={cn(
-          "inline-flex items-center gap-2 select-none",
-          isDisabled && "cursor-not-allowed opacity-70",
-          className
-        )}
-      >
-        {/* Off label */}
-        <span className={cn(
-          "text-sm font-semibold transition-colors",
-          checked ? "text-slate-400" : "text-slate-900"
-        )}>
-          Off
-        </span>
-        
-        {/* Toggle track */}
-        <div className={cn(
-          "relative h-6 w-11 rounded-full transition-colors",
-          checked ? "bg-blue-500" : "bg-slate-300"
-        )}>
-          {/* Toggle thumb */}
-          <div className={cn(
-            "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-md transition-transform",
-            checked ? "translate-x-5" : "translate-x-0.5"
-          )} />
-        </div>
-        
-        {/* On label */}
-        <span className={cn(
-          "text-sm font-semibold transition-colors",
-          checked ? "text-blue-500" : "text-slate-400"
-        )}>
-          On
-        </span>
-        
-        {/* Lock icon for locked toggles */}
-        {locked && (
-          <Lock className="w-3.5 h-3.5 text-slate-400" />
-        )}
-      </button>
-    );
-  }
-);
-LabeledToggle.displayName = "LabeledToggle";
-
-export { LabeledToggle };
-```
-
-**Features:**
-- `checked` / `onCheckedChange` - Standard toggle API
-- `disabled` - Prevents interaction (grayed out)
-- `locked` - Forced on with lock icon (for critical settings)
-- Off text = black when off, gray when on
-- On text = blue when on, gray when off
-- Track = blue when on, gray when off
-
----
-
-### 3. Update `ChatInterfaceTab.tsx`
-
-#### 3.1 Rename Button (Line ~2484)
-
-Change from:
-```tsx
->
-  Interface
-</Button>
-```
-
-To:
-```tsx
->
-  <Settings className="w-4 h-4" />
-  Chat Settings
-</Button>
-```
-
-#### 3.2 Update Modal Layout (Lines ~2612-2733)
-
-**Before**: Narrow modal (`sm:max-w-md`), single-column checkboxes
-
-**After**: Wider modal (`max-w-2xl`), 2-column grid, section headings, LabeledToggle components
-
-```tsx
-{/* Chat Settings Modal */}
-<Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-  <DialogContent className="max-w-2xl bg-white border-slate-200 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)]">
-    <DialogHeader className="border-b border-slate-100 pb-4">
-      <DialogTitle className="flex items-center gap-2 text-lg font-black text-slate-900 uppercase tracking-tight">
-        <Settings className="w-5 h-5" />
-        Chat Settings
-      </DialogTitle>
-    </DialogHeader>
+    WORLD CONTEXT:
+    ${worldContext}
     
-    <div className="space-y-6 py-4 max-h-[70vh] overflow-y-auto">
-      {/* Interface Settings Section */}
-      <div className="space-y-4">
-        <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">
-          Interface Settings
-        </h3>
-        
-        {/* 2-column grid for toggles */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Show Backgrounds */}
-          <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 rounded-xl">
-            <span className="text-sm font-semibold text-slate-700">Show Background</span>
-            <LabeledToggle
-              checked={appData.uiSettings?.showBackgrounds ?? false}
-              onCheckedChange={(v) => handleUpdateUiSettings({ showBackgrounds: v })}
-            />
-          </div>
-          
-          {/* Transparent Bubbles */}
-          <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 rounded-xl">
-            <span className="text-sm font-semibold text-slate-700">Transparent Bubbles</span>
-            <LabeledToggle
-              checked={bubblesTransparent}
-              onCheckedChange={(v) => handleUpdateUiSettings({ transparentBubbles: v })}
-            />
-          </div>
-          
-          {/* Dark Mode */}
-          <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 rounded-xl">
-            <span className="text-sm font-semibold text-slate-700">Dark Mode</span>
-            <LabeledToggle
-              checked={appData.uiSettings?.darkMode ?? false}
-              onCheckedChange={(v) => handleUpdateUiSettings({ darkMode: v })}
-            />
-          </div>
-          
-          {/* Offset Bubbles */}
-          <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 rounded-xl">
-            <span className="text-sm font-semibold text-slate-700">Offset Bubbles</span>
-            <LabeledToggle
-              checked={offsetBubbles}
-              onCheckedChange={(v) => handleUpdateUiSettings({ offsetBubbles: v })}
-            />
-          </div>
-          
-          {/* Dynamic Text - spans full width for longer description */}
-          <div className="md:col-span-2 flex items-center justify-between gap-4 p-3 bg-slate-50 rounded-xl">
-            <span className="text-sm font-semibold text-slate-700">Dynamic Text</span>
-            <LabeledToggle
-              checked={dynamicText}
-              onCheckedChange={(v) => handleUpdateUiSettings({ dynamicText: v })}
-            />
-          </div>
-        </div>
+    CODEX:
+    ${codexContext}
+    
+    CAST:
+    ${characterContext}
+    
+    AVAILABLE SCENES: [${sceneTags}]
+    ${temporalContext}
+    ${memoriesContext}
+    INSTRUCTIONS:
+    - Respond as the narrator or relevant characters.
+    - NARRATIVE FOCUS: Prioritize 'ROLE: Main' characters in the narrative.
+    - MAINTAIN CONTROL CONTEXT:
+        * ONLY generate dialogue and actions for characters marked as 'CONTROL: AI'.
+        * DO NOT generate dialogue or actions for characters marked as 'CONTROL: User'.
+    - STRICT FORMATTING RULES (MANDATORY):
+        1. ENCLOSE ALL OUTSPOKEN DIALOGUE IN "DOUBLE QUOTES".
+        2. ENCLOSE ALL PHYSICAL ACTIONS OR DESCRIPTIONS IN *ASTERISKS*.
+        3. ENCLOSE ALL INTERNAL THOUGHTS OR MENTAL STATES IN (PARENTHESES).
+        Example: *He walks toward her, his heart racing.* (He hoped she wouldn't notice.) "Hey, did you wait long?"
+    ${narrativeBehaviorRules}
+    ${lineOfSightRules}
+    ${antiRepetitionRules}
+    - PARAGRAPH TAGGING (MANDATORY - NEVER OMIT):
+        ... [rest of existing rules]
+    ${characterIntroductionRules}
+    ... [rest of existing rules]
+`;
+```
+
+### 4. Update `ChatInterfaceTab.tsx` - Add New Toggles
+
+Add to the "AI Behavior" section of the Chat Settings modal:
+
+```tsx
+{/* AI Behavior Section */}
+<div className="space-y-4">
+  <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">
+    AI Behavior
+  </h3>
+  
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    {/* Proactive Character Discovery */}
+    <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 rounded-xl">
+      <div className="flex-1">
+        <span className="text-sm font-semibold text-slate-700">Character Discovery</span>
+        <p className="text-xs text-slate-500 mt-0.5">
+          AI may introduce characters from established media
+        </p>
       </div>
-      
-      {/* Visual Divider */}
-      <div className="border-t border-slate-200" />
-      
-      {/* AI Behavior Section */}
-      <div className="space-y-4">
-        <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">
-          AI Behavior
-        </h3>
-        
-        <div className="grid grid-cols-1 gap-4">
-          {/* Proactive Character Discovery */}
-          <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 rounded-xl">
-            <div className="flex-1">
-              <span className="text-sm font-semibold text-slate-700">Proactive Character Discovery</span>
-              <p className="text-xs text-slate-500 mt-0.5">
-                AI may introduce characters from established media at story-appropriate moments.
-              </p>
-            </div>
-            <LabeledToggle
-              checked={appData.uiSettings?.proactiveCharacterDiscovery !== false}
-              onCheckedChange={(v) => handleUpdateUiSettings({ proactiveCharacterDiscovery: v })}
-            />
-          </div>
-        </div>
+      <LabeledToggle
+        checked={appData.uiSettings?.proactiveCharacterDiscovery !== false}
+        onCheckedChange={(v) => handleUpdateUiSettings({ proactiveCharacterDiscovery: v })}
+      />
+    </div>
+    
+    {/* Proactive AI Mode - NEW */}
+    <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 rounded-xl">
+      <div className="flex-1">
+        <span className="text-sm font-semibold text-slate-700">Proactive AI Mode</span>
+        <p className="text-xs text-slate-500 mt-0.5">
+          AI drives the story forward assertively
+        </p>
       </div>
-      
-      {/* Footer Note */}
-      <p className="text-xs text-slate-400 border-t border-slate-100 pt-4">
-        Backgrounds will automatically change based on the story context if scene images are tagged in the gallery.
+      <LabeledToggle
+        checked={appData.uiSettings?.proactiveNarrative !== false}
+        onCheckedChange={(v) => handleUpdateUiSettings({ proactiveNarrative: v })}
+      />
+    </div>
+  </div>
+  
+  {/* POV Selection - NEW */}
+  <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 rounded-xl">
+    <div className="flex-1">
+      <span className="text-sm font-semibold text-slate-700">Narrative POV</span>
+      <p className="text-xs text-slate-500 mt-0.5">
+        How AI characters narrate their actions and thoughts
       </p>
     </div>
-  </DialogContent>
-</Dialog>
+    <div className="flex gap-2">
+      <button
+        onClick={() => handleUpdateUiSettings({ narrativePov: 'first' })}
+        className={cn(
+          "px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors",
+          appData.uiSettings?.narrativePov === 'first'
+            ? "bg-blue-500 text-white"
+            : "bg-slate-200 text-slate-600 hover:bg-slate-300"
+        )}
+      >
+        1st Person
+      </button>
+      <button
+        onClick={() => handleUpdateUiSettings({ narrativePov: 'third' })}
+        className={cn(
+          "px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors",
+          (appData.uiSettings?.narrativePov || 'third') === 'third'
+            ? "bg-blue-500 text-white"
+            : "bg-slate-200 text-slate-600 hover:bg-slate-300"
+        )}
+      >
+        3rd Person
+      </button>
+    </div>
+  </div>
+</div>
 ```
 
 ---
 
-## Visual Layout (ASCII Mockup)
+## Visual Preview - Updated Chat Settings Modal
 
 ```text
-┌─────────────────────────────────────────────────────────────────┐
-│  ⚙  CHAT SETTINGS                                          [X] │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  INTERFACE SETTINGS                                             │
-│  ┌──────────────────────────┐  ┌──────────────────────────┐     │
-│  │ Show Background          │  │ Transparent Bubbles      │     │
-│  │          Off ●━━━━ On    │  │          Off ━━━━● On    │     │
-│  └──────────────────────────┘  └──────────────────────────┘     │
-│  ┌──────────────────────────┐  ┌──────────────────────────┐     │
-│  │ Dark Mode                │  │ Offset Bubbles           │     │
-│  │          Off ━━━━● On    │  │          Off ━━━━● On    │     │
-│  └──────────────────────────┘  └──────────────────────────┘     │
-│  ┌─────────────────────────────────────────────────────────┐    │
-│  │ Dynamic Text                                            │    │
-│  │                                    Off ●━━━━ On         │    │
-│  └─────────────────────────────────────────────────────────┘    │
-│                                                                 │
-│  ──────────────────────────────────────────────────────────     │
-│                                                                 │
-│  AI BEHAVIOR                                                    │
-│  ┌─────────────────────────────────────────────────────────┐    │
-│  │ Proactive Character Discovery                           │    │
-│  │ AI may introduce characters from established media...   │    │
-│  │                                    Off ━━━━● On         │    │
-│  └─────────────────────────────────────────────────────────┘    │
-│                                                                 │
-│  ──────────────────────────────────────────────────────────     │
-│  Backgrounds will automatically change based on story...        │
-└─────────────────────────────────────────────────────────────────┘
++---------------------------------------------------------------------+
+|  CHAT SETTINGS                                                  [X] |
++---------------------------------------------------------------------+
+|                                                                     |
+|  INTERFACE SETTINGS                                                 |
+|  +---------------------------+  +---------------------------+       |
+|  | Show Background           |  | Transparent Bubbles       |       |
+|  |          Off [=] On       |  |          Off [=] On       |       |
+|  +---------------------------+  +---------------------------+       |
+|  +---------------------------+  +---------------------------+       |
+|  | Dark Mode                 |  | Offset Bubbles            |       |
+|  |          Off [=] On       |  |          Off [=] On       |       |
+|  +---------------------------+  +---------------------------+       |
+|  +----------------------------------------------------------+      |
+|  | Dynamic Text                                              |      |
+|  |                                    Off [=] On             |      |
+|  +----------------------------------------------------------+      |
+|                                                                     |
+|  -------------------------------------------------------------------+
+|                                                                     |
+|  AI BEHAVIOR                                                        |
+|  +---------------------------+  +---------------------------+       |
+|  | Character Discovery       |  | Proactive AI Mode         |       |
+|  | AI may introduce...       |  | AI drives story forward   |       |
+|  |          Off [=] On       |  |          Off [=] On       |       |
+|  +---------------------------+  +---------------------------+       |
+|  +----------------------------------------------------------+      |
+|  | Narrative POV                                             |      |
+|  | How AI characters narrate their actions and thoughts      |      |
+|  |                         [1st Person] [3rd Person]         |      |
+|  +----------------------------------------------------------+      |
+|                                                                     |
++---------------------------------------------------------------------+
 ```
 
 ---
 
-## Technical Notes
+## Behavior Changes Summary
 
-1. **Scrollable Content**: Added `max-h-[70vh] overflow-y-auto` to support future additional options
-2. **Responsive Grid**: Uses `grid-cols-1 md:grid-cols-2` so it collapses to single column on mobile
-3. **Reusable Component**: `LabeledToggle` can be imported and used anywhere else in the app
-4. **Locked State**: The `locked` prop on `LabeledToggle` is ready for critical settings that shouldn't be changed (like formatting rules)
-5. **Button Icon**: Added Settings icon to "Chat Settings" button for visual consistency with other buttons
+### When Proactive AI Mode is ON (default):
+
+| Before | After |
+|--------|-------|
+| "We don't have to talk about it if you don't want to" | Character asks a specific follow-up question or takes action |
+| AI responds to user's internal thought (Oh god, did she see?) | AI responds ONLY to visible actions/dialogue |
+| User shifts nervously → AI abandons conversation | AI acknowledges briefly, continues pursuing goal |
+| "She noticed the thong under his shorts" | "She noticed the waistband peeking above his shorts" (only what's visible) |
+| Repeating "she smirked" three times | Uses variety: "she smirked", "a grin tugged at her lips", "her expression turned knowing" |
+
+### POV Toggle Effect:
+
+| 3rd Person (Default) | 1st Person |
+|---------------------|------------|
+| *She walked toward the window.* | *I walked toward the window.* |
+| (She wondered if he noticed.) | (I wondered if he noticed.) |
+| "I'm fine," she said. | "I'm fine," I said. |
 
 ---
 
 ## Files Summary
 
-| File | Lines Changed | Description |
-|------|---------------|-------------|
-| `.lovable/plan.md` | +30 | Add BYOK investigation notes |
-| `src/components/ui/labeled-toggle.tsx` | New (~60 lines) | Reusable toggle component |
-| `src/components/chronicle/ChatInterfaceTab.tsx` | ~100 lines | Button rename + modal redesign |
+| File | Changes | Description |
+|------|---------|-------------|
+| `src/types.ts` | +2 lines | Add `proactiveNarrative` and `narrativePov` to uiSettings |
+| `src/utils.ts` | +4 lines | Default values for new settings |
+| `src/services/llm.ts` | +80 lines | Add behavior rules, POV function, line-of-sight, anti-repetition |
+| `src/components/chronicle/ChatInterfaceTab.tsx` | +50 lines | Add toggles and POV selector to Chat Settings |
 
 ---
 
-## Next Steps (Phase 2)
+## Testing Recommendations
 
-After this phase is complete, we'll address the AI behavior issues (passive dialogue, thought-reading, etc.) by:
-1. Adding new toggles to the AI Behavior section
-2. Modifying the system prompt in `llm.ts` based on toggle states
+After implementation, test with these scenarios:
+
+1. **Internal thought test**: User includes `(I hope she didn't notice the X)` - verify AI doesn't reference X
+2. **Line of sight test**: Describe something hidden under clothing - verify AI doesn't "see" it until revealed
+3. **Passive behavior test**: User character shows hesitation - verify AI continues pursuing goals
+4. **POV toggle test**: Switch between 1st and 3rd person - verify narration style changes
+5. **Repetition test**: Check that AI varies word choices and doesn't repeat actions/phrases
+6. **Phrase ban test**: Regenerate responses - verify banned passive phrases don't appear
+
+---
+
+## Reminder for Phase 3
+
+After completing this phase, we need to address:
+- **#22**: NSFW content handling / fetish pacing (non-checklist progression)
+- **Realism toggle**: Additional realism constraints for the narrative
 
