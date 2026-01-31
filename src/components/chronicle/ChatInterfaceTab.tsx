@@ -48,6 +48,7 @@ import { MemoriesModal } from './MemoriesModal';
 import { MemoryQuickSaveButton } from './MemoryQuickSaveButton';
 import { UserBackground } from '@/types';
 import { getStyleById, DEFAULT_STYLE_ID } from '@/constants/avatar-styles';
+import { LabeledToggle } from '@/components/ui/labeled-toggle';
 
 interface ChatInterfaceTabProps {
   scenarioId: string;
@@ -2479,9 +2480,10 @@ const updatedChar: SideCharacter = {
               <Button
                 onClick={() => setIsSettingsOpen(!isSettingsOpen)}
                 variant="secondary"
-                className="!border-slate-900"
+                className="!border-slate-900 flex items-center gap-2"
               >
-                Interface
+                <Settings className="w-4 h-4" />
+                Chat Settings
               </Button>
               
               {/* Generate Image Button */}
@@ -2608,120 +2610,95 @@ const updatedChar: SideCharacter = {
         onDeleteAllMemories={handleDeleteAllMemories}
       />
       
-      {/* Interface Settings Modal */}
+      {/* Chat Settings Modal */}
       <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-        <DialogContent className="sm:max-w-md bg-white border-slate-200 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)]">
+        <DialogContent className="max-w-2xl bg-white border-slate-200 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)]">
           <DialogHeader className="border-b border-slate-100 pb-4">
             <DialogTitle className="flex items-center gap-2 text-lg font-black text-slate-900 uppercase tracking-tight">
               <Settings className="w-5 h-5" />
-              Interface Settings
+              Chat Settings
             </DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-6 py-4">
-            {/* Display Section */}
+          <div className="space-y-6 py-4 max-h-[70vh] overflow-y-auto">
+            {/* Interface Settings Section */}
             <div className="space-y-4">
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Display</h3>
+              <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">
+                Interface Settings
+              </h3>
               
-              {/* Show Backgrounds */}
-              <div className="flex items-start justify-between gap-4 py-2 border-b border-slate-50">
-                <div className="flex-1">
-                  <p className="text-sm font-bold text-slate-900">Show Backgrounds</p>
-                  <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
-                    Display scene images behind the chat.
-                  </p>
+              {/* 2-column grid for toggles */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Show Backgrounds */}
+                <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 rounded-xl">
+                  <span className="text-sm font-semibold text-slate-700">Show Background</span>
+                  <LabeledToggle
+                    checked={appData.uiSettings?.showBackgrounds ?? false}
+                    onCheckedChange={(v) => handleUpdateUiSettings({ showBackgrounds: v })}
+                  />
                 </div>
-                <input
-                  type="checkbox"
-                  checked={appData.uiSettings?.showBackgrounds}
-                  onChange={(e) => handleUpdateUiSettings({ showBackgrounds: e.target.checked })}
-                  className="accent-blue-500 w-4 h-4 mt-0.5"
-                />
-              </div>
-              
-              {/* Transparent Bubbles */}
-              <div className="flex items-start justify-between gap-4 py-2 border-b border-slate-50">
-                <div className="flex-1">
-                  <p className="text-sm font-bold text-slate-900">Transparent Bubbles</p>
-                  <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
-                    Make message bubbles semi-transparent to see backgrounds through them.
-                  </p>
+                
+                {/* Transparent Bubbles */}
+                <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 rounded-xl">
+                  <span className="text-sm font-semibold text-slate-700">Transparent Bubbles</span>
+                  <LabeledToggle
+                    checked={bubblesTransparent}
+                    onCheckedChange={(v) => handleUpdateUiSettings({ transparentBubbles: v })}
+                  />
                 </div>
-                <input
-                  type="checkbox"
-                  checked={bubblesTransparent}
-                  onChange={(e) => handleUpdateUiSettings({ transparentBubbles: e.target.checked })}
-                  className="accent-blue-500 w-4 h-4 mt-0.5"
-                />
-              </div>
-              
-              {/* Dark Mode */}
-              <div className="flex items-start justify-between gap-4 py-2 border-b border-slate-50">
-                <div className="flex-1">
-                  <p className="text-sm font-bold text-slate-900">Dark Mode</p>
-                  <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
-                    Use a darker color scheme for the chat interface.
-                  </p>
+                
+                {/* Dark Mode */}
+                <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 rounded-xl">
+                  <span className="text-sm font-semibold text-slate-700">Dark Mode</span>
+                  <LabeledToggle
+                    checked={appData.uiSettings?.darkMode ?? false}
+                    onCheckedChange={(v) => handleUpdateUiSettings({ darkMode: v })}
+                  />
                 </div>
-                <input
-                  type="checkbox"
-                  checked={appData.uiSettings?.darkMode}
-                  onChange={(e) => handleUpdateUiSettings({ darkMode: e.target.checked })}
-                  className="accent-blue-500 w-4 h-4 mt-0.5"
-                />
-              </div>
-              
-              {/* Offset Bubbles */}
-              <div className="flex items-start justify-between gap-4 py-2 border-b border-slate-50">
-                <div className="flex-1">
-                  <p className="text-sm font-bold text-slate-900">Offset Bubbles</p>
-                  <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
-                    Align user messages to the right like a messaging app.
-                  </p>
+                
+                {/* Offset Bubbles */}
+                <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 rounded-xl">
+                  <span className="text-sm font-semibold text-slate-700">Offset Bubbles</span>
+                  <LabeledToggle
+                    checked={offsetBubbles}
+                    onCheckedChange={(v) => handleUpdateUiSettings({ offsetBubbles: v })}
+                  />
                 </div>
-                <input
-                  type="checkbox"
-                  checked={offsetBubbles}
-                  onChange={(e) => handleUpdateUiSettings({ offsetBubbles: e.target.checked })}
-                  className="accent-blue-500 w-4 h-4 mt-0.5"
-                />
-              </div>
-              
-              {/* Dynamic Text */}
-              <div className="flex items-start justify-between gap-4 py-2">
-                <div className="flex-1">
-                  <p className="text-sm font-bold text-slate-900">Dynamic Text</p>
-                  <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
-                    Apply visual styling to different text types (dialogue, actions, thoughts). When off, all text appears in a consistent white style like a book.
-                  </p>
+                
+                {/* Dynamic Text */}
+                <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 rounded-xl">
+                  <span className="text-sm font-semibold text-slate-700">Dynamic Text</span>
+                  <LabeledToggle
+                    checked={dynamicText}
+                    onCheckedChange={(v) => handleUpdateUiSettings({ dynamicText: v })}
+                  />
                 </div>
-                <input
-                  type="checkbox"
-                  checked={dynamicText}
-                  onChange={(e) => handleUpdateUiSettings({ dynamicText: e.target.checked })}
-                  className="accent-blue-500 w-4 h-4 mt-0.5"
-                />
               </div>
             </div>
             
+            {/* Visual Divider */}
+            <div className="border-t border-slate-200" />
+            
             {/* AI Behavior Section */}
-            <div className="space-y-4 border-t border-slate-100 pt-6">
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">AI Behavior</h3>
+            <div className="space-y-4">
+              <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">
+                AI Behavior
+              </h3>
               
-              {/* Proactive Character Discovery */}
-              <div className="flex items-start justify-between gap-4 py-2">
-                <div className="flex-1">
-                  <p className="text-sm font-bold text-slate-900">Proactive Character Discovery</p>
-                  <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
-                    When enabled, the AI may introduce characters from established media (books, movies) at story-appropriate moments.
-                  </p>
+              <div className="grid grid-cols-1 gap-3">
+                {/* Proactive Character Discovery */}
+                <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 rounded-xl">
+                  <div className="flex-1">
+                    <span className="text-sm font-semibold text-slate-700">Proactive Character Discovery</span>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      AI may introduce characters from established media at story-appropriate moments.
+                    </p>
+                  </div>
+                  <LabeledToggle
+                    checked={appData.uiSettings?.proactiveCharacterDiscovery !== false}
+                    onCheckedChange={(v) => handleUpdateUiSettings({ proactiveCharacterDiscovery: v })}
+                  />
                 </div>
-                <input
-                  type="checkbox"
-                  checked={appData.uiSettings?.proactiveCharacterDiscovery !== false}
-                  onChange={(e) => handleUpdateUiSettings({ proactiveCharacterDiscovery: e.target.checked })}
-                  className="accent-blue-500 w-4 h-4 mt-0.5"
-                />
               </div>
             </div>
             
