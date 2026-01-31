@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { ScenarioData, Character, Conversation, Message, CharacterTraitSection, Scene, TimeOfDay, SideCharacter, CharacterSessionState, Memory } from '../../types';
 import { Button, TextArea } from './UI';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 import { uid, now, uuid } from '../../services/storage';
 import { generateRoleplayResponseStream } from '../../services/llm';
 import { RefreshCw, MoreVertical, Copy, Pencil, Trash2, ChevronUp, ChevronDown, Sunrise, Sun, Sunset, Moon, Loader2, StepForward, Settings, Image as ImageIcon, Brain } from 'lucide-react';
@@ -58,7 +59,7 @@ interface ChatInterfaceTabProps {
   onUpdate: (convs: Conversation[]) => void;
   onBack: () => void;
   onSaveScenario: (conversations?: Conversation[]) => void;
-  onUpdateUiSettings?: (patch: { showBackgrounds?: boolean; transparentBubbles?: boolean; darkMode?: boolean; offsetBubbles?: boolean; proactiveCharacterDiscovery?: boolean; dynamicText?: boolean }) => void;
+  onUpdateUiSettings?: (patch: { showBackgrounds?: boolean; transparentBubbles?: boolean; darkMode?: boolean; offsetBubbles?: boolean; proactiveCharacterDiscovery?: boolean; dynamicText?: boolean; proactiveNarrative?: boolean; narrativePov?: 'first' | 'third' }) => void;
   onUpdateSideCharacters?: (sideCharacters: SideCharacter[]) => void;
 }
 
@@ -1994,7 +1995,7 @@ const updatedChar: SideCharacter = {
   const offsetBubbles = appData.uiSettings?.offsetBubbles;
   const dynamicText = appData.uiSettings?.dynamicText !== false;
 
-  const handleUpdateUiSettings = (patch: { showBackgrounds?: boolean; transparentBubbles?: boolean; darkMode?: boolean; offsetBubbles?: boolean; proactiveCharacterDiscovery?: boolean; dynamicText?: boolean }) => {
+  const handleUpdateUiSettings = (patch: { showBackgrounds?: boolean; transparentBubbles?: boolean; darkMode?: boolean; offsetBubbles?: boolean; proactiveCharacterDiscovery?: boolean; dynamicText?: boolean; proactiveNarrative?: boolean; narrativePov?: 'first' | 'third' }) => {
     if (onUpdateUiSettings) {
       onUpdateUiSettings(patch);
     }
@@ -2685,19 +2686,67 @@ const updatedChar: SideCharacter = {
                 AI Behavior
               </h3>
               
-              <div className="grid grid-cols-1 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {/* Proactive Character Discovery */}
                 <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 rounded-xl">
                   <div className="flex-1">
-                    <span className="text-sm font-semibold text-slate-700">Proactive Character Discovery</span>
+                    <span className="text-sm font-semibold text-slate-700">Character Discovery</span>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      AI may introduce characters from established media at story-appropriate moments.
+                      AI may introduce characters from established media
                     </p>
                   </div>
                   <LabeledToggle
                     checked={appData.uiSettings?.proactiveCharacterDiscovery !== false}
                     onCheckedChange={(v) => handleUpdateUiSettings({ proactiveCharacterDiscovery: v })}
                   />
+                </div>
+                
+                {/* Proactive AI Mode */}
+                <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 rounded-xl">
+                  <div className="flex-1">
+                    <span className="text-sm font-semibold text-slate-700">Proactive AI Mode</span>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      AI drives the story forward assertively
+                    </p>
+                  </div>
+                  <LabeledToggle
+                    checked={appData.uiSettings?.proactiveNarrative !== false}
+                    onCheckedChange={(v) => handleUpdateUiSettings({ proactiveNarrative: v })}
+                  />
+                </div>
+              </div>
+              
+              {/* POV Selection */}
+              <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 rounded-xl">
+                <div className="flex-1">
+                  <span className="text-sm font-semibold text-slate-700">Narrative POV</span>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    How AI characters narrate their actions and thoughts
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleUpdateUiSettings({ narrativePov: 'first' })}
+                    className={cn(
+                      "px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors",
+                      appData.uiSettings?.narrativePov === 'first'
+                        ? "bg-blue-500 text-white"
+                        : "bg-slate-200 text-slate-600 hover:bg-slate-300"
+                    )}
+                  >
+                    1st Person
+                  </button>
+                  <button
+                    onClick={() => handleUpdateUiSettings({ narrativePov: 'third' })}
+                    className={cn(
+                      "px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors",
+                      (appData.uiSettings?.narrativePov || 'third') === 'third'
+                        ? "bg-blue-500 text-white"
+                        : "bg-slate-200 text-slate-600 hover:bg-slate-300"
+                    )}
+                  >
+                    3rd Person
+                  </button>
                 </div>
               </div>
             </div>
