@@ -8,10 +8,12 @@ interface LabeledToggleProps {
   disabled?: boolean;
   locked?: boolean;
   className?: string;
+  offLabel?: string;  // Custom label for off state (default: "Off")
+  onLabel?: string;   // Custom label for on state (default: "On")
 }
 
 const LabeledToggle = React.forwardRef<HTMLButtonElement, LabeledToggleProps>(
-  ({ checked, onCheckedChange, disabled = false, locked = false, className }, ref) => {
+  ({ checked, onCheckedChange, disabled = false, locked = false, className, offLabel = "Off", onLabel = "On" }, ref) => {
     const isDisabled = disabled || locked;
     
     return (
@@ -33,7 +35,7 @@ const LabeledToggle = React.forwardRef<HTMLButtonElement, LabeledToggleProps>(
           "text-xs font-semibold transition-colors",
           checked ? "text-slate-400" : "text-slate-900"
         )}>
-          Off
+          {offLabel}
         </span>
         
         {/* Toggle track */}
@@ -53,7 +55,7 @@ const LabeledToggle = React.forwardRef<HTMLButtonElement, LabeledToggleProps>(
           "text-xs font-semibold transition-colors",
           checked ? "text-blue-500" : "text-slate-400"
         )}>
-          On
+          {onLabel}
         </span>
         
         {/* Lock icon for locked toggles */}
