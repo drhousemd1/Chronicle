@@ -618,18 +618,9 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
                   </div>
                 ))}
               </div>
-              <Button variant="ghost" className="w-full border border-dashed border-slate-300 text-slate-500 hover:bg-slate-50 mt-4" onClick={() => handleAddItem(selected.id, section.id)}>+ Add Row</Button>
+              <Button variant="ghost" className="w-full py-3 border-2 border-dashed border-slate-300 text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50/50 rounded-xl transition-all mt-4" onClick={() => handleAddItem(selected.id, section.id)}>+ Add Row</Button>
             </Card>
           ))}
-
-          {/* Add Category Button */}
-          <Button 
-            variant="ghost" 
-            className="w-full border-2 border-dashed border-slate-300 text-slate-500 hover:bg-slate-50 py-4"
-            onClick={handleAddSection}
-          >
-          + Add Category
-          </Button>
         </div>
       </div>
 
