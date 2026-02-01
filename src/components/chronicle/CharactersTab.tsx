@@ -618,7 +618,7 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
                   </div>
                 ))}
               </div>
-              <Button variant="ghost" className="w-full py-3 border-2 border-dashed border-slate-300 bg-slate-50/50 text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all mt-4" onClick={() => handleAddItem(selected.id, section.id)}>+ Add Row</Button>
+              <Button variant="ghost" className="w-full py-3 border-2 border-dashed border-slate-500 bg-slate-50/50 text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all mt-4" onClick={() => handleAddItem(selected.id, section.id)}>+ Add Row</Button>
             </Card>
           ))}
         </div>
