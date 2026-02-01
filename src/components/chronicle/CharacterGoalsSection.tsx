@@ -20,8 +20,26 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
   const [editingProgressId, setEditingProgressId] = useState<string | null>(null);
   const [tempProgress, setTempProgress] = useState<string>('');
 
+  // Ensure there's always at least one goal row displayed
+  const displayGoals = goals.length === 0 ? [{
+    id: uid('goal'),
+    title: '',
+    desiredOutcome: '',
+    currentStatus: '',
+    progress: 0,
+    createdAt: now(),
+    updatedAt: now()
+  }] : goals;
+
   // Sort goals by progress descending (completed goals at top)
-  const sortedGoals = [...goals].sort((a, b) => b.progress - a.progress);
+  const sortedGoals = [...displayGoals].sort((a, b) => b.progress - a.progress);
+
+  // Auto-save the default goal if it was just created
+  React.useEffect(() => {
+    if (goals.length === 0 && displayGoals.length === 1) {
+      onChange(displayGoals);
+    }
+  }, []);
 
   const addGoal = () => {
     const newGoal: CharacterGoal = {
@@ -65,8 +83,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
       </div>
 
       {/* Goals Table */}
-      {sortedGoals.length > 0 ? (
-        <div className="space-y-0">
+      <div className="space-y-0">
           {/* Column Headers */}
           <div className="grid grid-cols-12 gap-2 px-2 pb-2 border-b border-slate-200">
             <div className="col-span-3">
@@ -203,31 +220,14 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
                 </Popover>
               </div>
             </div>
-          ))}
-        </div>
-      ) : (
-        /* Empty State */
-        <div className="flex flex-col items-center justify-center py-8 text-center">
-          <p className="text-slate-400 text-sm mb-3">
-            No goals defined yet
-          </p>
-          {!readOnly && (
-            <Button
-              variant="ghost"
-              className="text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-              onClick={addGoal}
-            >
-              + Add First Goal
-            </Button>
-          )}
-        </div>
-      )}
+        ))}
+      </div>
 
       {/* Add Goal Button - at bottom like custom sections */}
-      {!readOnly && sortedGoals.length > 0 && (
+      {!readOnly && (
         <Button
           variant="ghost"
-          className="w-full border border-dashed border-slate-300 text-slate-500 hover:bg-slate-50 mt-4"
+          className="w-full py-3 border-2 border-dashed border-slate-300 text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50/50 rounded-xl transition-all mt-4"
           onClick={addGoal}
         >
           + Add Goal
