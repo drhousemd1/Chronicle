@@ -34,6 +34,7 @@ export type Database = {
           nicknames: string | null
           physical_appearance: Json | null
           preferred_clothing: Json | null
+          previous_names: string[] | null
           role_description: string | null
           sex_type: string | null
           updated_at: string | null
@@ -58,6 +59,7 @@ export type Database = {
           nicknames?: string | null
           physical_appearance?: Json | null
           preferred_clothing?: Json | null
+          previous_names?: string[] | null
           role_description?: string | null
           sex_type?: string | null
           updated_at?: string | null
@@ -82,6 +84,7 @@ export type Database = {
           nicknames?: string | null
           physical_appearance?: Json | null
           preferred_clothing?: Json | null
+          previous_names?: string[] | null
           role_description?: string | null
           sex_type?: string | null
           updated_at?: string | null

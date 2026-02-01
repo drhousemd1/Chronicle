@@ -26,6 +26,7 @@ import { ChangeNameModal } from './ChangeNameModal';
 export interface CharacterEditDraft {
   name?: string;
   nicknames?: string;
+  previousNames?: string[];  // Hidden field - stores old names for lookup, never shown in UI
   age?: string;
   sexType?: string;
   roleDescription?: string;
@@ -928,9 +929,18 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
         onOpenChange={setIsChangeNameModalOpen}
         currentName={draft.name || character?.name || ''}
         onSave={(newName) => {
+          const oldName = draft.name || character?.name || '';
+          
+          // Add old name to hidden previousNames array (if different and non-empty)
+          let updatedPreviousNames = [...(draft.previousNames || [])];
+          if (oldName && oldName !== newName && !updatedPreviousNames.includes(oldName)) {
+            updatedPreviousNames.push(oldName);
+          }
+          
           setDraft(prev => ({
             ...prev,
             name: newName,
+            previousNames: updatedPreviousNames,
           }));
           toast.success(`Name changed to ${newName}`);
         }}

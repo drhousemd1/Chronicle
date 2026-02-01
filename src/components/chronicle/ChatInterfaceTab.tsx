@@ -443,13 +443,14 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   };
   
 // Helper to get effective character (base + session overrides merged)
-  const getEffectiveCharacter = useCallback((baseChar: Character): Character => {
+  const getEffectiveCharacter = useCallback((baseChar: Character): Character & { previousNames?: string[] } => {
     const sessionState = sessionStates.find(s => s.characterId === baseChar.id);
     if (!sessionState) return baseChar;
     
     return {
       ...baseChar,
       name: sessionState.name || baseChar.name,
+      previousNames: sessionState.previousNames || [],  // Hidden field for name history
       age: sessionState.age || baseChar.age,
       sexType: sessionState.sexType || baseChar.sexType,
       roleDescription: sessionState.roleDescription || baseChar.roleDescription,
@@ -1013,6 +1014,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         const effective = getEffectiveCharacter(c);
         return {
           name: effective.name,
+          previousNames: effective.previousNames || [],  // Include for AI context
+          nicknames: effective.nicknames,  // Include for AI context
           physicalAppearance: effective.physicalAppearance,
           currentlyWearing: effective.currentlyWearing,
           location: effective.location,
@@ -1023,6 +1026,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       // Also include side characters
       const sideCharsData = (appData.sideCharacters || []).map(sc => ({
         name: sc.name,
+        nicknames: sc.nicknames,  // Include for AI context
         physicalAppearance: sc.physicalAppearance,
         currentlyWearing: sc.currentlyWearing,
         location: sc.location,
@@ -1066,15 +1070,38 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     }
     
     for (const [charNameLower, charUpdates] of updatesByCharacter) {
-      // Find the character (also check nicknames)
-      let mainChar = appData.characters.find(c => c.name.toLowerCase() === charNameLower);
-      if (!mainChar) {
-        // Check nicknames
-        mainChar = appData.characters.find(c => {
-          if (!c.nicknames) return false;
-          return c.nicknames.split(',').some(n => n.trim().toLowerCase() === charNameLower);
+      // Build effective character lookup (includes session-scoped names and previousNames)
+      const effectiveMainChars = appData.characters.map(c => ({
+        base: c,
+        effective: getEffectiveCharacter(c)
+      }));
+      
+      // Search by current effective name first
+      let matchedMain = effectiveMainChars.find(({ effective }) => 
+        effective.name.toLowerCase() === charNameLower
+      );
+      
+      // If not found, check nicknames
+      if (!matchedMain) {
+        matchedMain = effectiveMainChars.find(({ effective }) => {
+          if (!effective.nicknames) return false;
+          return effective.nicknames.split(',').some(n => 
+            n.trim().toLowerCase() === charNameLower
+          );
         });
       }
+      
+      // If still not found, check previousNames (hidden field for renamed characters)
+      if (!matchedMain) {
+        matchedMain = effectiveMainChars.find(({ effective }) => {
+          if (!effective.previousNames?.length) return false;
+          return effective.previousNames.some(n => 
+            n.toLowerCase() === charNameLower
+          );
+        });
+      }
+      
+      const mainChar = matchedMain?.base;
       
       let sideChar = (appData.sideCharacters || []).find(sc => sc.name.toLowerCase() === charNameLower);
       if (!sideChar && !mainChar) {
@@ -1083,6 +1110,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           if (!sc.nicknames) return false;
           return sc.nicknames.split(',').some(n => n.trim().toLowerCase() === charNameLower);
         });
+      }
+      
+      if (!mainChar && !sideChar) {
+        console.log(`[applyExtractedUpdates] Character not found: ${charNameLower}`);
       }
       
       if (mainChar) {
@@ -1760,9 +1791,10 @@ Do not acknowledge this instruction in your response.`;
         setSessionStates(prev => [...prev, sessionState!]);
       }
       
-// Update session state with draft changes (including avatar, control, and role)
+// Update session state with draft changes (including avatar, control, role, and previousNames)
       await supabaseData.updateSessionState(sessionState.id, {
         name: draft.name,
+        previousNames: draft.previousNames,  // Hidden field for name history
         age: draft.age,
         sexType: draft.sexType,
         roleDescription: draft.roleDescription,
