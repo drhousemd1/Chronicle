@@ -1,28 +1,14 @@
 
-# Fix: Make Add Buttons Visually Clickable in Default State
 
-## The Real Problem
+# Fix: Make Add Buttons More Visible with Black Border
 
-The "+ Add Row" and "+ Add Goal" buttons look like plain text because they have **no background color** in their default state. Adding hover effects doesn't solve this - the buttons need to be visually distinct BEFORE hovering.
+## The Problem
+
+The buttons still blend into the background because `border-slate-300` (light gray) on `bg-slate-50/50` (light gray) creates almost no visual contrast.
 
 ## Solution
 
-Add a subtle background color to the default state, matching the skeleton card pattern from ScenarioHub:
-
-**Skeleton Card (works well):**
-```jsx
-className="border-2 border-dashed border-slate-200 bg-slate-50/50 ..."
-```
-
-**Current Add Buttons (broken):**
-```jsx
-className="border-2 border-dashed border-slate-300 text-slate-500 ..." // No background!
-```
-
-**Fixed Add Buttons:**
-```jsx
-className="border-2 border-dashed border-slate-300 bg-slate-50/50 text-slate-500 ..."
-```
+Use a **black border by default** and **blue border on hover** for clear visibility:
 
 ---
 
@@ -30,8 +16,8 @@ className="border-2 border-dashed border-slate-300 bg-slate-50/50 text-slate-500
 
 | File | Change |
 |------|--------|
-| `CharactersTab.tsx` | Add `bg-slate-50/50` to "+ Add Row" button |
-| `CharacterGoalsSection.tsx` | Add `bg-slate-50/50` to "+ Add Goal" button |
+| `CharactersTab.tsx` | Change `border-slate-300` to `border-slate-500` (darker gray/black) |
+| `CharacterGoalsSection.tsx` | Change `border-slate-300` to `border-slate-500` (darker gray/black) |
 
 ---
 
@@ -41,41 +27,36 @@ className="border-2 border-dashed border-slate-300 bg-slate-50/50 text-slate-500
 
 From:
 ```jsx
-className="w-full py-3 border-2 border-dashed border-slate-300 text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50/50 rounded-xl transition-all mt-4"
+className="... border-slate-300 bg-slate-50/50 ..."
 ```
 
 To:
 ```jsx
-className="w-full py-3 border-2 border-dashed border-slate-300 bg-slate-50/50 text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all mt-4"
+className="... border-slate-500 bg-slate-50/50 ..."
 ```
 
 ### CharacterGoalsSection.tsx (line 229)
 
 From:
 ```jsx
-className="w-full py-3 border-2 border-dashed border-slate-300 text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50/50 rounded-xl transition-all mt-4"
+className="... border-slate-300 bg-slate-50/50 ..."
 ```
 
 To:
 ```jsx
-className="w-full py-3 border-2 border-dashed border-slate-300 bg-slate-50/50 text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all mt-4"
+className="... border-slate-500 bg-slate-50/50 ..."
 ```
 
 ---
 
-## Visual Comparison
+## Color Reference
 
-### Before (current - looks like text):
-```
-                    + Add Row
-```
-*(just text floating with an invisible light border)*
+| State | Border Color | Visual |
+|-------|--------------|--------|
+| Default | `border-slate-500` | Dark gray (almost black) |
+| Hover | `border-blue-400` | Blue (already set) |
 
-### After (with background - looks like a button):
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        + Add Row                            │  ← subtle gray background
-└─────────────────────────────────────────────────────────────┘
-```
+`slate-500` is `#64748b` - a medium-dark gray that provides strong contrast against the light background while not being harsh pure black.
 
-The `bg-slate-50/50` creates a visible "button area" that signals interactivity without requiring a hover.
+If you want true black, I can use `border-slate-700` (`#334155`) or `border-slate-800` (`#1e293b`).
+
