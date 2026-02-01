@@ -115,6 +115,17 @@ export type PreferredClothing = {
   miscellaneous: string;
 };
 
+// Character goal tracking
+export type CharacterGoal = {
+  id: string;
+  title: string;           // Short goal name (e.g., "Move out of the city")
+  desiredOutcome: string;  // What success looks like
+  currentStatus: string;   // What has been done so far
+  progress: number;        // 0-100 percentage
+  createdAt: number;
+  updatedAt: number;
+};
+
 export type Character = {
   id: string;
   name: string;
@@ -134,6 +145,9 @@ export type Character = {
   physicalAppearance: PhysicalAppearance;
   currentlyWearing: CurrentlyWearing;
   preferredClothing: PreferredClothing;
+  
+  // Character goals tracking
+  goals?: CharacterGoal[];
   
   // User-created custom sections
   sections: CharacterTraitSection[];
