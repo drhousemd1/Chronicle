@@ -1,164 +1,226 @@
 
-# Fix Chat Avatar Resolution for Renamed Characters
+# Day/Time Tracker UI Improvements
 
-## Problem Summary
+## Current State
 
-After renaming a character (e.g., from "Jake" to "Sarah"):
-- The sidebar card shows the correct avatar for "Sarah" ✓
-- The "Updating..." effect now triggers on the correct card ✓
-- BUT: The chat avatar shows a placeholder "S" instead of the actual image ✗
+The Day/Time control panel is located in `ChatInterfaceTab.tsx` (lines 2206-2255). It currently has:
+- A static gray/slate background (`bg-slate-50`)
+- Slate gray labels (`text-slate-400`)
+- Slate gray icons in buttons (`text-slate-400`)
+- No borders on inactive buttons (only a light `border-slate-200`)
+- Blue highlight for selected time button
 
-**Root cause:** The chat message rendering calls `findCharacterByName("Sarah", appData)`, which searches the **raw base data** in `appData.characters`. The base data still has the original name - only the session state has "Sarah". So the lookup fails and falls back to showing a placeholder.
+## Proposed Changes
+
+### 1. Dynamic Background Based on Time of Day
+
+Create CSS gradient backgrounds that change based on the currently selected time:
+
+| Time | Background Style |
+|------|------------------|
+| **Sunrise** | Warm golden-orange gradient (like your mockup - golden glow with soft peach) |
+| **Day** | Clear blue sky gradient (light blue to pale white at bottom) |
+| **Sunset** | Pink/purple/orange gradient (warm sunset colors from your mockup) |
+| **Night** | Deep navy to dark purple gradient with optional subtle stars |
+
+**Implementation approach**: Use Tailwind CSS gradients. For a subtle motion effect, we can add a CSS animation that slowly shifts the gradient position - this is lightweight and performant.
+
+### 2. Text Color Changes
+
+| Element | Current | New |
+|---------|---------|-----|
+| "DAY" label | `text-slate-400` | `text-black` |
+| "TIME" label | `text-slate-400` | `text-black` |
+
+### 3. Button Styling Improvements
+
+**Inactive time buttons:**
+- Keep white background (`bg-white`)
+- Add black border (`border-black` or `border-slate-900`)
+- Change icon color from slate to black
+
+**Day counter box:**
+- Add black border around the entire component
+- Make the up/down chevron arrows black (`text-black`)
+- Keep the day number visible with black text
+
+**Active/Selected state:**
+- Keep the existing blue highlight style (`bg-blue-100 border-2 border-blue-400`)
+- Icons remain blue when selected
+
+### 4. Optional: Subtle Animation
+
+A simple CSS animation can create gentle movement in the background:
+```css
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+```
+This creates a slow, dreamy drift effect. If it's too complex or distracting, we skip it and use static gradients.
 
 ---
 
-## Solution
+## File Changes
 
-Create a **session-aware character lookup** inside `ChatInterfaceTab.tsx` that:
-1. Searches effective (session-merged) character names first
-2. Falls back to nicknames
-3. Falls back to previousNames
-4. Returns the **effective** character with the correct avatar
+### src/components/chronicle/ChatInterfaceTab.tsx
 
-Then replace all calls to `findCharacterByName(name, appData)` with this new lookup in the chat rendering code.
+**1. Add a helper function for time-based backgrounds (near `getTimeIcon`)**
+
+```typescript
+const getTimeBackground = (time: TimeOfDay): string => {
+  switch (time) {
+    case 'sunrise':
+      // Golden sunrise gradient
+      return 'bg-gradient-to-b from-amber-200 via-orange-100 to-amber-50';
+    case 'day':
+      // Clear sky blue
+      return 'bg-gradient-to-b from-sky-200 via-blue-100 to-sky-50';
+    case 'sunset':
+      // Pink/purple sunset
+      return 'bg-gradient-to-b from-pink-300 via-orange-200 to-amber-100';
+    case 'night':
+      // Deep navy night
+      return 'bg-gradient-to-b from-indigo-900 via-slate-800 to-indigo-950';
+  }
+};
+```
+
+**2. Add helper for text color on night mode**
+
+Since night has a dark background, labels need to be white:
+
+```typescript
+const getTimeTextColor = (time: TimeOfDay): string => {
+  return time === 'night' ? 'text-white' : 'text-black';
+};
+```
+
+**3. Update the Day/Time section container (line 2207)**
+
+From:
+```tsx
+<section className="flex-shrink-0 bg-slate-50 rounded-xl p-4 border border-slate-100">
+```
+
+To:
+```tsx
+<section className={`flex-shrink-0 rounded-xl p-4 border border-slate-200 transition-all duration-700 ${getTimeBackground(currentTimeOfDay)}`}>
+```
+
+**4. Update "DAY" label (line 2211)**
+
+From:
+```tsx
+<span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Day</span>
+```
+
+To:
+```tsx
+<span className={`text-[9px] font-black uppercase tracking-widest ${getTimeTextColor(currentTimeOfDay)}`}>Day</span>
+```
+
+**5. Update "TIME" label (line 2236)**
+
+From:
+```tsx
+<span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Time</span>
+```
+
+To:
+```tsx
+<span className={`text-[9px] font-black uppercase tracking-widest ${getTimeTextColor(currentTimeOfDay)}`}>Time</span>
+```
+
+**6. Update Day counter box styling (lines 2212-2231)**
+
+Add black border to the container, make arrows and number black:
+
+```tsx
+<div className="flex items-center bg-white rounded-lg border border-black shadow-sm">
+  <div className="px-3 py-1.5 min-w-[40px] text-center font-bold text-black text-sm">
+    {currentDay}
+  </div>
+  <div className="flex flex-col border-l border-black">
+    <button 
+      onClick={incrementDay}
+      className="px-1.5 py-0.5 hover:bg-slate-100 transition-colors text-black hover:text-blue-600"
+    >
+      <ChevronUp className="w-3 h-3" />
+    </button>
+    <button 
+      onClick={decrementDay}
+      disabled={currentDay <= 1}
+      className="px-1.5 py-0.5 hover:bg-slate-100 transition-colors text-black hover:text-blue-600 disabled:opacity-30 disabled:cursor-not-allowed"
+    >
+      <ChevronDown className="w-3 h-3" />
+    </button>
+  </div>
+</div>
+```
+
+**7. Update time button styling (lines 2239-2251)**
+
+Update inactive state to have black border and black icons:
+
+```tsx
+{(['sunrise', 'day', 'sunset', 'night'] as TimeOfDay[]).map((time) => (
+  <button
+    key={time}
+    onClick={() => selectTime(time)}
+    className={`p-2 rounded-lg transition-all ${
+      currentTimeOfDay === time
+        ? 'bg-blue-100 border-2 border-blue-400 text-blue-600 shadow-sm'
+        : 'bg-white border border-black text-black hover:bg-slate-100'
+    }`}
+    title={time.charAt(0).toUpperCase() + time.slice(1)}
+  >
+    {getTimeIcon(time)}
+  </button>
+))}
+```
+
+### src/index.css (Optional Enhancement)
+
+If we want subtle animated gradients, add this keyframe:
+
+```css
+@keyframes gentle-gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-sky {
+  background-size: 200% 200%;
+  animation: gentle-gradient-shift 15s ease-in-out infinite;
+}
+```
+
+Then apply `.animate-sky` class to the section for a slow, dreamy motion effect.
 
 ---
 
-## Implementation Details
+## Visual Summary
 
-### 1. Create session-aware lookup function
-
-Add a new function in ChatInterfaceTab.tsx (near the existing `findAnyCharacterByName`):
-
-```typescript
-// Session-aware character lookup - searches effective names, nicknames, and previousNames
-const findCharacterWithSession = useCallback((name: string | null): (Character & { previousNames?: string[] }) | SideCharacter | null => {
-  if (!name) return null;
-  const nameLower = name.toLowerCase().trim();
-  
-  // Build effective main characters with session overrides
-  const effectiveMainChars = appData.characters.map(c => getEffectiveCharacter(c));
-  
-  // Search effective main characters by current name
-  let found = effectiveMainChars.find(c => c.name.toLowerCase() === nameLower);
-  if (found) return found;
-  
-  // Search main characters by nicknames
-  found = effectiveMainChars.find(c => {
-    if (!c.nicknames) return false;
-    return c.nicknames.split(',').some(n => n.trim().toLowerCase() === nameLower);
-  });
-  if (found) return found;
-  
-  // Search main characters by previousNames (hidden field)
-  found = effectiveMainChars.find(c => {
-    if (!c.previousNames?.length) return false;
-    return c.previousNames.some(n => n.toLowerCase() === nameLower);
-  });
-  if (found) return found;
-  
-  // Search side characters by name
-  const sideChars = appData.sideCharacters || [];
-  let sideFound = sideChars.find(sc => sc.name.toLowerCase() === nameLower);
-  if (sideFound) return sideFound;
-  
-  // Search side characters by nicknames
-  sideFound = sideChars.find(sc => {
-    if (!sc.nicknames) return false;
-    return sc.nicknames.split(',').some(n => n.trim().toLowerCase() === nameLower);
-  });
-  if (sideFound) return sideFound;
-  
-  return null;
-}, [appData.characters, appData.sideCharacters, getEffectiveCharacter]);
-```
-
-### 2. Update chat avatar rendering to use new lookup
-
-Replace `findCharacterByName(segment.speakerName, appData)` with `findCharacterWithSession(segment.speakerName)` in multiple locations:
-
-**Location 1 - Line 2424** (saved messages with speaker tags):
-```typescript
-// Before:
-segmentChar = findCharacterByName(segment.speakerName, appData);
-
-// After:
-segmentChar = findCharacterWithSession(segment.speakerName);
-```
-
-**Location 2 - Lines 2534-2536** (streaming content):
-```typescript
-// Before:
-const segmentChar = segment.speakerName 
-  ? findCharacterByName(segment.speakerName, appData)
-  : appData.characters.find(c => c.controlledBy === 'AI');
-
-// After:
-const segmentChar = segment.speakerName 
-  ? findCharacterWithSession(segment.speakerName)
-  : getEffectiveCharacter(appData.characters.find(c => c.controlledBy === 'AI')!);
-```
-
-**Location 3 - Lines 2545-2547** (previous segment lookup):
-```typescript
-// Before:
-const prevChar = prevSegment.speakerName 
-  ? findCharacterByName(prevSegment.speakerName, appData)
-  : appData.characters.find(c => c.controlledBy === 'AI');
-
-// After:
-const prevChar = prevSegment.speakerName 
-  ? findCharacterWithSession(prevSegment.speakerName)
-  : getEffectiveCharacter(appData.characters.find(c => c.controlledBy === 'AI')!);
-```
-
-### 3. Update fallback character lookups
-
-For AI character fallbacks (lines 2435-2436, 2450-2451), ensure we use effective data:
-
-```typescript
-// Before:
-const aiChars = appData.characters.filter(c => c.controlledBy === 'AI');
-segmentChar = aiChars.length > 0 ? aiChars[0] : null;
-
-// After:
-const aiChars = appData.characters.filter(c => c.controlledBy === 'AI');
-segmentChar = aiChars.length > 0 ? getEffectiveCharacter(aiChars[0]) : null;
-```
+| State | Background | Labels | Inactive Buttons | Active Button |
+|-------|------------|--------|------------------|---------------|
+| Sunrise | Golden-orange gradient | Black | White + black border + black icons | Blue highlight |
+| Day | Sky blue gradient | Black | White + black border + black icons | Blue highlight |
+| Sunset | Pink/purple/orange gradient | Black | White + black border + black icons | Blue highlight |
+| Night | Deep navy gradient | White | White + black border + black icons | Blue highlight |
 
 ---
 
-## Data Flow After Fix
+## Alternative Approach: Static Images
 
-```
-Chat message contains "Sarah:" speaker tag
-       ↓
-findCharacterWithSession("Sarah") called
-       ↓
-Searches effective main characters (session-merged data)
-       ↓
-Finds character with name="Sarah" (from session state)
-       ↓
-Returns effective character with correct avatarDataUrl
-       ↓
-Chat renders actual avatar image, not placeholder
-```
+If CSS gradients don't look good enough, we can create 4 static background images and place them in `public/images/time-backgrounds/`:
+- `sunrise.png`
+- `day.png`
+- `sunset.png`
+- `night.png`
 
----
-
-## Files to Modify
-
-| File | Change |
-|------|--------|
-| `src/components/chronicle/ChatInterfaceTab.tsx` | Add `findCharacterWithSession` function and update 5-6 call sites to use it |
-
----
-
-## Why This Works
-
-The key insight is that `getEffectiveCharacter` already correctly merges:
-- Session name ("Sarah") ✓
-- Session avatar URL ✓
-- Previous names array ✓
-
-We just weren't using it for the chat avatar lookups. By creating `findCharacterWithSession` that wraps the effective character data, all the pieces connect.
+These would be referenced via inline styles with `backgroundImage`. However, CSS gradients are simpler, more performant, and should achieve the effect based on your mockups.
