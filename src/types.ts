@@ -165,6 +165,7 @@ export type CharacterSessionState = {
   // Basic info overrides
   name?: string;
   nicknames?: string;  // Session-scoped nickname overrides
+  previousNames?: string[];  // Hidden field - stores old names for lookup, never shown in UI
   age?: string;
   sexType?: string;
   roleDescription?: string;

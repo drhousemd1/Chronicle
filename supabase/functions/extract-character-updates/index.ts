@@ -24,6 +24,8 @@ function normalizeModelId(modelId: string): string {
 
 interface CharacterData {
   name: string;
+  previousNames?: string[];  // Hidden field - stores old names for lookup
+  nicknames?: string;
   physicalAppearance?: Record<string, string>;
   currentlyWearing?: Record<string, string>;
   location?: string;
@@ -61,6 +63,13 @@ serve(async (req) => {
     const characterContext = (characters || []).map((c: CharacterData) => {
       const fields: string[] = [];
       fields.push(`Name: ${c.name}`);
+      // Include previous names so AI can map old names to current character
+      if (c.previousNames?.length) {
+        fields.push(`Previously known as: ${c.previousNames.join(', ')}`);
+      }
+      if (c.nicknames) {
+        fields.push(`Nicknames: ${c.nicknames}`);
+      }
       if (c.physicalAppearance) {
         const appearance = Object.entries(c.physicalAppearance)
           .filter(([_, v]) => v)

@@ -808,6 +808,7 @@ export async function fetchSessionStates(conversationId: string): Promise<Charac
     // Extended fields for session-scoped character editing
     name: row.name || undefined,
     nicknames: row.nicknames || undefined,
+    previousNames: row.previous_names || [],  // Hidden field for name history
     age: row.age || undefined,
     sexType: row.sex_type || undefined,
     roleDescription: row.role_description || undefined,
@@ -868,6 +869,7 @@ export async function updateSessionState(
   patch: Partial<{
     name: string;
     nicknames: string;
+    previousNames: string[];  // Hidden field for name history
     age: string;
     sexType: string;
     roleDescription: string;
@@ -888,6 +890,7 @@ export async function updateSessionState(
   // Extended fields for session-scoped character editing
   if (patch.name !== undefined) updateData.name = patch.name;
   if (patch.nicknames !== undefined) updateData.nicknames = patch.nicknames;
+  if (patch.previousNames !== undefined) updateData.previous_names = patch.previousNames;
   if (patch.age !== undefined) updateData.age = patch.age;
   if (patch.sexType !== undefined) updateData.sex_type = patch.sexType;
   if (patch.roleDescription !== undefined) updateData.role_description = patch.roleDescription;
