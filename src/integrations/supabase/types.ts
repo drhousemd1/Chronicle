@@ -27,6 +27,7 @@ export type Database = {
           current_mood: string | null
           currently_wearing: Json | null
           custom_sections: Json | null
+          goals: Json | null
           id: string
           location: string | null
           name: string | null
@@ -50,6 +51,7 @@ export type Database = {
           current_mood?: string | null
           currently_wearing?: Json | null
           custom_sections?: Json | null
+          goals?: Json | null
           id?: string
           location?: string | null
           name?: string | null
@@ -73,6 +75,7 @@ export type Database = {
           current_mood?: string | null
           currently_wearing?: Json | null
           custom_sections?: Json | null
+          goals?: Json | null
           id?: string
           location?: string | null
           name?: string | null
@@ -111,6 +114,7 @@ export type Database = {
           created_at: string | null
           current_mood: string | null
           currently_wearing: Json | null
+          goals: Json | null
           id: string
           is_library: boolean | null
           location: string | null
@@ -135,6 +139,7 @@ export type Database = {
           created_at?: string | null
           current_mood?: string | null
           currently_wearing?: Json | null
+          goals?: Json | null
           id?: string
           is_library?: boolean | null
           location?: string | null
@@ -159,6 +164,7 @@ export type Database = {
           created_at?: string | null
           current_mood?: string | null
           currently_wearing?: Json | null
+          goals?: Json | null
           id?: string
           is_library?: boolean | null
           location?: string | null

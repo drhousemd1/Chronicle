@@ -1,6 +1,6 @@
 
 import React, { useRef, useState, useCallback } from 'react';
-import { Character, CharacterTraitSection, ScenarioData, PhysicalAppearance, CurrentlyWearing, PreferredClothing } from '@/types';
+import { Character, CharacterTraitSection, ScenarioData, PhysicalAppearance, CurrentlyWearing, PreferredClothing, CharacterGoal } from '@/types';
 import { Button, Input, TextArea, Card } from './UI';
 import { Icons } from '@/constants';
 import { uid, now, clamp, resizeImage } from '@/utils';
@@ -12,6 +12,7 @@ import { UploadSourceMenu } from './UploadSourceMenu';
 import { Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { aiEnhanceCharacterField } from '@/services/character-ai';
+import { CharacterGoalsSection } from './CharacterGoalsSection';
 
 interface CharactersTabProps {
   appData: ScenarioData;
@@ -531,6 +532,12 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
             <HardcodedInput label="Undergarments" value={selected.preferredClothing?.undergarments || ''} onChange={(v) => handlePreferredClothingChange('undergarments', v)} placeholder="e.g., Cotton basics, Lace" onEnhance={() => handleEnhanceField('pc_undergarments', 'preferredClothing', () => selected.preferredClothing?.undergarments || '', (v) => handlePreferredClothingChange('undergarments', v))} isEnhancing={enhancingField === 'pc_undergarments'} />
             <HardcodedInput label="Miscellaneous" value={selected.preferredClothing?.miscellaneous || ''} onChange={(v) => handlePreferredClothingChange('miscellaneous', v)} placeholder="Formal, athletic, swimwear, etc." onEnhance={() => handleEnhanceField('pc_miscellaneous', 'preferredClothing', () => selected.preferredClothing?.miscellaneous || '', (v) => handlePreferredClothingChange('miscellaneous', v))} isEnhancing={enhancingField === 'pc_miscellaneous'} />
           </HardcodedSection>
+
+          {/* HARDCODED SECTION 4: Character Goals */}
+          <CharacterGoalsSection
+            goals={selected.goals || []}
+            onChange={(goals) => onUpdate(selected.id, { goals })}
+          />
 
           {/* USER-CREATED CUSTOM SECTIONS */}
           {selected.sections.map(section => (
