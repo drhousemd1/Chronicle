@@ -1,128 +1,81 @@
 
-# UI Consistency Fixes: Character Goals Section and Add Buttons
+# Fix: Make Add Buttons Visually Clickable in Default State
 
-## Issues to Fix
+## The Real Problem
 
-### Issue 1: Duplicate "+ Add Category" Button
-The header already has a "+ Category" button (in `Index.tsx` line 1155), but there's a duplicate at the bottom of `CharactersTab.tsx` (lines 625-632). The bottom one needs to be removed.
+The "+ Add Row" and "+ Add Goal" buttons look like plain text because they have **no background color** in their default state. Adding hover effects doesn't solve this - the buttons need to be visually distinct BEFORE hovering.
 
-### Issue 2: Character Goals Empty State
-The Goals section shows "No goals defined yet" with a centered "+ Add First Goal" button when empty. This doesn't match other hardcoded sections (Physical Appearance, Currently Wearing, etc.) which always show their input fields.
+## Solution
 
-Since this is a hardcoded container, it should always display the table structure with at least one empty row ready to fill in - just like other hardcoded sections.
+Add a subtle background color to the default state, matching the skeleton card pattern from ScenarioHub:
 
-### Issue 3: Add Buttons Look Like Plain Text
-The "+ Add Row" and "+ Add Goal" buttons use a subtle dashed border style that makes them look like static text rather than interactive buttons. They need improved visual treatment.
+**Skeleton Card (works well):**
+```jsx
+className="border-2 border-dashed border-slate-200 bg-slate-50/50 ..."
+```
 
-**Recommended Solution**: Use a more prominent dashed border style with blue hover effects - matching the skeleton card pattern used elsewhere in the app:
-- `border-2` instead of `border` for visibility
-- Blue hover state (`hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50/50`)
-- Adequate padding (`py-3`) for touch targets
+**Current Add Buttons (broken):**
+```jsx
+className="border-2 border-dashed border-slate-300 text-slate-500 ..." // No background!
+```
+
+**Fixed Add Buttons:**
+```jsx
+className="border-2 border-dashed border-slate-300 bg-slate-50/50 text-slate-500 ..."
+```
 
 ---
 
 ## Files to Modify
 
-| File | Changes |
-|------|---------|
-| `CharactersTab.tsx` | Remove duplicate "+ Add Category" button, improve "+ Add Row" button styling |
-| `CharacterGoalsSection.tsx` | Remove empty state, always show table with one default row, improve "+ Add Goal" button styling |
+| File | Change |
+|------|--------|
+| `CharactersTab.tsx` | Add `bg-slate-50/50` to "+ Add Row" button |
+| `CharacterGoalsSection.tsx` | Add `bg-slate-50/50` to "+ Add Goal" button |
 
 ---
 
 ## Technical Details
 
-### CharactersTab.tsx Changes
-
-**1. Remove duplicate button (lines 625-632)**
-
-Delete this entire block:
-```jsx
-{/* Add Category Button */}
-<Button 
-  variant="ghost" 
-  className="w-full border-2 border-dashed border-slate-300 text-slate-500 hover:bg-slate-50 py-4"
-  onClick={handleAddSection}
->
-+ Add Category
-</Button>
-```
-
-**2. Improve "+ Add Row" button (line 621)**
+### CharactersTab.tsx (line 621)
 
 From:
-```jsx
-className="w-full border border-dashed border-slate-300 text-slate-500 hover:bg-slate-50 mt-4"
-```
-
-To:
 ```jsx
 className="w-full py-3 border-2 border-dashed border-slate-300 text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50/50 rounded-xl transition-all mt-4"
 ```
 
-### CharacterGoalsSection.tsx Changes
-
-**1. Remove empty state (lines 208-224)**
-
-Delete the entire conditional branch that shows "No goals defined yet".
-
-**2. Always show table structure**
-
-Modify the component to automatically create and display one empty goal row if the goals array is empty. This ensures the table structure is always visible.
-
-**3. Improve "+ Add Goal" button (lines 228-234)**
-
-From:
+To:
 ```jsx
-className="w-full border border-dashed border-slate-300 text-slate-500 hover:bg-slate-50 mt-4"
+className="w-full py-3 border-2 border-dashed border-slate-300 bg-slate-50/50 text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all mt-4"
 ```
 
-To:
+### CharacterGoalsSection.tsx (line 229)
+
+From:
 ```jsx
 className="w-full py-3 border-2 border-dashed border-slate-300 text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50/50 rounded-xl transition-all mt-4"
 ```
 
-**4. Always show the "+ Add Goal" button**
-
-Change the condition from `sortedGoals.length > 0` to just `!readOnly` so the button is always visible.
+To:
+```jsx
+className="w-full py-3 border-2 border-dashed border-slate-300 bg-slate-50/50 text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all mt-4"
+```
 
 ---
 
-## Visual Result
+## Visual Comparison
 
-### Before (Add Row button):
+### Before (current - looks like text):
 ```
-+ Add Row  ← looks like plain text
+                    + Add Row
 ```
+*(just text floating with an invisible light border)*
 
-### After (Add Row button):
-```
-┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐
-          + Add Row
-└ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘
-
-On hover: blue dashed border, blue text, light blue background
-```
-
-### Character Goals (Always Shows Table):
+### After (with background - looks like a button):
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  Character Goals                                (emerald)   │
-├─────────────────────────────────────────────────────────────┤
-│  GOAL          DESIRED OUTCOME    CURRENT STATUS    PROGRESS│
-│  ─────────────────────────────────────────────────────────  │
-│  [empty input] [empty input]      [empty input]     [0%]    │
-│                                                             │
-│  ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐  │
-│                       + Add Goal                            │
-│  └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘  │
+│                        + Add Row                            │  ← subtle gray background
 └─────────────────────────────────────────────────────────────┘
 ```
 
----
-
-## Summary
-
-1. Remove duplicate "+ Add Category" button from bottom of CharactersTab
-2. Remove empty state from CharacterGoalsSection - always show table with at least one row
-3. Update both "+ Add Row" and "+ Add Goal" buttons with improved dashed styling that clearly indicates interactivity
+The `bg-slate-50/50` creates a visible "button area" that signals interactivity without requiring a hover.
