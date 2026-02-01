@@ -85,31 +85,48 @@ serve(async (req) => {
 CHARACTERS IN THIS SCENE:
 ${characterContext || 'No character data provided'}
 
-TRACKABLE FIELDS:
+TRACKABLE FIELDS (HARDCODED):
 - nicknames (comma-separated alternative names, aliases, pet names the character is called)
 - physicalAppearance.hairColor, physicalAppearance.eyeColor, physicalAppearance.build, physicalAppearance.height, physicalAppearance.skinTone, physicalAppearance.bodyHair, physicalAppearance.breastSize, physicalAppearance.genitalia, physicalAppearance.makeup, physicalAppearance.bodyMarkings, physicalAppearance.temporaryConditions
 - currentlyWearing.top, currentlyWearing.bottom, currentlyWearing.undergarments, currentlyWearing.miscellaneous
+- preferredClothing.casual, preferredClothing.work, preferredClothing.sleep, preferredClothing.underwear, preferredClothing.miscellaneous
 - location (current location/place)
 - currentMood (emotional state)
 
+CUSTOM SECTIONS (DYNAMIC):
+You can also update or create custom character sections using this field format:
+- sections.SectionTitle.ItemLabel = value
+
+Examples:
+- sections.Background.Occupation = "Doctor at City Hospital"
+- sections.Secrets.Hidden Fear = "Afraid of being rejected"
+- sections.Goals.Current Objective = "Find the missing artifact"
+
+If a section doesn't exist, it will be created automatically.
+If an item label doesn't exist in a section, it will be added as a new row.
+
 EXTRACTION RULES:
-1. Analyze BOTH the user message and AI response for character state changes
+1. SCAN the user message AND AI response for ANY character state changes
 2. Extract ONLY explicitly stated changes (not implied or assumed)
-3. Match character names exactly as provided
-4. Use the exact field names from TRACKABLE FIELDS
-5. Keep values concise but descriptive (e.g., "Short brown" not "He has short brown hair")
-6. For appearance details described in action text like "*runs hand through short brown hair*", extract the trait
-7. For clothing described like "wearing navy blue scrubs", extract to currentlyWearing fields
-8. For mood/emotion indicators like "(God I love her)" or described feelings, update currentMood
-9. For new nicknames/aliases (e.g., "call me Rhy" or user says "Mom" to refer to Sarah), add to nicknames as comma-separated
-10. Return empty updates array if nothing clearly changed
+3. Match character names exactly as provided (also check nicknames)
+4. Use the exact field names from TRACKABLE FIELDS for hardcoded fields
+5. Use sections.SectionTitle.ItemLabel format for custom/dynamic content
+6. Keep values concise but descriptive (e.g., "Short brown" not "He has short brown hair")
+7. For appearance details described in action text like "*runs hand through short brown hair*", extract the trait
+8. For clothing described like "wearing navy blue scrubs", extract to currentlyWearing fields
+9. For mood/emotion indicators like "(God I love her)" or described feelings, update currentMood
+10. For new nicknames/aliases (e.g., "call me Rhy" or user says "Mom" to refer to Sarah), add to nicknames as comma-separated
+11. For new character facts, goals, secrets, or backstory revealed in dialogue, create appropriate sections.* entries
+12. Return empty updates array if nothing clearly changed
 
 RESPONSE FORMAT (JSON only):
 {
   "updates": [
     { "character": "CharacterName", "field": "physicalAppearance.hairColor", "value": "Short brown" },
     { "character": "CharacterName", "field": "currentlyWearing.top", "value": "Navy blue scrubs" },
-    { "character": "CharacterName", "field": "currentMood", "value": "Affectionate" }
+    { "character": "CharacterName", "field": "currentMood", "value": "Affectionate" },
+    { "character": "CharacterName", "field": "sections.Background.Job", "value": "Bartender at neighborhood bar" },
+    { "character": "CharacterName", "field": "sections.Goals.Current Goal", "value": "Save enough money for nursing school" }
   ]
 }
 

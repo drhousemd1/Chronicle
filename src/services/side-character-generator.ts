@@ -46,20 +46,43 @@ export function getKnownCharacterNames(appData: ScenarioData): Set<string> {
 }
 
 /**
- * Find a character (main or side) by name
+ * Find a character (main or side) by name OR nickname
+ * This ensures aliases like "Jamie" correctly resolve to "James"
  */
 export function findCharacterByName(
   name: string | null, 
   appData: ScenarioData
 ): Character | SideCharacter | null {
   if (!name) return null;
-  const nameLower = name.toLowerCase();
+  const nameLower = name.toLowerCase().trim();
   
-  const mainChar = appData.characters.find(c => c.name.toLowerCase() === nameLower);
-  if (mainChar) return mainChar;
+  // Check main characters - name first, then nicknames
+  for (const c of appData.characters) {
+    // Exact name match
+    if (c.name.toLowerCase() === nameLower) return c;
+    // Check nicknames
+    if (c.nicknames) {
+      const nicknameList = c.nicknames.split(',').map(n => n.trim().toLowerCase());
+      if (nicknameList.includes(nameLower)) {
+        console.log(`[findCharacterByName] Resolved nickname "${name}" to character "${c.name}"`);
+        return c;
+      }
+    }
+  }
   
-  const sideChar = appData.sideCharacters?.find(c => c.name.toLowerCase() === nameLower);
-  if (sideChar) return sideChar;
+  // Check side characters - name first, then nicknames
+  for (const sc of appData.sideCharacters || []) {
+    // Exact name match
+    if (sc.name.toLowerCase() === nameLower) return sc;
+    // Check nicknames
+    if (sc.nicknames) {
+      const nicknameList = sc.nicknames.split(',').map(n => n.trim().toLowerCase());
+      if (nicknameList.includes(nameLower)) {
+        console.log(`[findCharacterByName] Resolved nickname "${name}" to side character "${sc.name}"`);
+        return sc;
+      }
+    }
+  }
   
   return null;
 }

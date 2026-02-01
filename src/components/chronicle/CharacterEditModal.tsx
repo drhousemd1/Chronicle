@@ -15,11 +15,12 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Loader2, Plus, Trash2, X } from 'lucide-react';
+import { Loader2, Plus, Trash2, X, Pencil } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import * as supabaseData from '@/services/supabase-data';
 import { toast } from 'sonner';
 import { UploadSourceMenu } from './UploadSourceMenu';
+import { ChangeNameModal } from './ChangeNameModal';
 
 // Unified draft type for both Character and SideCharacter
 export interface CharacterEditDraft {
@@ -130,6 +131,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
   const [draft, setDraft] = useState<CharacterEditDraft>({});
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isRegeneratingAvatar, setIsRegeneratingAvatar] = useState(false);
+  const [isChangeNameModalOpen, setIsChangeNameModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Determine if this is a side character (has background property)
@@ -492,12 +494,25 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
 
                 {/* Basic Fields */}
                 <Section title="Basic Info">
-                  <FieldInput
-                    label="Name"
-                    value={draft.name || ''}
-                    onChange={(v) => updateField('name', v)}
-                    placeholder="Character name"
-                  />
+                  {/* Name field - read-only with Change Name button */}
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Name</Label>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 px-3 py-2 bg-slate-100 rounded-md text-sm text-slate-700 font-medium border border-slate-200">
+                        {draft.name || character?.name || 'Unnamed'}
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setIsChangeNameModalOpen(true)}
+                        className="gap-1.5 text-xs"
+                      >
+                        <Pencil className="w-3 h-3" />
+                        Change
+                      </Button>
+                    </div>
+                  </div>
                   <FieldInput
                     label="Nicknames"
                     value={draft.nicknames || ''}
@@ -906,6 +921,22 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* Change Name Modal */}
+      <ChangeNameModal
+        open={isChangeNameModalOpen}
+        onOpenChange={setIsChangeNameModalOpen}
+        currentName={draft.name || character?.name || ''}
+        currentNicknames={draft.nicknames || ''}
+        onSave={(newName, updatedNicknames) => {
+          setDraft(prev => ({
+            ...prev,
+            name: newName,
+            nicknames: updatedNicknames,
+          }));
+          toast.success(`Name changed to ${newName}. Previous name added as nickname.`);
+        }}
+      />
     </Dialog>
   );
 };
