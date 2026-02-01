@@ -113,3 +113,18 @@ All colors MUST be HSL.
     display: none;
   }
 }
+
+/* Gentle animated gradient for Day/Time tracker */
+@keyframes gentle-gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-sky {
+  background-size: 200% 200%;
+  animation: gentle-gradient-shift 15s ease-in-out infinite;
+}

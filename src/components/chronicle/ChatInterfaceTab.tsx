@@ -1326,6 +1326,25 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     }
   };
 
+  // Dynamic background gradient based on time of day
+  const getTimeBackground = (time: TimeOfDay): string => {
+    switch (time) {
+      case 'sunrise':
+        return 'bg-gradient-to-b from-amber-200 via-orange-100 to-amber-50';
+      case 'day':
+        return 'bg-gradient-to-b from-sky-200 via-blue-100 to-sky-50';
+      case 'sunset':
+        return 'bg-gradient-to-b from-pink-300 via-orange-200 to-amber-100';
+      case 'night':
+        return 'bg-gradient-to-b from-indigo-900 via-slate-800 to-indigo-950';
+    }
+  };
+
+  // Text color for labels - white on dark night mode, black otherwise
+  const getTimeTextColor = (time: TimeOfDay): string => {
+    return time === 'night' ? 'text-white' : 'text-black';
+  };
+
   const handleSend = async () => {
     if (!input.trim() || !conversation || isStreaming) return;
 
@@ -2204,26 +2223,26 @@ const updatedChar: SideCharacter = {
           </div>
           <div className="flex-1 flex flex-col p-4 gap-4 overflow-hidden">
           {/* Day/Time Control Panel - Fixed at top */}
-          <section className="flex-shrink-0 bg-slate-50 rounded-xl p-4 border border-slate-100">
+          <section className={`flex-shrink-0 rounded-xl p-4 border border-slate-200 transition-all duration-700 animate-sky ${getTimeBackground(currentTimeOfDay)}`}>
             <div className="flex gap-4 items-center">
               {/* Day Counter */}
               <div className="flex flex-col items-center gap-1">
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Day</span>
-                <div className="flex items-center bg-white rounded-lg border border-slate-200 shadow-sm">
-                  <div className="px-3 py-1.5 min-w-[40px] text-center font-bold text-slate-700 text-sm">
+                <span className={`text-[9px] font-black uppercase tracking-widest ${getTimeTextColor(currentTimeOfDay)}`}>Day</span>
+                <div className="flex items-center bg-white rounded-lg border border-black shadow-sm">
+                  <div className="px-3 py-1.5 min-w-[40px] text-center font-bold text-black text-sm">
                     {currentDay}
                   </div>
-                  <div className="flex flex-col border-l border-slate-200">
+                  <div className="flex flex-col border-l border-black">
                     <button 
                       onClick={incrementDay}
-                      className="px-1.5 py-0.5 hover:bg-slate-100 transition-colors text-slate-500 hover:text-blue-600"
+                      className="px-1.5 py-0.5 hover:bg-slate-100 transition-colors text-black hover:text-blue-600"
                     >
                       <ChevronUp className="w-3 h-3" />
                     </button>
                     <button 
                       onClick={decrementDay}
                       disabled={currentDay <= 1}
-                      className="px-1.5 py-0.5 hover:bg-slate-100 transition-colors text-slate-500 hover:text-blue-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                      className="px-1.5 py-0.5 hover:bg-slate-100 transition-colors text-black hover:text-blue-600 disabled:opacity-30 disabled:cursor-not-allowed"
                     >
                       <ChevronDown className="w-3 h-3" />
                     </button>
@@ -2233,7 +2252,7 @@ const updatedChar: SideCharacter = {
 
               {/* Time of Day Icons */}
               <div className="flex flex-col items-center gap-1 flex-1">
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Time</span>
+                <span className={`text-[9px] font-black uppercase tracking-widest ${getTimeTextColor(currentTimeOfDay)}`}>Time</span>
                 <div className="flex gap-1">
                   {(['sunrise', 'day', 'sunset', 'night'] as TimeOfDay[]).map((time) => (
                     <button
@@ -2242,7 +2261,7 @@ const updatedChar: SideCharacter = {
                       className={`p-2 rounded-lg transition-all ${
                         currentTimeOfDay === time
                           ? 'bg-blue-100 border-2 border-blue-400 text-blue-600 shadow-sm'
-                          : 'bg-white border border-slate-200 text-slate-400 hover:bg-slate-100 hover:text-slate-600'
+                          : 'bg-white border border-black text-black hover:bg-slate-100'
                       }`}
                       title={time.charAt(0).toUpperCase() + time.slice(1)}
                     >
