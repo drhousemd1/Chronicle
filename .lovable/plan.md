@@ -1,261 +1,148 @@
 
-# Fix Character Name Sync with Hidden Previous Names
+# Fix Chat Avatar Resolution for Renamed Characters
 
-## The Approach
+## Problem Summary
 
-Store old names in a **hidden backend field** (`previousNames`) that is:
-- Used internally for character resolution and AI context
-- **Never** displayed in the UI
-- Separate from the user-editable `nicknames` field
+After renaming a character (e.g., from "Jake" to "Sarah"):
+- The sidebar card shows the correct avatar for "Sarah" ✓
+- The "Updating..." effect now triggers on the correct card ✓
+- BUT: The chat avatar shows a placeholder "S" instead of the actual image ✗
 
-This gives us the technical benefits of name tracking without polluting the user interface.
-
----
-
-## Database Change
-
-Add a new column `previous_names` to `character_session_states`:
-
-```sql
-ALTER TABLE character_session_states 
-ADD COLUMN previous_names text[] DEFAULT '{}';
-```
-
-This is a text array that stores all previous names for a character within this session. For example: `['Jake', 'Jacob']`
+**Root cause:** The chat message rendering calls `findCharacterByName("Sarah", appData)`, which searches the **raw base data** in `appData.characters`. The base data still has the original name - only the session state has "Sarah". So the lookup fails and falls back to showing a placeholder.
 
 ---
 
-## TypeScript Type Updates
+## Solution
 
-### src/types.ts
+Create a **session-aware character lookup** inside `ChatInterfaceTab.tsx` that:
+1. Searches effective (session-merged) character names first
+2. Falls back to nicknames
+3. Falls back to previousNames
+4. Returns the **effective** character with the correct avatar
 
-Add `previousNames` to the `CharacterSessionState` type:
-
-```typescript
-export type CharacterSessionState = {
-  // ... existing fields
-  previousNames?: string[];  // Hidden field - stores old names for lookup, never shown in UI
-  // ...
-};
-```
+Then replace all calls to `findCharacterByName(name, appData)` with this new lookup in the chat rendering code.
 
 ---
 
-## Service Layer Updates
+## Implementation Details
 
-### src/services/supabase-data.ts
+### 1. Create session-aware lookup function
 
-**1. Update the fetch function** to read `previous_names`:
-
-```typescript
-// In the session state converter
-previousNames: data.previous_names || [],
-```
-
-**2. Update the `updateSessionState` function** to accept and save `previousNames`:
+Add a new function in ChatInterfaceTab.tsx (near the existing `findAnyCharacterByName`):
 
 ```typescript
-patch: Partial<{
-  // ... existing fields
-  previousNames: string[];  // Add this
-}>
-
-// In the function body:
-if (patch.previousNames !== undefined) {
-  updateData.previous_names = patch.previousNames;
-}
-```
-
----
-
-## ChangeNameModal.tsx - Simple Name Change Only
-
-Keep the modal simple - it just returns the new name:
-
-```typescript
-// No changes needed from current implementation
-onSave: (newName: string) => void;
-```
-
-The modal does NOT touch nicknames or previousNames - that's handled by the calling code.
-
----
-
-## CharacterEditModal.tsx - Track Previous Names
-
-When saving a name change, add the old name to `previousNames`:
-
-```typescript
-onSave={(newName) => {
-  const oldName = draft.name || character?.name || '';
+// Session-aware character lookup - searches effective names, nicknames, and previousNames
+const findCharacterWithSession = useCallback((name: string | null): (Character & { previousNames?: string[] }) | SideCharacter | null => {
+  if (!name) return null;
+  const nameLower = name.toLowerCase().trim();
   
-  // Add old name to hidden previousNames array (if different)
-  let updatedPreviousNames = [...(draft.previousNames || [])];
-  if (oldName && oldName !== newName && !updatedPreviousNames.includes(oldName)) {
-    updatedPreviousNames.push(oldName);
-  }
+  // Build effective main characters with session overrides
+  const effectiveMainChars = appData.characters.map(c => getEffectiveCharacter(c));
   
-  setDraft(prev => ({
-    ...prev,
-    name: newName,
-    previousNames: updatedPreviousNames,
-  }));
-  toast.success(`Name changed to ${newName}`);
-}}
-```
-
----
-
-## ChatInterfaceTab.tsx Updates
-
-### 1. Merge previousNames in getEffectiveCharacter
-
-```typescript
-return {
-  ...baseChar,
-  name: sessionState.name || baseChar.name,
-  previousNames: sessionState.previousNames || [],  // ADD THIS
-  // ... rest of fields
-};
-```
-
-### 2. Save previousNames to session state
-
-In `handleSaveMainCharacterEdit`:
-
-```typescript
-await supabaseData.updateSessionState(sessionState.id, {
-  name: draft.name,
-  previousNames: draft.previousNames,  // ADD THIS
-  // ... rest of fields
-});
-```
-
-### 3. Include previousNames in extraction context
-
-When building character data for the edge function:
-
-```typescript
-const charactersData = appData.characters.map(c => {
-  const effective = getEffectiveCharacter(c);
-  return {
-    name: effective.name,
-    previousNames: effective.previousNames,  // ADD THIS
-    nicknames: effective.nicknames,
-    // ... rest of fields
-  };
-});
-```
-
-### 4. Search previousNames in applyExtractedUpdates
-
-Update the character lookup to also search `previousNames`:
-
-```typescript
-// Build effective character lookup
-const effectiveMainChars = appData.characters.map(c => ({
-  base: c,
-  effective: getEffectiveCharacter(c)
-}));
-
-// Search by current name, nicknames, AND previousNames
-let matchedMain = effectiveMainChars.find(({ effective }) => 
-  effective.name.toLowerCase() === charNameLower
-);
-
-if (!matchedMain) {
-  // Check nicknames
-  matchedMain = effectiveMainChars.find(({ effective }) => {
-    if (!effective.nicknames) return false;
-    return effective.nicknames.split(',').some(n => 
-      n.trim().toLowerCase() === charNameLower
-    );
+  // Search effective main characters by current name
+  let found = effectiveMainChars.find(c => c.name.toLowerCase() === nameLower);
+  if (found) return found;
+  
+  // Search main characters by nicknames
+  found = effectiveMainChars.find(c => {
+    if (!c.nicknames) return false;
+    return c.nicknames.split(',').some(n => n.trim().toLowerCase() === nameLower);
   });
-}
-
-if (!matchedMain) {
-  // Check previousNames (hidden field)
-  matchedMain = effectiveMainChars.find(({ effective }) => {
-    if (!effective.previousNames?.length) return false;
-    return effective.previousNames.some(n => 
-      n.toLowerCase() === charNameLower
-    );
-  });
-}
-
-const mainChar = matchedMain?.base;
-```
-
----
-
-## Edge Function Update
-
-### supabase/functions/extract-character-updates/index.ts
-
-**1. Update the interface:**
-
-```typescript
-interface CharacterData {
-  name: string;
-  previousNames?: string[];  // ADD THIS
-  nicknames?: string;
-  // ... rest of fields
-}
-```
-
-**2. Include previous names in AI context:**
-
-```typescript
-const characterContext = (characters || []).map((c: CharacterData) => {
-  const fields: string[] = [];
-  fields.push(`Name: ${c.name}`);
+  if (found) return found;
   
-  // Include previous names so AI can map old names to current character
-  if (c.previousNames?.length) {
-    fields.push(`Previously known as: ${c.previousNames.join(', ')}`);
-  }
-  if (c.nicknames) {
-    fields.push(`Nicknames: ${c.nicknames}`);
-  }
-  // ... rest of fields
-}).join('\n');
+  // Search main characters by previousNames (hidden field)
+  found = effectiveMainChars.find(c => {
+    if (!c.previousNames?.length) return false;
+    return c.previousNames.some(n => n.toLowerCase() === nameLower);
+  });
+  if (found) return found;
+  
+  // Search side characters by name
+  const sideChars = appData.sideCharacters || [];
+  let sideFound = sideChars.find(sc => sc.name.toLowerCase() === nameLower);
+  if (sideFound) return sideFound;
+  
+  // Search side characters by nicknames
+  sideFound = sideChars.find(sc => {
+    if (!sc.nicknames) return false;
+    return sc.nicknames.split(',').some(n => n.trim().toLowerCase() === nameLower);
+  });
+  if (sideFound) return sideFound;
+  
+  return null;
+}, [appData.characters, appData.sideCharacters, getEffectiveCharacter]);
+```
+
+### 2. Update chat avatar rendering to use new lookup
+
+Replace `findCharacterByName(segment.speakerName, appData)` with `findCharacterWithSession(segment.speakerName)` in multiple locations:
+
+**Location 1 - Line 2424** (saved messages with speaker tags):
+```typescript
+// Before:
+segmentChar = findCharacterByName(segment.speakerName, appData);
+
+// After:
+segmentChar = findCharacterWithSession(segment.speakerName);
+```
+
+**Location 2 - Lines 2534-2536** (streaming content):
+```typescript
+// Before:
+const segmentChar = segment.speakerName 
+  ? findCharacterByName(segment.speakerName, appData)
+  : appData.characters.find(c => c.controlledBy === 'AI');
+
+// After:
+const segmentChar = segment.speakerName 
+  ? findCharacterWithSession(segment.speakerName)
+  : getEffectiveCharacter(appData.characters.find(c => c.controlledBy === 'AI')!);
+```
+
+**Location 3 - Lines 2545-2547** (previous segment lookup):
+```typescript
+// Before:
+const prevChar = prevSegment.speakerName 
+  ? findCharacterByName(prevSegment.speakerName, appData)
+  : appData.characters.find(c => c.controlledBy === 'AI');
+
+// After:
+const prevChar = prevSegment.speakerName 
+  ? findCharacterWithSession(prevSegment.speakerName)
+  : getEffectiveCharacter(appData.characters.find(c => c.controlledBy === 'AI')!);
+```
+
+### 3. Update fallback character lookups
+
+For AI character fallbacks (lines 2435-2436, 2450-2451), ensure we use effective data:
+
+```typescript
+// Before:
+const aiChars = appData.characters.filter(c => c.controlledBy === 'AI');
+segmentChar = aiChars.length > 0 ? aiChars[0] : null;
+
+// After:
+const aiChars = appData.characters.filter(c => c.controlledBy === 'AI');
+segmentChar = aiChars.length > 0 ? getEffectiveCharacter(aiChars[0]) : null;
 ```
 
 ---
 
-## Data Flow Summary
+## Data Flow After Fix
 
 ```
-User changes "Jake" to "Sarah" in ChangeNameModal
+Chat message contains "Sarah:" speaker tag
        ↓
-CharacterEditModal adds "Jake" to previousNames array
+findCharacterWithSession("Sarah") called
        ↓
-handleSaveMainCharacterEdit saves: name="Sarah", previousNames=["Jake"]
+Searches effective main characters (session-merged data)
        ↓
-getEffectiveCharacter returns: name="Sarah", previousNames=["Jake"]
+Finds character with name="Sarah" (from session state)
        ↓
-Extraction context sent to edge function includes previousNames
+Returns effective character with correct avatarDataUrl
        ↓
-AI sees: "Name: Sarah | Previously known as: Jake"
-       ↓
-AI returns update for "Sarah" (or "Jake" if referenced in old dialogue)
-       ↓
-applyExtractedUpdates searches: name → nicknames → previousNames
-       ↓
-Finds character via previousNames → triggers correct card update
-       ↓
-Avatar resolves correctly (same character ID)
+Chat renders actual avatar image, not placeholder
 ```
-
----
-
-## What the User Sees
-
-- **Nothing about previous names** - completely hidden from UI
-- The `nicknames` field remains user-controlled and unchanged
-- Name changes work seamlessly
-- Avatar always shows correctly
-- "Updating..." effect triggers on the right card
 
 ---
 
@@ -263,9 +150,15 @@ Avatar resolves correctly (same character ID)
 
 | File | Change |
 |------|--------|
-| Database migration | Add `previous_names text[]` column |
-| `src/types.ts` | Add `previousNames?: string[]` to CharacterSessionState |
-| `src/services/supabase-data.ts` | Read/write previousNames in session state |
-| `src/components/chronicle/CharacterEditModal.tsx` | Track old name when changing name |
-| `src/components/chronicle/ChatInterfaceTab.tsx` | Merge, save, send, and search previousNames |
-| `supabase/functions/extract-character-updates/index.ts` | Include previousNames in AI context |
+| `src/components/chronicle/ChatInterfaceTab.tsx` | Add `findCharacterWithSession` function and update 5-6 call sites to use it |
+
+---
+
+## Why This Works
+
+The key insight is that `getEffectiveCharacter` already correctly merges:
+- Session name ("Sarah") ✓
+- Session avatar URL ✓
+- Previous names array ✓
+
+We just weren't using it for the chat avatar lookups. By creating `findCharacterWithSession` that wraps the effective character data, all the pieces connect.
