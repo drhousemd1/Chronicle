@@ -261,6 +261,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const [sidebarBackgrounds, setSidebarBackgrounds] = useState<UserBackground[]>([]);
   const [selectedSidebarBgId, setSelectedSidebarBgId] = useState<string | null>(null);
   const [isUploadingSidebarBg, setIsUploadingSidebarBg] = useState(false);
+  const [sidebarBgIsLight, setSidebarBgIsLight] = useState<boolean>(true);
   
   // Memories state
   const [memories, setMemories] = useState<Memory[]>([]);
@@ -393,6 +394,47 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     if (!selectedSidebarBgId) return null;
     return sidebarBackgrounds.find(bg => bg.id === selectedSidebarBgId)?.imageUrl || null;
   }, [selectedSidebarBgId, sidebarBackgrounds]);
+  
+  // Analyze sidebar background brightness for dynamic text color
+  const analyzeImageBrightness = useCallback((imageUrl: string) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      const sampleSize = 50;
+      canvas.width = sampleSize;
+      canvas.height = sampleSize;
+      
+      ctx.drawImage(img, 0, 0, sampleSize, sampleSize);
+      const imageData = ctx.getImageData(0, 0, sampleSize, sampleSize);
+      const data = imageData.data;
+      
+      let totalLuminosity = 0;
+      const pixelCount = data.length / 4;
+      
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        totalLuminosity += (0.299 * r + 0.587 * g + 0.114 * b);
+      }
+      
+      const avgLuminosity = totalLuminosity / pixelCount;
+      setSidebarBgIsLight(avgLuminosity > 128);
+    };
+    img.src = imageUrl;
+  }, []);
+  
+  useEffect(() => {
+    if (selectedSidebarBgUrl) {
+      analyzeImageBrightness(selectedSidebarBgUrl);
+    } else {
+      setSidebarBgIsLight(true);
+    }
+  }, [selectedSidebarBgUrl, analyzeImageBrightness]);
   
   const handleUploadSidebarBg = async (file: File) => {
     try {
@@ -2200,7 +2242,11 @@ const updatedChar: SideCharacter = {
           <div className="p-4 border-b border-slate-100 flex items-center justify-between">
             <button
               onClick={onBack}
-              className="flex items-center gap-2 text-xs font-black text-slate-500 uppercase tracking-widest hover:text-blue-600 transition-colors"
+              className={`flex items-center gap-2 text-xs font-black uppercase tracking-widest transition-colors ${
+                sidebarBgIsLight 
+                  ? 'text-black hover:text-blue-600' 
+                  : 'text-white hover:text-blue-300'
+              }`}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
               Exit Scenario
