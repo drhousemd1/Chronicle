@@ -76,7 +76,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
   };
 
   return (
-    <Card className="p-6 space-y-4 !shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)] !bg-slate-100 border border-slate-300">
+    <Card className="p-6 space-y-4 !shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)] !bg-slate-100 border-2 border-slate-800">
       {/* Header - matching HardcodedSection styling */}
       <div className="flex justify-between items-center bg-emerald-100 rounded-xl px-3 py-2">
         <span className="text-emerald-900 font-bold text-base">Character Goals</span>
