@@ -27,7 +27,7 @@ const HardcodedSection: React.FC<{
   title: string;
   children: React.ReactNode;
 }> = ({ title, children }) => (
-  <Card className="p-6 space-y-4 !shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)] !bg-slate-100 border-2 border-slate-800">
+  <Card className="p-6 space-y-4 !shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)] !bg-slate-100 border border-slate-300">
     <div className="flex justify-between items-center bg-emerald-100 rounded-xl px-3 py-2">
       <span className="text-emerald-900 font-bold text-base">{title}</span>
     </div>
@@ -323,7 +323,7 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
           <div className="flex justify-between items-center h-9">
             <h2 className="text-xl font-bold text-slate-900">Avatar</h2>
           </div>
-          <Card className="p-6 !shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)] border-2 border-slate-800">
+          <Card className="p-6 !shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)] border-transparent ring-1 ring-slate-900/5">
             <div className="space-y-4">
               <div className="flex flex-col items-center gap-4">
                 <div 
