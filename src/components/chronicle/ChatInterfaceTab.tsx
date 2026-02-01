@@ -1052,7 +1052,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     }
   };
 
-  // Apply extracted updates to session state (simplified version for new format)
+  // Apply extracted updates to session state (enhanced to handle custom sections)
   const applyExtractedUpdates = async (updates: ExtractedUpdate[]) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user || updates.length === 0) return;
@@ -1066,16 +1066,31 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     }
     
     for (const [charNameLower, charUpdates] of updatesByCharacter) {
-      // Find the character
-      const mainChar = appData.characters.find(c => c.name.toLowerCase() === charNameLower);
-      const sideChar = (appData.sideCharacters || []).find(sc => sc.name.toLowerCase() === charNameLower);
+      // Find the character (also check nicknames)
+      let mainChar = appData.characters.find(c => c.name.toLowerCase() === charNameLower);
+      if (!mainChar) {
+        // Check nicknames
+        mainChar = appData.characters.find(c => {
+          if (!c.nicknames) return false;
+          return c.nicknames.split(',').some(n => n.trim().toLowerCase() === charNameLower);
+        });
+      }
+      
+      let sideChar = (appData.sideCharacters || []).find(sc => sc.name.toLowerCase() === charNameLower);
+      if (!sideChar && !mainChar) {
+        // Check nicknames
+        sideChar = (appData.sideCharacters || []).find(sc => {
+          if (!sc.nicknames) return false;
+          return sc.nicknames.split(',').some(n => n.trim().toLowerCase() === charNameLower);
+        });
+      }
       
       if (mainChar) {
         // Show updating indicator
         showCharacterUpdateIndicator(mainChar.id);
         
         // Find or create session state
-        let sessionState = sessionStates.find(s => s.characterId === mainChar.id);
+        let sessionState = sessionStates.find(s => s.characterId === mainChar!.id);
         if (!sessionState) {
           sessionState = await supabaseData.createSessionState(mainChar, conversationId, user.id);
           setSessionStates(prev => [...prev, sessionState!]);
@@ -1083,9 +1098,63 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         
         // Build patch from updates
         const patch: Record<string, any> = {};
+        let sectionsModified = false;
+        let updatedSections = [...(sessionState.customSections || mainChar.sections || [])];
+        
         for (const update of charUpdates) {
           const { field, value } = update;
-          if (field.includes('.')) {
+          
+          // Handle sections.SectionTitle.ItemLabel format
+          if (field.startsWith('sections.')) {
+            const parts = field.split('.');
+            if (parts.length >= 3) {
+              const sectionTitle = parts[1];
+              const itemLabel = parts.slice(2).join('.'); // Allow dots in item labels
+              
+              // Find or create section
+              let sectionIndex = updatedSections.findIndex(s => s.title.toLowerCase() === sectionTitle.toLowerCase());
+              if (sectionIndex === -1) {
+                // Create new section
+                const newSection = {
+                  id: `sec_${uuid().slice(0, 12)}`,
+                  title: sectionTitle,
+                  items: [],
+                  createdAt: Date.now(),
+                  updatedAt: Date.now()
+                };
+                updatedSections.push(newSection);
+                sectionIndex = updatedSections.length - 1;
+                console.log(`[applyExtractedUpdates] Created new section: ${sectionTitle}`);
+              }
+              
+              // Find or create item in section
+              const section = updatedSections[sectionIndex];
+              const itemIndex = section.items.findIndex(i => i.label.toLowerCase() === itemLabel.toLowerCase());
+              
+              if (itemIndex === -1) {
+                // Add new item
+                section.items.push({
+                  id: `item_${uuid().slice(0, 12)}`,
+                  label: itemLabel,
+                  value: value,
+                  createdAt: Date.now(),
+                  updatedAt: Date.now()
+                });
+                console.log(`[applyExtractedUpdates] Added new item "${itemLabel}" to section "${sectionTitle}"`);
+              } else {
+                // Update existing item
+                section.items[itemIndex] = {
+                  ...section.items[itemIndex],
+                  value: value,
+                  updatedAt: Date.now()
+                };
+                console.log(`[applyExtractedUpdates] Updated item "${itemLabel}" in section "${sectionTitle}"`);
+              }
+              
+              section.updatedAt = Date.now();
+              sectionsModified = true;
+            }
+          } else if (field.includes('.')) {
             const [parent, child] = field.split('.');
             if (parent === 'physicalAppearance') {
               patch.physicalAppearance = { ...(sessionState.physicalAppearance || {}), ...(patch.physicalAppearance || {}), [child]: value };
@@ -1099,10 +1168,15 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           }
         }
         
+        // Add sections to patch if modified
+        if (sectionsModified) {
+          patch.customSections = updatedSections;
+        }
+        
         if (Object.keys(patch).length > 0) {
           await supabaseData.updateSessionState(sessionState.id, patch);
           setSessionStates(prev => prev.map(s => s.id === sessionState!.id ? { ...s, ...patch } : s));
-          console.log(`[applyExtractedUpdates] Updated ${mainChar.name}:`, patch);
+          console.log(`[applyExtractedUpdates] Updated ${mainChar.name}:`, Object.keys(patch));
         }
       } else if (sideChar) {
         // Show updating indicator
@@ -1119,6 +1193,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
             } else if (parent === 'currentlyWearing') {
               patch.currentlyWearing = { ...(sideChar.currentlyWearing || {}), ...(patch.currentlyWearing || {}), [child]: value };
             }
+            // Note: Side characters don't have custom sections in current schema
           } else {
             patch[field] = value;
           }
@@ -1128,12 +1203,14 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           await supabaseData.updateSideCharacter(sideChar.id, patch);
           if (onUpdateSideCharacters) {
             const updated = (appData.sideCharacters || []).map(sc => 
-              sc.id === sideChar.id ? { ...sc, ...patch } : sc
+              sc.id === sideChar!.id ? { ...sc, ...patch } : sc
             );
             onUpdateSideCharacters(updated);
           }
-          console.log(`[applyExtractedUpdates] Updated side character ${sideChar.name}:`, patch);
+          console.log(`[applyExtractedUpdates] Updated side character ${sideChar.name}:`, Object.keys(patch));
         }
+      } else {
+        console.log(`[applyExtractedUpdates] Character not found: ${charNameLower}`);
       }
     }
   };

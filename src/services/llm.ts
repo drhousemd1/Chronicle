@@ -169,7 +169,10 @@ ${traits}`;
         
     - DIALOGUE REQUIREMENTS:
         * Every AI response MUST contain at least one line of spoken dialogue (text in quotes)
-        * Prioritize external dialogue and observable actions over internal monologue
+        * Focus on external dialogue, but ensure actions and internal thoughts occur naturally and realistically throughout dialogue where appropriate
+        * Vary internal thought placement organically - sometimes at the beginning, middle, or end of a response
+        * Some responses may have multiple brief internal moments at different points; others may have none if the character isn't introspective at that moment
+        * AVOID predictable patterns - do NOT always place a single thought in the same position
         * Internal thoughts should complement action, not replace it
 ` : '';
 
