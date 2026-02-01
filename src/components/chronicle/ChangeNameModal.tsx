@@ -1,5 +1,4 @@
-// ChangeNameModal - Popup for safely changing a character's primary name
-// Automatically adds the old name as a nickname to preserve avatar linkage
+// ChangeNameModal - Simple popup for changing a character's primary name
 
 import React, { useState, useEffect } from 'react';
 import {
@@ -18,15 +17,13 @@ interface ChangeNameModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   currentName: string;
-  currentNicknames: string;
-  onSave: (newName: string, updatedNicknames: string) => void;
+  onSave: (newName: string) => void;
 }
 
 export const ChangeNameModal: React.FC<ChangeNameModalProps> = ({
   open,
   onOpenChange,
   currentName,
-  currentNicknames,
   onSave,
 }) => {
   const [newName, setNewName] = useState('');
@@ -42,23 +39,7 @@ export const ChangeNameModal: React.FC<ChangeNameModalProps> = ({
     const trimmedName = newName.trim();
     if (!trimmedName) return;
     
-    // Add old name to nicknames (if not already there)
-    const existingNicknames = currentNicknames
-      .split(',')
-      .map(n => n.trim())
-      .filter(n => n.length > 0);
-    
-    const oldNameLower = currentName.toLowerCase().trim();
-    const alreadyHasOldName = existingNicknames.some(n => n.toLowerCase() === oldNameLower);
-    
-    let updatedNicknames = currentNicknames;
-    if (!alreadyHasOldName && currentName.trim()) {
-      updatedNicknames = existingNicknames.length > 0
-        ? `${currentNicknames}, ${currentName}`
-        : currentName;
-    }
-    
-    onSave(trimmedName, updatedNicknames);
+    onSave(trimmedName);
     onOpenChange(false);
   };
 
@@ -70,7 +51,7 @@ export const ChangeNameModal: React.FC<ChangeNameModalProps> = ({
         <DialogHeader>
           <DialogTitle className="text-lg font-bold">Change Character Name</DialogTitle>
           <DialogDescription className="text-sm text-slate-500">
-            The previous name will be added as a nickname to maintain avatar linkage and dialogue history.
+            Enter a new name for this character.
           </DialogDescription>
         </DialogHeader>
 
@@ -95,12 +76,6 @@ export const ChangeNameModal: React.FC<ChangeNameModalProps> = ({
               autoFocus
             />
           </div>
-
-          {currentNicknames && (
-            <div className="text-xs text-slate-400">
-              <span className="font-medium">Existing nicknames:</span> {currentNicknames}
-            </div>
-          )}
         </div>
 
         <DialogFooter className="gap-2">

@@ -927,14 +927,12 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
         open={isChangeNameModalOpen}
         onOpenChange={setIsChangeNameModalOpen}
         currentName={draft.name || character?.name || ''}
-        currentNicknames={draft.nicknames || ''}
-        onSave={(newName, updatedNicknames) => {
+        onSave={(newName) => {
           setDraft(prev => ({
             ...prev,
             name: newName,
-            nicknames: updatedNicknames,
           }));
-          toast.success(`Name changed to ${newName}. Previous name added as nickname.`);
+          toast.success(`Name changed to ${newName}`);
         }}
       />
     </Dialog>
