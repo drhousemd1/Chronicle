@@ -471,6 +471,48 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     };
   }, [sessionStates]);
 
+  // Session-aware character lookup - searches effective names, nicknames, and previousNames
+  // Returns the EFFECTIVE character data (with session overrides merged)
+  const findCharacterWithSession = useCallback((name: string | null): (Character & { previousNames?: string[] }) | SideCharacter | null => {
+    if (!name) return null;
+    const nameLower = name.toLowerCase().trim();
+    
+    // Build effective main characters with session overrides
+    const effectiveMainChars = appData.characters.map(c => getEffectiveCharacter(c));
+    
+    // Search effective main characters by current name
+    let found = effectiveMainChars.find(c => c.name.toLowerCase() === nameLower);
+    if (found) return found;
+    
+    // Search main characters by nicknames
+    found = effectiveMainChars.find(c => {
+      if (!c.nicknames) return false;
+      return c.nicknames.split(',').some(n => n.trim().toLowerCase() === nameLower);
+    });
+    if (found) return found;
+    
+    // Search main characters by previousNames (hidden field)
+    found = effectiveMainChars.find(c => {
+      if (!c.previousNames?.length) return false;
+      return c.previousNames.some(n => n.toLowerCase() === nameLower);
+    });
+    if (found) return found;
+    
+    // Search side characters by name
+    const sideChars = appData.sideCharacters || [];
+    let sideFound = sideChars.find(sc => sc.name.toLowerCase() === nameLower);
+    if (sideFound) return sideFound;
+    
+    // Search side characters by nicknames
+    sideFound = sideChars.find(sc => {
+      if (!sc.nicknames) return false;
+      return sc.nicknames.split(',').some(n => n.trim().toLowerCase() === nameLower);
+    });
+    if (sideFound) return sideFound;
+    
+    return null;
+  }, [appData.characters, appData.sideCharacters, getEffectiveCharacter]);
+
   const conversation = appData.conversations.find(c => c.id === conversationId);
   
   // Merge all characters (main characters with session overrides + side characters)
@@ -2420,20 +2462,21 @@ const updatedChar: SideCharacter = {
                       let isGenerating = false;
                       
                       if (segment.speakerName) {
-                        // BOTH user and AI: If there's a speaker tag, use that character
-                        segmentChar = findCharacterByName(segment.speakerName, appData);
+                        // BOTH user and AI: If there's a speaker tag, use session-aware lookup
+                        segmentChar = findCharacterWithSession(segment.speakerName);
                         segmentName = segment.speakerName;
                         segmentAvatar = segmentChar?.avatarDataUrl || null;
                         isGenerating = segmentChar && 'isAvatarGenerating' in segmentChar ? segmentChar.isAvatarGenerating : false;
                       } else if (!isAi) {
-                        // User message WITHOUT speaker tag - default to user's character
-                        segmentChar = userChar || null;
-                        segmentName = userChar?.name || 'You';
-                        segmentAvatar = userChar?.avatarDataUrl || null;
+                        // User message WITHOUT speaker tag - default to user's effective character
+                        const effectiveUserChar = userChar ? getEffectiveCharacter(userChar) : null;
+                        segmentChar = effectiveUserChar || null;
+                        segmentName = effectiveUserChar?.name || 'You';
+                        segmentAvatar = effectiveUserChar?.avatarDataUrl || null;
                       } else {
-                        // AI message without speaker - use first AI character as default
+                        // AI message without speaker - use first AI character's effective data
                         const aiChars = appData.characters.filter(c => c.controlledBy === 'AI');
-                        segmentChar = aiChars.length > 0 ? aiChars[0] : null;
+                        segmentChar = aiChars.length > 0 ? getEffectiveCharacter(aiChars[0]) : null;
                         segmentName = segmentChar?.name || 'Narrator';
                         segmentAvatar = segmentChar?.avatarDataUrl || null;
                       }
@@ -2530,10 +2573,13 @@ const updatedChar: SideCharacter = {
                       : 'bg-[#1c1f26] border-white/5'
                 }`}>
                   {segments.map((segment, segIndex) => {
-                    // Look up character for this segment
+                    // Look up character for this segment using session-aware lookup
                     const segmentChar = segment.speakerName 
-                      ? findCharacterByName(segment.speakerName, appData)
-                      : appData.characters.find(c => c.controlledBy === 'AI');
+                      ? findCharacterWithSession(segment.speakerName)
+                      : (() => {
+                          const aiChars = appData.characters.filter(c => c.controlledBy === 'AI');
+                          return aiChars.length > 0 ? getEffectiveCharacter(aiChars[0]) : null;
+                        })();
                     const segmentName = segment.speakerName || segmentChar?.name || 'Thinking';
                     const segmentAvatar = segmentChar?.avatarDataUrl || null;
                     const isGenerating = segmentChar && 'isAvatarGenerating' in segmentChar ? segmentChar.isAvatarGenerating : false;
@@ -2543,8 +2589,11 @@ const updatedChar: SideCharacter = {
                     let prevSpeakerName = '';
                     if (prevSegment) {
                       const prevChar = prevSegment.speakerName 
-                        ? findCharacterByName(prevSegment.speakerName, appData)
-                        : appData.characters.find(c => c.controlledBy === 'AI');
+                        ? findCharacterWithSession(prevSegment.speakerName)
+                        : (() => {
+                            const aiChars = appData.characters.filter(c => c.controlledBy === 'AI');
+                            return aiChars.length > 0 ? getEffectiveCharacter(aiChars[0]) : null;
+                          })();
                       prevSpeakerName = prevSegment.speakerName || prevChar?.name || 'Thinking';
                     }
                     const showAvatar = segIndex === 0 || prevSpeakerName !== segmentName;
