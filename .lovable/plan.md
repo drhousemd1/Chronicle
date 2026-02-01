@@ -1,223 +1,149 @@
 
-# Implementation Plan: Character Goals Tracking System
+# Fix Plan: Character Goals Section UI Consistency
 
-## Overview
+## Problem Summary
 
-This plan implements a new **Character Goals** tracking system that allows the AI to monitor and update character objectives during roleplay. The system uses a single unified container with automatic sorting by progress, matching your preferred approach (Image 1).
+The Character Goals section has two UI inconsistencies compared to the other hardcoded sections (Physical Appearance, Currently Wearing, Preferred Clothing):
 
-Additionally, this plan addresses the text wrapping bug in custom section labels.
-
----
-
-## Data Model
-
-### New Type: `CharacterGoal`
-
-```typescript
-type CharacterGoal = {
-  id: string;
-  title: string;           // Short goal name (e.g., "Move out of the city")
-  desiredOutcome: string;  // What success looks like
-  currentStatus: string;   // What has been done so far
-  progress: number;        // 0-100 percentage
-  createdAt: number;
-  updatedAt: number;
-};
-```
-
-### Updated Types
-
-The `Character` type will gain a new `goals` field:
-
-```typescript
-type Character = {
-  // ...existing fields...
-  goals: CharacterGoal[];  // New field
-};
-```
-
-Similarly, `CharacterSessionState` will include:
-
-```typescript
-type CharacterSessionState = {
-  // ...existing fields...
-  goals?: CharacterGoal[];  // Session-scoped goal overrides
-};
-```
+1. **Wrong color scheme**: Uses amber colors instead of the slate/emerald theme
+2. **Wrong button placement**: The "+ Add" button is in the header instead of at the bottom
 
 ---
 
-## Database Schema Changes
+## Visual Comparison
 
-### New JSONB column on `characters` table
+### Current (Incorrect) Goals Section:
+- Background: Amber (`bg-amber-50`)
+- Header: Amber (`bg-amber-100`, text: `text-amber-900`)
+- Column headers: Amber (`text-amber-700`)
+- "+ Add" button: In the header area
 
-```sql
-ALTER TABLE characters 
-ADD COLUMN goals jsonb DEFAULT '[]'::jsonb;
-```
-
-### New JSONB column on `character_session_states` table
-
-```sql
-ALTER TABLE character_session_states 
-ADD COLUMN goals jsonb DEFAULT '[]'::jsonb;
-```
+### Correct Pattern (from HardcodedSection):
+- Background: Slate (`bg-slate-100`, border: `border-slate-300`)
+- Header: Emerald (`bg-emerald-100`, text: `text-emerald-900`)
+- Column headers: Slate (`text-slate-500`)
+- Add button: At the BOTTOM of the card (like "+ Add Row" in custom sections)
 
 ---
 
-## UI Component: GoalsSection
+## Changes Required
 
-### Location
-New file: `src/components/chronicle/CharacterGoalsSection.tsx`
+### File: `src/components/chronicle/CharacterGoalsSection.tsx`
 
-### Design (matching app's existing styling)
+**1. Update Card styling (line 66)**
 
-The component renders a table-like layout within a Card container:
+From:
+```jsx
+<Card className="... !bg-amber-50 border border-amber-200">
+```
+
+To:
+```jsx
+<Card className="... !bg-slate-100 border border-slate-300">
+```
+
+**2. Update Header styling (line 68)**
+
+From:
+```jsx
+<div className="flex justify-between items-center bg-amber-100 rounded-xl px-3 py-2">
+  <span className="text-amber-900 font-bold text-base">Character Goals</span>
+  {/* Remove the + Add button from here */}
+</div>
+```
+
+To:
+```jsx
+<div className="flex justify-between items-center bg-emerald-100 rounded-xl px-3 py-2">
+  <span className="text-emerald-900 font-bold text-base">Character Goals</span>
+</div>
+```
+
+**3. Update Column Headers (lines 86-97)**
+
+Change `text-amber-700` to `text-slate-500` for consistency with HardcodedInput labels.
+
+**4. Update Table Border (line 85)**
+
+From: `border-b border-amber-200`
+To: `border-b border-slate-200`
+
+**5. Update Row Styling (lines 106-109)**
+
+From:
+```jsx
+goal.progress >= 100 ? 'bg-emerald-50/50' : 'hover:bg-amber-100/50'
+```
+
+To:
+```jsx
+goal.progress >= 100 ? 'bg-emerald-50/50' : 'hover:bg-slate-50'
+```
+
+**6. Update Input Field Styling (lines 120-121, 135-136, 151-152)**
+
+From: `border-amber-200 focus:border-amber-400`
+To: `border-slate-200 focus:border-blue-500` (matching app's standard input styling)
+
+**7. Move "+ Add Goal" Button to Bottom**
+
+Remove the button from the header area (lines 70-80).
+
+Add a new button at the BOTTOM of the goals list, AFTER the empty state area:
+
+```jsx
+{/* Add Goal Button - at bottom like custom sections */}
+{!readOnly && sortedGoals.length > 0 && (
+  <Button 
+    variant="ghost" 
+    className="w-full border border-dashed border-slate-300 text-slate-500 hover:bg-slate-50 mt-4"
+    onClick={addGoal}
+  >
+    + Add Goal
+  </Button>
+)}
+```
+
+**8. Update Empty State Styling (lines 213-227)**
+
+From: `text-amber-600/60`, `text-amber-700 hover:text-amber-900`
+To: `text-slate-400`, standard ghost button styling
+
+---
+
+## Technical Details
+
+### Complete Revised Structure:
 
 ```text
 ┌─────────────────────────────────────────────────────────────┐
-│  Character Goals                                    [+ Add] │
-├─────────────────────────────────────────────────────────────┤
-│  GOAL             DESIRED OUTCOME       STATUS      PROGRESS│
-├─────────────────────────────────────────────────────────────┤
-│  Move out of      Ashley will convince  James and     ●────●│
-│  the city         James to move out...  Ashley moved  100%  │
-│                                         to the...           │
-├─────────────────────────────────────────────────────────────┤
-│  Hormone          Ashley secretly...    Ashley gave    ●───○│
-│  Therapy                                3 doses...     30%  │
-├─────────────────────────────────────────────────────────────┤
-│  Sissification    Ashley has always...  Still hasn't   ○───○│
-│                                         figured out..   0%  │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │ Character Goals                            (emerald)│    │
+│  └─────────────────────────────────────────────────────┘    │
+│                                                             │
+│  GOAL          DESIRED OUTCOME    CURRENT STATUS    %       │
+│  ─────────────────────────────────────────────────────      │
+│  [textarea]    [textarea]         [textarea]        [ring]  │
+│  [textarea]    [textarea]         [textarea]        [ring]  │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │              + Add Goal (dashed border)             │    │
+│  └─────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Features
+### Color Mapping Summary:
 
-1. **Progress Ring Indicator**
-   - Circular SVG ring showing percentage (0-100%)
-   - Color coding:
-     - 0%: Gray ring with gray text
-     - 1-99%: Blue ring with percentage fill
-     - 100%: Green filled ring
-   - Clicking the ring opens a small input to manually edit the percentage
-
-2. **Text Wrapping**
-   - All columns support text wrapping
-   - Goal title column: ~25% width
-   - Desired Outcome column: ~35% width
-   - Current Status column: ~25% width
-   - Progress column: ~15% width (ring + percentage)
-
-3. **Auto-Sort**
-   - Goals automatically sort by progress (descending)
-   - 100% goals appear at top
-   - 0% goals appear at bottom
-
-4. **Row Actions**
-   - Edit button (pencil icon on hover)
-   - Delete button (trash icon on hover)
-   - All fields are editable inline or via popup
-
-5. **Add Goal Button**
-   - Creates a new goal row with empty fields and 0% progress
-
----
-
-## AI Integration
-
-### Extract Character Updates Enhancement
-
-The `extract-character-updates` edge function prompt will be updated to understand goals:
-
-```text
-GOALS TRACKING:
-You can also track character goals using this format:
-- goals.GoalTitle.desiredOutcome = "Description of success"
-- goals.GoalTitle.currentStatus = "What has been done"
-- goals.GoalTitle.progress = number (0-100)
-
-Examples:
-- goals.Hormone Therapy.currentStatus = "Given 4 doses so far"
-- goals.Hormone Therapy.progress = 40
-- goals.Move to countryside.progress = 100
-- goals.Find new job.desiredOutcome = "Get hired as a nurse"
-
-When dialogue reveals:
-- A NEW goal or desire: Create goals.GoalTitle with desiredOutcome, currentStatus="Not started", progress=0
-- Progress on an existing goal: Update goals.GoalTitle.currentStatus and goals.GoalTitle.progress
-- Goal completion: Set goals.GoalTitle.progress = 100 and update currentStatus with the outcome
-```
-
-### Apply Extracted Updates Enhancement
-
-The `applyExtractedUpdates` function in `ChatInterfaceTab.tsx` will be updated to handle goal updates:
-
-```typescript
-// Handle goals.* field updates
-if (field.startsWith('goals.')) {
-  const parts = field.split('.');
-  const goalTitle = parts[1];
-  const goalField = parts[2] as 'desiredOutcome' | 'currentStatus' | 'progress';
-  
-  // Find or create the goal
-  const existingGoals = currentGoals[characterId] || [];
-  let goal = existingGoals.find(g => g.title === goalTitle);
-  
-  if (!goal) {
-    goal = {
-      id: `goal-${Date.now()}`,
-      title: goalTitle,
-      desiredOutcome: '',
-      currentStatus: '',
-      progress: 0,
-      createdAt: Date.now(),
-      updatedAt: Date.now()
-    };
-    existingGoals.push(goal);
-  }
-  
-  // Update the specific field
-  if (goalField === 'progress') {
-    goal.progress = Math.min(100, Math.max(0, parseInt(value) || 0));
-  } else {
-    goal[goalField] = value;
-  }
-  goal.updatedAt = Date.now();
-  
-  // Save updated goals
-  updateCharacterGoals(characterId, existingGoals);
-}
-```
-
----
-
-## Text Wrapping Fix (Side Issue)
-
-### Problem
-In `CharactersTab.tsx`, the label Input in custom sections uses a standard `<Input>` component which is a single-line `<input>` element that doesn't wrap text.
-
-### Solution
-The label field should use a textarea with auto-resize instead, or we add a CSS property to allow the input to show the full text on blur.
-
-Option A (Simpler): Add `text-ellipsis overflow-hidden` for display, but show full text on focus.
-
-Option B (Better): Convert the label field to use a small auto-resizing textarea that wraps naturally.
-
-For consistency with the rest of the app, Option B is recommended. This involves:
-
-1. Change the label Input to TextArea in custom sections (lines 556-564 in CharactersTab.tsx)
-2. Add `autoResize={true}` and `rows={1}` for minimal initial height
-3. Apply the same pattern to CharacterEditModal.tsx custom sections (lines 860-863)
-
----
-
-## Files to Create
-
-| File | Purpose |
-|------|---------|
-| `src/components/chronicle/CharacterGoalsSection.tsx` | Goals table component with progress rings |
-| `src/components/chronicle/CircularProgress.tsx` | Reusable circular progress ring component |
+| Element | Incorrect (Amber) | Correct (Slate/Emerald) |
+|---------|-------------------|-------------------------|
+| Card background | `bg-amber-50` | `bg-slate-100` |
+| Card border | `border-amber-200` | `border-slate-300` |
+| Header background | `bg-amber-100` | `bg-emerald-100` |
+| Header text | `text-amber-900` | `text-emerald-900` |
+| Column headers | `text-amber-700` | `text-slate-500` |
+| Row hover | `bg-amber-100/50` | `bg-slate-50` |
+| Input borders | `border-amber-*` | `border-slate-*` |
+| Empty state text | `text-amber-600/60` | `text-slate-400` |
 
 ---
 
@@ -225,101 +151,13 @@ For consistency with the rest of the app, Option B is recommended. This involves
 
 | File | Changes |
 |------|---------|
-| `src/types.ts` | Add `CharacterGoal` type, update `Character` and `CharacterSessionState` |
-| `src/components/chronicle/CharactersTab.tsx` | Add GoalsSection after Preferred Clothing, fix label wrapping |
-| `src/components/chronicle/CharacterEditModal.tsx` | Add GoalsSection, fix label wrapping in custom sections |
-| `supabase/functions/extract-character-updates/index.ts` | Add goals tracking to prompt |
-| `src/components/chronicle/ChatInterfaceTab.tsx` | Handle goals.* updates in `applyExtractedUpdates` |
+| `src/components/chronicle/CharacterGoalsSection.tsx` | Update all amber colors to slate/emerald, move Add button to bottom |
 
 ---
 
-## Database Migrations
+## Implementation Notes
 
-1. Add `goals` JSONB column to `characters` table (default: `'[]'::jsonb`)
-2. Add `goals` JSONB column to `character_session_states` table (default: `'[]'::jsonb`)
-
----
-
-## Implementation Sequence
-
-### Phase 1: Types and Database
-1. Update `src/types.ts` with CharacterGoal type
-2. Run database migration to add goals columns
-
-### Phase 2: UI Components
-3. Create `CircularProgress.tsx` component
-4. Create `CharacterGoalsSection.tsx` component
-5. Integrate into `CharactersTab.tsx` (Scenario Builder)
-6. Integrate into `CharacterEditModal.tsx` (Session edit modal)
-
-### Phase 3: AI Integration
-7. Update `extract-character-updates` edge function prompt
-8. Update `applyExtractedUpdates` in ChatInterfaceTab.tsx
-
-### Phase 4: Bug Fix
-9. Fix text wrapping in custom section labels
-
----
-
-## Technical Notes
-
-### Circular Progress SVG
-
-The progress ring will be implemented using SVG `circle` elements with `stroke-dasharray` and `stroke-dashoffset` for the fill animation:
-
-```tsx
-const CircularProgress = ({ value, size = 48 }) => {
-  const radius = (size - 4) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (value / 100) * circumference;
-  
-  return (
-    <svg width={size} height={size}>
-      {/* Background circle */}
-      <circle
-        cx={size/2} cy={size/2} r={radius}
-        stroke="#e2e8f0" strokeWidth={4} fill="none"
-      />
-      {/* Progress circle */}
-      <circle
-        cx={size/2} cy={size/2} r={radius}
-        stroke={value >= 100 ? "#22c55e" : "#3b82f6"}
-        strokeWidth={4} fill="none"
-        strokeDasharray={circumference}
-        strokeDashoffset={offset}
-        transform={`rotate(-90 ${size/2} ${size/2})`}
-      />
-      {/* Text */}
-      <text x="50%" y="50%" textAnchor="middle" dy=".3em">
-        {value}%
-      </text>
-    </svg>
-  );
-};
-```
-
-### Goals Sorting Logic
-
-Goals will be sorted in the UI with completed goals at the top:
-
-```typescript
-const sortedGoals = [...goals].sort((a, b) => b.progress - a.progress);
-```
-
-### Manual Progress Edit
-
-When user clicks the progress ring, a small popover or inline input appears:
-
-```tsx
-<Popover>
-  <PopoverTrigger><CircularProgress value={goal.progress} /></PopoverTrigger>
-  <PopoverContent>
-    <Input 
-      type="number" 
-      min={0} max={100} 
-      value={goal.progress}
-      onChange={(v) => updateGoalProgress(goal.id, parseInt(v))}
-    />
-  </PopoverContent>
-</Popover>
-```
+- This is purely a styling fix with no logic changes
+- The `CircularProgress` component doesn't need changes as it uses neutral/standard colors
+- The delete button styling (rose colors) is correct and matches custom section row delete buttons
+- The completed goal styling (`bg-emerald-50/50`) is appropriate and should remain
