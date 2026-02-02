@@ -1,203 +1,155 @@
 
-# Character Goals Section - Complete UI Overhaul
+# Character Goals Section - Complete Rewrite with Correct Colors
 
 ## Overview
 
-This is a major redesign of the `CharacterGoalsSection` component, transforming it from a table-style layout with a light theme to a dark, card-based design with milestone history tracking. Additionally, we're changing how users access character cards - replacing the expandable dropdown with a "View character card" link that opens the modal in view mode, with an edit toggle.
+The current implementation uses the wrong color palette. I need to completely rewrite the component using the exact colors and structure from your mockup code.
 
 ---
 
-## Color Scheme Analysis (from mockups)
+## Key Color Corrections
 
-### Outer Container
-- Background: Dark slate/charcoal (`bg-slate-800` or `#2d3748`)
-- Border: Subtle gray border (`border-slate-600`)
-- Border radius: Rounded corners
+### Current (Wrong) vs. Correct Colors
 
-### Section Header
-- Background: Muted blue-gray (`bg-slate-500/60` or similar)
-- "SECTION" label: Light green text (`text-emerald-300`)
-- "Character Goals" title: White text (`text-white`)
-
-### Goal Subcontainer
-- Background: Slightly lighter dark (`bg-slate-700` or `#374151`)
-- Border: Subtle (`border-slate-600`)
-
-### Labels
-- Category labels (GOAL NAME, DESIRED OUTCOME, etc.): Yellow/gold color (`text-amber-400` or `text-yellow-400`)
-- Content text: White (`text-white`) or light gray (`text-slate-200`)
-
-### Progress Ring
-- Large circular progress indicator
-- Blue ring stroke (`stroke-blue-500`)
-- Dark fill background
-- White percentage text
-- "OVERALL PROGRESS" label: Muted gray uppercase text
-
-### Milestone History Section
-- Divider line separating from main content
-- Clock icon with "MILESTONE HISTORY" header
-- Timeline-style dots (blue circles with vertical connector)
-- "DAY X" and time-of-day chips on the right side
-  - Day chip: Dark background with white text
-  - Time chip: Time-specific colors (blue for midday, orange for sunset, etc.)
-
-### Edit Mode Differences
-- Blue border around editable containers (`border-blue-500`)
-- Input fields appear inside containers
-- Delete (X) buttons appear next to milestones
-- Horizontal slider appears under progress ring for manual adjustment
-- "+ Add Milestone Step" button at bottom of milestones
-- "+ Add New Goal" button (blue with white text)
-- Trash icon in top-right for deleting entire goal
+| Element | Current (Wrong) | Correct (from mockup) |
+|---------|-----------------|----------------------|
+| Main container bg | `bg-slate-800` | `bg-[#2a2a2f]` |
+| Main border | `border-slate-600` | `border-white/10` |
+| Section header bg | `bg-slate-500/60` | `bg-[#4a5f7f]` |
+| Section header border | none | `border-white/20` |
+| "Section" label | `text-emerald-300` | `text-[#a5d6a7]` |
+| Title text | `text-white` | `text-[#e8f5e9]` |
+| Goal card bg | `bg-slate-700` | `bg-[#3a3a3f]/30` |
+| Goal card border | `border-slate-600` | `border-white/5` |
+| Field labels | `text-amber-400` | `text-zinc-400` |
+| Content text | `text-slate-200` | `text-zinc-300` |
+| Progress ring bg | `#334155` (slate) | `text-zinc-800/40` |
+| Timeline line | `bg-blue-500/50` | `bg-zinc-700/50` |
+| Day chip | `bg-slate-800` | `bg-zinc-800/50 border-white/5` |
 
 ---
 
-## Data Model Changes
+## Structural Changes from Mockup Code
 
-Add a new type for milestone history in `src/types.ts`:
+### 1. Main Container
+```tsx
+<div className="w-full max-w-4xl bg-[#2a2a2f] rounded-[24px] border border-white/10 custom-shadow">
+```
+Note: Using `rounded-[24px]` for large border radius
 
-```typescript
-export type GoalMilestone = {
-  id: string;
-  description: string;
-  day: number;
-  timeOfDay: TimeOfDay;
-  createdAt: number;
-};
-
-export type CharacterGoal = {
-  id: string;
-  title: string;
-  desiredOutcome: string;
-  currentStatus: string;
-  progress: number;
-  milestones?: GoalMilestone[];  // NEW: milestone history
-  createdAt: number;
-  updatedAt: number;
-};
+### 2. Section Header
+```tsx
+<div className="bg-[#4a5f7f] border border-white/20 rounded-xl px-5 py-3 flex items-center justify-between shadow-lg">
+  <div className="flex items-center gap-3">
+    <span className="text-[#a5d6a7] font-bold tracking-wide uppercase text-xs">Section</span>
+    <h2 className="text-[#e8f5e9] text-xl font-bold tracking-tight">Character Goals</h2>
+  </div>
+  {/* Edit button in view mode */}
+</div>
 ```
 
----
-
-## Component Architecture
-
-### CharacterGoalsSection.tsx - Complete Rewrite
-
-**Props changes:**
-- Keep `goals`, `onChange`, `readOnly`
-- Add `currentDay` and `currentTimeOfDay` for milestone timestamps
-
-**New internal state:**
-- `isEditMode` - toggle between view and edit modes (passed from parent or internal)
-
-**Structure:**
-
-```
-CharacterGoalsSection (dark container)
-├── Section Header (muted blue bar)
-│   └── "SECTION" label + "Character Goals" title
-│
-├── Goal Cards (one per goal, sorted by progress)
-│   ├── Left Side (flex-1)
-│   │   ├── GOAL NAME section
-│   │   │   └── Label + Title (view mode) OR Input (edit mode)
-│   │   ├── DESIRED OUTCOME section
-│   │   │   └── Label + Text (view mode) OR Textarea (edit mode)
-│   │   ├── CURRENT STATUS SUMMARY section
-│   │   │   └── Label + Text (view mode) OR Textarea (edit mode)
-│   │   ├── Divider line
-│   │   └── MILESTONE HISTORY section
-│   │       ├── Clock icon + Header
-│   │       ├── Timeline items (dots + descriptions + day/time chips)
-│   │       └── "+ Add Milestone Step" button (edit mode only)
-│   │
-│   └── Right Side (fixed width ~200px)
-│       ├── Circular Progress Ring (large, redesigned)
-│       ├── "OVERALL PROGRESS" label
-│       └── Horizontal Slider (edit mode only)
-│
-└── "+ Add New Goal" button (edit mode only)
+### 3. Goal Card (View Mode)
+```tsx
+<div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
+  <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+    {/* Left column: content (col-span-9) */}
+    {/* Right column: progress ring (col-span-3) */}
+  </div>
+</div>
 ```
 
+### 4. Field Labels
+```tsx
+<label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Goal Name</label>
+<h3 className="text-lg font-bold text-white mt-0.5">{goal.title}</h3>
+```
+
+### 5. Progress Ring (96x96 with 38 radius)
+```tsx
+<div className="relative h-24 w-24 flex items-center justify-center">
+  <svg className="w-full h-full transform -rotate-90">
+    <circle cx="48" cy="48" r="38" stroke="currentColor" stroke-width="8" fill="transparent" className="text-zinc-800/40" />
+    <circle cx="48" cy="48" r="38" stroke="currentColor" stroke-width="8" fill="transparent" 
+      stroke-dasharray="238.7" stroke-dashoffset={offset} className="text-blue-500" stroke-linecap="round" />
+  </svg>
+  <span className="absolute text-white font-extrabold text-lg">{progress}%</span>
+</div>
+<p className="mt-3 text-[9px] font-black text-zinc-400 uppercase tracking-[0.2em]">Overall Progress</p>
+```
+
+### 6. Milestone History Section
+```tsx
+<div className="mt-6 pt-6 border-t border-white/5">
+  <h4 className="text-[10px] font-bold text-white uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+    <History className="text-blue-400" />
+    Milestone History
+  </h4>
+  
+  <div className="space-y-3 pl-2 relative">
+    {/* Vertical timeline line */}
+    <div className="absolute left-[7px] top-2 bottom-2 w-px bg-zinc-700/50" />
+    
+    {/* Milestone entries */}
+    <div className="relative flex items-center justify-between gap-4">
+      <div className="flex items-center gap-4">
+        <div className="h-3.5 w-3.5 rounded-full bg-blue-500/80 ring-2 ring-blue-500/10 z-10" />
+        <span className="text-sm text-zinc-200">{description}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        {/* Day chip */}
+        <div className="flex items-center bg-zinc-800/50 rounded-md px-2 py-1 border border-white/5">
+          <span className="text-[10px] font-bold text-zinc-400 mr-2">DAY</span>
+          <span className="text-[11px] font-bold text-white">{day}</span>
+        </div>
+        {/* Time chip */}
+        <div className="flex items-center bg-blue-500/10 rounded-md px-2 py-1 border border-blue-500/20 text-blue-400">
+          <Sun className="text-xs" />
+          <span className="text-[10px] font-bold ml-1 uppercase">Midday</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+```
+
+### 7. Time Chip Colors
+| Time | Background | Border | Text |
+|------|------------|--------|------|
+| Sunrise | `bg-amber-500/10` | `border-amber-500/20` | `text-amber-400` |
+| Day/Midday | `bg-blue-500/10` | `border-blue-500/20` | `text-blue-400` |
+| Sunset | `bg-orange-500/10` | `border-orange-500/20` | `text-orange-400` |
+| Night | `bg-indigo-500/10` | `border-indigo-500/20` | `text-indigo-400` |
+
 ---
 
-## Character Card Changes
+## Edit Mode Changes
 
-### Current Behavior (to remove)
-- Click on avatar/name expands an inline dropdown showing character details
-- Small arrow icon next to name indicates expandability
-
-### New Behavior
-1. Replace the expandable area with a simple "View character card" text link below the avatar/name
-2. On hover, show a subtle highlight effect
-3. Click opens the `CharacterEditModal` in **view mode** (new prop: `viewOnly`)
-4. Inside the modal, add an edit icon/button that toggles to edit mode
-
-### Files to modify:
-- `ChatInterfaceTab.tsx`: Update `renderCharacterCard` function
-- `SideCharacterCard.tsx`: Update to match new behavior
-- `CharacterEditModal.tsx`: Add `viewOnly` prop and toggle UI
+In edit mode, the mockup shows:
+- Blue borders on containers (`border-blue-500/20`)
+- Input fields appear
+- Delete (X) buttons next to milestones
+- Horizontal slider under progress ring
+- "+ Add Milestone Step" button
+- "+ Add New Goal" button
 
 ---
 
-## Implementation Phases
+## Files to Modify
 
-### Phase 1: Types Update
-- Add `GoalMilestone` type to `src/types.ts`
-- Update `CharacterGoal` to include optional `milestones` array
-
-### Phase 2: CharacterGoalsSection Rewrite
-- Complete visual overhaul with dark theme
-- Two-column layout (content + progress ring)
-- Milestone history section with timeline UI
-- View mode vs Edit mode states
-- All the color/styling from mockups
-
-### Phase 3: CircularProgress Enhancement
-- Larger size for goals display (80-100px)
-- Dark background variant for the new theme
-- Optional size variants
-
-### Phase 4: Character Card Flow Update
-- Remove expandable dropdown from `renderCharacterCard`
-- Add "View character card" clickable text
-- Update `CharacterEditModal` to support view-only mode with edit toggle
-- Apply same changes to `SideCharacterCard`
+| File | Action |
+|------|--------|
+| `src/components/chronicle/CharacterGoalsSection.tsx` | Complete rewrite with correct colors |
 
 ---
 
-## Files to Create/Modify
+## Implementation Approach
 
-| File | Action | Description |
-|------|--------|-------------|
-| `src/types.ts` | Modify | Add `GoalMilestone` type, update `CharacterGoal` |
-| `src/components/chronicle/CharacterGoalsSection.tsx` | Rewrite | Complete visual overhaul with new design |
-| `src/components/chronicle/CircularProgress.tsx` | Modify | Add dark theme variant, larger size support |
-| `src/components/chronicle/ChatInterfaceTab.tsx` | Modify | Replace expandable dropdown with "View character card" link |
-| `src/components/chronicle/SideCharacterCard.tsx` | Modify | Match new character card behavior |
-| `src/components/chronicle/CharacterEditModal.tsx` | Modify | Add `viewOnly` prop and edit toggle |
+I will completely rewrite the component using the exact color values and structure from your mockup code. The key changes:
 
----
-
-## Technical Notes
-
-### Timeline UI for Milestones
-The milestone history uses a vertical timeline with:
-- Blue circle dots on the left
-- Vertical line connecting them (using CSS `::before` or border)
-- Description text
-- Day/Time chips aligned to the right
-
-### Day/Time Chips in Milestones
-Reuse the same time-of-day styling from the Day/Time tracker:
-- Sunrise: orange/amber colors
-- Day/Midday: blue colors
-- Sunset: orange/pink colors
-- Night: dark/indigo colors
-
-### Edit Mode Blue Borders
-When `readOnly === false`, add blue border to all editable containers to visually indicate edit mode.
-
-### Slider for Progress
-Use the existing `@/components/ui/slider` component, styled to match the dark theme.
+1. Replace all `bg-slate-*` with the correct `bg-[#2a2a2f]`, `bg-[#3a3a3f]`, etc.
+2. Replace `text-amber-400` labels with `text-zinc-400`
+3. Update section header to use `bg-[#4a5f7f]` with `text-[#a5d6a7]` and `text-[#e8f5e9]`
+4. Fix the progress ring dimensions (96x96, r=38)
+5. Update timeline with proper vertical line and dot styling
+6. Fix Day/Time chip structure and colors
+7. Add proper border styles (`border-white/5`, `border-white/10`, etc.)
