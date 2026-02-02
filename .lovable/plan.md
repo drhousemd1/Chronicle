@@ -1,100 +1,93 @@
 
 
-# Fix Avatar Panel Button Styling
+# Fix Button Scaling and Text Size
 
 ## Problem
 
-The "Upload Image" and "AI Generate" buttons are not scaling properly and don't match the design reference. The reference shows:
-- **Upload Image**: Dark outlined button with border, upload icon, and dropdown chevron
-- **AI Generate**: Purple-to-blue gradient background with sparkle icon
+The "Upload Image" and "AI Generate" buttons have:
+1. **Text too large** compared to other UI elements (labels use `text-[10px]`, buttons use `text-sm`)
+2. **Text wrapping awkwardly** due to tight flex container
+3. **Not scaling properly** when container width decreases
 
 ## Root Cause
 
-1. **Scaling Issue**: The `UploadSourceMenu` wraps the button in a React fragment (`<>...</>`), so the `flex-1` class passed via `className` only applies to the inner button, not the fragment wrapper. This breaks the flex layout.
-
-2. **Styling Mismatch**: Both buttons currently use the same `primary` variant (solid dark), but the reference shows distinct styles.
-
----
+The Button component's base style uses `text-sm font-semibold` with `px-4 py-2` padding. When placed in a narrow flex container with `flex-1`, the buttons can't shrink gracefully - they squeeze until text wraps.
 
 ## Solution
 
-### 1. Fix UploadSourceMenu Wrapper
+### 1. Reduce Button Text Size for These Specific Buttons
 
-Change the fragment wrapper to a `div` that accepts and applies the `className` prop, ensuring `flex-1` works correctly:
+Add a `text-xs` override to make button text proportional to nearby labels.
+
+**File: `src/components/chronicle/CharactersTab.tsx`**
+
+```tsx
+// Line 398 - UploadSourceMenu
+className="flex-1 text-xs"
+
+// Line 400 - AI Generate button  
+className="flex-1 gap-2 text-xs"
+```
+
+### 2. Add `whitespace-nowrap` and `min-w-0` to Prevent Wrapping
+
+Ensure button text stays on one line and buttons can shrink:
+
+```tsx
+// UploadSourceMenu (line 398)
+className="flex-1 text-xs min-w-0"
+
+// AI Generate button (line 400)
+className="flex-1 gap-2 text-xs whitespace-nowrap min-w-0"
+```
+
+### 3. Update UploadSourceMenu Button to Prevent Text Wrap
 
 **File: `src/components/chronicle/UploadSourceMenu.tsx`**
 
-```tsx
-// Before (line 33-34):
-return (
-  <>
-
-// After:
-return (
-  <div className={className}>
-```
-
-Also remove className from the inner Button since it's now on the wrapper:
+Add `whitespace-nowrap` to the inner button:
 
 ```tsx
-// Before (line 40):
-className={`gap-2 ${className}`}
-
-// After:
-className="gap-2 w-full"
+// Line 40
+className="gap-2 w-full whitespace-nowrap"
 ```
 
-### 2. Add New Button Variants to UI.tsx
+### 4. Reduce Icon Size Proportionally
 
-Add an `outlineDark` variant for Upload Image and a `gradient` variant for AI Generate:
+Make icons match the smaller text:
+
+```tsx
+// UploadSourceMenu.tsx line 42
+<Upload className="w-3.5 h-3.5" />
+
+// UploadSourceMenu.tsx line 44
+<ChevronDown className="w-3.5 h-3.5" />
+
+// CharactersTab.tsx line 401
+<Sparkles className="w-3.5 h-3.5" />
+```
+
+---
+
+## Alternative Approach: Smaller Button Variant
+
+If the above doesn't fully resolve it, we could add a `size="sm"` option to the Button component:
 
 **File: `src/components/chronicle/UI.tsx`**
 
 ```tsx
-export type ButtonVariant = "primary" | "secondary" | "danger" | "ghost" | "brand" | "outlineDark" | "gradient";
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: ButtonVariant;
+  size?: "default" | "sm";
+}
 
-const styles: Record<ButtonVariant, string> = {
-  // ... existing variants ...
-  outlineDark: "bg-zinc-900/80 text-white border border-zinc-600 hover:bg-zinc-800 hover:border-zinc-500",
-  gradient: "bg-gradient-to-r from-purple-600 via-violet-500 to-blue-500 text-white border-0 hover:from-purple-500 hover:via-violet-400 hover:to-blue-400 shadow-lg",
+// In the component:
+const sizeStyles = {
+  default: "px-4 py-2 text-sm",
+  sm: "px-3 py-1.5 text-xs",
 };
-```
 
-### 3. Update Button Usage in CharactersTab.tsx
-
-**File: `src/components/chronicle/CharactersTab.tsx`**
-
-Update the UploadSourceMenu call:
-```tsx
-<UploadSourceMenu
-  variant="outlineDark"
-  className="flex-1"
-  // ... other props
-/>
-```
-
-Update the AI Generate button to use gradient variant and add sparkle icon:
-```tsx
-import { Sparkles } from 'lucide-react';
-
-<Button variant="gradient" onClick={handleAiPortrait} disabled={isGeneratingImg} className="flex-1 gap-2">
-  <Sparkles className="w-4 h-4" />
-  {isGeneratingImg ? "..." : "AI Generate"}
-</Button>
-```
-
-### 4. Add Upload Icon to UploadSourceMenu
-
-Add an upload icon before the label text:
-
-**File: `src/components/chronicle/UploadSourceMenu.tsx`**
-
-```tsx
-<Button ...>
-  <Upload className="w-4 h-4" />
-  {isUploading ? 'Uploading...' : label}
-  <ChevronDown className="w-4 h-4" />
-</Button>
+// In base, remove px/py/text-sm, then add sizeStyles[size] to className
 ```
 
 ---
@@ -103,16 +96,16 @@ Add an upload icon before the label text:
 
 | File | Changes |
 |------|---------|
-| `src/components/chronicle/UI.tsx` | Add `outlineDark` and `gradient` button variants |
-| `src/components/chronicle/UploadSourceMenu.tsx` | Fix wrapper element, add upload icon |
-| `src/components/chronicle/CharactersTab.tsx` | Use new variants, add Sparkles icon to AI Generate |
+| `src/components/chronicle/CharactersTab.tsx` | Add `text-xs min-w-0 whitespace-nowrap` to button classes, reduce icon size |
+| `src/components/chronicle/UploadSourceMenu.tsx` | Add `whitespace-nowrap` to button, reduce icon sizes |
 
 ---
 
 ## Visual Result
 
 After these changes:
-- **Upload Image**: Dark outlined button with upload icon, text, and chevron
-- **AI Generate**: Purple-to-blue gradient with sparkle icon
-- Both buttons will scale equally using `flex-1` layout
+- Button text will be proportional to input labels
+- Text won't wrap across multiple lines
+- Buttons will scale gracefully side-by-side
+- Icons will match the smaller text size
 
