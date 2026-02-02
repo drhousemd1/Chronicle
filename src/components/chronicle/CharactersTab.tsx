@@ -323,13 +323,14 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
         {/* Left Column - Avatar Panel */}
-        <div className="space-y-6 lg:sticky lg:top-0 lg:max-h-[calc(100vh-9rem)] lg:overflow-y-auto lg:pr-2 lg:pb-6 lg:overscroll-contain">
+        <div className="space-y-6 lg:sticky lg:top-0 lg:max-h-[calc(100vh-9rem)] lg:overflow-y-auto lg:pr-4 lg:pb-6 lg:pl-2 lg:overscroll-contain">
           <div className="flex justify-between items-center h-9">
             <h2 className="text-xl font-bold text-slate-900">Profile</h2>
           </div>
-          <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
+          <div className="pb-4 px-2">
+          <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
             {/* Section Header */}
             <div className="bg-[#4a5f7f] border-b border-white/20 px-5 py-3 flex items-center gap-3 shadow-lg">
               <span className="text-[#a5d6a7] font-bold tracking-wide uppercase text-xs">Section</span>
@@ -396,19 +397,19 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
                           variant="primary"
                           className="flex-1"
                         />
-                        {selected.avatarDataUrl && (
-                          <Button 
-                            variant={isRepositioning ? 'primary' : 'secondary'} 
-                            onClick={() => setIsRepositioning(!isRepositioning)}
-                            className={`flex-1 ${isRepositioning ? 'bg-blue-600 text-white' : ''}`}
-                          >
-                            {isRepositioning ? "Save Position" : "Reposition"}
-                          </Button>
-                        )}
+                        <Button variant="primary" onClick={handleAiPortrait} disabled={isGeneratingImg} className="flex-1">
+                          {isGeneratingImg ? "..." : "AI Generate"}
+                        </Button>
                       </div>
-                      <Button variant="primary" onClick={handleAiPortrait} disabled={isGeneratingImg} className="w-full">
-                        {isGeneratingImg ? "..." : "AI Generate"}
-                      </Button>
+                      {selected.avatarDataUrl && (
+                        <Button 
+                          variant={isRepositioning ? 'primary' : 'secondary'} 
+                          onClick={() => setIsRepositioning(!isRepositioning)}
+                          className={`w-full ${isRepositioning ? 'bg-blue-600 text-white' : ''}`}
+                        >
+                          {isRepositioning ? "Save Position" : "Reposition"}
+                        </Button>
+                      )}
                     </div>
                     
                     <input 
@@ -467,13 +468,15 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
                       <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Nicknames</label>
                       <input type="text" value={selected.nicknames || ''} onChange={(e) => onUpdate(selected.id, { nicknames: e.target.value })} placeholder="e.g., Mom, Mother (comma-separated)" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                     </div>
-                    <div>
-                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Age</label>
-                      <input type="text" value={selected.age || ''} onChange={(e) => onUpdate(selected.id, { age: e.target.value })} placeholder="e.g., 25" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Sex / Identity</label>
-                      <input type="text" value={selected.sexType} onChange={(e) => onUpdate(selected.id, { sexType: e.target.value })} placeholder="e.g., Female, Male, Non-binary" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Age</label>
+                        <input type="text" value={selected.age || ''} onChange={(e) => onUpdate(selected.id, { age: e.target.value })} placeholder="e.g., 25" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Sex / Identity</label>
+                        <input type="text" value={selected.sexType} onChange={(e) => onUpdate(selected.id, { sexType: e.target.value })} placeholder="e.g., Female, Male, Non-binary" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                      </div>
                     </div>
                     <div>
                       <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Location</label>
@@ -484,39 +487,40 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
                       <input type="text" value={selected.currentMood || ''} onChange={(e) => onUpdate(selected.id, { currentMood: e.target.value })} placeholder="e.g., Happy, Tired" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                     </div>
                     
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block">Controlled By</label>
-                      <div className="flex p-1 bg-zinc-800 rounded-xl">
-                        <button 
-                          onClick={() => onUpdate(selected.id, { controlledBy: 'AI' })}
-                          className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.controlledBy === 'AI' ? 'bg-zinc-700 text-blue-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
-                        >
-                          AI
-                        </button>
-                        <button 
-                          onClick={() => onUpdate(selected.id, { controlledBy: 'User' })}
-                          className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.controlledBy === 'User' ? 'bg-zinc-700 text-amber-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
-                        >
-                          User
-                        </button>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block">Controlled By</label>
+                        <div className="flex p-1 bg-zinc-800 rounded-xl">
+                          <button 
+                            onClick={() => onUpdate(selected.id, { controlledBy: 'AI' })}
+                            className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.controlledBy === 'AI' ? 'bg-zinc-700 text-blue-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+                          >
+                            AI
+                          </button>
+                          <button 
+                            onClick={() => onUpdate(selected.id, { controlledBy: 'User' })}
+                            className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.controlledBy === 'User' ? 'bg-zinc-700 text-amber-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+                          >
+                            User
+                          </button>
+                        </div>
                       </div>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block">Character Role</label>
-                      <div className="flex p-1 bg-zinc-800 rounded-xl">
-                        <button 
-                          onClick={() => onUpdate(selected.id, { characterRole: 'Main' })}
-                          className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.characterRole === 'Main' ? 'bg-zinc-700 text-indigo-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
-                        >
-                          Main
-                        </button>
-                        <button 
-                          onClick={() => onUpdate(selected.id, { characterRole: 'Side' })}
-                          className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.characterRole === 'Side' ? 'bg-zinc-700 text-zinc-300 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
-                        >
-                          Side
-                        </button>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block">Character Role</label>
+                        <div className="flex p-1 bg-zinc-800 rounded-xl">
+                          <button 
+                            onClick={() => onUpdate(selected.id, { characterRole: 'Main' })}
+                            className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.characterRole === 'Main' ? 'bg-zinc-700 text-indigo-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+                          >
+                            Main
+                          </button>
+                          <button 
+                            onClick={() => onUpdate(selected.id, { characterRole: 'Side' })}
+                            className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.characterRole === 'Side' ? 'bg-zinc-700 text-zinc-300 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+                          >
+                            Side
+                          </button>
+                        </div>
                       </div>
                     </div>
 
@@ -524,16 +528,13 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
                       <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Role Description</label>
                       <input type="text" value={selected.roleDescription || ''} onChange={(e) => onUpdate(selected.id, { roleDescription: e.target.value })} placeholder="Brief description of the character's role" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                     </div>
-                    <div>
-                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Tags</label>
-                      <input type="text" value={selected.tags} onChange={(e) => onUpdate(selected.id, { tags: e.target.value })} placeholder="Separated by commas" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
-                    </div>
                   </div>
                 </div>
               </div>
             </div>
+            </div>
           </div>
-        </div>
+          </div>
 
         {/* Right Column - Trait Sections */}
         <div className="lg:col-span-2 space-y-6">
