@@ -115,6 +115,15 @@ export type PreferredClothing = {
   miscellaneous: string;
 };
 
+// Goal milestone tracking
+export type GoalMilestone = {
+  id: string;
+  description: string;
+  day: number;
+  timeOfDay: TimeOfDay;
+  createdAt: number;
+};
+
 // Character goal tracking
 export type CharacterGoal = {
   id: string;
@@ -122,6 +131,7 @@ export type CharacterGoal = {
   desiredOutcome: string;  // What success looks like
   currentStatus: string;   // What has been done so far
   progress: number;        // 0-100 percentage
+  milestones?: GoalMilestone[];  // Milestone history
   createdAt: number;
   updatedAt: number;
 };
