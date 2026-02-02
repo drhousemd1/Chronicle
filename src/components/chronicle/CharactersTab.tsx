@@ -22,22 +22,25 @@ interface CharactersTabProps {
   onDelete: (id: string) => void;
 }
 
-// Hardcoded section component with distinct styling
+// Hardcoded section component with distinct styling (matching CharacterGoalsSection)
 const HardcodedSection: React.FC<{
   title: string;
   children: React.ReactNode;
 }> = ({ title, children }) => (
-  <Card className="p-6 space-y-4 !shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)] !bg-slate-100 border border-slate-300">
-    <div className="flex justify-between items-center bg-emerald-100 rounded-xl px-3 py-2">
-      <span className="text-emerald-900 font-bold text-base">{title}</span>
+  <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
+    {/* Section Header */}
+    <div className="bg-[#4a5f7f] border-b border-white/20 px-5 py-3 flex items-center gap-3 shadow-lg">
+      <span className="text-[#a5d6a7] font-bold tracking-wide uppercase text-xs">Section</span>
+      <h2 className="text-[#e8f5e9] text-xl font-bold tracking-tight">{title}</h2>
     </div>
-    <div className="space-y-4">
+    {/* Content */}
+    <div className="p-5 space-y-4">
       {children}
     </div>
-  </Card>
+  </div>
 );
 
-// Reusable input field for hardcoded sections with AI enhance button
+// Reusable input field for hardcoded sections with AI enhance button (matching CharacterGoalsSection)
 const HardcodedInput: React.FC<{
   label: string;
   value: string;
@@ -46,37 +49,35 @@ const HardcodedInput: React.FC<{
   onEnhance?: () => void;
   isEnhancing?: boolean;
 }> = ({ label, value, onChange, placeholder, onEnhance, isEnhancing }) => (
-  <div className="flex flex-col md:flex-row gap-2 md:gap-4 items-start">
-    <div className="w-full md:w-1/3 shrink-0">
-      <div className="flex items-center gap-1.5 mb-1">
-        <label className="block text-xs font-bold uppercase text-slate-500">{label}</label>
-        {onEnhance && (
-          <button
-            type="button"
-            onClick={onEnhance}
-            disabled={isEnhancing}
-            title="Enhance with AI"
-            className={cn(
-              "p-1 rounded-md transition-all",
-              isEnhancing
-                ? "text-blue-500 animate-pulse cursor-wait"
-                : "text-black hover:text-blue-500 hover:bg-blue-50"
-            )}
-          >
-            <Sparkles size={14} />
-          </button>
-        )}
-      </div>
+  <div>
+    {/* Label row with AI enhance button */}
+    <div className="flex items-center gap-1.5 mb-1">
+      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{label}</label>
+      {onEnhance && (
+        <button
+          type="button"
+          onClick={onEnhance}
+          disabled={isEnhancing}
+          title="Enhance with AI"
+          className={cn(
+            "p-1 rounded-md transition-all",
+            isEnhancing
+              ? "text-blue-500 animate-pulse cursor-wait"
+              : "text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10"
+          )}
+        >
+          <Sparkles size={14} />
+        </button>
+      )}
     </div>
-    <div className="w-full md:flex-1">
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-      />
-    </div>
+    {/* Full-width input */}
+    <input
+      type="text"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+    />
   </div>
 );
 
