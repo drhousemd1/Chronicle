@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button } from './UI';
+import { Button, ButtonVariant } from './UI';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +14,7 @@ interface UploadSourceMenuProps {
   onSelectFromLibrary: (imageUrl: string) => void;
   disabled?: boolean;
   label?: string;
-  variant?: 'primary' | 'secondary' | 'ghost';
+  variant?: ButtonVariant;
   className?: string;
   isUploading?: boolean;
 }
@@ -31,14 +31,15 @@ export const UploadSourceMenu: React.FC<UploadSourceMenuProps> = ({
   const [isPickerOpen, setIsPickerOpen] = useState(false);
 
   return (
-    <>
+    <div className={className}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
             variant={variant}
             disabled={disabled || isUploading}
-            className={`gap-2 ${className}`}
+            className="gap-2 w-full"
           >
+            <Upload className="w-4 h-4" />
             {isUploading ? 'Uploading...' : label}
             <ChevronDown className="w-4 h-4" />
           </Button>
@@ -69,6 +70,6 @@ export const UploadSourceMenu: React.FC<UploadSourceMenuProps> = ({
           setIsPickerOpen(false);
         }}
       />
-    </>
+    </div>
   );
 };
