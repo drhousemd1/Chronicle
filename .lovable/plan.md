@@ -1,155 +1,158 @@
 
-# Character Goals Section - Complete Rewrite with Correct Colors
+# Fix Slider Colors and "Add New Goal" Button Styling
 
 ## Overview
 
-The current implementation uses the wrong color palette. I need to completely rewrite the component using the exact colors and structure from your mockup code.
+Two UI fixes for the Character Goals section:
+1. Fix the progress slider to show dark track (empty) and blue fill (progress)
+2. Subdue the "Add New Goal" button to not overpower the header
 
 ---
 
-## Key Color Corrections
+## Issue 1: Slider Colors
 
-### Current (Wrong) vs. Correct Colors
+### Current Problem
+The slider uses Radix UI's default styling with CSS variables:
+- Track: `bg-secondary` (shows as white/light in current theme)
+- Range (filled): `bg-primary` (shows as black/dark)
 
-| Element | Current (Wrong) | Correct (from mockup) |
-|---------|-----------------|----------------------|
-| Main container bg | `bg-slate-800` | `bg-[#2a2a2f]` |
-| Main border | `border-slate-600` | `border-white/10` |
-| Section header bg | `bg-slate-500/60` | `bg-[#4a5f7f]` |
-| Section header border | none | `border-white/20` |
-| "Section" label | `text-emerald-300` | `text-[#a5d6a7]` |
-| Title text | `text-white` | `text-[#e8f5e9]` |
-| Goal card bg | `bg-slate-700` | `bg-[#3a3a3f]/30` |
-| Goal card border | `border-slate-600` | `border-white/5` |
-| Field labels | `text-amber-400` | `text-zinc-400` |
-| Content text | `text-slate-200` | `text-zinc-300` |
-| Progress ring bg | `#334155` (slate) | `text-zinc-800/40` |
-| Timeline line | `bg-blue-500/50` | `bg-zinc-700/50` |
-| Day chip | `bg-slate-800` | `bg-zinc-800/50 border-white/5` |
+### Expected Behavior
+- Track (empty portion): Dark, almost invisible against the dark background
+- Range (filled portion): Blue, matching the progress ring
+
+### Solution
+Override the Slider classes directly in CharacterGoalsSection when rendering:
+
+```tsx
+<Slider
+  value={[goal.progress]}
+  onValueChange={([value]) => updateGoal(goal.id, { progress: value })}
+  max={100}
+  step={1}
+  className="w-full [&_[data-slot=track]]:bg-zinc-700 [&_[data-slot=range]]:bg-blue-500 [&_[data-slot=thumb]]:border-blue-500 [&_[data-slot=thumb]]:bg-white"
+/>
+```
+
+However, Radix Slider doesn't use data-slot. Looking at the component, I need to target the internal class structure. The cleaner approach is to pass className overrides using Tailwind's arbitrary selectors targeting the child elements:
+
+```tsx
+<Slider
+  value={[goal.progress]}
+  onValueChange={([value]) => updateGoal(goal.id, { progress: value })}
+  max={100}
+  step={1}
+  className="w-full [&>span:first-child]:bg-zinc-700 [&>span:first-child>span]:bg-blue-500"
+/>
+```
+
+Or even simpler - create a styled wrapper or add a custom className that targets the Radix primitives.
+
+Actually, the cleanest fix is to pass specific classes targeting the Track and Range. Looking at the Slider component structure, I'll use CSS to override:
+
+```tsx
+<Slider
+  ...
+  className="w-full 
+    [&_[role=slider]]:border-blue-500 
+    [&_[role=slider]]:bg-white
+    [&>span:first-child]:bg-zinc-700 
+    [&>span:first-child>span]:bg-blue-500"
+/>
+```
 
 ---
 
-## Structural Changes from Mockup Code
+## Issue 2: "Add New Goal" Button
 
-### 1. Main Container
+### Current Styling (too dominant)
 ```tsx
-<div className="w-full max-w-4xl bg-[#2a2a2f] rounded-[24px] border border-white/10 custom-shadow">
-```
-Note: Using `rounded-[24px]` for large border radius
-
-### 2. Section Header
-```tsx
-<div className="bg-[#4a5f7f] border border-white/20 rounded-xl px-5 py-3 flex items-center justify-between shadow-lg">
-  <div className="flex items-center gap-3">
-    <span className="text-[#a5d6a7] font-bold tracking-wide uppercase text-xs">Section</span>
-    <h2 className="text-[#e8f5e9] text-xl font-bold tracking-tight">Character Goals</h2>
-  </div>
-  {/* Edit button in view mode */}
-</div>
+className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
 ```
 
-### 3. Goal Card (View Mode)
+### Desired Styling
+- Remove the solid blue background
+- Add a dotted/dashed border in a muted color (like `border-zinc-500` or similar)
+- Background: subtle or transparent
+- Plus icon and "Add New Goal" text: Blue color (like the "+ Add Milestone Step" link)
+- On hover: subtle highlight effect
+
+### New Styling
 ```tsx
-<div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
-  <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-    {/* Left column: content (col-span-9) */}
-    {/* Right column: progress ring (col-span-3) */}
-  </div>
-</div>
+className="w-full py-3 bg-transparent border-2 border-dashed border-zinc-500 text-blue-400 hover:border-blue-400 hover:bg-blue-500/5 font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
 ```
 
-### 4. Field Labels
-```tsx
-<label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Goal Name</label>
-<h3 className="text-lg font-bold text-white mt-0.5">{goal.title}</h3>
-```
-
-### 5. Progress Ring (96x96 with 38 radius)
-```tsx
-<div className="relative h-24 w-24 flex items-center justify-center">
-  <svg className="w-full h-full transform -rotate-90">
-    <circle cx="48" cy="48" r="38" stroke="currentColor" stroke-width="8" fill="transparent" className="text-zinc-800/40" />
-    <circle cx="48" cy="48" r="38" stroke="currentColor" stroke-width="8" fill="transparent" 
-      stroke-dasharray="238.7" stroke-dashoffset={offset} className="text-blue-500" stroke-linecap="round" />
-  </svg>
-  <span className="absolute text-white font-extrabold text-lg">{progress}%</span>
-</div>
-<p className="mt-3 text-[9px] font-black text-zinc-400 uppercase tracking-[0.2em]">Overall Progress</p>
-```
-
-### 6. Milestone History Section
-```tsx
-<div className="mt-6 pt-6 border-t border-white/5">
-  <h4 className="text-[10px] font-bold text-white uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-    <History className="text-blue-400" />
-    Milestone History
-  </h4>
-  
-  <div className="space-y-3 pl-2 relative">
-    {/* Vertical timeline line */}
-    <div className="absolute left-[7px] top-2 bottom-2 w-px bg-zinc-700/50" />
-    
-    {/* Milestone entries */}
-    <div className="relative flex items-center justify-between gap-4">
-      <div className="flex items-center gap-4">
-        <div className="h-3.5 w-3.5 rounded-full bg-blue-500/80 ring-2 ring-blue-500/10 z-10" />
-        <span className="text-sm text-zinc-200">{description}</span>
-      </div>
-      <div className="flex items-center gap-2">
-        {/* Day chip */}
-        <div className="flex items-center bg-zinc-800/50 rounded-md px-2 py-1 border border-white/5">
-          <span className="text-[10px] font-bold text-zinc-400 mr-2">DAY</span>
-          <span className="text-[11px] font-bold text-white">{day}</span>
-        </div>
-        {/* Time chip */}
-        <div className="flex items-center bg-blue-500/10 rounded-md px-2 py-1 border border-blue-500/20 text-blue-400">
-          <Sun className="text-xs" />
-          <span className="text-[10px] font-bold ml-1 uppercase">Midday</span>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-```
-
-### 7. Time Chip Colors
-| Time | Background | Border | Text |
-|------|------------|--------|------|
-| Sunrise | `bg-amber-500/10` | `border-amber-500/20` | `text-amber-400` |
-| Day/Midday | `bg-blue-500/10` | `border-blue-500/20` | `text-blue-400` |
-| Sunset | `bg-orange-500/10` | `border-orange-500/20` | `text-orange-400` |
-| Night | `bg-indigo-500/10` | `border-indigo-500/20` | `text-indigo-400` |
-
----
-
-## Edit Mode Changes
-
-In edit mode, the mockup shows:
-- Blue borders on containers (`border-blue-500/20`)
-- Input fields appear
-- Delete (X) buttons next to milestones
-- Horizontal slider under progress ring
-- "+ Add Milestone Step" button
-- "+ Add New Goal" button
+This matches the design memory for interactive add buttons: "2px dashed border in slate-500" with blue hover states.
 
 ---
 
 ## Files to Modify
 
-| File | Action |
+| File | Change |
 |------|--------|
-| `src/components/chronicle/CharacterGoalsSection.tsx` | Complete rewrite with correct colors |
+| `src/components/chronicle/CharacterGoalsSection.tsx` | Lines 427-434: Update Slider className to fix track/range colors |
+| `src/components/chronicle/CharacterGoalsSection.tsx` | Lines 443-449: Update "Add New Goal" button styling |
 
 ---
 
-## Implementation Approach
+## Specific Changes
 
-I will completely rewrite the component using the exact color values and structure from your mockup code. The key changes:
+### Change 1: Slider (line ~427-433)
+**From:**
+```tsx
+<Slider
+  value={[goal.progress]}
+  onValueChange={([value]) => updateGoal(goal.id, { progress: value })}
+  max={100}
+  step={1}
+  className="w-full"
+/>
+```
 
-1. Replace all `bg-slate-*` with the correct `bg-[#2a2a2f]`, `bg-[#3a3a3f]`, etc.
-2. Replace `text-amber-400` labels with `text-zinc-400`
-3. Update section header to use `bg-[#4a5f7f]` with `text-[#a5d6a7]` and `text-[#e8f5e9]`
-4. Fix the progress ring dimensions (96x96, r=38)
-5. Update timeline with proper vertical line and dot styling
-6. Fix Day/Time chip structure and colors
-7. Add proper border styles (`border-white/5`, `border-white/10`, etc.)
+**To:**
+```tsx
+<Slider
+  value={[goal.progress]}
+  onValueChange={([value]) => updateGoal(goal.id, { progress: value })}
+  max={100}
+  step={1}
+  className="w-full [&>span:first-child]:bg-zinc-700 [&>span:first-child>span]:bg-blue-500 [&_[role=slider]]:border-blue-500 [&_[role=slider]]:bg-white"
+/>
+```
+
+### Change 2: Add New Goal Button (line ~443-449)
+**From:**
+```tsx
+<button
+  onClick={addGoal}
+  className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
+>
+  <Plus className="h-5 w-5" />
+  Add New Goal
+</button>
+```
+
+**To:**
+```tsx
+<button
+  onClick={addGoal}
+  className="w-full py-3 bg-transparent border-2 border-dashed border-zinc-500 text-blue-400 hover:border-blue-400 hover:bg-blue-500/5 font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
+>
+  <Plus className="h-5 w-5" />
+  Add New Goal
+</button>
+```
+
+---
+
+## Visual Result
+
+**Slider:**
+- Empty (0%): Dark zinc track, no blue visible
+- Partially filled: Blue bar from left to thumb position, dark track for remainder
+- Thumb: White circle with blue border
+
+**Add New Goal Button:**
+- Muted dashed border (zinc-500 gray)
+- Blue text and plus icon (matching "+ Add Milestone Step")
+- On hover: border turns blue, subtle blue background tint
+- Much less visually dominant than the solid blue button
