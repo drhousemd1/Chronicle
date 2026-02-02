@@ -395,10 +395,10 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
                           isUploading={isUploading}
                           label="Upload Image"
                           variant="outlineDark"
-                          className="flex-1"
+                          className="flex-1 text-xs min-w-0"
                         />
-                        <Button variant="gradient" onClick={handleAiPortrait} disabled={isGeneratingImg} className="flex-1 gap-2">
-                          <Sparkles className="w-4 h-4" />
+                        <Button variant="gradient" onClick={handleAiPortrait} disabled={isGeneratingImg} className="flex-1 gap-2 text-xs whitespace-nowrap min-w-0">
+                          <Sparkles className="w-3.5 h-3.5" />
                           {isGeneratingImg ? "..." : "AI Generate"}
                         </Button>
                       </div>

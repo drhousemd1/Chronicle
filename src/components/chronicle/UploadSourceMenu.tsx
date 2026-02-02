@@ -37,11 +37,11 @@ export const UploadSourceMenu: React.FC<UploadSourceMenuProps> = ({
           <Button
             variant={variant}
             disabled={disabled || isUploading}
-            className="gap-2 w-full"
+            className="gap-2 w-full whitespace-nowrap"
           >
-            <Upload className="w-4 h-4" />
+            <Upload className="w-3.5 h-3.5" />
             {isUploading ? 'Uploading...' : label}
-            <ChevronDown className="w-4 h-4" />
+            <ChevronDown className="w-3.5 h-3.5" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-48 bg-white border-slate-200 shadow-lg z-50">
