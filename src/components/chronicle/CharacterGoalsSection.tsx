@@ -1,6 +1,6 @@
 import React from 'react';
 import { CharacterGoal, GoalMilestone, TimeOfDay } from '@/types';
-import { Trash2, Plus, X, History, Sun, Sunrise, Sunset, Moon } from 'lucide-react';
+import { Trash2, Plus, X, History, Sun, Sunrise, Sunset, Moon, ChevronDown, ChevronUp } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,6 +11,8 @@ interface CharacterGoalsSectionProps {
   goals: CharacterGoal[];
   onChange: (goals: CharacterGoal[]) => void;
   readOnly?: boolean;
+  isExpanded?: boolean;
+  onToggle?: () => void;
   currentDay?: number;
   currentTimeOfDay?: TimeOfDay;
 }
@@ -139,10 +141,12 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
   goals,
   onChange,
   readOnly = false,
+  isExpanded = true,
+  onToggle,
   currentDay = 1,
   currentTimeOfDay = 'day'
 }) => {
-  const isEditMode = !readOnly;
+  // Note: isEditMode is recalculated after CollapsedGoalsView is defined
 
   // Ensure there's always at least one goal row displayed
   const displayGoals = goals.length === 0 ? [{
@@ -225,6 +229,37 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
     });
   };
 
+  // Determine if we're in view mode (collapsed or explicitly readOnly)
+  const isViewMode = !isExpanded || readOnly;
+  const isEditMode = isExpanded && !readOnly;
+
+  // Condensed view for collapsed state
+  const CollapsedGoalsView = () => {
+    if (goals.length === 0) {
+      return <p className="text-zinc-500 text-sm italic">No goals defined</p>;
+    }
+    return (
+      <div className="space-y-2">
+        {goals.map((goal) => (
+          <div key={goal.id} className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-sm text-zinc-200 truncate">{goal.title || 'Untitled goal'}</span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="w-24 h-2 bg-zinc-700 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-blue-500 transition-all" 
+                  style={{ width: `${goal.progress}%` }}
+                />
+              </div>
+              <span className="text-xs font-bold text-zinc-400 w-10 text-right">{goal.progress}%</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
       {/* Section Header */}
@@ -233,222 +268,241 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
           <span className="text-[#a5d6a7] font-bold tracking-wide uppercase text-xs">Section</span>
           <h2 className="text-[#e8f5e9] text-xl font-bold tracking-tight">Character Goals</h2>
         </div>
-      </div>
-
-      {/* Goals Container */}
-      <div className="p-5 space-y-4">
-        {sortedGoals.map((goal) => (
-          <div
-            key={goal.id}
-            className={cn(
-              "p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border relative",
-              isEditMode ? "border-blue-500/20" : "border-white/5"
-            )}
+        {onToggle && (
+          <button 
+            onClick={onToggle} 
+            className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-white/10"
           >
-            {/* Delete Goal Button (Edit Mode) */}
-            {isEditMode && (
-              <button
-                onClick={() => deleteGoal(goal.id)}
-                className="absolute top-4 right-4 text-zinc-500 hover:text-rose-400 transition-colors"
-                title="Delete goal"
-              >
-                <Trash2 className="h-5 w-5" />
-              </button>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-              {/* Left Side - Goal Details (col-span-9) */}
-              <div className="md:col-span-9 space-y-4">
-                {/* Goal Name */}
-                <div>
-                  <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
-                    Goal Name
-                  </label>
-                  {isEditMode ? (
-                    <Input
-                      value={goal.title}
-                      onChange={(e) => updateGoal(goal.id, { title: e.target.value })}
-                      placeholder="Enter goal name..."
-                      className="mt-1 bg-zinc-900/50 border-white/10 text-white placeholder:text-zinc-600"
-                    />
-                  ) : (
-                    <h3 className="text-lg font-bold text-white mt-0.5">
-                      {goal.title || 'No goal name set'}
-                    </h3>
-                  )}
-                </div>
-
-                {/* Desired Outcome */}
-                <div>
-                  <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
-                    Desired Outcome
-                  </label>
-                  {isEditMode ? (
-                    <Textarea
-                      value={goal.desiredOutcome}
-                      onChange={(e) => updateGoal(goal.id, { desiredOutcome: e.target.value })}
-                      placeholder="What success looks like..."
-                      className="mt-1 bg-zinc-900/50 border-white/10 text-white placeholder:text-zinc-600 min-h-[60px]"
-                    />
-                  ) : (
-                    <p className="text-sm text-zinc-300 mt-0.5">
-                      {goal.desiredOutcome || 'No outcome defined'}
-                    </p>
-                  )}
-                </div>
-
-                {/* Current Status Summary */}
-                <div>
-                  <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
-                    Current Status Summary
-                  </label>
-                  {isEditMode ? (
-                    <Textarea
-                      value={goal.currentStatus}
-                      onChange={(e) => updateGoal(goal.id, { currentStatus: e.target.value })}
-                      placeholder="Progress so far..."
-                      className="mt-1 bg-zinc-900/50 border-white/10 text-white placeholder:text-zinc-600 min-h-[60px]"
-                    />
-                  ) : (
-                    <p className="text-sm text-zinc-300 mt-0.5">
-                      {goal.currentStatus || 'No status update'}
-                    </p>
-                  )}
-                </div>
-
-                {/* Milestone History */}
-                <div className="mt-6 pt-6 border-t border-white/5">
-                  <h4 className="text-[10px] font-bold text-white uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                    <History className="h-4 w-4 text-blue-400" />
-                    Milestone History
-                  </h4>
-
-                  {(goal.milestones && goal.milestones.length > 0) ? (
-                    <div className="space-y-3 pl-2 relative">
-                      {/* Vertical timeline line */}
-                      <div className="absolute left-[7px] top-2 bottom-2 w-px bg-zinc-700/50" />
-
-                      {goal.milestones.map((milestone) => (
-                        <div key={milestone.id} className="relative flex items-center justify-between gap-4">
-                          <div className="flex items-center gap-4">
-                            {/* Timeline dot */}
-                            <div className="h-3.5 w-3.5 rounded-full bg-blue-500/80 ring-2 ring-blue-500/10 z-10 flex-shrink-0" />
-                            
-                            {isEditMode ? (
-                              <div className="flex items-center gap-2 flex-1">
-                                <Input
-                                  value={milestone.description}
-                                  onChange={(e) => updateMilestone(goal.id, milestone.id, { description: e.target.value })}
-                                  placeholder="Describe this milestone..."
-                                  className="bg-zinc-900/50 border-white/10 text-white placeholder:text-zinc-600 text-sm h-8"
-                                />
-                                <button
-                                  onClick={() => deleteMilestone(goal.id, milestone.id)}
-                                  className="text-zinc-500 hover:text-rose-400 transition-colors p-1"
-                                >
-                                  <X className="h-4 w-4" />
-                                </button>
-                              </div>
-                            ) : (
-                              <span className="text-sm text-zinc-200">
-                                {milestone.description || 'No description'}
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Day/Time chips */}
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            {isEditMode ? (
-                              <>
-                                <div className="flex items-center gap-1">
-                                  <span className="text-zinc-500 text-[10px]">Day</span>
-                                  <Input
-                                    type="number"
-                                    value={milestone.day}
-                                    onChange={(e) => updateMilestone(goal.id, milestone.id, { day: parseInt(e.target.value) || 1 })}
-                                    className="w-14 h-7 bg-zinc-900/50 border-white/10 text-white text-xs text-center"
-                                    min={1}
-                                  />
-                                </div>
-                                <div className="flex gap-1">
-                                  {timeOfDayOptions.map((tod) => {
-                                    const style = getTimeChipStyle(tod);
-                                    return (
-                                      <button
-                                        key={tod}
-                                        onClick={() => updateMilestone(goal.id, milestone.id, { timeOfDay: tod })}
-                                        className={cn(
-                                          "px-1.5 py-0.5 rounded text-[10px] font-medium transition-all border",
-                                          milestone.timeOfDay === tod
-                                            ? cn(style.bg, style.border, style.text)
-                                            : "bg-zinc-800/30 border-white/5 text-zinc-500 hover:text-zinc-300"
-                                        )}
-                                      >
-                                        {style.label}
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              </>
-                            ) : (
-                              <>
-                                <DayChip day={milestone.day} />
-                                <TimeChip timeOfDay={milestone.timeOfDay} />
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-zinc-500 text-sm italic pl-2">No milestones recorded yet</p>
-                  )}
-
-                  {/* Add Milestone Button */}
-                  {isEditMode && (
-                    <button
-                      onClick={() => addMilestone(goal.id)}
-                      className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm mt-4 ml-2 transition-colors"
-                    >
-                      <Plus className="h-4 w-4" />
-                      <span>Add Milestone Step</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Right Side - Progress Ring (col-span-3) */}
-              <div className="md:col-span-3 flex flex-col items-center justify-start pt-4">
-                <GoalProgressRing value={goal.progress} />
-
-                {/* Progress Slider (Edit Mode) */}
-                {isEditMode && (
-                  <div className="w-full mt-4 px-2">
-                    <Slider
-                      value={[goal.progress]}
-                      onValueChange={([value]) => updateGoal(goal.id, { progress: value })}
-                      max={100}
-                      step={1}
-                      className="w-full [&>span:first-child]:bg-zinc-700 [&>span:first-child>span]:bg-blue-500 [&_[role=slider]]:border-blue-500 [&_[role=slider]]:bg-white"
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        ))}
-
-        {/* Add New Goal Button */}
-        {isEditMode && (
-          <button
-            onClick={addGoal}
-            className="w-full py-3 bg-transparent border-2 border-dashed border-zinc-500 text-blue-400 hover:border-blue-400 hover:bg-blue-500/5 font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
-          >
-            <Plus className="h-5 w-5" />
-            Add New Goal
+            {isExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
           </button>
         )}
       </div>
+
+      {/* Collapsed view */}
+      {!isExpanded && (
+        <div className="p-5">
+          <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
+            <CollapsedGoalsView />
+          </div>
+        </div>
+      )}
+
+      {/* Expanded Goals Container */}
+      {isExpanded && (
+        <div className="p-5 space-y-4">
+          {sortedGoals.map((goal) => (
+            <div
+              key={goal.id}
+              className={cn(
+                "p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border relative",
+                isEditMode ? "border-blue-500/20" : "border-white/5"
+              )}
+            >
+              {/* Delete Goal Button (Edit Mode) */}
+              {isEditMode && (
+                <button
+                  onClick={() => deleteGoal(goal.id)}
+                  className="absolute top-4 right-4 text-zinc-500 hover:text-rose-400 transition-colors"
+                  title="Delete goal"
+                >
+                  <Trash2 className="h-5 w-5" />
+                </button>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                {/* Left Side - Goal Details (col-span-9) */}
+                <div className="md:col-span-9 space-y-4">
+                  {/* Goal Name */}
+                  <div>
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+                      Goal Name
+                    </label>
+                    {isEditMode ? (
+                      <Input
+                        value={goal.title}
+                        onChange={(e) => updateGoal(goal.id, { title: e.target.value })}
+                        placeholder="Enter goal name..."
+                        className="mt-1 bg-zinc-900/50 border-white/10 text-white placeholder:text-zinc-600"
+                      />
+                    ) : (
+                      <h3 className="text-lg font-bold text-white mt-0.5">
+                        {goal.title || 'No goal name set'}
+                      </h3>
+                    )}
+                  </div>
+
+                  {/* Desired Outcome */}
+                  <div>
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+                      Desired Outcome
+                    </label>
+                    {isEditMode ? (
+                      <Textarea
+                        value={goal.desiredOutcome}
+                        onChange={(e) => updateGoal(goal.id, { desiredOutcome: e.target.value })}
+                        placeholder="What success looks like..."
+                        className="mt-1 bg-zinc-900/50 border-white/10 text-white placeholder:text-zinc-600 min-h-[60px]"
+                      />
+                    ) : (
+                      <p className="text-sm text-zinc-300 mt-0.5">
+                        {goal.desiredOutcome || 'No outcome defined'}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Current Status Summary */}
+                  <div>
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+                      Current Status Summary
+                    </label>
+                    {isEditMode ? (
+                      <Textarea
+                        value={goal.currentStatus}
+                        onChange={(e) => updateGoal(goal.id, { currentStatus: e.target.value })}
+                        placeholder="Progress so far..."
+                        className="mt-1 bg-zinc-900/50 border-white/10 text-white placeholder:text-zinc-600 min-h-[60px]"
+                      />
+                    ) : (
+                      <p className="text-sm text-zinc-300 mt-0.5">
+                        {goal.currentStatus || 'No status update'}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Milestone History */}
+                  <div className="mt-6 pt-6 border-t border-white/5">
+                    <h4 className="text-[10px] font-bold text-white uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                      <History className="h-4 w-4 text-blue-400" />
+                      Milestone History
+                    </h4>
+
+                    {(goal.milestones && goal.milestones.length > 0) ? (
+                      <div className="space-y-3 pl-2 relative">
+                        {/* Vertical timeline line */}
+                        <div className="absolute left-[7px] top-2 bottom-2 w-px bg-zinc-700/50" />
+
+                        {goal.milestones.map((milestone) => (
+                          <div key={milestone.id} className="relative flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-4">
+                              {/* Timeline dot */}
+                              <div className="h-3.5 w-3.5 rounded-full bg-blue-500/80 ring-2 ring-blue-500/10 z-10 flex-shrink-0" />
+                              
+                              {isEditMode ? (
+                                <div className="flex items-center gap-2 flex-1">
+                                  <Input
+                                    value={milestone.description}
+                                    onChange={(e) => updateMilestone(goal.id, milestone.id, { description: e.target.value })}
+                                    placeholder="Describe this milestone..."
+                                    className="bg-zinc-900/50 border-white/10 text-white placeholder:text-zinc-600 text-sm h-8"
+                                  />
+                                  <button
+                                    onClick={() => deleteMilestone(goal.id, milestone.id)}
+                                    className="text-zinc-500 hover:text-rose-400 transition-colors p-1"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <span className="text-sm text-zinc-200">
+                                  {milestone.description || 'No description'}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Day/Time chips */}
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              {isEditMode ? (
+                                <>
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-zinc-500 text-[10px]">Day</span>
+                                    <Input
+                                      type="number"
+                                      value={milestone.day}
+                                      onChange={(e) => updateMilestone(goal.id, milestone.id, { day: parseInt(e.target.value) || 1 })}
+                                      className="w-14 h-7 bg-zinc-900/50 border-white/10 text-white text-xs text-center"
+                                      min={1}
+                                    />
+                                  </div>
+                                  <div className="flex gap-1">
+                                    {timeOfDayOptions.map((tod) => {
+                                      const style = getTimeChipStyle(tod);
+                                      return (
+                                        <button
+                                          key={tod}
+                                          onClick={() => updateMilestone(goal.id, milestone.id, { timeOfDay: tod })}
+                                          className={cn(
+                                            "px-1.5 py-0.5 rounded text-[10px] font-medium transition-all border",
+                                            milestone.timeOfDay === tod
+                                              ? cn(style.bg, style.border, style.text)
+                                              : "bg-zinc-800/30 border-white/5 text-zinc-500 hover:text-zinc-300"
+                                          )}
+                                        >
+                                          {style.label}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <DayChip day={milestone.day} />
+                                  <TimeChip timeOfDay={milestone.timeOfDay} />
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-zinc-500 text-sm italic pl-2">No milestones recorded yet</p>
+                    )}
+
+                    {/* Add Milestone Button */}
+                    {isEditMode && (
+                      <button
+                        onClick={() => addMilestone(goal.id)}
+                        className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm mt-4 ml-2 transition-colors"
+                      >
+                        <Plus className="h-4 w-4" />
+                        <span>Add Milestone Step</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right Side - Progress Ring (col-span-3) */}
+                <div className="md:col-span-3 flex flex-col items-center justify-start pt-4">
+                  <GoalProgressRing value={goal.progress} />
+
+                  {/* Progress Slider (Edit Mode) */}
+                  {isEditMode && (
+                    <div className="w-full mt-4 px-2">
+                      <Slider
+                        value={[goal.progress]}
+                        onValueChange={([value]) => updateGoal(goal.id, { progress: value })}
+                        max={100}
+                        step={1}
+                        className="w-full [&>span:first-child]:bg-zinc-700 [&>span:first-child>span]:bg-blue-500 [&_[role=slider]]:border-blue-500 [&_[role=slider]]:bg-white"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {/* Add New Goal Button */}
+          {isEditMode && (
+            <button
+              onClick={addGoal}
+              className="w-full py-3 bg-transparent border-2 border-dashed border-zinc-500 text-blue-400 hover:border-blue-400 hover:bg-blue-500/5 font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
+            >
+              <Plus className="h-5 w-5" />
+              Add New Goal
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 };
