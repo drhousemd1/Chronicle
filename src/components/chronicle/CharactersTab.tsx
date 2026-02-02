@@ -9,7 +9,7 @@ import { uploadAvatar, dataUrlToBlob } from '@/services/supabase-data';
 import { toast } from 'sonner';
 import { AvatarGenerationModal } from './AvatarGenerationModal';
 import { AvatarActionButtons } from './AvatarActionButtons';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { aiEnhanceCharacterField } from '@/services/character-ai';
 import { CharacterGoalsSection } from './CharacterGoalsSection';
@@ -25,21 +25,36 @@ interface CharactersTabProps {
 // Hardcoded section component with distinct styling (matching CharacterGoalsSection)
 const HardcodedSection: React.FC<{
   title: string;
+  isExpanded: boolean;
+  onToggle: () => void;
   children: React.ReactNode;
-}> = ({ title, children }) => (
+  collapsedContent: React.ReactNode;
+}> = ({ title, isExpanded, onToggle, children, collapsedContent }) => (
   <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
     {/* Section Header */}
-    <div className="bg-[#4a5f7f] border-b border-white/20 px-5 py-3 flex items-center gap-3 shadow-lg">
-      <span className="text-[#a5d6a7] font-bold tracking-wide uppercase text-xs">Section</span>
-      <h2 className="text-[#e8f5e9] text-xl font-bold tracking-tight">{title}</h2>
+    <div className="bg-[#4a5f7f] border-b border-white/20 px-5 py-3 flex items-center justify-between shadow-lg">
+      <div className="flex items-center gap-3">
+        <span className="text-[#a5d6a7] font-bold tracking-wide uppercase text-xs">Section</span>
+        <h2 className="text-[#e8f5e9] text-xl font-bold tracking-tight">{title}</h2>
+      </div>
+      <button 
+        onClick={onToggle} 
+        className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-white/10"
+      >
+        {isExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
+      </button>
     </div>
     {/* Content */}
     <div className="p-5">
       {/* Inner card for visual depth */}
       <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
-        <div className="space-y-4">
-          {children}
-        </div>
+        {isExpanded ? (
+          <div className="space-y-4">
+            {children}
+          </div>
+        ) : (
+          collapsedContent
+        )}
       </div>
     </div>
   </div>
@@ -101,8 +116,19 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
   const [dragStart, setDragStart] = useState<{ x: number, y: number, pos: { x: number, y: number } } | null>(null);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [enhancingField, setEnhancingField] = useState<string | null>(null);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    avatar: true,
+    physicalAppearance: true,
+    currentlyWearing: true,
+    preferredClothing: true,
+    characterGoals: true
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const avatarContainerRef = useRef<HTMLDivElement>(null);
+
+  const toggleSection = (key: string) => {
+    setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
+  };
 
   const selected = characters.find(c => c.id === selectedId);
 
@@ -242,6 +268,67 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
     });
   };
 
+  // Condensed view helpers for collapsed sections
+  const CollapsedFieldRow: React.FC<{ label: string; value: string }> = ({ label, value }) => {
+    if (!value) return null;
+    return (
+      <div className="flex gap-3 py-0.5">
+        <span className="text-[10px] font-bold text-zinc-500 uppercase w-24 shrink-0">{label}</span>
+        <span className="text-sm text-zinc-200">{value}</span>
+      </div>
+    );
+  };
+
+  const CollapsedPhysicalAppearance = () => {
+    const data = selected?.physicalAppearance;
+    const hasAnyValue = data && Object.values(data).some(v => v);
+    if (!hasAnyValue) return <p className="text-zinc-500 text-sm italic">No appearance details</p>;
+    return (
+      <div className="space-y-0.5">
+        <CollapsedFieldRow label="Hair" value={data?.hairColor || ''} />
+        <CollapsedFieldRow label="Eyes" value={data?.eyeColor || ''} />
+        <CollapsedFieldRow label="Build" value={data?.build || ''} />
+        <CollapsedFieldRow label="Height" value={data?.height || ''} />
+        <CollapsedFieldRow label="Skin Tone" value={data?.skinTone || ''} />
+        <CollapsedFieldRow label="Body Hair" value={data?.bodyHair || ''} />
+        <CollapsedFieldRow label="Breast Size" value={data?.breastSize || ''} />
+        <CollapsedFieldRow label="Genitalia" value={data?.genitalia || ''} />
+        <CollapsedFieldRow label="Makeup" value={data?.makeup || ''} />
+        <CollapsedFieldRow label="Markings" value={data?.bodyMarkings || ''} />
+        <CollapsedFieldRow label="Conditions" value={data?.temporaryConditions || ''} />
+      </div>
+    );
+  };
+
+  const CollapsedCurrentlyWearing = () => {
+    const data = selected?.currentlyWearing;
+    const hasAnyValue = data && Object.values(data).some(v => v);
+    if (!hasAnyValue) return <p className="text-zinc-500 text-sm italic">No clothing details</p>;
+    return (
+      <div className="space-y-0.5">
+        <CollapsedFieldRow label="Top" value={data?.top || ''} />
+        <CollapsedFieldRow label="Bottom" value={data?.bottom || ''} />
+        <CollapsedFieldRow label="Undergarments" value={data?.undergarments || ''} />
+        <CollapsedFieldRow label="Other" value={data?.miscellaneous || ''} />
+      </div>
+    );
+  };
+
+  const CollapsedPreferredClothing = () => {
+    const data = selected?.preferredClothing;
+    const hasAnyValue = data && Object.values(data).some(v => v);
+    if (!hasAnyValue) return <p className="text-zinc-500 text-sm italic">No preferences set</p>;
+    return (
+      <div className="space-y-0.5">
+        <CollapsedFieldRow label="Casual" value={data?.casual || ''} />
+        <CollapsedFieldRow label="Work" value={data?.work || ''} />
+        <CollapsedFieldRow label="Sleep" value={data?.sleep || ''} />
+        <CollapsedFieldRow label="Undergarments" value={data?.undergarments || ''} />
+        <CollapsedFieldRow label="Other" value={data?.miscellaneous || ''} />
+      </div>
+    );
+  };
+
   // Handle adding a new custom section
   const handleAddSection = () => {
     if (!selected) return;
@@ -332,198 +419,238 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
           <div className="pb-4 px-2">
           <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
             {/* Section Header */}
-            <div className="bg-[#4a5f7f] border-b border-white/20 px-5 py-3 flex items-center gap-3 shadow-lg">
-              <span className="text-[#a5d6a7] font-bold tracking-wide uppercase text-xs">Section</span>
-              <h2 className="text-[#e8f5e9] text-xl font-bold tracking-tight">Avatar</h2>
+            <div className="bg-[#4a5f7f] border-b border-white/20 px-5 py-3 flex items-center justify-between shadow-lg">
+              <div className="flex items-center gap-3">
+                <span className="text-[#a5d6a7] font-bold tracking-wide uppercase text-xs">Section</span>
+                <h2 className="text-[#e8f5e9] text-xl font-bold tracking-tight">Avatar</h2>
+              </div>
+              <button 
+                onClick={() => toggleSection('avatar')} 
+                className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-white/10"
+              >
+                {expandedSections.avatar ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
+              </button>
             </div>
             {/* Content */}
             <div className="p-5">
               <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
-                <div className="space-y-4">
-                  <div className="flex flex-col items-center gap-4">
-                    <div 
-                      ref={avatarContainerRef}
-                      className={`relative group w-48 h-48 rounded-2xl overflow-hidden shadow-lg select-none ${isRepositioning ? 'ring-4 ring-blue-500 cursor-move' : 'border-2 border-white/10'}`}
-                      onMouseDown={handleMouseDown}
-                      onMouseMove={handleMouseMove}
-                      onMouseUp={handleMouseUp}
-                      onMouseLeave={handleMouseUp}
-                    >
+                {expandedSections.avatar ? (
+                  <div className="space-y-4">
+                    <div className="flex flex-col items-center gap-4">
+                      <div 
+                        ref={avatarContainerRef}
+                        className={`relative group w-48 h-48 rounded-2xl overflow-hidden shadow-lg select-none ${isRepositioning ? 'ring-4 ring-blue-500 cursor-move' : 'border-2 border-white/10'}`}
+                        onMouseDown={handleMouseDown}
+                        onMouseMove={handleMouseMove}
+                        onMouseUp={handleMouseUp}
+                        onMouseLeave={handleMouseUp}
+                      >
+                        {selected.avatarDataUrl ? (
+                          <img 
+                            src={selected.avatarDataUrl} 
+                            style={{ 
+                              objectPosition: `${avatarPos.x}% ${avatarPos.y}%`,
+                              pointerEvents: 'none'
+                            }}
+                            className={`w-full h-full object-cover transition-opacity ${isGeneratingImg ? 'opacity-50' : ''}`} 
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-zinc-800 flex items-center justify-center font-bold text-3xl text-zinc-500 border-2 border-dashed border-zinc-600">
+                            {selected.name.charAt(0) || '?'}
+                          </div>
+                        )}
+                        
+                        {isGeneratingImg && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-[2px]">
+                            <div className="w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+                          </div>
+                        )}
+
+                        {isRepositioning && (
+                          <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                            <div className="w-full h-[1px] bg-blue-500/30 absolute" />
+                            <div className="h-full w-[1px] bg-blue-500/30 absolute" />
+                            <div className="bg-blue-600 text-white text-[9px] font-black uppercase px-2 py-1 rounded absolute bottom-2 tracking-widest">Drag to Refocus</div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col gap-2 w-full">
+                        <AvatarActionButtons
+                          onUploadFromDevice={() => fileInputRef.current?.click()}
+                          onSelectFromLibrary={(imageUrl) => {
+                            if (selected) {
+                              onUpdate(selected.id, {
+                                avatarDataUrl: imageUrl,
+                                avatarPosition: { x: 50, y: 50 }
+                              });
+                            }
+                          }}
+                          onGenerateClick={handleAiPortrait}
+                          disabled={isUploading}
+                          isGenerating={isGeneratingImg}
+                          isUploading={isUploading}
+                        />
+                        {selected.avatarDataUrl && (
+                          <Button 
+                            variant={isRepositioning ? 'primary' : 'secondary'} 
+                            onClick={() => setIsRepositioning(!isRepositioning)}
+                            className={`w-full text-[10px] font-bold leading-none ${isRepositioning ? 'bg-blue-600 text-white' : ''}`}
+                          >
+                            {isRepositioning ? "Save Position" : "Reposition"}
+                          </Button>
+                        )}
+                      </div>
+                      
+                      <input 
+                        type="file" 
+                        className="hidden" 
+                        ref={fileInputRef} 
+                        accept="image/*" 
+                        onChange={async (e) => {
+                          const f = e.target.files?.[0];
+                          if (!f || !selected || !user) {
+                            if (!user) toast.error('Please sign in to upload avatars');
+                            return;
+                          }
+                          
+                          setIsUploading(true);
+                          try {
+                            const reader = new FileReader();
+                            reader.onload = async () => {
+                              try {
+                                const optimized = await resizeImage(reader.result as string, 512, 512, 0.7);
+                                const blob = dataUrlToBlob(optimized);
+                                if (!blob) throw new Error('Failed to process image');
+                                
+                                const filename = `avatar-${selected.id}-${Date.now()}.jpg`;
+                                const publicUrl = await uploadAvatar(user.id, blob, filename);
+                                
+                                onUpdate(selected.id, { 
+                                  avatarDataUrl: publicUrl,
+                                  avatarPosition: { x: 50, y: 50 } 
+                                });
+                                setIsRepositioning(true);
+                              } catch (error) {
+                                console.error('Avatar upload failed:', error);
+                                toast.error('Failed to upload avatar');
+                              } finally {
+                                setIsUploading(false);
+                              }
+                            };
+                            reader.readAsDataURL(f);
+                          } catch (error) {
+                            console.error('Avatar upload failed:', error);
+                            toast.error('Failed to upload avatar');
+                            setIsUploading(false);
+                          }
+                        }} 
+                      />
+                    </div>
+                    
+                    {/* Avatar Panel Fields */}
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Name</label>
+                        <input type="text" value={selected.name === "New Character" ? "" : selected.name} onChange={(e) => onUpdate(selected.id, { name: e.target.value })} placeholder="Character name" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Nicknames</label>
+                        <input type="text" value={selected.nicknames || ''} onChange={(e) => onUpdate(selected.id, { nicknames: e.target.value })} placeholder="e.g., Mom, Mother (comma-separated)" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Age</label>
+                          <input type="text" value={selected.age || ''} onChange={(e) => onUpdate(selected.id, { age: e.target.value })} placeholder="e.g., 25" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Sex / Identity</label>
+                          <input type="text" value={selected.sexType} onChange={(e) => onUpdate(selected.id, { sexType: e.target.value })} placeholder="e.g., Female, Male, Non-binary" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Location</label>
+                        <input type="text" value={selected.location || ''} onChange={(e) => onUpdate(selected.id, { location: e.target.value })} placeholder="Current location" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Current Mood</label>
+                        <input type="text" value={selected.currentMood || ''} onChange={(e) => onUpdate(selected.id, { currentMood: e.target.value })} placeholder="e.g., Happy, Tired" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block">Controlled By</label>
+                          <div className="flex p-1 bg-zinc-800 rounded-xl">
+                            <button 
+                              onClick={() => onUpdate(selected.id, { controlledBy: 'AI' })}
+                              className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.controlledBy === 'AI' ? 'bg-zinc-700 text-blue-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+                            >
+                              AI
+                            </button>
+                            <button 
+                              onClick={() => onUpdate(selected.id, { controlledBy: 'User' })}
+                              className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.controlledBy === 'User' ? 'bg-zinc-700 text-amber-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+                            >
+                              User
+                            </button>
+                          </div>
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block">Character Role</label>
+                          <div className="flex p-1 bg-zinc-800 rounded-xl">
+                            <button 
+                              onClick={() => onUpdate(selected.id, { characterRole: 'Main' })}
+                              className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.characterRole === 'Main' ? 'bg-zinc-700 text-indigo-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+                            >
+                              Main
+                            </button>
+                            <button 
+                              onClick={() => onUpdate(selected.id, { characterRole: 'Side' })}
+                              className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.characterRole === 'Side' ? 'bg-zinc-700 text-zinc-300 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+                            >
+                              Side
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Role Description</label>
+                        <input type="text" value={selected.roleDescription || ''} onChange={(e) => onUpdate(selected.id, { roleDescription: e.target.value })} placeholder="Brief description of the character's role" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  /* Collapsed Avatar View */
+                  <div className="flex items-start gap-4">
+                    {/* Small avatar thumbnail */}
+                    <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-white/10">
                       {selected.avatarDataUrl ? (
                         <img 
                           src={selected.avatarDataUrl} 
-                          style={{ 
-                            objectPosition: `${avatarPos.x}% ${avatarPos.y}%`,
-                            pointerEvents: 'none'
-                          }}
-                          className={`w-full h-full object-cover transition-opacity ${isGeneratingImg ? 'opacity-50' : ''}`} 
+                          style={{ objectPosition: `${avatarPos.x}% ${avatarPos.y}%` }}
+                          className="w-full h-full object-cover" 
                         />
                       ) : (
-                        <div className="w-full h-full bg-zinc-800 flex items-center justify-center font-bold text-3xl text-zinc-500 border-2 border-dashed border-zinc-600">
+                        <div className="w-full h-full bg-zinc-800 flex items-center justify-center font-bold text-xl text-zinc-500">
                           {selected.name.charAt(0) || '?'}
                         </div>
                       )}
-                      
-                      {isGeneratingImg && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-[2px]">
-                          <div className="w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
-                        </div>
+                    </div>
+                    {/* Condensed info */}
+                    <div className="flex-1 space-y-1">
+                      <h3 className="text-lg font-bold text-white">{selected.name || 'Unnamed'}</h3>
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-zinc-300">
+                        {selected.age && <span>{selected.age} years</span>}
+                        {selected.sexType && <span>{selected.sexType}</span>}
+                        {selected.location && <span className="text-zinc-400">{selected.location}</span>}
+                      </div>
+                      {selected.currentMood && (
+                        <p className="text-xs text-zinc-400 italic">Mood: {selected.currentMood}</p>
                       )}
-
-                      {isRepositioning && (
-                        <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                          <div className="w-full h-[1px] bg-blue-500/30 absolute" />
-                          <div className="h-full w-[1px] bg-blue-500/30 absolute" />
-                          <div className="bg-blue-600 text-white text-[9px] font-black uppercase px-2 py-1 rounded absolute bottom-2 tracking-widest">Drag to Refocus</div>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex flex-col gap-2 w-full">
-                      <AvatarActionButtons
-                        onUploadFromDevice={() => fileInputRef.current?.click()}
-                        onSelectFromLibrary={(imageUrl) => {
-                          if (selected) {
-                            onUpdate(selected.id, {
-                              avatarDataUrl: imageUrl,
-                              avatarPosition: { x: 50, y: 50 }
-                            });
-                          }
-                        }}
-                        onGenerateClick={handleAiPortrait}
-                        disabled={isUploading}
-                        isGenerating={isGeneratingImg}
-                        isUploading={isUploading}
-                      />
-                      {selected.avatarDataUrl && (
-                        <Button 
-                          variant={isRepositioning ? 'primary' : 'secondary'} 
-                          onClick={() => setIsRepositioning(!isRepositioning)}
-                          className={`w-full text-[10px] font-bold leading-none ${isRepositioning ? 'bg-blue-600 text-white' : ''}`}
-                        >
-                          {isRepositioning ? "Save Position" : "Reposition"}
-                        </Button>
-                      )}
-                    </div>
-                    
-                    <input 
-                      type="file" 
-                      className="hidden" 
-                      ref={fileInputRef} 
-                      accept="image/*" 
-                      onChange={async (e) => {
-                        const f = e.target.files?.[0];
-                        if (!f || !selected || !user) {
-                          if (!user) toast.error('Please sign in to upload avatars');
-                          return;
-                        }
-                        
-                        setIsUploading(true);
-                        try {
-                          const reader = new FileReader();
-                          reader.onload = async () => {
-                            try {
-                              const optimized = await resizeImage(reader.result as string, 512, 512, 0.7);
-                              const blob = dataUrlToBlob(optimized);
-                              if (!blob) throw new Error('Failed to process image');
-                              
-                              const filename = `avatar-${selected.id}-${Date.now()}.jpg`;
-                              const publicUrl = await uploadAvatar(user.id, blob, filename);
-                              
-                              onUpdate(selected.id, { 
-                                avatarDataUrl: publicUrl,
-                                avatarPosition: { x: 50, y: 50 } 
-                              });
-                              setIsRepositioning(true);
-                            } catch (error) {
-                              console.error('Avatar upload failed:', error);
-                              toast.error('Failed to upload avatar');
-                            } finally {
-                              setIsUploading(false);
-                            }
-                          };
-                          reader.readAsDataURL(f);
-                        } catch (error) {
-                          console.error('Avatar upload failed:', error);
-                          toast.error('Failed to upload avatar');
-                          setIsUploading(false);
-                        }
-                      }} 
-                    />
-                  </div>
-                  
-                  {/* Avatar Panel Fields */}
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Name</label>
-                      <input type="text" value={selected.name === "New Character" ? "" : selected.name} onChange={(e) => onUpdate(selected.id, { name: e.target.value })} placeholder="Character name" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Nicknames</label>
-                      <input type="text" value={selected.nicknames || ''} onChange={(e) => onUpdate(selected.id, { nicknames: e.target.value })} placeholder="e.g., Mom, Mother (comma-separated)" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Age</label>
-                        <input type="text" value={selected.age || ''} onChange={(e) => onUpdate(selected.id, { age: e.target.value })} placeholder="e.g., 25" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Sex / Identity</label>
-                        <input type="text" value={selected.sexType} onChange={(e) => onUpdate(selected.id, { sexType: e.target.value })} placeholder="e.g., Female, Male, Non-binary" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Location</label>
-                      <input type="text" value={selected.location || ''} onChange={(e) => onUpdate(selected.id, { location: e.target.value })} placeholder="Current location" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Current Mood</label>
-                      <input type="text" value={selected.currentMood || ''} onChange={(e) => onUpdate(selected.id, { currentMood: e.target.value })} placeholder="e.g., Happy, Tired" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block">Controlled By</label>
-                        <div className="flex p-1 bg-zinc-800 rounded-xl">
-                          <button 
-                            onClick={() => onUpdate(selected.id, { controlledBy: 'AI' })}
-                            className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.controlledBy === 'AI' ? 'bg-zinc-700 text-blue-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
-                          >
-                            AI
-                          </button>
-                          <button 
-                            onClick={() => onUpdate(selected.id, { controlledBy: 'User' })}
-                            className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.controlledBy === 'User' ? 'bg-zinc-700 text-amber-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
-                          >
-                            User
-                          </button>
-                        </div>
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block">Character Role</label>
-                        <div className="flex p-1 bg-zinc-800 rounded-xl">
-                          <button 
-                            onClick={() => onUpdate(selected.id, { characterRole: 'Main' })}
-                            className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.characterRole === 'Main' ? 'bg-zinc-700 text-indigo-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
-                          >
-                            Main
-                          </button>
-                          <button 
-                            onClick={() => onUpdate(selected.id, { characterRole: 'Side' })}
-                            className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.characterRole === 'Side' ? 'bg-zinc-700 text-zinc-300 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
-                          >
-                            Side
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Role Description</label>
-                      <input type="text" value={selected.roleDescription || ''} onChange={(e) => onUpdate(selected.id, { roleDescription: e.target.value })} placeholder="Brief description of the character's role" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
             </div>
@@ -537,7 +664,12 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
           </div>
 
           {/* HARDCODED SECTION 1: Physical Appearance */}
-          <HardcodedSection title="Physical Appearance">
+          <HardcodedSection 
+            title="Physical Appearance"
+            isExpanded={expandedSections.physicalAppearance}
+            onToggle={() => toggleSection('physicalAppearance')}
+            collapsedContent={<CollapsedPhysicalAppearance />}
+          >
             <HardcodedInput label="Hair Color" value={selected.physicalAppearance?.hairColor || ''} onChange={(v) => handlePhysicalAppearanceChange('hairColor', v)} placeholder="e.g., Brunette, Blonde, Black" onEnhance={() => handleEnhanceField('hairColor', 'physicalAppearance', () => selected.physicalAppearance?.hairColor || '', (v) => handlePhysicalAppearanceChange('hairColor', v))} isEnhancing={enhancingField === 'hairColor'} />
             <HardcodedInput label="Eye Color" value={selected.physicalAppearance?.eyeColor || ''} onChange={(v) => handlePhysicalAppearanceChange('eyeColor', v)} placeholder="e.g., Blue, Brown, Green" onEnhance={() => handleEnhanceField('eyeColor', 'physicalAppearance', () => selected.physicalAppearance?.eyeColor || '', (v) => handlePhysicalAppearanceChange('eyeColor', v))} isEnhancing={enhancingField === 'eyeColor'} />
             <HardcodedInput label="Build" value={selected.physicalAppearance?.build || ''} onChange={(v) => handlePhysicalAppearanceChange('build', v)} placeholder="e.g., Athletic, Slim, Curvy" onEnhance={() => handleEnhanceField('build', 'physicalAppearance', () => selected.physicalAppearance?.build || '', (v) => handlePhysicalAppearanceChange('build', v))} isEnhancing={enhancingField === 'build'} />
@@ -552,7 +684,12 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
           </HardcodedSection>
 
           {/* HARDCODED SECTION 2: Currently Wearing */}
-          <HardcodedSection title="Currently Wearing">
+          <HardcodedSection 
+            title="Currently Wearing"
+            isExpanded={expandedSections.currentlyWearing}
+            onToggle={() => toggleSection('currentlyWearing')}
+            collapsedContent={<CollapsedCurrentlyWearing />}
+          >
             <HardcodedInput label="Shirt/Top" value={selected.currentlyWearing?.top || ''} onChange={(v) => handleCurrentlyWearingChange('top', v)} placeholder="e.g., White blouse, T-shirt" onEnhance={() => handleEnhanceField('top', 'currentlyWearing', () => selected.currentlyWearing?.top || '', (v) => handleCurrentlyWearingChange('top', v))} isEnhancing={enhancingField === 'top'} />
             <HardcodedInput label="Pants/Bottoms" value={selected.currentlyWearing?.bottom || ''} onChange={(v) => handleCurrentlyWearingChange('bottom', v)} placeholder="e.g., Jeans, Skirt, Shorts" onEnhance={() => handleEnhanceField('bottom', 'currentlyWearing', () => selected.currentlyWearing?.bottom || '', (v) => handleCurrentlyWearingChange('bottom', v))} isEnhancing={enhancingField === 'bottom'} />
             <HardcodedInput label="Undergarments" value={selected.currentlyWearing?.undergarments || ''} onChange={(v) => handleCurrentlyWearingChange('undergarments', v)} placeholder="Bras, panties, boxers, etc." onEnhance={() => handleEnhanceField('undergarments', 'currentlyWearing', () => selected.currentlyWearing?.undergarments || '', (v) => handleCurrentlyWearingChange('undergarments', v))} isEnhancing={enhancingField === 'undergarments'} />
@@ -560,7 +697,12 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
           </HardcodedSection>
 
           {/* HARDCODED SECTION 3: Preferred Clothing */}
-          <HardcodedSection title="Preferred Clothing">
+          <HardcodedSection 
+            title="Preferred Clothing"
+            isExpanded={expandedSections.preferredClothing}
+            onToggle={() => toggleSection('preferredClothing')}
+            collapsedContent={<CollapsedPreferredClothing />}
+          >
             <HardcodedInput label="Casual" value={selected.preferredClothing?.casual || ''} onChange={(v) => handlePreferredClothingChange('casual', v)} placeholder="e.g., Jeans and t-shirts" onEnhance={() => handleEnhanceField('casual', 'preferredClothing', () => selected.preferredClothing?.casual || '', (v) => handlePreferredClothingChange('casual', v))} isEnhancing={enhancingField === 'casual'} />
             <HardcodedInput label="Work" value={selected.preferredClothing?.work || ''} onChange={(v) => handlePreferredClothingChange('work', v)} placeholder="e.g., Business casual, Uniform" onEnhance={() => handleEnhanceField('work', 'preferredClothing', () => selected.preferredClothing?.work || '', (v) => handlePreferredClothingChange('work', v))} isEnhancing={enhancingField === 'work'} />
             <HardcodedInput label="Sleep" value={selected.preferredClothing?.sleep || ''} onChange={(v) => handlePreferredClothingChange('sleep', v)} placeholder="e.g., Pajamas, Nightgown" onEnhance={() => handleEnhanceField('sleep', 'preferredClothing', () => selected.preferredClothing?.sleep || '', (v) => handlePreferredClothingChange('sleep', v))} isEnhancing={enhancingField === 'sleep'} />
@@ -572,6 +714,8 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
           <CharacterGoalsSection
             goals={selected.goals || []}
             onChange={(goals) => onUpdate(selected.id, { goals })}
+            isExpanded={expandedSections.characterGoals}
+            onToggle={() => toggleSection('characterGoals')}
           />
 
           {/* USER-CREATED CUSTOM SECTIONS */}
