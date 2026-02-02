@@ -34,8 +34,13 @@ const HardcodedSection: React.FC<{
       <h2 className="text-[#e8f5e9] text-xl font-bold tracking-tight">{title}</h2>
     </div>
     {/* Content */}
-    <div className="p-5 space-y-4">
-      {children}
+    <div className="p-5">
+      {/* Inner card for visual depth */}
+      <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
+        <div className="space-y-4">
+          {children}
+        </div>
+      </div>
     </div>
   </div>
 );
