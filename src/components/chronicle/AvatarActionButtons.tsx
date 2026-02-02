@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Sparkles, Upload, ChevronDown, Image as ImageIcon } from "lucide-react";
+import { Sparkles, Upload, Image as ImageIcon } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,7 +31,7 @@ export function AvatarActionButtons({
 
   return (
     <>
-      <div className="flex flex-col gap-2 w-full">
+      <div className="flex gap-2 w-full">
         {/* Upload Button - Full width dropdown trigger */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -48,7 +48,6 @@ export function AvatarActionButtons({
             >
               <Upload className="w-3.5 h-3.5 shrink-0" />
               <span className="min-w-0 truncate">{isUploading ? "Uploading..." : "Upload Image"}</span>
-              <ChevronDown className="w-3.5 h-3.5 shrink-0" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent 
@@ -78,21 +77,21 @@ export function AvatarActionButtons({
           onClick={onGenerateClick}
           disabled={isDisabled || isGenerating}
           className="relative flex w-full min-w-0 h-10 items-center justify-center gap-2 px-4
-            rounded-xl border border-[hsl(var(--ui-border))] overflow-hidden
+            rounded-xl border border-white/5 overflow-hidden
             text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none disabled:opacity-50
             shadow-[0_12px_40px_rgba(0,0,0,0.45)]
             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-purple))]/45
             transition-colors"
         >
           {/* Background layers */}
-          <span className="absolute inset-0 bg-[hsl(var(--ui-surface-2))]" aria-hidden />
+          <span className="absolute inset-0 bg-[hsl(220_25%_16%)]" aria-hidden />
           <span 
-            className="absolute inset-0 bg-gradient-to-b from-[hsl(var(--accent-teal)/0.22)] to-[hsl(var(--accent-purple)/0.18)]" 
+            className="absolute inset-0 bg-gradient-to-r from-[hsl(var(--accent-teal)/0.35)] to-[hsl(var(--accent-purple)/0.30)]" 
             aria-hidden 
           />
           {/* Content */}
           <span className="relative z-10 flex items-center gap-2">
-            <Sparkles className="w-3.5 h-3.5 shrink-0" />
+            <Sparkles className="w-3.5 h-3.5 shrink-0 text-[hsl(var(--accent-teal))]" />
             <span className="min-w-0 truncate">{isGenerating ? "Generating..." : "AI Generate"}</span>
           </span>
         </button>
