@@ -71,28 +71,108 @@ export function AvatarActionButtons({
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* AI Generate Button - Full width */}
+        {/* AI Generate Button - Premium layered design */}
         <button
           type="button"
           onClick={onGenerateClick}
           disabled={isDisabled || isGenerating}
-          className="relative flex w-full min-w-0 h-10 items-center justify-center gap-2 px-4
-            rounded-xl border border-white/5 overflow-hidden
-            text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none disabled:opacity-50
+          className="group relative flex w-full min-w-0 h-10 px-4 rounded-xl overflow-hidden
+            text-white text-[10px] font-bold leading-none
             shadow-[0_12px_40px_rgba(0,0,0,0.45)]
-            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-purple))]/45
-            transition-colors"
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/45
+            disabled:opacity-50"
         >
-          {/* Background layers */}
-          <span className="absolute inset-0 bg-[hsl(220_25%_16%)]" aria-hidden />
-          <span 
-            className="absolute inset-0 bg-gradient-to-r from-[hsl(var(--accent-teal)/0.35)] to-[hsl(var(--accent-purple)/0.30)]" 
-            aria-hidden 
+          {/* Layer 1: Iridescent outer border ring */}
+          <span
+            aria-hidden
+            className="absolute inset-0 rounded-xl"
+            style={{
+              background:
+                "linear-gradient(90deg, rgba(255,255,255,0.34) 0%, rgba(34,184,200,0.62) 18%, rgba(255,255,255,0.22) 44%, rgba(109,94,247,0.64) 78%, rgba(255,255,255,0.28) 100%)",
+              filter:
+                "drop-shadow(0 0 10px rgba(255,255,255,0.10)) drop-shadow(0 0 18px rgba(109,94,247,0.10)) drop-shadow(0 0 18px rgba(34,184,200,0.10))",
+            }}
           />
-          {/* Content */}
-          <span className="relative z-10 flex items-center gap-2">
-            <Sparkles className="w-3.5 h-3.5 shrink-0 text-[hsl(var(--accent-teal))]" />
-            <span className="min-w-0 truncate">{isGenerating ? "Generating..." : "AI Generate"}</span>
+
+          {/* Layer 2: Mask to create 2px border effect */}
+          <span
+            aria-hidden
+            className="absolute inset-[2px] rounded-[10px]"
+            style={{ background: "#2B2D33" }}
+          />
+
+          {/* Layer 3: Button surface with gradient */}
+          <span
+            aria-hidden
+            className="absolute inset-[2px] rounded-[10px]"
+            style={{
+              background:
+                "linear-gradient(90deg, rgba(34,184,200,0.22), rgba(109,94,247,0.22)), #2B2D33",
+            }}
+          />
+
+          {/* Layer 4: Soft top sheen */}
+          <span
+            aria-hidden
+            className="absolute inset-[2px] rounded-[10px]"
+            style={{
+              background:
+                "linear-gradient(180deg, rgba(255,255,255,0.11), rgba(255,255,255,0.00) 46%, rgba(0,0,0,0.16))",
+            }}
+          />
+
+          {/* Layer 5: Border sheen (top-left diagonal) */}
+          <span
+            aria-hidden
+            className="absolute inset-0 rounded-xl pointer-events-none"
+            style={{
+              boxShadow:
+                "inset 0 1px 0 rgba(255,255,255,0.26), inset 0 -1px 0 rgba(0,0,0,0.22)",
+              background:
+                "linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.00) 55%)",
+              mixBlendMode: "screen",
+            }}
+          />
+
+          {/* Layer 6: Teal bloom (top-left) */}
+          <span
+            aria-hidden
+            className="absolute -left-8 -top-8 h-32 w-32 rounded-full blur-2xl pointer-events-none"
+            style={{
+              background:
+                "radial-gradient(circle, rgba(34,184,200,0.28), transparent 62%)",
+            }}
+          />
+
+          {/* Layer 7: Purple bloom (bottom-right) */}
+          <span
+            aria-hidden
+            className="absolute -right-10 -bottom-10 h-40 w-40 rounded-full blur-3xl pointer-events-none"
+            style={{
+              background:
+                "radial-gradient(circle, rgba(109,94,247,0.26), transparent 65%)",
+            }}
+          />
+
+          {/* Layer 8: Crisp inner edge */}
+          <span
+            aria-hidden
+            className="absolute inset-0 rounded-xl pointer-events-none"
+            style={{
+              boxShadow:
+                "inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -1px 0 rgba(0,0,0,0.26), 0 0 0 1px rgba(255,255,255,0.06)",
+            }}
+          />
+
+          {/* Content layer */}
+          <span className="relative z-10 flex items-center justify-center gap-2 w-full">
+            <Sparkles 
+              className="w-3.5 h-3.5 shrink-0 text-cyan-200" 
+              style={{ filter: "drop-shadow(0 0 10px rgba(34,184,200,0.35))" }}
+            />
+            <span className="min-w-0 truncate drop-shadow-[0_1px_0_rgba(0,0,0,0.35)]">
+              {isGenerating ? "Generating..." : "AI Generate"}
+            </span>
           </span>
         </button>
       </div>
