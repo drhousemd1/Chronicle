@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { uploadAvatar, dataUrlToBlob } from '@/services/supabase-data';
 import { toast } from 'sonner';
 import { AvatarGenerationModal } from './AvatarGenerationModal';
-import { UploadSourceMenu } from './UploadSourceMenu';
+import { AvatarActionButtons } from './AvatarActionButtons';
 import { Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { aiEnhanceCharacterField } from '@/services/character-ai';
@@ -380,28 +380,21 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
                     </div>
 
                     <div className="flex flex-col gap-2 w-full">
-                      <div className="flex gap-2 w-full">
-                        <UploadSourceMenu
-                          onUploadFromDevice={() => fileInputRef.current?.click()}
-                          onSelectFromLibrary={(imageUrl) => {
-                            if (selected) {
-                              onUpdate(selected.id, {
-                                avatarDataUrl: imageUrl,
-                                avatarPosition: { x: 50, y: 50 }
-                              });
-                            }
-                          }}
-                          disabled={isUploading}
-                          isUploading={isUploading}
-                          label="Upload Image"
-                          variant="outlineDark"
-                          className="flex-1 text-xs min-w-0"
-                        />
-                        <Button variant="gradient" onClick={handleAiPortrait} disabled={isGeneratingImg} className="flex-1 gap-2 text-xs whitespace-nowrap min-w-0">
-                          <Sparkles className="w-3.5 h-3.5" />
-                          {isGeneratingImg ? "..." : "AI Generate"}
-                        </Button>
-                      </div>
+                      <AvatarActionButtons
+                        onUploadFromDevice={() => fileInputRef.current?.click()}
+                        onSelectFromLibrary={(imageUrl) => {
+                          if (selected) {
+                            onUpdate(selected.id, {
+                              avatarDataUrl: imageUrl,
+                              avatarPosition: { x: 50, y: 50 }
+                            });
+                          }
+                        }}
+                        onGenerateClick={handleAiPortrait}
+                        disabled={isUploading}
+                        isGenerating={isGeneratingImg}
+                        isUploading={isUploading}
+                      />
                       {selected.avatarDataUrl && (
                         <Button 
                           variant={isRepositioning ? 'primary' : 'secondary'} 
