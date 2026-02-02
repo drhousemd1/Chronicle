@@ -7,6 +7,7 @@ interface CircularProgressProps {
   strokeWidth?: number;
   className?: string;
   onClick?: () => void;
+  variant?: 'light' | 'dark';
 }
 
 export const CircularProgress: React.FC<CircularProgressProps> = ({
@@ -14,7 +15,8 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
   size = 40,
   strokeWidth = 3,
   className,
-  onClick
+  onClick,
+  variant = 'light'
 }) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -24,13 +26,22 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
   const getColor = () => {
     if (clampedValue >= 100) return '#22c55e'; // green-500
     if (clampedValue > 0) return '#3b82f6';    // blue-500
-    return '#94a3b8';                           // slate-400
+    return variant === 'dark' ? '#475569' : '#94a3b8'; // slate-600 or slate-400
   };
 
   const getTextColor = () => {
+    if (variant === 'dark') {
+      if (clampedValue >= 100) return 'text-green-400';
+      if (clampedValue > 0) return 'text-blue-400';
+      return 'text-slate-400';
+    }
     if (clampedValue >= 100) return 'text-green-600';
     if (clampedValue > 0) return 'text-blue-600';
     return 'text-slate-400';
+  };
+
+  const getBackgroundStroke = () => {
+    return variant === 'dark' ? '#334155' : '#e2e8f0'; // slate-700 or slate-200
   };
 
   return (
@@ -50,7 +61,7 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="#e2e8f0"
+          stroke={getBackgroundStroke()}
           strokeWidth={strokeWidth}
           fill="none"
         />
@@ -69,7 +80,8 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
         />
       </svg>
       <span className={cn(
-        "absolute text-[10px] font-bold",
+        "absolute font-bold",
+        size >= 80 ? "text-lg" : "text-[10px]",
         getTextColor()
       )}>
         {clampedValue}%
