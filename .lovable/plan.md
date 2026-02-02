@@ -1,143 +1,69 @@
 
+Goal: Make the “Upload Image” + “AI Generate” button text the same size as the other Avatar panel UI text (specifically the label text for Name/Nicknames/Age), and stop any overflow/clipping on narrow screens.
 
-# Fix Avatar Action Buttons - Stack Layout and Refined Styling
+What’s happening now (confirmed in code)
+- In `src/components/chronicle/CharactersTab.tsx`, the Avatar panel labels (“Name”, “Nicknames”, “Age”, etc.) use:
+  - `text-[10px] font-bold ... uppercase tracking-widest`
+- In `src/components/chronicle/AvatarActionButtons.tsx`, both buttons currently use:
+  - `text-sm font-semibold`
+  - This is visibly larger than the rest of the Avatar panel typography, which is exactly what you’re seeing.
 
-## Problem Analysis
+Implementation approach (minimal, targeted, consistent)
+1) Match the button typography to the Avatar panel label typography
+- File: `src/components/chronicle/AvatarActionButtons.tsx`
+- Change BOTH buttons’ typography from `text-sm font-semibold` to match the panel’s label scale:
+  - Use `text-[10px] font-bold` (same size as Name/Nicknames/Age labels)
+  - Keep casing as-is (“Upload Image”, “AI Generate”) unless you want them uppercase. (Your labels are uppercase; buttons in your mockups are typically Title Case. We can keep Title Case and only match size.)
+- Add `leading-none` to keep the 10px type from looking vertically “floaty” inside a tall button.
+- Add `min-w-0` on the button + `truncate` on the text span so even on very narrow screens, text won’t blow out of the container.
 
-Comparing the current state (images 1 & 2) to the mockup (image 3):
+Concrete class changes for the two main buttons
+- Upload button (`<button ...>`)
+  - Replace: `text-[hsl(var(--ui-text))] text-sm font-semibold`
+  - With: `text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none`
+  - Add: `min-w-0`
+  - Change the label span to: `<span className="min-w-0 truncate">...</span>`
+- AI Generate button (`<button ...>`)
+  - Replace: `text-[hsl(var(--ui-text))] text-sm font-semibold`
+  - With: `text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none`
+  - Add: `min-w-0`
+  - Change the label span to: `<span className="min-w-0 truncate">...</span>`
 
-| Issue | Current | Mockup |
-|-------|---------|--------|
-| **Layout** | Side-by-side (causes scaling issues) | Should be stacked vertically |
-| **Border radius** | `rounded-2xl` (16px) - too round | More rectangular with softer corners (`rounded-xl` or 12px) |
-| **Upload button** | Split button with text truncating | Single button with "Upload Image ▾" text inline |
-| **AI Generate** | Gradient is close but button is too round | More rectangular, gradient matches |
+2) Scale the icons down to fit the 10px typography
+- File: `src/components/chronicle/AvatarActionButtons.tsx`
+- Current icons are `w-4 h-4` (16px). That reads too big next to 10px type.
+- Change icons used inside the buttons to `w-3.5 h-3.5` (14px):
+  - Upload icon
+  - ChevronDown icon
+  - Sparkles icon
 
----
+3) Fix dropdown menu item text size to match (so nothing “randomly” looks bigger)
+- File: `src/components/chronicle/AvatarActionButtons.tsx`
+- Radix dropdown menu items have a default `text-sm` coming from `src/components/ui/dropdown-menu.tsx`.
+- Override the two `DropdownMenuItem` rows with `text-[10px]` and shrink their icons to `w-3.5 h-3.5`.
+  - This prevents the dropdown from feeling mismatched against the Avatar panel’s typography.
 
-## Solution
+4) Bring the “Reposition / Save Position” button in the Avatar panel down to the same size
+- File: `src/components/chronicle/CharactersTab.tsx`
+- The “Reposition” button uses your local `Button` component from `src/components/chronicle/UI.tsx` which has a base `text-sm`.
+- Since `className` is appended last in that Button implementation, we can override safely by adding:
+  - `className="w-full text-[10px] font-bold leading-none ..."`
+- This ensures all action buttons in the Avatar panel (Upload, AI Generate, Reposition) are the same scale.
 
-### 1. Change Layout from Horizontal to Vertical Stack
+Validation checklist (what you should see after)
+- “Upload Image” and “AI Generate” text should visually match the “Name / Nicknames / Age” label size (10px).
+- Nothing should overflow the Avatar panel on narrow screens:
+  - If the screen gets extremely narrow, the button text should truncate (ellipsis) rather than spilling out.
+- Icons should feel proportionate and no longer dominate the line.
 
-Change the flex container from `flex-row` to `flex-col`:
+Files that will be changed
+- `src/components/chronicle/AvatarActionButtons.tsx`
+  - Reduce text size to `text-[10px]`
+  - Add truncation/min-width rules for safety
+  - Shrink icons
+  - Override dropdown item typography
+- `src/components/chronicle/CharactersTab.tsx`
+  - Override “Reposition / Save Position” button typography to `text-[10px]` for consistency within the Avatar panel
 
-**File**: `src/components/chronicle/AvatarActionButtons.tsx`
-
-```tsx
-// Line 34: Change from horizontal to vertical
-<div className="flex flex-col gap-2 w-full">
-```
-
-### 2. Reduce Border Radius
-
-Change `rounded-2xl` (16px) to `rounded-xl` (12px) for a more rectangular look:
-
-```tsx
-// Line 36: Upload button container
-rounded-2xl → rounded-xl
-
-// Line 93: AI Generate button
-rounded-2xl → rounded-xl
-```
-
-### 3. Simplify Upload Button to Single-Line Design
-
-The mockup shows "Upload Image" with a chevron inline as one text element, not a split button. Restructure to:
-
-```tsx
-// Simplified Upload button - chevron is part of the main button text
-<div className="flex h-10 w-full rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
-  <DropdownMenuTrigger asChild>
-    <button className="flex flex-1 items-center justify-center gap-2 px-4 ...">
-      <Upload className="w-4 h-4 shrink-0" />
-      <span>Upload Image</span>
-      <ChevronDown className="w-4 h-4 shrink-0 ml-1" />
-    </button>
-  </DropdownMenuTrigger>
-</div>
-```
-
-This makes the entire button a dropdown trigger with the chevron as part of the label.
-
-### 4. Make AI Generate Button Full Width
-
-Since it's now in a vertical stack:
-
-```tsx
-// Line 88-97: Remove flex-1, add w-full
-<button
-  className="relative flex w-full h-10 items-center justify-center gap-2 px-4
-    rounded-xl border ..."
->
-```
-
----
-
-## Complete Updated Component Structure
-
-```tsx
-<div className="flex flex-col gap-2 w-full">
-  {/* Upload Button - Full width, single dropdown trigger */}
-  <DropdownMenu>
-    <DropdownMenuTrigger asChild>
-      <button className="flex h-10 w-full items-center justify-center gap-2 px-4
-        rounded-xl border border-[hsl(var(--ui-border))] 
-        bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
-        text-[hsl(var(--ui-text))] text-sm font-semibold
-        hover:bg-white/5 active:bg-white/10 disabled:opacity-50
-        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40
-        transition-colors"
-      >
-        <Upload className="w-4 h-4 shrink-0" />
-        <span>Upload Image</span>
-        <ChevronDown className="w-4 h-4 shrink-0" />
-      </button>
-    </DropdownMenuTrigger>
-    <DropdownMenuContent ...>
-      <DropdownMenuItem>From Device</DropdownMenuItem>
-      <DropdownMenuItem>From Library</DropdownMenuItem>
-    </DropdownMenuContent>
-  </DropdownMenu>
-
-  {/* AI Generate Button - Full width */}
-  <button className="relative flex w-full h-10 items-center justify-center gap-2 px-4
-    rounded-xl border ..."
-  >
-    {/* Gradient background layers */}
-    <span className="relative z-10 flex items-center gap-2">
-      <Sparkles className="w-4 h-4 shrink-0" />
-      <span>AI Generate</span>
-    </span>
-  </button>
-</div>
-```
-
----
-
-## Key Style Changes Summary
-
-| Property | Before | After |
-|----------|--------|-------|
-| Container direction | `flex items-stretch gap-2` (horizontal) | `flex flex-col gap-2` (vertical) |
-| Border radius | `rounded-2xl` | `rounded-xl` |
-| Upload button | Split button with separate chevron zone | Single button with inline chevron |
-| Button width | `flex-1` (share horizontal space) | `w-full` (full width in stack) |
-
----
-
-## Files to Modify
-
-| File | Changes |
-|------|---------|
-| `src/components/chronicle/AvatarActionButtons.tsx` | Change to vertical layout, reduce border radius, simplify upload to single dropdown trigger |
-
----
-
-## Visual Result
-
-After these changes:
-- **Upload Image** button: Full-width, rectangular with soft corners, "Upload Image ▾" as single label
-- **AI Generate** button: Full-width, same rounded-xl corners, gradient preserved
-- Buttons stacked vertically, no more horizontal scaling/clipping issues
-- Matches mockup's more rectangular aesthetic
-
+Optional follow-up (not required for this fix, but will help the “app isn’t responsive” issue)
+- Do a quick responsive audit of the Avatar panel container widths/padding and the left-column sticky layout; the current layout is heavily “desktop-first” and will need some deliberate mobile breakpoints (spacing, sticky behavior, grid collapse, and consistent typography scale across components).
