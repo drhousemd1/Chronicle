@@ -11,6 +11,16 @@ All colors MUST be HSL.
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
 
+    /* Dark UI Panel Tokens */
+    --ui-surface: 240 7% 16%;
+    --ui-surface-2: 228 7% 20%;
+    --ui-border: 0 0% 100% / 0.10;
+    --ui-border-hover: 0 0% 100% / 0.16;
+    --ui-text: 210 20% 93%;
+    --ui-text-muted: 210 20% 93% / 0.75;
+    --accent-teal: 186 71% 46%;
+    --accent-purple: 246 91% 67%;
+
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
 
