@@ -429,7 +429,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
                       onValueChange={([value]) => updateGoal(goal.id, { progress: value })}
                       max={100}
                       step={1}
-                      className="w-full"
+                      className="w-full [&>span:first-child]:bg-zinc-700 [&>span:first-child>span]:bg-blue-500 [&_[role=slider]]:border-blue-500 [&_[role=slider]]:bg-white"
                     />
                   </div>
                 )}
@@ -442,7 +442,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
         {isEditMode && (
           <button
             onClick={addGoal}
-            className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
+            className="w-full py-3 bg-transparent border-2 border-dashed border-zinc-500 text-blue-400 hover:border-blue-400 hover:bg-blue-500/5 font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
           >
             <Plus className="h-5 w-5" />
             Add New Goal
