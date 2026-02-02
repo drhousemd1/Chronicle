@@ -64,6 +64,7 @@ interface CharacterEditModalProps {
   onSave: (draft: CharacterEditDraft) => void;
   isSaving?: boolean;
   modelId?: string; // For AI avatar regeneration
+  viewOnly?: boolean; // When true, opens in view mode with edit toggle
 }
 
 // Reusable input field component
@@ -72,15 +73,22 @@ const FieldInput: React.FC<{
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
-}> = ({ label, value, onChange, placeholder }) => (
+  readOnly?: boolean;
+}> = ({ label, value, onChange, placeholder, readOnly = false }) => (
   <div className="space-y-1.5">
     <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{label}</Label>
-    <Input
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      className="h-9 text-sm"
-    />
+    {readOnly ? (
+      <div className="px-3 py-2 bg-slate-100 rounded-md text-sm text-slate-700 min-h-[36px]">
+        {value || <span className="text-slate-400 italic">Not set</span>}
+      </div>
+    ) : (
+      <Input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="h-9 text-sm"
+      />
+    )}
   </div>
 );
 
@@ -91,16 +99,23 @@ const FieldTextarea: React.FC<{
   onChange: (value: string) => void;
   placeholder?: string;
   rows?: number;
-}> = ({ label, value, onChange, placeholder, rows = 3 }) => (
+  readOnly?: boolean;
+}> = ({ label, value, onChange, placeholder, rows = 3, readOnly = false }) => (
   <div className="space-y-1.5">
     <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{label}</Label>
-    <Textarea
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      rows={rows}
-      className="text-sm resize-none"
-    />
+    {readOnly ? (
+      <div className="px-3 py-2 bg-slate-100 rounded-md text-sm text-slate-700 min-h-[60px] whitespace-pre-wrap">
+        {value || <span className="text-slate-400 italic">Not set</span>}
+      </div>
+    ) : (
+      <Textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        rows={rows}
+        className="text-sm resize-none"
+      />
+    )}
   </div>
 );
 
@@ -127,13 +142,22 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
   character,
   onSave,
   isSaving = false,
-  modelId
+  modelId,
+  viewOnly = false
 }) => {
   const [draft, setDraft] = useState<CharacterEditDraft>({});
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isRegeneratingAvatar, setIsRegeneratingAvatar] = useState(false);
   const [isChangeNameModalOpen, setIsChangeNameModalOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(!viewOnly);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Reset edit mode when modal opens based on viewOnly prop
+  useEffect(() => {
+    if (open) {
+      setIsEditMode(!viewOnly);
+    }
+  }, [open, viewOnly]);
 
   // Determine if this is a side character (has background property)
   const isSideCharacter = character && 'background' in character;
@@ -417,12 +441,26 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 py-4 border-b bg-slate-50">
-          <DialogTitle className="text-lg font-bold text-slate-900">
-            Edit Character
-          </DialogTitle>
-          <p className="text-xs text-slate-500 mt-1">
-            Changes apply only to this playthrough
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle className="text-lg font-bold text-slate-900">
+                {isEditMode ? 'Edit Character' : 'Character Card'}
+              </DialogTitle>
+              <p className="text-xs text-slate-500 mt-1">
+                {isEditMode ? 'Changes apply only to this playthrough' : 'View character details'}
+              </p>
+            </div>
+            {/* Edit toggle button */}
+            <Button
+              variant={isEditMode ? "default" : "outline"}
+              size="sm"
+              onClick={() => setIsEditMode(!isEditMode)}
+              className="gap-2"
+            >
+              <Pencil className="w-4 h-4" />
+              {isEditMode ? 'Editing' : 'Edit'}
+            </Button>
+          </div>
         </DialogHeader>
 
         <ScrollArea className="flex-1 max-h-[calc(90vh-140px)]">
@@ -453,65 +491,71 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     )}
                   </div>
                   
-                  {/* Upload/Regenerate Buttons */}
-                  <div className="flex flex-col gap-2 w-full">
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleAvatarUpload}
-                    />
-                    <UploadSourceMenu
-                      onUploadFromDevice={() => fileInputRef.current?.click()}
-                      onSelectFromLibrary={(imageUrl) => {
-                        setDraft(prev => ({
-                          ...prev,
-                          avatarDataUrl: imageUrl,
-                          avatarPosition: { x: 50, y: 50 }
-                        }));
-                        toast.success('Avatar selected from library');
-                      }}
-                      disabled={isUploadingAvatar || isRegeneratingAvatar}
-                      isUploading={isUploadingAvatar}
-                      label="Upload Image"
-                      variant="primary"
-                      className="w-full bg-slate-900 hover:bg-slate-800 text-white"
-                    />
-                    <Button
-                      size="sm"
-                      className="w-full bg-slate-900 hover:bg-slate-800 text-white"
-                      onClick={handleRegenerateAvatar}
-                      disabled={isUploadingAvatar || isRegeneratingAvatar}
-                    >
-                      {isRegeneratingAvatar ? 'Generating...' : 'AI Generate'}
-                    </Button>
-                  </div>
+                  {/* Upload/Regenerate Buttons - only show in edit mode */}
+                  {isEditMode && (
+                    <div className="flex flex-col gap-2 w-full">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleAvatarUpload}
+                      />
+                      <UploadSourceMenu
+                        onUploadFromDevice={() => fileInputRef.current?.click()}
+                        onSelectFromLibrary={(imageUrl) => {
+                          setDraft(prev => ({
+                            ...prev,
+                            avatarDataUrl: imageUrl,
+                            avatarPosition: { x: 50, y: 50 }
+                          }));
+                          toast.success('Avatar selected from library');
+                        }}
+                        disabled={isUploadingAvatar || isRegeneratingAvatar}
+                        isUploading={isUploadingAvatar}
+                        label="Upload Image"
+                        variant="primary"
+                        className="w-full bg-slate-900 hover:bg-slate-800 text-white"
+                      />
+                      <Button
+                        size="sm"
+                        className="w-full bg-slate-900 hover:bg-slate-800 text-white"
+                        onClick={handleRegenerateAvatar}
+                        disabled={isUploadingAvatar || isRegeneratingAvatar}
+                      >
+                        {isRegeneratingAvatar ? 'Generating...' : 'AI Generate'}
+                      </Button>
+                    </div>
+                  )}
                   
-                  <p className="text-[10px] text-slate-400 text-center">
-                    Changes apply to this session only
-                  </p>
+                  {isEditMode && (
+                    <p className="text-[10px] text-slate-400 text-center">
+                      Changes apply to this session only
+                    </p>
+                  )}
                 </div>
 
                 {/* Basic Fields */}
                 <Section title="Basic Info">
-                  {/* Name field - read-only with Change Name button */}
+                  {/* Name field - read-only with Change Name button in edit mode */}
                   <div className="space-y-1.5">
                     <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Name</Label>
                     <div className="flex items-center gap-2">
                       <div className="flex-1 px-3 py-2 bg-slate-100 rounded-md text-sm text-slate-700 font-medium border border-slate-200">
                         {draft.name || character?.name || 'Unnamed'}
                       </div>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setIsChangeNameModalOpen(true)}
-                        className="gap-1.5 text-xs"
-                      >
-                        <Pencil className="w-3 h-3" />
-                        Change
-                      </Button>
+                      {isEditMode && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setIsChangeNameModalOpen(true)}
+                          className="gap-1.5 text-xs"
+                        >
+                          <Pencil className="w-3 h-3" />
+                          Change
+                        </Button>
+                      )}
                     </div>
                   </div>
                   <FieldInput
@@ -911,15 +955,17 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
             disabled={isSaving}
             className="bg-slate-900 hover:bg-slate-800 text-white border-0"
           >
-            Cancel
+            {isEditMode ? 'Cancel' : 'Close'}
           </Button>
-          <Button
-            onClick={handleSave}
-            disabled={isSaving}
-            className="bg-slate-900 hover:bg-slate-800 text-white"
-          >
-            {isSaving ? 'Saving...' : 'Save Changes'}
-          </Button>
+          {isEditMode && (
+            <Button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="bg-slate-900 hover:bg-slate-800 text-white"
+            >
+              {isSaving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
 
