@@ -1,6 +1,6 @@
 import React, { forwardRef } from "react";
 
-export type ButtonVariant = "primary" | "secondary" | "danger" | "ghost" | "brand";
+export type ButtonVariant = "primary" | "secondary" | "danger" | "ghost" | "brand" | "outlineDark" | "gradient";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
@@ -15,6 +15,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       danger: "bg-rose-600 text-white border-rose-600 hover:bg-rose-500 shadow-md",
       ghost: "bg-transparent text-slate-500 border-transparent hover:bg-slate-100 hover:text-slate-900",
       brand: "bg-blue-600 text-white border-blue-600 hover:bg-blue-500 shadow-md hover:shadow-lg",
+      outlineDark: "bg-zinc-900/80 text-white border border-zinc-600 hover:bg-zinc-800 hover:border-zinc-500",
+      gradient: "bg-gradient-to-r from-purple-600 via-violet-500 to-blue-500 text-white border-0 hover:from-purple-500 hover:via-violet-400 hover:to-blue-400 shadow-lg",
     };
     const dis = disabled ? "opacity-50 pointer-events-none" : "";
     return (
