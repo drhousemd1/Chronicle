@@ -2087,15 +2087,12 @@ const updatedChar: SideCharacter = {
   const renderCharacterCard = (baseChar: Character) => {
     // Apply session-scoped overrides to get the effective character
     const char = getEffectiveCharacter(baseChar);
-    const isExpanded = expandedCharId === char.id;
     const isUpdating = updatingCharacterIds.has(char.id);
     
     return (
       <div
         key={char.id}
-        className={`rounded-2xl transition-all duration-300 border-2 backdrop-blur-sm relative ${
-          isExpanded ? 'bg-white border-blue-100 shadow-sm' : 'bg-white/30 border-transparent hover:bg-white'
-        } ${isUpdating ? 'ring-2 ring-blue-400/60' : ''}`}
+        className={`rounded-2xl transition-all duration-300 border-2 backdrop-blur-sm relative bg-white/30 border-transparent hover:bg-white ${isUpdating ? 'ring-2 ring-blue-400/60' : ''}`}
       >
         {/* Blue vignette overlay - scoped to this card */}
         {isUpdating && (
@@ -2121,12 +2118,9 @@ const updatedChar: SideCharacter = {
           </div>
         )}
         <div className="relative">
-          <button
-            onClick={() => toggleCharacterExpand(char.id)}
-            className="w-full flex flex-col items-center gap-2 p-3 text-center group"
-          >
+          <div className="w-full flex flex-col items-center gap-2 p-3 text-center">
             <div className="relative">
-              <div className={`w-20 h-20 rounded-full border-2 shadow-sm overflow-hidden bg-slate-50 transition-all duration-300 ${isExpanded ? 'border-blue-400 scale-105 shadow-blue-100' : 'border-slate-100 group-hover:border-blue-200'}`}>
+              <div className={`w-20 h-20 rounded-full border-2 shadow-sm overflow-hidden bg-slate-50 transition-all duration-300 border-slate-100`}>
                 {char.avatarDataUrl ? (
                   <img src={char.avatarDataUrl} alt={char.name} className="w-full h-full object-cover" />
                 ) : (
@@ -2146,20 +2140,15 @@ const updatedChar: SideCharacter = {
                 {char.controlledBy}
               </Badge>
             </div>
-            <div className="flex items-center gap-2">
-              <div className={`text-sm font-bold tracking-tight transition-colors ${isExpanded ? 'text-blue-600' : 'text-slate-800'}`}>{char.name}</div>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="14" height="14"
-                viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" strokeWidth="3"
-                strokeLinecap="round" strokeLinejoin="round"
-                className={`transition-transform duration-300 text-slate-400 ${isExpanded ? 'rotate-180 text-blue-500' : ''}`}
-              >
-                <polyline points="6 9 12 15 18 9"></polyline>
-              </svg>
-            </div>
-          </button>
+            <div className="text-sm font-bold tracking-tight text-slate-800">{char.name}</div>
+            {/* View character card link */}
+            <button
+              onClick={() => openCharacterEditModal(char)}
+              className="text-xs text-blue-500 hover:text-blue-600 hover:underline transition-colors"
+            >
+              View character card
+            </button>
+          </div>
           
           {/* Edit dropdown menu - always visible */}
           <div className="absolute top-2 right-2">
@@ -2178,25 +2167,6 @@ const updatedChar: SideCharacter = {
             </DropdownMenu>
           </div>
         </div>
-
-        {isExpanded && (
-          <div className="px-5 pb-5 pt-1 space-y-1 animate-in zoom-in-95 duration-300">
-            {/* 1. Basics - Avatar panel data */}
-            {createBasicsSection(char).items.length > 0 && renderSection(createBasicsSection(char))}
-            
-            {/* 2. Physical Appearance - hardcoded */}
-            {createPhysicalAppearanceSection(char).items.length > 0 && renderSection(createPhysicalAppearanceSection(char))}
-            
-            {/* 3. Currently Wearing - hardcoded */}
-            {createCurrentlyWearingSection(char).items.length > 0 && renderSection(createCurrentlyWearingSection(char))}
-            
-            {/* 4. Preferred Clothing - hardcoded */}
-            {createPreferredClothingSection(char).items.length > 0 && renderSection(createPreferredClothingSection(char))}
-            
-            {/* 5. Custom sections */}
-            {char.sections.map(section => renderSection(section))}
-          </div>
-        )}
       </div>
     );
   };
@@ -2331,12 +2301,9 @@ const updatedChar: SideCharacter = {
                       <SideCharacterCard
                         key={char.id}
                         character={char as SideCharacter}
-                        isExpanded={expandedCharId === char.id}
-                        onToggleExpand={() => toggleCharacterExpand(char.id)}
                         onStartEdit={() => openCharacterEditModal(char as SideCharacter)}
                         onDelete={() => handleDeleteSideCharacter(char.id)}
-                        openSections={openSections}
-                        onToggleSection={toggleSection}
+                        isUpdating={updatingCharacterIds.has(char.id)}
                       />
                     )
                 )}
@@ -2359,12 +2326,8 @@ const updatedChar: SideCharacter = {
                       <SideCharacterCard
                         key={char.id}
                         character={char as SideCharacter}
-                        isExpanded={expandedCharId === char.id}
-                        onToggleExpand={() => toggleCharacterExpand(char.id)}
                         onStartEdit={() => openCharacterEditModal(char as SideCharacter)}
                         onDelete={() => handleDeleteSideCharacter(char.id)}
-                        openSections={openSections}
-                        onToggleSection={toggleSection}
                         isUpdating={updatingCharacterIds.has(char.id)}
                       />
                     )
