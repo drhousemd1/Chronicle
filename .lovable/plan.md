@@ -1,193 +1,192 @@
 
 
-# Premium AI Generate Button Implementation
+# Collapsible Sections for Character Traits
 
-## Overview
+## Clarification
 
-Replace the current simple gradient button with the premium multi-layered design from your ChatGPT reference. The new button has:
-- Iridescent glowing border (teal + purple + white shimmer)
-- Inner surface with subtle gradient overlay
-- Localized color blooms (teal left, purple right)
-- Top sheen highlight
-- Glowing cyan sparkles icon
+This plan **does NOT remove or replace** the hardcoded sections. These sections (Physical Appearance, Currently Wearing, Preferred Clothing, Character Goals) contain core fields that the AI uses and must always be present.
+
+The change is purely **visual/UX**: adding a collapse/expand toggle so users can condense sections they're done editing to reduce scroll distance, while keeping all fields and data intact.
 
 ---
 
-## Key Visual Layers (from reference code)
+## What Changes
 
-| Layer | Purpose | Effect |
-|-------|---------|--------|
-| **1. Outer ring** | Iridescent border | 90° gradient with white/teal/purple at high opacity |
-| **2. Mask** | Creates 2px border | Solid dark fill at `inset-[2px]` |
-| **3. Surface** | Button background | Teal-to-purple gradient over dark base |
-| **4. Top sheen** | Glass-like highlight | Vertical gradient (white top → transparent → dark bottom) |
-| **5. Border sheen** | Extra shimmer | Diagonal gradient with screen blend mode |
-| **6. Teal bloom** | Left glow | Blurred radial gradient positioned top-left |
-| **7. Purple bloom** | Right glow | Blurred radial gradient positioned bottom-right |
-| **8. Inner edge** | Crisp definition | Inset box-shadows for depth |
-| **9. Content** | Icon + text | Glowing cyan sparkles icon with text |
-
----
-
-## Adaptation for Avatar Panel
-
-The reference uses `h-12 px-6 rounded-2xl text-base` (larger button). We need to scale it down to fit the Avatar panel:
-
-| Property | Reference | Adapted |
-|----------|-----------|---------|
-| Height | `h-12` (48px) | `h-10` (40px) |
-| Padding | `px-6` | `px-4` |
-| Border radius | `rounded-2xl` (16px) | `rounded-xl` (12px) |
-| Text size | `text-base` | `text-[10px] font-bold` |
-| Icon size | `h-5 w-5` | `w-3.5 h-3.5` |
-| Inner mask inset | `inset-[2px]`, `rounded-[14px]` | `inset-[2px]`, `rounded-[10px]` |
+| Current | After |
+|---------|-------|
+| Sections always show full edit mode with input fields | Sections can toggle between expanded (edit) and collapsed (read-only summary) |
+| No header controls | Chevron arrow in header right corner toggles state |
+| Fixed section height | Collapsed sections are more compact |
 
 ---
 
 ## Implementation
 
-### File: `src/components/chronicle/AvatarActionButtons.tsx`
+### 1. Enhance `HardcodedSection` Component
 
-Replace the current AI Generate button (lines 75-97) with the layered premium version:
+Add collapse functionality to the existing component:
 
 ```tsx
-{/* AI Generate Button - Premium layered design */}
-<button
-  type="button"
-  onClick={onGenerateClick}
-  disabled={isDisabled || isGenerating}
-  className="group relative flex w-full min-w-0 h-10 px-4 rounded-xl overflow-hidden
-    text-white text-[10px] font-bold leading-none
-    shadow-[0_12px_40px_rgba(0,0,0,0.45)]
-    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/45
-    disabled:opacity-50"
+// Updated HardcodedSection with collapse toggle
+const HardcodedSection: React.FC<{
+  title: string;
+  isExpanded: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+  collapsedContent: React.ReactNode;
+}> = ({ title, isExpanded, onToggle, children, collapsedContent }) => (
+  <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[...]">
+    {/* Header with toggle button */}
+    <div className="bg-[#4a5f7f] ... flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <span className="...">Section</span>
+        <h2 className="...">{title}</h2>
+      </div>
+      <button onClick={onToggle} className="text-white/70 hover:text-white p-1">
+        {isExpanded ? <ChevronDown /> : <ChevronUp />}
+      </button>
+    </div>
+    {/* Content switches between edit and read-only */}
+    <div className="p-5">
+      <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
+        {isExpanded ? children : collapsedContent}
+      </div>
+    </div>
+  </div>
+);
+```
+
+### 2. Add State Management
+
+Track which sections are expanded:
+
+```tsx
+const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+  avatar: true,
+  physicalAppearance: true,
+  currentlyWearing: true,
+  preferredClothing: true,
+  characterGoals: true
+});
+
+const toggleSection = (key: string) => {
+  setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
+};
+```
+
+### 3. Create Condensed Read-Only Views
+
+Helper components that show field values as plain text (no inputs):
+
+**Physical Appearance (collapsed):**
+```tsx
+const CollapsedPhysicalAppearance: React.FC<{ data: PhysicalAppearance }> = ({ data }) => (
+  <div className="space-y-1.5">
+    {data.hairColor && (
+      <div className="flex gap-2">
+        <span className="text-[10px] font-bold text-zinc-500 uppercase w-20">Hair</span>
+        <span className="text-sm text-zinc-200">{data.hairColor}</span>
+      </div>
+    )}
+    {data.eyeColor && (
+      <div className="flex gap-2">
+        <span className="text-[10px] font-bold text-zinc-500 uppercase w-20">Eyes</span>
+        <span className="text-sm text-zinc-200">{data.eyeColor}</span>
+      </div>
+    )}
+    {/* ... similar for other non-empty fields */}
+  </div>
+);
+```
+
+Only fields with values are shown. Empty fields are hidden in collapsed view.
+
+### 4. Update Section Usage
+
+```tsx
+{/* Physical Appearance - now collapsible */}
+<HardcodedSection 
+  title="Physical Appearance"
+  isExpanded={expandedSections.physicalAppearance}
+  onToggle={() => toggleSection('physicalAppearance')}
+  collapsedContent={<CollapsedPhysicalAppearance data={selected.physicalAppearance} />}
 >
-  {/* Layer 1: Iridescent outer border ring */}
-  <span
-    aria-hidden
-    className="absolute inset-0 rounded-xl"
-    style={{
-      background:
-        "linear-gradient(90deg, rgba(255,255,255,0.34) 0%, rgba(34,184,200,0.62) 18%, rgba(255,255,255,0.22) 44%, rgba(109,94,247,0.64) 78%, rgba(255,255,255,0.28) 100%)",
-      filter:
-        "drop-shadow(0 0 10px rgba(255,255,255,0.10)) drop-shadow(0 0 18px rgba(109,94,247,0.10)) drop-shadow(0 0 18px rgba(34,184,200,0.10))",
-    }}
-  />
-
-  {/* Layer 2: Mask to create 2px border effect */}
-  <span
-    aria-hidden
-    className="absolute inset-[2px] rounded-[10px]"
-    style={{ background: "#2B2D33" }}
-  />
-
-  {/* Layer 3: Button surface with gradient */}
-  <span
-    aria-hidden
-    className="absolute inset-[2px] rounded-[10px]"
-    style={{
-      background:
-        "linear-gradient(90deg, rgba(34,184,200,0.22), rgba(109,94,247,0.22)), #2B2D33",
-    }}
-  />
-
-  {/* Layer 4: Soft top sheen */}
-  <span
-    aria-hidden
-    className="absolute inset-[2px] rounded-[10px]"
-    style={{
-      background:
-        "linear-gradient(180deg, rgba(255,255,255,0.11), rgba(255,255,255,0.00) 46%, rgba(0,0,0,0.16))",
-    }}
-  />
-
-  {/* Layer 5: Border sheen (top-left diagonal) */}
-  <span
-    aria-hidden
-    className="absolute inset-0 rounded-xl pointer-events-none"
-    style={{
-      boxShadow:
-        "inset 0 1px 0 rgba(255,255,255,0.26), inset 0 -1px 0 rgba(0,0,0,0.22)",
-      background:
-        "linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.00) 55%)",
-      mixBlendMode: "screen",
-    }}
-  />
-
-  {/* Layer 6: Teal bloom (top-left) */}
-  <span
-    aria-hidden
-    className="absolute -left-8 -top-8 h-32 w-32 rounded-full blur-2xl pointer-events-none"
-    style={{
-      background:
-        "radial-gradient(circle, rgba(34,184,200,0.28), transparent 62%)",
-    }}
-  />
-
-  {/* Layer 7: Purple bloom (bottom-right) */}
-  <span
-    aria-hidden
-    className="absolute -right-10 -bottom-10 h-40 w-40 rounded-full blur-3xl pointer-events-none"
-    style={{
-      background:
-        "radial-gradient(circle, rgba(109,94,247,0.26), transparent 65%)",
-    }}
-  />
-
-  {/* Layer 8: Crisp inner edge */}
-  <span
-    aria-hidden
-    className="absolute inset-0 rounded-xl pointer-events-none"
-    style={{
-      boxShadow:
-        "inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -1px 0 rgba(0,0,0,0.26), 0 0 0 1px rgba(255,255,255,0.06)",
-    }}
-  />
-
-  {/* Content layer */}
-  <span className="relative z-10 flex items-center justify-center gap-2 w-full">
-    <Sparkles 
-      className="w-3.5 h-3.5 shrink-0 text-cyan-200" 
-      style={{ filter: "drop-shadow(0 0 10px rgba(34,184,200,0.35))" }}
-    />
-    <span className="min-w-0 truncate drop-shadow-[0_1px_0_rgba(0,0,0,0.35)]">
-      {isGenerating ? "Generating..." : "AI Generate"}
-    </span>
-  </span>
-</button>
+  {/* All existing HardcodedInput fields stay exactly the same */}
+  <HardcodedInput label="Hair Color" ... />
+  <HardcodedInput label="Eye Color" ... />
+  {/* etc. */}
+</HardcodedSection>
 ```
+
+### 5. Update CharacterGoalsSection
+
+Add header toggle that uses the existing `readOnly` prop:
+
+```tsx
+// In CharacterGoalsSection header:
+<div className="flex items-center justify-between">
+  <div className="flex items-center gap-3">
+    <span>Section</span>
+    <h2>Character Goals</h2>
+  </div>
+  <button onClick={onToggle}>
+    {isExpanded ? <ChevronDown /> : <ChevronUp />}
+  </button>
+</div>
+
+// Props interface updated:
+interface CharacterGoalsSectionProps {
+  goals: CharacterGoal[];
+  onChange: (goals: CharacterGoal[]) => void;
+  readOnly?: boolean;
+  isExpanded?: boolean;        // NEW
+  onToggle?: () => void;       // NEW
+  currentDay?: number;
+  currentTimeOfDay?: TimeOfDay;
+}
+```
+
+### 6. Avatar Panel
+
+Same pattern - add toggle to header, collapsed view shows:
+- Smaller avatar thumbnail
+- Name, Age, Sex/Identity as inline text
+- Hide action buttons (Upload, AI Generate, Reposition)
 
 ---
 
-## Layer Breakdown (Visual Reference)
+## Visual Comparison
 
+**Expanded (default):**
 ```text
-┌─────────────────────────────────────────┐
-│  Layer 1: Iridescent gradient border    │ ← Full button size
-│  ┌───────────────────────────────────┐  │
-│  │  Layer 2: Dark mask (#2B2D33)     │  │ ← inset-[2px]
-│  │  Layer 3: Teal-purple gradient    │  │
-│  │  Layer 4: Top sheen highlight     │  │
-│  │                                   │  │
-│  │    ✨ AI Generate                 │  │ ← Content (z-10)
-│  │                                   │  │
-│  └───────────────────────────────────┘  │
-│                                         │
-│  🔵 Teal bloom (blur, top-left)         │ ← Extends beyond button
-│                        🟣 Purple bloom  │ ← Extends beyond button
-└─────────────────────────────────────────┘
+┌──────────────────────────────────────────────┐
+│ SECTION  Physical Appearance            ▼   │ ← Chevron down
+├──────────────────────────────────────────────┤
+│  ┌────────────────────────────────────────┐  │
+│  │ HAIR COLOR                             │  │
+│  │ [________________________] ✨          │  │
+│  │                                        │  │
+│  │ EYE COLOR                              │  │
+│  │ [________________________] ✨          │  │
+│  │                                        │  │
+│  │ ... 9 more fields ...                  │  │
+│  └────────────────────────────────────────┘  │
+└──────────────────────────────────────────────┘
 ```
 
----
-
-## Key Color Values
-
-| Color | HSL/RGB | Usage |
-|-------|---------|-------|
-| **Teal** | `rgb(34,184,200)` / `#22B8C8` | Left bloom, border accent, sparkles |
-| **Purple** | `rgb(109,94,247)` / `#6D5EF7` | Right bloom, border accent |
-| **Surface** | `#2B2D33` | Button background |
-| **White** | Various alphas | Border shimmer, sheens |
+**Collapsed:**
+```text
+┌──────────────────────────────────────────────┐
+│ SECTION  Physical Appearance            ▲   │ ← Chevron up
+├──────────────────────────────────────────────┤
+│  ┌────────────────────────────────────────┐  │
+│  │ HAIR    Brown, wavy, shoulder-length   │  │
+│  │ EYES    Hazel                          │  │
+│  │ BUILD   Athletic                       │  │
+│  │ HEIGHT  5'8"                           │  │
+│  └────────────────────────────────────────┘  │
+└──────────────────────────────────────────────┘
+```
 
 ---
 
@@ -195,17 +194,16 @@ Replace the current AI Generate button (lines 75-97) with the layered premium ve
 
 | File | Changes |
 |------|---------|
-| `src/components/chronicle/AvatarActionButtons.tsx` | Replace AI Generate button with premium layered version |
+| `src/components/chronicle/CharactersTab.tsx` | Add `expandedSections` state, update `HardcodedSection` component, add collapsed view helpers, update all section usages including Avatar |
+| `src/components/chronicle/CharacterGoalsSection.tsx` | Add `isExpanded` and `onToggle` props, add chevron toggle to header |
 
 ---
 
-## Expected Result
+## Technical Notes
 
-The AI Generate button will have:
-- A glowing iridescent border that shimmers teal → white → purple
-- A dark inner surface with subtle gradient
-- Colored bloom effects extending from the corners
-- A glowing cyan sparkles icon
-- Premium glass-like top sheen
-- Matches your ChatGPT mockup exactly
+- Uses Radix UI `Collapsible` (already installed) for smooth height animation
+- `ChevronDown` / `ChevronUp` icons from `lucide-react` (already in use)
+- Collapsed views only show non-empty fields to keep things tight
+- All section data, field handlers, and AI enhancement functionality remain unchanged
+- Default state: all sections expanded (matches current behavior)
 
