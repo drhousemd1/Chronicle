@@ -326,179 +326,210 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Avatar Panel */}
         <div className="space-y-6 lg:sticky lg:top-0 lg:max-h-[calc(100vh-9rem)] lg:overflow-y-auto lg:pr-2 lg:pb-6 lg:overscroll-contain">
-          <div className="flex justify-between items-center h-9">
-            <h2 className="text-xl font-bold text-slate-900">Avatar</h2>
-          </div>
-          <Card className="p-6 !shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)] border-transparent ring-1 ring-slate-900/5">
-            <div className="space-y-4">
-              <div className="flex flex-col items-center gap-4">
-                <div 
-                  ref={avatarContainerRef}
-                  className={`relative group w-48 h-48 rounded-2xl overflow-hidden shadow-lg select-none ${isRepositioning ? 'ring-4 ring-blue-500 cursor-move' : 'border-2 border-slate-100'}`}
-                  onMouseDown={handleMouseDown}
-                  onMouseMove={handleMouseMove}
-                  onMouseUp={handleMouseUp}
-                  onMouseLeave={handleMouseUp}
-                >
-                  {selected.avatarDataUrl ? (
-                    <img 
-                      src={selected.avatarDataUrl} 
-                      style={{ 
-                        objectPosition: `${avatarPos.x}% ${avatarPos.y}%`,
-                        pointerEvents: 'none'
-                      }}
-                      className={`w-full h-full object-cover transition-opacity ${isGeneratingImg ? 'opacity-50' : ''}`} 
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-slate-100 flex items-center justify-center font-bold text-3xl text-slate-400 border-2 border-dashed border-slate-200">
-                      {selected.name.charAt(0) || '?'}
-                    </div>
-                  )}
-                  
-                  {isGeneratingImg && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-white/30 backdrop-blur-[2px]">
-                      <div className="w-10 h-10 border-4 border-slate-900 border-t-transparent rounded-full animate-spin"></div>
-                    </div>
-                  )}
+          <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
+            {/* Section Header */}
+            <div className="bg-[#4a5f7f] border-b border-white/20 px-5 py-3 flex items-center gap-3 shadow-lg">
+              <span className="text-[#a5d6a7] font-bold tracking-wide uppercase text-xs">Section</span>
+              <h2 className="text-[#e8f5e9] text-xl font-bold tracking-tight">Avatar</h2>
+            </div>
+            {/* Content */}
+            <div className="p-5">
+              <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
+                <div className="space-y-4">
+                  <div className="flex flex-col items-center gap-4">
+                    <div 
+                      ref={avatarContainerRef}
+                      className={`relative group w-48 h-48 rounded-2xl overflow-hidden shadow-lg select-none ${isRepositioning ? 'ring-4 ring-blue-500 cursor-move' : 'border-2 border-white/10'}`}
+                      onMouseDown={handleMouseDown}
+                      onMouseMove={handleMouseMove}
+                      onMouseUp={handleMouseUp}
+                      onMouseLeave={handleMouseUp}
+                    >
+                      {selected.avatarDataUrl ? (
+                        <img 
+                          src={selected.avatarDataUrl} 
+                          style={{ 
+                            objectPosition: `${avatarPos.x}% ${avatarPos.y}%`,
+                            pointerEvents: 'none'
+                          }}
+                          className={`w-full h-full object-cover transition-opacity ${isGeneratingImg ? 'opacity-50' : ''}`} 
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-zinc-800 flex items-center justify-center font-bold text-3xl text-zinc-500 border-2 border-dashed border-zinc-600">
+                          {selected.name.charAt(0) || '?'}
+                        </div>
+                      )}
+                      
+                      {isGeneratingImg && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-[2px]">
+                          <div className="w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                      )}
 
-                  {isRepositioning && (
-                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                      <div className="w-full h-[1px] bg-blue-500/30 absolute" />
-                      <div className="h-full w-[1px] bg-blue-500/30 absolute" />
-                      <div className="bg-blue-600 text-white text-[9px] font-black uppercase px-2 py-1 rounded absolute bottom-2 tracking-widest">Drag to Refocus</div>
+                      {isRepositioning && (
+                        <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                          <div className="w-full h-[1px] bg-blue-500/30 absolute" />
+                          <div className="h-full w-[1px] bg-blue-500/30 absolute" />
+                          <div className="bg-blue-600 text-white text-[9px] font-black uppercase px-2 py-1 rounded absolute bottom-2 tracking-widest">Drag to Refocus</div>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
 
-                <div className="flex flex-col gap-2 w-full">
-                  <div className="flex gap-2 w-full">
-                    <UploadSourceMenu
-                      onUploadFromDevice={() => fileInputRef.current?.click()}
-                      onSelectFromLibrary={(imageUrl) => {
-                        if (selected) {
-                          onUpdate(selected.id, {
-                            avatarDataUrl: imageUrl,
-                            avatarPosition: { x: 50, y: 50 }
-                          });
-                        }
-                      }}
-                      disabled={isUploading}
-                      isUploading={isUploading}
-                      label="Upload Image"
-                      variant="primary"
-                      className="flex-1"
-                    />
-                    {selected.avatarDataUrl && (
-                      <Button 
-                        variant={isRepositioning ? 'primary' : 'secondary'} 
-                        onClick={() => setIsRepositioning(!isRepositioning)}
-                        className={`flex-1 ${isRepositioning ? 'bg-blue-600 text-white' : ''}`}
-                      >
-                        {isRepositioning ? "Save Position" : "Reposition"}
+                    <div className="flex flex-col gap-2 w-full">
+                      <div className="flex gap-2 w-full">
+                        <UploadSourceMenu
+                          onUploadFromDevice={() => fileInputRef.current?.click()}
+                          onSelectFromLibrary={(imageUrl) => {
+                            if (selected) {
+                              onUpdate(selected.id, {
+                                avatarDataUrl: imageUrl,
+                                avatarPosition: { x: 50, y: 50 }
+                              });
+                            }
+                          }}
+                          disabled={isUploading}
+                          isUploading={isUploading}
+                          label="Upload Image"
+                          variant="primary"
+                          className="flex-1"
+                        />
+                        {selected.avatarDataUrl && (
+                          <Button 
+                            variant={isRepositioning ? 'primary' : 'secondary'} 
+                            onClick={() => setIsRepositioning(!isRepositioning)}
+                            className={`flex-1 ${isRepositioning ? 'bg-blue-600 text-white' : ''}`}
+                          >
+                            {isRepositioning ? "Save Position" : "Reposition"}
+                          </Button>
+                        )}
+                      </div>
+                      <Button variant="primary" onClick={handleAiPortrait} disabled={isGeneratingImg} className="w-full">
+                        {isGeneratingImg ? "..." : "AI Generate"}
                       </Button>
-                    )}
-                  </div>
-                  <Button variant="primary" onClick={handleAiPortrait} disabled={isGeneratingImg} className="w-full">
-                    {isGeneratingImg ? "..." : "AI Generate"}
-                  </Button>
-                </div>
-                
-                <input 
-                  type="file" 
-                  className="hidden" 
-                  ref={fileInputRef} 
-                  accept="image/*" 
-                  onChange={async (e) => {
-                    const f = e.target.files?.[0];
-                    if (!f || !selected || !user) {
-                      if (!user) toast.error('Please sign in to upload avatars');
-                      return;
-                    }
+                    </div>
                     
-                    setIsUploading(true);
-                    try {
-                      const reader = new FileReader();
-                      reader.onload = async () => {
+                    <input 
+                      type="file" 
+                      className="hidden" 
+                      ref={fileInputRef} 
+                      accept="image/*" 
+                      onChange={async (e) => {
+                        const f = e.target.files?.[0];
+                        if (!f || !selected || !user) {
+                          if (!user) toast.error('Please sign in to upload avatars');
+                          return;
+                        }
+                        
+                        setIsUploading(true);
                         try {
-                          const optimized = await resizeImage(reader.result as string, 512, 512, 0.7);
-                          const blob = dataUrlToBlob(optimized);
-                          if (!blob) throw new Error('Failed to process image');
-                          
-                          const filename = `avatar-${selected.id}-${Date.now()}.jpg`;
-                          const publicUrl = await uploadAvatar(user.id, blob, filename);
-                          
-                          onUpdate(selected.id, { 
-                            avatarDataUrl: publicUrl,
-                            avatarPosition: { x: 50, y: 50 } 
-                          });
-                          setIsRepositioning(true);
+                          const reader = new FileReader();
+                          reader.onload = async () => {
+                            try {
+                              const optimized = await resizeImage(reader.result as string, 512, 512, 0.7);
+                              const blob = dataUrlToBlob(optimized);
+                              if (!blob) throw new Error('Failed to process image');
+                              
+                              const filename = `avatar-${selected.id}-${Date.now()}.jpg`;
+                              const publicUrl = await uploadAvatar(user.id, blob, filename);
+                              
+                              onUpdate(selected.id, { 
+                                avatarDataUrl: publicUrl,
+                                avatarPosition: { x: 50, y: 50 } 
+                              });
+                              setIsRepositioning(true);
+                            } catch (error) {
+                              console.error('Avatar upload failed:', error);
+                              toast.error('Failed to upload avatar');
+                            } finally {
+                              setIsUploading(false);
+                            }
+                          };
+                          reader.readAsDataURL(f);
                         } catch (error) {
                           console.error('Avatar upload failed:', error);
                           toast.error('Failed to upload avatar');
-                        } finally {
                           setIsUploading(false);
                         }
-                      };
-                      reader.readAsDataURL(f);
-                    } catch (error) {
-                      console.error('Avatar upload failed:', error);
-                      toast.error('Failed to upload avatar');
-                      setIsUploading(false);
-                    }
-                  }} 
-                />
-              </div>
-              
-              {/* Avatar Panel Fields */}
-              <div className="space-y-4">
-                <Input label="Name" value={selected.name === "New Character" ? "" : selected.name} onChange={(v) => onUpdate(selected.id, { name: v })} placeholder="Character name" />
-                <Input label="Nicknames" value={selected.nicknames || ''} onChange={(v) => onUpdate(selected.id, { nicknames: v })} placeholder="e.g., Mom, Mother (comma-separated)" />
-                <Input label="Age" value={selected.age || ''} onChange={(v) => onUpdate(selected.id, { age: v })} placeholder="e.g., 25" />
-                <Input label="Sex / Identity" value={selected.sexType} onChange={(v) => onUpdate(selected.id, { sexType: v })} placeholder="e.g., Female, Male, Non-binary" />
-                <Input label="Location" value={selected.location || ''} onChange={(v) => onUpdate(selected.id, { location: v })} placeholder="Current location" />
-                <Input label="Current Mood" value={selected.currentMood || ''} onChange={(v) => onUpdate(selected.id, { currentMood: v })} placeholder="e.g., Happy, Tired" />
-                
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold uppercase text-slate-500">Controlled By</label>
-                  <div className="flex p-1 bg-slate-100 rounded-xl">
-                    <button 
-                      onClick={() => onUpdate(selected.id, { controlledBy: 'AI' })}
-                      className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.controlledBy === 'AI' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                    >
-                      AI
-                    </button>
-                    <button 
-                      onClick={() => onUpdate(selected.id, { controlledBy: 'User' })}
-                      className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.controlledBy === 'User' ? 'bg-white text-amber-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                    >
-                      User
-                    </button>
+                      }} 
+                    />
+                  </div>
+                  
+                  {/* Avatar Panel Fields */}
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Name</label>
+                      <input type="text" value={selected.name === "New Character" ? "" : selected.name} onChange={(e) => onUpdate(selected.id, { name: e.target.value })} placeholder="Character name" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Nicknames</label>
+                      <input type="text" value={selected.nicknames || ''} onChange={(e) => onUpdate(selected.id, { nicknames: e.target.value })} placeholder="e.g., Mom, Mother (comma-separated)" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Age</label>
+                      <input type="text" value={selected.age || ''} onChange={(e) => onUpdate(selected.id, { age: e.target.value })} placeholder="e.g., 25" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Sex / Identity</label>
+                      <input type="text" value={selected.sexType} onChange={(e) => onUpdate(selected.id, { sexType: e.target.value })} placeholder="e.g., Female, Male, Non-binary" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Location</label>
+                      <input type="text" value={selected.location || ''} onChange={(e) => onUpdate(selected.id, { location: e.target.value })} placeholder="Current location" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Current Mood</label>
+                      <input type="text" value={selected.currentMood || ''} onChange={(e) => onUpdate(selected.id, { currentMood: e.target.value })} placeholder="e.g., Happy, Tired" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                    </div>
+                    
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block">Controlled By</label>
+                      <div className="flex p-1 bg-zinc-800 rounded-xl">
+                        <button 
+                          onClick={() => onUpdate(selected.id, { controlledBy: 'AI' })}
+                          className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.controlledBy === 'AI' ? 'bg-zinc-700 text-blue-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+                        >
+                          AI
+                        </button>
+                        <button 
+                          onClick={() => onUpdate(selected.id, { controlledBy: 'User' })}
+                          className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.controlledBy === 'User' ? 'bg-zinc-700 text-amber-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+                        >
+                          User
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block">Character Role</label>
+                      <div className="flex p-1 bg-zinc-800 rounded-xl">
+                        <button 
+                          onClick={() => onUpdate(selected.id, { characterRole: 'Main' })}
+                          className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.characterRole === 'Main' ? 'bg-zinc-700 text-indigo-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+                        >
+                          Main
+                        </button>
+                        <button 
+                          onClick={() => onUpdate(selected.id, { characterRole: 'Side' })}
+                          className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.characterRole === 'Side' ? 'bg-zinc-700 text-zinc-300 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+                        >
+                          Side
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Role Description</label>
+                      <input type="text" value={selected.roleDescription || ''} onChange={(e) => onUpdate(selected.id, { roleDescription: e.target.value })} placeholder="Brief description of the character's role" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Tags</label>
+                      <input type="text" value={selected.tags} onChange={(e) => onUpdate(selected.id, { tags: e.target.value })} placeholder="Separated by commas" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                    </div>
                   </div>
                 </div>
-
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold uppercase text-slate-500">Character Role</label>
-                  <div className="flex p-1 bg-slate-100 rounded-xl">
-                    <button 
-                      onClick={() => onUpdate(selected.id, { characterRole: 'Main' })}
-                      className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.characterRole === 'Main' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                    >
-                      Main
-                    </button>
-                    <button 
-                      onClick={() => onUpdate(selected.id, { characterRole: 'Side' })}
-                      className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.characterRole === 'Side' ? 'bg-white text-slate-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                    >
-                      Side
-                    </button>
-                  </div>
-                </div>
-
-                <Input label="Role Description" value={selected.roleDescription || ''} onChange={(v) => onUpdate(selected.id, { roleDescription: v })} placeholder="Brief description of the character's role" />
-                <Input label="Tags" value={selected.tags} onChange={(v) => onUpdate(selected.id, { tags: v })} placeholder="Separated by commas" />
               </div>
             </div>
-          </Card>
+          </div>
         </div>
 
         {/* Right Column - Trait Sections */}
