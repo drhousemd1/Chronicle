@@ -38,17 +38,17 @@ export function AvatarActionButtons({
             <button
               type="button"
               disabled={isDisabled}
-              className="flex h-10 w-full items-center justify-center gap-2 px-4
+              className="flex h-10 w-full min-w-0 items-center justify-center gap-2 px-4
                 rounded-xl border border-[hsl(var(--ui-border))] 
                 bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
-                text-[hsl(var(--ui-text))] text-sm font-semibold
+                text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none
                 hover:bg-white/5 active:bg-white/10 disabled:opacity-50
                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40
                 transition-colors"
             >
-              <Upload className="w-4 h-4 shrink-0" />
-              <span>{isUploading ? "Uploading..." : "Upload Image"}</span>
-              <ChevronDown className="w-4 h-4 shrink-0" />
+              <Upload className="w-3.5 h-3.5 shrink-0" />
+              <span className="min-w-0 truncate">{isUploading ? "Uploading..." : "Upload Image"}</span>
+              <ChevronDown className="w-3.5 h-3.5 shrink-0" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent 
@@ -57,16 +57,16 @@ export function AvatarActionButtons({
           >
             <DropdownMenuItem
               onClick={onUploadFromDevice}
-              className="cursor-pointer hover:bg-white/10 focus:bg-white/10"
+              className="cursor-pointer hover:bg-white/10 focus:bg-white/10 text-[10px]"
             >
-              <Upload className="w-4 h-4 mr-2" />
+              <Upload className="w-3.5 h-3.5 mr-2" />
               From Device
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => setIsPickerOpen(true)}
-              className="cursor-pointer hover:bg-white/10 focus:bg-white/10"
+              className="cursor-pointer hover:bg-white/10 focus:bg-white/10 text-[10px]"
             >
-              <ImageIcon className="w-4 h-4 mr-2" />
+              <ImageIcon className="w-3.5 h-3.5 mr-2" />
               From Library
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -77,9 +77,9 @@ export function AvatarActionButtons({
           type="button"
           onClick={onGenerateClick}
           disabled={isDisabled || isGenerating}
-          className="relative flex w-full h-10 items-center justify-center gap-2 px-4
+          className="relative flex w-full min-w-0 h-10 items-center justify-center gap-2 px-4
             rounded-xl border border-[hsl(var(--ui-border))] overflow-hidden
-            text-[hsl(var(--ui-text))] text-sm font-semibold disabled:opacity-50
+            text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none disabled:opacity-50
             shadow-[0_12px_40px_rgba(0,0,0,0.45)]
             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-purple))]/45
             transition-colors"
@@ -92,8 +92,8 @@ export function AvatarActionButtons({
           />
           {/* Content */}
           <span className="relative z-10 flex items-center gap-2">
-            <Sparkles className="w-4 h-4 shrink-0" />
-            <span>{isGenerating ? "Generating..." : "AI Generate"}</span>
+            <Sparkles className="w-3.5 h-3.5 shrink-0" />
+            <span className="min-w-0 truncate">{isGenerating ? "Generating..." : "AI Generate"}</span>
           </span>
         </button>
       </div>
