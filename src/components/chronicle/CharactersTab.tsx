@@ -326,6 +326,9 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Avatar Panel */}
         <div className="space-y-6 lg:sticky lg:top-0 lg:max-h-[calc(100vh-9rem)] lg:overflow-y-auto lg:pr-2 lg:pb-6 lg:overscroll-contain">
+          <div className="flex justify-between items-center h-9">
+            <h2 className="text-xl font-bold text-slate-900">Profile</h2>
+          </div>
           <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
             {/* Section Header */}
             <div className="bg-[#4a5f7f] border-b border-white/20 px-5 py-3 flex items-center gap-3 shadow-lg">
