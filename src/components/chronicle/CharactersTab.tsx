@@ -322,7 +322,7 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
   const avatarPos = selected.avatarPosition || { x: 50, y: 50 };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Avatar Panel */}
         <div className="space-y-6 lg:sticky lg:top-0 lg:max-h-[calc(100vh-9rem)] lg:overflow-y-auto lg:pr-2 lg:pb-6 lg:overscroll-contain">
