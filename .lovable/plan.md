@@ -1,69 +1,112 @@
 
-Goal: Make the “Upload Image” + “AI Generate” button text the same size as the other Avatar panel UI text (specifically the label text for Name/Nicknames/Age), and stop any overflow/clipping on narrow screens.
 
-What’s happening now (confirmed in code)
-- In `src/components/chronicle/CharactersTab.tsx`, the Avatar panel labels (“Name”, “Nicknames”, “Age”, etc.) use:
-  - `text-[10px] font-bold ... uppercase tracking-widest`
-- In `src/components/chronicle/AvatarActionButtons.tsx`, both buttons currently use:
-  - `text-sm font-semibold`
-  - This is visibly larger than the rest of the Avatar panel typography, which is exactly what you’re seeing.
+# Side-by-Side Layout + AI Generate Button Styling Fix
 
-Implementation approach (minimal, targeted, consistent)
-1) Match the button typography to the Avatar panel label typography
-- File: `src/components/chronicle/AvatarActionButtons.tsx`
-- Change BOTH buttons’ typography from `text-sm font-semibold` to match the panel’s label scale:
-  - Use `text-[10px] font-bold` (same size as Name/Nicknames/Age labels)
-  - Keep casing as-is (“Upload Image”, “AI Generate”) unless you want them uppercase. (Your labels are uppercase; buttons in your mockups are typically Title Case. We can keep Title Case and only match size.)
-- Add `leading-none` to keep the 10px type from looking vertically “floaty” inside a tall button.
-- Add `min-w-0` on the button + `truncate` on the text span so even on very narrow screens, text won’t blow out of the container.
+## Overview
 
-Concrete class changes for the two main buttons
-- Upload button (`<button ...>`)
-  - Replace: `text-[hsl(var(--ui-text))] text-sm font-semibold`
-  - With: `text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none`
-  - Add: `min-w-0`
-  - Change the label span to: `<span className="min-w-0 truncate">...</span>`
-- AI Generate button (`<button ...>`)
-  - Replace: `text-[hsl(var(--ui-text))] text-sm font-semibold`
-  - With: `text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none`
-  - Add: `min-w-0`
-  - Change the label span to: `<span className="min-w-0 truncate">...</span>`
+Three changes requested:
+1. Switch buttons back to horizontal (side-by-side) layout
+2. Remove the ChevronDown icon from the Upload Image button
+3. Fix the AI Generate button styling to match the mockup
 
-2) Scale the icons down to fit the 10px typography
-- File: `src/components/chronicle/AvatarActionButtons.tsx`
-- Current icons are `w-4 h-4` (16px). That reads too big next to 10px type.
-- Change icons used inside the buttons to `w-3.5 h-3.5` (14px):
-  - Upload icon
-  - ChevronDown icon
-  - Sparkles icon
+---
 
-3) Fix dropdown menu item text size to match (so nothing “randomly” looks bigger)
-- File: `src/components/chronicle/AvatarActionButtons.tsx`
-- Radix dropdown menu items have a default `text-sm` coming from `src/components/ui/dropdown-menu.tsx`.
-- Override the two `DropdownMenuItem` rows with `text-[10px]` and shrink their icons to `w-3.5 h-3.5`.
-  - This prevents the dropdown from feeling mismatched against the Avatar panel’s typography.
+## Detailed Visual Analysis: AI Generate Button
 
-4) Bring the “Reposition / Save Position” button in the Avatar panel down to the same size
-- File: `src/components/chronicle/CharactersTab.tsx`
-- The “Reposition” button uses your local `Button` component from `src/components/chronicle/UI.tsx` which has a base `text-sm`.
-- Since `className` is appended last in that Button implementation, we can override safely by adding:
-  - `className="w-full text-[10px] font-bold leading-none ..."`
-- This ensures all action buttons in the Avatar panel (Upload, AI Generate, Reposition) are the same scale.
+### Mockup (Image 2) vs Current (Image 3)
 
-Validation checklist (what you should see after)
-- “Upload Image” and “AI Generate” text should visually match the “Name / Nicknames / Age” label size (10px).
-- Nothing should overflow the Avatar panel on narrow screens:
-  - If the screen gets extremely narrow, the button text should truncate (ellipsis) rather than spilling out.
-- Icons should feel proportionate and no longer dominate the line.
+| Property | Mockup | Current | Fix Required |
+|----------|--------|---------|--------------|
+| **Base background** | Deep navy `~hsl(220, 25%, 16%)` | Lighter gray `hsl(228, 7%, 20%)` | Use darker, bluer base |
+| **Gradient direction** | Horizontal (left-to-right): teal on LEFT, purple on RIGHT | Vertical (top-to-bottom) | Change to `bg-gradient-to-r` |
+| **Gradient strength** | Strong, visible colored glows at edges | Very subtle, barely visible | Increase opacity from 0.22/0.18 to ~0.35/0.30 |
+| **Teal glow position** | LEFT side of button | Top of button | Left side via `from-` position |
+| **Purple glow position** | RIGHT side of button | Bottom of button | Right side via `to-` position |
+| **Sparkles icon** | Teal/cyan colored (matches glow) | White/gray (same as text) | Add `text-[hsl(var(--accent-teal))]` to icon |
+| **Border visibility** | Very subtle, almost invisible | Visible white/10 | Reduce to `white/5` or remove |
+| **Overall feel** | Rich, glowing, premium | Flat, muted | More saturation + stronger gradient |
 
-Files that will be changed
-- `src/components/chronicle/AvatarActionButtons.tsx`
-  - Reduce text size to `text-[10px]`
-  - Add truncation/min-width rules for safety
-  - Shrink icons
-  - Override dropdown item typography
-- `src/components/chronicle/CharactersTab.tsx`
-  - Override “Reposition / Save Position” button typography to `text-[10px]` for consistency within the Avatar panel
+---
 
-Optional follow-up (not required for this fix, but will help the “app isn’t responsive” issue)
-- Do a quick responsive audit of the Avatar panel container widths/padding and the left-column sticky layout; the current layout is heavily “desktop-first” and will need some deliberate mobile breakpoints (spacing, sticky behavior, grid collapse, and consistent typography scale across components).
+## Implementation
+
+### File: `src/components/chronicle/AvatarActionButtons.tsx`
+
+### 1. Change Layout to Side-by-Side
+
+```tsx
+// Line 34: Change from vertical to horizontal
+<div className="flex gap-2 w-full">
+```
+
+### 2. Remove ChevronDown Icon from Upload Button
+
+```tsx
+// Line 51: Delete this line entirely
+<ChevronDown className="w-3.5 h-3.5 shrink-0" />
+```
+
+Also remove `ChevronDown` from the imports on line 2.
+
+### 3. Fix AI Generate Button Styling
+
+**Current gradient (wrong direction, too subtle):**
+```tsx
+<span className="absolute inset-0 bg-gradient-to-b from-[hsl(var(--accent-teal)/0.22)] to-[hsl(var(--accent-purple)/0.18)]" />
+```
+
+**Fixed gradient (horizontal, stronger):**
+```tsx
+<span className="absolute inset-0 bg-gradient-to-r from-[hsl(var(--accent-teal)/0.35)] to-[hsl(var(--accent-purple)/0.30)]" />
+```
+
+**Make the Sparkles icon teal colored:**
+```tsx
+// Current
+<Sparkles className="w-3.5 h-3.5 shrink-0" />
+
+// Fixed
+<Sparkles className="w-3.5 h-3.5 shrink-0 text-[hsl(var(--accent-teal))]" />
+```
+
+**Reduce border visibility:**
+```tsx
+// Current
+border border-[hsl(var(--ui-border))]
+
+// Fixed - more subtle
+border border-white/5
+```
+
+**Darken the base background layer for more contrast:**
+```tsx
+// Current base
+<span className="absolute inset-0 bg-[hsl(var(--ui-surface-2))]" />
+
+// Fixed - darker, bluer base
+<span className="absolute inset-0 bg-[hsl(220_25%_16%)]" />
+```
+
+---
+
+## Summary of Changes
+
+| Change | Location | Before | After |
+|--------|----------|--------|-------|
+| Layout direction | Line 34 | `flex flex-col gap-2` | `flex gap-2` |
+| ChevronDown import | Line 2 | Imported | Remove from imports |
+| ChevronDown in button | Line 51 | `<ChevronDown .../>` | Delete entirely |
+| Gradient direction | Line 90 | `bg-gradient-to-b` | `bg-gradient-to-r` |
+| Gradient opacity | Line 90 | `0.22/0.18` | `0.35/0.30` |
+| Background base | Line 88 | `bg-[hsl(var(--ui-surface-2))]` | `bg-[hsl(220_25%_16%)]` |
+| Border | Line 81 | `border-[hsl(var(--ui-border))]` | `border-white/5` |
+| Sparkles icon | Line 95 | No color class | Add `text-[hsl(var(--accent-teal))]` |
+
+---
+
+## Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/components/chronicle/AvatarActionButtons.tsx` | Layout to horizontal, remove chevron, fix AI Generate styling |
+
