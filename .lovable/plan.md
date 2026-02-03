@@ -1,10 +1,13 @@
 
 
-# Match Buttons to Exact "+ Add Milestone Step" Color
+# Match Buttons to Container Header Blue Color
 
-## The Fix
+## The Color
 
-Change all three elements from the custom hex `#6b8aae` to the **exact** Tailwind `blue-400` color (`#60A5FA`).
+The container headers (like "Avatar", "Character Goals") use:
+- **Background:** `#4a5f7f` (steel blue)
+
+For hover states, I'll use a slightly lighter version: `#5a6f8f`
 
 ---
 
@@ -16,10 +19,10 @@ Change all three elements from the custom hex `#6b8aae` to the **exact** Tailwin
 
 ```tsx
 // Current
-"bg-[#6b8aae] shadow-lg shadow-black/40 text-white"
+"bg-[#60A5FA] shadow-lg shadow-black/40 text-white"
 
 // Updated
-"bg-[#60A5FA] shadow-lg shadow-black/40 text-white"
+"bg-[#4a5f7f] shadow-lg shadow-black/40 text-white"
 ```
 
 ### 2. "C" Logo - Loading State
@@ -28,10 +31,10 @@ Change all three elements from the custom hex `#6b8aae` to the **exact** Tailwin
 
 ```tsx
 // Current
-bg-[#6b8aae] ... shadow-[#6b8aae]/30
+bg-[#60A5FA] ... shadow-[#60A5FA]/30
 
 // Updated
-bg-[#60A5FA] ... shadow-[#60A5FA]/30
+bg-[#4a5f7f] ... shadow-[#4a5f7f]/30
 ```
 
 ### 3. "C" Logo - Header
@@ -40,10 +43,10 @@ bg-[#60A5FA] ... shadow-[#60A5FA]/30
 
 ```tsx
 // Current
-bg-[#6b8aae] ... shadow-[#6b8aae]/30
+bg-[#60A5FA] ... shadow-[#4a5f7f]/30
 
 // Updated
-bg-[#60A5FA] ... shadow-[#60A5FA]/30
+bg-[#4a5f7f] ... shadow-[#4a5f7f]/30
 ```
 
 ### 4. "Save Scenario" Button (brand variant)
@@ -52,20 +55,20 @@ bg-[#60A5FA] ... shadow-[#60A5FA]/30
 
 ```tsx
 // Current
-brand: "bg-[#6b8aae] text-white border-[#6b8aae] hover:bg-[#7d9abc] ..."
-
-// Updated (using #93C5FD for hover to match blue-300)
 brand: "bg-[#60A5FA] text-white border-[#60A5FA] hover:bg-[#93C5FD] ..."
+
+// Updated
+brand: "bg-[#4a5f7f] text-white border-[#4a5f7f] hover:bg-[#5a6f8f] ..."
 ```
 
 ---
 
 ## Color Reference
 
-| State | Hex | Tailwind Equivalent |
-|-------|-----|---------------------|
-| Base | `#60A5FA` | blue-400 |
-| Hover | `#93C5FD` | blue-300 |
+| State | Hex | Description |
+|-------|-----|-------------|
+| Base | `#4a5f7f` | Steel blue (matches header backgrounds) |
+| Hover | `#5a6f8f` | Slightly lighter for hover states |
 
 ---
 
@@ -73,6 +76,6 @@ brand: "bg-[#60A5FA] text-white border-[#60A5FA] hover:bg-[#93C5FD] ..."
 
 | File | Changes |
 |------|---------|
-| `src/pages/Index.tsx` | Lines 63, 927, 946 - replace `#6b8aae` with `#60A5FA` |
-| `src/components/chronicle/UI.tsx` | Line 17 - replace `#6b8aae` with `#60A5FA`, `#7d9abc` with `#93C5FD` |
+| `src/pages/Index.tsx` | Lines 63, 927, 946 - replace `#60A5FA` with `#4a5f7f` |
+| `src/components/chronicle/UI.tsx` | Line 17 - replace `#60A5FA` with `#4a5f7f`, `#93C5FD` with `#5a6f8f` |
 
