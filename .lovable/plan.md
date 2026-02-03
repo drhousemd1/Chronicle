@@ -1,131 +1,100 @@
 
 
-# Condensed View Styling + Header Cleanup
+# Change Blue Color to Match "+ Add Milestone Step"
 
 ## Overview
 
-Two sets of changes:
-1. **Update condensed view styling** - Vertical layout with dimmer text and better spacing
-2. **Clean up section headers** - Remove green "Section" label, make header text pure white
+Update three UI elements to use the same blue color (`blue-400`) as the "+ Add Milestone Step" link text, replacing the current `blue-600` which is a darker/more saturated blue.
+
+---
+
+## Color Comparison
+
+| Element | Current | Target |
+|---------|---------|--------|
+| "+ Add Milestone Step" | `text-blue-400` | (reference color) |
+| "C" Logo | `bg-blue-600` | `bg-blue-400` |
+| Active sidebar items | `bg-blue-600` | `bg-blue-400` |
+| "Save Scenario" button | `bg-blue-600` | `bg-blue-400` |
+
+The `blue-400` hex value is approximately `#60a5fa` - a softer, lighter blue.
 
 ---
 
 ## Changes
 
-### 1. Remove "Section" Label & Fix Header Color
+### 1. "C" Logo (2 locations)
 
-Both files have the same pattern that needs updating:
+**File:** `src/pages/Index.tsx`
 
-**Current header (both files):**
+**Loading state (line 927):**
 ```tsx
-<div className="flex items-center gap-3">
-  <span className="text-[#a5d6a7] font-bold tracking-wide uppercase text-xs">Section</span>
-  <h2 className="text-[#e8f5e9] text-xl font-bold tracking-tight">{title}</h2>
-</div>
+// Current
+bg-blue-600 ... shadow-blue-500/30
+
+// Updated
+bg-blue-400 ... shadow-blue-400/30
 ```
 
-**Updated header:**
+**Header logo (line 946):**
 ```tsx
-<h2 className="text-white text-xl font-bold tracking-tight">{title}</h2>
-```
+// Current  
+bg-blue-600 ... shadow-blue-500/30
 
-Color changes:
-| Element | Current | Updated |
-|---------|---------|---------|
-| "Section" label | `text-[#a5d6a7]` (green) | **Removed entirely** |
-| Title | `text-[#e8f5e9]` (greenish white) | `text-white` (pure white) |
+// Updated
+bg-blue-400 ... shadow-blue-400/30
+```
 
 ---
 
-### 2. Update `CollapsedFieldRow` to Vertical Layout
+### 2. Active Sidebar Item State
 
-**Current (horizontal):**
+**File:** `src/pages/Index.tsx` (lines 62-63)
+
 ```tsx
-const CollapsedFieldRow: React.FC<{ label: string; value: string }> = ({ label, value }) => {
-  if (!value) return null;
-  return (
-    <div className="flex gap-3 py-0.5">
-      <span className="text-[10px] font-bold text-zinc-500 uppercase w-24 shrink-0">{label}</span>
-      <span className="text-sm text-zinc-200">{value}</span>
-    </div>
-  );
-};
+// Current
+const activeClasses = active 
+  ? "bg-blue-600 shadow-lg shadow-black/40 text-white" 
+  : "...";
+
+// Updated
+const activeClasses = active 
+  ? "bg-blue-400 shadow-lg shadow-black/40 text-white" 
+  : "...";
 ```
 
-**Updated (vertical, dimmer text):**
-```tsx
-const CollapsedFieldRow: React.FC<{ label: string; value: string }> = ({ label, value }) => {
-  if (!value) return null;
-  return (
-    <div className="space-y-1">
-      <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block">{label}</span>
-      <p className="text-sm text-zinc-400">{value}</p>
-    </div>
-  );
-};
-```
-
-Key changes:
-- Layout: `flex gap-3` → `space-y-1` (vertical stack)
-- Value color: `text-zinc-200` → `text-zinc-400` (dimmer)
-- Label: Remove `w-24`, add `block` and `tracking-widest`
-- Value: `<span>` → `<p>` for block display
+This affects the "Scenario Builder" sidebar button when active.
 
 ---
 
-### 3. Increase Spacing Between Field Groups
+### 3. "Save Scenario" Button (brand variant)
 
-Update all three collapsed view containers:
+**File:** `src/components/chronicle/UI.tsx` (line 17)
 
-| Component | Line | Current | Updated |
-|-----------|------|---------|---------|
-| `CollapsedPhysicalAppearance` | 287 | `space-y-0.5` | `space-y-4` |
-| `CollapsedCurrentlyWearing` | 308 | `space-y-0.5` | `space-y-4` |
-| `CollapsedPreferredClothing` | 322 | `space-y-0.5` | `space-y-4` |
+```tsx
+// Current
+brand: "bg-blue-600 text-white border-blue-600 hover:bg-blue-500 shadow-md hover:shadow-lg",
 
----
-
-## Visual Comparison
-
-**Before (current collapsed view):**
-```
-HAIR           Blonde, wavy
-EYES           Blue
-BUILD          Athletic
-```
-(bright white values, horizontal layout, tight spacing)
-
-**After (updated):**
-```
-HAIR
-Blonde, wavy
-
-EYES
-Blue
-
-BUILD
-Athletic
-```
-(dimmer gray values, vertical layout, clear separation)
-
-**Before (header):**
-```
-SECTION  Physical Appearance
-↑ green   ↑ greenish-white
+// Updated
+brand: "bg-blue-400 text-white border-blue-400 hover:bg-blue-300 shadow-md hover:shadow-lg",
 ```
 
-**After (header):**
-```
-Physical Appearance
-↑ pure white
-```
+Note: Hover state also updated from `blue-500` to `blue-300` to maintain the "lighter on hover" pattern.
 
 ---
 
 ## Files to Modify
 
-| File | Changes |
-|------|---------|
-| `src/components/chronicle/CharactersTab.tsx` | Remove "Section" label (line 37), change header to `text-white` (line 38), update `CollapsedFieldRow` to vertical layout (lines 272-279), update spacing to `space-y-4` (lines 287, 308, 322) |
-| `src/components/chronicle/CharacterGoalsSection.tsx` | Remove "Section" label (line 268), change header to `text-white` (line 269) |
+| File | Lines | Changes |
+|------|-------|---------|
+| `src/pages/Index.tsx` | 927 | Update loading logo `bg-blue-600` to `bg-blue-400`, shadow to `shadow-blue-400/30` |
+| `src/pages/Index.tsx` | 946 | Update header logo `bg-blue-600` to `bg-blue-400`, shadow to `shadow-blue-400/30` |
+| `src/pages/Index.tsx` | 63 | Update active sidebar `bg-blue-600` to `bg-blue-400` |
+| `src/components/chronicle/UI.tsx` | 17 | Update brand variant `bg-blue-600` to `bg-blue-400`, `border-blue-600` to `border-blue-400`, hover `bg-blue-500` to `bg-blue-300` |
+
+---
+
+## Visual Result
+
+All three elements (logo, active sidebar, save button) will now use the same softer blue (`#60a5fa`) that matches the "+ Add Milestone Step" text, creating a more cohesive color scheme.
 
