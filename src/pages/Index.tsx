@@ -60,7 +60,7 @@ function SidebarItem({
   collapsed?: boolean;
 }) {
   const activeClasses = active 
-    ? "bg-[#60A5FA] shadow-lg shadow-black/40 text-white"
+    ? "bg-[#4a5f7f] shadow-lg shadow-black/40 text-white"
     : "text-slate-400 hover:bg-white/10 hover:text-white hover:shadow-md hover:shadow-black/20";
   
   const content = (
@@ -924,7 +924,7 @@ const IndexContent = () => {
     return (
       <div className="h-screen bg-slate-900 flex items-center justify-center">
         <div className="text-white text-center">
-          <div className="w-10 h-10 rounded-xl bg-[#60A5FA] flex items-center justify-center text-white font-black text-2xl italic shadow-xl shadow-[#60A5FA]/30 mx-auto mb-4">C</div>
+          <div className="w-10 h-10 rounded-xl bg-[#4a5f7f] flex items-center justify-center text-white font-black text-2xl italic shadow-xl shadow-[#4a5f7f]/30 mx-auto mb-4">C</div>
           <p>Loading...</p>
         </div>
       </div>
@@ -943,7 +943,7 @@ const IndexContent = () => {
           <div className={`${sidebarCollapsed ? 'p-4' : 'p-8'}`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-[#60A5FA] flex items-center justify-center text-white font-black text-2xl italic shadow-xl shadow-[#60A5FA]/30">C</div>
+                <div className="w-10 h-10 rounded-xl bg-[#4a5f7f] flex items-center justify-center text-white font-black text-2xl italic shadow-xl shadow-[#4a5f7f]/30">C</div>
                 {!sidebarCollapsed && (
                   <div className="font-black uppercase tracking-tighter text-2xl leading-none text-white">Chronicle</div>
                 )}
