@@ -33,10 +33,7 @@ const HardcodedSection: React.FC<{
   <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
     {/* Section Header */}
     <div className="bg-[#4a5f7f] border-b border-white/20 px-5 py-3 flex items-center justify-between shadow-lg">
-      <div className="flex items-center gap-3">
-        <span className="text-[#a5d6a7] font-bold tracking-wide uppercase text-xs">Section</span>
-        <h2 className="text-[#e8f5e9] text-xl font-bold tracking-tight">{title}</h2>
-      </div>
+      <h2 className="text-white text-xl font-bold tracking-tight">{title}</h2>
       <button 
         onClick={onToggle} 
         className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-white/10"
@@ -272,9 +269,9 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
   const CollapsedFieldRow: React.FC<{ label: string; value: string }> = ({ label, value }) => {
     if (!value) return null;
     return (
-      <div className="flex gap-3 py-0.5">
-        <span className="text-[10px] font-bold text-zinc-500 uppercase w-24 shrink-0">{label}</span>
-        <span className="text-sm text-zinc-200">{value}</span>
+      <div className="space-y-1">
+        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block">{label}</span>
+        <p className="text-sm text-zinc-400">{value}</p>
       </div>
     );
   };
@@ -284,7 +281,7 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
     const hasAnyValue = data && Object.values(data).some(v => v);
     if (!hasAnyValue) return <p className="text-zinc-500 text-sm italic">No appearance details</p>;
     return (
-      <div className="space-y-0.5">
+      <div className="space-y-4">
         <CollapsedFieldRow label="Hair" value={data?.hairColor || ''} />
         <CollapsedFieldRow label="Eyes" value={data?.eyeColor || ''} />
         <CollapsedFieldRow label="Build" value={data?.build || ''} />
@@ -305,7 +302,7 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
     const hasAnyValue = data && Object.values(data).some(v => v);
     if (!hasAnyValue) return <p className="text-zinc-500 text-sm italic">No clothing details</p>;
     return (
-      <div className="space-y-0.5">
+      <div className="space-y-4">
         <CollapsedFieldRow label="Top" value={data?.top || ''} />
         <CollapsedFieldRow label="Bottom" value={data?.bottom || ''} />
         <CollapsedFieldRow label="Undergarments" value={data?.undergarments || ''} />
@@ -319,7 +316,7 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
     const hasAnyValue = data && Object.values(data).some(v => v);
     if (!hasAnyValue) return <p className="text-zinc-500 text-sm italic">No preferences set</p>;
     return (
-      <div className="space-y-0.5">
+      <div className="space-y-4">
         <CollapsedFieldRow label="Casual" value={data?.casual || ''} />
         <CollapsedFieldRow label="Work" value={data?.work || ''} />
         <CollapsedFieldRow label="Sleep" value={data?.sleep || ''} />
@@ -420,10 +417,7 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
           <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
             {/* Section Header */}
             <div className="bg-[#4a5f7f] border-b border-white/20 px-5 py-3 flex items-center justify-between shadow-lg">
-              <div className="flex items-center gap-3">
-                <span className="text-[#a5d6a7] font-bold tracking-wide uppercase text-xs">Section</span>
-                <h2 className="text-[#e8f5e9] text-xl font-bold tracking-tight">Avatar</h2>
-              </div>
+              <h2 className="text-white text-xl font-bold tracking-tight">Avatar</h2>
               <button 
                 onClick={() => toggleSection('avatar')} 
                 className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-white/10"
