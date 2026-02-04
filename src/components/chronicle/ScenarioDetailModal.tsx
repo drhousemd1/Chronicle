@@ -206,10 +206,10 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                 {contentThemes?.storyType && (
                   <div className="absolute top-3 right-3">
                     <span className={cn(
-                      "px-3 py-1.5 rounded-lg text-xs font-bold shadow-lg",
+                      "px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f]",
                       contentThemes.storyType === 'NSFW'
-                        ? "bg-red-500/90 text-white"
-                        : "bg-blue-500/90 text-white"
+                        ? "text-red-400"
+                        : "text-blue-400"
                     )}>
                       {contentThemes.storyType}
                     </span>
