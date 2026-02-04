@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Loader2, Globe } from 'lucide-react';
+import { Search, Loader2, Globe, LayoutGrid, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { GalleryScenarioCard } from './GalleryScenarioCard';
 import { ScenarioDetailModal } from './ScenarioDetailModal';
+import { GalleryCategorySidebar, CategoryFilters } from './GalleryCategorySidebar';
 import { 
   PublishedScenario, 
   fetchPublishedScenarios, 
@@ -13,7 +14,8 @@ import {
   unsaveScenario,
   incrementPlayCount,
   incrementViewCount,
-  SortOption
+  SortOption,
+  ContentThemeFilters
 } from '@/services/gallery-data';
 import { useAuth } from '@/hooks/use-auth';
 import { toast } from 'sonner';
@@ -23,6 +25,14 @@ interface GalleryHubProps {
   onPlay: (scenarioId: string, publishedScenarioId: string) => void;
   onSaveChange?: () => void;
 }
+
+const defaultFilters: CategoryFilters = {
+  storyTypes: [],
+  genres: [],
+  origins: [],
+  triggerWarnings: [],
+  customTags: [],
+};
 
 export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange }) => {
   const { user } = useAuth();
@@ -34,16 +44,44 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange }) 
   const [likes, setLikes] = useState<Set<string>>(new Set());
   const [saves, setSaves] = useState<Set<string>>(new Set());
   
+  // Sidebar state
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [categoryFilters, setCategoryFilters] = useState<CategoryFilters>(defaultFilters);
+  
   // Detail modal state
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedPublished, setSelectedPublished] = useState<PublishedScenario | null>(null);
 
+  // Convert CategoryFilters to ContentThemeFilters for the service
+  const getContentThemeFilters = useCallback((): ContentThemeFilters | undefined => {
+    const hasFilters = 
+      categoryFilters.storyTypes.length > 0 ||
+      categoryFilters.genres.length > 0 ||
+      categoryFilters.origins.length > 0 ||
+      categoryFilters.triggerWarnings.length > 0 ||
+      categoryFilters.customTags.length > 0;
+
+    if (!hasFilters) return undefined;
+
+    return {
+      storyTypes: categoryFilters.storyTypes.length > 0 ? categoryFilters.storyTypes : undefined,
+      genres: categoryFilters.genres.length > 0 ? categoryFilters.genres : undefined,
+      origins: categoryFilters.origins.length > 0 ? categoryFilters.origins : undefined,
+      triggerWarnings: categoryFilters.triggerWarnings.length > 0 ? categoryFilters.triggerWarnings : undefined,
+      customTags: categoryFilters.customTags.length > 0 ? categoryFilters.customTags : undefined,
+    };
+  }, [categoryFilters]);
+
   const loadScenarios = useCallback(async () => {
     setIsLoading(true);
     try {
+      const contentFilters = getContentThemeFilters();
       const data = await fetchPublishedScenarios(
         searchTags.length > 0 ? searchTags : undefined,
-        sortBy
+        sortBy,
+        50,
+        0,
+        contentFilters
       );
       setScenarios(data);
 
@@ -60,7 +98,7 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange }) 
     } finally {
       setIsLoading(false);
     }
-  }, [user, searchTags, sortBy]);
+  }, [user, searchTags, sortBy, getContentThemeFilters]);
 
   useEffect(() => {
     loadScenarios();
@@ -173,62 +211,150 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange }) 
     ));
   };
 
+  // Count active filters
+  const activeFilterCount = 
+    categoryFilters.storyTypes.length +
+    categoryFilters.genres.length +
+    categoryFilters.origins.length +
+    categoryFilters.triggerWarnings.length +
+    categoryFilters.customTags.length;
+
   return (
-    <div className="w-full h-full flex flex-col">
-      {/* Search Header */}
-      <div className="bg-[#2a2a2f] border-b border-white/10">
-      {/* Content area */}
-        <div className="p-6">
-          <div className="max-w-2xl mx-auto space-y-4">
-            {/* Search input - dark recessed style */}
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Search by tags: fantasy, romance, mystery..."
-                className="w-full pl-12 pr-24 py-4 bg-[#3a3a3f]/50 border border-white/10 rounded-2xl text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#4a5f7f] focus:border-transparent"
-              />
-              <button
-                onClick={handleSearch}
-                className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-2 bg-[#4a5f7f] text-white rounded-xl font-semibold text-sm hover:bg-[#5a6f8f] transition-colors"
-              >
-                Search
-              </button>
-            </div>
-            
-            {/* Filter tags display (if any) */}
-            {searchTags.length > 0 && (
-              <div className="flex items-center gap-2">
+    <div className="w-full h-full flex flex-col bg-[#121214]">
+      {/* Glassmorphic Header */}
+      <header 
+        className="sticky top-0 z-50 px-6 py-4 flex items-center gap-4"
+        style={{
+          backgroundColor: 'rgba(18, 18, 20, 0.8)',
+          backdropFilter: 'blur(12px)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+        }}
+      >
+        {/* Search input */}
+        <div className="relative flex-1">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Type here to Search for Characters"
+            className="w-full pl-12 pr-24 py-3 bg-[#3a3a3f]/50 border border-white/10 rounded-xl text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#4a5f7f] focus:border-transparent"
+          />
+          <button
+            onClick={handleSearch}
+            className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-1.5 bg-[#4a5f7f] text-white rounded-lg font-semibold text-sm hover:bg-[#5a6f8f] transition-colors"
+          >
+            Search
+          </button>
+        </div>
+        
+        {/* Browse Categories button */}
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className={cn(
+            "flex items-center gap-2 px-4 py-3 rounded-lg font-semibold text-sm transition-colors flex-shrink-0",
+            sidebarOpen 
+              ? "bg-[#5a6f8f] text-white" 
+              : "bg-[#4a5f7f] text-white hover:bg-[#5a6f8f]"
+          )}
+        >
+          <LayoutGrid className="w-4 h-4" />
+          <span>Browse Categories</span>
+          {activeFilterCount > 0 && (
+            <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded-full text-xs">
+              {activeFilterCount}
+            </span>
+          )}
+        </button>
+      </header>
+
+      {/* Main content with sidebar */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Category Sidebar */}
+        <GalleryCategorySidebar
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          selectedFilters={categoryFilters}
+          onFilterChange={setCategoryFilters}
+        />
+        
+        {/* Main content area */}
+        <main className="flex-1 overflow-y-auto">
+          {/* Sort Filter Tabs + Active Filters */}
+          <div className="px-8 pt-6 pb-4">
+            {/* Active filters display */}
+            {(searchTags.length > 0 || activeFilterCount > 0) && (
+              <div className="flex items-center gap-2 mb-4 flex-wrap">
                 <span className="text-sm text-white/70">Filtering by:</span>
                 {searchTags.map(tag => (
                   <span
-                    key={tag}
-                    className="px-2 py-1 bg-white/20 text-white rounded-full text-xs font-medium"
+                    key={`search-${tag}`}
+                    className="px-2 py-1 bg-white/20 text-white rounded-full text-xs font-medium flex items-center gap-1"
                   >
                     #{tag}
+                    <button
+                      onClick={() => setSearchTags(prev => prev.filter(t => t !== tag))}
+                      className="hover:text-red-300"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+                {categoryFilters.storyTypes.map(item => (
+                  <span key={`type-${item}`} className="px-2 py-1 bg-blue-500/20 text-blue-400 rounded-full text-xs font-medium flex items-center gap-1">
+                    {item}
+                    <button onClick={() => setCategoryFilters(prev => ({ ...prev, storyTypes: prev.storyTypes.filter(t => t !== item) }))} className="hover:text-red-300">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+                {categoryFilters.genres.map(item => (
+                  <span key={`genre-${item}`} className="px-2 py-1 bg-purple-500/20 text-purple-400 rounded-full text-xs font-medium flex items-center gap-1">
+                    {item}
+                    <button onClick={() => setCategoryFilters(prev => ({ ...prev, genres: prev.genres.filter(t => t !== item) }))} className="hover:text-red-300">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+                {categoryFilters.origins.map(item => (
+                  <span key={`origin-${item}`} className="px-2 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-medium flex items-center gap-1">
+                    {item}
+                    <button onClick={() => setCategoryFilters(prev => ({ ...prev, origins: prev.origins.filter(t => t !== item) }))} className="hover:text-red-300">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+                {categoryFilters.triggerWarnings.map(item => (
+                  <span key={`warning-${item}`} className="px-2 py-1 bg-amber-500/20 text-amber-400 rounded-full text-xs font-medium flex items-center gap-1">
+                    {item}
+                    <button onClick={() => setCategoryFilters(prev => ({ ...prev, triggerWarnings: prev.triggerWarnings.filter(t => t !== item) }))} className="hover:text-red-300">
+                      <X className="w-3 h-3" />
+                    </button>
                   </span>
                 ))}
                 <button
-                  onClick={() => { setSearchTags([]); setSearchQuery(''); }}
+                  onClick={() => { 
+                    setSearchTags([]); 
+                    setSearchQuery(''); 
+                    setCategoryFilters(defaultFilters);
+                  }}
                   className="text-sm text-white/70 hover:text-white underline ml-2"
                 >
-                  Clear
+                  Clear all
                 </button>
               </div>
             )}
 
-            {/* Sort Filter Toggle - Dark Theme */}
+            {/* Sort Filter Toggle */}
             <div className="flex justify-center">
               <div className="flex items-center bg-white/10 rounded-full p-1 gap-0.5 border border-white/10">
                 {[
-                  { key: 'all' as SortOption, label: 'All' },
-                  { key: 'recent' as SortOption, label: 'Most Recent' },
-                  { key: 'liked' as SortOption, label: 'Most Liked' },
-                  { key: 'saved' as SortOption, label: 'Most Saved' },
-                  { key: 'played' as SortOption, label: 'Most Played' },
+                  { key: 'all' as SortOption, label: 'All Stories' },
+                  { key: 'recent' as SortOption, label: 'Recent' },
+                  { key: 'liked' as SortOption, label: 'Liked' },
+                  { key: 'saved' as SortOption, label: 'Saved' },
+                  { key: 'played' as SortOption, label: 'Played' },
                 ].map((option) => (
                   <button
                     key={option.key}
@@ -245,44 +371,52 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange }) 
                 ))}
               </div>
             </div>
+            
+            {/* Blue gradient divider */}
+            <div 
+              className="mt-6 h-px opacity-50"
+              style={{
+                backgroundImage: 'linear-gradient(90deg, transparent 0%, rgb(59, 130, 246) 50%, transparent 100%)',
+              }}
+            />
           </div>
-        </div>
-      </div>
 
-      {/* Gallery Grid */}
-      <div className="flex-1 overflow-y-auto p-10">
-        {isLoading ? (
-          <div className="flex items-center justify-center h-64">
-            <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+          {/* Gallery Grid */}
+          <div className="px-8 pb-10">
+            {isLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+              </div>
+            ) : scenarios.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-64 text-center">
+                <div className="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center mb-4">
+                  <Globe className="w-10 h-10 text-white/30" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">No stories found</h3>
+                <p className="text-white/60 max-w-md">
+                  {searchTags.length > 0 || activeFilterCount > 0
+                    ? "Try different filters or clear your search to see all stories."
+                    : "Be the first to publish a story to the gallery!"}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-8">
+                {scenarios.map((published) => (
+                  <GalleryScenarioCard
+                    key={published.id}
+                    published={published}
+                    isLiked={likes.has(published.id)}
+                    isSaved={saves.has(published.id)}
+                    onLike={() => handleLike(published)}
+                    onSave={() => handleSave(published)}
+                    onPlay={() => handlePlay(published)}
+                    onViewDetails={() => handleViewDetails(published)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
-        ) : scenarios.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 text-center">
-            <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-              <Globe className="w-10 h-10 text-slate-300" />
-            </div>
-            <h3 className="text-xl font-bold text-slate-700 mb-2">No stories found</h3>
-            <p className="text-slate-500 max-w-md">
-              {searchTags.length > 0 
-                ? "Try different tags or clear your search to see all stories."
-                : "Be the first to publish a story to the gallery!"}
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-8">
-            {scenarios.map((published) => (
-              <GalleryScenarioCard
-                key={published.id}
-                published={published}
-                isLiked={likes.has(published.id)}
-                isSaved={saves.has(published.id)}
-                onLike={() => handleLike(published)}
-                onSave={() => handleSave(published)}
-                onPlay={() => handlePlay(published)}
-                onViewDetails={() => handleViewDetails(published)}
-              />
-            ))}
-          </div>
-        )}
+        </main>
       </div>
 
       {/* Detail Modal */}
