@@ -1,167 +1,174 @@
 
 
-# UI Improvements for Like/Save Responsiveness, Button Text, Filters, and Published Tag
+# ScenarioHub Card UI Redesign
 
-## Summary
+## Overview
 
-This plan addresses 5 improvements:
-1. **Like/Save count not updating in real-time** - Modal stats don't refresh immediately
-2. **"Bookmark" button text change** - Change to "Save" / "Saved"
-3. **Filter text "Bookmarked" change** - Change to "Saved Stories" on Your Stories page
-4. **Add "Published" tag** - Show on tiles for published stories
-5. **Add "Published Stories" filter** - New filter option on Your Stories page
+This plan implements 4 fixes to improve the scenario card design on the "Your Stories" page to match the Community Gallery styling and improve visual consistency.
 
 ---
 
-## 1. Make Like/Save Counts Update Immediately
+## Fix 1: Unify Badge Styling and Position (Top-Left Corner)
 
-### Problem
-When clicking Like or Bookmark in the modal, the counts in the top-right stats area don't update until the modal is closed and reopened. The `GalleryHub` passes static props (`likeCount`, `saveCount`) from `selectedPublished` which doesn't get updated after interactions.
+### Changes
 
-### Solution
-The `GalleryHub` already updates `scenarios` state after like/save actions (lines 140-144, 167-171, 180-184). The issue is that `selectedPublished` is set once when opening the modal and never updated. We need to derive the selected scenario's current data from the updated `scenarios` array.
+Move status badges (Saved, Published) to a **top-left** flex container. Update styling to use charcoal background with colored text:
 
-**File:** `src/components/chronicle/GalleryHub.tsx`
-
-Update the modal props to use live data from `scenarios` state:
+**File:** `src/components/chronicle/ScenarioHub.tsx`
 
 ```tsx
-// Instead of passing selectedPublished directly, find the live version
-const liveSelectedPublished = selectedPublished 
-  ? scenarios.find(s => s.id === selectedPublished.id) || selectedPublished
-  : null;
-
-// Then use liveSelectedPublished for all modal props
-<ScenarioDetailModal
-  likeCount={liveSelectedPublished.like_count}
-  saveCount={liveSelectedPublished.save_count}
-  viewCount={liveSelectedPublished.view_count}
-  isLiked={likes.has(liveSelectedPublished.id)}
-  isSaved={saves.has(liveSelectedPublished.id)}
-  // ... rest of props
-/>
+{/* Top-left badge container - flows horizontally */}
+<div className="absolute top-4 left-4 flex items-center gap-2 z-10">
+  {/* Saved badge - yellow text */}
+  {scen.isBookmarked && (
+    <div className="px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f] text-yellow-400 uppercase tracking-wide">
+      Saved
+    </div>
+  )}
+  
+  {/* Published badge - green text */}
+  {!scen.isBookmarked && isPublished && (
+    <div className="px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f] text-emerald-400 uppercase tracking-wide">
+      Published
+    </div>
+  )}
+</div>
 ```
+
+**Badge Color Reference:**
+
+| Badge | Position | Background | Text Color |
+|-------|----------|-----------|------------|
+| Saved | Top-Left | `bg-[#2a2a2f]` | `text-yellow-400` |
+| Published | Top-Left | `bg-[#2a2a2f]` | `text-emerald-400` |
+| Remixable | Top-Left | `bg-[#2a2a2f]` | `text-purple-400` |
+| SFW | Top-Right | `bg-[#2a2a2f]` | `text-blue-400` |
+| NSFW | Top-Right | `bg-[#2a2a2f]` | `text-red-400` |
 
 ---
 
-## 2. Change "Bookmark" Button to "Save/Saved"
+## Fix 2: Move Delete Button to Hover Action Row
 
-**File:** `src/components/chronicle/ScenarioDetailModal.tsx` (line 284)
+### Changes
 
-Current:
+Remove floating trash icon from top-right. Add Delete button inline with Edit and Play:
+
+**File:** `src/components/chronicle/ScenarioHub.tsx`
+
 ```tsx
-<span className="text-sm font-semibold">Bookmark</span>
+{/* Hover Actions - Edit, Delete, Play */}
+<div className="absolute inset-0 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 scale-90 group-hover:scale-100">
+  <button 
+    onClick={(e) => { e.stopPropagation(); onEdit(scen.id); }}
+    className="px-6 py-2.5 bg-white text-slate-900 rounded-xl font-bold text-sm shadow-2xl hover:bg-slate-50 transition-colors"
+  >
+    Edit
+  </button>
+  <button 
+    onClick={handleDeleteClick}
+    className="px-6 py-2.5 bg-rose-600 text-white rounded-xl font-bold text-sm shadow-2xl hover:bg-rose-500 transition-colors"
+  >
+    Delete
+  </button>
+  <button 
+    onClick={(e) => { e.stopPropagation(); onPlay(scen.id); }}
+    className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm shadow-2xl hover:bg-blue-500 transition-colors"
+  >
+    Play
+  </button>
+</div>
 ```
 
-Change to:
-```tsx
-<span className="text-sm font-semibold">{isSaved ? 'Saved' : 'Save'}</span>
-```
+Also remove the floating trash button that's currently at top-right.
 
 ---
 
-## 3. Change "Bookmarked" Filter to "Saved Stories"
+## Fix 3: Add SFW/NSFW Badge (Top-Right Corner)
 
-**File:** `src/pages/Index.tsx` (line 1263)
+### Changes
 
-Current:
-```tsx
->
-  Bookmarked
-</button>
-```
+Add SFW/NSFW badge to Your Stories cards, positioned in the **top-right corner** (same as Community Gallery).
 
-Change to:
-```tsx
->
-  Saved Stories
-</button>
-```
+**File:** `src/services/supabase-data.ts`
 
----
-
-## 4. Add "Published" Tag to Story Tiles
-
-Stories that are published to the gallery should show a "Published" tag at the top of the tile, similar to the existing "Saved" tag.
-
-### Approach
-The `ScenarioHub` component needs to know which scenarios are published. Currently, publication status is only fetched when opening the detail modal. We need to pass publication status from the parent.
-
-**File:** `src/pages/Index.tsx`
-
-1. Fetch all published scenario IDs for the user's scenarios when loading data
-2. Pass this information to `ScenarioHub` or include it in the `ScenarioMetadata`
-
-**File:** `src/services/gallery-data.ts`
-
-Add a new function to get all published scenario IDs for a user:
+Add batch fetch function:
 
 ```tsx
-export async function fetchUserPublishedScenarioIds(userId: string): Promise<Set<string>> {
+export async function fetchContentThemesForScenarios(
+  scenarioIds: string[]
+): Promise<Map<string, ContentThemes>> {
+  if (scenarioIds.length === 0) return new Map();
+  
   const { data, error } = await supabase
-    .from('published_scenarios')
-    .select('scenario_id')
-    .eq('publisher_id', userId)
-    .eq('is_published', true);
+    .from('content_themes')
+    .select('*')
+    .in('scenario_id', scenarioIds);
     
   if (error) throw error;
-  return new Set((data || []).map(p => p.scenario_id));
+  
+  const map = new Map<string, ContentThemes>();
+  for (const row of data || []) {
+    map.set(row.scenario_id, {
+      characterTypes: row.character_types || [],
+      storyType: row.story_type || null,
+      genres: row.genres || [],
+      origin: row.origin || [],
+      triggerWarnings: row.trigger_warnings || [],
+      customTags: row.custom_tags || []
+    });
+  }
+  return map;
 }
 ```
 
 **File:** `src/pages/Index.tsx`
 
-1. Add state: `const [publishedScenarioIds, setPublishedScenarioIds] = useState<Set<string>>(new Set());`
-2. Fetch in `loadData()`: call `fetchUserPublishedScenarioIds(user.id)`
-3. Pass to `ScenarioHub`: `publishedScenarioIds={publishedScenarioIds}`
+1. Add state for content themes map
+2. Fetch themes after loading registry
+3. Pass map to ScenarioHub
 
 **File:** `src/components/chronicle/ScenarioHub.tsx`
 
-1. Add prop: `publishedScenarioIds?: Set<string>`
-2. In `ScenarioCard`, add the Published tag:
+Add SFW/NSFW badge in top-right:
 
 ```tsx
-{/* Published tag - show if published and not bookmarked */}
-{!scen.isBookmarked && publishedScenarioIds?.has(scen.id) && (
-  <div className="absolute top-4 right-4 px-2.5 py-1 bg-emerald-600 text-white text-[10px] font-bold uppercase tracking-wide rounded-full z-10 shadow-lg">
-    Published
+{/* SFW/NSFW Badge - Top Right */}
+{contentThemes?.storyType && (
+  <div className={cn(
+    "absolute top-4 right-4 px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f] z-10",
+    contentThemes.storyType === 'NSFW' ? "text-red-400" : "text-blue-400"
+  )}>
+    {contentThemes.storyType}
   </div>
 )}
 ```
 
-Note: Position right side since "Saved" tag uses left side.
-
 ---
 
-## 5. Add "Published Stories" Filter Option
+## Fix 4: Reposition Title to Top of Lower Third
 
-**File:** `src/pages/Index.tsx`
+### Changes
 
-1. Update the `HubFilter` type (line 142):
+Move title/description area higher on the card:
+
+**File:** `src/components/chronicle/ScenarioHub.tsx`
+
 ```tsx
-type HubFilter = "my" | "bookmarked" | "published" | "all";
+{/* Bottom Info - Positioned at top of lower third */}
+<div className="absolute inset-x-0 bottom-0 h-1/3 p-6 pointer-events-none flex flex-col justify-start">
+  <h3 className="text-xl font-black text-white leading-tight tracking-tight group-hover:text-blue-300 transition-colors truncate flex-shrink-0">
+    {scen.title || "Unnamed Story"}
+  </h3>
+  <p className="text-xs text-white/70 line-clamp-3 leading-relaxed italic mt-1 overflow-hidden">
+    {scen.description || "No summary provided."}
+  </p>
+</div>
 ```
 
-2. Update `filteredRegistry` (around line 225) to handle the new filter:
-```tsx
-case "published":
-  return registry.filter(s => publishedScenarioIds.has(s.id));
-```
-
-3. Add the new filter button after "Saved Stories" (around line 1265):
-```tsx
-<button
-  onClick={() => setHubFilter("published")}
-  className={cn(
-    "px-4 py-1.5 rounded-full text-xs font-bold transition-all",
-    hubFilter === "published" 
-      ? "bg-white text-slate-900 shadow-sm" 
-      : "text-slate-500 hover:text-slate-700"
-  )}
->
-  Published
-</button>
-```
+Key changes:
+- `h-28` → `h-1/3` (one-third of card height)
+- Added `justify-start` to push content to top of container
+- `line-clamp-3` already handles truncation with `...`
 
 ---
 
@@ -169,17 +176,25 @@ case "published":
 
 | File | Changes |
 |------|---------|
-| `src/services/gallery-data.ts` | Add `fetchUserPublishedScenarioIds()` function |
-| `src/pages/Index.tsx` | Add published IDs state, fetch on load, update filter type, add filter case, add filter button, rename "Bookmarked" to "Saved Stories" |
-| `src/components/chronicle/ScenarioHub.tsx` | Add `publishedScenarioIds` prop, show "Published" tag on cards |
-| `src/components/chronicle/GalleryHub.tsx` | Use live data for modal props so counts update immediately |
-| `src/components/chronicle/ScenarioDetailModal.tsx` | Change "Bookmark" to "Save/Saved" |
+| `src/components/chronicle/ScenarioHub.tsx` | Update badge positions (left for status, right for SFW/NSFW), move delete to hover row, reposition title area |
+| `src/pages/Index.tsx` | Add content themes state, fetch themes for all scenarios, pass to ScenarioHub |
+| `src/services/supabase-data.ts` | Add `fetchContentThemesForScenarios()` batch function |
 
 ---
 
-## Technical Notes
+## Visual Layout Summary
 
-- The like/save count update issue is a React state synchronization problem - `selectedPublished` is a snapshot that doesn't update when `scenarios` state changes
-- The "Published" tag will show on the right side of cards (opposite to "Saved" which shows on left) to avoid overlap
-- The new filter will only show user's own published stories, not all published stories from the gallery
+```text
++----------------------------------+
+|  [Saved] [Published]    [NSFW]   |  ← Badges: Left = status, Right = rating
+|                                  |
+|                                  |
+|      [Edit] [Delete] [Play]      |  ← Center hover actions (on hover)
+|                                  |
+|----------------------------------|  ← Top of lower 1/3
+|  Story Title                     |
+|  Synopsis text that can be       |
+|  up to 3 lines with ellipsis...  |
++----------------------------------+
+```
 
