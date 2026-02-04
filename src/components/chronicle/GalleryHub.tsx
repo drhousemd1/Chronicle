@@ -168,12 +168,7 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange }) 
     <div className="w-full h-full flex flex-col">
       {/* Search Header */}
       <div className="bg-[#2a2a2f] border-b border-white/10">
-        {/* Steel blue header bar */}
-        <div className="bg-[#4a5f7f] px-6 py-4">
-          <h2 className="text-white text-xl font-bold tracking-tight text-center">Discover Stories</h2>
-        </div>
-        
-        {/* Content area */}
+      {/* Content area */}
         <div className="p-6">
           <div className="max-w-2xl mx-auto space-y-4">
             {/* Search input - dark recessed style */}
