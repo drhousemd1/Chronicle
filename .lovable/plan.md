@@ -1,83 +1,40 @@
 
 
-# Fix: Published Scenarios Not Visible to Other Users
+# Fix: Stop Published Stories from Appearing in Other Users' "My Stories"
 
-## Problem
+## Problem Identified
 
-Your published story is not visible to your wife (or any other user) in the Community Gallery because of an RLS policy conflict.
+After the RLS policy change, the `fetchScenarios()` function returns **all scenarios visible to the user** instead of **only their own scenarios**. This causes published scenarios from other users to incorrectly appear in the "Your Stories" tab.
 
-**Root Cause:**
-
-The `fetchPublishedScenarios` function queries `published_scenarios` with an `!inner` join to the `scenarios` table:
-
+The root cause:
 ```typescript
-scenarios!inner (
-  id,
-  title,
-  description,
-  cover_image_url,
-  cover_image_position
-)
+// Current code - NO user_id filter
+export async function fetchScenarios(): Promise<ScenarioMetadata[]> {
+  const { data, error } = await supabase
+    .from('scenarios')
+    .select('...')
+    .order('updated_at', { ascending: false });
+  // Returns ALL scenarios the user can see (own + published)
+}
 ```
-
-The `scenarios` table has RLS that only allows users to view their own scenarios:
-```
-Policy: Users can view own scenarios
-USING: (auth.uid() = user_id)
-```
-
-When your wife queries the gallery, the join to `scenarios` fails because she doesn't own your scenario. The entire row is filtered out.
 
 ---
 
 ## Solution
 
-Add a new RLS policy to the `scenarios` table that allows anyone to view scenarios that have been published (linked via the `published_scenarios` table).
+Add an explicit `user_id` filter to ensure only the authenticated user's own scenarios are returned:
 
-```sql
-CREATE POLICY "Anyone can view published scenarios via join"
-  ON public.scenarios FOR SELECT
-  USING (
-    auth.uid() = user_id  -- Owner can always see
-    OR 
-    EXISTS (
-      SELECT 1 FROM published_scenarios ps
-      WHERE ps.scenario_id = id
-      AND ps.is_published = true
-      AND ps.is_hidden = false
-    )
-  );
-```
+```typescript
+export async function fetchMyScenarios(userId: string): Promise<ScenarioMetadata[]> {
+  const { data, error } = await supabase
+    .from('scenarios')
+    .select('id, title, description, cover_image_url, cover_image_position, tags, created_at, updated_at')
+    .eq('user_id', userId)  // Only fetch MY scenarios
+    .order('updated_at', { ascending: false });
 
-However, since we already have a policy `Users can view own scenarios`, and PostgreSQL RESTRICTIVE policies (Permissive: No) require ALL policies to pass, we need to either:
-
-1. **Drop the existing policy and create a new combined one**, OR
-2. **Change the existing policy to be PERMISSIVE** (so that any ONE policy passing is sufficient)
-
-The cleanest approach is to drop the old policy and create a new one that handles both cases.
-
----
-
-## Database Migration
-
-```sql
--- Drop the existing restrictive policy
-DROP POLICY IF EXISTS "Users can view own scenarios" ON public.scenarios;
-
--- Create a new policy that allows:
--- 1. Users to view their own scenarios
--- 2. Anyone to view scenarios that are published
-CREATE POLICY "Users can view own or published scenarios"
-  ON public.scenarios FOR SELECT
-  USING (
-    auth.uid() = user_id
-    OR EXISTS (
-      SELECT 1 FROM public.published_scenarios ps
-      WHERE ps.scenario_id = scenarios.id
-      AND ps.is_published = true
-      AND ps.is_hidden = false
-    )
-  );
+  if (error) throw error;
+  return (data || []).map(dbToScenarioMetadata);
+}
 ```
 
 ---
@@ -86,23 +43,57 @@ CREATE POLICY "Users can view own or published scenarios"
 
 | File | Changes |
 |------|---------|
-| Database migration | Drop old RLS policy, create new combined policy for `scenarios` table |
+| `src/services/supabase-data.ts` | Rename `fetchScenarios` to `fetchMyScenarios(userId)` and add `.eq('user_id', userId)` filter |
+| `src/pages/Index.tsx` | Update the call to pass `user.id` to the new function |
 
 ---
 
-## Security Considerations
+## Technical Changes
 
-1. **Only published scenarios are exposed** - The `EXISTS` check ensures only scenarios linked to a published entry (with `is_published = true` and `is_hidden = false`) can be viewed by others
-2. **Private scenarios remain private** - Unpublished scenarios are still only visible to their owner
-3. **No sensitive data exposed** - The gallery only displays title, description, and cover image - not private story content
+### 1. supabase-data.ts (line ~220)
+
+Replace the current function:
+
+```typescript
+export async function fetchMyScenarios(userId: string): Promise<ScenarioMetadata[]> {
+  const { data, error } = await supabase
+    .from('scenarios')
+    .select('id, title, description, cover_image_url, cover_image_position, tags, created_at, updated_at')
+    .eq('user_id', userId)
+    .order('updated_at', { ascending: false });
+
+  if (error) throw error;
+  return (data || []).map(dbToScenarioMetadata);
+}
+```
+
+### 2. Index.tsx (line ~163)
+
+Update the data loading:
+
+```typescript
+const [scenarios, characters, ...] = await Promise.all([
+  supabaseData.fetchMyScenarios(user.id),  // Changed from fetchScenarios()
+  supabaseData.fetchCharacterLibrary(),
+  // ...rest
+]);
+```
+
+---
+
+## Security Confirmation
+
+- RLS policy remains unchanged - it correctly allows viewing published scenarios (needed for Community Gallery)
+- The client-side filter ensures "My Stories" only shows owned content
+- This is defense-in-depth: RLS controls what CAN be accessed, client code controls what IS requested
 
 ---
 
 ## Result
 
 After this fix:
-- Your wife will see your published story in the Community Gallery
-- All users can browse published scenarios from any creator
-- Unpublished scenarios remain private to their owners
-- The "Saved Stories" (bookmarks) feature will also work correctly for viewing saved scenarios
+- "Your Stories" tab will ONLY show scenarios you created
+- Published scenarios from others will ONLY appear in the Community Gallery
+- Bookmarked scenarios will only appear after explicit user action
+- No data will "bleed" between accounts
 
