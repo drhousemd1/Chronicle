@@ -1,71 +1,41 @@
 
-
-# Update HintBox Styling to Match Dark Theme
+# Update HintBox Background to Match Cover Image Placeholder
 
 ## Overview
 
-Update the HintBox component to blend better with the dark container styling:
-- Make the box background match the darker inner padding area
-- Make the text color more subtle, matching the label text like "Hair Color", "Eye Color"
+Make the HintBox background match the dark color used in the "NO COVER" placeholder image area.
 
 ---
 
-## Current State
+## Current Colors
 
-```tsx
-const HintBox: React.FC<{ hints: string[] }> = ({ hints }) => (
-  <div className="bg-slate-900 rounded-xl p-4 space-y-2">
-    {hints.map((hint, index) => (
-      <p key={index} className="text-sm text-white leading-relaxed flex items-start gap-2">
-        <span className="text-white mt-0.5">◆</span>
-        <span>{hint}</span>
-      </p>
-    ))}
-  </div>
-);
-```
+**Cover Image Placeholder:**
+- Uses `bg-gradient-to-br from-zinc-800 to-zinc-900`
+- `zinc-800` = `#27272a`
+- `zinc-900` = `#18181b`
 
-**Issues:**
-- `bg-slate-900` is too opaque/solid compared to the surrounding `bg-[#3a3a3f]/30`
-- `text-white` is too bright/dominating
+**Current HintBox:**
+- Uses `bg-[#2a2a2f]/50` (semi-transparent, lighter)
 
 ---
 
-## Target State
+## Change
+
+**File:** `src/components/chronicle/WorldTab.tsx` (line 41)
 
 | Element | Current | Updated |
 |---------|---------|---------|
-| Box Background | `bg-slate-900` | `bg-[#2a2a2f]/50` (transparent dark) |
-| Text Color | `text-white` | `text-zinc-400` (muted like labels) |
-| Diamond Icon | `text-white` | `text-zinc-500` (slightly dimmer) |
+| Background | `bg-[#2a2a2f]/50` | `bg-zinc-800/80` |
 
----
-
-## Changes
-
-**File:** `src/components/chronicle/WorldTab.tsx` (lines 40-48)
+The `zinc-800/80` provides a solid darker background that matches the cover image placeholder while maintaining slight transparency for blending.
 
 ```tsx
-const HintBox: React.FC<{ hints: string[] }> = ({ hints }) => (
-  <div className="bg-[#2a2a2f]/50 rounded-xl p-4 space-y-2 border border-white/5">
-    {hints.map((hint, index) => (
-      <p key={index} className="text-sm text-zinc-400 leading-relaxed flex items-start gap-2">
-        <span className="text-zinc-500 mt-0.5">◆</span>
-        <span>{hint}</span>
-      </p>
-    ))}
-  </div>
-);
+// Current
+<div className="bg-[#2a2a2f]/50 rounded-xl p-4 space-y-2 border border-white/5">
+
+// Updated
+<div className="bg-zinc-800/80 rounded-xl p-4 space-y-2 border border-white/5">
 ```
-
----
-
-## Visual Result
-
-- **Box**: Semi-transparent dark background that blends with the container padding
-- **Text**: Muted zinc-400 color matching "Hair Color", "Eye Color" labels
-- **Diamond**: Slightly dimmer zinc-500 for subtle accent
-- **Border**: Optional subtle `border-white/5` for definition
 
 ---
 
@@ -73,5 +43,4 @@ const HintBox: React.FC<{ hints: string[] }> = ({ hints }) => (
 
 | File | Change |
 |------|--------|
-| `src/components/chronicle/WorldTab.tsx` | Update HintBox styling (lines 40-48) |
-
+| `src/components/chronicle/WorldTab.tsx` | Line 41 - change `bg-[#2a2a2f]/50` to `bg-zinc-800/80` |
