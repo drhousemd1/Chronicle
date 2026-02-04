@@ -47,7 +47,7 @@ export function SceneGalleryActionButtons({
                 transition-colors"
             >
               <Upload className="w-3.5 h-3.5 shrink-0" />
-              <span className="whitespace-nowrap">{isUploading ? "Uploading..." : "Upload Scene"}</span>
+              <span className="whitespace-nowrap">{isUploading ? "Uploading..." : "Upload Image"}</span>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent 
