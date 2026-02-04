@@ -150,6 +150,10 @@ export const GalleryScenarioCard: React.FC<GalleryScenarioCardProps> = ({
                 <Bookmark className={cn("w-3 h-3", isSaved && "fill-amber-400 text-amber-400")} />
                 {published.save_count}
               </span>
+              <span className="flex items-center gap-1">
+                <Play className="w-3 h-3" />
+                {published.play_count}
+              </span>
             </div>
           </div>
         </div>
