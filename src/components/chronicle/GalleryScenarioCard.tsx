@@ -11,6 +11,7 @@ interface GalleryScenarioCardProps {
   onLike: () => void;
   onSave: () => void;
   onPlay: () => void;
+  onViewDetails: () => void;
 }
 
 export const GalleryScenarioCard: React.FC<GalleryScenarioCardProps> = ({
@@ -19,7 +20,8 @@ export const GalleryScenarioCard: React.FC<GalleryScenarioCardProps> = ({
   isSaved,
   onLike,
   onSave,
-  onPlay
+  onPlay,
+  onViewDetails
 }) => {
   const [isLiking, setIsLiking] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -58,7 +60,7 @@ export const GalleryScenarioCard: React.FC<GalleryScenarioCardProps> = ({
   return (
     <div 
       className="group relative cursor-pointer"
-      onClick={onPlay}
+      onClick={onViewDetails}
     >
       <div className="aspect-[2/3] w-full overflow-hidden rounded-[2rem] bg-slate-200 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)] transition-all duration-300 group-hover:-translate-y-3 group-hover:shadow-2xl ring-1 ring-slate-900/5 relative">
         

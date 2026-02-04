@@ -1,16 +1,19 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { ScenarioMetadata } from "@/types";
 import { Button } from "./UI";
+import { ScenarioDetailModal } from "./ScenarioDetailModal";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 interface ScenarioCardProps {
   scen: ScenarioMetadata;
   onPlay: (id: string) => void;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
+  onViewDetails: (id: string) => void;
 }
 
-const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDelete }) => {
+const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDelete, onViewDetails }) => {
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onDelete(scen.id);
@@ -19,7 +22,7 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDel
   const coverPosition = scen.coverImagePosition || { x: 50, y: 50 };
 
   return (
-    <div className="group relative cursor-pointer" onClick={() => onPlay(scen.id)}>
+    <div className="group relative cursor-pointer" onClick={() => onViewDetails(scen.id)}>
       <div className="aspect-[2/3] w-full overflow-hidden rounded-[2rem] bg-slate-200 !shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)] transition-all duration-300 group-hover:-translate-y-3 group-hover:shadow-2xl ring-1 ring-slate-900/5 relative">
         
         {scen.isBookmarked && (
@@ -96,6 +99,18 @@ export function ScenarioHub({
   onDelete,
   onCreate,
 }: ScenarioHubProps) {
+  // Detail modal state
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [selectedScenario, setSelectedScenario] = useState<ScenarioMetadata | null>(null);
+
+  const handleViewDetails = (id: string) => {
+    const scenario = registry.find(s => s.id === id);
+    if (scenario) {
+      setSelectedScenario(scenario);
+      setDetailModalOpen(true);
+    }
+  };
+
   return (
     <div className="w-full h-full p-10 flex flex-col overflow-y-auto">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-8 w-full">
@@ -105,7 +120,8 @@ export function ScenarioHub({
             scen={scen} 
             onPlay={onPlay} 
             onEdit={onEdit} 
-            onDelete={onDelete} 
+            onDelete={onDelete}
+            onViewDetails={handleViewDetails}
           />
         ))}
         {registry.length > 0 && (
@@ -137,6 +153,31 @@ export function ScenarioHub({
             Create Scenario
           </Button>
         </div>
+      )}
+
+      {/* Detail Modal */}
+      {selectedScenario && (
+        <TooltipProvider>
+          <ScenarioDetailModal
+            open={detailModalOpen}
+            onOpenChange={setDetailModalOpen}
+            scenarioId={selectedScenario.id}
+            title={selectedScenario.title}
+            description={selectedScenario.description || ""}
+            coverImage={selectedScenario.coverImage || ""}
+            coverImagePosition={selectedScenario.coverImagePosition || { x: 50, y: 50 }}
+            tags={selectedScenario.tags || []}
+            isOwned={!selectedScenario.isBookmarked}
+            onPlay={() => {
+              onPlay(selectedScenario.id);
+              setDetailModalOpen(false);
+            }}
+            onEdit={() => {
+              onEdit(selectedScenario.id);
+              setDetailModalOpen(false);
+            }}
+          />
+        </TooltipProvider>
       )}
     </div>
   );
