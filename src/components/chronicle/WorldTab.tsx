@@ -316,7 +316,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
       onClick={onNavigateToCharacters}
       className="group/add w-full flex items-center gap-4 p-3 rounded-2xl transition-all duration-300 bg-[#3a3a3f]/30 hover:bg-[#3a3a3f]/50 border-2 border-dashed border-zinc-600 hover:border-zinc-500 cursor-pointer"
     >
-      <div className="w-14 h-14 shrink-0 rounded-xl bg-[#3a3a3f]/50 border-2 border-dashed border-zinc-600 flex items-center justify-center text-zinc-500 transition-all duration-300 group-hover/add:border-zinc-400 group-hover/add:bg-[#3a3a3f]/70 group-hover/add:text-zinc-300">
+      <div className="w-14 h-14 shrink-0 rounded-xl bg-[#1a1a1f] border-2 border-dashed border-zinc-600 flex items-center justify-center text-zinc-500 transition-all duration-300 group-hover/add:border-zinc-400 group-hover/add:bg-[#3a3a3f]/70 group-hover/add:text-zinc-300">
          <span className="text-2xl font-light">+</span>
       </div>
       <div className="text-left">
@@ -335,8 +335,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
         
         <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-none pb-20 bg-[#2a2a2f]">
           <section className="space-y-2">
-            <div className="bg-[#3a3a3f]/60 px-4 py-2 rounded-xl mb-3 border border-white/5">
-               <div className="text-[10px] font-bold text-zinc-300 uppercase tracking-wider">Main Characters</div>
+            <div className="bg-[#4a5f7f] px-4 py-2 rounded-xl mb-3 shadow-sm">
+               <div className="text-[10px] font-bold text-white uppercase tracking-wider">Main Characters</div>
             </div>
             <div className="space-y-2">
               {mainCharacters.map(char => <CharacterButton key={char.id} char={char} onSelect={onSelectCharacter} />)}
@@ -345,8 +345,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
           </section>
 
           <section className="space-y-2">
-            <div className="bg-[#3a3a3f]/60 px-4 py-2 rounded-xl mb-3 border border-white/5">
-               <div className="text-[10px] font-bold text-zinc-300 uppercase tracking-wider">Side Characters</div>
+            <div className="bg-[#4a5f7f] px-4 py-2 rounded-xl mb-3 shadow-sm">
+               <div className="text-[10px] font-bold text-white uppercase tracking-wider">Side Characters</div>
             </div>
             <div className="space-y-2">
               {sideCharacters.map(char => <CharacterButton key={char.id} char={char} onSelect={onSelectCharacter} />)}
