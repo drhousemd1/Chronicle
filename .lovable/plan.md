@@ -1,109 +1,94 @@
 
-# Add Community Gallery to Left Sidebar Navigation
 
-## Overview
+# Fix Community Gallery to Include Sidebar Navigation
 
-Move the Community Gallery access from the banner inside ScenarioHub to a dedicated navigation item in the left sidebar, positioned above "Your Stories".
+## Problem
+
+The Community Gallery page (`/gallery`) is a standalone page that doesn't include the left-hand sidebar navigation. When users click "Community Gallery" in the sidebar, they navigate to a completely separate page that loses the navigation context.
+
+## Solution
+
+Convert the Gallery from a separate route to a **tab within the main Index page**, just like "Your Stories", "Character Library", etc. This ensures consistent navigation across all sections.
 
 ---
 
 ## Changes
 
-### 1. Add Gallery Icon to IconsList
+### 1. Add "gallery" as a New Tab Type
 
-**File:** `src/pages/Index.tsx` (around line 31)
+**File:** `src/pages/Index.tsx`
 
-Add a new icon for the Gallery navigation item:
+Add "gallery" to the tab type definition and render GalleryHub when that tab is active.
 
 ```tsx
-const IconsList = {
-  Gallery: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>,
-  Hub: () => ...,
-  // ... rest of icons
+// Add to tab state type (around line 66)
+const [tab, setTab] = useState<"hub" | "library" | "image_library" | "world" | "characters" | "play" | "conversations" | "model_settings" | "gallery">("hub");
+```
+
+### 2. Update Sidebar Navigation Item
+
+**File:** `src/pages/Index.tsx` (line 968)
+
+Change from navigating to `/gallery` route to setting the tab:
+
+```tsx
+// Before
+<SidebarItem active={false} label="Community Gallery" icon={<IconsList.Gallery />} onClick={() => navigate('/gallery')} collapsed={sidebarCollapsed} />
+
+// After
+<SidebarItem active={tab === "gallery"} label="Community Gallery" icon={<IconsList.Gallery />} onClick={() => { setActiveId(null); setTab("gallery"); setPlayingConversationId(null); }} collapsed={sidebarCollapsed} />
+```
+
+### 3. Add Gallery Tab Rendering in Main Content Area
+
+**File:** `src/pages/Index.tsx` (in the main content render section)
+
+Add a case for rendering the GalleryHub component when tab is "gallery":
+
+```tsx
+{tab === "gallery" && (
+  <GalleryHub onPlay={handleGalleryPlay} />
+)}
+```
+
+### 4. Add Gallery Play Handler
+
+**File:** `src/pages/Index.tsx`
+
+Add a handler function for when a user clicks Play on a gallery scenario:
+
+```tsx
+const handleGalleryPlay = (scenarioId: string, publishedScenarioId: string) => {
+  // Handle playing a gallery scenario
+  // Navigate to play tab with the scenario data
 };
 ```
 
-Or better, use a different icon to distinguish from "World" (which already uses a globe). Use a grid/gallery style icon:
+### 5. Import GalleryHub Component
+
+**File:** `src/pages/Index.tsx`
+
+Add import at top of file:
 
 ```tsx
-Gallery: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor"/></svg>,
+import { GalleryHub } from '@/components/chronicle/GalleryHub';
 ```
+
+### 6. Keep Gallery Route as Redirect (Optional)
+
+**File:** `src/App.tsx`
+
+Optionally keep the `/gallery` route but redirect to main page with gallery tab, or simply remove the route if no longer needed.
 
 ---
 
-### 2. Add Gallery Navigation Item to Sidebar
+## Result
 
-**File:** `src/pages/Index.tsx` (line 966-971)
-
-Insert the Community Gallery item ABOVE "Your Stories":
-
-```tsx
-<nav className={`flex-1 overflow-y-auto pb-4 mt-4 space-y-1 ${sidebarCollapsed ? 'px-2' : 'px-4'}`}>
-  {/* NEW: Community Gallery - First item */}
-  <SidebarItem 
-    active={false} 
-    label="Community Gallery" 
-    icon={<IconsList.Gallery />} 
-    onClick={() => navigate('/gallery')} 
-    collapsed={sidebarCollapsed} 
-  />
-  
-  <SidebarItem active={tab === "hub"} label="Your Stories" icon={<IconsList.Hub />} onClick={() => { setActiveId(null); setTab("hub"); setPlayingConversationId(null); }} collapsed={sidebarCollapsed} />
-  <SidebarItem active={tab === "library"} label="Character Library" icon={<IconsList.Library />} onClick={() => { setActiveId(null); setTab("library"); setSelectedCharacterId(null); setPlayingConversationId(null); }} collapsed={sidebarCollapsed} />
-  {/* ... rest of navigation items */}
-</nav>
-```
-
----
-
-### 3. Remove Banner from ScenarioHub
-
-**File:** `src/components/chronicle/ScenarioHub.tsx` (lines 99-120)
-
-Remove the entire Gallery Navigation Banner since it's now in the sidebar:
-
-**Before:**
-```tsx
-return (
-  <div className="w-full h-full p-10 flex flex-col overflow-y-auto">
-    {/* Gallery Navigation Banner */}
-    <div className="mb-8">
-      <button onClick={() => navigate('/gallery')} ...>
-        ...
-      </button>
-    </div>
-    
-    <div className="grid ...">
-```
-
-**After:**
-```tsx
-return (
-  <div className="w-full h-full p-10 flex flex-col overflow-y-auto">
-    <div className="grid ...">
-```
-
-Also remove the `useNavigate` import and hook if no longer needed.
-
----
-
-## Visual Result
-
-**Sidebar Navigation (from top to bottom):**
-```
-┌─────────────────────────┐
-│  C  CHRONICLE           │
-├─────────────────────────┤
-│  🌐 Community Gallery   │  ← NEW (navigates to /gallery)
-│  ⊞ Your Stories         │  ← Existing
-│  📚 Character Library   │
-│  🖼 Image Library        │
-│  💬 Chat History        │
-│  🔧 Scenario Builder    │
-│  ─────────────────────  │
-│  ⚡ Model Settings      │
-└─────────────────────────┘
-```
+After this change:
+- Clicking "Community Gallery" in the sidebar shows the gallery content in the main area
+- The sidebar remains visible and functional
+- Users can navigate between Gallery and other sections seamlessly
+- The Gallery sidebar item will show as "active" when viewing the gallery
 
 ---
 
@@ -111,5 +96,6 @@ Also remove the `useNavigate` import and hook if no longer needed.
 
 | File | Changes |
 |------|---------|
-| `src/pages/Index.tsx` | Add Gallery icon to IconsList (line ~31), add SidebarItem for Community Gallery above "Your Stories" (line ~967) |
-| `src/components/chronicle/ScenarioHub.tsx` | Remove the Gallery Navigation Banner (lines 99-120), remove unused navigate import |
+| `src/pages/Index.tsx` | Add "gallery" to tab type, update SidebarItem onClick, add GalleryHub render case, import GalleryHub, add play handler |
+| `src/App.tsx` | Optionally remove or redirect the `/gallery` route |
+
