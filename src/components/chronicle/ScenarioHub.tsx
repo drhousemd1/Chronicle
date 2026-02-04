@@ -14,9 +14,10 @@ interface ScenarioCardProps {
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
   onViewDetails: (id: string) => void;
+  isPublished?: boolean;
 }
 
-const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDelete, onViewDetails }) => {
+const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDelete, onViewDetails, isPublished }) => {
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onDelete(scen.id);
@@ -31,6 +32,13 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDel
         {scen.isBookmarked && (
           <div className="absolute top-4 left-4 px-2.5 py-1 bg-purple-600 text-white text-[10px] font-bold uppercase tracking-wide rounded-full z-10 shadow-lg">
             Saved
+          </div>
+        )}
+        
+        {/* Published tag - show on right side for user's own published stories */}
+        {!scen.isBookmarked && isPublished && (
+          <div className="absolute top-4 right-12 px-2.5 py-1 bg-emerald-600 text-white text-[10px] font-bold uppercase tracking-wide rounded-full z-10 shadow-lg">
+            Published
           </div>
         )}
         
@@ -93,6 +101,7 @@ interface ScenarioHubProps {
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
   onCreate: () => void;
+  publishedScenarioIds?: Set<string>;
 }
 
 export function ScenarioHub({
@@ -101,6 +110,7 @@ export function ScenarioHub({
   onEdit,
   onDelete,
   onCreate,
+  publishedScenarioIds,
 }: ScenarioHubProps) {
   // Detail modal state
   const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -156,6 +166,7 @@ export function ScenarioHub({
             onEdit={onEdit} 
             onDelete={onDelete}
             onViewDetails={handleViewDetails}
+            isPublished={publishedScenarioIds?.has(scen.id)}
           />
         ))}
         {registry.length > 0 && (

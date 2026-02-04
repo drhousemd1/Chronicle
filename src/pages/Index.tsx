@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { ScenarioData, TabKey, Character, ScenarioMetadata, Conversation, Message, ConversationMetadata, SideCharacter, UserBackground, ContentThemes, defaultContentThemes } from "@/types";
-import { fetchSavedScenarios, SavedScenario, unsaveScenario } from "@/services/gallery-data";
+import { fetchSavedScenarios, SavedScenario, unsaveScenario, fetchUserPublishedScenarioIds } from "@/services/gallery-data";
 import { createDefaultScenarioData, now, uid, uuid, truncateLine, resizeImage } from "@/utils";
 import { CharactersTab } from "@/components/chronicle/CharactersTab";
 import { WorldTab } from "@/components/chronicle/WorldTab";
@@ -139,9 +139,10 @@ const IndexContent = () => {
   const [isImageLibraryBackgroundModalOpen, setIsImageLibraryBackgroundModalOpen] = useState(false);
 
   // Hub filter state for "Your Stories" tab
-  type HubFilter = "my" | "bookmarked" | "all";
+  type HubFilter = "my" | "bookmarked" | "published" | "all";
   const [hubFilter, setHubFilter] = useState<HubFilter>("all");
   const [savedScenarios, setSavedScenarios] = useState<SavedScenario[]>([]);
+  const [publishedScenarioIds, setPublishedScenarioIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     localStorage.setItem('chronicle_sidebar_collapsed', String(sidebarCollapsed));
@@ -161,19 +162,21 @@ const IndexContent = () => {
     async function loadData() {
       setIsLoading(true);
       try {
-        const [scenarios, characters, conversations, backgrounds, imageLibraryBgId, savedScens] = await Promise.all([
+        const [scenarios, characters, conversations, backgrounds, imageLibraryBgId, savedScens, publishedIds] = await Promise.all([
           supabaseData.fetchMyScenarios(user.id),
           supabaseData.fetchCharacterLibrary(),
           supabaseData.fetchConversationRegistry(),
           supabaseData.fetchUserBackgrounds(user.id),
           supabaseData.getImageLibraryBackground(user.id),
-          fetchSavedScenarios(user.id)
+          fetchSavedScenarios(user.id),
+          fetchUserPublishedScenarioIds(user.id)
         ]);
         setRegistry(scenarios);
         setLibrary(characters);
         setConversationRegistry(conversations);
         setHubBackgrounds(backgrounds);
         setSavedScenarios(savedScens);
+        setPublishedScenarioIds(publishedIds);
         
         // Set the selected background if one is marked as selected (Hub)
         const selectedBg = backgrounds.find(bg => bg.isSelected);
@@ -227,10 +230,12 @@ const IndexContent = () => {
         return registry;
       case "bookmarked":
         return bookmarkedScenarios;
+      case "published":
+        return registry.filter(s => publishedScenarioIds.has(s.id));
       case "all":
         return [...registry, ...bookmarkedScenarios];
     }
-  }, [registry, savedScenarios, hubFilter]);
+  }, [registry, savedScenarios, hubFilter, publishedScenarioIds]);
 
   const isValidUuid = useCallback(
     (s: string) =>
@@ -1260,7 +1265,18 @@ const IndexContent = () => {
                           : "text-slate-500 hover:text-slate-700"
                       )}
                     >
-                      Bookmarked
+                      Saved Stories
+                    </button>
+                    <button
+                      onClick={() => setHubFilter("published")}
+                      className={cn(
+                        "px-4 py-1.5 rounded-full text-xs font-bold transition-all",
+                        hubFilter === "published" 
+                          ? "bg-white text-slate-900 shadow-sm" 
+                          : "text-slate-500 hover:text-slate-700"
+                      )}
+                    >
+                      Published
                     </button>
                     <button
                       onClick={() => setHubFilter("all")}
@@ -1371,6 +1387,7 @@ const IndexContent = () => {
                 onEdit={handleEditScenario}
                 onDelete={handleDeleteScenario}
                 onCreate={handleCreateNewScenario}
+                publishedScenarioIds={publishedScenarioIds}
               />
             </div>
           )}

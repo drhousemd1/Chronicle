@@ -435,36 +435,40 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange }) 
       </div>
 
       {/* Detail Modal */}
-      {selectedPublished && (
-        <TooltipProvider>
-          <ScenarioDetailModal
-            open={detailModalOpen}
-            onOpenChange={setDetailModalOpen}
-            scenarioId={selectedPublished.scenario_id}
-            title={selectedPublished.scenario?.title || "Untitled"}
-            description={selectedPublished.scenario?.description || ""}
-            coverImage={selectedPublished.scenario?.cover_image_url || ""}
-            coverImagePosition={selectedPublished.scenario?.cover_image_position || { x: 50, y: 50 }}
-            tags={selectedPublished.tags}
-            contentThemes={selectedPublished.contentThemes}
-            likeCount={selectedPublished.like_count}
-            saveCount={selectedPublished.save_count}
-            playCount={selectedPublished.play_count}
-            viewCount={selectedPublished.view_count}
-            publisher={selectedPublished.publisher}
-            publishedAt={selectedPublished.created_at}
-            isLiked={likes.has(selectedPublished.id)}
-            isSaved={saves.has(selectedPublished.id)}
-            allowRemix={selectedPublished.allow_remix}
-            onLike={() => handleLike(selectedPublished)}
-            onSave={() => handleSave(selectedPublished)}
-            onPlay={() => handlePlay(selectedPublished)}
-            isPublished={true}
-            canUnpublish={user?.id === selectedPublished.publisher_id}
-            onUnpublish={user?.id === selectedPublished.publisher_id ? handleUnpublish : undefined}
-          />
-        </TooltipProvider>
-      )}
+      {selectedPublished && (() => {
+        // Use live data from scenarios state so counts update immediately
+        const liveData = scenarios.find(s => s.id === selectedPublished.id) || selectedPublished;
+        return (
+          <TooltipProvider>
+            <ScenarioDetailModal
+              open={detailModalOpen}
+              onOpenChange={setDetailModalOpen}
+              scenarioId={liveData.scenario_id}
+              title={liveData.scenario?.title || "Untitled"}
+              description={liveData.scenario?.description || ""}
+              coverImage={liveData.scenario?.cover_image_url || ""}
+              coverImagePosition={liveData.scenario?.cover_image_position || { x: 50, y: 50 }}
+              tags={liveData.tags}
+              contentThemes={liveData.contentThemes}
+              likeCount={liveData.like_count}
+              saveCount={liveData.save_count}
+              playCount={liveData.play_count}
+              viewCount={liveData.view_count}
+              publisher={liveData.publisher}
+              publishedAt={liveData.created_at}
+              isLiked={likes.has(liveData.id)}
+              isSaved={saves.has(liveData.id)}
+              allowRemix={liveData.allow_remix}
+              onLike={() => handleLike(liveData)}
+              onSave={() => handleSave(liveData)}
+              onPlay={() => handlePlay(liveData)}
+              isPublished={true}
+              canUnpublish={user?.id === liveData.publisher_id}
+              onUnpublish={user?.id === liveData.publisher_id ? handleUnpublish : undefined}
+            />
+          </TooltipProvider>
+        );
+      })()}
     </div>
   );
 };

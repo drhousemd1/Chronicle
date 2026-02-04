@@ -281,7 +281,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                         )}
                       >
                         <Bookmark className={cn("w-5 h-5", isSaved && "fill-current")} />
-                        <span className="text-sm font-semibold">Bookmark</span>
+                        <span className="text-sm font-semibold">{isSaved ? 'Saved' : 'Save'}</span>
                       </button>
                     )}
                     <button
