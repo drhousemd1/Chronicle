@@ -314,29 +314,29 @@ export const WorldTab: React.FC<WorldTabProps> = ({
     <button 
       type="button"
       onClick={onNavigateToCharacters}
-      className="group/add w-full flex items-center gap-4 p-2 rounded-2xl transition-all duration-300 bg-slate-100/50 hover:bg-blue-50 border-2 border-dashed border-slate-300 hover:border-blue-400 cursor-pointer"
+      className="group/add w-full flex items-center gap-4 p-3 rounded-2xl transition-all duration-300 bg-[#3a3a3f]/30 hover:bg-[#3a3a3f]/50 border-2 border-dashed border-zinc-600 hover:border-zinc-500 cursor-pointer"
     >
-      <div className="w-14 h-14 shrink-0 rounded-xl bg-white border-2 border-dashed border-slate-300 flex items-center justify-center text-slate-400 transition-all duration-300 group-hover/add:border-blue-400 group-hover/add:bg-blue-50 group-hover/add:text-blue-500">
+      <div className="w-14 h-14 shrink-0 rounded-xl bg-[#3a3a3f]/50 border-2 border-dashed border-zinc-600 flex items-center justify-center text-zinc-500 transition-all duration-300 group-hover/add:border-zinc-400 group-hover/add:bg-[#3a3a3f]/70 group-hover/add:text-zinc-300">
          <span className="text-2xl font-light">+</span>
       </div>
       <div className="text-left">
-        <div className="text-xs font-bold text-slate-500 group-hover/add:text-blue-600 transition-colors uppercase tracking-tight">Add / Create</div>
-        <div className="text-[9px] font-black text-slate-400 group-hover/add:text-blue-400 uppercase tracking-widest mt-0.5">Character Registry</div>
+        <div className="text-xs font-bold text-zinc-400 group-hover/add:text-zinc-200 transition-colors uppercase tracking-tight">Add / Create</div>
+        <div className="text-[9px] font-black text-zinc-500 group-hover/add:text-zinc-400 uppercase tracking-widest mt-0.5">Character Registry</div>
       </div>
     </button>
   );
 
   return (
     <div className="flex flex-1 h-full overflow-hidden">
-      <aside className="w-[260px] flex-shrink-0 bg-white border-r border-slate-200 flex flex-col h-full shadow-[inset_-4px_0_12px_rgba(0,0,0,0.02)]">
-        <div className="p-6 border-b border-slate-100 bg-slate-50/30">
-          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Character Roster</div>
+      <aside className="w-[260px] flex-shrink-0 bg-[#2a2a2f] border-r border-white/10 flex flex-col h-full">
+        <div className="p-6 border-b border-white/10 bg-[#4a5f7f]">
+          <div className="text-[10px] font-black text-white uppercase tracking-widest">Character Roster</div>
         </div>
         
-        <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-none pb-20">
+        <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-none pb-20 bg-[#2a2a2f]">
           <section className="space-y-2">
-            <div className="bg-[#4a5f7f] px-4 py-2 rounded-xl mb-3 shadow-sm">
-               <div className="text-[10px] font-bold text-white uppercase tracking-wider">Main Characters</div>
+            <div className="bg-[#3a3a3f]/60 px-4 py-2 rounded-xl mb-3 border border-white/5">
+               <div className="text-[10px] font-bold text-zinc-300 uppercase tracking-wider">Main Characters</div>
             </div>
             <div className="space-y-2">
               {mainCharacters.map(char => <CharacterButton key={char.id} char={char} onSelect={onSelectCharacter} />)}
@@ -345,8 +345,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
           </section>
 
           <section className="space-y-2">
-            <div className="bg-[#4a5f7f] px-4 py-2 rounded-xl mb-3 shadow-sm">
-               <div className="text-[10px] font-bold text-white uppercase tracking-wider">Side Characters</div>
+            <div className="bg-[#3a3a3f]/60 px-4 py-2 rounded-xl mb-3 border border-white/5">
+               <div className="text-[10px] font-bold text-zinc-300 uppercase tracking-wider">Side Characters</div>
             </div>
             <div className="space-y-2">
               {sideCharacters.map(char => <CharacterButton key={char.id} char={char} onSelect={onSelectCharacter} />)}
