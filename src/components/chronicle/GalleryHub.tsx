@@ -10,7 +10,8 @@ import {
   toggleLike,
   saveScenarioToCollection,
   unsaveScenario,
-  incrementPlayCount
+  incrementPlayCount,
+  SortOption
 } from '@/services/gallery-data';
 import { useAuth } from '@/hooks/use-auth';
 import { toast } from 'sonner';
@@ -27,6 +28,7 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange }) 
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchTags, setSearchTags] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState<SortOption>('all');
   const [likes, setLikes] = useState<Set<string>>(new Set());
   const [saves, setSaves] = useState<Set<string>>(new Set());
   
@@ -38,7 +40,8 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange }) 
     setIsLoading(true);
     try {
       const data = await fetchPublishedScenarios(
-        searchTags.length > 0 ? searchTags : undefined
+        searchTags.length > 0 ? searchTags : undefined,
+        sortBy
       );
       setScenarios(data);
 
@@ -55,7 +58,7 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange }) 
     } finally {
       setIsLoading(false);
     }
-  }, [user, searchTags]);
+  }, [user, searchTags, sortBy]);
 
   useEffect(() => {
     loadScenarios();
@@ -163,44 +166,72 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange }) 
   return (
     <div className="w-full h-full flex flex-col">
       {/* Search Header */}
-      <div className="p-6 border-b border-slate-200">
-        <div className="max-w-2xl mx-auto">
+      <div className="p-6 bg-[#4a5f7f]">
+        <div className="max-w-2xl mx-auto space-y-4">
+          {/* Search input */}
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Search by tags: fantasy, romance, mystery..."
-              className="w-full pl-12 pr-24 py-4 bg-white border border-slate-200 rounded-2xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
+              className="w-full pl-12 pr-24 py-4 bg-white/10 border border-white/20 rounded-2xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-transparent"
             />
             <button
               onClick={handleSearch}
-              className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-2 bg-slate-900 text-white rounded-xl font-semibold text-sm hover:bg-slate-800 transition-colors"
+              className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-2 bg-white text-[#4a5f7f] rounded-xl font-semibold text-sm hover:bg-white/90 transition-colors"
             >
               Search
             </button>
           </div>
+          
+          {/* Filter tags display (if any) */}
           {searchTags.length > 0 && (
-            <div className="flex items-center gap-2 mt-3">
-              <span className="text-sm text-slate-500">Filtering by:</span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-white/70">Filtering by:</span>
               {searchTags.map(tag => (
                 <span
                   key={tag}
-                  className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium"
+                  className="px-2 py-1 bg-white/20 text-white rounded-full text-xs font-medium"
                 >
                   #{tag}
                 </span>
               ))}
               <button
                 onClick={() => { setSearchTags([]); setSearchQuery(''); }}
-                className="text-sm text-slate-500 hover:text-slate-700 underline ml-2"
+                className="text-sm text-white/70 hover:text-white underline ml-2"
               >
                 Clear
               </button>
             </div>
           )}
+
+          {/* Sort Filter Toggle */}
+          <div className="flex justify-center">
+            <div className="inline-flex bg-white/10 rounded-full p-1 border border-white/20">
+              {[
+                { key: 'all' as SortOption, label: 'All' },
+                { key: 'recent' as SortOption, label: 'Most Recent' },
+                { key: 'liked' as SortOption, label: 'Most Liked' },
+                { key: 'saved' as SortOption, label: 'Most Saved' },
+                { key: 'played' as SortOption, label: 'Most Played' },
+              ].map((option) => (
+                <button
+                  key={option.key}
+                  onClick={() => setSortBy(option.key)}
+                  className={`px-4 py-2 text-sm font-medium rounded-full transition-all ${
+                    sortBy === option.key
+                      ? 'bg-white text-[#4a5f7f] shadow-sm'
+                      : 'text-white/70 hover:text-white'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
