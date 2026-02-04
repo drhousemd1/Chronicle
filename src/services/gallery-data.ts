@@ -11,6 +11,7 @@ export interface PublishedScenario {
   like_count: number;
   save_count: number;
   play_count: number;
+  view_count: number;
   is_published: boolean;
   created_at: string;
   updated_at: string;
@@ -65,6 +66,7 @@ export async function fetchPublishedScenarios(
       like_count,
       save_count,
       play_count,
+      view_count,
       is_published,
       created_at,
       updated_at,
@@ -126,6 +128,7 @@ export async function fetchPublishedScenarios(
     like_count: item.like_count,
     save_count: item.save_count,
     play_count: item.play_count,
+    view_count: item.view_count,
     is_published: item.is_published,
     created_at: item.created_at,
     updated_at: item.updated_at,
@@ -374,6 +377,13 @@ export async function getUserInteractions(
 // Increment play count
 export async function incrementPlayCount(publishedScenarioId: string): Promise<void> {
   await supabase.rpc('increment_play_count', { 
+    published_id: publishedScenarioId 
+  });
+}
+
+// Increment view count
+export async function incrementViewCount(publishedScenarioId: string): Promise<void> {
+  await supabase.rpc('increment_view_count', { 
     published_id: publishedScenarioId 
   });
 }

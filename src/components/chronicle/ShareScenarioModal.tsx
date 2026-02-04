@@ -75,6 +75,7 @@ export const ShareScenarioModal: React.FC<ShareScenarioModalProps> = ({
         like_count: existingPublication?.like_count || 0,
         save_count: existingPublication?.save_count || 0,
         play_count: existingPublication?.play_count || 0,
+        view_count: existingPublication?.view_count || 0,
         is_published: true,
         created_at: existingPublication?.created_at || new Date().toISOString(),
         updated_at: new Date().toISOString()

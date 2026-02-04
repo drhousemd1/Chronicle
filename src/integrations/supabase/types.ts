@@ -485,6 +485,7 @@ export type Database = {
           scenario_id: string
           tags: string[]
           updated_at: string | null
+          view_count: number
         }
         Insert: {
           allow_remix?: boolean
@@ -500,6 +501,7 @@ export type Database = {
           scenario_id: string
           tags?: string[]
           updated_at?: string | null
+          view_count?: number
         }
         Update: {
           allow_remix?: boolean
@@ -515,6 +517,7 @@ export type Database = {
           scenario_id?: string
           tags?: string[]
           updated_at?: string | null
+          view_count?: number
         }
         Relationships: [
           {
@@ -877,6 +880,10 @@ export type Database = {
         Returns: undefined
       }
       increment_save_count: {
+        Args: { published_id: string }
+        Returns: undefined
+      }
+      increment_view_count: {
         Args: { published_id: string }
         Returns: undefined
       }
