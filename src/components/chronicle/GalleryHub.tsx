@@ -167,71 +167,79 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange }) 
   return (
     <div className="w-full h-full flex flex-col">
       {/* Search Header */}
-      <div className="p-6 bg-[#4a5f7f]">
-        <div className="max-w-2xl mx-auto space-y-4">
-          {/* Search input */}
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Search by tags: fantasy, romance, mystery..."
-              className="w-full pl-12 pr-24 py-4 bg-white border border-white rounded-2xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent shadow-lg"
-            />
-            <button
-              onClick={handleSearch}
-              className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-2 bg-white text-[#4a5f7f] rounded-xl font-semibold text-sm hover:bg-white/90 transition-colors"
-            >
-              Search
-            </button>
-          </div>
-          
-          {/* Filter tags display (if any) */}
-          {searchTags.length > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-white/70">Filtering by:</span>
-              {searchTags.map(tag => (
-                <span
-                  key={tag}
-                  className="px-2 py-1 bg-white/20 text-white rounded-full text-xs font-medium"
-                >
-                  #{tag}
-                </span>
-              ))}
+      <div className="bg-[#2a2a2f] border-b border-white/10">
+        {/* Steel blue header bar */}
+        <div className="bg-[#4a5f7f] px-6 py-4">
+          <h2 className="text-white text-xl font-bold tracking-tight text-center">Discover Stories</h2>
+        </div>
+        
+        {/* Content area */}
+        <div className="p-6">
+          <div className="max-w-2xl mx-auto space-y-4">
+            {/* Search input - dark recessed style */}
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Search by tags: fantasy, romance, mystery..."
+                className="w-full pl-12 pr-24 py-4 bg-[#3a3a3f]/50 border border-white/10 rounded-2xl text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#4a5f7f] focus:border-transparent"
+              />
               <button
-                onClick={() => { setSearchTags([]); setSearchQuery(''); }}
-                className="text-sm text-white/70 hover:text-white underline ml-2"
+                onClick={handleSearch}
+                className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-2 bg-[#4a5f7f] text-white rounded-xl font-semibold text-sm hover:bg-[#5a6f8f] transition-colors"
               >
-                Clear
+                Search
               </button>
             </div>
-          )}
-
-          {/* Sort Filter Toggle */}
-          <div className="flex justify-center">
-            <div className="flex items-center bg-slate-200 rounded-full p-1 gap-0.5">
-              {[
-                { key: 'all' as SortOption, label: 'All' },
-                { key: 'recent' as SortOption, label: 'Most Recent' },
-                { key: 'liked' as SortOption, label: 'Most Liked' },
-                { key: 'saved' as SortOption, label: 'Most Saved' },
-                { key: 'played' as SortOption, label: 'Most Played' },
-              ].map((option) => (
+            
+            {/* Filter tags display (if any) */}
+            {searchTags.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-white/70">Filtering by:</span>
+                {searchTags.map(tag => (
+                  <span
+                    key={tag}
+                    className="px-2 py-1 bg-white/20 text-white rounded-full text-xs font-medium"
+                  >
+                    #{tag}
+                  </span>
+                ))}
                 <button
-                  key={option.key}
-                  onClick={() => setSortBy(option.key)}
-                  className={cn(
-                    "px-4 py-1.5 rounded-full text-xs font-bold transition-all",
-                    sortBy === option.key 
-                      ? "bg-white text-slate-900 shadow-sm" 
-                      : "text-slate-500 hover:text-slate-700"
-                  )}
+                  onClick={() => { setSearchTags([]); setSearchQuery(''); }}
+                  className="text-sm text-white/70 hover:text-white underline ml-2"
                 >
-                  {option.label}
+                  Clear
                 </button>
-              ))}
+              </div>
+            )}
+
+            {/* Sort Filter Toggle - Dark Theme */}
+            <div className="flex justify-center">
+              <div className="flex items-center bg-white/10 rounded-full p-1 gap-0.5 border border-white/10">
+                {[
+                  { key: 'all' as SortOption, label: 'All' },
+                  { key: 'recent' as SortOption, label: 'Most Recent' },
+                  { key: 'liked' as SortOption, label: 'Most Liked' },
+                  { key: 'saved' as SortOption, label: 'Most Saved' },
+                  { key: 'played' as SortOption, label: 'Most Played' },
+                ].map((option) => (
+                  <button
+                    key={option.key}
+                    onClick={() => setSortBy(option.key)}
+                    className={cn(
+                      "px-4 py-1.5 rounded-full text-xs font-bold transition-all",
+                      sortBy === option.key 
+                        ? "bg-[#4a5f7f] text-white shadow-sm" 
+                        : "text-zinc-400 hover:text-zinc-200"
+                    )}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
