@@ -185,25 +185,104 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
               <div className="p-6 md:p-8">
                 {/* Header: Image + Info */}
                 <div className="flex flex-col md:flex-row gap-6 md:gap-8">
+                {/* Left Column: Cover Image + Action Buttons */}
+                <div className="w-full md:w-64 flex-shrink-0">
                   {/* Cover Image */}
-                  <div className="w-full md:w-64 flex-shrink-0">
-                    <div className="aspect-[2/3] w-full overflow-hidden rounded-2xl bg-[#2a2a2f] ring-1 ring-white/10 shadow-xl">
-                      {coverImage ? (
-                        <img
-                          src={coverImage}
-                          alt={title}
-                          style={{ objectPosition: `${coverImagePosition.x}% ${coverImagePosition.y}%` }}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#2a2a2f] to-[#1a1a1f]">
-                          <span className="font-black text-white/20 text-7xl uppercase">
-                            {title?.charAt(0) || '?'}
-                          </span>
-                        </div>
-                      )}
-                    </div>
+                  <div className="aspect-[2/3] w-full overflow-hidden rounded-2xl bg-[#2a2a2f] ring-1 ring-white/10 shadow-xl">
+                    {coverImage ? (
+                      <img
+                        src={coverImage}
+                        alt={title}
+                        style={{ objectPosition: `${coverImagePosition.x}% ${coverImagePosition.y}%` }}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#2a2a2f] to-[#1a1a1f]">
+                        <span className="font-black text-white/20 text-7xl uppercase">
+                          {title?.charAt(0) || '?'}
+                        </span>
+                      </div>
+                    )}
                   </div>
+
+                  {/* Action Buttons - Under Cover */}
+                  <div className="flex flex-col gap-2 mt-4">
+                    {isOwned ? (
+                      <>
+                        {onEdit && (
+                          <button
+                            onClick={handleEdit}
+                            className="w-full px-4 py-2.5 bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] text-white rounded-xl font-bold text-sm shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
+                          >
+                            <Edit className="w-4 h-4" />
+                            Edit Story
+                          </button>
+                        )}
+                        <button
+                          onClick={handlePlay}
+                          className="w-full px-4 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm shadow-lg hover:bg-blue-500 transition-colors flex items-center justify-center gap-2"
+                        >
+                          <Play className="w-4 h-4 fill-current" />
+                          Play Story
+                        </button>
+                        {isPublished && onUnpublish && (
+                          <button
+                            onClick={handleUnpublish}
+                            disabled={isUnpublishing}
+                            className="w-full px-4 py-2.5 bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] text-white/70 rounded-xl font-bold text-sm shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/10 hover:text-white transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                          >
+                            {isUnpublishing ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Globe className="w-4 h-4" />
+                            )}
+                            Remove from Gallery
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        {onLike && (
+                          <button
+                            onClick={handleLike}
+                            disabled={isLiking}
+                            className={cn(
+                              "w-full px-4 py-2.5 rounded-xl font-bold text-sm shadow-lg transition-all flex items-center justify-center gap-2",
+                              isLiked 
+                                ? "bg-rose-500 text-white hover:bg-rose-600" 
+                                : "bg-white/10 text-white/80 hover:bg-white/20"
+                            )}
+                          >
+                            <Heart className={cn("w-4 h-4", isLiked && "fill-current")} />
+                            {isLiked ? 'Liked' : 'Like'}
+                          </button>
+                        )}
+                        {onSave && (
+                          <button
+                            onClick={handleSave}
+                            disabled={isSaving}
+                            className={cn(
+                              "w-full px-4 py-2.5 rounded-xl font-bold text-sm shadow-lg transition-all flex items-center justify-center gap-2",
+                              isSaved 
+                                ? "bg-amber-500 text-white hover:bg-amber-600" 
+                                : "bg-white/10 text-white/80 hover:bg-white/20"
+                            )}
+                          >
+                            <Bookmark className={cn("w-4 h-4", isSaved && "fill-current")} />
+                            {isSaved ? 'Saved' : 'Save'}
+                          </button>
+                        )}
+                        <button
+                          onClick={handlePlay}
+                          className="w-full px-4 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm shadow-lg hover:bg-blue-500 transition-colors flex items-center justify-center gap-2"
+                        >
+                          <Play className="w-4 h-4 fill-current" />
+                          Play Story
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
 
                   {/* Info Section */}
                   <div className="flex-1 min-w-0">
@@ -346,97 +425,6 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                       </div>
                     )}
 
-                    {/* Tags */}
-                    {tags.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mb-6">
-                        {tags.map((tag) => (
-                          <span
-                            key={tag}
-                            className="px-3 py-1 bg-white/10 rounded-full text-xs text-white/80 font-medium"
-                          >
-                            #{tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Action Buttons */}
-                    <div className="flex flex-wrap gap-3">
-                      {isOwned ? (
-                        <>
-                          {onEdit && (
-                            <button
-                              onClick={handleEdit}
-                              className="px-6 py-3 bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] text-white rounded-xl font-bold text-sm shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/10 transition-colors flex items-center gap-2"
-                            >
-                              <Edit className="w-4 h-4" />
-                              Edit Story
-                            </button>
-                          )}
-                          <button
-                            onClick={handlePlay}
-                            className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm shadow-lg hover:bg-blue-500 transition-colors flex items-center gap-2"
-                          >
-                            <Play className="w-4 h-4 fill-current" />
-                            Play Story
-                          </button>
-                          {isPublished && onUnpublish && (
-                            <button
-                              onClick={handleUnpublish}
-                              disabled={isUnpublishing}
-                              className="px-6 py-3 bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] text-white/70 rounded-xl font-bold text-sm shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/10 hover:text-white transition-colors flex items-center gap-2 disabled:opacity-50"
-                            >
-                            {isUnpublishing ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <Globe className="w-4 h-4" />
-                              )}
-                              Remove from Gallery
-                            </button>
-                          )}
-                        </>
-                      ) : (
-                        <>
-                          {onLike && (
-                            <button
-                              onClick={handleLike}
-                              disabled={isLiking}
-                              className={cn(
-                                "px-5 py-3 rounded-xl font-bold text-sm shadow-lg transition-all flex items-center gap-2",
-                                isLiked 
-                                  ? "bg-rose-500 text-white hover:bg-rose-600" 
-                                  : "bg-white/10 text-white/80 hover:bg-white/20"
-                              )}
-                            >
-                              <Heart className={cn("w-4 h-4", isLiked && "fill-current")} />
-                              {isLiked ? 'Liked' : 'Like'}
-                            </button>
-                          )}
-                          {onSave && (
-                            <button
-                              onClick={handleSave}
-                              disabled={isSaving}
-                              className={cn(
-                                "px-5 py-3 rounded-xl font-bold text-sm shadow-lg transition-all flex items-center gap-2",
-                                isSaved 
-                                  ? "bg-amber-500 text-white hover:bg-amber-600" 
-                                  : "bg-white/10 text-white/80 hover:bg-white/20"
-                              )}
-                            >
-                              <Bookmark className={cn("w-4 h-4", isSaved && "fill-current")} />
-                              {isSaved ? 'Saved' : 'Save'}
-                            </button>
-                          )}
-                          <button
-                            onClick={handlePlay}
-                            className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm shadow-lg hover:bg-blue-500 transition-colors flex items-center gap-2"
-                          >
-                            <Play className="w-4 h-4 fill-current" />
-                            Play Story
-                          </button>
-                        </>
-                      )}
-                    </div>
                   </div>
                 </div>
 
