@@ -14,7 +14,6 @@ import {
   unsaveScenario,
   incrementPlayCount,
   incrementViewCount,
-  unpublishScenario,
   SortOption,
   ContentThemeFilters
 } from '@/services/gallery-data';
@@ -210,23 +209,6 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange }) 
         ? { ...s, view_count: s.view_count + 1 }
         : s
     ));
-  };
-
-  const handleUnpublish = async (published: PublishedScenario) => {
-    if (!user) return;
-    
-    try {
-      await unpublishScenario(published.scenario_id);
-      // Remove from local list
-      setScenarios(prev => prev.filter(s => s.id !== published.id));
-      // Close the modal
-      setDetailModalOpen(false);
-      setSelectedPublished(null);
-      toast.success('Story removed from gallery');
-    } catch (error) {
-      console.error('Failed to unpublish:', error);
-      toast.error('Failed to remove from gallery');
-    }
   };
 
   // Count active filters
@@ -462,9 +444,6 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange }) 
             onLike={() => handleLike(selectedPublished)}
             onSave={() => handleSave(selectedPublished)}
             onPlay={() => handlePlay(selectedPublished)}
-            isOwned={user?.id === selectedPublished.publisher_id}
-            isPublished={selectedPublished.is_published}
-            onUnpublish={() => handleUnpublish(selectedPublished)}
           />
         </TooltipProvider>
       )}
