@@ -1511,6 +1511,32 @@ export async function fetchContentThemes(scenarioId: string): Promise<ContentThe
   };
 }
 
+export async function fetchContentThemesForScenarios(
+  scenarioIds: string[]
+): Promise<Map<string, ContentThemes>> {
+  if (scenarioIds.length === 0) return new Map();
+  
+  const { data, error } = await supabase
+    .from('content_themes')
+    .select('*')
+    .in('scenario_id', scenarioIds);
+    
+  if (error) throw error;
+  
+  const map = new Map<string, ContentThemes>();
+  for (const row of data || []) {
+    map.set(row.scenario_id, {
+      characterTypes: row.character_types || [],
+      storyType: row.story_type as 'SFW' | 'NSFW' | null,
+      genres: row.genres || [],
+      origin: row.origin || [],
+      triggerWarnings: row.trigger_warnings || [],
+      customTags: row.custom_tags || []
+    });
+  }
+  return map;
+}
+
 export async function saveContentThemes(scenarioId: string, themes: ContentThemes): Promise<void> {
   const { error } = await supabase
     .from('content_themes')
