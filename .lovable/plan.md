@@ -1,168 +1,267 @@
 
-# Fix Gallery Card - Complete Rewrite
 
-## The Problems (Honest Assessment)
+# ScenarioDetailModal Updates: Remove Old Tags, Relocate Buttons, Add Scrolling
 
-| Issue | Root Cause |
-|-------|------------|
-| Glitchy hover/corners | Multiple conflicting CSS transitions on container + image + overlay |
-| No publisher on card | Publisher info is fetched but never rendered in `GalleryScenarioCard` |
-| Counters wrong position | They're in a flex row at left, should be bottom-right |
-| Text glitching | `transition-colors` on title conflicts with container transitions |
-| Modal missing counters | Conditional rendering `{!isOwned &&` hiding stats |
+## Overview
 
-## Solution: Simplify and Fix
+This plan addresses 4 issues with the ScenarioDetailModal:
+1. Remove the old `tags` display (legacy system) from the modal
+2. Make the modal scrollable for long content
+3. Move Like/Save/Play buttons under the cover image on the left
+4. Add "Remove from Gallery" button for owners of published stories
 
-### File: `src/components/chronicle/GalleryScenarioCard.tsx`
+---
 
-**Complete rewrite with these specific fixes:**
+## Analysis
 
-### 1) Simplify transitions to prevent glitches
-Remove conflicting transitions. Use only:
-- Container: `transition-transform duration-300` (just the lift)
-- Image: `transition-transform duration-500` (just the zoom)
-- No transition on gradient, no transition on title color
+### Issue 1: Old Tags Still Displaying
 
-### 2) Add publisher info to bottom-left
+Looking at the code:
+- **ScenarioDetailModal.tsx lines 349-361**: The modal displays `tags` prop which comes from the old `published_scenarios.tags` column
+- **GalleryHub.tsx line 299**: Passes `tags={selectedPublished.tags}` to the modal
+- **ScenarioHub.tsx line 203**: Passes `tags={selectedScenario.tags || []}` to the modal
+
+The new tag system uses `content_themes` table with `customTags`, `genres`, `characterTypes`, etc. - which is already being displayed correctly in the Content Themes block.
+
+**Solution**: Remove the old tags display from the modal. The `tags` prop can remain for backwards compatibility but won't be rendered. Note: We could also consider dropping the `tags` column from `published_scenarios` table but that's a separate migration.
+
+### Issue 2: Modal Scrolling
+
+The modal already has a `ScrollArea` component wrapping the content (line 184), but we should ensure it properly handles overflow with many characters or long descriptions.
+
+### Issue 3: Button Placement
+
+Currently the Like/Save/Play buttons are at the bottom of the info section (lines 363-439). Per the user's screenshot and request, they should be moved under the cover image on the left side.
+
+### Issue 4: Remove from Gallery Button
+
+The modal already has `onUnpublish` prop and displays the "Remove from Gallery" button for owned scenarios (lines 383-396), but it's inside the isOwned block with Edit/Play buttons. The user wants this button under the action buttons (Like/Save/Play) after they're moved to the left.
+
+---
+
+## Changes Required
+
+### File: `src/components/chronicle/ScenarioDetailModal.tsx`
+
+**1. Remove Old Tags Display (lines 349-361)**
+
+Delete this entire block:
 ```tsx
-{/* Bottom Left - Publisher */}
-<div className="absolute bottom-4 left-4 flex items-center gap-2 z-10">
-  <div className="w-6 h-6 rounded-full bg-white/20 overflow-hidden">
-    {published.publisher?.avatar_url ? (
-      <img src={published.publisher.avatar_url} className="w-full h-full object-cover" />
-    ) : (
-      <div className="w-full h-full flex items-center justify-center text-white/50 text-xs font-bold">
-        {published.publisher?.username?.charAt(0)?.toUpperCase() || '?'}
-      </div>
-    )}
+{/* Tags */}
+{tags.length > 0 && (
+  <div className="flex flex-wrap gap-2 mb-6">
+    {tags.map((tag) => (
+      <span
+        key={tag}
+        className="px-3 py-1 bg-white/10 rounded-full text-xs text-white/80 font-medium"
+      >
+        #{tag}
+      </span>
+    ))}
   </div>
-  <span className="text-xs text-white/70 font-medium truncate max-w-[100px]">
-    {published.publisher?.username || 'Anonymous'}
-  </span>
-</div>
+)}
 ```
 
-### 3) Move counters to bottom-right
-```tsx
-{/* Bottom Right - Stats */}
-<div className="absolute bottom-4 right-4 flex items-center gap-3 z-10">
-  <span className="flex items-center gap-1 text-[10px] font-bold text-white/60">
-    <Eye className="w-3 h-3" /> {published.view_count}
-  </span>
-  <span className="flex items-center gap-1 text-[10px] font-bold text-white/60">
-    <Heart className="w-3 h-3" /> {published.like_count}
-  </span>
-  <span className="flex items-center gap-1 text-[10px] font-bold text-white/60">
-    <Bookmark className="w-3 h-3" /> {published.save_count}
-  </span>
-  <span className="flex items-center gap-1 text-[10px] font-bold text-white/60">
-    <Play className="w-3 h-3" /> {published.play_count}
-  </span>
-</div>
-```
+**2. Restructure Layout for Button Placement**
 
-### 4) Restructure card layout
-The current bottom info section tries to do too much. New structure:
-
+Current layout:
 ```text
-┌─────────────────────────────────────┐
-│ [Remixable]              [SFW/NSFW] │  <- Top badges (existing)
-│                                     │
-│         (Cover Image)               │
-│                                     │
-│     [Like] [Save] [Play]            │  <- Hover actions (existing)
-│                                     │
-│─────────────────────────────────────│  <- Gradient starts
-│ Title                               │
-│ Description (2 lines)               │
-│                                     │
-│ [👤 Username]    [👁 12 ❤ 5 🔖 3 ▶ 8] │  <- Bottom row
-└─────────────────────────────────────┘
++------------------+---------------------+
+| Cover Image      | Badges              |
+|                  | Title               |
+|                  | Stats               |
+|                  | Publisher Info      |
+|                  | Description         |
+|                  | Content Themes      |
+|                  | [Old Tags] <- REMOVE|
+|                  | [Like][Save][Play]  |
++------------------+---------------------+
+| Characters                             |
++----------------------------------------+
 ```
 
-### 5) Final structure
+New layout:
+```text
++------------------+---------------------+
+| Cover Image      | Badges              |
+|                  | Title               |
+| [Like][Save]     | Stats               |
+| [Play Story]     | Publisher Info      |
+| [Remove from     | Description         |
+|  Gallery]*       | Content Themes      |
++------------------+---------------------+
+| Characters                             |
++----------------------------------------+
+* Only shows for owners of published scenarios
+```
+
+**3. Move Action Buttons Under Cover Image**
+
+- Move the action buttons div (lines 363-439) from the info section (right side) to below the cover image (left side)
+- Keep the conditional logic for isOwned vs. gallery mode
+- Add the "Remove from Gallery" button after Like/Save/Play for gallery mode scenarios that the user owns
+
+**4. For Gallery Mode (non-owned scenarios)**
+
+After the cover image, add:
 ```tsx
-<div className="group relative cursor-pointer" onClick={onViewDetails}>
-  <div className="aspect-[2/3] w-full overflow-hidden rounded-[2rem] bg-slate-800 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)] transition-transform duration-300 group-hover:-translate-y-3 ring-1 ring-slate-900/5 relative">
-    
-    {/* Badges - Top */}
-    {/* ... existing badge code ... */}
-    
+{/* Action Buttons - Under Cover */}
+<div className="flex flex-wrap gap-2 mt-4">
+  {onLike && (
+    <button onClick={handleLike} className="...">
+      <Heart /> Like
+    </button>
+  )}
+  {onSave && (
+    <button onClick={handleSave} className="...">
+      <Bookmark /> Save  
+    </button>
+  )}
+  <button onClick={handlePlay} className="...">
+    <Play /> Play Story
+  </button>
+</div>
+```
+
+**5. For Owner Mode (isOwned scenarios)**
+
+After the cover image, add:
+```tsx
+{/* Action Buttons - Under Cover */}
+<div className="flex flex-wrap gap-2 mt-4">
+  {onEdit && (
+    <button onClick={handleEdit} className="...">
+      <Edit /> Edit Story
+    </button>
+  )}
+  <button onClick={handlePlay} className="...">
+    <Play /> Play Story
+  </button>
+  {isPublished && onUnpublish && (
+    <button onClick={handleUnpublish} className="...">
+      <Globe /> Remove from Gallery
+    </button>
+  )}
+</div>
+```
+
+---
+
+## Updated Modal Layout Code Structure
+
+```tsx
+<div className="flex flex-col md:flex-row gap-6 md:gap-8">
+  {/* Left Column: Cover Image + Action Buttons */}
+  <div className="w-full md:w-64 flex-shrink-0">
     {/* Cover Image */}
-    {scenario?.cover_image_url ? (
-      <img
-        src={scenario.cover_image_url}
-        alt={scenario.title}
-        style={{ objectPosition: `${coverPosition.x}% ${coverPosition.y}%` }}
-        className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-      />
-    ) : (
-      <div className="absolute inset-0 flex items-center justify-center bg-slate-900">
-        <span className="font-black text-white/10 text-6xl">{scenario?.title?.charAt(0) || '?'}</span>
-      </div>
-    )}
-    
-    {/* Gradient Overlay - NO transition */}
-    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-90" />
-    
-    {/* Hover Actions - Center */}
-    <div className="absolute inset-0 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20">
-      {/* Like, Save, Play buttons */}
+    <div className="aspect-[2/3] w-full overflow-hidden rounded-2xl ...">
+      ...
     </div>
     
-    {/* Title & Description - Mid-bottom */}
-    <div className="absolute inset-x-0 bottom-12 px-5 pointer-events-none z-10">
-      <h3 className="text-lg font-black text-white leading-tight truncate">
-        {scenario?.title || "Untitled Story"}
-      </h3>
-      <p className="text-xs text-white/70 line-clamp-2 mt-1">
-        {scenario?.description || "No description."}
-      </p>
+    {/* Action Buttons - Moved here */}
+    <div className="flex flex-wrap gap-2 mt-4">
+      {isOwned ? (
+        <>
+          {/* Edit + Play + Remove from Gallery */}
+        </>
+      ) : (
+        <>
+          {/* Like + Save + Play */}
+        </>
+      )}
     </div>
-    
-    {/* Bottom Bar - Publisher left, Stats right */}
-    <div className="absolute inset-x-0 bottom-0 h-10 px-4 flex items-center justify-between z-10 pointer-events-none">
-      {/* Publisher - Left */}
-      <div className="flex items-center gap-1.5">
-        <div className="w-5 h-5 rounded-full bg-white/20 overflow-hidden">
-          {/* avatar */}
-        </div>
-        <span className="text-[10px] text-white/60 font-medium truncate max-w-[80px]">
-          {published.publisher?.username || 'Anon'}
-        </span>
-      </div>
-      
-      {/* Stats - Right */}
-      <div className="flex items-center gap-2">
-        <span className="flex items-center gap-0.5 text-[9px] text-white/50">
-          <Eye className="w-2.5 h-2.5" /> {published.view_count}
-        </span>
-        <span className="flex items-center gap-0.5 text-[9px] text-white/50">
-          <Heart className="w-2.5 h-2.5" /> {published.like_count}
-        </span>
-        <span className="flex items-center gap-0.5 text-[9px] text-white/50">
-          <Play className="w-2.5 h-2.5" /> {published.play_count}
-        </span>
-      </div>
-    </div>
+  </div>
+
+  {/* Right Column: Info Section */}
+  <div className="flex-1 min-w-0">
+    {/* Badges, Title, Stats, Publisher, Description, Content Themes */}
+    {/* NO action buttons here anymore */}
+    {/* NO old tags here anymore */}
   </div>
 </div>
 ```
 
-## Key Changes Summary
+---
 
-1. **Remove `transition-all`** from container - use only `transition-transform`
-2. **Remove `transition-colors`** from title - prevents glitching
-3. **Remove `transition-opacity`** from gradient - static opacity
-4. **Add publisher info** - bottom-left with avatar + username
-5. **Move stats to bottom-right** - Eye, Heart, Play icons with counts
-6. **Simplify bottom section** - separate positioning for title block vs bottom bar
-7. **Use `absolute inset-0`** on image - ensures it fills the rounded container properly
+## Button Styling Updates
 
-## Files Changed
+For the buttons under the cover image, use a stacked vertical layout on mobile and horizontal on larger screens:
 
-- `src/components/chronicle/GalleryScenarioCard.tsx` - Complete rewrite
+```tsx
+<div className="flex flex-col gap-2 mt-4">
+  {/* Like button (if not owned) */}
+  <button className="w-full px-4 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 ...">
+    <Heart className="w-4 h-4" /> Like
+  </button>
+  
+  {/* Save button (if not owned) */}
+  <button className="w-full px-4 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 ...">
+    <Bookmark className="w-4 h-4" /> Save
+  </button>
+  
+  {/* Play Story button */}
+  <button className="w-full px-4 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 ...">
+    <Play className="w-4 h-4 fill-current" /> Play Story
+  </button>
+  
+  {/* Remove from Gallery (for owner of published story) */}
+  {isOwned && isPublished && onUnpublish && (
+    <button className="w-full px-4 py-2.5 bg-[#2a2a2f] border border-white/10 text-white/70 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:text-white ...">
+      <Globe className="w-4 h-4" /> Remove from Gallery
+    </button>
+  )}
+</div>
+```
 
-## Why This Will Work
+---
 
-The glitches are caused by `transition-all` which tries to animate everything including border-radius changes. By being explicit about what transitions (`transition-transform` only), we prevent the stuttering. Adding the publisher and fixing counter positions are straightforward additions.
+## Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/components/chronicle/ScenarioDetailModal.tsx` | Remove old tags block, restructure layout to move action buttons under cover image, add Remove from Gallery button for owners |
+
+---
+
+## Visual Summary
+
+### Before (Current)
+```text
++-------------------------+-----------------------------+
+| [Cover Image 2:3]       | NSFW  REMIXABLE             |
+|                         | Test Story                  |
+|                         | 👁 14  ❤️ 0  🔖 0  ▶️ 1      |
+|                         | Anonymous - Feb 3, 2026     |
+|                         | Description...              |
+|                         | Content Themes Box          |
+|                         | #4th wing  <- OLD TAGS      |
+|                         | [Like][Save][Play Story]    |
++-------------------------+-----------------------------+
+| Characters: (avatar) (avatar)                        |
++------------------------------------------------------+
+```
+
+### After (Updated)
+```text
++-------------------------+-----------------------------+
+| [Cover Image 2:3]       | NSFW  REMIXABLE             |
+|                         | Test Story                  |
+| [Like] [Save]           | 👁 14  ❤️ 0  🔖 0  ▶️ 1      |
+| [Play Story]            | Anonymous - Feb 3, 2026     |
+| [Remove from Gallery]*  | Description...              |
+|                         | Content Themes Box          |
++-------------------------+-----------------------------+
+| Characters: (avatar) (avatar)                        |
++------------------------------------------------------+
+* Only shows if user owns the published story
+```
+
+---
+
+## Notes
+
+- The modal already has `ScrollArea` wrapping the content for scrollability
+- The `tags` prop will remain in the interface for backwards compatibility but won't be rendered
+- Button widths will be `w-full` to fit nicely under the 256px cover image
+- The "Remove from Gallery" button uses the same premium shadow surface styling as other UI elements
+
