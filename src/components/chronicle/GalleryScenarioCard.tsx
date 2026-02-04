@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Heart, Bookmark, Play, Sparkles } from 'lucide-react';
+import { Heart, Bookmark, Play, Sparkles, Eye } from 'lucide-react';
 import { PublishedScenario } from '@/services/gallery-data';
 import { cn } from '@/lib/utils';
 
@@ -142,6 +142,10 @@ export const GalleryScenarioCard: React.FC<GalleryScenarioCardProps> = ({
               by {publisher?.username || 'Anonymous'}
             </span>
             <div className="flex items-center gap-3 text-[10px] text-white/50">
+              <span className="flex items-center gap-1">
+                <Eye className="w-3 h-3" />
+                {published.view_count}
+              </span>
               <span className="flex items-center gap-1">
                 <Heart className={cn("w-3 h-3", isLiked && "fill-rose-400 text-rose-400")} />
                 {published.like_count}

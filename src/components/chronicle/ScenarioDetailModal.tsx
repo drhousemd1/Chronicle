@@ -24,6 +24,7 @@ export interface ScenarioDetailModalProps {
   likeCount?: number;
   saveCount?: number;
   playCount?: number;
+  viewCount?: number;
   
   // Publisher info
   publisher?: {
@@ -59,6 +60,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
   likeCount = 0,
   saveCount = 0,
   playCount = 0,
+  viewCount = 0,
   publisher,
   publishedAt,
   isLiked = false,
@@ -189,7 +191,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                       <div className="flex items-center gap-4 text-sm text-white/60 mb-4">
                         <span className="flex items-center gap-1.5">
                           <Eye className="w-4 h-4" />
-                          {playCount.toLocaleString()}
+                          {viewCount.toLocaleString()}
                         </span>
                         <span className="flex items-center gap-1.5">
                           <Heart className={cn("w-4 h-4", isLiked && "fill-rose-400 text-rose-400")} />
@@ -198,6 +200,10 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                         <span className="flex items-center gap-1.5">
                           <Bookmark className={cn("w-4 h-4", isSaved && "fill-amber-400 text-amber-400")} />
                           {saveCount.toLocaleString()}
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <Play className="w-4 h-4" />
+                          {playCount.toLocaleString()}
                         </span>
                       </div>
                     )}

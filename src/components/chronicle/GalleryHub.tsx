@@ -12,6 +12,7 @@ import {
   saveScenarioToCollection,
   unsaveScenario,
   incrementPlayCount,
+  incrementViewCount,
   SortOption
 } from '@/services/gallery-data';
 import { useAuth } from '@/hooks/use-auth';
@@ -162,6 +163,14 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange }) 
   const handleViewDetails = (published: PublishedScenario) => {
     setSelectedPublished(published);
     setDetailModalOpen(true);
+    // Increment view count in background
+    incrementViewCount(published.id).catch(console.error);
+    // Update local count optimistically
+    setScenarios(prev => prev.map(s => 
+      s.id === published.id 
+        ? { ...s, view_count: s.view_count + 1 }
+        : s
+    ));
   };
 
   return (
@@ -291,6 +300,7 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange }) 
             likeCount={selectedPublished.like_count}
             saveCount={selectedPublished.save_count}
             playCount={selectedPublished.play_count}
+            viewCount={selectedPublished.view_count}
             publisher={selectedPublished.publisher}
             publishedAt={selectedPublished.created_at}
             isLiked={likes.has(selectedPublished.id)}
