@@ -892,29 +892,20 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                 <h2 className="text-white text-xl font-bold tracking-tight">Share Your Story</h2>
               </div>
               <div className="p-6">
-                <div className="p-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
-                  <HintBox hints={[
-                    'Publish to the gallery for others to discover.',
-                    'Choose whether others can remix or play-only.',
-                    'Add tags so players can find your story.'
-                  ]} />
-                  <div className="mt-4">
-                    <button
-                      type="button"
-                      onClick={() => setShowShareModal(true)}
-                      className="flex h-10 w-full items-center justify-center gap-2 px-4
-                        rounded-xl border border-[hsl(var(--ui-border))] 
-                        bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
-                        text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none
-                        hover:bg-white/5 active:bg-white/10
-                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40
-                        transition-colors"
-                    >
-                      <Share2 className="w-3.5 h-3.5 shrink-0" />
-                      <span>Publish to Gallery</span>
-                    </button>
-                  </div>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowShareModal(true)}
+                  className="flex h-10 w-full items-center justify-center gap-2 px-4
+                    rounded-xl border border-[hsl(var(--ui-border))] 
+                    bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
+                    text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none
+                    hover:bg-white/5 active:bg-white/10
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40
+                    transition-colors"
+                >
+                  <Share2 className="w-3.5 h-3.5 shrink-0" />
+                  <span>Publish to Gallery</span>
+                </button>
               </div>
             </div>
           </section>

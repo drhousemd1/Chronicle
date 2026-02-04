@@ -1,8 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from './UI';
-import { TagInput } from './TagInput';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Share2, Globe, Pencil, Check, Loader2 } from 'lucide-react';
@@ -28,7 +26,6 @@ export const ShareScenarioModal: React.FC<ShareScenarioModalProps> = ({
   const [isPublishing, setIsPublishing] = useState(false);
   const [existingPublication, setExistingPublication] = useState<PublishedScenario | null>(null);
   const [allowRemix, setAllowRemix] = useState(false);
-  const [tags, setTags] = useState<string[]>([]);
 
   useEffect(() => {
     if (isOpen) {
@@ -43,11 +40,9 @@ export const ShareScenarioModal: React.FC<ShareScenarioModalProps> = ({
       if (existing) {
         setExistingPublication(existing);
         setAllowRemix(existing.allow_remix);
-        setTags(existing.tags || []);
       } else {
         setExistingPublication(null);
         setAllowRemix(false);
-        setTags([]);
       }
     } catch (error) {
       console.error('Failed to load publication status:', error);
@@ -57,21 +52,16 @@ export const ShareScenarioModal: React.FC<ShareScenarioModalProps> = ({
   };
 
   const handlePublish = async () => {
-    if (tags.length === 0) {
-      toast.error('Please add at least one tag so others can find your story');
-      return;
-    }
-
     setIsPublishing(true);
     try {
-      await publishScenario(scenarioId, userId, allowRemix, tags);
+      await publishScenario(scenarioId, userId, allowRemix, []);
       toast.success(existingPublication ? 'Publication updated!' : 'Your story is now live in the Gallery!');
       setExistingPublication({
         id: '',
         scenario_id: scenarioId,
         publisher_id: userId,
         allow_remix: allowRemix,
-        tags,
+        tags: [],
         like_count: existingPublication?.like_count || 0,
         save_count: existingPublication?.save_count || 0,
         play_count: existingPublication?.play_count || 0,
@@ -161,22 +151,6 @@ export const ShareScenarioModal: React.FC<ShareScenarioModalProps> = ({
               </div>
             </div>
 
-            {/* Tags */}
-            <div className="space-y-3">
-              <div>
-                <Label className="text-white font-semibold">Discovery Tags</Label>
-                <p className="text-xs text-zinc-400 mt-0.5">
-                  Help others find your story with relevant tags
-                </p>
-              </div>
-              <TagInput
-                tags={tags}
-                onTagsChange={setTags}
-                placeholder="fantasy, romance, mystery..."
-                maxTags={8}
-              />
-            </div>
-
             {/* Action Buttons */}
             <div className="flex gap-3 pt-2">
               {existingPublication?.is_published && (
@@ -195,7 +169,7 @@ export const ShareScenarioModal: React.FC<ShareScenarioModalProps> = ({
               <Button
                 variant="primary"
                 onClick={handlePublish}
-                disabled={isPublishing || tags.length === 0}
+                disabled={isPublishing}
                 className="flex-1 !bg-blue-600 hover:!bg-blue-500"
               >
                 {isPublishing ? (
