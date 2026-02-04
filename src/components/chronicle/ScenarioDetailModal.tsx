@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Heart, Bookmark, Play, Sparkles, Edit, Loader2, Users, Eye, Calendar, X, UserPlus } from 'lucide-react';
+import { Heart, Bookmark, Play, Sparkles, Edit, Loader2, Users, Eye, Calendar, X, UserPlus, Globe } from 'lucide-react';
 import { Dialog, DialogContent, DialogOverlay, DialogPortal } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -53,9 +53,11 @@ export interface ScenarioDetailModalProps {
   onSave?: () => void;
   onPlay: () => void;
   onEdit?: () => void;
+  onUnpublish?: () => void;
   
   // Display mode
   isOwned?: boolean; // Shows Edit button instead of Like/Save
+  isPublished?: boolean; // Shows unpublish button for owned scenarios
 }
 
 export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
@@ -81,12 +83,15 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
   onSave,
   onPlay,
   onEdit,
-  isOwned = false
+  onUnpublish,
+  isOwned = false,
+  isPublished = false
 }) => {
   const [characters, setCharacters] = useState<ScenarioCharacter[]>([]);
   const [isLoadingCharacters, setIsLoadingCharacters] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUnpublishing, setIsUnpublishing] = useState(false);
 
   // Fetch characters when modal opens
   useEffect(() => {
@@ -131,6 +136,16 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
     }
   };
 
+  const handleUnpublish = async () => {
+    if (!onUnpublish || isUnpublishing) return;
+    setIsUnpublishing(true);
+    try {
+      await onUnpublish();
+    } finally {
+      setIsUnpublishing(false);
+    }
+  };
+
   const formattedDate = publishedAt 
     ? new Date(publishedAt).toLocaleDateString('en-US', { 
         month: 'short', 
@@ -139,13 +154,23 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
       })
     : null;
 
+  // Check if content themes has any data
+  const hasContentThemes = contentThemes && (
+    contentThemes.genres.length > 0 ||
+    contentThemes.characterTypes.length > 0 ||
+    contentThemes.origin.length > 0 ||
+    contentThemes.triggerWarnings.length > 0 ||
+    contentThemes.customTags.length > 0 ||
+    contentThemes.storyType
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
         <DialogOverlay className="bg-black/90 backdrop-blur-sm" />
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div 
-            className="relative w-full max-w-4xl max-h-[90vh] bg-slate-900 rounded-3xl shadow-2xl ring-1 ring-white/10 overflow-hidden flex flex-col"
+            className="relative w-full max-w-4xl max-h-[90vh] bg-[#1a1a1f] rounded-3xl shadow-2xl ring-1 ring-white/10 overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close Button */}
@@ -162,7 +187,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                 <div className="flex flex-col md:flex-row gap-6 md:gap-8">
                   {/* Cover Image */}
                   <div className="w-full md:w-64 flex-shrink-0">
-                    <div className="aspect-[2/3] w-full overflow-hidden rounded-2xl bg-slate-800 ring-1 ring-white/10 shadow-xl">
+                    <div className="aspect-[2/3] w-full overflow-hidden rounded-2xl bg-[#2a2a2f] ring-1 ring-white/10 shadow-xl">
                       {coverImage ? (
                         <img
                           src={coverImage}
@@ -171,7 +196,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                           className="h-full w-full object-cover"
                         />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-700 to-slate-800">
+                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#2a2a2f] to-[#1a1a1f]">
                           <span className="font-black text-white/20 text-7xl uppercase">
                             {title?.charAt(0) || '?'}
                           </span>
@@ -184,10 +209,26 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                   <div className="flex-1 min-w-0">
                     {/* Badges */}
                     <div className="flex flex-wrap gap-2 mb-3">
+                      {/* SFW/NSFW Badge */}
+                      {contentThemes?.storyType && (
+                        <span className={cn(
+                          "px-2.5 py-1 rounded-lg text-xs font-bold",
+                          contentThemes.storyType === 'NSFW'
+                            ? "bg-red-500/20 text-red-400"
+                            : "bg-blue-500/20 text-blue-400"
+                        )}>
+                          {contentThemes.storyType}
+                        </span>
+                      )}
                       {allowRemix && (
-                        <span className="px-2.5 py-1 bg-purple-500/80 rounded-lg text-[10px] font-bold text-white flex items-center gap-1.5">
+                        <span className="px-2.5 py-1 bg-purple-500/80 rounded-lg text-xs font-bold text-white flex items-center gap-1.5">
                           <Sparkles className="w-3 h-3" />
                           REMIXABLE
+                        </span>
+                      )}
+                      {isOwned && isPublished && (
+                        <span className="px-2.5 py-1 bg-emerald-500/20 rounded-lg text-xs font-bold text-emerald-400">
+                          PUBLISHED
                         </span>
                       )}
                     </div>
@@ -221,8 +262,8 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
 
                     {/* Publisher Info */}
                     {publisher && !isOwned && (
-                      <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl mb-4">
-                        <div className="w-10 h-10 rounded-full bg-slate-700 overflow-hidden ring-2 ring-white/10 flex-shrink-0">
+                      <div className="flex items-center gap-3 p-3 bg-[#2a2a2f] rounded-xl mb-4 border border-white/5">
+                        <div className="w-10 h-10 rounded-full bg-[#3a3a3f] overflow-hidden ring-2 ring-white/10 flex-shrink-0">
                           {publisher.avatar_url ? (
                             <img 
                               src={publisher.avatar_url} 
@@ -269,9 +310,9 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                       </p>
                     </div>
 
-                    {/* Content Themes Display */}
-                    {contentThemes && (
-                      <div className="space-y-3 mb-4 p-4 bg-white/5 rounded-xl border border-white/10">
+                    {/* Content Themes Display - Show for both owned and gallery scenarios */}
+                    {hasContentThemes && (
+                      <div className="space-y-3 mb-4 p-4 bg-[#2a2a2f] rounded-xl border border-white/10">
                         {contentThemes.genres.length > 0 && (
                           <div>
                             <span className="text-[10px] font-bold text-white/40 uppercase tracking-wider block mb-1">Genre</span>
@@ -326,7 +367,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                           {onEdit && (
                             <button
                               onClick={handleEdit}
-                              className="px-6 py-3 bg-white text-slate-900 rounded-xl font-bold text-sm shadow-lg hover:bg-slate-100 transition-colors flex items-center gap-2"
+                              className="px-6 py-3 bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] text-white rounded-xl font-bold text-sm shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/10 transition-colors flex items-center gap-2"
                             >
                               <Edit className="w-4 h-4" />
                               Edit Story
@@ -339,6 +380,20 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                             <Play className="w-4 h-4 fill-current" />
                             Play Story
                           </button>
+                          {isPublished && onUnpublish && (
+                            <button
+                              onClick={handleUnpublish}
+                              disabled={isUnpublishing}
+                              className="px-6 py-3 bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] text-white/70 rounded-xl font-bold text-sm shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/10 hover:text-white transition-colors flex items-center gap-2 disabled:opacity-50"
+                            >
+                            {isUnpublishing ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Globe className="w-4 h-4" />
+                              )}
+                              Remove from Gallery
+                            </button>
+                          )}
                         </>
                       ) : (
                         <>
@@ -396,8 +451,8 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                     <div className="flex gap-4 overflow-x-auto pb-2">
                       {[1, 2, 3, 4].map((i) => (
                         <div key={i} className="flex-shrink-0 flex flex-col items-center gap-2">
-                          <Skeleton className="w-16 h-16 rounded-full bg-slate-700" />
-                          <Skeleton className="w-14 h-3 rounded bg-slate-700" />
+                          <Skeleton className="w-16 h-16 rounded-full bg-[#2a2a2f]" />
+                          <Skeleton className="w-14 h-3 rounded bg-[#2a2a2f]" />
                         </div>
                       ))}
                     </div>
@@ -407,7 +462,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                     <div className="flex gap-4 overflow-x-auto pb-2">
                       {characters.map((char) => (
                         <div key={char.id} className="flex-shrink-0 flex flex-col items-center gap-2">
-                          <div className="w-16 h-16 rounded-full bg-slate-700 overflow-hidden ring-2 ring-white/10 shadow-lg">
+                          <div className="w-16 h-16 rounded-full bg-[#2a2a2f] overflow-hidden ring-2 ring-white/10 shadow-lg">
                             {char.avatarUrl ? (
                               <img
                                 src={char.avatarUrl}
@@ -416,12 +471,12 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                                 className="w-full h-full object-cover"
                               />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center text-white/40 text-lg font-bold">
-                                {char.name?.charAt(0)?.toUpperCase() || '?'}
+                              <div className="w-full h-full flex items-center justify-center text-white/30 text-lg font-bold">
+                                {char.name.charAt(0).toUpperCase()}
                               </div>
                             )}
                           </div>
-                          <span className="text-xs text-white/70 font-medium text-center max-w-16 truncate">
+                          <span className="text-xs text-white/70 font-medium text-center max-w-[4rem] truncate">
                             {char.name}
                           </span>
                         </div>

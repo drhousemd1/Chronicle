@@ -1,9 +1,12 @@
 
 import React, { useState } from "react";
-import { ScenarioMetadata } from "@/types";
+import { ScenarioMetadata, ContentThemes } from "@/types";
 import { Button } from "./UI";
 import { ScenarioDetailModal } from "./ScenarioDetailModal";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { fetchContentThemes } from "@/services/supabase-data";
+import { getPublishedScenario, unpublishScenario, PublishedScenario } from "@/services/gallery-data";
+import { toast } from "sonner";
 
 interface ScenarioCardProps {
   scen: ScenarioMetadata;
@@ -102,12 +105,43 @@ export function ScenarioHub({
   // Detail modal state
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedScenario, setSelectedScenario] = useState<ScenarioMetadata | null>(null);
+  const [selectedContentThemes, setSelectedContentThemes] = useState<ContentThemes | null>(null);
+  const [publicationStatus, setPublicationStatus] = useState<PublishedScenario | null>(null);
+  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
 
-  const handleViewDetails = (id: string) => {
+  const handleViewDetails = async (id: string) => {
     const scenario = registry.find(s => s.id === id);
     if (scenario) {
       setSelectedScenario(scenario);
       setDetailModalOpen(true);
+      setIsLoadingDetails(true);
+      
+      // Fetch content themes and publication status in parallel
+      try {
+        const [themes, published] = await Promise.all([
+          fetchContentThemes(id).catch(() => null),
+          getPublishedScenario(id).catch(() => null)
+        ]);
+        
+        setSelectedContentThemes(themes);
+        setPublicationStatus(published);
+      } catch (e) {
+        console.error('Failed to fetch scenario details:', e);
+      } finally {
+        setIsLoadingDetails(false);
+      }
+    }
+  };
+
+  const handleUnpublish = async () => {
+    if (!selectedScenario) return;
+    try {
+      await unpublishScenario(selectedScenario.id);
+      setPublicationStatus(null);
+      toast.success('Your story has been removed from the Gallery');
+    } catch (e) {
+      console.error('Failed to unpublish:', e);
+      toast.error('Failed to remove from gallery');
     }
   };
 
@@ -167,7 +201,9 @@ export function ScenarioHub({
             coverImage={selectedScenario.coverImage || ""}
             coverImagePosition={selectedScenario.coverImagePosition || { x: 50, y: 50 }}
             tags={selectedScenario.tags || []}
+            contentThemes={selectedContentThemes || undefined}
             isOwned={!selectedScenario.isBookmarked}
+            isPublished={!!publicationStatus?.is_published}
             onPlay={() => {
               onPlay(selectedScenario.id);
               setDetailModalOpen(false);
@@ -176,6 +212,7 @@ export function ScenarioHub({
               onEdit(selectedScenario.id);
               setDetailModalOpen(false);
             }}
+            onUnpublish={handleUnpublish}
           />
         </TooltipProvider>
       )}
