@@ -111,7 +111,7 @@ const IndexContent = () => {
   const [activeCoverPosition, setActiveCoverPosition] = useState<{ x: number; y: number }>({ x: 50, y: 50 });
   const [playingConversationId, setPlayingConversationId] = useState<string | null>(null);
   const [library, setLibrary] = useState<Character[]>([]);
-  const [tab, setTab] = useState<TabKey | "library" | "gallery">("hub");
+  const [tab, setTab] = useState<TabKey | "library">("hub");
   const [fatal, setFatal] = useState<string>("");
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
   const [isAiFilling, setIsAiFilling] = useState(false);
@@ -1061,7 +1061,7 @@ const IndexContent = () => {
         </aside>
 
       <main className="flex-1 flex flex-col overflow-hidden bg-slate-50/50">
-        {(tab === "characters" || tab === "world" || tab === "library" || tab === "conversations" || tab === "hub" || tab === "image_library") && (
+        {(tab === "characters" || tab === "world" || tab === "library" || tab === "conversations" || tab === "hub" || tab === "image_library" || tab === "gallery") && (
           <header className="flex-shrink-0 h-16 border-b border-slate-200 bg-white flex items-center justify-between px-8 shadow-sm">
             <div className="flex items-center gap-4">
               {tab === "library" && (
@@ -1113,6 +1113,11 @@ const IndexContent = () => {
               {tab === "image_library" && (
                 <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
                   Image Library
+                </h1>
+              )}
+              {tab === "gallery" && (
+                <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
+                  Community Gallery
                 </h1>
               )}
             </div>
