@@ -501,12 +501,56 @@ const IndexContent = () => {
       }
       const { data, coverImage, coverImagePosition } = result;
       
-      // Set cover image from fetched result (not from stale registry)
-      setActiveCoverImage(coverImage);
-      setActiveCoverPosition(coverImagePosition);
+      // Check if this is someone else's scenario (bookmarked/remixable)
+      const ownerId = await supabaseData.getScenarioOwner(id);
+      const isOwnScenario = ownerId === user?.id;
       
-      setActiveId(id);
-      setActiveData(data);
+      if (!isOwnScenario && user) {
+        // This is a bookmarked/remixed scenario - create a personal clone
+        const newScenarioId = uuid();
+        
+        toast({ 
+          title: "Creating your copy...", 
+          description: "You'll be editing your own version of this story." 
+        });
+        
+        const clonedData = await supabaseData.cloneScenarioForRemix(
+          id,
+          newScenarioId,
+          user.id,
+          data,
+          coverImage,
+          coverImagePosition
+        );
+        
+        // Track the remix for attribution (find the published scenario ID)
+        const savedScenario = savedScenarios.find(s => s.source_scenario_id === id);
+        if (savedScenario?.published_scenario_id) {
+          await supabaseData.trackRemix(savedScenario.published_scenario_id, newScenarioId, user.id);
+        }
+        
+        // Refresh registry to show the new clone
+        const updatedRegistry = await supabaseData.fetchMyScenarios(user.id);
+        setRegistry(updatedRegistry);
+        
+        // Switch to editing the CLONE
+        setActiveId(newScenarioId);
+        setActiveData(clonedData);
+        setActiveCoverImage(coverImage);
+        setActiveCoverPosition(coverImagePosition);
+        
+        toast({ 
+          title: "Your copy is ready!", 
+          description: "Edit freely - your changes won't affect the original." 
+        });
+      } else {
+        // Own scenario - edit directly
+        setActiveId(id);
+        setActiveData(data);
+        setActiveCoverImage(coverImage);
+        setActiveCoverPosition(coverImagePosition);
+      }
+      
       setTab("world"); 
       setSelectedCharacterId(null);
       setPlayingConversationId(null);
