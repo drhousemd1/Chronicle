@@ -12,6 +12,7 @@ import { ScenarioHub } from "@/components/chronicle/ScenarioHub";
 import { ModelSettingsTab } from "@/components/chronicle/ModelSettingsTab";
 import { ChatInterfaceTab } from "@/components/chronicle/ChatInterfaceTab";
 import { ImageLibraryTab } from "@/components/chronicle/ImageLibraryTab";
+import { GalleryHub } from "@/components/chronicle/GalleryHub";
 import { Button } from "@/components/chronicle/UI";
 import { aiFillCharacter, aiGenerateCharacter } from "@/services/character-ai";
 import { CharacterPicker } from "@/components/chronicle/CharacterPicker";
@@ -110,7 +111,7 @@ const IndexContent = () => {
   const [activeCoverPosition, setActiveCoverPosition] = useState<{ x: number; y: number }>({ x: 50, y: 50 });
   const [playingConversationId, setPlayingConversationId] = useState<string | null>(null);
   const [library, setLibrary] = useState<Character[]>([]);
-  const [tab, setTab] = useState<TabKey | "library">("hub");
+  const [tab, setTab] = useState<TabKey | "library" | "gallery">("hub");
   const [fatal, setFatal] = useState<string>("");
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
   const [isAiFilling, setIsAiFilling] = useState(false);
@@ -349,6 +350,13 @@ const IndexContent = () => {
       toast({ title: "Failed to set background", description: e.message, variant: "destructive" });
     }
   };
+
+  // Handler for playing a scenario from the gallery
+  const handleGalleryPlay = useCallback((scenarioId: string, publishedScenarioId: string) => {
+    // For now, just play the scenario normally
+    // In the future, this could handle special gallery-specific logic
+    handlePlayScenario(scenarioId);
+  }, []);
 
   async function handlePlayScenario(id: string) {
     if (!user) return;
@@ -965,7 +973,7 @@ const IndexContent = () => {
             </div>
           </div>
           <nav className={`flex-1 overflow-y-auto pb-4 mt-4 space-y-1 ${sidebarCollapsed ? 'px-2' : 'px-4'}`}>
-            <SidebarItem active={false} label="Community Gallery" icon={<IconsList.Gallery />} onClick={() => navigate('/gallery')} collapsed={sidebarCollapsed} />
+            <SidebarItem active={tab === "gallery"} label="Community Gallery" icon={<IconsList.Gallery />} onClick={() => { setActiveId(null); setTab("gallery"); setPlayingConversationId(null); }} collapsed={sidebarCollapsed} />
             <SidebarItem active={tab === "hub"} label="Your Stories" icon={<IconsList.Hub />} onClick={() => { setActiveId(null); setTab("hub"); setPlayingConversationId(null); }} collapsed={sidebarCollapsed} />
             <SidebarItem active={tab === "library"} label="Character Library" icon={<IconsList.Library />} onClick={() => { setActiveId(null); setTab("library"); setSelectedCharacterId(null); setPlayingConversationId(null); }} collapsed={sidebarCollapsed} />
             <SidebarItem active={tab === "image_library"} label="Image Library" icon={<IconsList.ImageLibrary />} onClick={() => { setActiveId(null); setTab("image_library"); setPlayingConversationId(null); }} collapsed={sidebarCollapsed} />
@@ -1194,6 +1202,10 @@ const IndexContent = () => {
                 onCreate={handleCreateNewScenario}
               />
             </div>
+          )}
+
+          {tab === "gallery" && (
+            <GalleryHub onPlay={handleGalleryPlay} />
           )}
 
           {tab === "image_library" && (
