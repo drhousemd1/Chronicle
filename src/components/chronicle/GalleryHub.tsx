@@ -16,9 +16,10 @@ import { toast } from 'sonner';
 
 interface GalleryHubProps {
   onPlay: (scenarioId: string, publishedScenarioId: string) => void;
+  onSaveChange?: () => void;
 }
 
-export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay }) => {
+export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange }) => {
   const { user } = useAuth();
   const [scenarios, setScenarios] = useState<PublishedScenario[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -133,6 +134,9 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay }) => {
         ));
         toast.success('Saved to your stories!');
       }
+      
+      // Notify parent that saves changed
+      onSaveChange?.();
     } catch (error) {
       console.error('Failed to toggle save:', error);
       toast.error('Failed to update save');

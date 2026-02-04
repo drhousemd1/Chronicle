@@ -399,6 +399,17 @@ const IndexContent = () => {
     handlePlayScenario(scenarioId);
   }, []);
 
+  // Handler to refresh saved scenarios when bookmark changes in gallery
+  const handleGallerySaveChange = useCallback(async () => {
+    if (!user) return;
+    try {
+      const savedScens = await fetchSavedScenarios(user.id);
+      setSavedScenarios(savedScens);
+    } catch (e) {
+      console.error('Failed to refresh saved scenarios:', e);
+    }
+  }, [user]);
+
   async function handlePlayScenario(id: string) {
     if (!user) return;
     
@@ -1288,7 +1299,7 @@ const IndexContent = () => {
           )}
 
           {tab === "gallery" && (
-            <GalleryHub onPlay={handleGalleryPlay} />
+            <GalleryHub onPlay={handleGalleryPlay} onSaveChange={handleGallerySaveChange} />
           )}
 
           {tab === "image_library" && (
