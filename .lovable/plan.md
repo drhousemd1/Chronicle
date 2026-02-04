@@ -1,48 +1,80 @@
 
+# Fix Share Your Story Section Styling
 
-# Character Roster Panel - Styling Refinements
+## Overview
 
-## Changes Required
+Update the "Share Your Story" section in `src/components/chronicle/WorldTab.tsx` to:
+1. Use the steel blue header color (`#4a5f7f`) instead of the purple/blue gradient
+2. Restyle the "Publish to Gallery" button to match the "Upload Image" button design with drop shadow
 
-Two targeted styling updates in `src/components/chronicle/WorldTab.tsx`:
+---
 
-### 1. Darken the Add/Create Box with + Icon
+## File to Modify
 
-The inner box containing the + icon needs a darker background to match the "NO COVER" placeholder style.
+| File | Changes |
+|------|---------|
+| `src/components/chronicle/WorldTab.tsx` | Update Share section header color and button styling |
+
+---
+
+## Detailed Changes
+
+### 1. Section Header (line 879)
 
 **Current:**
 ```tsx
-<div className="w-14 h-14 shrink-0 rounded-xl bg-[#3a3a3f]/50 border-2 border-dashed border-zinc-600 ...">
+<div className="bg-gradient-to-r from-blue-600 to-purple-600 border-b border-white/20 px-6 py-4 flex items-center gap-3 shadow-lg">
 ```
 
 **Updated:**
 ```tsx
-<div className="w-14 h-14 shrink-0 rounded-xl bg-[#1a1a1f] border-2 border-dashed border-zinc-600 ...">
+<div className="bg-[#4a5f7f] border-b border-white/20 px-6 py-4 flex items-center gap-3 shadow-lg">
 ```
 
-The background changes from `bg-[#3a3a3f]/50` (lighter gray with transparency) to `bg-[#1a1a1f]` (solid dark charcoal, almost black).
+This changes from the purple/blue gradient to the steel blue (`#4a5f7f`) used by all other section headers on the page.
 
-### 2. Restore Blue Background for Section Headers
-
-Change "Main Characters" and "Side Characters" headers back to the steel blue color.
+### 2. Publish to Gallery Button (lines 890-899)
 
 **Current:**
 ```tsx
-<div className="bg-[#3a3a3f]/60 px-4 py-2 rounded-xl mb-3 border border-white/5">
-  <div className="text-[10px] font-bold text-zinc-300 uppercase tracking-wider">Main Characters</div>
+<div className="mt-4">
+  <Button 
+    variant="primary"
+    onClick={() => setShowShareModal(true)}
+    className="w-full !bg-gradient-to-r !from-blue-600 !to-purple-600 hover:!from-blue-500 hover:!to-purple-500"
+  >
+    <Share2 className="w-4 h-4 mr-2" />
+    Publish to Gallery
+  </Button>
 </div>
 ```
 
 **Updated:**
 ```tsx
-<div className="bg-[#4a5f7f] px-4 py-2 rounded-xl mb-3 shadow-sm">
-  <div className="text-[10px] font-bold text-white uppercase tracking-wider">Main Characters</div>
+<div className="mt-4">
+  <button
+    type="button"
+    onClick={() => setShowShareModal(true)}
+    className="flex h-10 w-full items-center justify-center gap-2 px-4
+      rounded-xl border border-[hsl(var(--ui-border))] 
+      bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
+      text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none
+      hover:bg-white/5 active:bg-white/10
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40
+      transition-colors"
+  >
+    <Share2 className="w-3.5 h-3.5 shrink-0" />
+    <span>Publish to Gallery</span>
+  </button>
 </div>
 ```
 
-- Background: `bg-[#3a3a3f]/60` → `bg-[#4a5f7f]` (steel blue, same as "Character Roster" header)
-- Border: `border border-white/5` → `shadow-sm`
-- Text: `text-zinc-300` → `text-white`
+This exact styling is copied from the Upload Image button in `CoverImageActionButtons.tsx`, including:
+- `shadow-[0_10px_30px_rgba(0,0,0,0.35)]` for the drop shadow
+- `bg-[hsl(var(--ui-surface-2))]` for the dark surface background
+- `border-[hsl(var(--ui-border))]` for the consistent border
+- `text-[10px] font-bold` for the button text style
+- `h-10 rounded-xl` for the height and border radius
 
 ---
 
@@ -50,7 +82,7 @@ Change "Main Characters" and "Side Characters" headers back to the steel blue co
 
 | Element | Before | After |
 |---------|--------|-------|
-| + Icon box background | `#3a3a3f` at 50% | `#1a1a1f` (solid dark) |
-| Section header background | `#3a3a3f` at 60% | `#4a5f7f` (steel blue) |
-| Section header text | `zinc-300` | `white` |
-
+| Header background | `bg-gradient-to-r from-blue-600 to-purple-600` | `bg-[#4a5f7f]` (steel blue) |
+| Button style | Custom Button component with gradient | Native button with Upload Image styling |
+| Button shadow | None | `shadow-[0_10px_30px_rgba(0,0,0,0.35)]` |
+| Button background | Gradient | `bg-[hsl(var(--ui-surface-2))]` (dark surface) |
