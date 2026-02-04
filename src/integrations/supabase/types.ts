@@ -446,6 +446,162 @@ export type Database = {
         }
         Relationships: []
       }
+      published_scenarios: {
+        Row: {
+          allow_remix: boolean
+          created_at: string | null
+          id: string
+          is_hidden: boolean
+          is_published: boolean
+          like_count: number
+          play_count: number
+          publisher_id: string
+          reported_count: number
+          save_count: number
+          scenario_id: string
+          tags: string[]
+          updated_at: string | null
+        }
+        Insert: {
+          allow_remix?: boolean
+          created_at?: string | null
+          id?: string
+          is_hidden?: boolean
+          is_published?: boolean
+          like_count?: number
+          play_count?: number
+          publisher_id: string
+          reported_count?: number
+          save_count?: number
+          scenario_id: string
+          tags?: string[]
+          updated_at?: string | null
+        }
+        Update: {
+          allow_remix?: boolean
+          created_at?: string | null
+          id?: string
+          is_hidden?: boolean
+          is_published?: boolean
+          like_count?: number
+          play_count?: number
+          publisher_id?: string
+          reported_count?: number
+          save_count?: number
+          scenario_id?: string
+          tags?: string[]
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "published_scenarios_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: true
+            referencedRelation: "scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      remixed_scenarios: {
+        Row: {
+          created_at: string | null
+          id: string
+          original_published_id: string | null
+          remixed_scenario_id: string
+          remixer_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          original_published_id?: string | null
+          remixed_scenario_id: string
+          remixer_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          original_published_id?: string | null
+          remixed_scenario_id?: string
+          remixer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "remixed_scenarios_original_published_id_fkey"
+            columns: ["original_published_id"]
+            isOneToOne: false
+            referencedRelation: "published_scenarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "remixed_scenarios_remixed_scenario_id_fkey"
+            columns: ["remixed_scenario_id"]
+            isOneToOne: false
+            referencedRelation: "scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      saved_scenarios: {
+        Row: {
+          created_at: string | null
+          id: string
+          published_scenario_id: string
+          source_scenario_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          published_scenario_id: string
+          source_scenario_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          published_scenario_id?: string
+          source_scenario_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_scenarios_published_scenario_id_fkey"
+            columns: ["published_scenario_id"]
+            isOneToOne: false
+            referencedRelation: "published_scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scenario_likes: {
+        Row: {
+          created_at: string | null
+          id: string
+          published_scenario_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          published_scenario_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          published_scenario_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scenario_likes_published_scenario_id_fkey"
+            columns: ["published_scenario_id"]
+            isOneToOne: false
+            referencedRelation: "published_scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scenarios: {
         Row: {
           cover_image_position: Json | null
@@ -680,7 +836,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      decrement_like_count: {
+        Args: { published_id: string }
+        Returns: undefined
+      }
+      decrement_save_count: {
+        Args: { published_id: string }
+        Returns: undefined
+      }
+      increment_like_count: {
+        Args: { published_id: string }
+        Returns: undefined
+      }
+      increment_play_count: {
+        Args: { published_id: string }
+        Returns: undefined
+      }
+      increment_save_count: {
+        Args: { published_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
