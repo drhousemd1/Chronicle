@@ -1,9 +1,7 @@
 
 import React from "react";
-import { useNavigate } from "react-router-dom";
 import { ScenarioMetadata } from "@/types";
 import { Button } from "./UI";
-import { Globe } from "lucide-react";
 
 interface ScenarioCardProps {
   scen: ScenarioMetadata;
@@ -92,33 +90,8 @@ export function ScenarioHub({
   onDelete,
   onCreate,
 }: ScenarioHubProps) {
-  const navigate = useNavigate();
-
   return (
     <div className="w-full h-full p-10 flex flex-col overflow-y-auto">
-      {/* Gallery Navigation Banner */}
-      <div className="mb-8">
-        <button
-          onClick={() => navigate('/gallery')}
-          className="w-full p-6 rounded-2xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 transition-all shadow-lg hover:shadow-xl hover:-translate-y-1 flex items-center justify-between group"
-        >
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-              <Globe className="w-6 h-6 text-white" />
-            </div>
-            <div className="text-left">
-              <h3 className="text-xl font-black text-white tracking-tight">Community Gallery</h3>
-              <p className="text-blue-100 text-sm">Discover and play stories from other creators</p>
-            </div>
-          </div>
-          <div className="text-white/80 group-hover:text-white group-hover:translate-x-1 transition-all">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m9 18 6-6-6-6"/>
-            </svg>
-          </div>
-        </button>
-      </div>
-
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-8 w-full">
         {registry.map((scen) => (
           <ScenarioCard 
