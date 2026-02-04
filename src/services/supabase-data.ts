@@ -545,6 +545,106 @@ export async function deleteScenario(id: string): Promise<void> {
 }
 
 // =============================================
+// SCENARIO CLONING (for remixable bookmarked scenarios)
+// =============================================
+
+/**
+ * Check who owns a scenario
+ */
+export async function getScenarioOwner(scenarioId: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('scenarios')
+    .select('user_id')
+    .eq('id', scenarioId)
+    .maybeSingle();
+    
+  if (error || !data) return null;
+  return data.user_id;
+}
+
+/**
+ * Clone a scenario with all its related data (characters, codex entries, scenes)
+ * for the current user to edit freely without affecting the original.
+ */
+export async function cloneScenarioForRemix(
+  originalScenarioId: string,
+  newScenarioId: string,
+  userId: string,
+  originalData: ScenarioData,
+  originalCoverImage: string,
+  originalCoverPosition: { x: number; y: number }
+): Promise<ScenarioData> {
+  // Generate new IDs for all entities
+  const clonedCharacters = originalData.characters.map(char => ({
+    ...char,
+    id: crypto.randomUUID(),
+    createdAt: Date.now(),
+    updatedAt: Date.now()
+  }));
+  
+  const clonedCodexEntries = originalData.world.entries.map(entry => ({
+    ...entry,
+    id: crypto.randomUUID(),
+    createdAt: Date.now(),
+    updatedAt: Date.now()
+  }));
+  
+  const clonedScenes = originalData.scenes.map(scene => ({
+    ...scene,
+    id: crypto.randomUUID(),
+    createdAt: Date.now()
+  }));
+  
+  // Build cloned data (without conversations - start fresh)
+  const clonedData: ScenarioData = {
+    ...originalData,
+    characters: clonedCharacters,
+    world: {
+      ...originalData.world,
+      entries: clonedCodexEntries
+    },
+    scenes: clonedScenes,
+    conversations: [], // Start fresh for remixes
+    sideCharacters: []
+  };
+  
+  // Save the cloned scenario with the user's ID
+  const metadata = {
+    title: originalData.world.core.scenarioName || 'Remixed Scenario',
+    description: originalData.world.core.briefDescription || '',
+    coverImage: originalCoverImage,
+    coverImagePosition: originalCoverPosition,
+    tags: ['Remix']
+  };
+  
+  await saveScenario(newScenarioId, clonedData, metadata, userId);
+  
+  return clonedData;
+}
+
+/**
+ * Track a remix in the remixed_scenarios table for attribution
+ */
+export async function trackRemix(
+  originalPublishedId: string,
+  remixedScenarioId: string,
+  remixerId: string
+): Promise<void> {
+  const { error } = await supabase
+    .from('remixed_scenarios')
+    .insert({
+      original_published_id: originalPublishedId,
+      remixed_scenario_id: remixedScenarioId,
+      remixer_id: remixerId
+    });
+  
+  // Don't throw on error - this is just attribution tracking
+  if (error) {
+    console.warn('Failed to track remix:', error.message);
+  }
+}
+
+// =============================================
 // CHARACTER LIBRARY
 // =============================================
 
