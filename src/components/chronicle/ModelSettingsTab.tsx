@@ -1,8 +1,16 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, SectionTitle, Button, Label } from "./UI";
 import { LLM_MODELS, LLMModel } from "@/constants";
-import { Key, Zap, Shield } from "lucide-react";
+import { Key, Zap, Shield, Share2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { useAuth } from "@/hooks/use-auth";
+import { 
+  checkSharedKeyStatus, 
+  isAdminUser, 
+  updateSharedKeySetting,
+  SharedKeyStatus 
+} from "@/services/app-settings";
 
 // Group models by provider
 function groupModelsByProvider(models: LLMModel[]): Record<string, LLMModel[]> {
@@ -19,14 +27,37 @@ interface ModelSettingsTabProps {
 }
 
 export function ModelSettingsTab({ selectedModelId, onSelectModel }: ModelSettingsTabProps) {
+  const { user } = useAuth();
   const selectedModel = LLM_MODELS.find(m => m.id === selectedModelId);
   const description = selectedModel?.description || 'Integrating external models for diverse narrative experiences.';
 
   const [connectionStatus, setConnectionStatus] = useState<'idle' | 'checking' | 'connected' | 'error'>('connected');
+  const [sharedKeyStatus, setSharedKeyStatus] = useState<SharedKeyStatus>({ 
+    xaiShared: false, 
+    xaiConfigured: false 
+  });
+  const [isUpdatingShare, setIsUpdatingShare] = useState(false);
+  const isAdmin = isAdminUser(user?.id);
+
+  // Fetch shared key status on mount
+  useEffect(() => {
+    checkSharedKeyStatus().then(setSharedKeyStatus);
+  }, []);
 
   const handleRefreshConnection = async () => {
     setConnectionStatus('checking');
-    setTimeout(() => setConnectionStatus('connected'), 1000);
+    const status = await checkSharedKeyStatus();
+    setSharedKeyStatus(status);
+    setTimeout(() => setConnectionStatus('connected'), 500);
+  };
+
+  const handleToggleShare = async (checked: boolean) => {
+    setIsUpdatingShare(true);
+    const success = await updateSharedKeySetting(checked);
+    if (success) {
+      setSharedKeyStatus(prev => ({ ...prev, xaiShared: checked }));
+    }
+    setIsUpdatingShare(false);
   };
 
   const groupedModels = groupModelsByProvider(LLM_MODELS);
@@ -43,6 +74,14 @@ export function ModelSettingsTab({ selectedModelId, onSelectModel }: ModelSettin
   const getProviderBadge = (provider: string) => {
     switch (provider) {
       case 'xAI':
+        if (sharedKeyStatus.xaiShared) {
+          return (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700 border border-emerald-200">
+              <Share2 className="w-2.5 h-2.5" />
+              Shared
+            </span>
+          );
+        }
         return (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-orange-100 text-orange-700 border border-orange-200">
             <Key className="w-2.5 h-2.5" />
@@ -57,6 +96,23 @@ export function ModelSettingsTab({ selectedModelId, onSelectModel }: ModelSettin
           </span>
         );
     }
+  };
+
+  const getModelIconBadge = (model: LLMModel) => {
+    if (model.provider === 'xAI' && sharedKeyStatus.xaiShared) {
+      return <Share2 className={`w-4 h-4 ${selectedModelId === model.id ? 'text-emerald-400' : 'text-emerald-500'}`} />;
+    }
+    if (model.requiresKey) {
+      return <Key className={`w-4 h-4 ${selectedModelId === model.id ? 'text-orange-400' : 'text-orange-500'}`} />;
+    }
+    return <Zap className={`w-4 h-4 ${selectedModelId === model.id ? 'text-emerald-400' : 'text-emerald-500'}`} />;
+  };
+
+  const getModelIconBgClass = (model: LLMModel) => {
+    if (selectedModelId === model.id) return 'bg-white/10';
+    if (model.provider === 'xAI' && sharedKeyStatus.xaiShared) return 'bg-emerald-50';
+    if (model.requiresKey) return 'bg-orange-50';
+    return 'bg-emerald-50';
   };
 
   return (
@@ -105,17 +161,8 @@ export function ModelSettingsTab({ selectedModelId, onSelectModel }: ModelSettin
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          <div className={`p-2 rounded-lg ${
-                            selectedModelId === model.id 
-                              ? 'bg-white/10' 
-                              : model.requiresKey 
-                                ? 'bg-orange-50' 
-                                : 'bg-emerald-50'
-                          }`}>
-                            {model.requiresKey 
-                              ? <Key className={`w-4 h-4 ${selectedModelId === model.id ? 'text-orange-400' : 'text-orange-500'}`} />
-                              : <Zap className={`w-4 h-4 ${selectedModelId === model.id ? 'text-emerald-400' : 'text-emerald-500'}`} />
-                            }
+                          <div className={`p-2 rounded-lg ${getModelIconBgClass(model)}`}>
+                            {getModelIconBadge(model)}
                           </div>
                           <div>
                             <div className={`font-bold ${selectedModelId === model.id ? 'text-white' : 'text-slate-900'}`}>
@@ -144,8 +191,11 @@ export function ModelSettingsTab({ selectedModelId, onSelectModel }: ModelSettin
                 <h3 className="text-2xl font-black text-slate-900 tracking-tight">{selectedModel?.name}</h3>
                 <p className="text-blue-600 font-bold text-xs uppercase tracking-widest mt-1">
                   Provider: {selectedModel?.provider}
-                  {selectedModel?.requiresKey && (
+                  {selectedModel?.requiresKey && !sharedKeyStatus.xaiShared && (
                     <span className="ml-2 text-orange-500">• BYOK</span>
+                  )}
+                  {selectedModel?.requiresKey && sharedKeyStatus.xaiShared && (
+                    <span className="ml-2 text-emerald-500">• Shared</span>
                   )}
                 </p>
               </div>
@@ -174,19 +224,61 @@ export function ModelSettingsTab({ selectedModelId, onSelectModel }: ModelSettin
               <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200">
                 {selectedModel?.requiresKey ? (
                   <div className="space-y-4">
-                    <div className="flex items-start gap-3">
-                      <Shield className="w-5 h-5 text-orange-500 mt-0.5" />
-                      <div>
-                        <p className="text-sm text-slate-700 font-medium">
-                          This model requires your personal API key from {selectedModel.provider}.
-                        </p>
-                        <p className="text-xs text-slate-500 mt-1">
-                          Your API key is stored securely and never exposed to the client.
-                        </p>
+                    {/* Admin-only toggle */}
+                    {isAdmin && (
+                      <div className="flex items-center justify-between p-4 bg-purple-50 rounded-xl border border-purple-200 mb-4">
+                        <div className="flex items-center gap-3">
+                          <Share2 className="w-5 h-5 text-purple-600" />
+                          <div>
+                            <p className="text-sm text-slate-700 font-medium">
+                              Share XAI key with all users
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              When enabled, all users can use Grok models
+                            </p>
+                          </div>
+                        </div>
+                        <Switch 
+                          checked={sharedKeyStatus.xaiShared}
+                          onCheckedChange={handleToggleShare}
+                          disabled={isUpdatingShare || !sharedKeyStatus.xaiConfigured}
+                        />
                       </div>
+                    )}
+                    
+                    {/* Status message for all users */}
+                    <div className="flex items-start gap-3">
+                      {sharedKeyStatus.xaiShared ? (
+                        <>
+                          <Share2 className="w-5 h-5 text-emerald-500 mt-0.5" />
+                          <div>
+                            <p className="text-sm text-slate-700 font-medium">
+                              A shared API key is available for all users.
+                            </p>
+                            <p className="text-xs text-slate-500 mt-1">
+                              You can use Grok models without providing your own key.
+                            </p>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <Shield className="w-5 h-5 text-orange-500 mt-0.5" />
+                          <div>
+                            <p className="text-sm text-slate-700 font-medium">
+                              This model requires an API key from {selectedModel.provider}.
+                            </p>
+                            <p className="text-xs text-slate-500 mt-1">
+                              {isAdmin 
+                                ? "Enable sharing above to let all users access Grok."
+                                : "Contact the app administrator for access."
+                              }
+                            </p>
+                          </div>
+                        </>
+                      )}
                     </div>
                     <Button variant="secondary" onClick={handleRefreshConnection} disabled={connectionStatus === 'checking'}>
-                      Verify API Key Connection
+                      {sharedKeyStatus.xaiShared ? 'Verify Connection' : 'Check Key Status'}
                     </Button>
                   </div>
                 ) : (
