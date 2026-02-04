@@ -226,6 +226,18 @@ export async function getPublishedScenario(scenarioId: string): Promise<Publishe
   return data;
 }
 
+// Fetch all published scenario IDs for a user (for "Published" tags in hub)
+export async function fetchUserPublishedScenarioIds(userId: string): Promise<Set<string>> {
+  const { data, error } = await supabase
+    .from('published_scenarios')
+    .select('scenario_id')
+    .eq('publisher_id', userId)
+    .eq('is_published', true);
+    
+  if (error) throw error;
+  return new Set((data || []).map(p => p.scenario_id));
+}
+
 // Publish or update a scenario
 export async function publishScenario(
   scenarioId: string,
