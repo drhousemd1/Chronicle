@@ -252,6 +252,53 @@ export type Database = {
           },
         ]
       }
+      content_themes: {
+        Row: {
+          character_types: string[] | null
+          created_at: string | null
+          custom_tags: string[] | null
+          genres: string[] | null
+          id: string
+          origin: string[] | null
+          scenario_id: string
+          story_type: string | null
+          trigger_warnings: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          character_types?: string[] | null
+          created_at?: string | null
+          custom_tags?: string[] | null
+          genres?: string[] | null
+          id?: string
+          origin?: string[] | null
+          scenario_id: string
+          story_type?: string | null
+          trigger_warnings?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          character_types?: string[] | null
+          created_at?: string | null
+          custom_tags?: string[] | null
+          genres?: string[] | null
+          id?: string
+          origin?: string[] | null
+          scenario_id?: string
+          story_type?: string | null
+          trigger_warnings?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_themes_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: true
+            referencedRelation: "scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversations: {
         Row: {
           created_at: string | null

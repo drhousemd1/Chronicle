@@ -297,6 +297,7 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange }) 
             coverImage={selectedPublished.scenario?.cover_image_url || ""}
             coverImagePosition={selectedPublished.scenario?.cover_image_position || { x: 50, y: 50 }}
             tags={selectedPublished.tags}
+            contentThemes={selectedPublished.contentThemes}
             likeCount={selectedPublished.like_count}
             saveCount={selectedPublished.save_count}
             playCount={selectedPublished.play_count}

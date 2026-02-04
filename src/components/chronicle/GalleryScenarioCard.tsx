@@ -83,6 +83,18 @@ export const GalleryScenarioCard: React.FC<GalleryScenarioCardProps> = ({
         {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent opacity-90 group-hover:opacity-95 transition-opacity" />
 
+        {/* SFW/NSFW Badge */}
+        {published.contentThemes?.storyType && (
+          <div className={cn(
+            "absolute top-4 right-4 px-2.5 py-1 backdrop-blur-sm rounded-lg text-[10px] font-bold shadow-lg",
+            published.contentThemes.storyType === 'NSFW'
+              ? "bg-rose-950/80 text-rose-400"
+              : "bg-black/50 text-white/80"
+          )}>
+            {published.contentThemes.storyType}
+          </div>
+        )}
+
         {/* Remix Badge */}
         {published.allow_remix && (
           <div className="absolute top-4 left-4 px-2.5 py-1 bg-purple-500/80 backdrop-blur-sm rounded-lg text-[10px] font-bold text-white flex items-center gap-1.5 shadow-lg">

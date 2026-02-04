@@ -315,6 +315,28 @@ export type UserBackground = {
 export type TabKey = "hub" | "characters" | "world" | "conversations" | "model_settings" | "builder" | "chat_interface" | "image_library" | "gallery";
 
 // =============================================
+// CONTENT THEMES (Scenario categorization)
+// =============================================
+
+export type ContentThemes = {
+  characterTypes: string[];
+  storyType: 'SFW' | 'NSFW' | null;
+  genres: string[];
+  origin: string[];
+  triggerWarnings: string[];
+  customTags: string[];
+};
+
+export const defaultContentThemes: ContentThemes = {
+  characterTypes: [],
+  storyType: null,
+  genres: [],
+  origin: [],
+  triggerWarnings: [],
+  customTags: []
+};
+
+// =============================================
 // MEMORY TYPES (Story continuity tracking)
 // =============================================
 

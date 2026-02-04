@@ -1,6 +1,6 @@
 
 import React, { useRef, useState, useCallback } from 'react';
-import { World, OpeningDialog, CodexEntry, Character, Scene, TimeOfDay, WorldCore } from '@/types';
+import { World, OpeningDialog, CodexEntry, Character, Scene, TimeOfDay, WorldCore, ContentThemes, defaultContentThemes } from '@/types';
 import { Button, Input, TextArea, Card } from './UI';
 import { Icons } from '@/constants';
 import { uid, now, resizeImage, uuid, clamp } from '@/utils';
@@ -17,6 +17,7 @@ import { SceneImageGenerationModal } from './SceneImageGenerationModal';
 import { CoverImageActionButtons } from './CoverImageActionButtons';
 import { SceneGalleryActionButtons } from './SceneGalleryActionButtons';
 import { ShareScenarioModal } from './ShareScenarioModal';
+import { ContentThemesSection } from './ContentThemesSection';
 import { aiEnhanceWorldField } from '@/services/world-ai';
 import { useModelSettings } from '@/contexts/ModelSettingsContext';
 
@@ -35,6 +36,8 @@ interface WorldTabProps {
   onUpdateCoverImage: (url: string) => void;
   onUpdateCoverPosition: (position: { x: number; y: number }) => void;
   onUpdateArtStyle: (styleId: string) => void;
+  contentThemes: ContentThemes;
+  onUpdateContentThemes: (themes: ContentThemes) => void;
   onNavigateToCharacters: () => void;
   onSelectCharacter: (id: string) => void;
 }
@@ -87,6 +90,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   onUpdateCoverImage,
   onUpdateCoverPosition,
   onUpdateArtStyle,
+  contentThemes,
+  onUpdateContentThemes,
   onNavigateToCharacters, 
   onSelectCharacter 
 }) => {
@@ -872,6 +877,12 @@ export const WorldTab: React.FC<WorldTabProps> = ({
               </div>
             </div>
           </section>
+
+          {/* Content Themes Section */}
+          <ContentThemesSection
+            themes={contentThemes}
+            onUpdate={onUpdateContentThemes}
+          />
 
           {/* Share Section */}
           <section>
