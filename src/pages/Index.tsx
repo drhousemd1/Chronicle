@@ -1234,8 +1234,9 @@ const IndexContent = () => {
             </div>
           )}
 
-          {tab === "world" && activeData && (
+          {tab === "world" && activeData && activeId && (
             <WorldTab
+              scenarioId={activeId}
               world={activeData.world}
               characters={activeData.characters}
               openingDialog={activeData.story.openingDialog}

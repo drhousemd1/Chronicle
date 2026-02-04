@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { uploadSceneImage, uploadCoverImage, dataUrlToBlob } from '@/services/supabase-data';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Sunrise, Sun, Sunset, Moon, ChevronUp, ChevronDown, Pencil, Sparkles } from 'lucide-react';
+import { Sunrise, Sun, Sunset, Moon, ChevronUp, ChevronDown, Pencil, Sparkles, Share2 } from 'lucide-react';
 import { AVATAR_STYLES, DEFAULT_STYLE_ID } from '@/constants/avatar-styles';
 import { cn } from '@/lib/utils';
 import { SceneTagEditorModal } from './SceneTagEditorModal';
@@ -16,10 +16,12 @@ import { CoverImageGenerationModal } from './CoverImageGenerationModal';
 import { SceneImageGenerationModal } from './SceneImageGenerationModal';
 import { CoverImageActionButtons } from './CoverImageActionButtons';
 import { SceneGalleryActionButtons } from './SceneGalleryActionButtons';
+import { ShareScenarioModal } from './ShareScenarioModal';
 import { aiEnhanceWorldField } from '@/services/world-ai';
 import { useModelSettings } from '@/contexts/ModelSettingsContext';
 
 interface WorldTabProps {
+  scenarioId: string;
   world: World;
   characters: Character[];
   openingDialog: OpeningDialog;
@@ -71,6 +73,7 @@ const CharacterButton: React.FC<{ char: Character; onSelect: (id: string) => voi
 );
 
 export const WorldTab: React.FC<WorldTabProps> = ({ 
+  scenarioId,
   world, 
   characters, 
   openingDialog, 
@@ -98,6 +101,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   const [isGeneratingCover, setIsGeneratingCover] = useState(false);
   const [showSceneGenModal, setShowSceneGenModal] = useState(false);
   const [isGeneratingScene, setIsGeneratingScene] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [enhancingField, setEnhancingField] = useState<keyof WorldCore | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverFileInputRef = useRef<HTMLInputElement>(null);
@@ -868,6 +872,35 @@ export const WorldTab: React.FC<WorldTabProps> = ({
               </div>
             </div>
           </section>
+
+          {/* Share Section */}
+          <section>
+            <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-lg">
+              <div className="bg-gradient-to-r from-blue-600 to-purple-600 border-b border-white/20 px-6 py-4 flex items-center gap-3 shadow-lg">
+                <Share2 className="w-5 h-5 text-white" />
+                <h2 className="text-white text-xl font-bold tracking-tight">Share Your Story</h2>
+              </div>
+              <div className="p-6">
+                <div className="p-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
+                  <HintBox hints={[
+                    'Publish to the gallery for others to discover.',
+                    'Choose whether others can remix or play-only.',
+                    'Add tags so players can find your story.'
+                  ]} />
+                  <div className="mt-4">
+                    <Button 
+                      variant="primary"
+                      onClick={() => setShowShareModal(true)}
+                      className="w-full !bg-gradient-to-r !from-blue-600 !to-purple-600 hover:!from-blue-500 hover:!to-purple-500"
+                    >
+                      <Share2 className="w-4 h-4 mr-2" />
+                      Publish to Gallery
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
       </div>
       
@@ -942,6 +975,17 @@ export const WorldTab: React.FC<WorldTabProps> = ({
         isGenerating={isGeneratingScene}
         selectedArtStyle={selectedArtStyle}
       />
+      
+      {/* Share Scenario Modal */}
+      {user && (
+        <ShareScenarioModal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          scenarioId={scenarioId}
+          scenarioTitle={world.core.scenarioName || 'Untitled Story'}
+          userId={user.id}
+        />
+      )}
     </div>
   );
 };
