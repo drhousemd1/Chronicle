@@ -1,131 +1,240 @@
 
 
-# Styling Fixes for Content Themes Section
+# Update ScenarioHub Modal with Content Themes, Styling & Unpublish Button
 
 ## Overview
 
-Fix 4 styling inconsistencies in the Content Themes section to match the established design patterns in the Scenario Builder.
+The "Your Stories" page modal (ScenarioHub) is missing the Content Themes display, uses incorrect SFW/NSFW badge colors, and lacks an unpublish option for published scenarios. This plan addresses all four issues:
+
+1. Add content themes display to the owner's detail modal
+2. Update SFW/NSFW badge to use blue-400/vibrant red colors
+3. Apply dark theme styling to match Scenario Builder
+4. Add unpublish button for published scenarios
 
 ---
 
-## Issues and Fixes
+## Changes Required
 
-### Issue 1: SFW/NSFW Badge Text Size on Gallery Cards
+### 1. SFW/NSFW Badge Color Updates
 
-**Current:** The badge uses `text-[10px]` which matches the stats text  
-**Problem:** User wants consistent sizing with the rest of the card text  
-**Fix:** Keep `text-[10px]` as this is intentional for badge compactness - same as stats row. However, if user wants it larger to match title/description, we can adjust to `text-xs` (12px).
+Update both `GalleryScenarioCard.tsx` and `ScenarioDetailModal.tsx`:
 
-**File:** `src/components/chronicle/GalleryScenarioCard.tsx` (line 89)
+| Current | Updated |
+|---------|---------|
+| SFW: `bg-black/50 text-white/80` | SFW: `bg-blue-500/20 text-blue-400` |
+| NSFW: `bg-rose-950/80 text-rose-400` | NSFW: `bg-red-500/20 text-red-400` (more vibrant) |
 
-**Change:**
+Applies to:
+- Gallery card badges
+- Modal badges (if displayed)
+
+---
+
+### 2. ScenarioHub - Pass Content Themes to Modal
+
+**File:** `src/components/chronicle/ScenarioHub.tsx`
+
+Current implementation:
+- Only passes basic scenario metadata (title, description, tags)
+- Missing content themes, publication status
+
+New implementation:
+- Fetch content themes when scenario is selected
+- Fetch publication status for the scenario
+- Pass to ScenarioDetailModal
+
 ```tsx
-// Current (10px)
-"...text-[10px] font-bold shadow-lg"
+// Add state for content themes and publication status
+const [selectedContentThemes, setSelectedContentThemes] = useState<ContentThemes | null>(null);
+const [publicationStatus, setPublicationStatus] = useState<PublishedScenario | null>(null);
 
-// Updated to match card description text (12px)
-"...text-xs font-bold shadow-lg"
+// On scenario selection, fetch content themes and publication status
+const handleViewDetails = async (id: string) => {
+  const scenario = registry.find(s => s.id === id);
+  if (scenario) {
+    setSelectedScenario(scenario);
+    setDetailModalOpen(true);
+    
+    // Fetch content themes
+    try {
+      const themes = await fetchContentThemes(id);
+      setSelectedContentThemes(themes);
+    } catch (e) {
+      setSelectedContentThemes(null);
+    }
+    
+    // Fetch publication status
+    try {
+      const published = await getPublishedScenario(id);
+      setPublicationStatus(published);
+    } catch (e) {
+      setPublicationStatus(null);
+    }
+  }
+};
+```
+
+Pass to modal:
+```tsx
+<ScenarioDetailModal
+  ...
+  contentThemes={selectedContentThemes}
+  isPublished={!!publicationStatus?.is_published}
+  onUnpublish={handleUnpublish}
+/>
 ```
 
 ---
 
-### Issue 2: "+ Add custom" Button Text Color
+### 3. ScenarioDetailModal - Add Unpublish Support & Fix Display
 
-**Current:** Uses `text-zinc-500` (inactive gray color)  
-**Desired:** Match the blue color used for interactive buttons like "Add Milestone Step" (`text-blue-400`)
+**File:** `src/components/chronicle/ScenarioDetailModal.tsx`
 
-**File:** `src/components/chronicle/ContentThemesSection.tsx` (line 146)
-
-**Change:**
+Add new props:
 ```tsx
-// Current
-className="px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-800/50 text-zinc-500 border border-dashed border-zinc-600 hover:border-zinc-500 hover:text-zinc-400 transition-all flex items-center gap-1"
+interface ScenarioDetailModalProps {
+  // ... existing props
+  isPublished?: boolean;
+  onUnpublish?: () => void;
+}
+```
 
-// Updated
-className="px-3 py-1.5 rounded-lg text-xs font-medium bg-transparent text-blue-400 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 transition-all flex items-center gap-1"
+Display content themes block for owner mode:
+- Currently only shows for `!isOwned` (gallery items)
+- Update to show for both owner and gallery scenarios
+- The content themes block is already in the component, just need to ensure it renders for owned scenarios too
+
+Add unpublish button (for published, owned scenarios):
+```tsx
+{isOwned && isPublished && onUnpublish && (
+  <button
+    onClick={handleUnpublish}
+    className="px-6 py-3 bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] text-white/70 rounded-xl font-bold text-sm shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/10 hover:text-white transition-colors flex items-center gap-2"
+  >
+    <GlobeX className="w-4 h-4" />
+    Remove from Gallery
+  </button>
+)}
 ```
 
 ---
 
-### Issue 3: Custom Tag Chip Styling (Green vs Blue)
+### 4. Modal Dark Theme Styling Updates
 
-**Current:** Custom options use emerald/green styling (`bg-emerald-500/20 text-emerald-300 border-emerald-500/30`)  
-**Desired:** Match prebuilt selected styling (`bg-blue-500/20 text-blue-300 border-blue-500/30`)
+Update the modal background and elements to match Scenario Builder dark theme:
 
-**File:** `src/components/chronicle/ContentThemesSection.tsx` (line 103)
-
-**Change:**
-```tsx
-// Current
-className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
-
-// Updated - Match prebuilt selected state
-className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30"
-```
-
-Also update the Custom Tags section (line 247) from violet to blue:
-```tsx
-// Current
-className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-violet-500/20 text-violet-300 border border-violet-500/30"
-
-// Updated
-className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30"
-```
+| Element | Current | Updated |
+|---------|---------|---------|
+| Modal background | `bg-slate-900` | `bg-[#1a1a1f]` (darker charcoal) |
+| Content themes box | `bg-white/5` | `bg-[#2a2a2f]` with steel blue header |
+| Buttons (Edit Story) | `bg-white text-slate-900` | Premium shadow surface style |
+| Action buttons | Various | Match Scenario Builder button styling |
+| Border colors | `ring-white/10` | `border-[hsl(var(--ui-border))]` |
 
 ---
 
-### Issue 4: "Add" Button Styling in Custom Tags
-
-**Current:** Standard blue button (`bg-blue-600 text-white`)  
-**Desired:** Match "Publish to Gallery" and "Upload Image" premium styling
-
-**File:** `src/components/chronicle/ContentThemesSection.tsx` (lines 232-237)
-
-**Change:**
-```tsx
-// Current
-<button
-  type="button"
-  onClick={addTag}
-  disabled={!input.trim()}
-  className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
->
-  Add
-</button>
-
-// Updated - Premium shadow surface style
-<button
-  type="button"
-  onClick={addTag}
-  disabled={!input.trim()}
-  className="flex h-10 items-center justify-center gap-2 px-4
-    rounded-xl border border-[hsl(var(--ui-border))] 
-    bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
-    text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none
-    hover:bg-white/5 active:bg-white/10 
-    disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
->
-  Add
-</button>
-```
-
----
-
-## Files Modified
+## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/components/chronicle/GalleryScenarioCard.tsx` | SFW/NSFW badge text size → `text-xs` |
-| `src/components/chronicle/ContentThemesSection.tsx` | 3 styling fixes: button colors, chip colors, Add button styling |
+| `src/components/chronicle/ScenarioHub.tsx` | Fetch content themes + publication status, pass to modal, add unpublish handler |
+| `src/components/chronicle/ScenarioDetailModal.tsx` | Add isPublished/onUnpublish props, unpublish button, show content themes for owner, update styling |
+| `src/components/chronicle/GalleryScenarioCard.tsx` | Update SFW/NSFW badge colors |
 
 ---
 
 ## Visual Summary
 
-| Element | Before | After |
-|---------|--------|-------|
-| "+ Add custom" button | Gray inactive (`text-zinc-500`) | Blue interactive (`text-blue-400`) |
-| Custom tag chips | Green (`emerald`) | Blue (`blue-500`) - matches selected prebuilt |
-| Custom Tags "Add" button | Simple blue button | Premium dark surface with shadow |
-| SFW/NSFW badge | 10px text | 12px text (same as description) |
+### Updated Badge Colors
+
+```text
+SFW Badge:
+- Background: bg-blue-500/20 (semi-transparent blue)
+- Text: text-blue-400 (vibrant blue matching "+ Add custom" buttons)
+- Maintains same padding/size
+
+NSFW Badge:
+- Background: bg-red-500/20 (semi-transparent red)
+- Text: text-red-400 (vibrant red, equally saturated as blue)
+- Maintains same padding/size
+```
+
+### Modal Layout for Owned Scenarios
+
+```text
++----------------------------------------------------------+
+|                                           [X Close]      |
+|                                                          |
+|  [Cover Image]   Title                                   |
+|                                                          |
+|                  Description...                          |
+|                                                          |
+|                  +----------------------------------+    |
+|                  | Content Themes Box               |    |
+|                  | Genre: ...                       |    |
+|                  | Character Types: ...             |    |
+|                  | Story Origin: ...                |    |
+|                  | Trigger Warnings: ...            |    |
+|                  +----------------------------------+    |
+|                                                          |
+|                  #tag1  #tag2  #tag3                     |
+|                                                          |
+|                  [Edit Story]  [Play Story]              |
+|                  [Remove from Gallery] <- if published   |
+|                                                          |
+|  ──────────────────────────────────────────────────────  |
+|  Characters                                              |
+|  (avatar) (avatar) (avatar)                              |
++----------------------------------------------------------+
+```
+
+---
+
+## Implementation Details
+
+### Content Themes Rendering Logic
+
+Update the condition to show content themes:
+```tsx
+// Current: {contentThemes && (
+// Updated: Always show if contentThemes exists
+{contentThemes && (contentThemes.genres.length > 0 || 
+                   contentThemes.characterTypes.length > 0 || 
+                   contentThemes.origin.length > 0 || 
+                   contentThemes.triggerWarnings.length > 0 ||
+                   contentThemes.customTags.length > 0) && (
+  <div className="space-y-3 mb-4 p-4 bg-[#2a2a2f] rounded-xl border border-white/10">
+    {/* ... content themes display ... */}
+  </div>
+)}
+```
+
+### Unpublish Handler in ScenarioHub
+
+```tsx
+const handleUnpublish = async () => {
+  if (!selectedScenario) return;
+  try {
+    await unpublishScenario(selectedScenario.id);
+    setPublicationStatus(null);
+    toast.success('Your story has been removed from the Gallery');
+  } catch (e) {
+    console.error('Failed to unpublish:', e);
+    toast.error('Failed to remove from gallery');
+  }
+};
+```
+
+---
+
+## Summary of Style Updates
+
+| Component | Style Change |
+|-----------|--------------|
+| SFW badge | `bg-blue-500/20 text-blue-400` with existing padding |
+| NSFW badge | `bg-red-500/20 text-red-400` with existing padding |
+| Modal background | Darker charcoal `bg-[#1a1a1f]` |
+| Content themes box | `bg-[#2a2a2f]` matching Scenario Builder |
+| Edit Story button | Premium shadow surface style |
+| Remove from Gallery button | Premium shadow surface style with subtle warning tone |
 
