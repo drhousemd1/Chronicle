@@ -459,8 +459,8 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange }) 
             onLike={() => handleLike(selectedPublished)}
             onSave={() => handleSave(selectedPublished)}
             onPlay={() => handlePlay(selectedPublished)}
-            isOwned={user?.id === selectedPublished.publisher_id}
             isPublished={true}
+            canUnpublish={user?.id === selectedPublished.publisher_id}
             onUnpublish={user?.id === selectedPublished.publisher_id ? handleUnpublish : undefined}
           />
         </TooltipProvider>
