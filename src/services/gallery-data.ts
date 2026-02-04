@@ -46,8 +46,11 @@ export interface GalleryScenarioData {
 }
 
 // Fetch all published scenarios with optional tag filter
+export type SortOption = 'all' | 'recent' | 'liked' | 'saved' | 'played';
+
 export async function fetchPublishedScenarios(
   searchTags?: string[],
+  sortBy: SortOption = 'all',
   limit = 50,
   offset = 0
 ): Promise<PublishedScenario[]> {
@@ -73,9 +76,27 @@ export async function fetchPublishedScenarios(
         cover_image_position
       )
     `)
-    .eq('is_published', true)
-    .order('created_at', { ascending: false })
-    .range(offset, offset + limit - 1);
+    .eq('is_published', true);
+
+  // Apply sorting based on sortBy parameter
+  switch (sortBy) {
+    case 'liked':
+      query = query.order('like_count', { ascending: false });
+      break;
+    case 'saved':
+      query = query.order('save_count', { ascending: false });
+      break;
+    case 'played':
+      query = query.order('play_count', { ascending: false });
+      break;
+    case 'recent':
+    case 'all':
+    default:
+      query = query.order('created_at', { ascending: false });
+      break;
+  }
+
+  query = query.range(offset, offset + limit - 1);
 
   if (searchTags?.length) {
     query = query.overlaps('tags', searchTags);
