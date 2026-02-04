@@ -59,6 +59,15 @@ export interface GalleryScenarioData {
   isSaved: boolean;
 }
 
+// Content theme filters interface
+export interface ContentThemeFilters {
+  storyTypes?: string[];
+  genres?: string[];
+  origins?: string[];
+  triggerWarnings?: string[];
+  customTags?: string[];
+}
+
 // Fetch all published scenarios with optional tag filter
 export type SortOption = 'all' | 'recent' | 'liked' | 'saved' | 'played';
 
@@ -66,7 +75,8 @@ export async function fetchPublishedScenarios(
   searchTags?: string[],
   sortBy: SortOption = 'all',
   limit = 50,
-  offset = 0
+  offset = 0,
+  contentThemeFilters?: ContentThemeFilters
 ): Promise<PublishedScenario[]> {
   let query = supabase
     .from('published_scenarios')
@@ -142,7 +152,7 @@ export async function fetchPublishedScenarios(
   }]));
   
   // Transform the data to match our interface
-  return data.map((item: any) => ({
+  let results = data.map((item: any) => ({
     id: item.id,
     scenario_id: item.scenario_id,
     publisher_id: item.publisher_id,
@@ -159,6 +169,49 @@ export async function fetchPublishedScenarios(
     publisher: profileMap.get(item.publisher_id) || null,
     contentThemes: themesMap.get(item.scenario_id) || null
   }));
+
+  // Apply content theme filters if provided
+  if (contentThemeFilters) {
+    results = results.filter(scenario => {
+      const themes = scenario.contentThemes;
+      if (!themes) return false;
+
+      // Filter by story type
+      if (contentThemeFilters.storyTypes?.length) {
+        if (!themes.storyType || !contentThemeFilters.storyTypes.includes(themes.storyType)) {
+          return false;
+        }
+      }
+
+      // Filter by genres (any match)
+      if (contentThemeFilters.genres?.length) {
+        const hasMatchingGenre = themes.genres?.some(g => contentThemeFilters.genres!.includes(g));
+        if (!hasMatchingGenre) return false;
+      }
+
+      // Filter by origins (any match)
+      if (contentThemeFilters.origins?.length) {
+        const hasMatchingOrigin = themes.origin?.some(o => contentThemeFilters.origins!.includes(o));
+        if (!hasMatchingOrigin) return false;
+      }
+
+      // Filter by trigger warnings (any match)
+      if (contentThemeFilters.triggerWarnings?.length) {
+        const hasMatchingWarning = themes.triggerWarnings?.some(w => contentThemeFilters.triggerWarnings!.includes(w));
+        if (!hasMatchingWarning) return false;
+      }
+
+      // Filter by custom tags (any match)
+      if (contentThemeFilters.customTags?.length) {
+        const hasMatchingTag = themes.customTags?.some(t => contentThemeFilters.customTags!.includes(t));
+        if (!hasMatchingTag) return false;
+      }
+
+      return true;
+    });
+  }
+
+  return results;
 }
 
 // Check if current user has published a scenario
