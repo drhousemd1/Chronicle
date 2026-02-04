@@ -1,238 +1,123 @@
 
-# Scenario Detail Modal - Full Preview Before Playing
+
+# Update Character Roster Panel Styling
 
 ## Overview
 
-Create a new "Scenario Detail Modal" that opens when clicking anywhere on a scenario tile (except action buttons). This modal shows the full story details, author information, engagement stats, and character portraits - giving users a complete preview before deciding to play, edit, or save a story.
+Update the Character Roster sidebar in the Scenario Builder (WorldTab.tsx) to match the dark charcoal theme used on the right-hand side panels (like Cover Image, Scene Gallery, etc.).
 
-## Current Behavior Problem
+## Current State
 
-Currently, clicking on a tile card triggers `onPlay` immediately, taking users directly to the chat interface. Users cannot:
-- Read the full description (truncated with `...` on cards)
-- See all the characters in the story
-- Get detailed information before committing to play
+The Character Roster panel currently uses a light theme:
+- Section headers: `bg-slate-100` with `text-slate-500`
+- Add/Create buttons: Light dashed border with slate colors
+- Overall sidebar: `bg-white` background
 
-## Proposed Solution
+## Target State
 
-### 1. New Scenario Detail Modal Component
-
-Create `src/components/chronicle/ScenarioDetailModal.tsx` - a full-featured modal displaying:
-
-**Layout (inspired by the reference screenshot):**
-```
-┌──────────────────────────────────────────────────────────────────┐
-│  [X Close]                                                       │
-├──────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│   ┌─────────────────┐    Story Title                             │
-│   │                 │    ──────────────────                      │
-│   │   Cover Image   │    [Play Count] [Save Count] [Like Count]  │
-│   │     (Large)     │                                            │
-│   │                 │    ┌──────────────────────────────────┐    │
-│   │                 │    │ Creator: @username   [Follow*]   │    │
-│   │                 │    │ Published: Jan 15, 2026          │    │
-│   └─────────────────┘    └──────────────────────────────────┘    │
-│                                                                  │
-│        Full description text goes here. This is the complete     │
-│        description that was previously truncated on the card.    │
-│        Users can now read the entire story premise without...    │
-│                                                                  │
-│        ┌─────┐ ┌─────┐ ┌─────────┐ ┌─────────┐                   │
-│        │#tag1│ │#tag2│ │#fantasy│ │#romance │ (All Tags)        │
-│        └─────┘ └─────┘ └─────────┘ └─────────┘                   │
-│                                                                  │
-│        [❤ Like]  [🔖 Save]  [▶ Play Story]                       │
-│                                                                  │
-├──────────────────────────────────────────────────────────────────┤
-│   CHARACTERS                                                     │
-│   ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐                           │
-│   │      │ │      │ │      │ │      │                           │
-│   │Avatar│ │Avatar│ │Avatar│ │Avatar│                           │
-│   │      │ │      │ │      │ │      │                           │
-│   └──────┘ └──────┘ └──────┘ └──────┘                           │
-│    Name     Name     Name     Name                               │
-└──────────────────────────────────────────────────────────────────┘
-
-* Follow button disabled - shows "Follow" but links to future profile page
-```
-
-### 2. Data Requirements
-
-**For Gallery/Community scenarios (PublishedScenario):**
-- Already have: title, description, cover image, tags, like/save/play counts, publisher info
-- Need to fetch: characters from the scenario (using the RLS policy we just updated)
-
-**For Your Stories/Bookmarked scenarios (ScenarioMetadata):**
-- Already have: title, description, cover image, tags
-- Need to fetch: characters from the scenario
-- For bookmarked: also get publisher info from savedScenario data
-
-### 3. Files to Create/Modify
-
-| File | Action | Description |
-|------|--------|-------------|
-| `src/components/chronicle/ScenarioDetailModal.tsx` | **Create** | New modal component with full scenario preview |
-| `src/services/gallery-data.ts` | **Modify** | Add `fetchScenarioCharacters()` function to fetch character avatars |
-| `src/components/chronicle/GalleryScenarioCard.tsx` | **Modify** | Change card click to open detail modal instead of playing |
-| `src/components/chronicle/GalleryHub.tsx` | **Modify** | Add state for detail modal, pass onViewDetails handler |
-| `src/components/chronicle/ScenarioHub.tsx` | **Modify** | Add detail modal support for Your Stories cards |
-| `src/pages/Index.tsx` | **Modify** | Handle detail modal state for the main hub |
+Match the dark theme styling from the right-side panels:
+- Section headers: Steel blue `bg-[#4a5f7f]` with white text
+- Add/Create buttons: Dark theme with blue accent on hover
+- Keep the sidebar background light (white) as it contrasts nicely with the dark section headers
 
 ---
 
-## Technical Implementation Details
+## Files to Modify
 
-### ScenarioDetailModal Props
+| File | Changes |
+|------|---------|
+| `src/components/chronicle/WorldTab.tsx` | Update Main/Side Characters section headers and AddCharacterPlaceholder styling |
 
-```typescript
-interface ScenarioDetailModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  
-  // Core scenario data
-  scenarioId: string;
-  title: string;
-  description: string;
-  coverImage: string;
-  coverImagePosition: { x: number; y: number };
-  tags: string[];
-  
-  // Stats (for published scenarios)
-  likeCount?: number;
-  saveCount?: number;
-  playCount?: number;
-  
-  // Publisher info
-  publisher?: {
-    username: string | null;
-    avatar_url: string | null;
-  };
-  publishedAt?: string;
-  
-  // Interaction state
-  isLiked?: boolean;
-  isSaved?: boolean;
-  allowRemix?: boolean;
-  
-  // Actions
-  onLike?: () => void;
-  onSave?: () => void;
-  onPlay: () => void;
-  onEdit?: () => void;
-  
-  // Display mode
-  isOwned?: boolean; // Shows Edit button instead of Like/Save
-}
-```
+---
 
-### Character Fetching
+## Detailed Changes
 
-Add to `gallery-data.ts`:
-```typescript
-export async function fetchScenarioCharacters(scenarioId: string): Promise<{
-  id: string;
-  name: string;
-  avatarUrl: string;
-  avatarPosition: { x: number; y: number };
-}[]> {
-  const { data, error } = await supabase
-    .from('characters')
-    .select('id, name, avatar_url, avatar_position')
-    .eq('scenario_id', scenarioId);
-    
-  if (error) throw error;
-  
-  return (data || []).map(char => ({
-    id: char.id,
-    name: char.name,
-    avatarUrl: char.avatar_url || '',
-    avatarPosition: (char.avatar_position as { x: number; y: number }) || { x: 50, y: 50 }
-  }));
-}
-```
+### 1. Section Headers (Main Characters / Side Characters)
 
-### Card Click Behavior Changes
-
-**GalleryScenarioCard.tsx changes:**
-```typescript
-// Change the outer div onClick
-<div 
-  className="group relative cursor-pointer"
-  onClick={onViewDetails}  // <-- Changed from onPlay
->
-  // ... existing content ...
-  
-  // The Play button still calls onPlay directly
-  <button onClick={handlePlay}>Play</button>
+**Before:**
+```tsx
+<div className="bg-slate-100 px-3 py-1.5 rounded-lg mb-3">
+  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Main Characters</div>
 </div>
 ```
 
-**ScenarioHub.tsx ScenarioCard changes:**
-```typescript
-// Same pattern - card click opens details, buttons still work
-<div className="group relative cursor-pointer" onClick={() => onViewDetails(scen.id)}>
-  // Edit/Play buttons still have stopPropagation and call their handlers
+**After:**
+```tsx
+<div className="bg-[#4a5f7f] px-4 py-2 rounded-xl mb-3 shadow-sm">
+  <div className="text-[10px] font-bold text-white uppercase tracking-wider">Main Characters</div>
 </div>
 ```
 
-### Modal Design Elements
+Key styling changes:
+- Background: `bg-slate-100` becomes `bg-[#4a5f7f]` (steel blue brand color)
+- Text: `text-slate-500` becomes `text-white`
+- Padding: Slightly increased for better visual weight
+- Border radius: `rounded-lg` becomes `rounded-xl` to match other elements
+- Added subtle shadow for depth
 
-The modal will use:
-- `Dialog` from `@/components/ui/dialog` (existing component)
-- `ScrollArea` for content overflow
-- Dark gradient header similar to card design
-- Character avatar grid at bottom
-- Consistent styling with the app's design system
+### 2. AddCharacterPlaceholder Button
 
-### Visual Styling
+**Before:**
+```tsx
+<button className="group/add w-full flex items-center gap-4 p-2 rounded-2xl transition-all duration-300 hover:bg-blue-50/50 cursor-pointer">
+  <div className="w-14 h-14 shrink-0 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center text-slate-300 ...">
+    <span className="text-2xl font-light">+</span>
+  </div>
+  <div className="text-left">
+    <div className="text-xs font-bold text-slate-400 group-hover/add:text-blue-600 ...">Add / Create</div>
+    <div className="text-[9px] font-black text-slate-300 group-hover/add:text-blue-300 ...">Character Registry</div>
+  </div>
+</button>
+```
 
-- Modal max-width: `max-w-3xl` (768px)
-- Cover image: Left side, portrait orientation, similar to reference
-- Dark mode ready (uses existing Tailwind classes)
-- Rounded corners matching app aesthetic
-- Character avatars: 64x64px rounded circles in a horizontal scroll
+**After:**
+```tsx
+<button className="group/add w-full flex items-center gap-4 p-2 rounded-2xl transition-all duration-300 bg-slate-100/50 hover:bg-blue-50 border-2 border-dashed border-slate-300 hover:border-blue-400 cursor-pointer">
+  <div className="w-14 h-14 shrink-0 rounded-xl bg-white border-2 border-dashed border-slate-300 flex items-center justify-center text-slate-400 transition-all duration-300 group-hover/add:border-blue-400 group-hover/add:bg-blue-50 group-hover/add:text-blue-500">
+    <span className="text-2xl font-light">+</span>
+  </div>
+  <div className="text-left">
+    <div className="text-xs font-bold text-slate-500 group-hover/add:text-blue-600 transition-colors uppercase tracking-tight">Add / Create</div>
+    <div className="text-[9px] font-black text-slate-400 group-hover/add:text-blue-400 uppercase tracking-widest mt-0.5">Character Registry</div>
+  </div>
+</button>
+```
 
----
-
-## User Experience Flow
-
-**Gallery/Bookmarked Scenarios:**
-1. User clicks on scenario tile (not on action button)
-2. Detail modal opens, fetches character data in background
-3. User sees full description, all tags, author info
-4. User sees character avatar thumbnails at bottom
-5. User can Like, Save, or Play from the modal
-6. Clicking Play closes modal and starts the story
-
-**Your Stories (Owned):**
-1. User clicks on scenario tile (not on Edit/Play buttons)
-2. Detail modal opens (no like/save buttons, shows Edit instead)
-3. User sees their full story details
-4. User can Edit or Play from the modal
-
----
-
-## Security Considerations
-
-- Character data fetching uses existing RLS policies (updated in previous fix)
-- No new database changes required
-- Published scenario characters are already viewable via the policy update
+Key styling changes:
+- Added background to the whole button: `bg-slate-100/50`
+- Added outer dashed border to match the memory note pattern
+- Improved contrast on text colors
+- Better hover states with blue accent
 
 ---
 
-## Edge Cases
+## Visual Comparison
 
-| Scenario | Handling |
-|----------|----------|
-| No cover image | Show large initial letter (same as cards) |
-| No characters | Show "No characters yet" message |
-| No description | Show "No description provided" |
-| No tags | Hide tag section |
-| Loading characters | Show skeleton/spinner in character section |
-| Click action button | stopPropagation prevents modal open, action fires directly |
+```text
+BEFORE                           AFTER
+┌────────────────────┐          ┌────────────────────┐
+│ Character Roster   │          │ Character Roster   │
+├────────────────────┤          ├────────────────────┤
+│ ┌────────────────┐ │          │ ┌────────────────┐ │
+│ │ Main Characters│ │ (light)  │ │ MAIN CHARACTERS│ │ (steel blue)
+│ └────────────────┘ │          │ └────────────────┘ │
+│  [avatar] Name     │          │  [avatar] Name     │
+│  ┌- - - - - - - ─┐ │          │ ┌─ ─ ─ ─ ─ ─ ─ ─┐ │
+│  │ + Add/Create  │ │          │ │  + Add/Create │ │ (dashed border)
+│  └- - - - - - - ─┘ │          │ └─ ─ ─ ─ ─ ─ ─ ─┘ │
+│ ┌────────────────┐ │          │ ┌────────────────┐ │
+│ │ Side Characters│ │ (light)  │ │ SIDE CHARACTERS│ │ (steel blue)
+│ └────────────────┘ │          │ └────────────────┘ │
+└────────────────────┘          └────────────────────┘
+```
 
 ---
 
-## Future Enhancement: Follow Button
+## Implementation Summary
 
-The modal includes a "Follow" button placeholder next to the author name. This button will be disabled/greyed out with a tooltip saying "Coming soon" since the user profile system is not yet implemented. This sets up the UX pattern for future work.
+1. Update both "Main Characters" and "Side Characters" header divs to use steel blue background with white text
+2. Update AddCharacterPlaceholder to have a more prominent dashed border style matching the interactive button pattern from other sections
+3. Keep the sidebar background white for contrast
+
+This creates visual consistency between the Character Roster panel and the dark-themed sections on the right side while maintaining the app's established design language.
+
