@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { ScenarioData, TabKey, Character, ScenarioMetadata, Conversation, Message, ConversationMetadata, SideCharacter, UserBackground } from "@/types";
-import { fetchSavedScenarios, SavedScenario } from "@/services/gallery-data";
+import { fetchSavedScenarios, SavedScenario, unsaveScenario } from "@/services/gallery-data";
 import { createDefaultScenarioData, now, uid, uuid, truncateLine, resizeImage } from "@/utils";
 import { CharactersTab } from "@/components/chronicle/CharactersTab";
 import { WorldTab } from "@/components/chronicle/WorldTab";
@@ -792,26 +792,47 @@ const IndexContent = () => {
   }
 
   async function handleDeleteScenario(id: string) {
-    if (!confirm("Delete this entire scenario? This cannot be undone.")) return;
-    try {
-      await supabaseData.deleteScenario(id);
-      const updatedRegistry = await supabaseData.fetchMyScenarios(user.id);
-      setRegistry(updatedRegistry);
+    // Check if this is a bookmarked scenario (not owned by user)
+    const savedScenario = savedScenarios.find(s => s.source_scenario_id === id);
+    const isBookmarked = savedScenario && !registry.some(r => r.id === id);
+    
+    if (isBookmarked) {
+      // This is a bookmarked scenario - ask to remove from collection
+      if (!confirm("Remove this story from your bookmarks?")) return;
       
-      const updatedConvRegistry = await supabaseData.fetchConversationRegistry();
-      setConversationRegistry(updatedConvRegistry);
-      
-      if (activeId === id) {
-        setActiveId(null);
-        setActiveData(null);
-        setSelectedCharacterId(null);
-        setPlayingConversationId(null);
-        setTab("hub");
+      try {
+        await unsaveScenario(savedScenario.published_scenario_id, user!.id);
+        
+        // Refresh saved scenarios
+        const savedScens = await fetchSavedScenarios(user!.id);
+        setSavedScenarios(savedScens);
+        
+        toast({ title: "Removed from bookmarks" });
+      } catch (e: any) {
+        toast({ title: "Failed to remove bookmark", description: e.message, variant: "destructive" });
       }
+    } else {
+      // This is the user's own scenario - delete it entirely
+      if (!confirm("Delete this entire scenario? This cannot be undone.")) return;
       
-      
-    } catch (e: any) {
-      toast({ title: "Delete failed", description: e.message, variant: "destructive" });
+      try {
+        await supabaseData.deleteScenario(id);
+        const updatedRegistry = await supabaseData.fetchMyScenarios(user!.id);
+        setRegistry(updatedRegistry);
+        
+        const updatedConvRegistry = await supabaseData.fetchConversationRegistry();
+        setConversationRegistry(updatedConvRegistry);
+        
+        if (activeId === id) {
+          setActiveId(null);
+          setActiveData(null);
+          setSelectedCharacterId(null);
+          setPlayingConversationId(null);
+          setTab("hub");
+        }
+      } catch (e: any) {
+        toast({ title: "Delete failed", description: e.message, variant: "destructive" });
+      }
     }
   }
   
