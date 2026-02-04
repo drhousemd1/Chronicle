@@ -53,6 +53,7 @@ export interface ScenarioDetailModalProps {
   onPlay: () => void;
   onEdit?: () => void;
   onUnpublish?: () => void;
+  canUnpublish?: boolean; // Show "Remove from Gallery" without switching to owned-mode UI
   
   // Display mode
   isOwned?: boolean; // Shows Edit button instead of Like/Save
@@ -91,6 +92,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
   onPlay,
   onEdit,
   onUnpublish,
+  canUnpublish,
   isOwned = false,
   isPublished = false
 }) => {
@@ -162,6 +164,8 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
     contentThemes.customTags.length > 0 ||
     contentThemes.storyType
   );
+
+  const canShowUnpublish = isPublished && !!onUnpublish && (canUnpublish ?? isOwned);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -461,7 +465,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                 </div>
 
                 {/* Remove from Gallery - Bottom Right */}
-                {isOwned && isPublished && onUnpublish && (
+                {canShowUnpublish && (
                   <div className="flex justify-end mt-6">
                     <button
                       onClick={handleUnpublish}
