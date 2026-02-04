@@ -291,21 +291,6 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                 )}
               </div>
 
-              {/* Unpublish button for owned published scenarios */}
-              {isOwned && isPublished && onUnpublish && (
-                <button
-                  onClick={handleUnpublish}
-                  disabled={isUnpublishing}
-                  className="w-full mt-2 h-10 bg-white/5 hover:bg-white/10 border border-white/10 text-white/60 hover:text-white rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {isUnpublishing ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Globe className="w-4 h-4" />
-                  )}
-                  Remove from Gallery
-                </button>
-              )}
             </div>
 
             {/* Right Column - Content */}
@@ -474,6 +459,24 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                     </div>
                   )}
                 </div>
+
+                {/* Remove from Gallery - Bottom Right */}
+                {isOwned && isPublished && onUnpublish && (
+                  <div className="flex justify-end mt-6">
+                    <button
+                      onClick={handleUnpublish}
+                      disabled={isUnpublishing}
+                      className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white/60 hover:text-white rounded-xl font-semibold text-sm transition-colors flex items-center gap-2 disabled:opacity-50"
+                    >
+                      {isUnpublishing ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Globe className="w-4 h-4" />
+                      )}
+                      Remove from Gallery
+                    </button>
+                  </div>
+                )}
               </div>
             </ScrollArea>
           </div>
