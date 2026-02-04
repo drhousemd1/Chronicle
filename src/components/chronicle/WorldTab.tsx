@@ -14,8 +14,8 @@ import { cn } from '@/lib/utils';
 import { SceneTagEditorModal } from './SceneTagEditorModal';
 import { CoverImageGenerationModal } from './CoverImageGenerationModal';
 import { SceneImageGenerationModal } from './SceneImageGenerationModal';
-import { UploadSourceMenu } from './UploadSourceMenu';
 import { CoverImageActionButtons } from './CoverImageActionButtons';
+import { SceneGalleryActionButtons } from './SceneGalleryActionButtons';
 import { aiEnhanceWorldField } from '@/services/world-ai';
 import { useModelSettings } from '@/contexts/ModelSettingsContext';
 
@@ -132,7 +132,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
     }
   };
 
-  // Reusable field label with AI enhance button
+  // Reusable field label with AI enhance button (dark theme)
   const FieldLabel: React.FC<{
     label: string;
     fieldName: keyof WorldCore;
@@ -140,7 +140,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
     const isLoading = enhancingField === fieldName;
     return (
       <div className="flex items-center gap-2 mb-1">
-        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
           {label}
         </label>
         <button
@@ -151,10 +151,10 @@ export const WorldTab: React.FC<WorldTabProps> = ({
           className={cn(
             "p-1 rounded-md transition-all",
             isLoading 
-              ? "text-blue-500 animate-pulse cursor-wait" 
+              ? "text-cyan-400 animate-pulse cursor-wait" 
               : enhancingField !== null
-              ? "text-slate-200 cursor-not-allowed"
-              : "text-black hover:text-blue-500 hover:bg-blue-50"
+              ? "text-zinc-600 cursor-not-allowed"
+              : "text-zinc-400 hover:text-cyan-400 hover:bg-white/5"
           )}
         >
           <Sparkles size={14} />
@@ -465,262 +465,272 @@ export const WorldTab: React.FC<WorldTabProps> = ({
             </div>
           </section>
 
+          {/* World Core Section - Dark Theme */}
           <section>
-            <Card className="p-8 !shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)] border-transparent ring-1 ring-slate-900/5">
-              <h2 className="text-lg font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight mb-8 pb-4 border-b border-slate-100">
-                <Icons.Globe /> World Core
-              </h2>
-              <div className="grid grid-cols-1 gap-8">
-                <div>
-                  <FieldLabel label="Scenario Name" fieldName="scenarioName" />
-                  <Input value={world.core.scenarioName} onChange={(v) => updateCore({ scenarioName: v })} placeholder="e.g. Chronicles of Eldoria" />
-                </div>
-                <div>
-                  <FieldLabel label="Brief Description" fieldName="briefDescription" />
-                  <TextArea value={world.core.briefDescription || ''} onChange={(v) => updateCore({ briefDescription: v })} rows={2} placeholder="A short summary that appears on your story card (1-2 sentences)..." />
-                </div>
-                <div>
-                  <FieldLabel label="Story Premise" fieldName="storyPremise" />
-                  <TextArea value={world.core.storyPremise || ''} onChange={(v) => updateCore({ storyPremise: v })} rows={4} placeholder="What's the central situation or conflict? What's at stake? Describe the overall narrative the AI should understand..." />
-                </div>
-                <div>
-                  <FieldLabel label="Setting Overview" fieldName="settingOverview" />
-                  <TextArea value={world.core.settingOverview} onChange={(v) => updateCore({ settingOverview: v })} rows={4} placeholder="Describe the physical and cultural landscape of your world..." />
-                </div>
-                <div>
-                  <FieldLabel label="Rules of Magic & Technology" fieldName="rulesOfMagicTech" />
-                  <TextArea value={world.core.rulesOfMagicTech} onChange={(v) => updateCore({ rulesOfMagicTech: v })} rows={3} placeholder="How do supernatural or advanced systems function?" />
-                </div>
-                <div>
-                  <FieldLabel label="Primary Locations" fieldName="locations" />
-                  <TextArea value={world.core.locations} onChange={(v) => updateCore({ locations: v })} rows={3} placeholder="List key cities, landmarks, or regions..." />
-                </div>
-                <div>
-                  <FieldLabel label="Tone & Central Themes" fieldName="toneThemes" />
-                  <TextArea value={world.core.toneThemes} onChange={(v) => updateCore({ toneThemes: v })} rows={3} placeholder="What feelings and ideas should define the story?" />
-                </div>
+            <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
+              <div className="bg-[#4a5f7f] border-b border-white/20 px-6 py-4 flex items-center gap-3 shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                <h2 className="text-white text-xl font-bold tracking-tight">World Core</h2>
               </div>
-            </Card>
-          </section>
-
-          <section>
-            <Card className="p-8 !shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)] border-transparent ring-1 ring-slate-900/5">
-              <h2 className="text-lg font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight mb-8 pb-4 border-b border-slate-100">
-                <Icons.MessageSquare /> Opening Dialog
-              </h2>
-              <div className="space-y-6">
-                <HintBox hints={[
-                  "Opening dialog will display at the start of every new session. This should set the scene for where the story begins.",
-                  'Dialog / blocks of dialog should be started with the name of the character followed by ":" i.e., "James:" This triggers avatars to appear by the appropriate dialog.',
-                  'Enclose all spoken dialogue in " ".',
-                  "Enclose all physical actions or descriptions in * *.",
-                  "Enclose all internal thoughts in ( )."
-                ]} />
-                <TextArea 
-                  label="Opening Dialog" 
-                  value={openingDialog.text} 
-                  onChange={(v) => onUpdateOpening({ text: v })} 
-                  rows={8} 
-                  placeholder='James: *James looked up from where he sat on the ground* (What was that?) "Hello? Is anyone there?"'
-                />
-                
-                {/* Starting Day & Time Controls */}
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Starting Day & Time</label>
-                  <div className="flex items-center gap-6">
-                    {/* Day Counter */}
-                    <div className="flex items-center gap-2 bg-slate-50 rounded-xl px-4 py-2 border border-slate-200">
-                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mr-1">Day</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const current = openingDialog.startingDay || 1;
-                          if (current > 1) onUpdateOpening({ startingDay: current - 1 });
-                        }}
-                        className="p-1 rounded-md hover:bg-slate-200 text-slate-500 transition-colors disabled:opacity-30"
-                        disabled={(openingDialog.startingDay || 1) <= 1}
-                      >
-                        <ChevronDown size={16} />
-                      </button>
-                      <span className="text-lg font-bold text-slate-700 min-w-[2ch] text-center">
-                        {openingDialog.startingDay || 1}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const current = openingDialog.startingDay || 1;
-                          onUpdateOpening({ startingDay: current + 1 });
-                        }}
-                        className="p-1 rounded-md hover:bg-slate-200 text-slate-500 transition-colors"
-                      >
-                        <ChevronUp size={16} />
-                      </button>
+              <div className="p-6">
+                <div className="p-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
+                  <div className="grid grid-cols-1 gap-8">
+                    <div>
+                      <FieldLabel label="Scenario Name" fieldName="scenarioName" />
+                      <Input value={world.core.scenarioName} onChange={(v) => updateCore({ scenarioName: v })} placeholder="e.g. Chronicles of Eldoria" className="bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500" />
                     </div>
-
-                    {/* Time of Day Icons */}
-                    <div className="flex items-center gap-1 bg-slate-50 rounded-xl p-1 border border-slate-200">
-                      {([
-                        { key: 'sunrise' as TimeOfDay, icon: Sunrise, label: 'Sunrise' },
-                        { key: 'day' as TimeOfDay, icon: Sun, label: 'Day' },
-                        { key: 'sunset' as TimeOfDay, icon: Sunset, label: 'Sunset' },
-                        { key: 'night' as TimeOfDay, icon: Moon, label: 'Night' },
-                      ] as const).map(({ key, icon: Icon, label }) => {
-                        const isActive = (openingDialog.startingTimeOfDay || 'day') === key;
-                        return (
-                          <button
-                            key={key}
-                            type="button"
-                            onClick={() => onUpdateOpening({ startingTimeOfDay: key })}
-                            title={label}
-                            className={`p-2 rounded-lg transition-all ${
-                              isActive 
-                                ? 'bg-blue-500 text-white shadow-md' 
-                                : 'text-slate-400 hover:bg-slate-200 hover:text-slate-600'
-                            }`}
-                          >
-                            <Icon size={18} />
-                          </button>
-                        );
-                      })}
+                    <div>
+                      <FieldLabel label="Brief Description" fieldName="briefDescription" />
+                      <TextArea value={world.core.briefDescription || ''} onChange={(v) => updateCore({ briefDescription: v })} rows={2} placeholder="A short summary that appears on your story card (1-2 sentences)..." className="bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500" />
+                    </div>
+                    <div>
+                      <FieldLabel label="Story Premise" fieldName="storyPremise" />
+                      <TextArea value={world.core.storyPremise || ''} onChange={(v) => updateCore({ storyPremise: v })} rows={4} placeholder="What's the central situation or conflict? What's at stake? Describe the overall narrative the AI should understand..." className="bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500" />
+                    </div>
+                    <div>
+                      <FieldLabel label="Setting Overview" fieldName="settingOverview" />
+                      <TextArea value={world.core.settingOverview} onChange={(v) => updateCore({ settingOverview: v })} rows={4} placeholder="Describe the physical and cultural landscape of your world..." className="bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500" />
+                    </div>
+                    <div>
+                      <FieldLabel label="Rules of Magic & Technology" fieldName="rulesOfMagicTech" />
+                      <TextArea value={world.core.rulesOfMagicTech} onChange={(v) => updateCore({ rulesOfMagicTech: v })} rows={3} placeholder="How do supernatural or advanced systems function?" className="bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500" />
+                    </div>
+                    <div>
+                      <FieldLabel label="Primary Locations" fieldName="locations" />
+                      <TextArea value={world.core.locations} onChange={(v) => updateCore({ locations: v })} rows={3} placeholder="List key cities, landmarks, or regions..." className="bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500" />
+                    </div>
+                    <div>
+                      <FieldLabel label="Tone & Central Themes" fieldName="toneThemes" />
+                      <TextArea value={world.core.toneThemes} onChange={(v) => updateCore({ toneThemes: v })} rows={3} placeholder="What feelings and ideas should define the story?" className="bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500" />
                     </div>
                   </div>
                 </div>
-                
-                <HintBox hints={[
-                  "Set when your story begins. The AI will use this context for time-appropriate responses.",
-                  "This message will automatically appear at the start of every new session."
-                ]} />
               </div>
-            </Card>
+            </div>
           </section>
 
+          {/* Opening Dialog Section - Dark Theme */}
           <section>
-            <Card className="p-8 !shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)] border-transparent ring-1 ring-slate-900/5">
-              <div className="flex justify-between items-center mb-8 pb-4 border-b border-slate-100">
-                <h2 className="text-lg font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg> Scene Gallery
-                </h2>
-                <div className="flex items-center gap-3">
-                  <UploadSourceMenu
-                    onUploadFromDevice={() => fileInputRef.current?.click()}
-                    onSelectFromLibrary={(imageUrl) => {
-                      const newScene: Scene = {
-                        id: uuid(),
-                        url: imageUrl,
-                        tags: [],
-                        createdAt: now()
-                      };
-                      onUpdateScenes([newScene, ...scenes]);
-                      setEditingScene(newScene);
-                      toast.success('Scene added from library');
-                    }}
-                    disabled={isUploading || isGeneratingScene}
-                    isUploading={isUploading}
-                    label="+ Upload Scene"
-                    variant="primary"
-                  />
-                  <Button 
-                    variant="primary" 
-                    onClick={() => setShowSceneGenModal(true)} 
-                    disabled={isUploading || isGeneratingScene}
-                    className="!px-5"
-                  >
-                    {isGeneratingScene ? "Generating..." : "AI Generate"}
-                  </Button>
-                </div>
-                <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAddScene} />
+            <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
+              <div className="bg-[#4a5f7f] border-b border-white/20 px-6 py-4 flex items-center gap-3 shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                <h2 className="text-white text-xl font-bold tracking-tight">Opening Dialog</h2>
               </div>
-
-              <HintBox hints={[
-                "Add keywords to each scene. When dialog mentions these keywords, the background will automatically change.",
-                "Recommended: 1024px × 768px (landscape orientation, 4:3 aspect ratio)"
-              ]} />
-              <div className="mt-6 grid grid-cols-2 md:grid-cols-3 gap-6">
-                {scenes.map(scene => {
-                  // Migration: handle legacy single tag
-                  const sceneTags = scene.tags ?? ((scene as any).tag ? [(scene as any).tag] : []);
-                  const tagCount = sceneTags.length;
-                  
-                  return (
-                    <div key={scene.id} className="group relative aspect-video rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-slate-50">
-                      <img src={scene.url} alt={sceneTags[0] || 'Scene'} className="w-full h-full object-cover" />
-                      
-                      {/* Bottom bar with tag count and edit button */}
-                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent p-3">
-                        <div className="flex items-center justify-between">
-                          {/* Tag count indicator */}
-                          <div className="flex items-center gap-1.5">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/60 flex-shrink-0">
-                              <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
-                              <line x1="7" y1="7" x2="7.01" y2="7"/>
-                            </svg>
-                            <span className="text-white/80 text-[11px] font-medium">
-                              {tagCount === 0 ? 'No tags' : `${tagCount} tag${tagCount !== 1 ? 's' : ''}`}
-                            </span>
-                          </div>
-                          
-                          {/* Edit button - always visible */}
+              <div className="p-6">
+                <div className="p-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
+                  <div className="space-y-6">
+                    <HintBox hints={[
+                      "Opening dialog will display at the start of every new session. This should set the scene for where the story begins.",
+                      'Dialog / blocks of dialog should be started with the name of the character followed by ":" i.e., "James:" This triggers avatars to appear by the appropriate dialog.',
+                      'Enclose all spoken dialogue in " ".',
+                      "Enclose all physical actions or descriptions in * *.",
+                      "Enclose all internal thoughts in ( )."
+                    ]} />
+                    <div>
+                      <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1 block">Opening Dialog</label>
+                      <TextArea 
+                        value={openingDialog.text} 
+                        onChange={(v) => onUpdateOpening({ text: v })} 
+                        rows={8} 
+                        placeholder='James: *James looked up from where he sat on the ground* (What was that?) "Hello? Is anyone there?"'
+                        className="bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500"
+                      />
+                    </div>
+                    
+                    {/* Starting Day & Time Controls */}
+                    <div className="space-y-3">
+                      <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Starting Day & Time</label>
+                      <div className="flex items-center gap-6">
+                        {/* Day Counter */}
+                        <div className="flex items-center gap-2 bg-zinc-800 rounded-xl px-4 py-2 border border-zinc-700">
+                          <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mr-1">Day</span>
                           <button
-                            onClick={() => setEditingScene({ ...scene, tags: sceneTags })}
-                            className="p-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all"
-                            title="Edit tags"
+                            type="button"
+                            onClick={() => {
+                              const current = openingDialog.startingDay || 1;
+                              if (current > 1) onUpdateOpening({ startingDay: current - 1 });
+                            }}
+                            className="p-1 rounded-md hover:bg-zinc-700 text-zinc-400 transition-colors disabled:opacity-30"
+                            disabled={(openingDialog.startingDay || 1) <= 1}
                           >
-                            <Pencil size={14} />
+                            <ChevronDown size={16} />
                           </button>
+                          <span className="text-lg font-bold text-white min-w-[2ch] text-center">
+                            {openingDialog.startingDay || 1}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const current = openingDialog.startingDay || 1;
+                              onUpdateOpening({ startingDay: current + 1 });
+                            }}
+                            className="p-1 rounded-md hover:bg-zinc-700 text-zinc-400 transition-colors"
+                          >
+                            <ChevronUp size={16} />
+                          </button>
+                        </div>
+
+                        {/* Time of Day Icons */}
+                        <div className="flex items-center gap-1 bg-zinc-800 rounded-xl p-1 border border-zinc-700">
+                          {([
+                            { key: 'sunrise' as TimeOfDay, icon: Sunrise, label: 'Sunrise' },
+                            { key: 'day' as TimeOfDay, icon: Sun, label: 'Day' },
+                            { key: 'sunset' as TimeOfDay, icon: Sunset, label: 'Sunset' },
+                            { key: 'night' as TimeOfDay, icon: Moon, label: 'Night' },
+                          ] as const).map(({ key, icon: Icon, label }) => {
+                            const isActive = (openingDialog.startingTimeOfDay || 'day') === key;
+                            return (
+                              <button
+                                key={key}
+                                type="button"
+                                onClick={() => onUpdateOpening({ startingTimeOfDay: key })}
+                                title={label}
+                                className={`p-2 rounded-lg transition-all ${
+                                  isActive 
+                                    ? 'bg-blue-500 text-white shadow-md' 
+                                    : 'text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200'
+                                }`}
+                              >
+                                <Icon size={18} />
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
-                      
-                      {/* Delete button */}
-                      <button 
-                        onClick={() => handleDeleteScene(scene.id)}
-                        className="absolute top-2 right-2 p-1.5 bg-rose-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-600"
-                      >
-                        <Icons.Trash />
-                      </button>
-                      
-                      {/* Starting Scene Checkbox */}
-                      <button
-                        onClick={() => {
-                          const updatedScenes = scenes.map(s => ({
-                            ...s,
-                            isStartingScene: s.id === scene.id ? !s.isStartingScene : false
-                          }));
-                          onUpdateScenes(updatedScenes);
-                        }}
-                        className={`absolute top-2 left-2 p-1.5 rounded-lg transition-all ${
-                          scene.isStartingScene 
-                            ? 'bg-amber-500 text-white opacity-100 shadow-lg shadow-amber-500/30' 
-                            : 'bg-black/50 text-white/70 opacity-0 group-hover:opacity-100 hover:bg-black/70'
-                        }`}
-                        title={scene.isStartingScene ? "Starting scene" : "Set as starting scene"}
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill={scene.isStartingScene ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                        </svg>
-                      </button>
-                      {scene.isStartingScene && (
-                        <div className="absolute top-2 left-10 bg-amber-500 text-white text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md shadow-lg">
-                          Start
-                        </div>
-                      )}
                     </div>
-                  );
-                })}
-                {scenes.length === 0 && (
-                  <div className="col-span-full py-12 text-center text-slate-400 border-2 border-dashed border-slate-100 rounded-2xl">
-                     <p className="text-xs font-bold uppercase tracking-widest">No scenes uploaded</p>
-                     <p className="text-sm mt-1">Upload images to enable dynamic backgrounds in chat.</p>
+                    
+                    <HintBox hints={[
+                      "Set when your story begins. The AI will use this context for time-appropriate responses.",
+                      "This message will automatically appear at the start of every new session."
+                    ]} />
                   </div>
-                )}
+                </div>
               </div>
-            </Card>
+            </div>
           </section>
 
-          {/* Art Style Preference Section */}
-          <section className="space-y-6">
-            <Card className="p-8 !shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)] border-transparent ring-1 ring-slate-900/5">
-              <h2 className="text-lg font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight mb-8 pb-4 border-b border-slate-100">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          {/* Scene Gallery Section - Dark Theme */}
+          <section>
+            <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
+              <div className="bg-[#4a5f7f] border-b border-white/20 px-6 py-4 flex items-center justify-between shadow-lg">
+                <div className="flex items-center gap-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-white"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                  <h2 className="text-white text-xl font-bold tracking-tight">Scene Gallery</h2>
+                </div>
+                <SceneGalleryActionButtons
+                  onUploadFromDevice={() => fileInputRef.current?.click()}
+                  onSelectFromLibrary={(imageUrl) => {
+                    const newScene: Scene = {
+                      id: uuid(),
+                      url: imageUrl,
+                      tags: [],
+                      createdAt: now()
+                    };
+                    onUpdateScenes([newScene, ...scenes]);
+                    setEditingScene(newScene);
+                    toast.success('Scene added from library');
+                  }}
+                  onGenerateClick={() => setShowSceneGenModal(true)}
+                  disabled={isUploading || isGeneratingScene}
+                  isUploading={isUploading}
+                  isGenerating={isGeneratingScene}
+                />
+                <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAddScene} />
+              </div>
+              <div className="p-6">
+                <div className="p-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
+                  <HintBox hints={[
+                    "Add keywords to each scene. When dialog mentions these keywords, the background will automatically change.",
+                    "Recommended: 1024px × 768px (landscape orientation, 4:3 aspect ratio)"
+                  ]} />
+                  <div className="mt-6 grid grid-cols-2 md:grid-cols-3 gap-6">
+                    {scenes.map(scene => {
+                      // Migration: handle legacy single tag
+                      const sceneTags = scene.tags ?? ((scene as any).tag ? [(scene as any).tag] : []);
+                      const tagCount = sceneTags.length;
+                      
+                      return (
+                        <div key={scene.id} className="group relative aspect-video rounded-xl overflow-hidden border border-zinc-700 shadow-sm bg-zinc-800">
+                          <img src={scene.url} alt={sceneTags[0] || 'Scene'} className="w-full h-full object-cover" />
+                          
+                          {/* Bottom bar with tag count and edit button */}
+                          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent p-3">
+                            <div className="flex items-center justify-between">
+                              {/* Tag count indicator */}
+                              <div className="flex items-center gap-1.5">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/60 flex-shrink-0">
+                                  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                                  <line x1="7" y1="7" x2="7.01" y2="7"/>
+                                </svg>
+                                <span className="text-white/80 text-[11px] font-medium">
+                                  {tagCount === 0 ? 'No tags' : `${tagCount} tag${tagCount !== 1 ? 's' : ''}`}
+                                </span>
+                              </div>
+                              
+                              {/* Edit button - always visible */}
+                              <button
+                                onClick={() => setEditingScene({ ...scene, tags: sceneTags })}
+                                className="p-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all"
+                                title="Edit tags"
+                              >
+                                <Pencil size={14} />
+                              </button>
+                            </div>
+                          </div>
+                          
+                          {/* Delete button */}
+                          <button 
+                            onClick={() => handleDeleteScene(scene.id)}
+                            className="absolute top-2 right-2 p-1.5 bg-rose-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-600"
+                          >
+                            <Icons.Trash />
+                          </button>
+                          
+                          {/* Starting Scene Checkbox */}
+                          <button
+                            onClick={() => {
+                              const updatedScenes = scenes.map(s => ({
+                                ...s,
+                                isStartingScene: s.id === scene.id ? !s.isStartingScene : false
+                              }));
+                              onUpdateScenes(updatedScenes);
+                            }}
+                            className={`absolute top-2 left-2 p-1.5 rounded-lg transition-all ${
+                              scene.isStartingScene 
+                                ? 'bg-amber-500 text-white opacity-100 shadow-lg shadow-amber-500/30' 
+                                : 'bg-black/50 text-white/70 opacity-0 group-hover:opacity-100 hover:bg-black/70'
+                            }`}
+                            title={scene.isStartingScene ? "Starting scene" : "Set as starting scene"}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill={scene.isStartingScene ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                            </svg>
+                          </button>
+                          {scene.isStartingScene && (
+                            <div className="absolute top-2 left-10 bg-amber-500 text-white text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md shadow-lg">
+                              Start
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {scenes.length === 0 && (
+                      <div className="col-span-full py-12 text-center text-zinc-500 border-2 border-dashed border-zinc-700 rounded-2xl">
+                         <p className="text-xs font-bold uppercase tracking-widest">No scenes uploaded</p>
+                         <p className="text-sm mt-1 text-zinc-600">Upload images to enable dynamic backgrounds in chat.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Art Style Preference Section - Dark Theme */}
+          <section>
+            <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
+              <div className="bg-[#4a5f7f] border-b border-white/20 px-6 py-4 flex items-center gap-3 shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-white">
                   <circle cx="13.5" cy="6.5" r="2.5"/>
                   <circle cx="6" cy="12" r="2.5"/>
                   <circle cx="18" cy="12" r="2.5"/>
@@ -728,114 +738,128 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                   <circle cx="17" cy="18.5" r="2.5"/>
                   <path d="M12 2v1"/>
                 </svg>
-                Art Style Preference
-              </h2>
-              
-              <HintBox hints={[
-                "Select an art style you would like the AI to use when generating character avatars or images during your playthrough."
-              ]} />
-              
-              <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-                {AVATAR_STYLES.map((style) => (
-                  <button
-                    key={style.id}
-                    type="button"
-                    onClick={() => onUpdateArtStyle(style.id)}
-                    className={cn(
-                      "relative rounded-xl p-2 transition-all duration-200 cursor-pointer outline-none",
-                      "bg-white hover:bg-slate-50",
-                      selectedArtStyle === style.id
-                        ? "ring-2 ring-blue-400 shadow-md"
-                        : "ring-1 ring-slate-200 hover:ring-slate-300",
-                      "focus:ring-2 focus:ring-blue-100 focus:ring-offset-0"
-                    )}
-                  >
-                    <div className="aspect-square rounded-lg overflow-hidden bg-slate-100">
-                      <img
-                        src={style.thumbnailUrl}
-                        alt={style.displayName}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <p className="text-xs font-semibold text-slate-700 text-center mt-2 truncate">
-                      {style.displayName}
-                    </p>
-                    {selectedArtStyle === style.id && (
-                      <div className="absolute top-3 right-3 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                      </div>
-                    )}
-                  </button>
-                ))}
+                <h2 className="text-white text-xl font-bold tracking-tight">Art Style Preference</h2>
               </div>
-            </Card>
-          </section>
-
-          <section className="space-y-6">
-            <Card className="p-8 !shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)] border-transparent ring-1 ring-slate-900/5">
-              <h2 className="text-lg font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight mb-8 pb-4 border-b border-slate-100">
-                <Icons.Database /> World Codex
-              </h2>
-              
-              <div className="space-y-8">
-                <TextArea 
-                  label="Narrative Style" 
-                  value={world.core.narrativeStyle} 
-                  onChange={(v) => updateCore({ narrativeStyle: v })} 
-                  rows={4} 
-                  placeholder="Detailed descriptions of environments and character actions..."
-                />
-                
-                <div className="space-y-4">
-                  <label className="block text-xs font-bold uppercase text-slate-500">Dialog Formatting</label>
-                  
-                  {/* Critical rules - always present, read-only */}
+              <div className="p-6">
+                <div className="p-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
                   <HintBox hints={[
-                    'Enclose all spoken dialogue in " ".',
-                    'Enclose all physical actions or descriptions in * *.',
-                    'Enclose all internal thoughts in ( ).'
+                    "Select an art style you would like the AI to use when generating character avatars or images during your playthrough."
                   ]} />
                   
-                  {/* User's additional formatting preferences - editable */}
-                  <TextArea 
-                    label="Additional Formatting Rules (Optional)"
-                    value={world.core.dialogFormatting} 
-                    onChange={(v) => updateCore({ dialogFormatting: v })} 
-                    rows={3} 
-                    placeholder="Add any custom formatting preferences here..."
-                  />
-                </div>
-
-                {world.entries.length > 0 && (
-                  <div className="space-y-6 pt-6 border-t border-slate-100">
-                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Additional Entries</h3>
-                    <div className="grid grid-cols-1 gap-6">
-                      {world.entries.map(entry => (
-                        <div key={entry.id} className="p-6 space-y-4 group rounded-2xl bg-slate-50 border border-slate-200">
-                          <div className="flex justify-between items-center">
-                            <div className="flex-1">
-                              <Input 
-                                value={entry.title} 
-                                onChange={(v) => handleUpdateEntry(entry.id, { title: v })} 
-                                placeholder="Entry Title..." 
-                                className="!text-sm font-bold !bg-transparent !border-none !px-0 focus:!ring-0"
-                              />
-                            </div>
-                            <Button variant="ghost" className="text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 !p-0" onClick={() => {
-                              const next = world.entries.filter(e => e.id !== entry.id);
-                              onUpdateWorld({ entries: next });
-                            }}><Icons.Trash /></Button>
-                          </div>
-                          <TextArea value={entry.body} onChange={(v) => handleUpdateEntry(entry.id, { body: v })} placeholder="Detail the specifics..." rows={4} className="!bg-transparent" />
+                  <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                    {AVATAR_STYLES.map((style) => (
+                      <button
+                        key={style.id}
+                        type="button"
+                        onClick={() => onUpdateArtStyle(style.id)}
+                        className={cn(
+                          "relative rounded-xl p-2 transition-all duration-200 cursor-pointer outline-none",
+                          "bg-zinc-800 hover:bg-zinc-700",
+                          selectedArtStyle === style.id
+                            ? "ring-2 ring-blue-400 shadow-md shadow-blue-500/20"
+                            : "ring-1 ring-zinc-600 hover:ring-zinc-500",
+                          "focus:ring-2 focus:ring-blue-400 focus:ring-offset-0"
+                        )}
+                      >
+                        <div className="aspect-square rounded-lg overflow-hidden bg-zinc-900">
+                          <img
+                            src={style.thumbnailUrl}
+                            alt={style.displayName}
+                            className="w-full h-full object-cover"
+                          />
                         </div>
-                      ))}
-                    </div>
+                        <p className="text-xs font-semibold text-zinc-200 text-center mt-2 truncate">
+                          {style.displayName}
+                        </p>
+                        {selectedArtStyle === style.id && (
+                          <div className="absolute top-3 right-3 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                        )}
+                      </button>
+                    ))}
                   </div>
-                )}
+                </div>
               </div>
-            </Card>
+            </div>
+          </section>
+
+          {/* World Codex Section - Dark Theme */}
+          <section>
+            <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
+              <div className="bg-[#4a5f7f] border-b border-white/20 px-6 py-4 flex items-center gap-3 shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>
+                <h2 className="text-white text-xl font-bold tracking-tight">World Codex</h2>
+              </div>
+              <div className="p-6">
+                <div className="p-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
+                  <div className="space-y-8">
+                    <div>
+                      <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1 block">Narrative Style</label>
+                      <TextArea 
+                        value={world.core.narrativeStyle} 
+                        onChange={(v) => updateCore({ narrativeStyle: v })} 
+                        rows={4} 
+                        placeholder="Detailed descriptions of environments and character actions..."
+                        className="bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500"
+                      />
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <label className="block text-[10px] font-black uppercase text-zinc-400 tracking-widest">Dialog Formatting</label>
+                      
+                      {/* Critical rules - always present, read-only */}
+                      <HintBox hints={[
+                        'Enclose all spoken dialogue in " ".',
+                        'Enclose all physical actions or descriptions in * *.',
+                        'Enclose all internal thoughts in ( ).'
+                      ]} />
+                      
+                      {/* User's additional formatting preferences - editable */}
+                      <div>
+                        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1 block">Additional Formatting Rules (Optional)</label>
+                        <TextArea 
+                          value={world.core.dialogFormatting} 
+                          onChange={(v) => updateCore({ dialogFormatting: v })} 
+                          rows={3} 
+                          placeholder="Add any custom formatting preferences here..."
+                          className="bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500"
+                        />
+                      </div>
+                    </div>
+
+                    {world.entries.length > 0 && (
+                      <div className="space-y-6 pt-6 border-t border-zinc-700/50">
+                        <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Additional Entries</h3>
+                        <div className="grid grid-cols-1 gap-6">
+                          {world.entries.map(entry => (
+                            <div key={entry.id} className="p-6 space-y-4 group rounded-2xl bg-zinc-800/50 border border-zinc-700">
+                              <div className="flex justify-between items-center">
+                                <div className="flex-1">
+                                  <Input 
+                                    value={entry.title} 
+                                    onChange={(v) => handleUpdateEntry(entry.id, { title: v })} 
+                                    placeholder="Entry Title..." 
+                                    className="!text-sm font-bold !bg-transparent !border-none !px-0 focus:!ring-0 text-white placeholder:text-zinc-500"
+                                  />
+                                </div>
+                                <Button variant="ghost" className="text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 !p-0 hover:text-rose-300 hover:bg-rose-500/10" onClick={() => {
+                                  const next = world.entries.filter(e => e.id !== entry.id);
+                                  onUpdateWorld({ entries: next });
+                                }}><Icons.Trash /></Button>
+                              </div>
+                              <TextArea value={entry.body} onChange={(v) => handleUpdateEntry(entry.id, { body: v })} placeholder="Detail the specifics..." rows={4} className="!bg-transparent border-zinc-700 text-white placeholder:text-zinc-500" />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
           </section>
         </div>
       </div>
