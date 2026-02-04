@@ -314,14 +314,14 @@ export const WorldTab: React.FC<WorldTabProps> = ({
     <button 
       type="button"
       onClick={onNavigateToCharacters}
-      className="group/add w-full flex items-center gap-4 p-2 rounded-2xl transition-all duration-300 hover:bg-blue-50/50 cursor-pointer"
+      className="group/add w-full flex items-center gap-4 p-2 rounded-2xl transition-all duration-300 bg-slate-100/50 hover:bg-blue-50 border-2 border-dashed border-slate-300 hover:border-blue-400 cursor-pointer"
     >
-      <div className="w-14 h-14 shrink-0 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center text-slate-300 transition-all duration-300 group-hover/add:border-blue-400 group-hover/add:bg-blue-50 group-hover/add:text-blue-500">
+      <div className="w-14 h-14 shrink-0 rounded-xl bg-white border-2 border-dashed border-slate-300 flex items-center justify-center text-slate-400 transition-all duration-300 group-hover/add:border-blue-400 group-hover/add:bg-blue-50 group-hover/add:text-blue-500">
          <span className="text-2xl font-light">+</span>
       </div>
       <div className="text-left">
-        <div className="text-xs font-bold text-slate-400 group-hover/add:text-blue-600 transition-colors uppercase tracking-tight">Add / Create</div>
-        <div className="text-[9px] font-black text-slate-300 group-hover/add:text-blue-300 uppercase tracking-widest mt-0.5">Character Registry</div>
+        <div className="text-xs font-bold text-slate-500 group-hover/add:text-blue-600 transition-colors uppercase tracking-tight">Add / Create</div>
+        <div className="text-[9px] font-black text-slate-400 group-hover/add:text-blue-400 uppercase tracking-widest mt-0.5">Character Registry</div>
       </div>
     </button>
   );
@@ -335,8 +335,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
         
         <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-none pb-20">
           <section className="space-y-2">
-            <div className="bg-slate-100 px-3 py-1.5 rounded-lg mb-3">
-               <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Main Characters</div>
+            <div className="bg-[#4a5f7f] px-4 py-2 rounded-xl mb-3 shadow-sm">
+               <div className="text-[10px] font-bold text-white uppercase tracking-wider">Main Characters</div>
             </div>
             <div className="space-y-2">
               {mainCharacters.map(char => <CharacterButton key={char.id} char={char} onSelect={onSelectCharacter} />)}
@@ -345,8 +345,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
           </section>
 
           <section className="space-y-2">
-            <div className="bg-slate-100 px-3 py-1.5 rounded-lg mb-3">
-               <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Side Characters</div>
+            <div className="bg-[#4a5f7f] px-4 py-2 rounded-xl mb-3 shadow-sm">
+               <div className="text-[10px] font-bold text-white uppercase tracking-wider">Side Characters</div>
             </div>
             <div className="space-y-2">
               {sideCharacters.map(char => <CharacterButton key={char.id} char={char} onSelect={onSelectCharacter} />)}
