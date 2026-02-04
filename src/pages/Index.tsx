@@ -1,7 +1,8 @@
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { ScenarioData, TabKey, Character, ScenarioMetadata, Conversation, Message, ConversationMetadata, SideCharacter, UserBackground } from "@/types";
+import { fetchSavedScenarios, SavedScenario } from "@/services/gallery-data";
 import { createDefaultScenarioData, now, uid, uuid, truncateLine, resizeImage } from "@/utils";
 import { CharactersTab } from "@/components/chronicle/CharactersTab";
 import { WorldTab } from "@/components/chronicle/WorldTab";
@@ -19,6 +20,7 @@ import { CharacterPicker } from "@/components/chronicle/CharacterPicker";
 import { BackgroundPickerModal } from "@/components/chronicle/BackgroundPickerModal";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PanelLeftClose, PanelLeft, Settings, Image as ImageIcon } from "lucide-react";
 import {
@@ -135,6 +137,11 @@ const IndexContent = () => {
   const [selectedImageLibraryBackgroundId, setSelectedImageLibraryBackgroundId] = useState<string | null>(null);
   const [isImageLibraryBackgroundModalOpen, setIsImageLibraryBackgroundModalOpen] = useState(false);
 
+  // Hub filter state for "Your Stories" tab
+  type HubFilter = "my" | "bookmarked" | "all";
+  const [hubFilter, setHubFilter] = useState<HubFilter>("all");
+  const [savedScenarios, setSavedScenarios] = useState<SavedScenario[]>([]);
+
   useEffect(() => {
     localStorage.setItem('chronicle_sidebar_collapsed', String(sidebarCollapsed));
   }, [sidebarCollapsed]);
@@ -153,17 +160,19 @@ const IndexContent = () => {
     async function loadData() {
       setIsLoading(true);
       try {
-        const [scenarios, characters, conversations, backgrounds, imageLibraryBgId] = await Promise.all([
+        const [scenarios, characters, conversations, backgrounds, imageLibraryBgId, savedScens] = await Promise.all([
           supabaseData.fetchScenarios(),
           supabaseData.fetchCharacterLibrary(),
           supabaseData.fetchConversationRegistry(),
           supabaseData.fetchUserBackgrounds(user.id),
-          supabaseData.getImageLibraryBackground(user.id)
+          supabaseData.getImageLibraryBackground(user.id),
+          fetchSavedScenarios(user.id)
         ]);
         setRegistry(scenarios);
         setLibrary(characters);
         setConversationRegistry(conversations);
         setHubBackgrounds(backgrounds);
+        setSavedScenarios(savedScens);
         
         // Set the selected background if one is marked as selected (Hub)
         const selectedBg = backgrounds.find(bg => bg.isSelected);
@@ -189,6 +198,38 @@ const IndexContent = () => {
     
     loadData();
   }, [isAuthenticated, user, toast]);
+
+  // Compute filtered registry based on hubFilter
+  const filteredRegistry = useMemo(() => {
+    const myScenarioIds = new Set(registry.map(s => s.id));
+    
+    // Convert saved scenarios to ScenarioMetadata format
+    const bookmarkedScenarios: ScenarioMetadata[] = savedScenarios
+      .filter(saved => 
+        saved.published_scenario?.scenario && 
+        !myScenarioIds.has(saved.source_scenario_id) // Exclude own scenarios
+      )
+      .map(saved => ({
+        id: saved.source_scenario_id,
+        title: saved.published_scenario!.scenario!.title,
+        description: saved.published_scenario!.scenario!.description || '',
+        coverImage: saved.published_scenario!.scenario!.cover_image_url || '',
+        coverImagePosition: (saved.published_scenario!.scenario!.cover_image_position as { x: number; y: number }) || { x: 50, y: 50 },
+        tags: saved.published_scenario!.tags || [],
+        createdAt: new Date(saved.created_at).getTime(),
+        updatedAt: new Date(saved.created_at).getTime(),
+        isBookmarked: true,
+      }));
+    
+    switch (hubFilter) {
+      case "my":
+        return registry;
+      case "bookmarked":
+        return bookmarkedScenarios;
+      case "all":
+        return [...registry, ...bookmarkedScenarios];
+    }
+  }, [registry, savedScenarios, hubFilter]);
 
   const isValidUuid = useCallback(
     (s: string) =>
@@ -1106,9 +1147,46 @@ const IndexContent = () => {
                 </h1>
               )}
               {tab === "hub" && (
-                <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
-                  Your Stories
-                </h1>
+                <div className="flex items-center gap-6">
+                  <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
+                    Your Stories
+                  </h1>
+                  <div className="flex items-center bg-slate-200 rounded-full p-1 gap-0.5">
+                    <button
+                      onClick={() => setHubFilter("my")}
+                      className={cn(
+                        "px-4 py-1.5 rounded-full text-xs font-bold transition-all",
+                        hubFilter === "my" 
+                          ? "bg-white text-slate-900 shadow-sm" 
+                          : "text-slate-500 hover:text-slate-700"
+                      )}
+                    >
+                      My Stories
+                    </button>
+                    <button
+                      onClick={() => setHubFilter("bookmarked")}
+                      className={cn(
+                        "px-4 py-1.5 rounded-full text-xs font-bold transition-all",
+                        hubFilter === "bookmarked" 
+                          ? "bg-white text-slate-900 shadow-sm" 
+                          : "text-slate-500 hover:text-slate-700"
+                      )}
+                    >
+                      Bookmarked
+                    </button>
+                    <button
+                      onClick={() => setHubFilter("all")}
+                      className={cn(
+                        "px-4 py-1.5 rounded-full text-xs font-bold transition-all",
+                        hubFilter === "all" 
+                          ? "bg-white text-slate-900 shadow-sm" 
+                          : "text-slate-500 hover:text-slate-700"
+                      )}
+                    >
+                      All
+                    </button>
+                  </div>
+                </div>
               )}
               {tab === "image_library" && (
                 <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
@@ -1200,7 +1278,7 @@ const IndexContent = () => {
                 <div className="absolute inset-0 bg-black/10 pointer-events-none" />
               )}
               <ScenarioHub
-                registry={registry}
+                registry={filteredRegistry}
                 onPlay={handlePlayScenario}
                 onEdit={handleEditScenario}
                 onDelete={handleDeleteScenario}

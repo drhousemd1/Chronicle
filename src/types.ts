@@ -283,6 +283,7 @@ export type ScenarioMetadata = {
   tags: string[];
   createdAt: number;
   updatedAt: number;
+  isBookmarked?: boolean;  // For distinguishing saved scenarios from other users
 };
 
 export type AppState = {
