@@ -31,7 +31,7 @@ export function SceneGalleryActionButtons({
 
   return (
     <>
-      <div className="flex gap-2">
+      <div className="flex flex-col gap-2">
         {/* Upload Button - Dark outlined dropdown trigger */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
