@@ -1,139 +1,238 @@
 
+# Scenario Detail Modal - Full Preview Before Playing
 
-# Fix: Deleting Bookmarked Scenarios from Your Stories Tab
+## Overview
 
-## Problem Identified
+Create a new "Scenario Detail Modal" that opens when clicking anywhere on a scenario tile (except action buttons). This modal shows the full story details, author information, engagement stats, and character portraits - giving users a complete preview before deciding to play, edit, or save a story.
 
-When a user tries to delete a bookmarked story from the "Bookmarked" section:
+## Current Behavior Problem
 
-1. The delete confirmation popup appears and user clicks OK
-2. `handleDeleteScenario(id)` is called with the **original scenario's ID** (not the user's own)
-3. This calls `supabaseData.deleteScenario(id)` which tries to delete from the `scenarios` table
-4. RLS correctly blocks deletion since the user doesn't own the original scenario
-5. The operation fails silently - the story remains in the list
+Currently, clicking on a tile card triggers `onPlay` immediately, taking users directly to the chat interface. Users cannot:
+- Read the full description (truncated with `...` on cards)
+- See all the characters in the story
+- Get detailed information before committing to play
 
-**Root Cause**: The delete handler doesn't distinguish between owned scenarios and bookmarked (saved) scenarios. For bookmarked scenarios, it should remove the entry from `saved_scenarios` table, not try to delete the original scenario.
+## Proposed Solution
+
+### 1. New Scenario Detail Modal Component
+
+Create `src/components/chronicle/ScenarioDetailModal.tsx` - a full-featured modal displaying:
+
+**Layout (inspired by the reference screenshot):**
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  [X Close]                                                       │
+├──────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│   ┌─────────────────┐    Story Title                             │
+│   │                 │    ──────────────────                      │
+│   │   Cover Image   │    [Play Count] [Save Count] [Like Count]  │
+│   │     (Large)     │                                            │
+│   │                 │    ┌──────────────────────────────────┐    │
+│   │                 │    │ Creator: @username   [Follow*]   │    │
+│   │                 │    │ Published: Jan 15, 2026          │    │
+│   └─────────────────┘    └──────────────────────────────────┘    │
+│                                                                  │
+│        Full description text goes here. This is the complete     │
+│        description that was previously truncated on the card.    │
+│        Users can now read the entire story premise without...    │
+│                                                                  │
+│        ┌─────┐ ┌─────┐ ┌─────────┐ ┌─────────┐                   │
+│        │#tag1│ │#tag2│ │#fantasy│ │#romance │ (All Tags)        │
+│        └─────┘ └─────┘ └─────────┘ └─────────┘                   │
+│                                                                  │
+│        [❤ Like]  [🔖 Save]  [▶ Play Story]                       │
+│                                                                  │
+├──────────────────────────────────────────────────────────────────┤
+│   CHARACTERS                                                     │
+│   ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐                           │
+│   │      │ │      │ │      │ │      │                           │
+│   │Avatar│ │Avatar│ │Avatar│ │Avatar│                           │
+│   │      │ │      │ │      │ │      │                           │
+│   └──────┘ └──────┘ └──────┘ └──────┘                           │
+│    Name     Name     Name     Name                               │
+└──────────────────────────────────────────────────────────────────┘
+
+* Follow button disabled - shows "Follow" but links to future profile page
+```
+
+### 2. Data Requirements
+
+**For Gallery/Community scenarios (PublishedScenario):**
+- Already have: title, description, cover image, tags, like/save/play counts, publisher info
+- Need to fetch: characters from the scenario (using the RLS policy we just updated)
+
+**For Your Stories/Bookmarked scenarios (ScenarioMetadata):**
+- Already have: title, description, cover image, tags
+- Need to fetch: characters from the scenario
+- For bookmarked: also get publisher info from savedScenario data
+
+### 3. Files to Create/Modify
+
+| File | Action | Description |
+|------|--------|-------------|
+| `src/components/chronicle/ScenarioDetailModal.tsx` | **Create** | New modal component with full scenario preview |
+| `src/services/gallery-data.ts` | **Modify** | Add `fetchScenarioCharacters()` function to fetch character avatars |
+| `src/components/chronicle/GalleryScenarioCard.tsx` | **Modify** | Change card click to open detail modal instead of playing |
+| `src/components/chronicle/GalleryHub.tsx` | **Modify** | Add state for detail modal, pass onViewDetails handler |
+| `src/components/chronicle/ScenarioHub.tsx` | **Modify** | Add detail modal support for Your Stories cards |
+| `src/pages/Index.tsx` | **Modify** | Handle detail modal state for the main hub |
 
 ---
 
-## Solution
+## Technical Implementation Details
 
-Modify `handleDeleteScenario` to check if the scenario being deleted is a bookmarked scenario (owned by someone else). If so, remove it from `saved_scenarios` instead of trying to delete the original scenario.
-
----
-
-## Files to Modify
-
-| File | Changes |
-|------|---------|
-| `src/pages/Index.tsx` | Update `handleDeleteScenario()` to detect bookmarked scenarios and call `unsaveScenario()` instead |
-
----
-
-## Technical Implementation
-
-### Update `handleDeleteScenario()` in Index.tsx
+### ScenarioDetailModal Props
 
 ```typescript
-async function handleDeleteScenario(id: string) {
-  // Check if this is a bookmarked scenario (not owned by user)
-  const savedScenario = savedScenarios.find(s => s.source_scenario_id === id);
-  const isBookmarked = savedScenario && !registry.some(r => r.id === id);
+interface ScenarioDetailModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   
-  if (isBookmarked) {
-    // This is a bookmarked scenario - ask to remove from collection
-    if (!confirm("Remove this story from your bookmarks?")) return;
-    
-    try {
-      await unsaveScenario(savedScenario.published_scenario_id, user!.id);
-      
-      // Refresh saved scenarios
-      const savedScens = await fetchSavedScenarios(user!.id);
-      setSavedScenarios(savedScens);
-      
-      toast({ title: "Removed from bookmarks" });
-    } catch (e: any) {
-      toast({ title: "Failed to remove bookmark", description: e.message, variant: "destructive" });
-    }
-  } else {
-    // This is the user's own scenario - delete it entirely
-    if (!confirm("Delete this entire scenario? This cannot be undone.")) return;
-    
-    try {
-      await supabaseData.deleteScenario(id);
-      const updatedRegistry = await supabaseData.fetchMyScenarios(user!.id);
-      setRegistry(updatedRegistry);
-      
-      const updatedConvRegistry = await supabaseData.fetchConversationRegistry();
-      setConversationRegistry(updatedConvRegistry);
-      
-      if (activeId === id) {
-        setActiveId(null);
-        setActiveData(null);
-        setSelectedCharacterId(null);
-        setPlayingConversationId(null);
-        setTab("hub");
-      }
-    } catch (e: any) {
-      toast({ title: "Delete failed", description: e.message, variant: "destructive" });
-    }
-  }
+  // Core scenario data
+  scenarioId: string;
+  title: string;
+  description: string;
+  coverImage: string;
+  coverImagePosition: { x: number; y: number };
+  tags: string[];
+  
+  // Stats (for published scenarios)
+  likeCount?: number;
+  saveCount?: number;
+  playCount?: number;
+  
+  // Publisher info
+  publisher?: {
+    username: string | null;
+    avatar_url: string | null;
+  };
+  publishedAt?: string;
+  
+  // Interaction state
+  isLiked?: boolean;
+  isSaved?: boolean;
+  allowRemix?: boolean;
+  
+  // Actions
+  onLike?: () => void;
+  onSave?: () => void;
+  onPlay: () => void;
+  onEdit?: () => void;
+  
+  // Display mode
+  isOwned?: boolean; // Shows Edit button instead of Like/Save
 }
 ```
 
----
+### Character Fetching
 
-## Data Flow After Fix
-
-```
-User clicks Delete on bookmarked story
-            |
-handleDeleteScenario(id)
-            |
-Check: Is this in savedScenarios but NOT in registry?
-            |
-     +------+------+
-     |             |
-   Yes (Bookmarked)   No (Own Scenario)
-     |             |
-"Remove from bookmarks?"  "Delete this scenario?"
-     |             |
-unsaveScenario()   deleteScenario()
-     |             |
-Refresh savedScenarios  Refresh registry
-     |             |
-Card disappears    Card disappears
-```
-
----
-
-## Import Addition
-
-Add `unsaveScenario` to the imports from `gallery-data.ts`:
-
+Add to `gallery-data.ts`:
 ```typescript
-import { fetchSavedScenarios, SavedScenario, unsaveScenario } from "@/services/gallery-data";
+export async function fetchScenarioCharacters(scenarioId: string): Promise<{
+  id: string;
+  name: string;
+  avatarUrl: string;
+  avatarPosition: { x: number; y: number };
+}[]> {
+  const { data, error } = await supabase
+    .from('characters')
+    .select('id, name, avatar_url, avatar_position')
+    .eq('scenario_id', scenarioId);
+    
+  if (error) throw error;
+  
+  return (data || []).map(char => ({
+    id: char.id,
+    name: char.name,
+    avatarUrl: char.avatar_url || '',
+    avatarPosition: (char.avatar_position as { x: number; y: number }) || { x: 50, y: 50 }
+  }));
+}
 ```
 
+### Card Click Behavior Changes
+
+**GalleryScenarioCard.tsx changes:**
+```typescript
+// Change the outer div onClick
+<div 
+  className="group relative cursor-pointer"
+  onClick={onViewDetails}  // <-- Changed from onPlay
+>
+  // ... existing content ...
+  
+  // The Play button still calls onPlay directly
+  <button onClick={handlePlay}>Play</button>
+</div>
+```
+
+**ScenarioHub.tsx ScenarioCard changes:**
+```typescript
+// Same pattern - card click opens details, buttons still work
+<div className="group relative cursor-pointer" onClick={() => onViewDetails(scen.id)}>
+  // Edit/Play buttons still have stopPropagation and call their handlers
+</div>
+```
+
+### Modal Design Elements
+
+The modal will use:
+- `Dialog` from `@/components/ui/dialog` (existing component)
+- `ScrollArea` for content overflow
+- Dark gradient header similar to card design
+- Character avatar grid at bottom
+- Consistent styling with the app's design system
+
+### Visual Styling
+
+- Modal max-width: `max-w-3xl` (768px)
+- Cover image: Left side, portrait orientation, similar to reference
+- Dark mode ready (uses existing Tailwind classes)
+- Rounded corners matching app aesthetic
+- Character avatars: 64x64px rounded circles in a horizontal scroll
+
 ---
 
-## Edge Cases Handled
+## User Experience Flow
 
-| Case | Behavior |
-|------|----------|
-| Delete own scenario | Full deletion from `scenarios` table |
-| Delete bookmarked scenario | Removes from `saved_scenarios` table only |
-| Scenario exists in both (remixed) | Treated as own scenario since it's in registry |
-| Cancel confirmation | No action taken |
+**Gallery/Bookmarked Scenarios:**
+1. User clicks on scenario tile (not on action button)
+2. Detail modal opens, fetches character data in background
+3. User sees full description, all tags, author info
+4. User sees character avatar thumbnails at bottom
+5. User can Like, Save, or Play from the modal
+6. Clicking Play closes modal and starts the story
+
+**Your Stories (Owned):**
+1. User clicks on scenario tile (not on Edit/Play buttons)
+2. Detail modal opens (no like/save buttons, shows Edit instead)
+3. User sees their full story details
+4. User can Edit or Play from the modal
 
 ---
 
-## Result
+## Security Considerations
 
-After this fix:
-- Deleting a bookmarked story removes it from the user's saved collection
-- The original creator's content is never affected
-- Different confirmation message for bookmarks vs owned scenarios
-- Success toast confirms the action
-- The card immediately disappears from the bookmarked list
+- Character data fetching uses existing RLS policies (updated in previous fix)
+- No new database changes required
+- Published scenario characters are already viewable via the policy update
 
+---
+
+## Edge Cases
+
+| Scenario | Handling |
+|----------|----------|
+| No cover image | Show large initial letter (same as cards) |
+| No characters | Show "No characters yet" message |
+| No description | Show "No description provided" |
+| No tags | Hide tag section |
+| Loading characters | Show skeleton/spinner in character section |
+| Click action button | stopPropagation prevents modal open, action fires directly |
+
+---
+
+## Future Enhancement: Follow Button
+
+The modal includes a "Follow" button placeholder next to the author name. This button will be disabled/greyed out with a tooltip saying "Coming soon" since the user profile system is not yet implemented. This sets up the UX pattern for future work.
