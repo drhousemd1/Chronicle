@@ -1,267 +1,302 @@
 
 
-# ScenarioDetailModal Updates: Remove Old Tags, Relocate Buttons, Add Scrolling
+# Community Gallery Redesign - Layout & Category Browser
 
 ## Overview
 
-This plan addresses 4 issues with the ScenarioDetailModal:
-1. Remove the old `tags` display (legacy system) from the modal
-2. Make the modal scrollable for long content
-3. Move Like/Save/Play buttons under the cover image on the left
-4. Add "Remove from Gallery" button for owners of published stories
+This plan updates the Community Gallery page layout based on the HTML mockup while **preserving the existing story cards (`GalleryScenarioCard`) and detail modal (`ScenarioDetailModal`) completely untouched**.
+
+**Files that will NOT be modified:**
+- `src/components/chronicle/GalleryScenarioCard.tsx` ❌
+- `src/components/chronicle/ScenarioDetailModal.tsx` ❌
 
 ---
 
-## Analysis
+## Changes Summary
 
-### Issue 1: Old Tags Still Displaying
-
-Looking at the code:
-- **ScenarioDetailModal.tsx lines 349-361**: The modal displays `tags` prop which comes from the old `published_scenarios.tags` column
-- **GalleryHub.tsx line 299**: Passes `tags={selectedPublished.tags}` to the modal
-- **ScenarioHub.tsx line 203**: Passes `tags={selectedScenario.tags || []}` to the modal
-
-The new tag system uses `content_themes` table with `customTags`, `genres`, `characterTypes`, etc. - which is already being displayed correctly in the Content Themes block.
-
-**Solution**: Remove the old tags display from the modal. The `tags` prop can remain for backwards compatibility but won't be rendered. Note: We could also consider dropping the `tags` column from `published_scenarios` table but that's a separate migration.
-
-### Issue 2: Modal Scrolling
-
-The modal already has a `ScrollArea` component wrapping the content (line 184), but we should ensure it properly handles overflow with many characters or long descriptions.
-
-### Issue 3: Button Placement
-
-Currently the Like/Save/Play buttons are at the bottom of the info section (lines 363-439). Per the user's screenshot and request, they should be moved under the cover image on the left side.
-
-### Issue 4: Remove from Gallery Button
-
-The modal already has `onUnpublish` prop and displays the "Remove from Gallery" button for owned scenarios (lines 383-396), but it's inside the isOwned block with Edit/Play buttons. The user wants this button under the action buttons (Like/Save/Play) after they're moved to the left.
+| Area | What Changes |
+|------|-------------|
+| Gallery Page Layout | Add glassmorphic header with search + Browse Categories button |
+| Category Sidebar | New collapsible sidebar with category filtering |
+| Content Themes Constants | Add new trigger warnings |
+| Gallery Data Service | Support filtering by content themes (genres, triggers, etc.) |
 
 ---
 
-## Changes Required
+## Part 1: Add New Trigger Warnings
 
-### File: `src/components/chronicle/ScenarioDetailModal.tsx`
+**File:** `src/constants/content-themes.ts`
 
-**1. Remove Old Tags Display (lines 349-361)**
+Add the following new trigger warnings to the `TRIGGER_WARNINGS` array:
 
-Delete this entire block:
-```tsx
-{/* Tags */}
-{tags.length > 0 && (
-  <div className="flex flex-wrap gap-2 mb-6">
-    {tags.map((tag) => (
-      <span
-        key={tag}
-        className="px-3 py-1 bg-white/10 rounded-full text-xs text-white/80 font-medium"
-      >
-        #{tag}
-      </span>
-    ))}
-  </div>
-)}
-```
-
-**2. Restructure Layout for Button Placement**
-
-Current layout:
-```text
-+------------------+---------------------+
-| Cover Image      | Badges              |
-|                  | Title               |
-|                  | Stats               |
-|                  | Publisher Info      |
-|                  | Description         |
-|                  | Content Themes      |
-|                  | [Old Tags] <- REMOVE|
-|                  | [Like][Save][Play]  |
-+------------------+---------------------+
-| Characters                             |
-+----------------------------------------+
-```
-
-New layout:
-```text
-+------------------+---------------------+
-| Cover Image      | Badges              |
-|                  | Title               |
-| [Like][Save]     | Stats               |
-| [Play Story]     | Publisher Info      |
-| [Remove from     | Description         |
-|  Gallery]*       | Content Themes      |
-+------------------+---------------------+
-| Characters                             |
-+----------------------------------------+
-* Only shows for owners of published scenarios
-```
-
-**3. Move Action Buttons Under Cover Image**
-
-- Move the action buttons div (lines 363-439) from the info section (right side) to below the cover image (left side)
-- Keep the conditional logic for isOwned vs. gallery mode
-- Add the "Remove from Gallery" button after Like/Save/Play for gallery mode scenarios that the user owns
-
-**4. For Gallery Mode (non-owned scenarios)**
-
-After the cover image, add:
-```tsx
-{/* Action Buttons - Under Cover */}
-<div className="flex flex-wrap gap-2 mt-4">
-  {onLike && (
-    <button onClick={handleLike} className="...">
-      <Heart /> Like
-    </button>
-  )}
-  {onSave && (
-    <button onClick={handleSave} className="...">
-      <Bookmark /> Save  
-    </button>
-  )}
-  <button onClick={handlePlay} className="...">
-    <Play /> Play Story
-  </button>
-</div>
-```
-
-**5. For Owner Mode (isOwned scenarios)**
-
-After the cover image, add:
-```tsx
-{/* Action Buttons - Under Cover */}
-<div className="flex flex-wrap gap-2 mt-4">
-  {onEdit && (
-    <button onClick={handleEdit} className="...">
-      <Edit /> Edit Story
-    </button>
-  )}
-  <button onClick={handlePlay} className="...">
-    <Play /> Play Story
-  </button>
-  {isPublished && onUnpublish && (
-    <button onClick={handleUnpublish} className="...">
-      <Globe /> Remove from Gallery
-    </button>
-  )}
-</div>
+```typescript
+export const TRIGGER_WARNINGS = [
+  // Existing warnings...
+  'Cheating',
+  'Cuckold',
+  'CNC',
+  'NTR',
+  'Chastity',
+  'Hypno',
+  'BDSM',
+  'Voyeurism',
+  'Bondage',
+  'Impregnation',
+  'Sissification',
+  'Breeding',
+  'Femdom',
+  'Gore',
+  'Bloodplay',
+  'Forced Orgasm',
+  'Humiliation',
+  'Drug Use',
+  // NEW WARNINGS:
+  'Coercion / Manipulation',
+  'Blackmail',
+  'Somnophilia',
+  'Captivity',
+  'Physical Abuse',
+  'Domestic Violence',
+  'Murder',
+  'Stalking',
+  'Isolation Control',
+  'Medical Play',
+  'Age Gap',
+  'Incest',
+  'Pseudo-Incest',
+  'Degradation',
+  'Breath Play',
+  'Knife Play',
+  'Free Use',
+  'Self Harm',
+  'Eating Disorders',
+  'Mental Illness',
+  'Dark Themes'
+] as const;
 ```
 
 ---
 
-## Updated Modal Layout Code Structure
+## Part 2: Create Category Sidebar Component
 
-```tsx
-<div className="flex flex-col md:flex-row gap-6 md:gap-8">
-  {/* Left Column: Cover Image + Action Buttons */}
-  <div className="w-full md:w-64 flex-shrink-0">
-    {/* Cover Image */}
-    <div className="aspect-[2/3] w-full overflow-hidden rounded-2xl ...">
-      ...
-    </div>
-    
-    {/* Action Buttons - Moved here */}
-    <div className="flex flex-wrap gap-2 mt-4">
-      {isOwned ? (
-        <>
-          {/* Edit + Play + Remove from Gallery */}
-        </>
-      ) : (
-        <>
-          {/* Like + Save + Play */}
-        </>
-      )}
-    </div>
-  </div>
+**New File:** `src/components/chronicle/GalleryCategorySidebar.tsx`
 
-  {/* Right Column: Info Section */}
-  <div className="flex-1 min-w-0">
-    {/* Badges, Title, Stats, Publisher, Description, Content Themes */}
-    {/* NO action buttons here anymore */}
-    {/* NO old tags here anymore */}
-  </div>
-</div>
+A new collapsible sidebar component that allows filtering by:
+- **Story Type** (SFW/NSFW)
+- **Genre** (Fiction, Fantasy, Romance, Dark Romance, etc.)
+- **Origin** (Original Story, Game, Movie, Novel)
+- **Trigger Warnings** (all warnings from content-themes.ts)
+- **Popular Custom Tags** (dynamically fetched from most-used tags)
+
+### Key Features:
+- Collapsible sections with chevron arrows
+- Yellow accent border at top (per mockup: `border-top: 3px solid rgb(250, 204, 21)`)
+- Dark background (`#18181b`)
+- "Filter by" toggle button to show/hide checkboxes
+- Clicking category items toggles selection
+- Selected items have blue highlight
+
+### Props Interface:
+```typescript
+interface GalleryCategorySidebarProps {
+  isOpen: boolean;
+  selectedFilters: {
+    storyTypes: string[];
+    genres: string[];
+    origins: string[];
+    triggerWarnings: string[];
+    customTags: string[];
+  };
+  onFilterChange: (filters: typeof selectedFilters) => void;
+}
 ```
+
+### Icon Mapping for Categories:
+| Category | Icon |
+|----------|------|
+| Story Type - SFW | `Shield` (green) |
+| Story Type - NSFW | `Flame` (orange) |
+| Genres - Fantasy | `Wand` |
+| Genres - Romance | `Heart` |
+| Genres - Dark Romance | `Moon` |
+| Genres - Horror | `Skull` |
+| Genres - Sci-Fi | `Rocket` |
+| Genres - Action | `Zap` |
+| Genres - Historical | `BookOpen` |
+| Origin - Original | `Pen` |
+| Origin - Game | `Gamepad2` |
+| Origin - Movie | `Film` |
+| Origin - Novel | `BookOpen` |
+| Trigger Warnings | `AlertTriangle` (all use this) |
+| Custom Tags | `Tag` |
 
 ---
 
-## Button Styling Updates
+## Part 3: Update GalleryHub Layout
 
-For the buttons under the cover image, use a stacked vertical layout on mobile and horizontal on larger screens:
+**File:** `src/components/chronicle/GalleryHub.tsx`
 
-```tsx
-<div className="flex flex-col gap-2 mt-4">
-  {/* Like button (if not owned) */}
-  <button className="w-full px-4 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 ...">
-    <Heart className="w-4 h-4" /> Like
-  </button>
+### Changes:
+
+1. **Replace the search header** with the new glassmorphic navigation bar:
+   - Full-width search input on the left
+   - "Browse Categories" button on the right (slate blue: `#4a5f7f`)
+   - Glassmorphic background with backdrop blur
+
+2. **Add sidebar state management:**
+   ```typescript
+   const [sidebarOpen, setSidebarOpen] = useState(false);
+   const [categoryFilters, setCategoryFilters] = useState({
+     storyTypes: [],
+     genres: [],
+     origins: [],
+     triggerWarnings: [],
+     customTags: []
+   });
+   ```
+
+3. **Update layout structure:**
+   ```tsx
+   <div className="min-h-full flex flex-col bg-[#121214]">
+     {/* Glassmorphic Header */}
+     <header className="glass-nav sticky top-0 z-50 px-6 py-4 flex items-center gap-4">
+       {/* Search input */}
+       {/* Browse Categories button */}
+     </header>
+     
+     <div className="flex-1 flex overflow-hidden">
+       {/* Category Sidebar - conditionally rendered */}
+       {sidebarOpen && <GalleryCategorySidebar ... />}
+       
+       {/* Main content area */}
+       <main className="flex-1 overflow-y-auto p-8">
+         {/* Sort filter tabs (All, Recent, Liked, Saved, Played) */}
+         {/* Blue gradient divider */}
+         {/* Story cards grid - UNCHANGED */}
+       </main>
+     </div>
+   </div>
+   ```
+
+4. **Update search placeholder:** "Type here to Search for Characters"
+
+5. **Move sort filters** from the search header into the main content area (centered, with blue underline on active tab)
+
+---
+
+## Part 4: Update Gallery Data Service
+
+**File:** `src/services/gallery-data.ts`
+
+Add support for filtering by content themes:
+
+```typescript
+export interface ContentThemeFilters {
+  storyTypes?: string[];
+  genres?: string[];
+  origins?: string[];
+  triggerWarnings?: string[];
+  customTags?: string[];
+}
+
+export async function fetchPublishedScenarios(
+  searchTags?: string[],
+  sortBy: SortOption = 'all',
+  limit = 50,
+  offset = 0,
+  contentThemeFilters?: ContentThemeFilters  // NEW PARAMETER
+): Promise<PublishedScenario[]> {
+  // ... existing query logic ...
   
-  {/* Save button (if not owned) */}
-  <button className="w-full px-4 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 ...">
-    <Bookmark className="w-4 h-4" /> Save
-  </button>
-  
-  {/* Play Story button */}
-  <button className="w-full px-4 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 ...">
-    <Play className="w-4 h-4 fill-current" /> Play Story
-  </button>
-  
-  {/* Remove from Gallery (for owner of published story) */}
-  {isOwned && isPublished && onUnpublish && (
-    <button className="w-full px-4 py-2.5 bg-[#2a2a2f] border border-white/10 text-white/70 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:text-white ...">
-      <Globe className="w-4 h-4" /> Remove from Gallery
-    </button>
-  )}
-</div>
+  // If content theme filters provided, filter scenarios after fetch
+  // based on their content_themes data
+}
 ```
 
 ---
 
-## Files to Modify
+## Visual Layout Reference
 
-| File | Changes |
-|------|---------|
-| `src/components/chronicle/ScenarioDetailModal.tsx` | Remove old tags block, restructure layout to move action buttons under cover image, add Remove from Gallery button for owners |
-
----
-
-## Visual Summary
-
-### Before (Current)
 ```text
-+-------------------------+-----------------------------+
-| [Cover Image 2:3]       | NSFW  REMIXABLE             |
-|                         | Test Story                  |
-|                         | 👁 14  ❤️ 0  🔖 0  ▶️ 1      |
-|                         | Anonymous - Feb 3, 2026     |
-|                         | Description...              |
-|                         | Content Themes Box          |
-|                         | #4th wing  <- OLD TAGS      |
-|                         | [Like][Save][Play Story]    |
-+-------------------------+-----------------------------+
-| Characters: (avatar) (avatar)                        |
-+------------------------------------------------------+
-```
-
-### After (Updated)
-```text
-+-------------------------+-----------------------------+
-| [Cover Image 2:3]       | NSFW  REMIXABLE             |
-|                         | Test Story                  |
-| [Like] [Save]           | 👁 14  ❤️ 0  🔖 0  ▶️ 1      |
-| [Play Story]            | Anonymous - Feb 3, 2026     |
-| [Remove from Gallery]*  | Description...              |
-|                         | Content Themes Box          |
-+-------------------------+-----------------------------+
-| Characters: (avatar) (avatar)                        |
-+------------------------------------------------------+
-* Only shows if user owns the published story
++------------------------------------------------------------------+
+| [🔍 Search input...................................] [Browse Cat] |  ← Glassmorphic header
++------------------------------------------------------------------+
+|        |                                                          |
+| SIDEBAR|   All Stories | Recent | Liked | Saved | Played          |
+| (280px)|   ─────────────────────────────────────────────          |
+|        |                                                          |
+| Story  |   +-------+  +-------+  +-------+  +-------+             |
+| Type   |   | Card  |  | Card  |  | Card  |  | Card  |             |
+| ├ SFW  |   +-------+  +-------+  +-------+  +-------+             |
+| └ NSFW |                                                          |
+|        |   +-------+  +-------+  +-------+  +-------+             |
+| Genre  |   | Card  |  | Card  |  | Card  |  | Card  |             |
+| ├ Fant.|   +-------+  +-------+  +-------+  +-------+             |
+| ├ Rom. |                                                          |
+| └ ...  |                                                          |
+|        |                                                          |
+| Origin |                                                          |
+| ├ Orig.|                                                          |
+| └ Game |                                                          |
+|        |                                                          |
+| Trigger|                                                          |
+| ├ BDSM |                                                          |
+| └ ...  |                                                          |
++--------+----------------------------------------------------------+
 ```
 
 ---
 
-## Notes
+## Files to Create/Modify
 
-- The modal already has `ScrollArea` wrapping the content for scrollability
-- The `tags` prop will remain in the interface for backwards compatibility but won't be rendered
-- Button widths will be `w-full` to fit nicely under the 256px cover image
-- The "Remove from Gallery" button uses the same premium shadow surface styling as other UI elements
+| File | Action | Description |
+|------|--------|-------------|
+| `src/constants/content-themes.ts` | Modify | Add 21 new trigger warnings |
+| `src/components/chronicle/GalleryCategorySidebar.tsx` | Create | New sidebar component |
+| `src/components/chronicle/GalleryHub.tsx` | Modify | Update layout, add sidebar toggle |
+| `src/services/gallery-data.ts` | Modify | Add content theme filtering |
+
+---
+
+## Styling Details
+
+### Glassmorphic Header
+```css
+background-color: rgba(18, 18, 20, 0.8);
+backdrop-filter: blur(12px);
+border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+```
+
+### Browse Categories Button
+```css
+background-color: #4a5f7f; /* Slate blue */
+color: white;
+border-radius: 0.5rem;
+padding: 0.5rem 1rem;
+```
+
+### Sidebar Accent
+```css
+border-top: 3px solid rgb(250, 204, 21); /* Yellow accent */
+background-color: #18181b;
+```
+
+### Blue Gradient Divider
+```css
+height: 1px;
+background-image: linear-gradient(90deg, transparent 0%, rgb(59, 130, 246) 50%, transparent 100%);
+opacity: 0.5;
+```
+
+---
+
+## What Stays Unchanged
+
+The following components remain **completely untouched**:
+- `GalleryScenarioCard.tsx` - Story tile cards (as shown in user's screenshot)
+- `ScenarioDetailModal.tsx` - Popup modal for story details (as shown in user's screenshot)
+- All card data, styling, badges, stats display
+- Modal layout, content themes display, character avatars
+
+This plan only modifies the **page-level layout** and **filtering infrastructure**.
 
