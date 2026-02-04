@@ -86,10 +86,10 @@ export const GalleryScenarioCard: React.FC<GalleryScenarioCardProps> = ({
         {/* SFW/NSFW Badge */}
         {published.contentThemes?.storyType && (
           <div className={cn(
-            "absolute top-4 right-4 px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg",
+            "absolute top-4 right-4 px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f]",
             published.contentThemes.storyType === 'NSFW'
-              ? "bg-red-500/20 text-red-400"
-              : "bg-blue-500/20 text-blue-400"
+              ? "text-red-400"
+              : "text-blue-400"
           )}>
             {published.contentThemes.storyType}
           </div>
