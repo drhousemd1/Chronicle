@@ -100,7 +100,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
         {customOptions.map(option => (
           <div
             key={option}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30"
           >
             <span>{option}</span>
             <button
@@ -143,7 +143,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
             <button
               type="button"
               onClick={() => setShowInput(true)}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-800/50 text-zinc-500 border border-dashed border-zinc-600 hover:border-zinc-500 hover:text-zinc-400 transition-all flex items-center gap-1"
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-transparent text-blue-400 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 transition-all flex items-center gap-1"
             >
               <Plus className="w-3 h-3" />
               Add custom
@@ -233,7 +233,7 @@ const CustomTagsSection: React.FC<{
           type="button"
           onClick={addTag}
           disabled={!input.trim()}
-          className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex h-10 items-center justify-center gap-2 px-4 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none hover:bg-white/5 active:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           Add
         </button>
@@ -244,7 +244,7 @@ const CustomTagsSection: React.FC<{
           {tags.map(tag => (
             <div
               key={tag}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-violet-500/20 text-violet-300 border border-violet-500/30"
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30"
             >
               <span>{tag}</span>
               <button
