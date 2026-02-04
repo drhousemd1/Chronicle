@@ -1,27 +1,24 @@
 
 
-# Fix: Enable Editing of Bookmarked Scenarios via Automatic Cloning
+# Fix: Deleting Bookmarked Scenarios from Your Stories Tab
 
 ## Problem Identified
 
-When a user clicks "Edit" on a bookmarked (remixable) scenario, they can view the data but cannot save changes. The error occurs because:
+When a user tries to delete a bookmarked story from the "Bookmarked" section:
 
-1. The `handleEditScenario` function loads the **original scenario** with its original IDs
-2. When the user tries to save (e.g., changing a character name), `saveScenario()` attempts to UPSERT with the original owner's IDs
-3. RLS correctly blocks this because `user_id` doesn't match the current user
+1. The delete confirmation popup appears and user clicks OK
+2. `handleDeleteScenario(id)` is called with the **original scenario's ID** (not the user's own)
+3. This calls `supabaseData.deleteScenario(id)` which tries to delete from the `scenarios` table
+4. RLS correctly blocks deletion since the user doesn't own the original scenario
+5. The operation fails silently - the story remains in the list
 
-The user expects bookmarking to work like "downloading" - they should be able to freely edit their saved copy without affecting the original.
+**Root Cause**: The delete handler doesn't distinguish between owned scenarios and bookmarked (saved) scenarios. For bookmarked scenarios, it should remove the entry from `saved_scenarios` table, not try to delete the original scenario.
 
 ---
 
 ## Solution
 
-Implement automatic cloning when editing a scenario that the user doesn't own. The system will:
-
-1. **Detect ownership** when `handleEditScenario` is called
-2. **If not owned**: Clone the scenario with new IDs (scenario, characters, codex entries, scenes) and set the current user as owner
-3. **Track the remix** in the `remixed_scenarios` table for attribution
-4. **All edits go to the clone** - the original remains untouched
+Modify `handleDeleteScenario` to check if the scenario being deleted is a bookmarked scenario (owned by someone else). If so, remove it from `saved_scenarios` instead of trying to delete the original scenario.
 
 ---
 
@@ -29,157 +26,57 @@ Implement automatic cloning when editing a scenario that the user doesn't own. T
 
 | File | Changes |
 |------|---------|
-| `src/services/supabase-data.ts` | Add `cloneScenarioForRemix()` function that creates a full copy with new IDs |
-| `src/pages/Index.tsx` | Update `handleEditScenario()` to detect ownership and trigger cloning when needed |
+| `src/pages/Index.tsx` | Update `handleDeleteScenario()` to detect bookmarked scenarios and call `unsaveScenario()` instead |
 
 ---
 
 ## Technical Implementation
 
-### 1. Add `cloneScenarioForRemix()` to supabase-data.ts
+### Update `handleDeleteScenario()` in Index.tsx
 
 ```typescript
-export async function cloneScenarioForRemix(
-  originalScenarioId: string,
-  newScenarioId: string,
-  userId: string,
-  originalData: ScenarioData,
-  originalCoverImage: string,
-  originalCoverPosition: { x: number; y: number }
-): Promise<ScenarioData> {
-  // Generate new IDs for all entities
-  const characterIdMap = new Map<string, string>();
-  const codexIdMap = new Map<string, string>();
-  const sceneIdMap = new Map<string, string>();
+async function handleDeleteScenario(id: string) {
+  // Check if this is a bookmarked scenario (not owned by user)
+  const savedScenario = savedScenarios.find(s => s.source_scenario_id === id);
+  const isBookmarked = savedScenario && !registry.some(r => r.id === id);
   
-  // Clone characters with new IDs
-  const clonedCharacters = originalData.characters.map(char => {
-    const newId = uuid();
-    characterIdMap.set(char.id, newId);
-    return { ...char, id: newId, createdAt: Date.now(), updatedAt: Date.now() };
-  });
-  
-  // Clone codex entries with new IDs
-  const clonedCodexEntries = originalData.world.entries.map(entry => {
-    const newId = uuid();
-    codexIdMap.set(entry.id, newId);
-    return { ...entry, id: newId, createdAt: Date.now(), updatedAt: Date.now() };
-  });
-  
-  // Clone scenes with new IDs
-  const clonedScenes = originalData.scenes.map(scene => {
-    const newId = uuid();
-    sceneIdMap.set(scene.id, newId);
-    return { ...scene, id: newId, createdAt: Date.now() };
-  });
-  
-  // Build cloned data (without conversations - start fresh)
-  const clonedData: ScenarioData = {
-    ...originalData,
-    characters: clonedCharacters,
-    world: {
-      ...originalData.world,
-      entries: clonedCodexEntries
-    },
-    scenes: clonedScenes,
-    conversations: [], // Start fresh for remixes
-    sideCharacters: []
-  };
-  
-  // Save the cloned scenario
-  const metadata = {
-    title: originalData.world.core.scenarioName || 'Remixed Scenario',
-    description: originalData.world.core.briefDescription || '',
-    coverImage: originalCoverImage,
-    coverImagePosition: originalCoverPosition,
-    tags: ['Remix']
-  };
-  
-  await saveScenario(newScenarioId, clonedData, metadata, userId);
-  
-  return clonedData;
-}
-
-// Helper to check scenario ownership
-export async function getScenarioOwner(scenarioId: string): Promise<string | null> {
-  const { data, error } = await supabase
-    .from('scenarios')
-    .select('user_id')
-    .eq('id', scenarioId)
-    .maybeSingle();
+  if (isBookmarked) {
+    // This is a bookmarked scenario - ask to remove from collection
+    if (!confirm("Remove this story from your bookmarks?")) return;
     
-  if (error || !data) return null;
-  return data.user_id;
-}
-```
-
-### 2. Update `handleEditScenario()` in Index.tsx
-
-```typescript
-async function handleEditScenario(id: string) {
-  try {
-    const result = await supabaseData.fetchScenarioById(id);
-    if (!result) {
-      toast({ title: "Scenario not found", variant: "destructive" });
-      return;
+    try {
+      await unsaveScenario(savedScenario.published_scenario_id, user!.id);
+      
+      // Refresh saved scenarios
+      const savedScens = await fetchSavedScenarios(user!.id);
+      setSavedScenarios(savedScens);
+      
+      toast({ title: "Removed from bookmarks" });
+    } catch (e: any) {
+      toast({ title: "Failed to remove bookmark", description: e.message, variant: "destructive" });
     }
-    const { data, coverImage, coverImagePosition } = result;
+  } else {
+    // This is the user's own scenario - delete it entirely
+    if (!confirm("Delete this entire scenario? This cannot be undone.")) return;
     
-    // Check if this is someone else's scenario
-    const ownerId = await supabaseData.getScenarioOwner(id);
-    const isOwnScenario = ownerId === user?.id;
-    
-    if (!isOwnScenario && user) {
-      // This is a bookmarked/remixed scenario - create a clone
-      const newScenarioId = uuid();
-      
-      toast({ 
-        title: "Creating your copy...", 
-        description: "You'll be editing your own version of this story." 
-      });
-      
-      const clonedData = await supabaseData.cloneScenarioForRemix(
-        id,
-        newScenarioId,
-        user.id,
-        data,
-        coverImage,
-        coverImagePosition
-      );
-      
-      // Track the remix for attribution
-      const savedScenario = savedScenarios.find(s => s.source_scenario_id === id);
-      if (savedScenario?.published_scenario_id) {
-        await trackRemix(savedScenario.published_scenario_id, newScenarioId, user.id);
-      }
-      
-      // Refresh registry to show the new clone
-      const updatedRegistry = await supabaseData.fetchMyScenarios(user.id);
+    try {
+      await supabaseData.deleteScenario(id);
+      const updatedRegistry = await supabaseData.fetchMyScenarios(user!.id);
       setRegistry(updatedRegistry);
       
-      // Switch to editing the CLONE
-      setActiveId(newScenarioId);
-      setActiveData(clonedData);
-      setActiveCoverImage(coverImage);
-      setActiveCoverPosition(coverImagePosition);
+      const updatedConvRegistry = await supabaseData.fetchConversationRegistry();
+      setConversationRegistry(updatedConvRegistry);
       
-      toast({ 
-        title: "Your copy is ready!", 
-        description: "Edit freely - your changes won't affect the original." 
-      });
-    } else {
-      // Own scenario - edit directly
-      setActiveId(id);
-      setActiveData(data);
-      setActiveCoverImage(coverImage);
-      setActiveCoverPosition(coverImagePosition);
+      if (activeId === id) {
+        setActiveId(null);
+        setActiveData(null);
+        setSelectedCharacterId(null);
+        setPlayingConversationId(null);
+        setTab("hub");
+      }
+    } catch (e: any) {
+      toast({ title: "Delete failed", description: e.message, variant: "destructive" });
     }
-    
-    setTab("world");
-    setSelectedCharacterId(null);
-    setPlayingConversationId(null);
-  } catch (e: any) {
-    toast({ title: "Failed to edit scenario", description: e.message, variant: "destructive" });
   }
 }
 ```
@@ -189,36 +86,34 @@ async function handleEditScenario(id: string) {
 ## Data Flow After Fix
 
 ```
-User clicks "Edit" on bookmarked story
-            ↓
-handleEditScenario(originalId)
-            ↓
-Fetch original scenario data (RLS allows SELECT)
-            ↓
-Check ownership: ownerId !== user.id
-            ↓
-Generate new UUIDs for everything
-            ↓
-cloneScenarioForRemix() → Creates copy in DB
-            ↓
-Track remix for attribution
-            ↓
-activeId = newScenarioId (the clone)
-            ↓
-User edits the CLONE freely
-            ↓
-All saves work (user owns the clone)
+User clicks Delete on bookmarked story
+            |
+handleDeleteScenario(id)
+            |
+Check: Is this in savedScenarios but NOT in registry?
+            |
+     +------+------+
+     |             |
+   Yes (Bookmarked)   No (Own Scenario)
+     |             |
+"Remove from bookmarks?"  "Delete this scenario?"
+     |             |
+unsaveScenario()   deleteScenario()
+     |             |
+Refresh savedScenarios  Refresh registry
+     |             |
+Card disappears    Card disappears
 ```
 
 ---
 
-## Security & UX Considerations
+## Import Addition
 
-1. **Original content is NEVER modified** - The clone has completely new IDs
-2. **Attribution preserved** - The `remixed_scenarios` table links the clone to the original
-3. **User feedback** - Toast messages explain what's happening
-4. **Clone appears in "My Stories"** - After cloning, it shows in their registry
-5. **Fresh start for conversations** - Clones don't copy previous play sessions
+Add `unsaveScenario` to the imports from `gallery-data.ts`:
+
+```typescript
+import { fetchSavedScenarios, SavedScenario, unsaveScenario } from "@/services/gallery-data";
+```
 
 ---
 
@@ -226,19 +121,19 @@ All saves work (user owns the clone)
 
 | Case | Behavior |
 |------|----------|
-| User edits their own scenario | Direct edit (no clone) |
-| User edits bookmarked scenario | Auto-clone on first edit |
-| User clicks Edit again on same bookmarked story | Creates another clone (or we could detect existing clone) |
-| Scenario has no cover image | Clone inherits empty cover |
+| Delete own scenario | Full deletion from `scenarios` table |
+| Delete bookmarked scenario | Removes from `saved_scenarios` table only |
+| Scenario exists in both (remixed) | Treated as own scenario since it's in registry |
+| Cancel confirmation | No action taken |
 
 ---
 
 ## Result
 
 After this fix:
-- Clicking "Edit" on a bookmarked story creates YOUR personal copy
-- You can change character names, traits, world settings - anything
-- The original creator's content is never touched
-- Your remixed version appears in "My Stories"
-- All saves work without RLS errors
+- Deleting a bookmarked story removes it from the user's saved collection
+- The original creator's content is never affected
+- Different confirmation message for bookmarks vs owned scenarios
+- Success toast confirms the action
+- The card immediately disappears from the bookmarked list
 
