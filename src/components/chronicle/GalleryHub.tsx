@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Loader2, Globe } from 'lucide-react';
 import { GalleryScenarioCard } from './GalleryScenarioCard';
+import { ScenarioDetailModal } from './ScenarioDetailModal';
 import { 
   PublishedScenario, 
   fetchPublishedScenarios, 
@@ -13,6 +14,7 @@ import {
 } from '@/services/gallery-data';
 import { useAuth } from '@/hooks/use-auth';
 import { toast } from 'sonner';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 interface GalleryHubProps {
   onPlay: (scenarioId: string, publishedScenarioId: string) => void;
@@ -27,6 +29,10 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange }) 
   const [searchTags, setSearchTags] = useState<string[]>([]);
   const [likes, setLikes] = useState<Set<string>>(new Set());
   const [saves, setSaves] = useState<Set<string>>(new Set());
+  
+  // Detail modal state
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [selectedPublished, setSelectedPublished] = useState<PublishedScenario | null>(null);
 
   const loadScenarios = useCallback(async () => {
     setIsLoading(true);
@@ -149,6 +155,11 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange }) 
     onPlay(published.scenario_id, published.id);
   };
 
+  const handleViewDetails = (published: PublishedScenario) => {
+    setSelectedPublished(published);
+    setDetailModalOpen(true);
+  };
+
   return (
     <div className="w-full h-full flex flex-col">
       {/* Search Header */}
@@ -222,11 +233,39 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange }) 
                 onLike={() => handleLike(published)}
                 onSave={() => handleSave(published)}
                 onPlay={() => handlePlay(published)}
+                onViewDetails={() => handleViewDetails(published)}
               />
             ))}
           </div>
         )}
       </div>
+
+      {/* Detail Modal */}
+      {selectedPublished && (
+        <TooltipProvider>
+          <ScenarioDetailModal
+            open={detailModalOpen}
+            onOpenChange={setDetailModalOpen}
+            scenarioId={selectedPublished.scenario_id}
+            title={selectedPublished.scenario?.title || "Untitled"}
+            description={selectedPublished.scenario?.description || ""}
+            coverImage={selectedPublished.scenario?.cover_image_url || ""}
+            coverImagePosition={selectedPublished.scenario?.cover_image_position || { x: 50, y: 50 }}
+            tags={selectedPublished.tags}
+            likeCount={selectedPublished.like_count}
+            saveCount={selectedPublished.save_count}
+            playCount={selectedPublished.play_count}
+            publisher={selectedPublished.publisher}
+            publishedAt={selectedPublished.created_at}
+            isLiked={likes.has(selectedPublished.id)}
+            isSaved={saves.has(selectedPublished.id)}
+            allowRemix={selectedPublished.allow_remix}
+            onLike={() => handleLike(selectedPublished)}
+            onSave={() => handleSave(selectedPublished)}
+            onPlay={() => handlePlay(selectedPublished)}
+          />
+        </TooltipProvider>
+      )}
     </div>
   );
 };

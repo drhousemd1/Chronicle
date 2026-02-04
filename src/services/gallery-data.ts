@@ -373,3 +373,28 @@ export async function trackRemix(
     
   if (error) throw error;
 }
+
+// Scenario characters type for detail modal
+export interface ScenarioCharacter {
+  id: string;
+  name: string;
+  avatarUrl: string;
+  avatarPosition: { x: number; y: number };
+}
+
+// Fetch characters for a scenario (for detail modal preview)
+export async function fetchScenarioCharacters(scenarioId: string): Promise<ScenarioCharacter[]> {
+  const { data, error } = await supabase
+    .from('characters')
+    .select('id, name, avatar_url, avatar_position')
+    .eq('scenario_id', scenarioId);
+    
+  if (error) throw error;
+  
+  return (data || []).map(char => ({
+    id: char.id,
+    name: char.name,
+    avatarUrl: char.avatar_url || '',
+    avatarPosition: (char.avatar_position as { x: number; y: number }) || { x: 50, y: 50 }
+  }));
+}
