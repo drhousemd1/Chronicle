@@ -1,12 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { Heart, Bookmark, Play, Sparkles, Edit, Loader2, Users, Eye, Calendar, X, UserPlus, Globe } from 'lucide-react';
+import { Heart, Bookmark, Play, Sparkles, Edit, Loader2, Eye, X, Globe } from 'lucide-react';
 import { Dialog, DialogContent, DialogOverlay, DialogPortal } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { fetchScenarioCharacters, ScenarioCharacter } from '@/services/gallery-data';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 export interface ScenarioDetailModalProps {
   open: boolean;
@@ -59,6 +58,14 @@ export interface ScenarioDetailModalProps {
   isOwned?: boolean; // Shows Edit button instead of Like/Save
   isPublished?: boolean; // Shows unpublish button for owned scenarios
 }
+
+// Helper function for count formatting
+const formatCount = (count: number): string => {
+  if (count >= 1000) {
+    return (count / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+  }
+  return count.toString();
+};
 
 export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
   open,
@@ -146,14 +153,6 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
     }
   };
 
-  const formattedDate = publishedAt 
-    ? new Date(publishedAt).toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric', 
-        year: 'numeric' 
-      })
-    : null;
-
   // Check if content themes has any data
   const hasContentThemes = contentThemes && (
     contentThemes.genres.length > 0 ||
@@ -170,179 +169,184 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
         <DialogOverlay className="bg-black/90 backdrop-blur-sm" />
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div 
-            className="relative w-full max-w-4xl max-h-[90vh] bg-[#1a1a1f] rounded-3xl shadow-2xl ring-1 ring-white/10 overflow-hidden flex flex-col"
+            className="relative w-full max-w-6xl max-h-[90vh] bg-[#121214] rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10 overflow-hidden flex flex-col md:flex-row"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close Button */}
             <button
               onClick={() => onOpenChange(false)}
-              className="absolute top-4 right-4 z-20 p-2 bg-black/50 hover:bg-black/70 rounded-full text-white/70 hover:text-white transition-colors"
+              className="absolute top-4 right-4 z-20 p-2 text-white/20 hover:text-white transition-colors"
             >
-              <X className="w-5 h-5" />
+              <X className="w-6 h-6" />
             </button>
 
-            <ScrollArea className="flex-1">
-              <div className="p-6 md:p-8">
-                {/* Header: Image + Info */}
-                <div className="flex flex-col md:flex-row gap-6 md:gap-8">
-                {/* Left Column: Cover Image + Action Buttons */}
-                <div className="w-full md:w-64 flex-shrink-0">
-                  {/* Cover Image */}
-                  <div className="aspect-[2/3] w-full overflow-hidden rounded-2xl bg-[#2a2a2f] ring-1 ring-white/10 shadow-xl">
-                    {coverImage ? (
-                      <img
-                        src={coverImage}
-                        alt={title}
-                        style={{ objectPosition: `${coverImagePosition.x}% ${coverImagePosition.y}%` }}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#2a2a2f] to-[#1a1a1f]">
-                        <span className="font-black text-white/20 text-7xl uppercase">
-                          {title?.charAt(0) || '?'}
-                        </span>
-                      </div>
-                    )}
+            {/* Left Column - Cover Image + Actions */}
+            <div className="md:w-[420px] flex-shrink-0 p-6 flex flex-col">
+              {/* Cover Image with Badge Overlay */}
+              <div className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl bg-[#2a2a2f]">
+                {coverImage ? (
+                  <img
+                    src={coverImage}
+                    alt={title}
+                    style={{ objectPosition: `${coverImagePosition.x}% ${coverImagePosition.y}%` }}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#2a2a2f] to-[#1a1a1f]">
+                    <span className="font-black text-white/20 text-7xl uppercase">
+                      {title?.charAt(0) || '?'}
+                    </span>
                   </div>
-
-                  {/* Action Buttons - Under Cover */}
-                  <div className="flex flex-col gap-2 mt-4">
-                    {isOwned ? (
-                      <>
-                        {onEdit && (
-                          <button
-                            onClick={handleEdit}
-                            className="w-full px-4 py-2.5 bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] text-white rounded-xl font-bold text-sm shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
-                          >
-                            <Edit className="w-4 h-4" />
-                            Edit Story
-                          </button>
-                        )}
-                        <button
-                          onClick={handlePlay}
-                          className="w-full px-4 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm shadow-lg hover:bg-blue-500 transition-colors flex items-center justify-center gap-2"
-                        >
-                          <Play className="w-4 h-4 fill-current" />
-                          Play Story
-                        </button>
-                        {isPublished && onUnpublish && (
-                          <button
-                            onClick={handleUnpublish}
-                            disabled={isUnpublishing}
-                            className="w-full px-4 py-2.5 bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] text-white/70 rounded-xl font-bold text-sm shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/10 hover:text-white transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                          >
-                            {isUnpublishing ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <Globe className="w-4 h-4" />
-                            )}
-                            Remove from Gallery
-                          </button>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        {onLike && (
-                          <button
-                            onClick={handleLike}
-                            disabled={isLiking}
-                            className={cn(
-                              "w-full px-4 py-2.5 rounded-xl font-bold text-sm shadow-lg transition-all flex items-center justify-center gap-2",
-                              isLiked 
-                                ? "bg-rose-500 text-white hover:bg-rose-600" 
-                                : "bg-white/10 text-white/80 hover:bg-white/20"
-                            )}
-                          >
-                            <Heart className={cn("w-4 h-4", isLiked && "fill-current")} />
-                            {isLiked ? 'Liked' : 'Like'}
-                          </button>
-                        )}
-                        {onSave && (
-                          <button
-                            onClick={handleSave}
-                            disabled={isSaving}
-                            className={cn(
-                              "w-full px-4 py-2.5 rounded-xl font-bold text-sm shadow-lg transition-all flex items-center justify-center gap-2",
-                              isSaved 
-                                ? "bg-amber-500 text-white hover:bg-amber-600" 
-                                : "bg-white/10 text-white/80 hover:bg-white/20"
-                            )}
-                          >
-                            <Bookmark className={cn("w-4 h-4", isSaved && "fill-current")} />
-                            {isSaved ? 'Saved' : 'Save'}
-                          </button>
-                        )}
-                        <button
-                          onClick={handlePlay}
-                          className="w-full px-4 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm shadow-lg hover:bg-blue-500 transition-colors flex items-center justify-center gap-2"
-                        >
-                          <Play className="w-4 h-4 fill-current" />
-                          Play Story
-                        </button>
-                      </>
-                    )}
+                )}
+                
+                {/* Gradient overlay at bottom */}
+                <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/60 to-transparent" />
+                
+                {/* SFW/NSFW Badge Overlay */}
+                {contentThemes?.storyType && (
+                  <div className="absolute top-3 right-3">
+                    <span className={cn(
+                      "px-3 py-1.5 rounded-lg text-xs font-bold shadow-lg",
+                      contentThemes.storyType === 'NSFW'
+                        ? "bg-red-500/90 text-white"
+                        : "bg-blue-500/90 text-white"
+                    )}>
+                      {contentThemes.storyType}
+                    </span>
                   </div>
-                </div>
+                )}
+                
+                {/* Remixable Badge */}
+                {allowRemix && (
+                  <div className="absolute top-3 left-3">
+                    <span className="px-3 py-1.5 bg-purple-500/90 rounded-lg text-xs font-bold text-white flex items-center gap-1.5 shadow-lg">
+                      <Sparkles className="w-3 h-3" />
+                      REMIXABLE
+                    </span>
+                  </div>
+                )}
+              </div>
 
-                  {/* Info Section */}
-                  <div className="flex-1 min-w-0">
-                    {/* Badges */}
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {/* SFW/NSFW Badge */}
-                      {contentThemes?.storyType && (
-                        <span className={cn(
-                          "px-2.5 py-1 rounded-lg text-xs font-bold",
-                          contentThemes.storyType === 'NSFW'
-                            ? "bg-red-500/20 text-red-400"
-                            : "bg-blue-500/20 text-blue-400"
-                        )}>
-                          {contentThemes.storyType}
-                        </span>
-                      )}
-                      {allowRemix && (
-                        <span className="px-2.5 py-1 bg-purple-500/80 rounded-lg text-xs font-bold text-white flex items-center gap-1.5">
-                          <Sparkles className="w-3 h-3" />
-                          REMIXABLE
-                        </span>
-                      )}
-                      {isOwned && isPublished && (
-                        <span className="px-2.5 py-1 bg-emerald-500/20 rounded-lg text-xs font-bold text-emerald-400">
-                          PUBLISHED
-                        </span>
+              {/* Action Buttons - Horizontal Row */}
+              <div className="flex gap-2 mt-4">
+                {isOwned ? (
+                  <>
+                    {onEdit && (
+                      <button
+                        onClick={handleEdit}
+                        className="flex-1 h-12 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl flex items-center justify-center gap-2 text-white transition-colors"
+                      >
+                        <Edit className="w-5 h-5" />
+                        <span className="text-sm font-semibold">Edit</span>
+                      </button>
+                    )}
+                    <button
+                      onClick={handlePlay}
+                      className="flex-1 h-12 bg-[#3b82f6] hover:bg-[#2563eb] rounded-xl flex items-center justify-center gap-2 text-white shadow-md transition-colors"
+                    >
+                      <Play className="w-5 h-5 fill-current" />
+                      <span className="text-sm font-semibold">Play</span>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    {onLike && (
+                      <button
+                        onClick={handleLike}
+                        disabled={isLiking}
+                        className={cn(
+                          "flex-1 h-12 border rounded-xl flex items-center justify-center gap-2 transition-all",
+                          isLiked 
+                            ? "bg-rose-500/20 border-rose-500/50 text-rose-400" 
+                            : "bg-white/5 hover:bg-white/10 border-white/10 text-white"
+                        )}
+                      >
+                        <Heart className={cn("w-5 h-5", isLiked && "fill-current")} />
+                        <span className="text-sm font-semibold">Like</span>
+                      </button>
+                    )}
+                    {onSave && (
+                      <button
+                        onClick={handleSave}
+                        disabled={isSaving}
+                        className={cn(
+                          "flex-1 h-12 border rounded-xl flex items-center justify-center gap-2 transition-all",
+                          isSaved 
+                            ? "bg-amber-500/20 border-amber-500/50 text-amber-400" 
+                            : "bg-white/5 hover:bg-white/10 border-white/10 text-white"
+                        )}
+                      >
+                        <Bookmark className={cn("w-5 h-5", isSaved && "fill-current")} />
+                        <span className="text-sm font-semibold">Bookmark</span>
+                      </button>
+                    )}
+                    <button
+                      onClick={handlePlay}
+                      className="flex-1 h-12 bg-[#3b82f6] hover:bg-[#2563eb] rounded-xl flex items-center justify-center gap-2 text-white shadow-md transition-colors"
+                    >
+                      <Play className="w-5 h-5 fill-current" />
+                      <span className="text-sm font-semibold">Play</span>
+                    </button>
+                  </>
+                )}
+              </div>
+
+              {/* Unpublish button for owned published scenarios */}
+              {isOwned && isPublished && onUnpublish && (
+                <button
+                  onClick={handleUnpublish}
+                  disabled={isUnpublishing}
+                  className="w-full mt-2 h-10 bg-white/5 hover:bg-white/10 border border-white/10 text-white/60 hover:text-white rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {isUnpublishing ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Globe className="w-4 h-4" />
+                  )}
+                  Remove from Gallery
+                </button>
+              )}
+            </div>
+
+            {/* Right Column - Content */}
+            <ScrollArea className="flex-1 md:border-l border-white/5">
+              <div className="p-6 md:p-8 md:pr-12 flex flex-col min-h-full">
+                {/* Header: Title + Stats */}
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex flex-col gap-1 flex-1 pr-8">
+                    {/* Title with inline stats */}
+                    <div className="flex items-center flex-wrap gap-4">
+                      <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">
+                        {title || "Untitled Story"}
+                      </h1>
+                      
+                      {/* Inline Stats - Gallery mode only */}
+                      {!isOwned && (
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-1.5 text-[#94a3b8]">
+                            <Eye className="w-4 h-4" />
+                            <span className="text-xs font-bold">{formatCount(viewCount)}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-[#94a3b8]">
+                            <Heart className={cn("w-4 h-4", isLiked && "fill-rose-400 text-rose-400")} />
+                            <span className="text-xs font-bold">{formatCount(likeCount)}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-[#94a3b8]">
+                            <Bookmark className={cn("w-4 h-4", isSaved && "fill-amber-400 text-amber-400")} />
+                            <span className="text-xs font-bold">{formatCount(saveCount)}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-[#94a3b8]">
+                            <Play className="w-4 h-4" />
+                            <span className="text-xs font-bold">{formatCount(playCount)}</span>
+                          </div>
+                        </div>
                       )}
                     </div>
 
-                    {/* Title */}
-                    <h2 className="text-2xl md:text-3xl font-black text-white leading-tight tracking-tight mb-3">
-                      {title || "Untitled Story"}
-                    </h2>
-
-                    {/* Stats Row */}
-                    {!isOwned && (
-                      <div className="flex items-center gap-4 text-sm text-white/60 mb-4">
-                        <span className="flex items-center gap-1.5">
-                          <Eye className="w-4 h-4" />
-                          {viewCount.toLocaleString()}
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                          <Heart className={cn("w-4 h-4", isLiked && "fill-rose-400 text-rose-400")} />
-                          {likeCount.toLocaleString()}
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                          <Bookmark className={cn("w-4 h-4", isSaved && "fill-amber-400 text-amber-400")} />
-                          {saveCount.toLocaleString()}
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                          <Play className="w-4 h-4" />
-                          {playCount.toLocaleString()}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Publisher Info */}
+                    {/* Publisher "by" line */}
                     {publisher && !isOwned && (
-                      <div className="flex items-center gap-3 p-3 bg-[#2a2a2f] rounded-xl mb-4 border border-white/5">
-                        <div className="w-10 h-10 rounded-full bg-[#3a3a3f] overflow-hidden ring-2 ring-white/10 flex-shrink-0">
+                      <div className="flex items-center gap-2 mt-1">
+                        <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 overflow-hidden flex-shrink-0">
                           {publisher.avatar_url ? (
                             <img 
                               src={publisher.avatar_url} 
@@ -350,121 +354,119 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-white/40 text-sm font-bold">
+                            <div className="w-full h-full flex items-center justify-center text-white/80 text-[10px] font-bold">
                               {publisher.username?.charAt(0)?.toUpperCase() || '?'}
                             </div>
                           )}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-semibold text-white truncate">
-                            {publisher.username || 'Anonymous'}
-                          </div>
-                          {formattedDate && (
-                            <div className="text-xs text-white/50 flex items-center gap-1">
-                              <Calendar className="w-3 h-3" />
-                              Published {formattedDate}
-                            </div>
-                          )}
-                        </div>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button 
-                              className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white/70 hover:text-white rounded-lg text-xs font-semibold transition-colors cursor-not-allowed opacity-60"
-                              disabled
-                            >
-                              <UserPlus className="w-4 h-4" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Follow feature coming soon</p>
-                          </TooltipContent>
-                        </Tooltip>
+                        <p className="text-sm text-[#94a3b8]">
+                          by <span className="text-white font-medium">{publisher.username || 'Anonymous'}</span>
+                        </p>
                       </div>
                     )}
 
-                    {/* Description */}
-                    <div className="mb-4">
-                      <p className="text-sm text-white/70 leading-relaxed whitespace-pre-wrap">
-                        {description || "No description provided."}
-                      </p>
-                    </div>
-
-                    {/* Content Themes Display - Show for both owned and gallery scenarios */}
-                    {hasContentThemes && (
-                      <div className="space-y-3 mb-4 p-4 bg-[#2a2a2f] rounded-xl border border-white/10">
-                        {contentThemes.genres.length > 0 && (
-                          <div>
-                            <span className="text-[10px] font-bold text-white/40 uppercase tracking-wider block mb-1">Genre</span>
-                            <p className="text-sm text-white/80">{contentThemes.genres.join(', ')}</p>
-                          </div>
-                        )}
-                        {contentThemes.characterTypes.length > 0 && (
-                          <div>
-                            <span className="text-[10px] font-bold text-white/40 uppercase tracking-wider block mb-1">Character Types</span>
-                            <p className="text-sm text-white/80">{contentThemes.characterTypes.join(', ')}</p>
-                          </div>
-                        )}
-                        {contentThemes.origin.length > 0 && (
-                          <div>
-                            <span className="text-[10px] font-bold text-white/40 uppercase tracking-wider block mb-1">Story Origin</span>
-                            <p className="text-sm text-white/80">{contentThemes.origin.join(', ')}</p>
-                          </div>
-                        )}
-                        {contentThemes.triggerWarnings.length > 0 && (
-                          <div>
-                            <span className="text-[10px] font-bold text-rose-400/70 uppercase tracking-wider block mb-1">Trigger Warnings</span>
-                            <p className="text-sm text-rose-300/80">{contentThemes.triggerWarnings.join(', ')}</p>
-                          </div>
-                        )}
-                        {contentThemes.customTags.length > 0 && (
-                          <div>
-                            <span className="text-[10px] font-bold text-white/40 uppercase tracking-wider block mb-1">Custom Tags</span>
-                            <p className="text-sm text-white/80">{contentThemes.customTags.join(', ')}</p>
-                          </div>
-                        )}
-                      </div>
+                    {/* Published badge for owned scenarios */}
+                    {isOwned && isPublished && (
+                      <span className="inline-flex w-fit px-2.5 py-1 bg-emerald-500/20 rounded-lg text-xs font-bold text-emerald-400 mt-1">
+                        PUBLISHED
+                      </span>
                     )}
-
                   </div>
                 </div>
 
+                {/* Synopsis Section */}
+                <div className="mt-6">
+                  <h3 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-3">Synopsis</h3>
+                  <p className="text-[#e2e8f0] leading-relaxed max-w-2xl whitespace-pre-wrap">
+                    {description || "No description provided."}
+                  </p>
+                </div>
+
+                {/* Content Themes Grid */}
+                {hasContentThemes && (
+                  <>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mt-8">
+                      {contentThemes.genres.length > 0 && (
+                        <div>
+                          <h4 className="text-[10px] font-bold text-white/40 uppercase mb-2">Genre</h4>
+                          <p className="text-sm text-white">{contentThemes.genres.join(', ')}</p>
+                        </div>
+                      )}
+                      {contentThemes.characterTypes.length > 0 && (
+                        <div>
+                          <h4 className="text-[10px] font-bold text-white/40 uppercase mb-2">Character Types</h4>
+                          <p className="text-sm text-white">{contentThemes.characterTypes.join(', ')}</p>
+                        </div>
+                      )}
+                      {contentThemes.origin.length > 0 && (
+                        <div>
+                          <h4 className="text-[10px] font-bold text-white/40 uppercase mb-2">Story Origin</h4>
+                          <p className="text-sm text-white">{contentThemes.origin.join(', ')}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Trigger Warnings - Separate Row */}
+                    {contentThemes.triggerWarnings.length > 0 && (
+                      <div className="mt-6">
+                        <h4 className="text-[10px] font-bold text-white/40 uppercase mb-2">Trigger Warnings</h4>
+                        <p className="text-sm text-red-400 leading-relaxed font-medium">
+                          {contentThemes.triggerWarnings.join(', ')}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Custom Tags */}
+                    {contentThemes.customTags.length > 0 && (
+                      <div className="mt-6">
+                        <h4 className="text-[10px] font-bold text-white/40 uppercase mb-2">Custom Tags</h4>
+                        <p className="text-sm text-white">{contentThemes.customTags.join(', ')}</p>
+                      </div>
+                    )}
+                  </>
+                )}
+
                 {/* Characters Section */}
-                <div className="mt-8 pt-6 border-t border-white/10">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Users className="w-5 h-5 text-white/60" />
-                    <h3 className="text-lg font-bold text-white">Characters</h3>
+                <div className="mt-auto pt-8 border-t border-white/5">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xs font-bold text-white/40 uppercase tracking-widest">Characters</h3>
+                    {characters.length > 4 && (
+                      <button className="text-[10px] font-bold text-[#3b82f6] hover:underline uppercase">
+                        View All
+                      </button>
+                    )}
                   </div>
                   
                   {isLoadingCharacters ? (
-                    <div className="flex gap-4 overflow-x-auto pb-2">
+                    <div className="flex gap-4">
                       {[1, 2, 3, 4].map((i) => (
-                        <div key={i} className="flex-shrink-0 flex flex-col items-center gap-2">
-                          <Skeleton className="w-16 h-16 rounded-full bg-[#2a2a2f]" />
-                          <Skeleton className="w-14 h-3 rounded bg-[#2a2a2f]" />
+                        <div key={i} className="flex flex-col items-center gap-2">
+                          <Skeleton className="w-14 h-14 rounded-full bg-[#2a2a2f]" />
+                          <Skeleton className="w-12 h-3 rounded bg-[#2a2a2f]" />
                         </div>
                       ))}
                     </div>
                   ) : characters.length === 0 ? (
                     <p className="text-sm text-white/50 italic">No characters yet</p>
                   ) : (
-                    <div className="flex gap-4 overflow-x-auto pb-2">
-                      {characters.map((char) => (
-                        <div key={char.id} className="flex-shrink-0 flex flex-col items-center gap-2">
-                          <div className="w-16 h-16 rounded-full bg-[#2a2a2f] overflow-hidden ring-2 ring-white/10 shadow-lg">
+                    <div className="flex flex-wrap gap-4">
+                      {characters.slice(0, 8).map((char) => (
+                        <div key={char.id} className="flex flex-col items-center gap-2 group cursor-pointer">
+                          <div className="w-14 h-14 rounded-full border-2 border-white/10 p-0.5 group-hover:border-[#3b82f6] transition-all">
                             {char.avatarUrl ? (
                               <img
                                 src={char.avatarUrl}
                                 alt={char.name}
                                 style={{ objectPosition: `${char.avatarPosition.x}% ${char.avatarPosition.y}%` }}
-                                className="w-full h-full object-cover"
+                                className="w-full h-full rounded-full object-cover"
                               />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center text-white/30 text-lg font-bold">
+                              <div className="w-full h-full rounded-full bg-[#2a2a2f] flex items-center justify-center text-white/30 text-lg font-bold">
                                 {char.name.charAt(0).toUpperCase()}
                               </div>
                             )}
                           </div>
-                          <span className="text-xs text-white/70 font-medium text-center max-w-[4rem] truncate">
+                          <span className="text-[10px] text-white/60 group-hover:text-white text-center max-w-[4rem] truncate transition-colors">
                             {char.name}
                           </span>
                         </div>
