@@ -1,42 +1,84 @@
 
-# Fix: Enable Toggle for Shared XAI Key
 
-## Problem Identified
+# Fix: Published Scenarios Not Visible to Other Users
 
-The toggle is disabled because the edge function cannot read the `app_settings` table. Here's what's happening:
+## Problem
 
-1. The edge function `check-shared-keys` uses the **anon key** to query the database
-2. The RLS policy only allows **authenticated** users to read the table
-3. Since the edge function operates without user authentication, it fails with "0 rows" error
-4. This causes `xaiConfigured` to return `false`, which disables the toggle
+Your published story is not visible to your wife (or any other user) in the Community Gallery because of an RLS policy conflict.
 
-## Solution
+**Root Cause:**
 
-Add an RLS policy allowing the `anon` role to read `app_settings`. This is safe because:
-- The settings table only contains non-sensitive boolean flags
-- We're not exposing any API keys, just the status "is sharing enabled?"
-- All users (logged in or not) should be able to check if shared keys are available
+The `fetchPublishedScenarios` function queries `published_scenarios` with an `!inner` join to the `scenarios` table:
+
+```typescript
+scenarios!inner (
+  id,
+  title,
+  description,
+  cover_image_url,
+  cover_image_position
+)
+```
+
+The `scenarios` table has RLS that only allows users to view their own scenarios:
+```
+Policy: Users can view own scenarios
+USING: (auth.uid() = user_id)
+```
+
+When your wife queries the gallery, the join to `scenarios` fails because she doesn't own your scenario. The entire row is filtered out.
 
 ---
 
-## Changes
+## Solution
 
-### 1. Add Database Migration
-
-Create a new RLS policy to allow anonymous access to read settings:
+Add a new RLS policy to the `scenarios` table that allows anyone to view scenarios that have been published (linked via the `published_scenarios` table).
 
 ```sql
--- Allow anonymous users to read app settings (for edge functions)
-CREATE POLICY "Anyone can read settings"
-  ON public.app_settings FOR SELECT
-  TO anon
-  USING (true);
+CREATE POLICY "Anyone can view published scenarios via join"
+  ON public.scenarios FOR SELECT
+  USING (
+    auth.uid() = user_id  -- Owner can always see
+    OR 
+    EXISTS (
+      SELECT 1 FROM published_scenarios ps
+      WHERE ps.scenario_id = id
+      AND ps.is_published = true
+      AND ps.is_hidden = false
+    )
+  );
 ```
 
-This single change will:
-- Allow the edge function to successfully query `app_settings`
-- Return the correct `xaiShared` and `xaiConfigured` values
-- Enable the toggle switch for you (the admin)
+However, since we already have a policy `Users can view own scenarios`, and PostgreSQL RESTRICTIVE policies (Permissive: No) require ALL policies to pass, we need to either:
+
+1. **Drop the existing policy and create a new combined one**, OR
+2. **Change the existing policy to be PERMISSIVE** (so that any ONE policy passing is sufficient)
+
+The cleanest approach is to drop the old policy and create a new one that handles both cases.
+
+---
+
+## Database Migration
+
+```sql
+-- Drop the existing restrictive policy
+DROP POLICY IF EXISTS "Users can view own scenarios" ON public.scenarios;
+
+-- Create a new policy that allows:
+-- 1. Users to view their own scenarios
+-- 2. Anyone to view scenarios that are published
+CREATE POLICY "Users can view own or published scenarios"
+  ON public.scenarios FOR SELECT
+  USING (
+    auth.uid() = user_id
+    OR EXISTS (
+      SELECT 1 FROM public.published_scenarios ps
+      WHERE ps.scenario_id = scenarios.id
+      AND ps.is_published = true
+      AND ps.is_hidden = false
+    )
+  );
+```
 
 ---
 
@@ -44,13 +86,23 @@ This single change will:
 
 | File | Changes |
 |------|---------|
-| Database migration | Add RLS policy for `anon` role to SELECT from `app_settings` |
+| Database migration | Drop old RLS policy, create new combined policy for `scenarios` table |
 
 ---
 
-## After This Fix
+## Security Considerations
 
-1. The edge function will correctly read the `app_settings` table
-2. `xaiConfigured` will return `true` (since XAI_API_KEY is set)
-3. The toggle will be clickable for your admin account
-4. You can enable sharing, and your wife will see "Shared" instead of "BYOK"
+1. **Only published scenarios are exposed** - The `EXISTS` check ensures only scenarios linked to a published entry (with `is_published = true` and `is_hidden = false`) can be viewed by others
+2. **Private scenarios remain private** - Unpublished scenarios are still only visible to their owner
+3. **No sensitive data exposed** - The gallery only displays title, description, and cover image - not private story content
+
+---
+
+## Result
+
+After this fix:
+- Your wife will see your published story in the Community Gallery
+- All users can browse published scenarios from any creator
+- Unpublished scenarios remain private to their owners
+- The "Saved Stories" (bookmarks) feature will also work correctly for viewing saved scenarios
+
