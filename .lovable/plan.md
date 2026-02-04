@@ -1,114 +1,166 @@
 
-# Fix "Remove from Gallery" Button & Badge Styling
 
-## Overview
+# UI Improvements for Like/Save Responsiveness, Button Text, Filters, and Published Tag
 
-Two issues need to be fixed:
+## Summary
 
-1. **"Remove from Gallery" button not appearing when viewing your own stories from the Community Gallery** - The button logic exists but the props aren't being passed from `GalleryHub.tsx`
-
-2. **SFW/NSFW badge styling mismatch** - The modal uses a different style than the gallery cards
+This plan addresses 5 improvements:
+1. **Like/Save count not updating in real-time** - Modal stats don't refresh immediately
+2. **"Bookmark" button text change** - Change to "Save" / "Saved"
+3. **Filter text "Bookmarked" change** - Change to "Saved Stories" on Your Stories page
+4. **Add "Published" tag** - Show on tiles for published stories
+5. **Add "Published Stories" filter** - New filter option on Your Stories page
 
 ---
 
-## Issue 1: Add "Remove from Gallery" to GalleryHub
+## 1. Make Like/Save Counts Update Immediately
 
-### Root Cause
-
-In `GalleryHub.tsx`, the `ScenarioDetailModal` is rendered without these required props:
-- `isOwned` (not passed → defaults to false)
-- `isPublished` (not passed → defaults to false)
-- `onUnpublish` (not passed → undefined)
-
-The button only shows when all three are truthy.
+### Problem
+When clicking Like or Bookmark in the modal, the counts in the top-right stats area don't update until the modal is closed and reopened. The `GalleryHub` passes static props (`likeCount`, `saveCount`) from `selectedPublished` which doesn't get updated after interactions.
 
 ### Solution
+The `GalleryHub` already updates `scenarios` state after like/save actions (lines 140-144, 167-171, 180-184). The issue is that `selectedPublished` is set once when opening the modal and never updated. We need to derive the selected scenario's current data from the updated `scenarios` array.
 
 **File:** `src/components/chronicle/GalleryHub.tsx`
 
-1. **Add unpublish handler function** (after `handleViewDetails`):
-```tsx
-const handleUnpublish = async () => {
-  if (!selectedPublished || !user) return;
-  try {
-    await unpublishScenario(selectedPublished.scenario_id);
-    // Remove from local list
-    setScenarios(prev => prev.filter(s => s.id !== selectedPublished.id));
-    setDetailModalOpen(false);
-    toast.success('Your story has been removed from the Gallery');
-  } catch (e) {
-    console.error('Failed to unpublish:', e);
-    toast.error('Failed to remove from gallery');
-  }
-};
-```
+Update the modal props to use live data from `scenarios` state:
 
-2. **Add `unpublishScenario` to imports** (line 14):
 ```tsx
-import { 
-  // ... existing imports
-  unpublishScenario
-} from '@/services/gallery-data';
-```
+// Instead of passing selectedPublished directly, find the live version
+const liveSelectedPublished = selectedPublished 
+  ? scenarios.find(s => s.id === selectedPublished.id) || selectedPublished
+  : null;
 
-3. **Update ScenarioDetailModal props** (lines 425-447):
-
-Add these three new props:
-```tsx
+// Then use liveSelectedPublished for all modal props
 <ScenarioDetailModal
-  // ... existing props
-  isOwned={user?.id === selectedPublished.publisher_id}
-  isPublished={true}  // All stories in gallery are published
-  onUnpublish={user?.id === selectedPublished.publisher_id ? handleUnpublish : undefined}
+  likeCount={liveSelectedPublished.like_count}
+  saveCount={liveSelectedPublished.save_count}
+  viewCount={liveSelectedPublished.view_count}
+  isLiked={likes.has(liveSelectedPublished.id)}
+  isSaved={saves.has(liveSelectedPublished.id)}
+  // ... rest of props
 />
 ```
 
 ---
 
-## Issue 2: Fix SFW/NSFW Badge Styling
+## 2. Change "Bookmark" Button to "Save/Saved"
 
-### Current (Wrong)
+**File:** `src/components/chronicle/ScenarioDetailModal.tsx` (line 284)
 
-**Modal (lines 206-217 of ScenarioDetailModal.tsx):**
+Current:
 ```tsx
-<span className={cn(
-  "px-3 py-1.5 rounded-lg text-xs font-bold shadow-lg",
-  contentThemes.storyType === 'NSFW'
-    ? "bg-red-500/90 text-white"     // ❌ Solid red bg, white text
-    : "bg-blue-500/90 text-white"    // ❌ Solid blue bg, white text
-)}>
+<span className="text-sm font-semibold">Bookmark</span>
 ```
-
-### Correct (Matches Gallery Cards)
-
-**From GalleryScenarioCard.tsx (lines 88-92):**
-```tsx
-<div className={cn(
-  "... bg-[#2a2a2f]",
-  published.contentThemes.storyType === 'NSFW'
-    ? "text-red-400"    // ✅ Dark bg, red text
-    : "text-blue-400"   // ✅ Dark bg, blue text
-)}>
-```
-
-### Fix Required
-
-**File:** `src/components/chronicle/ScenarioDetailModal.tsx` (lines 206-217)
 
 Change to:
 ```tsx
-{contentThemes?.storyType && (
-  <div className="absolute top-3 right-3">
-    <span className={cn(
-      "px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f]",
-      contentThemes.storyType === 'NSFW'
-        ? "text-red-400"
-        : "text-blue-400"
-    )}>
-      {contentThemes.storyType}
-    </span>
+<span className="text-sm font-semibold">{isSaved ? 'Saved' : 'Save'}</span>
+```
+
+---
+
+## 3. Change "Bookmarked" Filter to "Saved Stories"
+
+**File:** `src/pages/Index.tsx` (line 1263)
+
+Current:
+```tsx
+>
+  Bookmarked
+</button>
+```
+
+Change to:
+```tsx
+>
+  Saved Stories
+</button>
+```
+
+---
+
+## 4. Add "Published" Tag to Story Tiles
+
+Stories that are published to the gallery should show a "Published" tag at the top of the tile, similar to the existing "Saved" tag.
+
+### Approach
+The `ScenarioHub` component needs to know which scenarios are published. Currently, publication status is only fetched when opening the detail modal. We need to pass publication status from the parent.
+
+**File:** `src/pages/Index.tsx`
+
+1. Fetch all published scenario IDs for the user's scenarios when loading data
+2. Pass this information to `ScenarioHub` or include it in the `ScenarioMetadata`
+
+**File:** `src/services/gallery-data.ts`
+
+Add a new function to get all published scenario IDs for a user:
+
+```tsx
+export async function fetchUserPublishedScenarioIds(userId: string): Promise<Set<string>> {
+  const { data, error } = await supabase
+    .from('published_scenarios')
+    .select('scenario_id')
+    .eq('publisher_id', userId)
+    .eq('is_published', true);
+    
+  if (error) throw error;
+  return new Set((data || []).map(p => p.scenario_id));
+}
+```
+
+**File:** `src/pages/Index.tsx`
+
+1. Add state: `const [publishedScenarioIds, setPublishedScenarioIds] = useState<Set<string>>(new Set());`
+2. Fetch in `loadData()`: call `fetchUserPublishedScenarioIds(user.id)`
+3. Pass to `ScenarioHub`: `publishedScenarioIds={publishedScenarioIds}`
+
+**File:** `src/components/chronicle/ScenarioHub.tsx`
+
+1. Add prop: `publishedScenarioIds?: Set<string>`
+2. In `ScenarioCard`, add the Published tag:
+
+```tsx
+{/* Published tag - show if published and not bookmarked */}
+{!scen.isBookmarked && publishedScenarioIds?.has(scen.id) && (
+  <div className="absolute top-4 right-4 px-2.5 py-1 bg-emerald-600 text-white text-[10px] font-bold uppercase tracking-wide rounded-full z-10 shadow-lg">
+    Published
   </div>
 )}
+```
+
+Note: Position right side since "Saved" tag uses left side.
+
+---
+
+## 5. Add "Published Stories" Filter Option
+
+**File:** `src/pages/Index.tsx`
+
+1. Update the `HubFilter` type (line 142):
+```tsx
+type HubFilter = "my" | "bookmarked" | "published" | "all";
+```
+
+2. Update `filteredRegistry` (around line 225) to handle the new filter:
+```tsx
+case "published":
+  return registry.filter(s => publishedScenarioIds.has(s.id));
+```
+
+3. Add the new filter button after "Saved Stories" (around line 1265):
+```tsx
+<button
+  onClick={() => setHubFilter("published")}
+  className={cn(
+    "px-4 py-1.5 rounded-full text-xs font-bold transition-all",
+    hubFilter === "published" 
+      ? "bg-white text-slate-900 shadow-sm" 
+      : "text-slate-500 hover:text-slate-700"
+  )}
+>
+  Published
+</button>
 ```
 
 ---
@@ -117,22 +169,17 @@ Change to:
 
 | File | Changes |
 |------|---------|
-| `src/components/chronicle/GalleryHub.tsx` | Add `unpublishScenario` import, add `handleUnpublish` function, pass `isOwned`, `isPublished`, `onUnpublish` props to modal |
-| `src/components/chronicle/ScenarioDetailModal.tsx` | Update SFW/NSFW badge styling to match gallery cards (dark bg + colored text) |
+| `src/services/gallery-data.ts` | Add `fetchUserPublishedScenarioIds()` function |
+| `src/pages/Index.tsx` | Add published IDs state, fetch on load, update filter type, add filter case, add filter button, rename "Bookmarked" to "Saved Stories" |
+| `src/components/chronicle/ScenarioHub.tsx` | Add `publishedScenarioIds` prop, show "Published" tag on cards |
+| `src/components/chronicle/GalleryHub.tsx` | Use live data for modal props so counts update immediately |
+| `src/components/chronicle/ScenarioDetailModal.tsx` | Change "Bookmark" to "Save/Saved" |
 
 ---
 
-## Visual Reference
+## Technical Notes
 
-### Badge Styling (After Fix)
+- The like/save count update issue is a React state synchronization problem - `selectedPublished` is a snapshot that doesn't update when `scenarios` state changes
+- The "Published" tag will show on the right side of cards (opposite to "Saved" which shows on left) to avoid overlap
+- The new filter will only show user's own published stories, not all published stories from the gallery
 
-Both gallery cards AND modal will show:
-- **NSFW**: Dark charcoal background (`#2a2a2f`) with red text (`text-red-400`)
-- **SFW**: Dark charcoal background (`#2a2a2f`) with blue text (`text-blue-400`)
-
-### "Remove from Gallery" Behavior (After Fix)
-
-| Viewing From | Your Own Story | Someone Else's Story |
-|--------------|----------------|----------------------|
-| Your Stories page | ✅ Shows button | N/A |
-| Community Gallery | ✅ Shows button | ❌ No button |
