@@ -1,107 +1,114 @@
 
-
-# Move "Remove From Gallery" to Bottom Right Corner
+# Fix "Remove from Gallery" Button & Badge Styling
 
 ## Overview
 
-Move the existing "Remove from Gallery" button from its current location (left column, under action buttons) to the bottom right corner of the modal's right column content area.
+Two issues need to be fixed:
+
+1. **"Remove from Gallery" button not appearing when viewing your own stories from the Community Gallery** - The button logic exists but the props aren't being passed from `GalleryHub.tsx`
+
+2. **SFW/NSFW badge styling mismatch** - The modal uses a different style than the gallery cards
 
 ---
 
-## Current Location (to be removed)
+## Issue 1: Add "Remove from Gallery" to GalleryHub
 
-**Lines 294-308** - Currently in the left column, below the Edit/Play buttons:
+### Root Cause
+
+In `GalleryHub.tsx`, the `ScenarioDetailModal` is rendered without these required props:
+- `isOwned` (not passed → defaults to false)
+- `isPublished` (not passed → defaults to false)
+- `onUnpublish` (not passed → undefined)
+
+The button only shows when all three are truthy.
+
+### Solution
+
+**File:** `src/components/chronicle/GalleryHub.tsx`
+
+1. **Add unpublish handler function** (after `handleViewDetails`):
 ```tsx
-{/* Unpublish button for owned published scenarios */}
-{isOwned && isPublished && onUnpublish && (
-  <button onClick={handleUnpublish} ...>
-    Remove from Gallery
-  </button>
-)}
+const handleUnpublish = async () => {
+  if (!selectedPublished || !user) return;
+  try {
+    await unpublishScenario(selectedPublished.scenario_id);
+    // Remove from local list
+    setScenarios(prev => prev.filter(s => s.id !== selectedPublished.id));
+    setDetailModalOpen(false);
+    toast.success('Your story has been removed from the Gallery');
+  } catch (e) {
+    console.error('Failed to unpublish:', e);
+    toast.error('Failed to remove from gallery');
+  }
+};
+```
+
+2. **Add `unpublishScenario` to imports** (line 14):
+```tsx
+import { 
+  // ... existing imports
+  unpublishScenario
+} from '@/services/gallery-data';
+```
+
+3. **Update ScenarioDetailModal props** (lines 425-447):
+
+Add these three new props:
+```tsx
+<ScenarioDetailModal
+  // ... existing props
+  isOwned={user?.id === selectedPublished.publisher_id}
+  isPublished={true}  // All stories in gallery are published
+  onUnpublish={user?.id === selectedPublished.publisher_id ? handleUnpublish : undefined}
+/>
 ```
 
 ---
 
-## New Location
+## Issue 2: Fix SFW/NSFW Badge Styling
 
-The button will be placed at the **bottom of the right column's content area**, after the Characters section, aligned to the right.
+### Current (Wrong)
 
----
-
-## Changes Required
-
-### File: `src/components/chronicle/ScenarioDetailModal.tsx`
-
-**1. Remove the button from lines 294-308** (left column)
-
-Delete this block:
+**Modal (lines 206-217 of ScenarioDetailModal.tsx):**
 ```tsx
-{/* Unpublish button for owned published scenarios */}
-{isOwned && isPublished && onUnpublish && (
-  <button
-    onClick={handleUnpublish}
-    disabled={isUnpublishing}
-    className="w-full mt-2 h-10 bg-white/5 hover:bg-white/10 border border-white/10 text-white/60 hover:text-white rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-  >
-    {isUnpublishing ? (
-      <Loader2 className="w-4 h-4 animate-spin" />
-    ) : (
-      <Globe className="w-4 h-4" />
-    )}
-    Remove from Gallery
-  </button>
-)}
+<span className={cn(
+  "px-3 py-1.5 rounded-lg text-xs font-bold shadow-lg",
+  contentThemes.storyType === 'NSFW'
+    ? "bg-red-500/90 text-white"     // ❌ Solid red bg, white text
+    : "bg-blue-500/90 text-white"    // ❌ Solid blue bg, white text
+)}>
 ```
 
-**2. Add the button after the Characters section (line 476)**, aligned to the right:
+### Correct (Matches Gallery Cards)
 
+**From GalleryScenarioCard.tsx (lines 88-92):**
 ```tsx
-{/* Characters Section */}
-<div className="mt-auto pt-8 border-t border-white/5">
-  {/* ... existing characters content ... */}
-</div>
+<div className={cn(
+  "... bg-[#2a2a2f]",
+  published.contentThemes.storyType === 'NSFW'
+    ? "text-red-400"    // ✅ Dark bg, red text
+    : "text-blue-400"   // ✅ Dark bg, blue text
+)}>
+```
 
-{/* Remove from Gallery - Bottom Right */}
-{isOwned && isPublished && onUnpublish && (
-  <div className="flex justify-end mt-6">
-    <button
-      onClick={handleUnpublish}
-      disabled={isUnpublishing}
-      className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white/60 hover:text-white rounded-xl font-semibold text-sm transition-colors flex items-center gap-2 disabled:opacity-50"
-    >
-      {isUnpublishing ? (
-        <Loader2 className="w-4 h-4 animate-spin" />
-      ) : (
-        <Globe className="w-4 h-4" />
-      )}
-      Remove from Gallery
-    </button>
+### Fix Required
+
+**File:** `src/components/chronicle/ScenarioDetailModal.tsx` (lines 206-217)
+
+Change to:
+```tsx
+{contentThemes?.storyType && (
+  <div className="absolute top-3 right-3">
+    <span className={cn(
+      "px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f]",
+      contentThemes.storyType === 'NSFW'
+        ? "text-red-400"
+        : "text-blue-400"
+    )}>
+      {contentThemes.storyType}
+    </span>
   </div>
 )}
-```
-
----
-
-## Visual Layout
-
-```text
-+------------------------------------------+----------------------------------------+
-| LEFT COLUMN (420px)                      | RIGHT COLUMN (flex-1)                  |
-|                                          |                                        |
-| [Cover Image]                            | Title                                  |
-|                                          | PUBLISHED badge                        |
-| [Edit] [Play]                            |                                        |
-|                                          | SYNOPSIS                               |
-| (NO Remove button here anymore)          | Description text...                    |
-|                                          |                                        |
-|                                          | Content Themes Grid                    |
-|                                          |                                        |
-|                                          | ─────────────────────────────────────  |
-|                                          | CHARACTERS                             |
-|                                          | (avatar) (avatar) (avatar)             |
-|                                          |                                        |
-|                                          |            [Remove from Gallery] ← NEW |
-+------------------------------------------+----------------------------------------+
 ```
 
 ---
@@ -110,5 +117,22 @@ Delete this block:
 
 | File | Changes |
 |------|---------|
-| `src/components/chronicle/ScenarioDetailModal.tsx` | Remove button from left column (lines 294-308), add to bottom of right column content (after line 476) |
+| `src/components/chronicle/GalleryHub.tsx` | Add `unpublishScenario` import, add `handleUnpublish` function, pass `isOwned`, `isPublished`, `onUnpublish` props to modal |
+| `src/components/chronicle/ScenarioDetailModal.tsx` | Update SFW/NSFW badge styling to match gallery cards (dark bg + colored text) |
 
+---
+
+## Visual Reference
+
+### Badge Styling (After Fix)
+
+Both gallery cards AND modal will show:
+- **NSFW**: Dark charcoal background (`#2a2a2f`) with red text (`text-red-400`)
+- **SFW**: Dark charcoal background (`#2a2a2f`) with blue text (`text-blue-400`)
+
+### "Remove from Gallery" Behavior (After Fix)
+
+| Viewing From | Your Own Story | Someone Else's Story |
+|--------------|----------------|----------------------|
+| Your Stories page | ✅ Shows button | N/A |
+| Community Gallery | ✅ Shows button | ❌ No button |
