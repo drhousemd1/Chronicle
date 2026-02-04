@@ -1,88 +1,185 @@
 
-# Fix Share Your Story Section Styling
+
+# Community Gallery - Search Header Styling & Sort Filter
 
 ## Overview
 
-Update the "Share Your Story" section in `src/components/chronicle/WorldTab.tsx` to:
-1. Use the steel blue header color (`#4a5f7f`) instead of the purple/blue gradient
-2. Restyle the "Publish to Gallery" button to match the "Upload Image" button design with drop shadow
+Update the Community Gallery search header to:
+1. Use the steel blue (`#4a5f7f`) background matching the Scenario Builder
+2. Add a segmented filter toggle for quick sorting: All, Most Recent, Most Liked, Most Saved, Most Played
 
 ---
 
-## File to Modify
+## File Changes
 
 | File | Changes |
 |------|---------|
-| `src/components/chronicle/WorldTab.tsx` | Update Share section header color and button styling |
+| `src/components/chronicle/GalleryHub.tsx` | Restyle search header container + add sort filter state and UI |
+| `src/services/gallery-data.ts` | Add sortBy parameter to fetchPublishedScenarios function |
 
 ---
 
 ## Detailed Changes
 
-### 1. Section Header (line 879)
+### 1. GalleryHub.tsx - Add Sort State & Filter Toggle
 
-**Current:**
+**Add new state variable (after line 29):**
 ```tsx
-<div className="bg-gradient-to-r from-blue-600 to-purple-600 border-b border-white/20 px-6 py-4 flex items-center gap-3 shadow-lg">
+const [sortBy, setSortBy] = useState<'all' | 'recent' | 'liked' | 'saved' | 'played'>('all');
 ```
 
-**Updated:**
+**Update loadScenarios dependency (line 58):**
+Include `sortBy` in the callback dependencies so changing the filter reloads data.
+
+### 2. GalleryHub.tsx - Restyle Search Header Container (lines 165-205)
+
+**Current search header:**
 ```tsx
-<div className="bg-[#4a5f7f] border-b border-white/20 px-6 py-4 flex items-center gap-3 shadow-lg">
-```
-
-This changes from the purple/blue gradient to the steel blue (`#4a5f7f`) used by all other section headers on the page.
-
-### 2. Publish to Gallery Button (lines 890-899)
-
-**Current:**
-```tsx
-<div className="mt-4">
-  <Button 
-    variant="primary"
-    onClick={() => setShowShareModal(true)}
-    className="w-full !bg-gradient-to-r !from-blue-600 !to-purple-600 hover:!from-blue-500 hover:!to-purple-500"
-  >
-    <Share2 className="w-4 h-4 mr-2" />
-    Publish to Gallery
-  </Button>
+<div className="p-6 border-b border-slate-200">
+  <div className="max-w-2xl mx-auto">
+    ...
+  </div>
 </div>
 ```
 
-**Updated:**
+**Updated search header with steel blue background:**
 ```tsx
-<div className="mt-4">
-  <button
-    type="button"
-    onClick={() => setShowShareModal(true)}
-    className="flex h-10 w-full items-center justify-center gap-2 px-4
-      rounded-xl border border-[hsl(var(--ui-border))] 
-      bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
-      text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none
-      hover:bg-white/5 active:bg-white/10
-      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40
-      transition-colors"
-  >
-    <Share2 className="w-3.5 h-3.5 shrink-0" />
-    <span>Publish to Gallery</span>
-  </button>
+<div className="p-6 bg-[#4a5f7f]">
+  <div className="max-w-2xl mx-auto space-y-4">
+    {/* Search input */}
+    <div className="relative">
+      <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
+      <input
+        type="text"
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder="Search by tags: fantasy, romance, mystery..."
+        className="w-full pl-12 pr-24 py-4 bg-white/10 border border-white/20 rounded-2xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-transparent"
+      />
+      <button
+        onClick={handleSearch}
+        className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-2 bg-white text-[#4a5f7f] rounded-xl font-semibold text-sm hover:bg-white/90 transition-colors"
+      >
+        Search
+      </button>
+    </div>
+    
+    {/* Filter tags display (if any) */}
+    {searchTags.length > 0 && (
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-white/70">Filtering by:</span>
+        {searchTags.map(tag => (
+          <span key={tag} className="px-2 py-1 bg-white/20 text-white rounded-full text-xs font-medium">
+            #{tag}
+          </span>
+        ))}
+        <button
+          onClick={() => { setSearchTags([]); setSearchQuery(''); }}
+          className="text-sm text-white/70 hover:text-white underline ml-2"
+        >
+          Clear
+        </button>
+      </div>
+    )}
+
+    {/* Sort Filter Toggle */}
+    <div className="flex justify-center">
+      <div className="inline-flex bg-white/10 rounded-full p-1 border border-white/20">
+        {[
+          { key: 'all', label: 'All' },
+          { key: 'recent', label: 'Most Recent' },
+          { key: 'liked', label: 'Most Liked' },
+          { key: 'saved', label: 'Most Saved' },
+          { key: 'played', label: 'Most Played' },
+        ].map((option) => (
+          <button
+            key={option.key}
+            onClick={() => setSortBy(option.key as typeof sortBy)}
+            className={`px-4 py-2 text-sm font-medium rounded-full transition-all ${
+              sortBy === option.key
+                ? 'bg-white text-[#4a5f7f] shadow-sm'
+                : 'text-white/70 hover:text-white'
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  </div>
 </div>
 ```
 
-This exact styling is copied from the Upload Image button in `CoverImageActionButtons.tsx`, including:
-- `shadow-[0_10px_30px_rgba(0,0,0,0.35)]` for the drop shadow
-- `bg-[hsl(var(--ui-surface-2))]` for the dark surface background
-- `border-[hsl(var(--ui-border))]` for the consistent border
-- `text-[10px] font-bold` for the button text style
-- `h-10 rounded-xl` for the height and border radius
+### 3. gallery-data.ts - Add Sort Parameter to fetchPublishedScenarios
+
+**Update function signature (line 49):**
+```tsx
+export async function fetchPublishedScenarios(
+  searchTags?: string[],
+  sortBy: 'all' | 'recent' | 'liked' | 'saved' | 'played' = 'all',
+  limit = 50,
+  offset = 0
+): Promise<PublishedScenario[]> {
+```
+
+**Update order clause based on sortBy (replace line 77):**
+```tsx
+// Apply sorting based on sortBy parameter
+switch (sortBy) {
+  case 'liked':
+    query = query.order('like_count', { ascending: false });
+    break;
+  case 'saved':
+    query = query.order('save_count', { ascending: false });
+    break;
+  case 'played':
+    query = query.order('play_count', { ascending: false });
+    break;
+  case 'recent':
+  case 'all':
+  default:
+    query = query.order('created_at', { ascending: false });
+    break;
+}
+```
+
+### 4. GalleryHub.tsx - Update loadScenarios Call
+
+**Update the fetchPublishedScenarios call (line 40):**
+```tsx
+const data = await fetchPublishedScenarios(
+  searchTags.length > 0 ? searchTags : undefined,
+  sortBy
+);
+```
+
+**Update useCallback dependencies (line 58):**
+```tsx
+}, [user, searchTags, sortBy]);
+```
 
 ---
 
-## Summary
+## Visual Reference
 
-| Element | Before | After |
-|---------|--------|-------|
-| Header background | `bg-gradient-to-r from-blue-600 to-purple-600` | `bg-[#4a5f7f]` (steel blue) |
-| Button style | Custom Button component with gradient | Native button with Upload Image styling |
-| Button shadow | None | `shadow-[0_10px_30px_rgba(0,0,0,0.35)]` |
-| Button background | Gradient | `bg-[hsl(var(--ui-surface-2))]` (dark surface) |
+The sort filter toggle matches Image 2 styling:
+- Pill-shaped container with subtle background
+- Active item has solid white background with dark text
+- Inactive items have transparent background with muted text
+- Smooth transitions on hover and selection
+
+The steel blue header matches the Scenario Builder panels exactly (`#4a5f7f`).
+
+---
+
+## Sort Options Mapping
+
+| Filter | Database Sort | Purpose |
+|--------|--------------|---------|
+| All | `created_at DESC` | Default view, newest first |
+| Most Recent | `created_at DESC` | Explicitly sort by publish date |
+| Most Liked | `like_count DESC` | Popular by engagement |
+| Most Saved | `save_count DESC` | Popular by saves/bookmarks |
+| Most Played | `play_count DESC` | Popular by plays |
+
