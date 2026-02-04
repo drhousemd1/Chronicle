@@ -1,41 +1,31 @@
 
 
-# Fix: Stop Published Stories from Appearing in Other Users' "My Stories"
+# Fix: Bookmarked Stories Not Appearing in "Your Stories" Tab
 
 ## Problem Identified
 
-After the RLS policy change, the `fetchScenarios()` function returns **all scenarios visible to the user** instead of **only their own scenarios**. This causes published scenarios from other users to incorrectly appear in the "Your Stories" tab.
+When a user bookmarks a story in the Community Gallery:
+1. The save IS written to the `saved_scenarios` table in the database
+2. The Gallery's local UI updates correctly (bookmark icon fills in)
+3. **BUT** the "Your Stories" page's `savedScenarios` state is NOT refreshed
+4. The "Bookmarked" filter shows nothing until you reload the page
 
-The root cause:
+## Root Cause
+
+The `GalleryHub` component handles saves internally but has no way to notify `Index.tsx` that a save occurred. The `savedScenarios` state is only fetched once on initial page load (line 169).
+
 ```typescript
-// Current code - NO user_id filter
-export async function fetchScenarios(): Promise<ScenarioMetadata[]> {
-  const { data, error } = await supabase
-    .from('scenarios')
-    .select('...')
-    .order('updated_at', { ascending: false });
-  // Returns ALL scenarios the user can see (own + published)
-}
+// Current: GalleryHub only has onPlay callback
+<GalleryHub onPlay={handleGalleryPlay} />
+
+// Missing: No callback for when saves happen
 ```
 
 ---
 
 ## Solution
 
-Add an explicit `user_id` filter to ensure only the authenticated user's own scenarios are returned:
-
-```typescript
-export async function fetchMyScenarios(userId: string): Promise<ScenarioMetadata[]> {
-  const { data, error } = await supabase
-    .from('scenarios')
-    .select('id, title, description, cover_image_url, cover_image_position, tags, created_at, updated_at')
-    .eq('user_id', userId)  // Only fetch MY scenarios
-    .order('updated_at', { ascending: false });
-
-  if (error) throw error;
-  return (data || []).map(dbToScenarioMetadata);
-}
-```
+Add an `onSaveChange` callback to `GalleryHub` that triggers whenever a user bookmarks or unbookmarks a story. Index.tsx will use this to refresh its `savedScenarios` state.
 
 ---
 
@@ -43,57 +33,99 @@ export async function fetchMyScenarios(userId: string): Promise<ScenarioMetadata
 
 | File | Changes |
 |------|---------|
-| `src/services/supabase-data.ts` | Rename `fetchScenarios` to `fetchMyScenarios(userId)` and add `.eq('user_id', userId)` filter |
-| `src/pages/Index.tsx` | Update the call to pass `user.id` to the new function |
+| `src/components/chronicle/GalleryHub.tsx` | Add `onSaveChange` prop, call it after save/unsave operations |
+| `src/pages/Index.tsx` | Pass callback to GalleryHub that refreshes savedScenarios |
 
 ---
 
 ## Technical Changes
 
-### 1. supabase-data.ts (line ~220)
+### 1. GalleryHub.tsx - Add callback prop
 
-Replace the current function:
+Update the interface and component:
 
 ```typescript
-export async function fetchMyScenarios(userId: string): Promise<ScenarioMetadata[]> {
-  const { data, error } = await supabase
-    .from('scenarios')
-    .select('id, title, description, cover_image_url, cover_image_position, tags, created_at, updated_at')
-    .eq('user_id', userId)
-    .order('updated_at', { ascending: false });
-
-  if (error) throw error;
-  return (data || []).map(dbToScenarioMetadata);
+interface GalleryHubProps {
+  onPlay: (scenarioId: string, publishedScenarioId: string) => void;
+  onSaveChange?: () => void;  // New callback
 }
+
+export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange }) => {
+  // ... existing code ...
+
+  const handleSave = async (published: PublishedScenario) => {
+    // ... existing save logic ...
+    
+    try {
+      if (isSaved) {
+        await unsaveScenario(published.id, user.id);
+        // ... existing UI updates ...
+        toast.success('Removed from your collection');
+      } else {
+        await saveScenarioToCollection(published.id, published.scenario_id, user.id);
+        // ... existing UI updates ...
+        toast.success('Saved to your stories!');
+      }
+      
+      // Notify parent that saves changed
+      onSaveChange?.();
+      
+    } catch (error) {
+      // ... error handling ...
+    }
+  };
 ```
 
-### 2. Index.tsx (line ~163)
-
-Update the data loading:
+### 2. Index.tsx - Pass refresh callback
 
 ```typescript
-const [scenarios, characters, ...] = await Promise.all([
-  supabaseData.fetchMyScenarios(user.id),  // Changed from fetchScenarios()
-  supabaseData.fetchCharacterLibrary(),
-  // ...rest
-]);
+// Add a handler to refresh saved scenarios
+const handleGallerySaveChange = useCallback(async () => {
+  if (!user) return;
+  try {
+    const savedScens = await fetchSavedScenarios(user.id);
+    setSavedScenarios(savedScens);
+  } catch (e) {
+    console.error('Failed to refresh saved scenarios:', e);
+  }
+}, [user]);
+
+// Update GalleryHub usage
+<GalleryHub 
+  onPlay={handleGalleryPlay} 
+  onSaveChange={handleGallerySaveChange}
+/>
 ```
 
 ---
 
-## Security Confirmation
+## Data Flow After Fix
 
-- RLS policy remains unchanged - it correctly allows viewing published scenarios (needed for Community Gallery)
-- The client-side filter ensures "My Stories" only shows owned content
-- This is defense-in-depth: RLS controls what CAN be accessed, client code controls what IS requested
+```
+User clicks Bookmark in Gallery
+         ↓
+GalleryHub.handleSave()
+         ↓
+Save written to saved_scenarios table
+         ↓
+GalleryHub local UI updates (icon fills)
+         ↓
+onSaveChange() callback fires  ← NEW
+         ↓
+Index.tsx refetches savedScenarios
+         ↓
+filteredRegistry updates
+         ↓
+Bookmarked tab now shows the story
+```
 
 ---
 
 ## Result
 
 After this fix:
-- "Your Stories" tab will ONLY show scenarios you created
-- Published scenarios from others will ONLY appear in the Community Gallery
-- Bookmarked scenarios will only appear after explicit user action
-- No data will "bleed" between accounts
+- Bookmarking a story in the Community Gallery will immediately appear in the "Bookmarked" filter
+- Unbookmarking will immediately remove it from the "Bookmarked" filter
+- No page refresh required
+- Both save and unsave actions trigger the refresh
 
