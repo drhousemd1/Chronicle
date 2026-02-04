@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Loader2, Globe } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { GalleryScenarioCard } from './GalleryScenarioCard';
 import { ScenarioDetailModal } from './ScenarioDetailModal';
 import { 
@@ -170,14 +171,14 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange }) 
         <div className="max-w-2xl mx-auto space-y-4">
           {/* Search input */}
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Search by tags: fantasy, romance, mystery..."
-              className="w-full pl-12 pr-24 py-4 bg-white/10 border border-white/20 rounded-2xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-transparent"
+              className="w-full pl-12 pr-24 py-4 bg-white border border-white rounded-2xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent shadow-lg"
             />
             <button
               onClick={handleSearch}
@@ -210,7 +211,7 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange }) 
 
           {/* Sort Filter Toggle */}
           <div className="flex justify-center">
-            <div className="inline-flex bg-white/10 rounded-full p-1 border border-white/20">
+            <div className="flex items-center bg-slate-200 rounded-full p-1 gap-0.5">
               {[
                 { key: 'all' as SortOption, label: 'All' },
                 { key: 'recent' as SortOption, label: 'Most Recent' },
@@ -221,11 +222,12 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange }) 
                 <button
                   key={option.key}
                   onClick={() => setSortBy(option.key)}
-                  className={`px-4 py-2 text-sm font-medium rounded-full transition-all ${
-                    sortBy === option.key
-                      ? 'bg-white text-[#4a5f7f] shadow-sm'
-                      : 'text-white/70 hover:text-white'
-                  }`}
+                  className={cn(
+                    "px-4 py-1.5 rounded-full text-xs font-bold transition-all",
+                    sortBy === option.key 
+                      ? "bg-white text-slate-900 shadow-sm" 
+                      : "text-slate-500 hover:text-slate-700"
+                  )}
                 >
                   {option.label}
                 </button>
