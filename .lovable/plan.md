@@ -1,185 +1,132 @@
 
 
-# Community Gallery - Search Header Styling & Sort Filter
+# Community Gallery - Fix Search Bar & Sort Filter Styling
 
 ## Overview
 
-Update the Community Gallery search header to:
-1. Use the steel blue (`#4a5f7f`) background matching the Scenario Builder
-2. Add a segmented filter toggle for quick sorting: All, Most Recent, Most Liked, Most Saved, Most Played
+Two issues to fix in `src/components/chronicle/GalleryHub.tsx`:
+
+1. **Search bar needs white background** - Keep the blue container but make the search input itself white
+2. **Sort filter toggle must match Your Stories slider** - Use the exact same styling from Index.tsx
 
 ---
 
-## File Changes
+## File to Modify
 
 | File | Changes |
 |------|---------|
-| `src/components/chronicle/GalleryHub.tsx` | Restyle search header container + add sort filter state and UI |
-| `src/services/gallery-data.ts` | Add sortBy parameter to fetchPublishedScenarios function |
+| `src/components/chronicle/GalleryHub.tsx` | Fix search input background + match sort toggle styling to Your Stories |
 
 ---
 
 ## Detailed Changes
 
-### 1. GalleryHub.tsx - Add Sort State & Filter Toggle
+### 1. Search Input - White Background (lines 174-181)
 
-**Add new state variable (after line 29):**
+**Current:**
 ```tsx
-const [sortBy, setSortBy] = useState<'all' | 'recent' | 'liked' | 'saved' | 'played'>('all');
+<input
+  ...
+  className="w-full pl-12 pr-24 py-4 bg-white/10 border border-white/20 rounded-2xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-transparent"
+/>
 ```
 
-**Update loadScenarios dependency (line 58):**
-Include `sortBy` in the callback dependencies so changing the filter reloads data.
-
-### 2. GalleryHub.tsx - Restyle Search Header Container (lines 165-205)
-
-**Current search header:**
+**Updated:**
 ```tsx
-<div className="p-6 border-b border-slate-200">
-  <div className="max-w-2xl mx-auto">
-    ...
-  </div>
-</div>
+<input
+  ...
+  className="w-full pl-12 pr-24 py-4 bg-white border border-white rounded-2xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent shadow-lg"
+/>
 ```
 
-**Updated search header with steel blue background:**
+Changes:
+- `bg-white/10` → `bg-white` (solid white background)
+- `text-white` → `text-slate-900` (dark text on white)
+- `placeholder:text-white/50` → `placeholder:text-slate-400` (gray placeholder)
+- Added `shadow-lg` for depth
+
+### 2. Search Icon Color (line 173)
+
+**Current:**
 ```tsx
-<div className="p-6 bg-[#4a5f7f]">
-  <div className="max-w-2xl mx-auto space-y-4">
-    {/* Search input */}
-    <div className="relative">
-      <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
-      <input
-        type="text"
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder="Search by tags: fantasy, romance, mystery..."
-        className="w-full pl-12 pr-24 py-4 bg-white/10 border border-white/20 rounded-2xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-transparent"
-      />
+<Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
+```
+
+**Updated:**
+```tsx
+<Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+```
+
+### 3. Sort Filter Toggle - Match Your Stories Slider (lines 212-234)
+
+**Current:**
+```tsx
+<div className="flex justify-center">
+  <div className="inline-flex bg-white/10 rounded-full p-1 border border-white/20">
+    {[...].map((option) => (
       <button
-        onClick={handleSearch}
-        className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-2 bg-white text-[#4a5f7f] rounded-xl font-semibold text-sm hover:bg-white/90 transition-colors"
+        ...
+        className={`px-4 py-2 text-sm font-medium rounded-full transition-all ${
+          sortBy === option.key
+            ? 'bg-white text-[#4a5f7f] shadow-sm'
+            : 'text-white/70 hover:text-white'
+        }`}
       >
-        Search
+        {option.label}
       </button>
-    </div>
-    
-    {/* Filter tags display (if any) */}
-    {searchTags.length > 0 && (
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-white/70">Filtering by:</span>
-        {searchTags.map(tag => (
-          <span key={tag} className="px-2 py-1 bg-white/20 text-white rounded-full text-xs font-medium">
-            #{tag}
-          </span>
-        ))}
-        <button
-          onClick={() => { setSearchTags([]); setSearchQuery(''); }}
-          className="text-sm text-white/70 hover:text-white underline ml-2"
-        >
-          Clear
-        </button>
-      </div>
-    )}
-
-    {/* Sort Filter Toggle */}
-    <div className="flex justify-center">
-      <div className="inline-flex bg-white/10 rounded-full p-1 border border-white/20">
-        {[
-          { key: 'all', label: 'All' },
-          { key: 'recent', label: 'Most Recent' },
-          { key: 'liked', label: 'Most Liked' },
-          { key: 'saved', label: 'Most Saved' },
-          { key: 'played', label: 'Most Played' },
-        ].map((option) => (
-          <button
-            key={option.key}
-            onClick={() => setSortBy(option.key as typeof sortBy)}
-            className={`px-4 py-2 text-sm font-medium rounded-full transition-all ${
-              sortBy === option.key
-                ? 'bg-white text-[#4a5f7f] shadow-sm'
-                : 'text-white/70 hover:text-white'
-            }`}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
-    </div>
+    ))}
   </div>
 </div>
 ```
 
-### 3. gallery-data.ts - Add Sort Parameter to fetchPublishedScenarios
-
-**Update function signature (line 49):**
+**Updated (exact match to Your Stories slider from Index.tsx lines 1230-1264):**
 ```tsx
-export async function fetchPublishedScenarios(
-  searchTags?: string[],
-  sortBy: 'all' | 'recent' | 'liked' | 'saved' | 'played' = 'all',
-  limit = 50,
-  offset = 0
-): Promise<PublishedScenario[]> {
+<div className="flex justify-center">
+  <div className="flex items-center bg-slate-200 rounded-full p-1 gap-0.5">
+    {[...].map((option) => (
+      <button
+        ...
+        className={cn(
+          "px-4 py-1.5 rounded-full text-xs font-bold transition-all",
+          sortBy === option.key 
+            ? "bg-white text-slate-900 shadow-sm" 
+            : "text-slate-500 hover:text-slate-700"
+        )}
+      >
+        {option.label}
+      </button>
+    ))}
+  </div>
+</div>
 ```
 
-**Update order clause based on sortBy (replace line 77):**
-```tsx
-// Apply sorting based on sortBy parameter
-switch (sortBy) {
-  case 'liked':
-    query = query.order('like_count', { ascending: false });
-    break;
-  case 'saved':
-    query = query.order('save_count', { ascending: false });
-    break;
-  case 'played':
-    query = query.order('play_count', { ascending: false });
-    break;
-  case 'recent':
-  case 'all':
-  default:
-    query = query.order('created_at', { ascending: false });
-    break;
-}
-```
+Key styling changes:
+- Container: `bg-white/10 border border-white/20` → `bg-slate-200 gap-0.5` (light gray, no border)
+- Active button: `text-[#4a5f7f]` → `text-slate-900`
+- Inactive button: `text-white/70 hover:text-white` → `text-slate-500 hover:text-slate-700`
+- Button padding: `py-2 text-sm font-medium` → `py-1.5 text-xs font-bold`
+- Add `cn()` import for consistency with rest of codebase
 
-### 4. GalleryHub.tsx - Update loadScenarios Call
+### 4. Add cn Import
 
-**Update the fetchPublishedScenarios call (line 40):**
+Add the `cn` utility import at the top of the file:
 ```tsx
-const data = await fetchPublishedScenarios(
-  searchTags.length > 0 ? searchTags : undefined,
-  sortBy
-);
-```
-
-**Update useCallback dependencies (line 58):**
-```tsx
-}, [user, searchTags, sortBy]);
+import { cn } from "@/lib/utils";
 ```
 
 ---
 
-## Visual Reference
+## Visual Summary
 
-The sort filter toggle matches Image 2 styling:
-- Pill-shaped container with subtle background
-- Active item has solid white background with dark text
-- Inactive items have transparent background with muted text
-- Smooth transitions on hover and selection
+| Element | Before | After |
+|---------|--------|-------|
+| Search input background | `bg-white/10` (semi-transparent) | `bg-white` (solid white) |
+| Search input text | `text-white` | `text-slate-900` |
+| Search icon | `text-white/50` | `text-slate-400` |
+| Filter container | `bg-white/10 border border-white/20` | `bg-slate-200` |
+| Active filter button | `text-[#4a5f7f]` | `text-slate-900` |
+| Inactive filter button | `text-white/70` | `text-slate-500` |
+| Filter button text size | `text-sm font-medium` | `text-xs font-bold` |
 
-The steel blue header matches the Scenario Builder panels exactly (`#4a5f7f`).
-
----
-
-## Sort Options Mapping
-
-| Filter | Database Sort | Purpose |
-|--------|--------------|---------|
-| All | `created_at DESC` | Default view, newest first |
-| Most Recent | `created_at DESC` | Explicitly sort by publish date |
-| Most Liked | `like_count DESC` | Popular by engagement |
-| Most Saved | `save_count DESC` | Popular by saves/bookmarks |
-| Most Played | `play_count DESC` | Popular by plays |
+This ensures the search bar has a clean white background while keeping the steel blue container, and the sort filter toggle matches exactly the slider on the Your Stories page.
 
