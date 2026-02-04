@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { fetchContentThemes } from "@/services/supabase-data";
 import { getPublishedScenario, unpublishScenario, PublishedScenario } from "@/services/gallery-data";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface ScenarioCardProps {
   scen: ScenarioMetadata;
@@ -15,9 +16,10 @@ interface ScenarioCardProps {
   onDelete: (id: string) => void;
   onViewDetails: (id: string) => void;
   isPublished?: boolean;
+  contentThemes?: ContentThemes;
 }
 
-const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDelete, onViewDetails, isPublished }) => {
+const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDelete, onViewDetails, isPublished, contentThemes }) => {
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onDelete(scen.id);
@@ -29,16 +31,28 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDel
     <div className="group relative cursor-pointer" onClick={() => onViewDetails(scen.id)}>
       <div className="aspect-[2/3] w-full overflow-hidden rounded-[2rem] bg-slate-200 !shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)] transition-all duration-300 group-hover:-translate-y-3 group-hover:shadow-2xl ring-1 ring-slate-900/5 relative">
         
-        {scen.isBookmarked && (
-          <div className="absolute top-4 left-4 px-2.5 py-1 bg-purple-600 text-white text-[10px] font-bold uppercase tracking-wide rounded-full z-10 shadow-lg">
-            Saved
-          </div>
-        )}
+        {/* Top-left badge container - flows horizontally */}
+        <div className="absolute top-4 left-4 flex items-center gap-2 z-10">
+          {scen.isBookmarked && (
+            <div className="px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f] text-yellow-400 uppercase tracking-wide">
+              Saved
+            </div>
+          )}
+          
+          {!scen.isBookmarked && isPublished && (
+            <div className="px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f] text-emerald-400 uppercase tracking-wide">
+              Published
+            </div>
+          )}
+        </div>
         
-        {/* Published tag - show on right side for user's own published stories */}
-        {!scen.isBookmarked && isPublished && (
-          <div className="absolute top-4 right-12 px-2.5 py-1 bg-emerald-600 text-white text-[10px] font-bold uppercase tracking-wide rounded-full z-10 shadow-lg">
-            Published
+        {/* SFW/NSFW Badge - Top Right */}
+        {contentThemes?.storyType && (
+          <div className={cn(
+            "absolute top-4 right-4 px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f] z-10 uppercase tracking-wide",
+            contentThemes.storyType === 'NSFW' ? "text-red-400" : "text-blue-400"
+          )}>
+            {contentThemes.storyType}
           </div>
         )}
         
@@ -59,12 +73,19 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDel
         
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/20 to-transparent opacity-90 group-hover:opacity-95 transition-opacity" />
         
+        {/* Hover Actions - Edit, Delete, Play */}
         <div className="absolute inset-0 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 scale-90 group-hover:scale-100">
           <button 
             onClick={(e) => { e.stopPropagation(); onEdit(scen.id); }}
             className="px-6 py-2.5 bg-white text-slate-900 rounded-xl font-bold text-sm shadow-2xl hover:bg-slate-50 transition-colors"
           >
             Edit
+          </button>
+          <button 
+            onClick={handleDeleteClick}
+            className="px-6 py-2.5 bg-rose-600 text-white rounded-xl font-bold text-sm shadow-2xl hover:bg-rose-500 transition-colors"
+          >
+            Delete
           </button>
           <button 
             onClick={(e) => { e.stopPropagation(); onPlay(scen.id); }}
@@ -74,22 +95,15 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDel
           </button>
         </div>
         
-        <div className="absolute inset-x-0 bottom-0 h-28 p-6 pointer-events-none flex flex-col">
+        {/* Bottom Info - Positioned at top of lower third */}
+        <div className="absolute inset-x-0 bottom-0 h-1/3 p-6 pointer-events-none flex flex-col justify-start">
           <h3 className="text-xl font-black text-white leading-tight tracking-tight group-hover:text-blue-300 transition-colors truncate flex-shrink-0">
             {scen.title || "Unnamed Story"}
           </h3>
-          <p className="text-xs text-white/70 line-clamp-3 leading-relaxed italic mt-1">
+          <p className="text-xs text-white/70 line-clamp-3 leading-relaxed italic mt-1 overflow-hidden">
             {scen.description || "No summary provided."}
           </p>
         </div>
-
-        <button 
-          type="button"
-          onClick={handleDeleteClick}
-          className="absolute top-4 right-4 p-3 bg-black/40 text-white/50 hover:text-rose-500 hover:bg-black/60 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 hover:rotate-12 z-20 pointer-events-auto"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-        </button>
       </div>
     </div>
   );
@@ -102,6 +116,7 @@ interface ScenarioHubProps {
   onDelete: (id: string) => void;
   onCreate: () => void;
   publishedScenarioIds?: Set<string>;
+  contentThemesMap?: Map<string, ContentThemes>;
 }
 
 export function ScenarioHub({
@@ -111,6 +126,7 @@ export function ScenarioHub({
   onDelete,
   onCreate,
   publishedScenarioIds,
+  contentThemesMap,
 }: ScenarioHubProps) {
   // Detail modal state
   const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -167,6 +183,7 @@ export function ScenarioHub({
             onDelete={onDelete}
             onViewDetails={handleViewDetails}
             isPublished={publishedScenarioIds?.has(scen.id)}
+            contentThemes={contentThemesMap?.get(scen.id)}
           />
         ))}
         {registry.length > 0 && (

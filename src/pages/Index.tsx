@@ -143,6 +143,7 @@ const IndexContent = () => {
   const [hubFilter, setHubFilter] = useState<HubFilter>("all");
   const [savedScenarios, setSavedScenarios] = useState<SavedScenario[]>([]);
   const [publishedScenarioIds, setPublishedScenarioIds] = useState<Set<string>>(new Set());
+  const [contentThemesMap, setContentThemesMap] = useState<Map<string, ContentThemes>>(new Map());
 
   useEffect(() => {
     localStorage.setItem('chronicle_sidebar_collapsed', String(sidebarCollapsed));
@@ -177,6 +178,12 @@ const IndexContent = () => {
         setHubBackgrounds(backgrounds);
         setSavedScenarios(savedScens);
         setPublishedScenarioIds(publishedIds);
+        
+        // Fetch content themes for all user scenarios
+        if (scenarios.length > 0) {
+          const themesMap = await supabaseData.fetchContentThemesForScenarios(scenarios.map(s => s.id));
+          setContentThemesMap(themesMap);
+        }
         
         // Set the selected background if one is marked as selected (Hub)
         const selectedBg = backgrounds.find(bg => bg.isSelected);
@@ -1388,6 +1395,7 @@ const IndexContent = () => {
                 onDelete={handleDeleteScenario}
                 onCreate={handleCreateNewScenario}
                 publishedScenarioIds={publishedScenarioIds}
+                contentThemesMap={contentThemesMap}
               />
             </div>
           )}
