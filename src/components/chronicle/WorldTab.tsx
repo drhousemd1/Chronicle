@@ -15,6 +15,7 @@ import { SceneTagEditorModal } from './SceneTagEditorModal';
 import { CoverImageGenerationModal } from './CoverImageGenerationModal';
 import { SceneImageGenerationModal } from './SceneImageGenerationModal';
 import { UploadSourceMenu } from './UploadSourceMenu';
+import { CoverImageActionButtons } from './CoverImageActionButtons';
 import { aiEnhanceWorldField } from '@/services/world-ai';
 import { useModelSettings } from '@/contexts/ModelSettingsContext';
 
@@ -358,114 +359,110 @@ export const WorldTab: React.FC<WorldTabProps> = ({
             <p className="text-sm font-medium text-slate-500 mt-1">Configure the foundation of your interactive narrative.</p>
           </div>
 
-          {/* Cover Image Section */}
+          {/* Cover Image Section - Dark Theme */}
           <section>
-            <Card className="p-8 !shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)] border-transparent ring-1 ring-slate-900/5">
-              <h2 className="text-lg font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight mb-8 pb-4 border-b border-slate-100">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-                Cover Image
-              </h2>
+            <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
+              {/* Section Header - Steel Blue */}
+              <div className="bg-[#4a5f7f] border-b border-white/20 px-6 py-4 flex items-center gap-3 shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-white"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                <h2 className="text-white text-xl font-bold tracking-tight">Cover Image</h2>
+              </div>
               
-              <div className="flex flex-col md:flex-row gap-8">
-                {/* Preview Container - Portrait aspect ratio for story cards */}
-                <div 
-                  ref={coverContainerRef}
-                  onMouseDown={handleCoverMouseDown}
-                  onMouseMove={handleCoverMouseMove}
-                  onMouseUp={handleCoverMouseUp}
-                  onMouseLeave={handleCoverMouseUp}
-                  className={`relative w-full md:w-48 aspect-[2/3] rounded-2xl overflow-hidden transition-all duration-200 ${
-                    isRepositioningCover 
-                      ? 'ring-4 ring-blue-500 cursor-move shadow-xl shadow-blue-500/20' 
-                      : 'border-2 border-slate-100 shadow-lg'
-                  }`}
-                >
-                  {coverImage ? (
-                    <>
-                      <img 
-                        src={coverImage}
-                        alt="Cover"
-                        style={{ objectPosition: `${coverImagePosition.x}% ${coverImagePosition.y}%` }}
-                        className="w-full h-full object-cover pointer-events-none select-none"
-                        draggable={false}
-                      />
-                      {isRepositioningCover && (
-                        <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                          <div className="w-full h-[1px] bg-blue-500/40 absolute" />
-                          <div className="h-full w-[1px] bg-blue-500/40 absolute" />
-                          <div className="bg-blue-600 text-white text-[9px] font-black uppercase px-3 py-1.5 rounded-lg absolute bottom-3 tracking-widest shadow-xl">
-                            Drag to Refocus
-                          </div>
+              {/* Content */}
+              <div className="p-6">
+                <div className="p-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
+                  <div className="flex flex-col md:flex-row gap-8">
+                    {/* Preview Container - Portrait aspect ratio for story cards */}
+                    <div 
+                      ref={coverContainerRef}
+                      onMouseDown={handleCoverMouseDown}
+                      onMouseMove={handleCoverMouseMove}
+                      onMouseUp={handleCoverMouseUp}
+                      onMouseLeave={handleCoverMouseUp}
+                      className={`relative w-full md:w-48 aspect-[2/3] rounded-2xl overflow-hidden transition-all duration-200 ${
+                        isRepositioningCover 
+                          ? 'ring-4 ring-blue-500 cursor-move shadow-xl shadow-blue-500/20' 
+                          : 'border-2 border-white/10 shadow-lg'
+                      }`}
+                    >
+                      {coverImage ? (
+                        <>
+                          <img 
+                            src={coverImage}
+                            alt="Cover"
+                            style={{ objectPosition: `${coverImagePosition.x}% ${coverImagePosition.y}%` }}
+                            className="w-full h-full object-cover pointer-events-none select-none"
+                            draggable={false}
+                          />
+                          {isRepositioningCover && (
+                            <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                              <div className="w-full h-[1px] bg-blue-500/40 absolute" />
+                              <div className="h-full w-[1px] bg-blue-500/40 absolute" />
+                              <div className="bg-blue-600 text-white text-[9px] font-black uppercase px-3 py-1.5 rounded-lg absolute bottom-3 tracking-widest shadow-xl">
+                                Drag to Refocus
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex flex-col items-center justify-center border-2 border-dashed border-zinc-600 gap-3 rounded-2xl">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-500"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                          <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">No Cover</span>
                         </div>
                       )}
-                    </>
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 gap-3 rounded-2xl">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-slate-300"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No Cover</span>
                     </div>
-                  )}
-                </div>
-                
-                {/* Controls */}
-                <div className="flex flex-col gap-4 flex-1">
-              <HintBox hints={[
-                "This image appears on your story card in the hub. For best results, use a portrait-oriented image (2:3 aspect ratio)."
-              ]} />
-                  
-                  <div className="flex flex-wrap gap-3">
-                    <UploadSourceMenu
-                      onUploadFromDevice={() => coverFileInputRef.current?.click()}
-                      onSelectFromLibrary={(imageUrl) => {
-                        onUpdateCoverImage(imageUrl);
-                        onUpdateCoverPosition({ x: 50, y: 50 });
-                      }}
-                      disabled={isUploadingCover || isGeneratingCover}
-                      isUploading={isUploadingCover}
-                      label={coverImage ? "Change Image" : "Upload Image"}
-                      variant="primary"
-                      className="!px-5"
-                    />
                     
-                    <Button 
-                      variant="primary" 
-                      onClick={() => setShowCoverGenModal(true)} 
-                      disabled={isUploadingCover || isGeneratingCover}
-                      className="!px-5"
-                    >
-                      {isGeneratingCover ? "Generating..." : "AI Generate"}
-                    </Button>
-                    
-                    {coverImage && (
-                      <>
-                        <Button 
-                          variant={isRepositioningCover ? 'primary' : 'secondary'}
-                          onClick={() => setIsRepositioningCover(!isRepositioningCover)}
-                          className="!px-5"
-                        >
-                          {isRepositioningCover ? "Done" : "Reposition"}
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          className="!text-rose-500 hover:!bg-rose-50" 
-                          onClick={handleDeleteCover}
-                        >
-                          Remove
-                        </Button>
-                      </>
-                    )}
+                    {/* Controls */}
+                    <div className="flex flex-col gap-4 flex-1">
+                      <HintBox hints={[
+                        "This image appears on your story card in the hub. For best results, use a portrait-oriented image (2:3 aspect ratio)."
+                      ]} />
+                      
+                      <CoverImageActionButtons
+                        onUploadFromDevice={() => coverFileInputRef.current?.click()}
+                        onSelectFromLibrary={(imageUrl) => {
+                          onUpdateCoverImage(imageUrl);
+                          onUpdateCoverPosition({ x: 50, y: 50 });
+                        }}
+                        onGenerateClick={() => setShowCoverGenModal(true)}
+                        disabled={isUploadingCover || isGeneratingCover}
+                        isUploading={isUploadingCover}
+                        isGenerating={isGeneratingCover}
+                      />
+                      
+                      {coverImage && (
+                        <div className="flex flex-wrap gap-3">
+                          <button 
+                            onClick={() => setIsRepositioningCover(!isRepositioningCover)}
+                            className={`h-10 px-5 rounded-xl text-[10px] font-bold transition-colors ${
+                              isRepositioningCover 
+                                ? 'bg-blue-500 text-white' 
+                                : 'bg-zinc-700 text-zinc-200 hover:bg-zinc-600 border border-zinc-600'
+                            }`}
+                          >
+                            {isRepositioningCover ? "Done" : "Reposition"}
+                          </button>
+                          <button 
+                            onClick={handleDeleteCover}
+                            className="h-10 px-5 rounded-xl text-[10px] font-bold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition-colors"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      )}
+                      
+                      <input 
+                        type="file" 
+                        ref={coverFileInputRef} 
+                        className="hidden" 
+                        accept="image/*" 
+                        onChange={handleCoverUpload} 
+                      />
+                    </div>
                   </div>
-                  
-                  <input 
-                    type="file" 
-                    ref={coverFileInputRef} 
-                    className="hidden" 
-                    accept="image/*" 
-                    onChange={handleCoverUpload} 
-                  />
                 </div>
               </div>
-            </Card>
+            </div>
           </section>
 
           <section>
