@@ -91,19 +91,6 @@ export const GalleryScenarioCard: React.FC<GalleryScenarioCardProps> = ({
           </div>
         )}
 
-        {/* Tags */}
-        {published.tags.length > 0 && (
-          <div className="absolute top-4 right-4 flex flex-wrap gap-1.5 max-w-[120px] justify-end">
-            {published.tags.slice(0, 3).map((tag) => (
-              <span
-                key={tag}
-                className="px-2 py-0.5 bg-black/50 backdrop-blur-sm rounded-full text-[10px] text-white/80 font-medium"
-              >
-                #{tag}
-              </span>
-            ))}
-          </div>
-        )}
 
         {/* Hover Actions */}
         <div className="absolute inset-0 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 scale-90 group-hover:scale-100">
