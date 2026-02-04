@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Heart, Bookmark, Play, Sparkles, MessageCircle } from 'lucide-react';
+import { Heart, Bookmark, Play, Sparkles, Eye } from 'lucide-react';
 import { PublishedScenario } from '@/services/gallery-data';
 import { cn } from '@/lib/utils';
 
@@ -62,36 +62,47 @@ export const GalleryScenarioCard: React.FC<GalleryScenarioCardProps> = ({
       className="group relative cursor-pointer"
       onClick={onViewDetails}
     >
-      <div className="aspect-[3/4] w-full overflow-hidden rounded-2xl bg-[#2a2a2f] border border-white/5 hover:border-blue-500/30 transition-all duration-300 shadow-xl relative">
+      {/* Card container - matches ScenarioHub exactly */}
+      <div className="aspect-[2/3] w-full overflow-hidden rounded-[2rem] bg-slate-200 !shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)] transition-all duration-300 group-hover:-translate-y-3 group-hover:shadow-2xl ring-1 ring-slate-900/5 relative">
         
-        {/* Cover Image */}
+        {/* Remix Badge - top left */}
+        {published.allow_remix && (
+          <div className="absolute top-4 left-4 px-2.5 py-1 bg-purple-600 text-white text-[10px] font-bold uppercase tracking-wide rounded-full z-10 shadow-lg flex items-center gap-1">
+            <Sparkles className="w-3 h-3" />
+            Remixable
+          </div>
+        )}
+
+        {/* SFW/NSFW Badge - top right */}
+        {storyType && (
+          <div className={cn(
+            "absolute top-4 right-4 px-2.5 py-1 bg-[#2a2a2f]/90 backdrop-blur-sm border border-white/10 text-[10px] font-bold uppercase tracking-wide rounded-full z-10 shadow-lg",
+            storyType === 'NSFW' ? "text-red-400" : "text-blue-400"
+          )}>
+            {storyType}
+          </div>
+        )}
+        
+        {/* Cover Image - matches ScenarioHub */}
         {scenario?.cover_image_url ? (
           <img
             src={scenario.cover_image_url}
             alt={scenario.title}
             style={{ objectPosition: `${coverPosition.x}% ${coverPosition.y}%` }}
-            className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
           />
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900">
-            <div className="font-black text-white/10 text-6xl uppercase tracking-tighter italic">
+          <div className="flex h-full w-full items-center justify-center bg-slate-900 p-10 text-center">
+            <div className="font-black text-white/10 text-6xl uppercase tracking-tighter italic break-words p-4 text-center">
               {scenario?.title?.charAt(0) || '?'}
             </div>
           </div>
         )}
         
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+        {/* Gradient Overlay - matches ScenarioHub */}
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/20 to-transparent opacity-90 group-hover:opacity-95 transition-opacity" />
 
-        {/* Remix Badge */}
-        {published.allow_remix && (
-          <div className="absolute top-3 left-3 px-2 py-1 bg-purple-500/80 backdrop-blur-sm rounded-lg text-[10px] font-bold text-white flex items-center gap-1.5 shadow-lg">
-            <Sparkles className="w-3 h-3" />
-            REMIXABLE
-          </div>
-        )}
-
-        {/* Hover Actions */}
+        {/* Hover Actions - Gallery specific */}
         <div className="absolute inset-0 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 scale-90 group-hover:scale-100">
           <button
             onClick={handleLike}
@@ -119,44 +130,39 @@ export const GalleryScenarioCard: React.FC<GalleryScenarioCardProps> = ({
           </button>
           <button
             onClick={handlePlay}
-            className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm shadow-2xl hover:bg-blue-500 transition-colors flex items-center gap-2"
+            className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm shadow-2xl hover:bg-blue-500 transition-colors"
           >
-            <Play className="w-4 h-4 fill-current" />
             Play
           </button>
         </div>
 
-        {/* Bottom Info */}
-        <div className="absolute inset-x-0 bottom-0 p-5 flex flex-col justify-end pointer-events-none">
-          <h4 className="text-xl font-bold text-white leading-tight mb-1 truncate">
+        {/* Bottom Info - fixed height h-32 for alignment with metrics */}
+        <div className="absolute inset-x-0 bottom-0 h-32 p-6 pointer-events-none flex flex-col">
+          <h3 className="text-xl font-black text-white leading-tight tracking-tight group-hover:text-blue-300 transition-colors truncate flex-shrink-0">
             {scenario?.title || "Untitled Story"}
-          </h4>
-          <p className="text-xs text-gray-300 line-clamp-2 leading-relaxed mb-3">
+          </h3>
+          <p className="text-xs text-white/70 line-clamp-2 leading-relaxed italic mt-1 flex-1">
             {scenario?.description || "No description provided."}
           </p>
           
-          {/* Stats Row */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1 text-[10px] font-bold text-gray-400">
-                <Heart className={cn("w-3 h-3", isLiked && "fill-red-500 text-red-500")} />
-                {published.like_count}
-              </span>
-              {storyType && (
-                <span className={cn(
-                  "text-[10px] font-bold px-1.5 py-0.5 rounded",
-                  storyType === 'NSFW'
-                    ? "bg-red-500/20 text-red-400"
-                    : "bg-blue-500/20 text-blue-400"
-                )}>
-                  {storyType}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-1 text-[10px] font-bold text-gray-400">
-              <MessageCircle className="w-3 h-3" />
+          {/* Stats Row - Views, Likes, Saves, Plays */}
+          <div className="flex items-center gap-4 mt-auto pt-2">
+            <span className="flex items-center gap-1 text-[10px] font-bold text-white/50">
+              <Eye className="w-3 h-3" />
+              {published.view_count}
+            </span>
+            <span className="flex items-center gap-1 text-[10px] font-bold text-white/50">
+              <Heart className={cn("w-3 h-3", isLiked && "fill-red-500 text-red-500")} />
+              {published.like_count}
+            </span>
+            <span className="flex items-center gap-1 text-[10px] font-bold text-white/50">
+              <Bookmark className={cn("w-3 h-3", isSaved && "fill-amber-500 text-amber-500")} />
+              {published.save_count}
+            </span>
+            <span className="flex items-center gap-1 text-[10px] font-bold text-white/50">
+              <Play className="w-3 h-3" />
               {published.play_count}
-            </div>
+            </span>
           </div>
         </div>
       </div>
