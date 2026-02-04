@@ -20,6 +20,16 @@ export interface ScenarioDetailModalProps {
   coverImagePosition: { x: number; y: number };
   tags: string[];
   
+  // Content themes
+  contentThemes?: {
+    characterTypes: string[];
+    storyType: 'SFW' | 'NSFW' | null;
+    genres: string[];
+    origin: string[];
+    triggerWarnings: string[];
+    customTags: string[];
+  };
+  
   // Stats (for published scenarios)
   likeCount?: number;
   saveCount?: number;
@@ -57,6 +67,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
   coverImage,
   coverImagePosition,
   tags,
+  contentThemes,
   likeCount = 0,
   saveCount = 0,
   playCount = 0,
@@ -257,6 +268,42 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                         {description || "No description provided."}
                       </p>
                     </div>
+
+                    {/* Content Themes Display */}
+                    {contentThemes && (
+                      <div className="space-y-3 mb-4 p-4 bg-white/5 rounded-xl border border-white/10">
+                        {contentThemes.genres.length > 0 && (
+                          <div>
+                            <span className="text-[10px] font-bold text-white/40 uppercase tracking-wider block mb-1">Genre</span>
+                            <p className="text-sm text-white/80">{contentThemes.genres.join(', ')}</p>
+                          </div>
+                        )}
+                        {contentThemes.characterTypes.length > 0 && (
+                          <div>
+                            <span className="text-[10px] font-bold text-white/40 uppercase tracking-wider block mb-1">Character Types</span>
+                            <p className="text-sm text-white/80">{contentThemes.characterTypes.join(', ')}</p>
+                          </div>
+                        )}
+                        {contentThemes.origin.length > 0 && (
+                          <div>
+                            <span className="text-[10px] font-bold text-white/40 uppercase tracking-wider block mb-1">Story Origin</span>
+                            <p className="text-sm text-white/80">{contentThemes.origin.join(', ')}</p>
+                          </div>
+                        )}
+                        {contentThemes.triggerWarnings.length > 0 && (
+                          <div>
+                            <span className="text-[10px] font-bold text-rose-400/70 uppercase tracking-wider block mb-1">Trigger Warnings</span>
+                            <p className="text-sm text-rose-300/80">{contentThemes.triggerWarnings.join(', ')}</p>
+                          </div>
+                        )}
+                        {contentThemes.customTags.length > 0 && (
+                          <div>
+                            <span className="text-[10px] font-bold text-white/40 uppercase tracking-wider block mb-1">Custom Tags</span>
+                            <p className="text-sm text-white/80">{contentThemes.customTags.join(', ')}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* Tags */}
                     {tags.length > 0 && (

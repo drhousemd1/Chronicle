@@ -19,14 +19,16 @@ import type {
   SideCharacterPersonality,
   Memory,
   MemorySource,
-  TimeOfDay
+  TimeOfDay,
+  ContentThemes
 } from '@/types';
 import { 
   defaultPhysicalAppearance, 
   defaultCurrentlyWearing, 
   defaultPreferredClothing,
   defaultSideCharacterBackground,
-  defaultSideCharacterPersonality
+  defaultSideCharacterPersonality,
+  defaultContentThemes
 } from '@/types';
 import { LLM_MODELS } from '@/constants';
 
@@ -1481,5 +1483,46 @@ export async function deleteAllMemories(conversationId: string): Promise<void> {
     .delete()
     .eq('conversation_id', conversationId);
 
+  if (error) throw error;
+}
+
+// =============================================
+// CONTENT THEMES
+// =============================================
+
+export async function fetchContentThemes(scenarioId: string): Promise<ContentThemes> {
+  const { data, error } = await supabase
+    .from('content_themes')
+    .select('*')
+    .eq('scenario_id', scenarioId)
+    .maybeSingle();
+  
+  if (error) throw error;
+  
+  if (!data) return { ...defaultContentThemes };
+  
+  return {
+    characterTypes: data.character_types || [],
+    storyType: data.story_type as 'SFW' | 'NSFW' | null,
+    genres: data.genres || [],
+    origin: data.origin || [],
+    triggerWarnings: data.trigger_warnings || [],
+    customTags: data.custom_tags || []
+  };
+}
+
+export async function saveContentThemes(scenarioId: string, themes: ContentThemes): Promise<void> {
+  const { error } = await supabase
+    .from('content_themes')
+    .upsert({
+      scenario_id: scenarioId,
+      character_types: themes.characterTypes,
+      story_type: themes.storyType,
+      genres: themes.genres,
+      origin: themes.origin,
+      trigger_warnings: themes.triggerWarnings,
+      custom_tags: themes.customTags
+    }, { onConflict: 'scenario_id' });
+  
   if (error) throw error;
 }

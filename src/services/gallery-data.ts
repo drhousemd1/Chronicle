@@ -1,7 +1,18 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import type { ContentThemes } from '@/types';
+import { defaultContentThemes } from '@/types';
 
 // Types for gallery data
+export interface PublishedScenarioContentThemes {
+  characterTypes: string[];
+  storyType: 'SFW' | 'NSFW' | null;
+  genres: string[];
+  origin: string[];
+  triggerWarnings: string[];
+  customTags: string[];
+}
+
 export interface PublishedScenario {
   id: string;
   scenario_id: string;
@@ -28,6 +39,8 @@ export interface PublishedScenario {
     username: string | null;
     avatar_url: string | null;
   };
+  // Content themes
+  contentThemes?: PublishedScenarioContentThemes;
 }
 
 export interface SavedScenario {
@@ -109,14 +122,24 @@ export async function fetchPublishedScenarios(
   
   if (!data || data.length === 0) return [];
   
-  // Fetch publisher profiles separately
+  // Fetch publisher profiles and content themes separately
   const publisherIds = [...new Set(data.map((item: any) => item.publisher_id))];
-  const { data: profiles } = await supabase
-    .from('profiles')
-    .select('id, username, avatar_url')
-    .in('id', publisherIds);
+  const scenarioIds = data.map((item: any) => item.scenario_id);
   
-  const profileMap = new Map((profiles || []).map(p => [p.id, p]));
+  const [profilesResult, themesResult] = await Promise.all([
+    supabase.from('profiles').select('id, username, avatar_url').in('id', publisherIds),
+    supabase.from('content_themes').select('*').in('scenario_id', scenarioIds)
+  ]);
+  
+  const profileMap = new Map((profilesResult.data || []).map(p => [p.id, p]));
+  const themesMap = new Map((themesResult.data || []).map(t => [t.scenario_id, {
+    characterTypes: t.character_types || [],
+    storyType: t.story_type as 'SFW' | 'NSFW' | null,
+    genres: t.genres || [],
+    origin: t.origin || [],
+    triggerWarnings: t.trigger_warnings || [],
+    customTags: t.custom_tags || []
+  }]));
   
   // Transform the data to match our interface
   return data.map((item: any) => ({
@@ -133,7 +156,8 @@ export async function fetchPublishedScenarios(
     created_at: item.created_at,
     updated_at: item.updated_at,
     scenario: item.scenarios,
-    publisher: profileMap.get(item.publisher_id) || null
+    publisher: profileMap.get(item.publisher_id) || null,
+    contentThemes: themesMap.get(item.scenario_id) || null
   }));
 }
 

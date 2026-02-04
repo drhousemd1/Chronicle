@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { ScenarioData, TabKey, Character, ScenarioMetadata, Conversation, Message, ConversationMetadata, SideCharacter, UserBackground } from "@/types";
+import { ScenarioData, TabKey, Character, ScenarioMetadata, Conversation, Message, ConversationMetadata, SideCharacter, UserBackground, ContentThemes, defaultContentThemes } from "@/types";
 import { fetchSavedScenarios, SavedScenario, unsaveScenario } from "@/services/gallery-data";
 import { createDefaultScenarioData, now, uid, uuid, truncateLine, resizeImage } from "@/utils";
 import { CharactersTab } from "@/components/chronicle/CharactersTab";
@@ -111,6 +111,7 @@ const IndexContent = () => {
   const [activeData, setActiveData] = useState<ScenarioData | null>(null);
   const [activeCoverImage, setActiveCoverImage] = useState<string>("");
   const [activeCoverPosition, setActiveCoverPosition] = useState<{ x: number; y: number }>({ x: 50, y: 50 });
+  const [activeContentThemes, setActiveContentThemes] = useState<ContentThemes>(defaultContentThemes);
   const [playingConversationId, setPlayingConversationId] = useState<string | null>(null);
   const [library, setLibrary] = useState<Character[]>([]);
   const [tab, setTab] = useState<TabKey | "library">("hub");
@@ -538,6 +539,7 @@ const IndexContent = () => {
         setActiveData(clonedData);
         setActiveCoverImage(coverImage);
         setActiveCoverPosition(coverImagePosition);
+        setActiveContentThemes(defaultContentThemes); // New clone starts with empty themes
         
         toast({ 
           title: "Your copy is ready!", 
@@ -549,6 +551,15 @@ const IndexContent = () => {
         setActiveData(data);
         setActiveCoverImage(coverImage);
         setActiveCoverPosition(coverImagePosition);
+        
+        // Load content themes for this scenario
+        try {
+          const themes = await supabaseData.fetchContentThemes(id);
+          setActiveContentThemes(themes);
+        } catch (e) {
+          console.error('Failed to load content themes:', e);
+          setActiveContentThemes(defaultContentThemes);
+        }
       }
       
       setTab("world"); 
@@ -566,6 +577,7 @@ const IndexContent = () => {
     setActiveData(data);
     setActiveCoverImage("");
     setActiveCoverPosition({ x: 50, y: 50 });
+    setActiveContentThemes(defaultContentThemes);
     setTab("world"); 
     setSelectedCharacterId(null);
     setPlayingConversationId(null);
@@ -1423,6 +1435,18 @@ const IndexContent = () => {
               onUpdateCoverImage={setActiveCoverImage}
               onUpdateCoverPosition={setActiveCoverPosition}
               onUpdateArtStyle={(styleId) => handleUpdateActive({ selectedArtStyle: styleId })}
+              contentThemes={activeContentThemes}
+              onUpdateContentThemes={async (themes) => {
+                setActiveContentThemes(themes);
+                // Auto-save content themes if we have a valid scenario ID
+                if (activeId && user) {
+                  try {
+                    await supabaseData.saveContentThemes(activeId, themes);
+                  } catch (e) {
+                    console.error('Failed to save content themes:', e);
+                  }
+                }
+              }}
               onNavigateToCharacters={() => { setTab("characters"); setSelectedCharacterId(null); }}
               onSelectCharacter={(id) => { setSelectedCharacterId(id); setTab("characters"); }}
             />
