@@ -876,7 +876,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
           {/* Share Section */}
           <section>
             <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-lg">
-              <div className="bg-gradient-to-r from-blue-600 to-purple-600 border-b border-white/20 px-6 py-4 flex items-center gap-3 shadow-lg">
+              <div className="bg-[#4a5f7f] border-b border-white/20 px-6 py-4 flex items-center gap-3 shadow-lg">
                 <Share2 className="w-5 h-5 text-white" />
                 <h2 className="text-white text-xl font-bold tracking-tight">Share Your Story</h2>
               </div>
@@ -888,14 +888,20 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                     'Add tags so players can find your story.'
                   ]} />
                   <div className="mt-4">
-                    <Button 
-                      variant="primary"
+                    <button
+                      type="button"
                       onClick={() => setShowShareModal(true)}
-                      className="w-full !bg-gradient-to-r !from-blue-600 !to-purple-600 hover:!from-blue-500 hover:!to-purple-500"
+                      className="flex h-10 w-full items-center justify-center gap-2 px-4
+                        rounded-xl border border-[hsl(var(--ui-border))] 
+                        bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
+                        text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none
+                        hover:bg-white/5 active:bg-white/10
+                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40
+                        transition-colors"
                     >
-                      <Share2 className="w-4 h-4 mr-2" />
-                      Publish to Gallery
-                    </Button>
+                      <Share2 className="w-3.5 h-3.5 shrink-0" />
+                      <span>Publish to Gallery</span>
+                    </button>
                   </div>
                 </div>
               </div>
