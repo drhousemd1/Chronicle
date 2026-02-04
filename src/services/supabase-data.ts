@@ -217,10 +217,11 @@ function dbToConversation(row: any, messages: any[]): Conversation {
 // SCENARIOS
 // =============================================
 
-export async function fetchScenarios(): Promise<ScenarioMetadata[]> {
+export async function fetchMyScenarios(userId: string): Promise<ScenarioMetadata[]> {
   const { data, error } = await supabase
     .from('scenarios')
     .select('id, title, description, cover_image_url, cover_image_position, tags, created_at, updated_at')
+    .eq('user_id', userId)
     .order('updated_at', { ascending: false });
 
   if (error) throw error;

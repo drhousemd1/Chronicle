@@ -161,7 +161,7 @@ const IndexContent = () => {
       setIsLoading(true);
       try {
         const [scenarios, characters, conversations, backgrounds, imageLibraryBgId, savedScens] = await Promise.all([
-          supabaseData.fetchScenarios(),
+          supabaseData.fetchMyScenarios(user.id),
           supabaseData.fetchCharacterLibrary(),
           supabaseData.fetchConversationRegistry(),
           supabaseData.fetchUserBackgrounds(user.id),
@@ -569,7 +569,7 @@ const IndexContent = () => {
       await supabaseData.saveScenario(scenarioIdToSave, dataToSave, metadata, user.id);
       
       // Refresh registry
-      const updatedRegistry = await supabaseData.fetchScenarios();
+      const updatedRegistry = await supabaseData.fetchMyScenarios(user.id);
       setRegistry(updatedRegistry);
       
       // Update conversation registry
@@ -740,7 +740,7 @@ const IndexContent = () => {
     if (!confirm("Delete this entire scenario? This cannot be undone.")) return;
     try {
       await supabaseData.deleteScenario(id);
-      const updatedRegistry = await supabaseData.fetchScenarios();
+      const updatedRegistry = await supabaseData.fetchMyScenarios(user.id);
       setRegistry(updatedRegistry);
       
       const updatedConvRegistry = await supabaseData.fetchConversationRegistry();
