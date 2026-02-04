@@ -12,6 +12,7 @@ import {
   toggleLike,
   saveScenarioToCollection,
   unsaveScenario,
+  unpublishScenario,
   incrementPlayCount,
   incrementViewCount,
   SortOption,
@@ -209,6 +210,20 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange }) 
         ? { ...s, view_count: s.view_count + 1 }
         : s
     ));
+  };
+
+  const handleUnpublish = async () => {
+    if (!selectedPublished || !user) return;
+    try {
+      await unpublishScenario(selectedPublished.scenario_id);
+      // Remove from local list
+      setScenarios(prev => prev.filter(s => s.id !== selectedPublished.id));
+      setDetailModalOpen(false);
+      toast.success('Your story has been removed from the Gallery');
+    } catch (e) {
+      console.error('Failed to unpublish:', e);
+      toast.error('Failed to remove from gallery');
+    }
   };
 
   // Count active filters
@@ -444,6 +459,9 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange }) 
             onLike={() => handleLike(selectedPublished)}
             onSave={() => handleSave(selectedPublished)}
             onPlay={() => handlePlay(selectedPublished)}
+            isOwned={user?.id === selectedPublished.publisher_id}
+            isPublished={true}
+            onUnpublish={user?.id === selectedPublished.publisher_id ? handleUnpublish : undefined}
           />
         </TooltipProvider>
       )}
