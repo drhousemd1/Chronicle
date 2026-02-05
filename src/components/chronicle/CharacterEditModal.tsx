@@ -524,7 +524,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
           </p>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 max-h-[calc(90vh-140px)] bg-[#2a2a2f]">
+        <ScrollArea className="flex-1 max-h-[calc(90vh-160px)] bg-[#2a2a2f]">
           <div className="p-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Left Column - Avatar & Basic Info */}
@@ -1018,18 +1018,20 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                             {section.items.map((item) => (
                               <div key={item.id}>
                                 <div className="flex items-start gap-2">
-                                  <div className="flex-1 flex gap-2">
-                                    <AutoResizeTextarea
-                                      value={item.label}
-                                      onChange={(v) => updateSectionItem(section.id, item.id, 'label', v)}
-                                      placeholder="Label"
-                                      className="w-1/3 px-3 py-2 rounded-lg text-xs font-bold bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
-                                    />
+                                  <div className="flex-1 flex gap-2 min-w-0">
+                                    <div className="w-1/3 min-w-0">
+                                      <AutoResizeTextarea
+                                        value={item.label}
+                                        onChange={(v) => updateSectionItem(section.id, item.id, 'label', v)}
+                                        placeholder="Label"
+                                        className="w-full px-3 py-2 rounded-lg text-xs font-bold bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
+                                      />
+                                    </div>
                                     <AutoResizeTextarea
                                       value={item.value}
                                       onChange={(v) => updateSectionItem(section.id, item.id, 'value', v)}
                                       placeholder="Description"
-                                      className="flex-1 px-3 py-2 rounded-lg text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
+                                      className="flex-1 min-w-0 px-3 py-2 rounded-lg text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
                                     />
                                   </div>
                                   <button
@@ -1091,7 +1093,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
           </div>
         </ScrollArea>
 
-        <DialogFooter className="px-6 py-4 border-t border-white/10 bg-[#2a2a2f] gap-3">
+        <DialogFooter className="px-6 py-5 border-t border-white/10 bg-[#2a2a2f] gap-3 flex-shrink-0">
           <button
             type="button"
             onClick={() => onOpenChange(false)}
@@ -1111,11 +1113,11 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
             onClick={handleSave}
             disabled={isSaving}
             className="flex h-10 px-6 items-center justify-center gap-2
-              rounded-xl border border-blue-500/30 
-              bg-blue-600 shadow-[0_10px_30px_rgba(0,0,0,0.35)]
+              rounded-xl border border-[#5a6f8f] 
+              bg-[#4a5f7f] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
               text-white text-[10px] font-bold leading-none uppercase tracking-wider
-              hover:bg-blue-500 active:bg-blue-400 disabled:opacity-50
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/40
+              hover:bg-[#5a6f8f] active:bg-[#6a7f9f] disabled:opacity-50
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5a6f8f]/40
               transition-colors"
           >
             {isSaving ? 'Saving...' : 'Save Changes'}
