@@ -353,11 +353,23 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                       </div>
                     )}
 
-                    {/* Published badge for owned scenarios */}
-                    {isOwned && isPublished && (
-                      <span className="inline-flex w-fit px-2.5 py-1 bg-emerald-500/20 rounded-lg text-xs font-bold text-emerald-400 mt-1">
-                        PUBLISHED
-                      </span>
+                    {/* Status badges row */}
+                    {(isPublished || allowRemix) && (
+                      <div className="flex items-center gap-2 mt-1">
+                        {/* Published badge - for owned scenarios */}
+                        {isOwned && isPublished && (
+                          <span className="inline-flex w-fit px-2.5 py-1 bg-emerald-500/20 rounded-lg text-xs font-bold text-emerald-400">
+                            PUBLISHED
+                          </span>
+                        )}
+                        
+                        {/* Editable badge - shows when allowRemix is enabled */}
+                        {allowRemix && (
+                          <span className="inline-flex w-fit px-2.5 py-1 bg-purple-500/20 rounded-lg text-xs font-bold text-purple-400">
+                            EDITABLE
+                          </span>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>
