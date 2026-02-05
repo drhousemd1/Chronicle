@@ -1,83 +1,16 @@
 
 
-# Add "Remixable" Badge to Your Stories Page
+# Fix Badge Collision - Replace Text with Icon
 
 ## Summary
 
-Add a "Remixable" badge to the "Your Stories" page for scenarios that are published AND have remixing enabled. This helps users quickly see which of their published stories can be remixed by others.
+The badges are colliding because "Remixable" is too long. The solution is:
 
----
-
-## Current State
-
-- The "Published" badge shows in the top-left for published scenarios
-- The `publishedData` prop (type `PublishedScenario`) is already passed to `ScenarioCard`
-- `publishedData.allow_remix` contains the boolean we need
-- The badge is NOT currently displayed on the Your Stories page
-
----
-
-## Solution
-
-Add the "Remixable" badge to the top-left badge container, right after the "Published" badge (or "Saved" badge if applicable). Both badges can show simultaneously if a story is both published and remixable.
-
-### File: `src/components/chronicle/ScenarioHub.tsx`
-
-**Add import for Sparkles icon:**
-```tsx
-import { Eye, Heart, Bookmark, Play, Sparkles } from "lucide-react";
-```
-
-**Update the badge container** (around lines 37-50) to include the Remixable badge:
-
-```tsx
-{/* Top-left badge container - flows horizontally */}
-<div className="absolute top-4 left-4 flex items-center gap-2 z-10">
-  {scen.isBookmarked && (
-    <div className="px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f] text-yellow-400 uppercase tracking-wide">
-      Saved
-    </div>
-  )}
-  
-  {!scen.isBookmarked && isPublished && (
-    <div className="px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f] text-emerald-400 uppercase tracking-wide">
-      Published
-    </div>
-  )}
-  
-  {/* NEW: Remixable badge - shows for published scenarios with allow_remix enabled */}
-  {publishedData?.allow_remix && (
-    <div className="px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f] text-purple-400 uppercase tracking-wide flex items-center gap-1.5">
-      <Sparkles className="w-3 h-3" />
-      Remixable
-    </div>
-  )}
-</div>
-```
-
----
-
-## Visual Result
-
-For a story that is published AND remixable, both badges will display side-by-side:
-
-```text
-+------------------------------------------+
-|  [Published] [✦ Remixable]       [NSFW]  |
-|                                          |
-|        ...                               |
-+------------------------------------------+
-```
-
-For a story that is published but NOT remixable:
-
-```text
-+------------------------------------------+
-|  [Published]                     [NSFW]  |
-|                                          |
-|        ...                               |
-+------------------------------------------+
-```
+1. **Remove "Saved" badge** from tile display (keep save functionality working)
+2. **Keep "Published" badge** as-is
+3. **Replace "Remixable" text badge with just a Pencil icon** using the same purple color
+4. **Rename toggle to "Allow Edits"** in the ShareScenarioModal
+5. **Show Edit icon badge everywhere** the story has "allow_remix" enabled (Your Stories, Community Gallery, Saved stories)
 
 ---
 
@@ -85,14 +18,129 @@ For a story that is published but NOT remixable:
 
 | File | Changes |
 |------|---------|
-| `src/components/chronicle/ScenarioHub.tsx` | Import `Sparkles` icon, add Remixable badge after Published badge |
+| `src/components/chronicle/ScenarioHub.tsx` | Remove Saved badge, replace Remixable badge with Pencil icon only |
+| `src/components/chronicle/GalleryScenarioCard.tsx` | Replace Remixable badge with Pencil icon only |
+| `src/components/chronicle/ScenarioDetailModal.tsx` | Replace REMIXABLE badge with Pencil icon only |
+| `src/components/chronicle/ShareScenarioModal.tsx` | Change "Allow Remixing" label to "Allow Edits" |
 
 ---
 
-## Technical Notes
+## Change 1: ScenarioHub.tsx - Remove "Saved" Badge + Replace "Remixable" with Icon
 
-- The data is already available via `publishedData` prop
-- No new data fetching required
-- Badge styling matches the existing unified system (charcoal background with purple text for Remixable)
-- The badge only appears when `publishedData?.allow_remix` is truthy, so unpublished scenarios won't show it
+**Remove "Saved" badge entirely** (lines 39-43):
+```tsx
+// DELETE THIS BLOCK
+{scen.isBookmarked && (
+  <div className="px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f] text-yellow-400 uppercase tracking-wide">
+    Saved
+  </div>
+)}
+```
+
+**Replace "Remixable" text badge with Pencil icon** (lines 51-57):
+```tsx
+{/* Edit icon badge - shows for stories with allow_remix enabled */}
+{publishedData?.allow_remix && (
+  <div className="p-1.5 backdrop-blur-sm rounded-lg shadow-lg bg-[#2a2a2f]">
+    <Pencil className="w-4 h-4 text-purple-400" />
+  </div>
+)}
+```
+
+**Update import** - add `Pencil`, remove `Sparkles`:
+```tsx
+import { Eye, Heart, Bookmark, Play, Pencil } from "lucide-react";
+```
+
+---
+
+## Change 2: GalleryScenarioCard.tsx - Replace "Remixable" with Icon
+
+**Replace the existing Remixable badge** (lines 98-104) with just an icon:
+```tsx
+{/* Edit icon badge - shows for stories with allow_remix enabled */}
+{published.allow_remix && (
+  <div className="absolute top-4 left-4 p-1.5 backdrop-blur-sm rounded-lg shadow-lg bg-[#2a2a2f]">
+    <Pencil className="w-4 h-4 text-purple-400" />
+  </div>
+)}
+```
+
+**Update import** - replace `Sparkles` with `Pencil`:
+```tsx
+import { Heart, Bookmark, Play, Pencil, Eye } from 'lucide-react';
+```
+
+---
+
+## Change 3: ScenarioDetailModal.tsx - Replace REMIXABLE Badge with Icon
+
+**Replace the existing Remixable badge** (lines 223-231) with icon-only:
+```tsx
+{/* Edit icon badge */}
+{allowRemix && (
+  <div className="absolute top-3 left-3">
+    <span className="p-2 bg-[#2a2a2f] rounded-lg shadow-lg flex items-center justify-center">
+      <Pencil className="w-4 h-4 text-purple-400" />
+    </span>
+  </div>
+)}
+```
+
+**Update import** - add `Pencil`, can remove `Sparkles` if unused:
+```tsx
+import { Heart, Bookmark, Play, Pencil, Edit, Loader2, Eye, X, Globe } from 'lucide-react';
+```
+
+---
+
+## Change 4: ShareScenarioModal.tsx - Rename Toggle to "Allow Edits"
+
+**Update the label text** (lines 124-125):
+```tsx
+<Label htmlFor="allow-remix" className="text-white font-semibold cursor-pointer">
+  Allow Edits
+</Label>
+```
+
+**Update the description** (lines 127-129):
+```tsx
+<p className="text-xs text-zinc-400 mt-0.5">
+  Others can clone and edit their own copy
+</p>
+```
+
+**Update the permissions list item** (line 148):
+```tsx
+{allowRemix && <li className="text-purple-300">Clone and edit their own version</li>}
+```
+
+---
+
+## Visual Result
+
+**Before (colliding):**
+```text
+[Published] [✦ Remixable]    [SFW]
+```
+
+**After (no collision):**
+```text
+[Published] [✏️]              [SFW]
+```
+
+The Pencil icon in a small charcoal pill takes up minimal horizontal space and clearly indicates editability.
+
+---
+
+## Badge Visibility Summary
+
+| Scenario State | What Badge Shows |
+|---------------|------------------|
+| User's own story, published, edits enabled | `[Published] [✏️]` + `[SFW/NSFW]` |
+| User's own story, published, edits disabled | `[Published]` + `[SFW/NSFW]` |
+| Saved story with edits enabled | `[✏️]` + `[SFW/NSFW]` |
+| Saved story without edits | `[SFW/NSFW]` only |
+| Gallery story with edits enabled | `[✏️]` + `[SFW/NSFW]` |
+| Gallery story without edits | `[SFW/NSFW]` only |
 
