@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { ScenarioMetadata, ContentThemes } from "@/types";
- import { Eye, Heart, Bookmark, Play, Sparkles } from "lucide-react";
+import { Eye, Heart, Bookmark, Play, Pencil } from "lucide-react";
 import { Button } from "./UI";
 import { ScenarioDetailModal } from "./ScenarioDetailModal";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -36,23 +36,16 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDel
         
         {/* Top-left badge container - flows horizontally */}
         <div className="absolute top-4 left-4 flex items-center gap-2 z-10">
-          {scen.isBookmarked && (
-            <div className="px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f] text-yellow-400 uppercase tracking-wide">
-              Saved
-            </div>
-          )}
-          
           {!scen.isBookmarked && isPublished && (
             <div className="px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f] text-emerald-400 uppercase tracking-wide">
               Published
             </div>
           )}
           
-          {/* Remixable badge - shows for published scenarios with allow_remix enabled */}
+          {/* Edit icon badge - shows for stories with allow_remix enabled */}
           {publishedData?.allow_remix && (
-            <div className="px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f] text-purple-400 uppercase tracking-wide flex items-center gap-1.5">
-              <Sparkles className="w-3 h-3" />
-              Remixable
+            <div className="p-1.5 backdrop-blur-sm rounded-lg shadow-lg bg-[#2a2a2f]">
+              <Pencil className="w-4 h-4 text-purple-400" />
             </div>
           )}
         </div>

@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Heart, Bookmark, Play, Sparkles, Eye } from 'lucide-react';
+import { Heart, Bookmark, Play, Pencil, Eye } from 'lucide-react';
 import { PublishedScenario } from '@/services/gallery-data';
 import { cn } from '@/lib/utils';
 
@@ -95,11 +95,10 @@ export const GalleryScenarioCard: React.FC<GalleryScenarioCardProps> = ({
           </div>
         )}
 
-        {/* Remix Badge - Top Left with charcoal styling */}
+        {/* Edit icon badge - shows for stories with allow_remix enabled */}
         {published.allow_remix && (
-          <div className="absolute top-4 left-4 px-2.5 py-1 bg-[#2a2a2f] backdrop-blur-sm rounded-lg text-xs font-bold text-purple-400 flex items-center gap-1.5 shadow-lg uppercase tracking-wide">
-            <Sparkles className="w-3 h-3" />
-            Remixable
+          <div className="absolute top-4 left-4 p-1.5 backdrop-blur-sm rounded-lg shadow-lg bg-[#2a2a2f]">
+            <Pencil className="w-4 h-4 text-purple-400" />
           </div>
         )}
 

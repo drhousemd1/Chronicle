@@ -122,10 +122,10 @@ export const ShareScenarioModal: React.FC<ShareScenarioModalProps> = ({
                 </div>
                 <div>
                   <Label htmlFor="allow-remix" className="text-white font-semibold cursor-pointer">
-                    Allow Remixing
+                  Allow Edits
                   </Label>
                   <p className="text-xs text-zinc-400 mt-0.5">
-                    Others can clone and modify your story
+                  Others can clone and edit their own copy
                   </p>
                 </div>
               </div>
@@ -145,7 +145,7 @@ export const ShareScenarioModal: React.FC<ShareScenarioModalProps> = ({
                   <ul className="list-disc list-inside space-y-0.5 text-blue-200/70">
                     <li>View and play your story</li>
                     <li>Like and save it to their collection</li>
-                    {allowRemix && <li className="text-purple-300">Clone and create their own version</li>}
+                    {allowRemix && <li className="text-purple-300">Clone and edit their own version</li>}
                   </ul>
                 </div>
               </div>
