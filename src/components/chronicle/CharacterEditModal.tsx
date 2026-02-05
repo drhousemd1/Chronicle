@@ -15,11 +15,11 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Loader2, Plus, Trash2, X, Pencil } from 'lucide-react';
+import { Loader2, Plus, Trash2, X, Pencil, ChevronDown, ChevronUp } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client'; 
 import * as supabaseData from '@/services/supabase-data'; 
 import { toast } from 'sonner';
-import { UploadSourceMenu } from './UploadSourceMenu';
+import { AvatarActionButtons } from './AvatarActionButtons';
 import { ChangeNameModal } from './ChangeNameModal';
 
 // Unified draft type for both Character and SideCharacter
@@ -100,25 +100,40 @@ const FieldTextarea: React.FC<{
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       rows={rows}
-      className="text-sm resize-none bg-zinc-900/50 border-white/10 text-white placeholder:text-zinc-500 focus:ring-blue-500/20 focus:border-blue-500"
+      className="text-sm resize-none bg-zinc-900/50 border-white/10 text-white placeholder:text-zinc-500 focus:ring-blue-500/20 focus:border-blue-500 whitespace-pre-wrap break-words"
     />
   </div>
 );
 
-// Section wrapper component
-const Section: React.FC<{
+// Collapsible section component matching Scenario Builder style
+const CollapsibleSection: React.FC<{
   title: string;
+  isExpanded: boolean;
+  onToggle: () => void;
   children: React.ReactNode;
-  className?: string;
-}> = ({ title, children, className = '' }) => (
-  <div className={`space-y-4 ${className}`}>
-    <div className="flex items-center gap-2">
-      <h4 className="text-xs font-black text-white uppercase tracking-wider">{title}</h4>
-      <div className="flex-1 h-px bg-white/20" />
+}> = ({ title, isExpanded, onToggle, children }) => (
+  <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
+    {/* Slate blue header with collapse arrow */}
+    <div className="bg-[#4a5f7f] border-b border-white/20 px-5 py-3 flex items-center justify-between shadow-lg">
+      <h2 className="text-white text-xl font-bold tracking-tight">{title}</h2>
+      <button 
+        type="button"
+        onClick={onToggle} 
+        className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-white/10"
+      >
+        {isExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
+      </button>
     </div>
-    <div className="space-y-3">
-      {children}
-    </div>
+    {/* Content */}
+    {isExpanded && (
+      <div className="p-5">
+        <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
+          <div className="space-y-4">
+            {children}
+          </div>
+        </div>
+      </div>
+    )}
   </div>
 );
 
@@ -136,6 +151,22 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
   const [isRegeneratingAvatar, setIsRegeneratingAvatar] = useState(false);
   const [isChangeNameModalOpen, setIsChangeNameModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Expanded state for collapsible sections
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    avatar: true,
+    control: true,
+    physicalAppearance: true,
+    currentlyWearing: true,
+    preferredClothing: true,
+    background: true,
+    personality: true,
+    customCategories: true
+  });
+
+  const toggleSection = (key: string) => {
+    setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
+  };
 
   // Determine if this is a side character (has background property)
   const isSideCharacter = character && 'background' in character;
@@ -417,7 +448,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] p-0 gap-0 overflow-hidden bg-[#2a2a2f] border-white/10">
+      <DialogContent className="max-w-6xl max-h-[90vh] p-0 gap-0 overflow-hidden bg-[#2a2a2f] border-white/10">
         <DialogHeader className="px-6 py-4 border-b border-white/20 bg-[#4a5f7f]">
           <DialogTitle className="text-lg font-bold text-white">
             Edit Character
@@ -432,31 +463,36 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Left Column - Avatar & Basic Info */}
               <div className="space-y-6">
-{/* Avatar Display with Upload/Regenerate */}
-                <div className="flex flex-col items-center gap-3">
-                  <div className="w-32 h-32 rounded-2xl overflow-hidden bg-zinc-800 border-2 border-white/10 shadow-sm relative">
-                    {(isUploadingAvatar || isRegeneratingAvatar) ? (
-                      <div className="w-full h-full flex items-center justify-center bg-zinc-900">
-                        <Loader2 className="w-8 h-8 animate-spin text-zinc-400" />
-                      </div>
-                    ) : (draft.avatarDataUrl || character.avatarDataUrl) ? (
-                      <img 
-                        src={draft.avatarDataUrl || character.avatarDataUrl} 
-                        alt={draft.name || character.name} 
-                        className="w-full h-full object-cover"
-                        style={{ 
-                          objectPosition: `${(draft.avatarPosition?.x ?? character.avatarPosition?.x ?? 50)}% ${(draft.avatarPosition?.y ?? character.avatarPosition?.y ?? 50)}%` 
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center font-black text-zinc-500 text-3xl italic uppercase">
-                        {(draft.name || character.name)?.charAt(0) || '?'}
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Upload/Regenerate Buttons */}
-                  <div className="flex flex-col gap-2 w-full">
+                {/* Avatar Section */}
+                <CollapsibleSection
+                  title="Avatar"
+                  isExpanded={expandedSections.avatar}
+                  onToggle={() => toggleSection('avatar')}
+                >
+                  {/* Avatar Display */}
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="w-48 h-48 rounded-2xl overflow-hidden bg-zinc-800 border-2 border-white/10 shadow-sm relative">
+                      {(isUploadingAvatar || isRegeneratingAvatar) ? (
+                        <div className="w-full h-full flex items-center justify-center bg-zinc-900">
+                          <Loader2 className="w-8 h-8 animate-spin text-zinc-400" />
+                        </div>
+                      ) : (draft.avatarDataUrl || character.avatarDataUrl) ? (
+                        <img 
+                          src={draft.avatarDataUrl || character.avatarDataUrl} 
+                          alt={draft.name || character.name} 
+                          className="w-full h-full object-cover"
+                          style={{ 
+                            objectPosition: `${(draft.avatarPosition?.x ?? character.avatarPosition?.x ?? 50)}% ${(draft.avatarPosition?.y ?? character.avatarPosition?.y ?? 50)}%` 
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center font-black text-zinc-500 text-4xl italic uppercase">
+                          {(draft.name || character.name)?.charAt(0) || '?'}
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Hidden file input */}
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -464,7 +500,9 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                       className="hidden"
                       onChange={handleAvatarUpload}
                     />
-                    <UploadSourceMenu
+                    
+                    {/* Premium Avatar Action Buttons */}
+                    <AvatarActionButtons
                       onUploadFromDevice={() => fileInputRef.current?.click()}
                       onSelectFromLibrary={(imageUrl) => {
                         setDraft(prev => ({
@@ -474,55 +512,40 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                         }));
                         toast.success('Avatar selected from library');
                       }}
-                      disabled={isUploadingAvatar || isRegeneratingAvatar}
+                      onGenerateClick={handleRegenerateAvatar}
+                      disabled={isUploadingAvatar}
+                      isGenerating={isRegeneratingAvatar}
                       isUploading={isUploadingAvatar}
-                      label="Upload Image"
-                      variant="primary"
-                      className="w-full bg-zinc-900 hover:bg-zinc-800 text-white border-white/10"
                     />
-                    <Button
-                      size="sm"
-                      className="w-full bg-zinc-900 hover:bg-zinc-800 text-white border-white/10"
-                      onClick={handleRegenerateAvatar}
-                      disabled={isUploadingAvatar || isRegeneratingAvatar}
-                    >
-                      {isRegeneratingAvatar ? 'Generating...' : 'AI Generate'}
-                    </Button>
                   </div>
                   
-                  <p className="text-[10px] text-zinc-500 text-center">
-                    Changes apply to this session only
-                  </p>
-                </div>
-
-                {/* Basic Fields */}
-                <Section title="Basic Info">
-                  {/* Name field - read-only with Change Name button in edit mode */}
-                  <div className="space-y-1.5">
-                    <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Name</Label>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 px-3 py-2 bg-zinc-900/50 rounded-md text-sm text-white font-medium border border-white/10">
-                        {draft.name || character?.name || 'Unnamed'}
+                  {/* Basic Info Fields - Stacked */}
+                  <div className="space-y-4 mt-6">
+                    {/* Name field - read-only with Change Name button */}
+                    <div className="space-y-1.5">
+                      <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Name</Label>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 px-3 py-2 bg-zinc-900/50 rounded-md text-sm text-white font-medium border border-white/10">
+                          {draft.name || character?.name || 'Unnamed'}
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setIsChangeNameModalOpen(true)}
+                          className="gap-1.5 text-xs bg-zinc-900 hover:bg-zinc-800 text-white border-white/20"
+                        >
+                          <Pencil className="w-3 h-3" />
+                          Change
+                        </Button>
                       </div>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setIsChangeNameModalOpen(true)}
-                        className="gap-1.5 text-xs bg-zinc-900 hover:bg-zinc-800 text-white border-white/20"
-                      >
-                        <Pencil className="w-3 h-3" />
-                        Change
-                      </Button>
                     </div>
-                  </div>
-                  <FieldInput
-                    label="Nicknames"
-                    value={draft.nicknames || ''}
-                    onChange={(v) => updateField('nicknames', v)}
-                    placeholder="e.g., Mom, Mother (comma-separated)"
-                  />
-                  <div className="grid grid-cols-2 gap-3">
+                    <FieldInput
+                      label="Nicknames"
+                      value={draft.nicknames || ''}
+                      onChange={(v) => updateField('nicknames', v)}
+                      placeholder="e.g., Mom, Mother (comma-separated)"
+                    />
                     <FieldInput
                       label="Age"
                       value={draft.age || ''}
@@ -535,8 +558,6 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                       onChange={(v) => updateField('sexType', v)}
                       placeholder="e.g., Female"
                     />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
                     <FieldInput
                       label="Location"
                       value={draft.location || ''}
@@ -549,26 +570,30 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                       onChange={(v) => updateField('currentMood', v)}
                       placeholder="e.g., Happy"
                     />
-                  </div>
-                  <FieldTextarea
-                    label="Role Description"
-                    value={draft.roleDescription || ''}
-                    onChange={(v) => updateField('roleDescription', v)}
-                    placeholder="Character's role in the story..."
-                    rows={3}
-                  />
-                  {!isSideCharacter && (
-                    <FieldInput
-                      label="Tags"
-                      value={draft.tags || ''}
-                      onChange={(v) => updateField('tags', v)}
-                      placeholder="warrior, hero, protagonist"
+                    <FieldTextarea
+                      label="Role Description"
+                      value={draft.roleDescription || ''}
+                      onChange={(v) => updateField('roleDescription', v)}
+                      placeholder="Character's role in the story..."
+                      rows={3}
                     />
-                  )}
-                </Section>
+                    {!isSideCharacter && (
+                      <FieldInput
+                        label="Tags"
+                        value={draft.tags || ''}
+                        onChange={(v) => updateField('tags', v)}
+                        placeholder="warrior, hero, protagonist"
+                      />
+                    )}
+                  </div>
+                </CollapsibleSection>
 
                 {/* Control toggles - for all characters */}
-                <Section title="Control">
+                <CollapsibleSection
+                  title="Control"
+                  isExpanded={expandedSections.control}
+                  onToggle={() => toggleSection('control')}
+                >
                   <div className="space-y-3">
                     <div className="space-y-1.5">
                       <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Controlled By</Label>
@@ -625,220 +650,232 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                       </div>
                     </div>
                   </div>
-                </Section>
+                </CollapsibleSection>
               </div>
 
               {/* Right Column - Trait Sections */}
               <div className="lg:col-span-2 space-y-6">
                 {/* Physical Appearance */}
-                <Section title="Physical Appearance" className="p-5 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    <FieldInput
-                      label="Hair Color"
-                      value={draft.physicalAppearance?.hairColor || ''}
-                      onChange={(v) => updatePhysicalAppearance('hairColor', v)}
-                      placeholder="e.g., Brown"
-                    />
-                    <FieldInput
-                      label="Eye Color"
-                      value={draft.physicalAppearance?.eyeColor || ''}
-                      onChange={(v) => updatePhysicalAppearance('eyeColor', v)}
-                      placeholder="e.g., Blue"
-                    />
-                    <FieldInput
-                      label="Build"
-                      value={draft.physicalAppearance?.build || ''}
-                      onChange={(v) => updatePhysicalAppearance('build', v)}
-                      placeholder="e.g., Athletic"
-                    />
-                    <FieldInput
-                      label="Body Hair"
-                      value={draft.physicalAppearance?.bodyHair || ''}
-                      onChange={(v) => updatePhysicalAppearance('bodyHair', v)}
-                      placeholder="e.g., Light"
-                    />
-                    <FieldInput
-                      label="Height"
-                      value={draft.physicalAppearance?.height || ''}
-                      onChange={(v) => updatePhysicalAppearance('height', v)}
-                      placeholder="e.g., 5ft 8in"
-                    />
-                    <FieldInput
-                      label="Breast Size"
-                      value={draft.physicalAppearance?.breastSize || ''}
-                      onChange={(v) => updatePhysicalAppearance('breastSize', v)}
-                      placeholder="e.g., Medium"
-                    />
-                    <FieldInput
-                      label="Genitalia"
-                      value={draft.physicalAppearance?.genitalia || ''}
-                      onChange={(v) => updatePhysicalAppearance('genitalia', v)}
-                      placeholder="Description"
-                    />
-                    <FieldInput
-                      label="Skin Tone"
-                      value={draft.physicalAppearance?.skinTone || ''}
-                      onChange={(v) => updatePhysicalAppearance('skinTone', v)}
-                      placeholder="e.g., Fair"
-                    />
-                    <FieldInput
-                      label="Makeup"
-                      value={draft.physicalAppearance?.makeup || ''}
-                      onChange={(v) => updatePhysicalAppearance('makeup', v)}
-                      placeholder="e.g., Natural"
-                    />
-                    <FieldInput
-                      label="Body Markings"
-                      value={draft.physicalAppearance?.bodyMarkings || ''}
-                      onChange={(v) => updatePhysicalAppearance('bodyMarkings', v)}
-                      placeholder="Tattoos, scars..."
-                    />
-                    <FieldInput
-                      label="Temporary Conditions"
-                      value={draft.physicalAppearance?.temporaryConditions || ''}
-                      onChange={(v) => updatePhysicalAppearance('temporaryConditions', v)}
-                      placeholder="Injuries, etc."
-                    />
-                  </div>
-                </Section>
+                <CollapsibleSection
+                  title="Physical Appearance"
+                  isExpanded={expandedSections.physicalAppearance}
+                  onToggle={() => toggleSection('physicalAppearance')}
+                >
+                  <FieldInput
+                    label="Hair Color"
+                    value={draft.physicalAppearance?.hairColor || ''}
+                    onChange={(v) => updatePhysicalAppearance('hairColor', v)}
+                    placeholder="e.g., Brown"
+                  />
+                  <FieldInput
+                    label="Eye Color"
+                    value={draft.physicalAppearance?.eyeColor || ''}
+                    onChange={(v) => updatePhysicalAppearance('eyeColor', v)}
+                    placeholder="e.g., Blue"
+                  />
+                  <FieldInput
+                    label="Build"
+                    value={draft.physicalAppearance?.build || ''}
+                    onChange={(v) => updatePhysicalAppearance('build', v)}
+                    placeholder="e.g., Athletic"
+                  />
+                  <FieldInput
+                    label="Body Hair"
+                    value={draft.physicalAppearance?.bodyHair || ''}
+                    onChange={(v) => updatePhysicalAppearance('bodyHair', v)}
+                    placeholder="e.g., Light"
+                  />
+                  <FieldInput
+                    label="Height"
+                    value={draft.physicalAppearance?.height || ''}
+                    onChange={(v) => updatePhysicalAppearance('height', v)}
+                    placeholder="e.g., 5ft 8in"
+                  />
+                  <FieldInput
+                    label="Breast Size"
+                    value={draft.physicalAppearance?.breastSize || ''}
+                    onChange={(v) => updatePhysicalAppearance('breastSize', v)}
+                    placeholder="e.g., Medium"
+                  />
+                  <FieldInput
+                    label="Genitalia"
+                    value={draft.physicalAppearance?.genitalia || ''}
+                    onChange={(v) => updatePhysicalAppearance('genitalia', v)}
+                    placeholder="Description"
+                  />
+                  <FieldInput
+                    label="Skin Tone"
+                    value={draft.physicalAppearance?.skinTone || ''}
+                    onChange={(v) => updatePhysicalAppearance('skinTone', v)}
+                    placeholder="e.g., Fair"
+                  />
+                  <FieldInput
+                    label="Makeup"
+                    value={draft.physicalAppearance?.makeup || ''}
+                    onChange={(v) => updatePhysicalAppearance('makeup', v)}
+                    placeholder="e.g., Natural"
+                  />
+                  <FieldInput
+                    label="Body Markings"
+                    value={draft.physicalAppearance?.bodyMarkings || ''}
+                    onChange={(v) => updatePhysicalAppearance('bodyMarkings', v)}
+                    placeholder="Tattoos, scars..."
+                  />
+                  <FieldInput
+                    label="Temporary Conditions"
+                    value={draft.physicalAppearance?.temporaryConditions || ''}
+                    onChange={(v) => updatePhysicalAppearance('temporaryConditions', v)}
+                    placeholder="Injuries, etc."
+                  />
+                </CollapsibleSection>
 
                 {/* Currently Wearing */}
-                <Section title="Currently Wearing" className="p-5 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
-                  <div className="grid grid-cols-2 gap-3">
-                    <FieldInput
-                      label="Shirt / Top"
-                      value={draft.currentlyWearing?.top || ''}
-                      onChange={(v) => updateCurrentlyWearing('top', v)}
-                      placeholder="e.g., White blouse"
-                    />
-                    <FieldInput
-                      label="Pants / Bottoms"
-                      value={draft.currentlyWearing?.bottom || ''}
-                      onChange={(v) => updateCurrentlyWearing('bottom', v)}
-                      placeholder="e.g., Blue jeans"
-                    />
-                    <FieldInput
-                      label="Undergarments"
-                      value={draft.currentlyWearing?.undergarments || ''}
-                      onChange={(v) => updateCurrentlyWearing('undergarments', v)}
-                      placeholder="Description"
-                    />
-                    <FieldInput
-                      label="Miscellaneous"
-                      value={draft.currentlyWearing?.miscellaneous || ''}
-                      onChange={(v) => updateCurrentlyWearing('miscellaneous', v)}
-                      placeholder="Accessories, etc."
-                    />
-                  </div>
-                </Section>
+                <CollapsibleSection
+                  title="Currently Wearing"
+                  isExpanded={expandedSections.currentlyWearing}
+                  onToggle={() => toggleSection('currentlyWearing')}
+                >
+                  <FieldInput
+                    label="Shirt / Top"
+                    value={draft.currentlyWearing?.top || ''}
+                    onChange={(v) => updateCurrentlyWearing('top', v)}
+                    placeholder="e.g., White blouse"
+                  />
+                  <FieldInput
+                    label="Pants / Bottoms"
+                    value={draft.currentlyWearing?.bottom || ''}
+                    onChange={(v) => updateCurrentlyWearing('bottom', v)}
+                    placeholder="e.g., Blue jeans"
+                  />
+                  <FieldInput
+                    label="Undergarments"
+                    value={draft.currentlyWearing?.undergarments || ''}
+                    onChange={(v) => updateCurrentlyWearing('undergarments', v)}
+                    placeholder="Description"
+                  />
+                  <FieldInput
+                    label="Miscellaneous"
+                    value={draft.currentlyWearing?.miscellaneous || ''}
+                    onChange={(v) => updateCurrentlyWearing('miscellaneous', v)}
+                    placeholder="Accessories, etc."
+                  />
+                </CollapsibleSection>
 
                 {/* Preferred Clothing */}
-                <Section title="Preferred Clothing" className="p-5 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    <FieldInput
-                      label="Casual"
-                      value={draft.preferredClothing?.casual || ''}
-                      onChange={(v) => updatePreferredClothing('casual', v)}
-                      placeholder="Casual wear"
-                    />
-                    <FieldInput
-                      label="Work"
-                      value={draft.preferredClothing?.work || ''}
-                      onChange={(v) => updatePreferredClothing('work', v)}
-                      placeholder="Work attire"
-                    />
-                    <FieldInput
-                      label="Sleep"
-                      value={draft.preferredClothing?.sleep || ''}
-                      onChange={(v) => updatePreferredClothing('sleep', v)}
-                      placeholder="Sleepwear"
-                    />
-                    <FieldInput
-                      label="Undergarments"
-                      value={draft.preferredClothing?.undergarments || ''}
-                      onChange={(v) => updatePreferredClothing('undergarments', v)}
-                      placeholder="Preferred underwear"
-                    />
-                    <FieldInput
-                      label="Miscellaneous"
-                      value={draft.preferredClothing?.miscellaneous || ''}
-                      onChange={(v) => updatePreferredClothing('miscellaneous', v)}
-                      placeholder="Other preferences"
-                    />
-                  </div>
-                </Section>
+                <CollapsibleSection
+                  title="Preferred Clothing"
+                  isExpanded={expandedSections.preferredClothing}
+                  onToggle={() => toggleSection('preferredClothing')}
+                >
+                  <FieldInput
+                    label="Casual"
+                    value={draft.preferredClothing?.casual || ''}
+                    onChange={(v) => updatePreferredClothing('casual', v)}
+                    placeholder="Casual wear"
+                  />
+                  <FieldInput
+                    label="Work"
+                    value={draft.preferredClothing?.work || ''}
+                    onChange={(v) => updatePreferredClothing('work', v)}
+                    placeholder="Work attire"
+                  />
+                  <FieldInput
+                    label="Sleep"
+                    value={draft.preferredClothing?.sleep || ''}
+                    onChange={(v) => updatePreferredClothing('sleep', v)}
+                    placeholder="Sleepwear"
+                  />
+                  <FieldInput
+                    label="Undergarments"
+                    value={draft.preferredClothing?.undergarments || ''}
+                    onChange={(v) => updatePreferredClothing('undergarments', v)}
+                    placeholder="Preferred underwear"
+                  />
+                  <FieldInput
+                    label="Miscellaneous"
+                    value={draft.preferredClothing?.miscellaneous || ''}
+                    onChange={(v) => updatePreferredClothing('miscellaneous', v)}
+                    placeholder="Other preferences"
+                  />
+                </CollapsibleSection>
 
                 {/* Side Character Specific: Background */}
                 {isSideCharacter && (
-                  <Section title="Background" className="p-5 bg-purple-900/20 rounded-2xl border border-purple-500/20">
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      <FieldInput
-                        label="Relationship Status"
-                        value={draft.background?.relationshipStatus || ''}
-                        onChange={(v) => updateBackground('relationshipStatus', v)}
-                        placeholder="e.g., Single"
-                      />
-                      <FieldInput
-                        label="Residence"
-                        value={draft.background?.residence || ''}
-                        onChange={(v) => updateBackground('residence', v)}
-                        placeholder="Where they live"
-                      />
-                      <FieldInput
-                        label="Education Level"
-                        value={draft.background?.educationLevel || ''}
-                        onChange={(v) => updateBackground('educationLevel', v)}
-                        placeholder="e.g., College"
-                      />
-                    </div>
-                  </Section>
+                  <CollapsibleSection
+                    title="Background"
+                    isExpanded={expandedSections.background}
+                    onToggle={() => toggleSection('background')}
+                  >
+                    <FieldInput
+                      label="Relationship Status"
+                      value={draft.background?.relationshipStatus || ''}
+                      onChange={(v) => updateBackground('relationshipStatus', v)}
+                      placeholder="e.g., Single"
+                    />
+                    <FieldInput
+                      label="Residence"
+                      value={draft.background?.residence || ''}
+                      onChange={(v) => updateBackground('residence', v)}
+                      placeholder="Where they live"
+                    />
+                    <FieldInput
+                      label="Education Level"
+                      value={draft.background?.educationLevel || ''}
+                      onChange={(v) => updateBackground('educationLevel', v)}
+                      placeholder="e.g., College"
+                    />
+                  </CollapsibleSection>
                 )}
 
                 {/* Side Character Specific: Personality */}
                 {isSideCharacter && (
-                  <Section title="Personality" className="p-5 bg-purple-900/20 rounded-2xl border border-purple-500/20">
-                    <div className="space-y-3">
-                      <FieldInput
-                        label="Traits"
-                        value={draft.personality?.traits?.join(', ') || ''}
-                        onChange={(v) => updatePersonality('traits', v.split(',').map(t => t.trim()).filter(Boolean))}
-                        placeholder="e.g., Friendly, Curious, Brave"
-                      />
-                      <div className="grid grid-cols-2 gap-3">
-                        <FieldInput
-                          label="Desires"
-                          value={draft.personality?.desires || ''}
-                          onChange={(v) => updatePersonality('desires', v)}
-                          placeholder="What they want"
-                        />
-                        <FieldInput
-                          label="Fears"
-                          value={draft.personality?.fears || ''}
-                          onChange={(v) => updatePersonality('fears', v)}
-                          placeholder="What they fear"
-                        />
-                      </div>
-                      <FieldTextarea
-                        label="Secrets"
-                        value={draft.personality?.secrets || ''}
-                        onChange={(v) => updatePersonality('secrets', v)}
-                        placeholder="Hidden information about this character..."
-                        rows={2}
-                      />
-                      <FieldTextarea
-                        label="Miscellaneous"
-                        value={draft.personality?.miscellaneous || ''}
-                        onChange={(v) => updatePersonality('miscellaneous', v)}
-                        placeholder="Other personality notes..."
-                        rows={2}
-                      />
-                    </div>
-                  </Section>
+                  <CollapsibleSection
+                    title="Personality"
+                    isExpanded={expandedSections.personality}
+                    onToggle={() => toggleSection('personality')}
+                  >
+                    <FieldInput
+                      label="Traits"
+                      value={draft.personality?.traits?.join(', ') || ''}
+                      onChange={(v) => updatePersonality('traits', v.split(',').map(t => t.trim()).filter(Boolean))}
+                      placeholder="e.g., Friendly, Curious, Brave"
+                    />
+                    <FieldInput
+                      label="Desires"
+                      value={draft.personality?.desires || ''}
+                      onChange={(v) => updatePersonality('desires', v)}
+                      placeholder="What they want"
+                    />
+                    <FieldInput
+                      label="Fears"
+                      value={draft.personality?.fears || ''}
+                      onChange={(v) => updatePersonality('fears', v)}
+                      placeholder="What they fear"
+                    />
+                    <FieldTextarea
+                      label="Secrets"
+                      value={draft.personality?.secrets || ''}
+                      onChange={(v) => updatePersonality('secrets', v)}
+                      placeholder="Hidden information about this character..."
+                      rows={2}
+                    />
+                    <FieldTextarea
+                      label="Miscellaneous"
+                      value={draft.personality?.miscellaneous || ''}
+                      onChange={(v) => updatePersonality('miscellaneous', v)}
+                      placeholder="Other personality notes..."
+                      rows={2}
+                    />
+                  </CollapsibleSection>
                 )}
 
                 {/* Custom Sections (Main characters only) - with add/remove controls */}
                 {!isSideCharacter && (
-                  <Section title="Custom Categories" className="space-y-4">
+                  <CollapsibleSection
+                    title="Custom Categories"
+                    isExpanded={expandedSections.customCategories}
+                    onToggle={() => toggleSection('customCategories')}
+                  >
                     {draft.sections && draft.sections.map((section) => (
                       <div key={section.id} className="p-4 bg-blue-900/20 rounded-xl border border-blue-500/20 space-y-3">
                         <div className="flex items-center gap-2">
@@ -895,11 +932,11 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     ))}
                     <Button
                       onClick={addNewSection}
-                      className="w-full bg-zinc-900 hover:bg-zinc-800 text-white border-white/10"
+                      className="w-full bg-zinc-800 hover:bg-zinc-700 text-white border-white/10"
                     >
                       <Plus className="w-4 h-4 mr-2" /> Add Category
                     </Button>
-                  </Section>
+                  </CollapsibleSection>
                 )}
               </div>
             </div>
