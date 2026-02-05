@@ -78,22 +78,22 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDel
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/20 to-transparent opacity-90 group-hover:opacity-95 transition-opacity" />
         
         {/* Hover Actions - Edit, Delete, Play */}
-        <div className="absolute inset-0 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 scale-90 group-hover:scale-100">
+        <div className="absolute inset-0 flex items-center justify-center gap-2 px-4 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 scale-90 group-hover:scale-100 flex-wrap">
           <button 
             onClick={(e) => { e.stopPropagation(); onEdit(scen.id); }}
-            className="px-6 py-2.5 bg-white text-slate-900 rounded-xl font-bold text-sm shadow-2xl hover:bg-slate-50 transition-colors"
+            className="px-4 py-2 bg-white text-slate-900 rounded-xl font-bold text-xs shadow-2xl hover:bg-slate-50 transition-colors"
           >
             Edit
           </button>
           <button 
             onClick={handleDeleteClick}
-            className="px-6 py-2.5 bg-rose-600 text-white rounded-xl font-bold text-sm shadow-2xl hover:bg-rose-500 transition-colors"
+            className="px-4 py-2 bg-rose-600 text-white rounded-xl font-bold text-xs shadow-2xl hover:bg-rose-500 transition-colors"
           >
             Delete
           </button>
           <button 
             onClick={(e) => { e.stopPropagation(); onPlay(scen.id); }}
-            className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm shadow-2xl hover:bg-blue-500 transition-colors"
+            className="px-4 py-2 bg-blue-600 text-white rounded-xl font-bold text-xs shadow-2xl hover:bg-blue-500 transition-colors"
           >
             Play
           </button>

@@ -104,36 +104,36 @@ export const GalleryScenarioCard: React.FC<GalleryScenarioCardProps> = ({
 
 
         {/* Hover Actions */}
-        <div className="absolute inset-0 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 scale-90 group-hover:scale-100">
+        <div className="absolute inset-0 flex items-center justify-center gap-2 px-4 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 scale-90 group-hover:scale-100 flex-wrap">
           <button
             onClick={handleLike}
             disabled={isLiking}
             className={cn(
-              "p-3 rounded-xl shadow-2xl transition-all",
+              "p-2.5 rounded-xl shadow-2xl transition-all",
               isLiked 
                 ? "bg-rose-500 text-white" 
                 : "bg-white/90 text-slate-700 hover:bg-rose-100 hover:text-rose-500"
             )}
           >
-            <Heart className={cn("w-5 h-5", isLiked && "fill-current")} />
+            <Heart className={cn("w-4 h-4", isLiked && "fill-current")} />
           </button>
           <button
             onClick={handleSave}
             disabled={isSaving}
             className={cn(
-              "p-3 rounded-xl shadow-2xl transition-all",
+              "p-2.5 rounded-xl shadow-2xl transition-all",
               isSaved 
                 ? "bg-amber-500 text-white" 
                 : "bg-white/90 text-slate-700 hover:bg-amber-100 hover:text-amber-500"
             )}
           >
-            <Bookmark className={cn("w-5 h-5", isSaved && "fill-current")} />
+            <Bookmark className={cn("w-4 h-4", isSaved && "fill-current")} />
           </button>
           <button
             onClick={handlePlay}
-            className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm shadow-2xl hover:bg-blue-500 transition-colors flex items-center gap-2"
+            className="px-4 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-xs shadow-2xl hover:bg-blue-500 transition-colors flex items-center gap-1.5"
           >
-            <Play className="w-4 h-4 fill-current" />
+            <Play className="w-3.5 h-3.5 fill-current" />
             Play
           </button>
         </div>
