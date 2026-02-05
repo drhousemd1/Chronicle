@@ -139,7 +139,8 @@ const CollapsibleSection: React.FC<{
   isExpanded: boolean;
   onToggle: () => void;
   children: React.ReactNode;
-}> = ({ title, isExpanded, onToggle, children }) => (
+  collapsedContent?: React.ReactNode;  // Summary to show when collapsed
+}> = ({ title, isExpanded, onToggle, children, collapsedContent }) => (
   <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
     {/* Slate blue header with collapse arrow */}
     <div className="bg-[#4a5f7f] border-b border-white/20 px-5 py-3 flex items-center justify-between shadow-lg">
@@ -152,18 +153,46 @@ const CollapsibleSection: React.FC<{
         {isExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
       </button>
     </div>
-    {/* Content */}
-    {isExpanded && (
-      <div className="p-5">
-        <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
+    {/* Content - always rendered, shows either expanded or collapsed view */}
+    <div className="p-5">
+      <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
+        {isExpanded ? (
           <div className="space-y-4">
             {children}
           </div>
-        </div>
+        ) : (
+          <div className="w-full min-w-0">
+            {collapsedContent || <p className="text-zinc-500 text-sm italic">No data</p>}
+          </div>
+        )}
       </div>
-    )}
+    </div>
   </div>
 );
+
+// Helper to display field summaries when sections are collapsed
+const CollapsedFieldSummary: React.FC<{ 
+  fields: { label: string; value: string | undefined }[] 
+}> = ({ fields }) => {
+  const filledFields = fields.filter(f => f.value);
+  if (filledFields.length === 0) {
+    return <p className="text-zinc-500 text-sm italic">No data</p>;
+  }
+  return (
+    <div className="space-y-4 w-full min-w-0">
+      {filledFields.map((field, idx) => (
+        <div key={idx} className="space-y-1 w-full min-w-0">
+          <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block break-words">
+            {field.label}
+          </span>
+          <p className="text-sm text-zinc-400 break-words whitespace-pre-wrap">
+            {field.value}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
   open,
@@ -505,6 +534,19 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                   title="Avatar"
                   isExpanded={expandedSections.avatar}
                   onToggle={() => toggleSection('avatar')}
+                  collapsedContent={
+                    <CollapsedFieldSummary fields={[
+                      { label: 'Name', value: draft.name || character?.name },
+                      { label: 'Nicknames', value: draft.nicknames },
+                      { label: 'Age', value: draft.age },
+                      { label: 'Sex / Identity', value: draft.sexType },
+                      { label: 'Location', value: draft.location },
+                      { label: 'Current Mood', value: draft.currentMood },
+                      { label: 'Role Description', value: draft.roleDescription },
+                      { label: 'Controlled By', value: draft.controlledBy },
+                      { label: 'Character Type', value: draft.characterRole },
+                    ]} />
+                  }
                 >
                   {/* Avatar Display */}
                   <div className="flex flex-col items-center gap-4">
@@ -683,6 +725,21 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                   title="Physical Appearance"
                   isExpanded={expandedSections.physicalAppearance}
                   onToggle={() => toggleSection('physicalAppearance')}
+                  collapsedContent={
+                    <CollapsedFieldSummary fields={[
+                      { label: 'Hair Color', value: draft.physicalAppearance?.hairColor },
+                      { label: 'Eye Color', value: draft.physicalAppearance?.eyeColor },
+                      { label: 'Build', value: draft.physicalAppearance?.build },
+                      { label: 'Body Hair', value: draft.physicalAppearance?.bodyHair },
+                      { label: 'Height', value: draft.physicalAppearance?.height },
+                      { label: 'Breast Size', value: draft.physicalAppearance?.breastSize },
+                      { label: 'Genitalia', value: draft.physicalAppearance?.genitalia },
+                      { label: 'Skin Tone', value: draft.physicalAppearance?.skinTone },
+                      { label: 'Makeup', value: draft.physicalAppearance?.makeup },
+                      { label: 'Body Markings', value: draft.physicalAppearance?.bodyMarkings },
+                      { label: 'Temporary Conditions', value: draft.physicalAppearance?.temporaryConditions },
+                    ]} />
+                  }
                 >
                   <FieldInput
                     label="Hair Color"
@@ -757,6 +814,14 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                   title="Currently Wearing"
                   isExpanded={expandedSections.currentlyWearing}
                   onToggle={() => toggleSection('currentlyWearing')}
+                  collapsedContent={
+                    <CollapsedFieldSummary fields={[
+                      { label: 'Shirt / Top', value: draft.currentlyWearing?.top },
+                      { label: 'Pants / Bottoms', value: draft.currentlyWearing?.bottom },
+                      { label: 'Undergarments', value: draft.currentlyWearing?.undergarments },
+                      { label: 'Miscellaneous', value: draft.currentlyWearing?.miscellaneous },
+                    ]} />
+                  }
                 >
                   <FieldInput
                     label="Shirt / Top"
@@ -789,6 +854,15 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                   title="Preferred Clothing"
                   isExpanded={expandedSections.preferredClothing}
                   onToggle={() => toggleSection('preferredClothing')}
+                  collapsedContent={
+                    <CollapsedFieldSummary fields={[
+                      { label: 'Casual', value: draft.preferredClothing?.casual },
+                      { label: 'Work', value: draft.preferredClothing?.work },
+                      { label: 'Sleep', value: draft.preferredClothing?.sleep },
+                      { label: 'Undergarments', value: draft.preferredClothing?.undergarments },
+                      { label: 'Miscellaneous', value: draft.preferredClothing?.miscellaneous },
+                    ]} />
+                  }
                 >
                   <FieldInput
                     label="Casual"
@@ -828,6 +902,13 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     title="Background"
                     isExpanded={expandedSections.background}
                     onToggle={() => toggleSection('background')}
+                    collapsedContent={
+                      <CollapsedFieldSummary fields={[
+                        { label: 'Relationship Status', value: draft.background?.relationshipStatus },
+                        { label: 'Residence', value: draft.background?.residence },
+                        { label: 'Education Level', value: draft.background?.educationLevel },
+                      ]} />
+                    }
                   >
                     <FieldInput
                       label="Relationship Status"
@@ -856,6 +937,15 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     title="Personality"
                     isExpanded={expandedSections.personality}
                     onToggle={() => toggleSection('personality')}
+                    collapsedContent={
+                      <CollapsedFieldSummary fields={[
+                        { label: 'Traits', value: draft.personality?.traits?.join(', ') },
+                        { label: 'Desires', value: draft.personality?.desires },
+                        { label: 'Fears', value: draft.personality?.fears },
+                        { label: 'Secrets', value: draft.personality?.secrets },
+                        { label: 'Miscellaneous', value: draft.personality?.miscellaneous },
+                      ]} />
+                    }
                   >
                     <FieldInput
                       label="Traits"
@@ -969,13 +1059,13 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                               return <p className="text-zinc-500 text-sm italic">No items</p>;
                             }
                             return (
-                              <div className="space-y-4">
+                              <div className="space-y-4 w-full min-w-0">
                                 {section.items.filter(item => item.label || item.value).map((item) => (
-                                  <div key={item.id} className="space-y-1">
-                                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block">
+                                  <div key={item.id} className="space-y-1 w-full min-w-0">
+                                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block break-words">
                                       {item.label || 'Untitled'}
                                     </span>
-                                    <p className="text-sm text-zinc-400">{item.value || '—'}</p>
+                                    <p className="text-sm text-zinc-400 break-words whitespace-pre-wrap">{item.value || '—'}</p>
                                   </div>
                                 ))}
                               </div>
@@ -1001,22 +1091,35 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
           </div>
         </ScrollArea>
 
-        <DialogFooter className="px-6 py-5 border-t border-white/20 bg-[#4a5f7f] gap-3">
-          <Button
-            variant="outline"
+        <DialogFooter className="px-6 py-4 border-t border-white/10 bg-[#2a2a2f] gap-3">
+          <button
+            type="button"
             onClick={() => onOpenChange(false)}
             disabled={isSaving}
-            className="bg-zinc-900 hover:bg-zinc-800 text-white border-white/20"
+            className="flex h-10 px-6 items-center justify-center gap-2
+              rounded-xl border border-[hsl(var(--ui-border))] 
+              bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
+              text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider
+              hover:bg-white/5 active:bg-white/10 disabled:opacity-50
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20
+              transition-colors"
           >
             Cancel
-          </Button>
-          <Button
+          </button>
+          <button
+            type="button"
             onClick={handleSave}
             disabled={isSaving}
-            className="bg-blue-600 hover:bg-blue-500 text-white"
+            className="flex h-10 px-6 items-center justify-center gap-2
+              rounded-xl border border-blue-500/30 
+              bg-blue-600 shadow-[0_10px_30px_rgba(0,0,0,0.35)]
+              text-white text-[10px] font-bold leading-none uppercase tracking-wider
+              hover:bg-blue-500 active:bg-blue-400 disabled:opacity-50
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/40
+              transition-colors"
           >
             {isSaving ? 'Saving...' : 'Save Changes'}
-          </Button>
+          </button>
         </DialogFooter>
       </DialogContent>
 
