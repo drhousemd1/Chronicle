@@ -275,6 +275,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   // Delete confirmation dialog state
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [characterToDelete, setCharacterToDelete] = useState<string | null>(null);
+  const [isMainCharacterDelete, setIsMainCharacterDelete] = useState(false);
   
   // Persistent map for placeholder name replacements (ensures consistency across the conversation)
   const placeholderMapRef = useRef<PlaceholderNameMap>({});
@@ -1844,33 +1845,56 @@ Do not acknowledge this instruction in your response.`;
   // Delete a side character - opens confirmation dialog
   const handleDeleteSideCharacter = (charId: string) => {
     setCharacterToDelete(charId);
+    setIsMainCharacterDelete(false);
     setIsDeleteDialogOpen(true);
   };
   
-  // Confirm deletion of a side character
-  const confirmDeleteSideCharacter = async () => {
+  // Delete a main character - opens confirmation dialog
+  const handleDeleteMainCharacter = (charId: string) => {
+    setCharacterToDelete(charId);
+    setIsMainCharacterDelete(true);
+    setIsDeleteDialogOpen(true);
+  };
+  
+  // Confirm deletion of a character (main or side)
+  const confirmDeleteCharacter = async () => {
     if (!characterToDelete) return;
     
     try {
-      await supabaseData.deleteSideCharacter(characterToDelete);
-      
-      // Update local ref and propagate to parent
-      const updatedList = sideCharactersRef.current.filter(sc => sc.id !== characterToDelete);
-      sideCharactersRef.current = updatedList;
-      onUpdateSideCharacters?.(updatedList);
-      
-      // Close expanded state if this was the expanded character
-      if (expandedCharId === characterToDelete) {
-        setExpandedCharId(null);
+      if (isMainCharacterDelete) {
+        // For main characters, we delete any session state overrides
+        // The character still exists in the scenario but their session edits are cleared
+        const { error } = await supabase
+          .from('character_session_states')
+          .delete()
+          .eq('conversation_id', conversationId)
+          .eq('character_id', characterToDelete);
+        
+        if (error) throw error;
+        toast.success('Character edits cleared');
+      } else {
+        // Delete side character
+        await supabaseData.deleteSideCharacter(characterToDelete);
+        
+        // Update local ref and propagate to parent
+        const updatedList = sideCharactersRef.current.filter(sc => sc.id !== characterToDelete);
+        sideCharactersRef.current = updatedList;
+        onUpdateSideCharacters?.(updatedList);
+        
+        // Close expanded state if this was the expanded character
+        if (expandedCharId === characterToDelete) {
+          setExpandedCharId(null);
+        }
+        
+        toast.success('Character deleted');
       }
-      
-      toast.success('Character deleted');
-    } catch (error) {
-      console.error('Failed to delete side character:', error);
+    } catch (error) {  
+      console.error('Failed to delete character:', error);
       toast.error('Failed to delete character');
     } finally {
       setIsDeleteDialogOpen(false);
       setCharacterToDelete(null);
+      setIsMainCharacterDelete(false);
     }
   };
   
@@ -2141,13 +2165,6 @@ const updatedChar: SideCharacter = {
               </Badge>
             </div>
             <div className="text-sm font-bold tracking-tight text-slate-800">{char.name}</div>
-            {/* View character card link */}
-            <button
-              onClick={() => openCharacterEditModal(char)}
-              className="text-xs text-blue-500 hover:text-blue-600 hover:underline transition-colors"
-            >
-              View character card
-            </button>
           </div>
           
           {/* Edit dropdown menu - always visible */}
@@ -2161,7 +2178,14 @@ const updatedChar: SideCharacter = {
               <DropdownMenuContent align="end" className="bg-white border-slate-200 shadow-lg z-50">
                 <DropdownMenuItem onClick={() => openCharacterEditModal(char)}>
                   <Pencil className="w-4 h-4 mr-2" />
-                  Edit for this session
+                  Edit character
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => handleDeleteMainCharacter(char.id)}
+                  className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete character
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -2995,7 +3019,7 @@ const updatedChar: SideCharacter = {
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction 
-              onClick={confirmDeleteSideCharacter}
+              onClick={confirmDeleteCharacter}
               className="bg-rose-600 text-white hover:bg-rose-700"
             >
               Delete

@@ -16,8 +16,8 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Loader2, Plus, Trash2, X, Pencil } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import * as supabaseData from '@/services/supabase-data';
+import { supabase } from '@/integrations/supabase/client'; 
+import * as supabaseData from '@/services/supabase-data'; 
 import { toast } from 'sonner';
 import { UploadSourceMenu } from './UploadSourceMenu';
 import { ChangeNameModal } from './ChangeNameModal';
@@ -73,22 +73,15 @@ const FieldInput: React.FC<{
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
-  readOnly?: boolean;
-}> = ({ label, value, onChange, placeholder, readOnly = false }) => (
+}> = ({ label, value, onChange, placeholder }) => (
   <div className="space-y-1.5">
-    <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{label}</Label>
-    {readOnly ? (
-      <div className="px-3 py-2 bg-slate-100 rounded-md text-sm text-slate-700 min-h-[36px]">
-        {value || <span className="text-slate-400 italic">Not set</span>}
-      </div>
-    ) : (
-      <Input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="h-9 text-sm"
-      />
-    )}
+    <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">{label}</Label>
+    <Input
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="h-9 text-sm bg-zinc-900/50 border-white/10 text-white placeholder:text-zinc-500 focus:ring-blue-500/20 focus:border-blue-500"
+    />
   </div>
 );
 
@@ -99,23 +92,16 @@ const FieldTextarea: React.FC<{
   onChange: (value: string) => void;
   placeholder?: string;
   rows?: number;
-  readOnly?: boolean;
-}> = ({ label, value, onChange, placeholder, rows = 3, readOnly = false }) => (
+}> = ({ label, value, onChange, placeholder, rows = 3 }) => (
   <div className="space-y-1.5">
-    <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{label}</Label>
-    {readOnly ? (
-      <div className="px-3 py-2 bg-slate-100 rounded-md text-sm text-slate-700 min-h-[60px] whitespace-pre-wrap">
-        {value || <span className="text-slate-400 italic">Not set</span>}
-      </div>
-    ) : (
-      <Textarea
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        rows={rows}
-        className="text-sm resize-none"
-      />
-    )}
+    <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">{label}</Label>
+    <Textarea
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      rows={rows}
+      className="text-sm resize-none bg-zinc-900/50 border-white/10 text-white placeholder:text-zinc-500 focus:ring-blue-500/20 focus:border-blue-500"
+    />
   </div>
 );
 
@@ -127,8 +113,8 @@ const Section: React.FC<{
 }> = ({ title, children, className = '' }) => (
   <div className={`space-y-4 ${className}`}>
     <div className="flex items-center gap-2">
-      <h4 className="text-xs font-black text-slate-700 uppercase tracking-wider">{title}</h4>
-      <div className="flex-1 h-px bg-slate-200" />
+      <h4 className="text-xs font-black text-white uppercase tracking-wider">{title}</h4>
+      <div className="flex-1 h-px bg-white/20" />
     </div>
     <div className="space-y-3">
       {children}
@@ -149,15 +135,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isRegeneratingAvatar, setIsRegeneratingAvatar] = useState(false);
   const [isChangeNameModalOpen, setIsChangeNameModalOpen] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(!viewOnly);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Reset edit mode when modal opens based on viewOnly prop
-  useEffect(() => {
-    if (open) {
-      setIsEditMode(!viewOnly);
-    }
-  }, [open, viewOnly]);
 
   // Determine if this is a side character (has background property)
   const isSideCharacter = character && 'background' in character;
@@ -439,41 +417,27 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] p-0 gap-0 overflow-hidden">
-        <DialogHeader className="px-6 py-4 border-b bg-slate-50">
-          <div className="flex items-center justify-between">
-            <div>
-              <DialogTitle className="text-lg font-bold text-slate-900">
-                {isEditMode ? 'Edit Character' : 'Character Card'}
-              </DialogTitle>
-              <p className="text-xs text-slate-500 mt-1">
-                {isEditMode ? 'Changes apply only to this playthrough' : 'View character details'}
-              </p>
-            </div>
-            {/* Edit toggle button */}
-            <Button
-              variant={isEditMode ? "default" : "outline"}
-              size="sm"
-              onClick={() => setIsEditMode(!isEditMode)}
-              className="gap-2"
-            >
-              <Pencil className="w-4 h-4" />
-              {isEditMode ? 'Editing' : 'Edit'}
-            </Button>
-          </div>
+      <DialogContent className="max-w-4xl max-h-[90vh] p-0 gap-0 overflow-hidden bg-[#2a2a2f] border-white/10">
+        <DialogHeader className="px-6 py-4 border-b border-white/20 bg-[#4a5f7f]">
+          <DialogTitle className="text-lg font-bold text-white">
+            Edit Character
+          </DialogTitle>
+          <p className="text-xs text-white/70 mt-1">
+            Changes apply only to this playthrough
+          </p>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 max-h-[calc(90vh-140px)]">
+        <ScrollArea className="flex-1 max-h-[calc(90vh-140px)] bg-[#2a2a2f]">
           <div className="p-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Left Column - Avatar & Basic Info */}
               <div className="space-y-6">
 {/* Avatar Display with Upload/Regenerate */}
                 <div className="flex flex-col items-center gap-3">
-                  <div className="w-32 h-32 rounded-2xl overflow-hidden bg-slate-100 border-2 border-slate-200 shadow-sm relative">
+                  <div className="w-32 h-32 rounded-2xl overflow-hidden bg-zinc-800 border-2 border-white/10 shadow-sm relative">
                     {(isUploadingAvatar || isRegeneratingAvatar) ? (
-                      <div className="w-full h-full flex items-center justify-center bg-slate-50">
-                        <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+                      <div className="w-full h-full flex items-center justify-center bg-zinc-900">
+                        <Loader2 className="w-8 h-8 animate-spin text-zinc-400" />
                       </div>
                     ) : (draft.avatarDataUrl || character.avatarDataUrl) ? (
                       <img 
@@ -485,77 +449,71 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                         }}
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center font-black text-slate-300 text-3xl italic uppercase">
+                      <div className="w-full h-full flex items-center justify-center font-black text-zinc-500 text-3xl italic uppercase">
                         {(draft.name || character.name)?.charAt(0) || '?'}
                       </div>
                     )}
                   </div>
                   
-                  {/* Upload/Regenerate Buttons - only show in edit mode */}
-                  {isEditMode && (
-                    <div className="flex flex-col gap-2 w-full">
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleAvatarUpload}
-                      />
-                      <UploadSourceMenu
-                        onUploadFromDevice={() => fileInputRef.current?.click()}
-                        onSelectFromLibrary={(imageUrl) => {
-                          setDraft(prev => ({
-                            ...prev,
-                            avatarDataUrl: imageUrl,
-                            avatarPosition: { x: 50, y: 50 }
-                          }));
-                          toast.success('Avatar selected from library');
-                        }}
-                        disabled={isUploadingAvatar || isRegeneratingAvatar}
-                        isUploading={isUploadingAvatar}
-                        label="Upload Image"
-                        variant="primary"
-                        className="w-full bg-slate-900 hover:bg-slate-800 text-white"
-                      />
-                      <Button
-                        size="sm"
-                        className="w-full bg-slate-900 hover:bg-slate-800 text-white"
-                        onClick={handleRegenerateAvatar}
-                        disabled={isUploadingAvatar || isRegeneratingAvatar}
-                      >
-                        {isRegeneratingAvatar ? 'Generating...' : 'AI Generate'}
-                      </Button>
-                    </div>
-                  )}
+                  {/* Upload/Regenerate Buttons */}
+                  <div className="flex flex-col gap-2 w-full">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleAvatarUpload}
+                    />
+                    <UploadSourceMenu
+                      onUploadFromDevice={() => fileInputRef.current?.click()}
+                      onSelectFromLibrary={(imageUrl) => {
+                        setDraft(prev => ({
+                          ...prev,
+                          avatarDataUrl: imageUrl,
+                          avatarPosition: { x: 50, y: 50 }
+                        }));
+                        toast.success('Avatar selected from library');
+                      }}
+                      disabled={isUploadingAvatar || isRegeneratingAvatar}
+                      isUploading={isUploadingAvatar}
+                      label="Upload Image"
+                      variant="primary"
+                      className="w-full bg-zinc-900 hover:bg-zinc-800 text-white border-white/10"
+                    />
+                    <Button
+                      size="sm"
+                      className="w-full bg-zinc-900 hover:bg-zinc-800 text-white border-white/10"
+                      onClick={handleRegenerateAvatar}
+                      disabled={isUploadingAvatar || isRegeneratingAvatar}
+                    >
+                      {isRegeneratingAvatar ? 'Generating...' : 'AI Generate'}
+                    </Button>
+                  </div>
                   
-                  {isEditMode && (
-                    <p className="text-[10px] text-slate-400 text-center">
-                      Changes apply to this session only
-                    </p>
-                  )}
+                  <p className="text-[10px] text-zinc-500 text-center">
+                    Changes apply to this session only
+                  </p>
                 </div>
 
                 {/* Basic Fields */}
                 <Section title="Basic Info">
                   {/* Name field - read-only with Change Name button in edit mode */}
                   <div className="space-y-1.5">
-                    <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Name</Label>
+                    <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Name</Label>
                     <div className="flex items-center gap-2">
-                      <div className="flex-1 px-3 py-2 bg-slate-100 rounded-md text-sm text-slate-700 font-medium border border-slate-200">
+                      <div className="flex-1 px-3 py-2 bg-zinc-900/50 rounded-md text-sm text-white font-medium border border-white/10">
                         {draft.name || character?.name || 'Unnamed'}
                       </div>
-                      {isEditMode && (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setIsChangeNameModalOpen(true)}
-                          className="gap-1.5 text-xs"
-                        >
-                          <Pencil className="w-3 h-3" />
-                          Change
-                        </Button>
-                      )}
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setIsChangeNameModalOpen(true)}
+                        className="gap-1.5 text-xs bg-zinc-900 hover:bg-zinc-800 text-white border-white/20"
+                      >
+                        <Pencil className="w-3 h-3" />
+                        Change
+                      </Button>
                     </div>
                   </div>
                   <FieldInput
@@ -613,15 +571,15 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                 <Section title="Control">
                   <div className="space-y-3">
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Controlled By</Label>
-                      <div className="flex p-1 bg-slate-100 rounded-lg">
+                      <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Controlled By</Label>
+                      <div className="flex p-1 bg-zinc-900/50 rounded-lg border border-white/10">
                         <button 
                           type="button"
                           onClick={() => updateField('controlledBy', 'AI')}
                           className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded transition-all ${
                             draft.controlledBy === 'AI' 
-                              ? 'bg-white text-blue-600 shadow-sm' 
-                              : 'text-slate-400 hover:text-slate-600'
+                              ? 'bg-zinc-700 text-blue-400 shadow-sm' 
+                              : 'text-zinc-500 hover:text-zinc-300'
                           }`}
                         >
                           AI
@@ -631,8 +589,8 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                           onClick={() => updateField('controlledBy', 'User')}
                           className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded transition-all ${
                             draft.controlledBy === 'User' 
-                              ? 'bg-white text-amber-600 shadow-sm' 
-                              : 'text-slate-400 hover:text-slate-600'
+                              ? 'bg-zinc-700 text-amber-400 shadow-sm' 
+                              : 'text-zinc-500 hover:text-zinc-300'
                           }`}
                         >
                           User
@@ -640,15 +598,15 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                       </div>
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Character Type</Label>
-                      <div className="flex p-1 bg-slate-100 rounded-lg">
+                      <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Character Type</Label>
+                      <div className="flex p-1 bg-zinc-900/50 rounded-lg border border-white/10">
                         <button 
                           type="button"
                           onClick={() => updateField('characterRole', 'Main')}
                           className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded transition-all ${
                             draft.characterRole === 'Main' 
-                              ? 'bg-white text-purple-600 shadow-sm' 
-                              : 'text-slate-400 hover:text-slate-600'
+                              ? 'bg-zinc-700 text-purple-400 shadow-sm' 
+                              : 'text-zinc-500 hover:text-zinc-300'
                           }`}
                         >
                           Main
@@ -658,8 +616,8 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                           onClick={() => updateField('characterRole', 'Side')}
                           className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded transition-all ${
                             draft.characterRole === 'Side' 
-                              ? 'bg-white text-green-600 shadow-sm' 
-                              : 'text-slate-400 hover:text-slate-600'
+                              ? 'bg-zinc-700 text-green-400 shadow-sm' 
+                              : 'text-zinc-500 hover:text-zinc-300'
                           }`}
                         >
                           Side
@@ -673,7 +631,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
               {/* Right Column - Trait Sections */}
               <div className="lg:col-span-2 space-y-6">
                 {/* Physical Appearance */}
-                <Section title="Physical Appearance" className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                <Section title="Physical Appearance" className="p-5 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     <FieldInput
                       label="Hair Color"
@@ -745,7 +703,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                 </Section>
 
                 {/* Currently Wearing */}
-                <Section title="Currently Wearing" className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                <Section title="Currently Wearing" className="p-5 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
                   <div className="grid grid-cols-2 gap-3">
                     <FieldInput
                       label="Shirt / Top"
@@ -775,7 +733,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                 </Section>
 
                 {/* Preferred Clothing */}
-                <Section title="Preferred Clothing" className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                <Section title="Preferred Clothing" className="p-5 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     <FieldInput
                       label="Casual"
@@ -812,7 +770,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
 
                 {/* Side Character Specific: Background */}
                 {isSideCharacter && (
-                  <Section title="Background" className="p-4 bg-purple-50 rounded-xl border border-purple-200">
+                  <Section title="Background" className="p-5 bg-purple-900/20 rounded-2xl border border-purple-500/20">
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                       <FieldInput
                         label="Relationship Status"
@@ -838,7 +796,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
 
                 {/* Side Character Specific: Personality */}
                 {isSideCharacter && (
-                  <Section title="Personality" className="p-4 bg-purple-50 rounded-xl border border-purple-200">
+                  <Section title="Personality" className="p-5 bg-purple-900/20 rounded-2xl border border-purple-500/20">
                     <div className="space-y-3">
                       <FieldInput
                         label="Traits"
@@ -882,19 +840,19 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                 {!isSideCharacter && (
                   <Section title="Custom Categories" className="space-y-4">
                     {draft.sections && draft.sections.map((section) => (
-                      <div key={section.id} className="p-4 bg-blue-50 rounded-xl border border-blue-200 space-y-3">
+                      <div key={section.id} className="p-4 bg-blue-900/20 rounded-xl border border-blue-500/20 space-y-3">
                         <div className="flex items-center gap-2">
                           <Input
                             value={section.title}
                             onChange={(e) => updateSectionTitle(section.id, e.target.value)}
                             placeholder="Category name"
-                            className="h-8 text-sm font-bold flex-1"
+                            className="h-8 text-sm font-bold flex-1 bg-zinc-900/50 border-white/10 text-white"
                           />
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => deleteSection(section.id)}
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2"
+                            className="text-red-400 hover:text-red-300 hover:bg-red-900/30 p-2"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -906,19 +864,19 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                                 value={item.label}
                                 onChange={(e) => updateSectionItem(section.id, item.id, 'label', e.target.value)}
                                 placeholder="Label"
-                                className="h-8 text-xs w-1/3"
+                                className="h-8 text-xs w-1/3 bg-zinc-900/50 border-white/10 text-white"
                               />
                               <Input
                                 value={item.value}
                                 onChange={(e) => updateSectionItem(section.id, item.id, 'value', e.target.value)}
                                 placeholder="Value"
-                                className="h-8 text-xs flex-1"
+                                className="h-8 text-xs flex-1 bg-zinc-900/50 border-white/10 text-white"
                               />
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => removeItemFromSection(section.id, item.id)}
-                                className="text-red-400 hover:text-red-600 p-1"
+                                className="text-red-400 hover:text-red-300 p-1"
                               >
                                 <X className="w-3 h-3" />
                               </Button>
@@ -928,7 +886,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                             variant="ghost"
                             size="sm"
                             onClick={() => addItemToSection(section.id)}
-                            className="text-blue-600 hover:text-blue-800 w-full"
+                            className="text-blue-400 hover:text-blue-300 w-full"
                           >
                             <Plus className="w-4 h-4 mr-1" /> Add Row
                           </Button>
@@ -937,7 +895,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     ))}
                     <Button
                       onClick={addNewSection}
-                      className="w-full bg-slate-900 hover:bg-slate-800 text-white"
+                      className="w-full bg-zinc-900 hover:bg-zinc-800 text-white border-white/10"
                     >
                       <Plus className="w-4 h-4 mr-2" /> Add Category
                     </Button>
@@ -948,24 +906,22 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
           </div>
         </ScrollArea>
 
-        <DialogFooter className="px-6 py-5 border-t bg-slate-50 gap-3">
+        <DialogFooter className="px-6 py-5 border-t border-white/20 bg-[#4a5f7f] gap-3">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={isSaving}
-            className="bg-slate-900 hover:bg-slate-800 text-white border-0"
+            className="bg-zinc-900 hover:bg-zinc-800 text-white border-white/20"
           >
-            {isEditMode ? 'Cancel' : 'Close'}
+            Cancel
           </Button>
-          {isEditMode && (
-            <Button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="bg-slate-900 hover:bg-slate-800 text-white"
-            >
-              {isSaving ? 'Saving...' : 'Save Changes'}
-            </Button>
-          )}
+          <Button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="bg-blue-600 hover:bg-blue-500 text-white"
+          >
+            {isSaving ? 'Saving...' : 'Save Changes'}
+          </Button>
         </DialogFooter>
       </DialogContent>
 

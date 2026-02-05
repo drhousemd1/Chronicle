@@ -80,13 +80,6 @@ export const SideCharacterCard: React.FC<SideCharacterCardProps> = ({
           <div className="text-sm font-bold tracking-tight text-slate-800">
             {character.name}
           </div>
-          {/* View character card link */}
-          <button
-            onClick={onStartEdit}
-            className="text-xs text-purple-500 hover:text-purple-600 hover:underline transition-colors"
-          >
-            View character card
-          </button>
         </div>
         
         {/* Edit dropdown menu - always visible */}
