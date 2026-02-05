@@ -607,16 +607,20 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                         <div className="flex-1 px-3 py-2 bg-zinc-900/50 rounded-md text-sm text-white font-medium border border-white/10">
                           {draft.name || character?.name || 'Unnamed'}
                         </div>
-                        <Button
+                        <button
                           type="button"
-                          size="sm"
-                          variant="outline"
                           onClick={() => setIsChangeNameModalOpen(true)}
-                          className="gap-1.5 text-xs bg-zinc-900 hover:bg-zinc-800 text-white border-white/20"
+                          className="flex h-10 px-4 items-center justify-center gap-2
+                            rounded-xl border border-[hsl(var(--ui-border))] 
+                            bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
+                            text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider
+                            hover:bg-white/5 active:bg-white/10
+                            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20
+                            transition-colors"
                         >
                           <Pencil className="w-3 h-3" />
                           Change
-                        </Button>
+                        </button>
                       </div>
                     </div>
                     <FieldInput
