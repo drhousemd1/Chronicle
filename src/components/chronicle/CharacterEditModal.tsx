@@ -515,7 +515,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[90vh] p-0 gap-0 overflow-hidden bg-[#2a2a2f] border-white/10">
-        <DialogHeader className="px-6 py-4 border-b border-white/20 bg-[#4a5f7f]">
+        <DialogHeader className="px-6 py-4 border-b border-white/20 bg-black">
           <DialogTitle className="text-lg font-bold text-white">
             Edit Character
           </DialogTitle>
@@ -1081,12 +1081,19 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
 
                 {/* Add Category button outside containers */}
                 {!isSideCharacter && (
-                  <Button
+                  <button
+                    type="button"
                     onClick={addNewSection}
-                    className="w-full bg-zinc-800 hover:bg-zinc-700 text-white border-white/10"
+                    className="w-full flex h-10 px-6 items-center justify-center gap-2
+                      rounded-xl border border-[hsl(var(--ui-border))] 
+                      bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
+                      text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider
+                      hover:bg-white/5 active:bg-white/10 disabled:opacity-50
+                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20
+                      transition-colors"
                   >
-                    <Plus className="w-4 h-4 mr-2" /> Add Category
-                  </Button>
+                    <Plus className="w-4 h-4" /> Add Category
+                  </button>
                 )}
               </div>
             </div>
