@@ -95,11 +95,11 @@ export const GalleryScenarioCard: React.FC<GalleryScenarioCardProps> = ({
           </div>
         )}
 
-        {/* Remix Badge */}
+        {/* Remix Badge - Top Left with charcoal styling */}
         {published.allow_remix && (
-          <div className="absolute top-4 left-4 px-2.5 py-1 bg-purple-500/80 backdrop-blur-sm rounded-lg text-[10px] font-bold text-white flex items-center gap-1.5 shadow-lg">
+          <div className="absolute top-4 left-4 px-2.5 py-1 bg-[#2a2a2f] backdrop-blur-sm rounded-lg text-xs font-bold text-purple-400 flex items-center gap-1.5 shadow-lg uppercase tracking-wide">
             <Sparkles className="w-3 h-3" />
-            REMIXABLE
+            Remixable
           </div>
         )}
 
@@ -140,16 +140,16 @@ export const GalleryScenarioCard: React.FC<GalleryScenarioCardProps> = ({
         </div>
 
         {/* Bottom Info */}
-        <div className="absolute inset-x-0 bottom-0 p-6 pointer-events-none">
-          <h3 className="text-xl font-black text-white leading-tight tracking-tight group-hover:text-blue-300 transition-colors truncate">
+        <div className="absolute inset-x-0 bottom-0 h-1/3 p-6 pointer-events-none flex flex-col justify-start">
+          <h3 className="text-xl font-black text-white leading-tight tracking-tight group-hover:text-blue-300 transition-colors truncate flex-shrink-0">
             {scenario?.title || "Untitled Story"}
           </h3>
-          <p className="text-xs text-white/70 line-clamp-2 leading-relaxed italic mt-1">
+          <p className="text-xs text-white/70 line-clamp-3 leading-relaxed italic mt-1 overflow-hidden">
             {scenario?.description || "No description provided."}
           </p>
           
           {/* Publisher & Stats */}
-          <div className="flex items-center justify-between mt-3">
+          <div className="flex items-center justify-between mt-auto">
             <span className="text-xs text-white/60 font-medium">
               by {publisher?.username || 'Anonymous'}
             </span>

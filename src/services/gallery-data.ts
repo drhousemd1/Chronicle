@@ -494,6 +494,25 @@ export async function trackRemix(
   if (error) throw error;
 }
 
+// Fetch published scenarios with full data for user's own scenarios
+export async function fetchUserPublishedScenarios(
+  userId: string
+): Promise<Map<string, PublishedScenario>> {
+  const { data, error } = await supabase
+    .from('published_scenarios')
+    .select('*')
+    .eq('publisher_id', userId)
+    .eq('is_published', true);
+    
+  if (error) throw error;
+  
+  const map = new Map<string, PublishedScenario>();
+  for (const row of data || []) {
+    map.set(row.scenario_id, row as unknown as PublishedScenario);
+  }
+  return map;
+}
+
 // Scenario characters type for detail modal
 export interface ScenarioCharacter {
   id: string;

@@ -1552,3 +1552,19 @@ export async function saveContentThemes(scenarioId: string, themes: ContentTheme
   
   if (error) throw error;
 }
+
+// Fetch user profile
+export async function fetchUserProfile(userId: string): Promise<{ username: string | null } | null> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('username')
+    .eq('id', userId)
+    .maybeSingle();
+    
+  if (error) {
+    console.error('Failed to fetch user profile:', error);
+    return null;
+  }
+  
+  return data;
+}
