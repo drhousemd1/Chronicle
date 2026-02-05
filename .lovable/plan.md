@@ -1,13 +1,10 @@
 
 
-# Update Header Color and Add Category Button Styling
+# Update Change Button Styling
 
 ## Summary
 
-Two styling updates to `CharacterEditModal.tsx`:
-
-1. **Change "Edit Character" header background** - From slate blue (#4a5f7f) to black
-2. **Update "+ Add Category" button** - Match the Cancel button styling
+Update the "Change" button (for changing character name) to match the Cancel and Upload Image button styling.
 
 ---
 
@@ -19,29 +16,19 @@ Two styling updates to `CharacterEditModal.tsx`:
 
 ## Technical Changes
 
-### 1. Change Header Background to Black (Line 518)
-
-**Current:**
-```tsx
-<DialogHeader className="px-6 py-4 border-b border-white/20 bg-[#4a5f7f]">
-```
-
-**Updated:**
-```tsx
-<DialogHeader className="px-6 py-4 border-b border-white/20 bg-black">
-```
-
----
-
-### 2. Update Add Category Button to Match Cancel Button (Lines 1084-1089)
+### Update Change Button (Lines 610-619)
 
 **Current:**
 ```tsx
 <Button
-  onClick={addNewSection}
-  className="w-full bg-zinc-800 hover:bg-zinc-700 text-white border-white/10"
+  type="button"
+  size="sm"
+  variant="outline"
+  onClick={() => setIsChangeNameModalOpen(true)}
+  className="gap-1.5 text-xs bg-zinc-900 hover:bg-zinc-800 text-white border-white/20"
 >
-  <Plus className="w-4 h-4 mr-2" /> Add Category
+  <Pencil className="w-3 h-3" />
+  Change
 </Button>
 ```
 
@@ -49,34 +36,33 @@ Two styling updates to `CharacterEditModal.tsx`:
 ```tsx
 <button
   type="button"
-  onClick={addNewSection}
-  className="w-full flex h-10 px-6 items-center justify-center gap-2
+  onClick={() => setIsChangeNameModalOpen(true)}
+  className="flex h-10 px-4 items-center justify-center gap-2
     rounded-xl border border-[hsl(var(--ui-border))] 
     bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
     text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider
-    hover:bg-white/5 active:bg-white/10 disabled:opacity-50
+    hover:bg-white/5 active:bg-white/10
     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20
     transition-colors"
 >
-  <Plus className="w-4 h-4" /> Add Category
+  <Pencil className="w-3 h-3" />
+  Change
 </button>
 ```
 
-Key changes:
+**Key changes:**
 - Switch from `<Button>` component to native `<button>` element
-- Use same styling classes as Cancel button
-- Add `w-full` to maintain full width
 - Use `rounded-xl` corners
-- Apply dark surface background with CSS variables
-- Heavy drop shadow
-- Small uppercase text styling
+- Apply dark surface background with CSS variables (`bg-[hsl(var(--ui-surface-2))]`)
+- Heavy drop shadow (`shadow-[0_10px_30px_rgba(0,0,0,0.35)]`)
+- Small uppercase text styling (`text-[10px] font-bold uppercase tracking-wider`)
+- Slightly smaller horizontal padding (`px-4`) since it's a compact button
 
 ---
 
-## Summary of Changes
+## Summary
 
 | Element | Current | Updated |
 |---------|---------|---------|
-| Header background | `bg-[#4a5f7f]` (slate blue) | `bg-black` |
-| Add Category button | `<Button>` with zinc-800 | Native `<button>` matching Cancel style |
+| Change button | `<Button>` with zinc-900 bg | Native `<button>` matching Cancel/Upload Image style |
 
