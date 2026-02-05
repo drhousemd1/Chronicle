@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Heart, Bookmark, Play, Sparkles, Edit, Loader2, Eye, X, Globe } from 'lucide-react';
+import { Heart, Bookmark, Play, Pencil, Edit, Loader2, Eye, X, Globe } from 'lucide-react';
 import { Dialog, DialogContent, DialogOverlay, DialogPortal } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -220,12 +220,11 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                   </div>
                 )}
                 
-                {/* Remixable Badge */}
+                {/* Edit icon badge */}
                 {allowRemix && (
                   <div className="absolute top-3 left-3">
-                    <span className="px-3 py-1.5 bg-purple-500/90 rounded-lg text-xs font-bold text-white flex items-center gap-1.5 shadow-lg">
-                      <Sparkles className="w-3 h-3" />
-                      REMIXABLE
+                    <span className="p-2 bg-[#2a2a2f] rounded-lg shadow-lg flex items-center justify-center">
+                      <Pencil className="w-4 h-4 text-purple-400" />
                     </span>
                   </div>
                 )}
