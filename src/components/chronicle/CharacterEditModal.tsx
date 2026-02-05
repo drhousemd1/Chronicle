@@ -921,47 +921,69 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                       </div>
                     </div>
                     {/* Content */}
-                    {(expandedCustomSections[section.id] ?? true) && (
-                      <div className="p-5">
-                        <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5 space-y-4">
-                          {section.items.map((item) => (
-                            <div key={item.id} className="space-y-2">
-                              <div className="flex items-start gap-2">
-                                <div className="flex-1 space-y-2">
-                                  <AutoResizeTextarea
-                                    value={item.label}
-                                    onChange={(v) => updateSectionItem(section.id, item.id, 'label', v)}
-                                    placeholder="Label"
-                                    className="px-3 py-2 rounded-lg text-xs font-bold bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
-                                  />
-                                  <AutoResizeTextarea
-                                    value={item.value}
-                                    onChange={(v) => updateSectionItem(section.id, item.id, 'value', v)}
-                                    placeholder="Value"
-                                    className="px-3 py-2 rounded-lg text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
-                                  />
+                    <div className="p-5">
+                      <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
+                        {(expandedCustomSections[section.id] ?? true) ? (
+                          <div className="space-y-4">
+                            {section.items.map((item) => (
+                              <div key={item.id}>
+                                <div className="flex items-start gap-2">
+                                  <div className="flex-1 flex gap-2">
+                                    <AutoResizeTextarea
+                                      value={item.label}
+                                      onChange={(v) => updateSectionItem(section.id, item.id, 'label', v)}
+                                      placeholder="Label"
+                                      className="w-1/3 px-3 py-2 rounded-lg text-xs font-bold bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
+                                    />
+                                    <AutoResizeTextarea
+                                      value={item.value}
+                                      onChange={(v) => updateSectionItem(section.id, item.id, 'value', v)}
+                                      placeholder="Description"
+                                      className="flex-1 px-3 py-2 rounded-lg text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
+                                    />
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeItemFromSection(section.id, item.id)}
+                                    className="text-red-400 hover:text-red-300 p-1.5 rounded-md hover:bg-red-900/30 mt-1"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
                                 </div>
-                                <button
-                                  type="button"
-                                  onClick={() => removeItemFromSection(section.id, item.id)}
-                                  className="text-red-400 hover:text-red-300 p-1.5 rounded-md hover:bg-red-900/30 mt-1"
-                                >
-                                  <X className="w-4 h-4" />
-                                </button>
                               </div>
-                            </div>
-                          ))}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => addItemToSection(section.id)}
-                            className="text-blue-400 hover:text-blue-300 w-full border border-dashed border-blue-500/30 hover:border-blue-400"
-                          >
-                            <Plus className="w-4 h-4 mr-1" /> Add Row
-                          </Button>
-                        </div>
+                            ))}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => addItemToSection(section.id)}
+                              className="text-blue-400 hover:text-blue-300 w-full border border-dashed border-blue-500/30 hover:border-blue-400"
+                            >
+                              <Plus className="w-4 h-4 mr-1" /> Add Row
+                            </Button>
+                          </div>
+                        ) : (
+                          // Collapsed view - show label/value summary
+                          (() => {
+                            const hasAnyValue = section.items.some(item => item.label || item.value);
+                            if (!hasAnyValue) {
+                              return <p className="text-zinc-500 text-sm italic">No items</p>;
+                            }
+                            return (
+                              <div className="space-y-4">
+                                {section.items.filter(item => item.label || item.value).map((item) => (
+                                  <div key={item.id} className="space-y-1">
+                                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block">
+                                      {item.label || 'Untitled'}
+                                    </span>
+                                    <p className="text-sm text-zinc-400">{item.value || '—'}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            );
+                          })()
+                        )}
                       </div>
-                    )}
+                    </div>
                   </div>
                 ))}
 
