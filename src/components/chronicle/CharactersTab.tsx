@@ -1,7 +1,7 @@
 
 import React, { useRef, useState, useCallback } from 'react';
 import { Character, CharacterTraitSection, ScenarioData, PhysicalAppearance, CurrentlyWearing, PreferredClothing, CharacterGoal } from '@/types';
-import { Button, Input, TextArea, Card } from './UI';
+import { Button, TextArea, Card } from './UI';
 import { Icons } from '@/constants';
 import { uid, now, clamp, resizeImage } from '@/utils';
 import { useAuth } from '@/hooks/use-auth';
@@ -9,7 +9,7 @@ import { uploadAvatar, dataUrlToBlob } from '@/services/supabase-data';
 import { toast } from 'sonner';
 import { AvatarGenerationModal } from './AvatarGenerationModal';
 import { AvatarActionButtons } from './AvatarActionButtons';
-import { Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
+import { Sparkles, ChevronDown, ChevronUp, Trash2, Plus, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { aiEnhanceCharacterField } from '@/services/character-ai';
 import { CharacterGoalsSection } from './CharacterGoalsSection';
@@ -21,6 +21,36 @@ interface CharactersTabProps {
   onUpdate: (id: string, patch: Partial<Character>) => void;
   onDelete: (id: string) => void;
 }
+
+// Auto-resizing textarea that wraps text and grows with content
+const AutoResizeTextarea: React.FC<{
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  className?: string;
+  rows?: number;
+}> = ({ value, onChange, placeholder, className = '', rows = 1 }) => {
+  const ref = React.useRef<HTMLTextAreaElement>(null);
+  
+  React.useEffect(() => {
+    if (ref.current) {
+      ref.current.style.height = 'auto';
+      ref.current.style.height = `${ref.current.scrollHeight}px`;
+    }
+  }, [value]);
+  
+  return (
+    <textarea
+      ref={ref}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      rows={rows}
+      spellCheck={true}
+      className={`w-full min-w-0 resize-none overflow-hidden whitespace-pre-wrap break-words ${className}`}
+    />
+  );
+};
 
 // Hardcoded section component with distinct styling (matching CharacterGoalsSection)
 const HardcodedSection: React.FC<{
@@ -88,10 +118,9 @@ const HardcodedInput: React.FC<{
       )}
     </div>
     {/* Full-width input */}
-    <input
-      type="text"
+    <AutoResizeTextarea
       value={value}
-      onChange={(e) => onChange(e.target.value)}
+      onChange={onChange}
       placeholder={placeholder}
       className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
     />
@@ -120,11 +149,19 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
     preferredClothing: true,
     characterGoals: true
   });
+  const [expandedCustomSections, setExpandedCustomSections] = useState<Record<string, boolean>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const avatarContainerRef = useRef<HTMLDivElement>(null);
 
   const toggleSection = (key: string) => {
     setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const toggleCustomSection = (sectionId: string) => {
+    setExpandedCustomSections(prev => ({
+      ...prev,
+      [sectionId]: !(prev[sectionId] ?? true)
+    }));
   };
 
   const selected = characters.find(c => c.id === selectedId);
@@ -546,29 +583,29 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
                     <div className="space-y-4">
                       <div>
                         <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Name</label>
-                        <input type="text" value={selected.name === "New Character" ? "" : selected.name} onChange={(e) => onUpdate(selected.id, { name: e.target.value })} placeholder="Character name" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                        <AutoResizeTextarea value={selected.name === "New Character" ? "" : selected.name} onChange={(v) => onUpdate(selected.id, { name: v })} placeholder="Character name" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                       </div>
                       <div>
                         <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Nicknames</label>
-                        <input type="text" value={selected.nicknames || ''} onChange={(e) => onUpdate(selected.id, { nicknames: e.target.value })} placeholder="e.g., Mom, Mother (comma-separated)" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                        <AutoResizeTextarea value={selected.nicknames || ''} onChange={(v) => onUpdate(selected.id, { nicknames: v })} placeholder="e.g., Mom, Mother (comma-separated)" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Age</label>
-                          <input type="text" value={selected.age || ''} onChange={(e) => onUpdate(selected.id, { age: e.target.value })} placeholder="e.g., 25" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                          <AutoResizeTextarea value={selected.age || ''} onChange={(v) => onUpdate(selected.id, { age: v })} placeholder="e.g., 25" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                         </div>
                         <div>
                           <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Sex / Identity</label>
-                          <input type="text" value={selected.sexType} onChange={(e) => onUpdate(selected.id, { sexType: e.target.value })} placeholder="e.g., Female, Male, Non-binary" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                          <AutoResizeTextarea value={selected.sexType} onChange={(v) => onUpdate(selected.id, { sexType: v })} placeholder="e.g., Female, Male, Non-binary" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                         </div>
                       </div>
                       <div>
                         <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Location</label>
-                        <input type="text" value={selected.location || ''} onChange={(e) => onUpdate(selected.id, { location: e.target.value })} placeholder="Current location" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                        <AutoResizeTextarea value={selected.location || ''} onChange={(v) => onUpdate(selected.id, { location: v })} placeholder="Current location" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                       </div>
                       <div>
                         <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Current Mood</label>
-                        <input type="text" value={selected.currentMood || ''} onChange={(e) => onUpdate(selected.id, { currentMood: e.target.value })} placeholder="e.g., Happy, Tired" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                        <AutoResizeTextarea value={selected.currentMood || ''} onChange={(v) => onUpdate(selected.id, { currentMood: v })} placeholder="e.g., Happy, Tired" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                       </div>
                       
                       <div className="grid grid-cols-2 gap-3">
@@ -610,7 +647,7 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
 
                       <div>
                         <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Role Description</label>
-                        <input type="text" value={selected.roleDescription || ''} onChange={(e) => onUpdate(selected.id, { roleDescription: e.target.value })} placeholder="Brief description of the character's role" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                        <AutoResizeTextarea value={selected.roleDescription || ''} onChange={(v) => onUpdate(selected.id, { roleDescription: v })} placeholder="Brief description of the character's role" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                       </div>
                     </div>
                   </div>
@@ -714,85 +751,113 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
 
           {/* USER-CREATED CUSTOM SECTIONS */}
           {selected.sections.map(section => (
-            <Card key={section.id} className="p-6 space-y-4 !shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)] hover:!shadow-[0_16px_40px_-2px_rgba(0,0,0,0.2)] transition-shadow border-transparent ring-1 ring-slate-900/5 bg-white">
-              <div className="flex justify-between items-center bg-emerald-100 rounded-xl px-3 py-2">
-                <Input 
-                  value={section.title} 
-                  onChange={(v) => handleUpdateSection(selected.id, section.id, { title: v })} 
-                  placeholder="Section Title" 
-                  className="!bg-transparent !border-none !text-emerald-900 font-bold placeholder:text-emerald-800/50 focus:!ring-0 text-base !p-0"
+            <div key={section.id} className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
+              {/* Dark blue header with editable title */}
+              <div className="bg-blue-900/40 border-b border-blue-500/20 px-5 py-3 flex items-center justify-between">
+                <AutoResizeTextarea
+                  value={section.title}
+                  onChange={(v) => handleUpdateSection(selected.id, section.id, { title: v })}
+                  placeholder="Section Title"
+                  className="bg-transparent border-none text-white text-xl font-bold tracking-tight placeholder:text-white/50 focus:outline-none flex-1 mr-2"
                 />
-                <Button variant="ghost" className="text-rose-500 hover:bg-emerald-200/50 h-8 w-8 !p-0" onClick={() => {
-                  const next = selected.sections.filter(s => s.id !== section.id);
-                  onUpdate(selected.id, { sections: next });
-                }}><Icons.Trash /></Button>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button 
+                    type="button"
+                    onClick={() => toggleCustomSection(section.id)} 
+                    className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-white/10"
+                  >
+                    {(expandedCustomSections[section.id] ?? true) ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      const next = selected.sections.filter(s => s.id !== section.id);
+                      onUpdate(selected.id, { sections: next });
+                    }}
+                    className="text-red-400 hover:text-red-300 p-1 rounded-md hover:bg-red-900/30"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
-              
-              <div className="space-y-4">
-                {section.items.map(item => (
-                  <div key={item.id} className="group relative flex flex-col md:flex-row gap-4 items-start pt-2">
-                    <div className="w-full md:w-1/3 shrink-0">
-                      <div className="flex items-center gap-1.5">
-                        <Input 
-                          value={item.label} 
-                          onChange={(v) => {
-                            const nextItems = section.items.map(it => it.id === item.id ? { ...it, label: v } : it);
-                            handleUpdateSection(selected.id, section.id, { items: nextItems });
-                          }} 
-                          placeholder="Label (e.g. Bio)" 
-                          className="flex-1"
-                        />
-                        {item.label && (
-                          <button
-                            type="button"
-                            onClick={() => handleEnhanceField(
-                              `custom_${item.id}`,
-                              'custom',
-                              () => item.value,
-                              (v) => {
+              {/* Content */}
+              {(expandedCustomSections[section.id] ?? true) && (
+                <div className="p-5">
+                  <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5 space-y-4">
+                    {section.items.map(item => (
+                      <div key={item.id} className="space-y-2">
+                        <div className="flex items-start gap-2">
+                          <div className="flex-1 space-y-2">
+                            <div className="flex items-center gap-1.5">
+                              <AutoResizeTextarea
+                                value={item.label}
+                                onChange={(v) => {
+                                  const nextItems = section.items.map(it => it.id === item.id ? { ...it, label: v } : it);
+                                  handleUpdateSection(selected.id, section.id, { items: nextItems });
+                                }}
+                                placeholder="Label (e.g. Bio)"
+                                className="flex-1 px-3 py-2 text-xs font-bold bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                              />
+                              {item.label && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleEnhanceField(
+                                    `custom_${item.id}`,
+                                    'custom',
+                                    () => item.value,
+                                    (v) => {
+                                      const nextItems = section.items.map(it => it.id === item.id ? { ...it, value: v } : it);
+                                      handleUpdateSection(selected.id, section.id, { items: nextItems });
+                                    },
+                                    item.label
+                                  )}
+                                  disabled={enhancingField !== null}
+                                  title="Enhance with AI"
+                                  className={cn(
+                                    "p-1.5 rounded-md transition-all flex-shrink-0",
+                                    enhancingField === `custom_${item.id}`
+                                      ? "text-blue-500 animate-pulse cursor-wait"
+                                      : "text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10"
+                                  )}
+                                >
+                                  <Sparkles size={14} />
+                                </button>
+                              )}
+                            </div>
+                            <AutoResizeTextarea
+                              value={item.value}
+                              onChange={(v) => {
                                 const nextItems = section.items.map(it => it.id === item.id ? { ...it, value: v } : it);
                                 handleUpdateSection(selected.id, section.id, { items: nextItems });
-                              },
-                              item.label
-                            )}
-                            disabled={enhancingField !== null}
-                            title="Enhance with AI"
-                            className={cn(
-                              "p-1.5 rounded-md transition-all flex-shrink-0",
-                              enhancingField === `custom_${item.id}`
-                                ? "text-blue-500 animate-pulse cursor-wait"
-                                : "text-black hover:text-blue-500 hover:bg-blue-50"
-                            )}
+                              }}
+                              placeholder="Value"
+                              className="px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const nextItems = section.items.filter(it => it.id !== item.id);
+                              handleUpdateSection(selected.id, section.id, { items: nextItems });
+                            }}
+                            className="text-red-400 hover:text-red-300 p-1.5 rounded-md hover:bg-red-900/30 mt-1"
                           >
-                            <Sparkles size={14} />
+                            <X className="w-4 h-4" />
                           </button>
-                        )}
+                        </div>
                       </div>
-                    </div>
-                    <div className="w-full md:flex-1 relative">
-                      <TextArea 
-                        value={item.value} 
-                        onChange={(v) => {
-                          const nextItems = section.items.map(it => it.id === item.id ? { ...it, value: v } : it);
-                          handleUpdateSection(selected.id, section.id, { items: nextItems });
-                        }} 
-                        placeholder="Value" 
-                        rows={1} 
-                        autoResize={true}
-                        className="!py-2 min-h-[42px] pr-10"
-                      />
-                      <div className="absolute right-1 top-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                         <Button variant="ghost" className="h-8 w-8 p-0 text-rose-500 hover:bg-rose-50 rounded-lg" onClick={() => {
-                           const nextItems = section.items.filter(it => it.id !== item.id);
-                           handleUpdateSection(selected.id, section.id, { items: nextItems });
-                         }}><Icons.Trash /></Button>
-                      </div>
-                    </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => handleAddItem(selected.id, section.id)}
+                      className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border border-dashed border-blue-500/30 hover:border-blue-400 rounded-xl transition-all"
+                    >
+                      <Plus className="w-4 h-4 inline mr-1" /> Add Row
+                    </button>
                   </div>
-                ))}
-              </div>
-              <Button variant="ghost" className="w-full py-3 border-2 border-dashed border-slate-500 bg-slate-50/50 text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all mt-4" onClick={() => handleAddItem(selected.id, section.id)}>+ Add Row</Button>
-            </Card>
+                </div>
+              )}
+            </div>
           ))}
         </div>
       </div>

@@ -4,7 +4,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Character, SideCharacter, PhysicalAppearance, CurrentlyWearing, PreferredClothing, CharacterTraitSection } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -32,7 +31,6 @@ export interface CharacterEditDraft {
   roleDescription?: string;
   location?: string;
   currentMood?: string;
-  tags?: string;
   controlledBy?: 'AI' | 'User';
   characterRole?: 'Main' | 'Side';
   physicalAppearance?: Partial<PhysicalAppearance>;
@@ -67,6 +65,36 @@ interface CharacterEditModalProps {
   viewOnly?: boolean; // When true, opens in view mode with edit toggle
 }
 
+// Auto-resizing textarea that wraps text and grows with content
+const AutoResizeTextarea: React.FC<{
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  className?: string;
+  rows?: number;
+}> = ({ value, onChange, placeholder, className = '', rows = 1 }) => {
+  const ref = React.useRef<HTMLTextAreaElement>(null);
+  
+  React.useEffect(() => {
+    if (ref.current) {
+      ref.current.style.height = 'auto';
+      ref.current.style.height = `${ref.current.scrollHeight}px`;
+    }
+  }, [value]);
+  
+  return (
+    <textarea
+      ref={ref}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      rows={rows}
+      spellCheck={true}
+      className={`w-full min-w-0 resize-none overflow-hidden whitespace-pre-wrap break-words ${className}`}
+    />
+  );
+};
+
 // Reusable input field component
 const FieldInput: React.FC<{
   label: string;
@@ -76,11 +104,11 @@ const FieldInput: React.FC<{
 }> = ({ label, value, onChange, placeholder }) => (
   <div className="space-y-1.5">
     <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">{label}</Label>
-    <Input
+    <AutoResizeTextarea
       value={value}
-      onChange={(e) => onChange(e.target.value)}
+      onChange={onChange}
       placeholder={placeholder}
-      className="h-9 text-sm bg-zinc-900/50 border-white/10 text-white placeholder:text-zinc-500 focus:ring-blue-500/20 focus:border-blue-500"
+      className="px-3 py-2 rounded-lg text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
     />
   </div>
 );
@@ -168,6 +196,16 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
     setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
+  // Custom category expansion state (per-section)
+  const [expandedCustomSections, setExpandedCustomSections] = useState<Record<string, boolean>>({});
+
+  const toggleCustomSection = (sectionId: string) => {
+    setExpandedCustomSections(prev => ({
+      ...prev,
+      [sectionId]: !(prev[sectionId] ?? true)
+    }));
+  };
+
   // Determine if this is a side character (has background property)
   const isSideCharacter = character && 'background' in character;
 
@@ -193,7 +231,6 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
       // Add Character-specific fields
       if ('sections' in character) {
         baseDraft.sections = character.sections?.map(s => ({ ...s, items: [...s.items] })) || [];
-        baseDraft.tags = (character as Character).tags || '';
         baseDraft.controlledBy = (character as Character).controlledBy;
         baseDraft.characterRole = (character as Character).characterRole;
       }
@@ -577,76 +614,62 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                       placeholder="Character's role in the story..."
                       rows={3}
                     />
-                    {!isSideCharacter && (
-                      <FieldInput
-                        label="Tags"
-                        value={draft.tags || ''}
-                        onChange={(v) => updateField('tags', v)}
-                        placeholder="warrior, hero, protagonist"
-                      />
-                    )}
-                  </div>
-                </CollapsibleSection>
 
-                {/* Control toggles - for all characters */}
-                <CollapsibleSection
-                  title="Control"
-                  isExpanded={expandedSections.control}
-                  onToggle={() => toggleSection('control')}
-                >
-                  <div className="space-y-3">
-                    <div className="space-y-1.5">
-                      <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Controlled By</Label>
-                      <div className="flex p-1 bg-zinc-900/50 rounded-lg border border-white/10">
-                        <button 
-                          type="button"
-                          onClick={() => updateField('controlledBy', 'AI')}
-                          className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded transition-all ${
-                            draft.controlledBy === 'AI' 
-                              ? 'bg-zinc-700 text-blue-400 shadow-sm' 
-                              : 'text-zinc-500 hover:text-zinc-300'
-                          }`}
-                        >
-                          AI
-                        </button>
-                        <button 
-                          type="button"
-                          onClick={() => updateField('controlledBy', 'User')}
-                          className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded transition-all ${
-                            draft.controlledBy === 'User' 
-                              ? 'bg-zinc-700 text-amber-400 shadow-sm' 
-                              : 'text-zinc-500 hover:text-zinc-300'
-                          }`}
-                        >
-                          User
-                        </button>
+                    {/* Control toggles - inside Avatar section */}
+                    <div className="space-y-3 pt-2 border-t border-white/10 mt-4">
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Controlled By</Label>
+                        <div className="flex p-1 bg-zinc-900/50 rounded-lg border border-white/10">
+                          <button 
+                            type="button"
+                            onClick={() => updateField('controlledBy', 'AI')}
+                            className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded transition-all ${
+                              draft.controlledBy === 'AI' 
+                                ? 'bg-zinc-700 text-blue-400 shadow-sm' 
+                                : 'text-zinc-500 hover:text-zinc-300'
+                            }`}
+                          >
+                            AI
+                          </button>
+                          <button 
+                            type="button"
+                            onClick={() => updateField('controlledBy', 'User')}
+                            className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded transition-all ${
+                              draft.controlledBy === 'User' 
+                                ? 'bg-zinc-700 text-amber-400 shadow-sm' 
+                                : 'text-zinc-500 hover:text-zinc-300'
+                            }`}
+                          >
+                            User
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Character Type</Label>
-                      <div className="flex p-1 bg-zinc-900/50 rounded-lg border border-white/10">
-                        <button 
-                          type="button"
-                          onClick={() => updateField('characterRole', 'Main')}
-                          className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded transition-all ${
-                            draft.characterRole === 'Main' 
-                              ? 'bg-zinc-700 text-purple-400 shadow-sm' 
-                              : 'text-zinc-500 hover:text-zinc-300'
-                          }`}
-                        >
-                          Main
-                        </button>
-                        <button 
-                          type="button"
-                          onClick={() => updateField('characterRole', 'Side')}
-                          className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded transition-all ${
-                            draft.characterRole === 'Side' 
-                              ? 'bg-zinc-700 text-green-400 shadow-sm' 
-                              : 'text-zinc-500 hover:text-zinc-300'
-                          }`}
-                        >
-                          Side
-                        </button>
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Character Type</Label>
+                        <div className="flex p-1 bg-zinc-900/50 rounded-lg border border-white/10">
+                          <button 
+                            type="button"
+                            onClick={() => updateField('characterRole', 'Main')}
+                            className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded transition-all ${
+                              draft.characterRole === 'Main' 
+                                ? 'bg-zinc-700 text-purple-400 shadow-sm' 
+                                : 'text-zinc-500 hover:text-zinc-300'
+                            }`}
+                          >
+                            Main
+                          </button>
+                          <button 
+                            type="button"
+                            onClick={() => updateField('characterRole', 'Side')}
+                            className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded transition-all ${
+                              draft.characterRole === 'Side' 
+                                ? 'bg-zinc-700 text-green-400 shadow-sm' 
+                                : 'text-zinc-500 hover:text-zinc-300'
+                            }`}
+                          >
+                            Side
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -869,74 +892,87 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                   </CollapsibleSection>
                 )}
 
-                {/* Custom Sections (Main characters only) - with add/remove controls */}
-                {!isSideCharacter && (
-                  <CollapsibleSection
-                    title="Custom Categories"
-                    isExpanded={expandedSections.customCategories}
-                    onToggle={() => toggleSection('customCategories')}
-                  >
-                    {draft.sections && draft.sections.map((section) => (
-                      <div key={section.id} className="p-4 bg-blue-900/20 rounded-xl border border-blue-500/20 space-y-3">
-                        <div className="flex items-center gap-2">
-                          <Input
-                            value={section.title}
-                            onChange={(e) => updateSectionTitle(section.id, e.target.value)}
-                            placeholder="Category name"
-                            className="h-8 text-sm font-bold flex-1 bg-zinc-900/50 border-white/10 text-white"
-                          />
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => deleteSection(section.id)}
-                            className="text-red-400 hover:text-red-300 hover:bg-red-900/30 p-2"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                        <div className="space-y-2">
+                {/* Custom Sections (Main characters only) - Each as its own container */}
+                {!isSideCharacter && draft.sections?.map((section) => (
+                  <div key={section.id} className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
+                    {/* Dark blue header with editable title */}
+                    <div className="bg-blue-900/40 border-b border-blue-500/20 px-5 py-3 flex items-center justify-between">
+                      <AutoResizeTextarea
+                        value={section.title}
+                        onChange={(v) => updateSectionTitle(section.id, v)}
+                        placeholder="Category name"
+                        className="bg-transparent border-none text-white text-xl font-bold tracking-tight placeholder:text-white/50 focus:outline-none flex-1 mr-2"
+                      />
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button 
+                          type="button"
+                          onClick={() => toggleCustomSection(section.id)} 
+                          className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-white/10"
+                        >
+                          {(expandedCustomSections[section.id] ?? true) ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => deleteSection(section.id)} 
+                          className="text-red-400 hover:text-red-300 p-1 rounded-md hover:bg-red-900/30"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                    {/* Content */}
+                    {(expandedCustomSections[section.id] ?? true) && (
+                      <div className="p-5">
+                        <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5 space-y-4">
                           {section.items.map((item) => (
-                            <div key={item.id} className="flex items-center gap-2">
-                              <Input
-                                value={item.label}
-                                onChange={(e) => updateSectionItem(section.id, item.id, 'label', e.target.value)}
-                                placeholder="Label"
-                                className="h-8 text-xs w-1/3 bg-zinc-900/50 border-white/10 text-white"
-                              />
-                              <Input
-                                value={item.value}
-                                onChange={(e) => updateSectionItem(section.id, item.id, 'value', e.target.value)}
-                                placeholder="Value"
-                                className="h-8 text-xs flex-1 bg-zinc-900/50 border-white/10 text-white"
-                              />
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => removeItemFromSection(section.id, item.id)}
-                                className="text-red-400 hover:text-red-300 p-1"
-                              >
-                                <X className="w-3 h-3" />
-                              </Button>
+                            <div key={item.id} className="space-y-2">
+                              <div className="flex items-start gap-2">
+                                <div className="flex-1 space-y-2">
+                                  <AutoResizeTextarea
+                                    value={item.label}
+                                    onChange={(v) => updateSectionItem(section.id, item.id, 'label', v)}
+                                    placeholder="Label"
+                                    className="px-3 py-2 rounded-lg text-xs font-bold bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
+                                  />
+                                  <AutoResizeTextarea
+                                    value={item.value}
+                                    onChange={(v) => updateSectionItem(section.id, item.id, 'value', v)}
+                                    placeholder="Value"
+                                    className="px-3 py-2 rounded-lg text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
+                                  />
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => removeItemFromSection(section.id, item.id)}
+                                  className="text-red-400 hover:text-red-300 p-1.5 rounded-md hover:bg-red-900/30 mt-1"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
                             </div>
                           ))}
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => addItemToSection(section.id)}
-                            className="text-blue-400 hover:text-blue-300 w-full"
+                            className="text-blue-400 hover:text-blue-300 w-full border border-dashed border-blue-500/30 hover:border-blue-400"
                           >
                             <Plus className="w-4 h-4 mr-1" /> Add Row
                           </Button>
                         </div>
                       </div>
-                    ))}
-                    <Button
-                      onClick={addNewSection}
-                      className="w-full bg-zinc-800 hover:bg-zinc-700 text-white border-white/10"
-                    >
-                      <Plus className="w-4 h-4 mr-2" /> Add Category
-                    </Button>
-                  </CollapsibleSection>
+                    )}
+                  </div>
+                ))}
+
+                {/* Add Category button outside containers */}
+                {!isSideCharacter && (
+                  <Button
+                    onClick={addNewSection}
+                    className="w-full bg-zinc-800 hover:bg-zinc-700 text-white border-white/10"
+                  >
+                    <Plus className="w-4 h-4 mr-2" /> Add Category
+                  </Button>
                 )}
               </div>
             </div>
