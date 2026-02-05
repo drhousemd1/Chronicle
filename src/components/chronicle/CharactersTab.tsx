@@ -781,82 +781,104 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
                 </div>
               </div>
               {/* Content */}
-              {(expandedCustomSections[section.id] ?? true) && (
-                <div className="p-5">
-                  <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5 space-y-4">
-                    {section.items.map(item => (
-                      <div key={item.id} className="space-y-2">
-                        <div className="flex items-start gap-2">
-                          <div className="flex-1 space-y-2">
-                            <div className="flex items-center gap-1.5">
+              <div className="p-5">
+                <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
+                  {(expandedCustomSections[section.id] ?? true) ? (
+                    <div className="space-y-4">
+                      {section.items.map(item => (
+                        <div key={item.id}>
+                          <div className="flex items-start gap-2">
+                            <div className="flex-1 flex gap-2">
+                              <div className="w-1/3 flex items-center gap-1.5">
+                                <AutoResizeTextarea
+                                  value={item.label}
+                                  onChange={(v) => {
+                                    const nextItems = section.items.map(it => it.id === item.id ? { ...it, label: v } : it);
+                                    handleUpdateSection(selected.id, section.id, { items: nextItems });
+                                  }}
+                                  placeholder="Label"
+                                  className="flex-1 px-3 py-2 text-xs font-bold bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
+                                />
+                                {item.label && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleEnhanceField(
+                                      `custom_${item.id}`,
+                                      'custom',
+                                      () => item.value,
+                                      (v) => {
+                                        const nextItems = section.items.map(it => it.id === item.id ? { ...it, value: v } : it);
+                                        handleUpdateSection(selected.id, section.id, { items: nextItems });
+                                      },
+                                      item.label
+                                    )}
+                                    disabled={enhancingField !== null}
+                                    title="Enhance with AI"
+                                    className={cn(
+                                      "p-1.5 rounded-md transition-all flex-shrink-0",
+                                      enhancingField === `custom_${item.id}`
+                                        ? "text-blue-500 animate-pulse cursor-wait"
+                                        : "text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10"
+                                    )}
+                                  >
+                                    <Sparkles size={14} />
+                                  </button>
+                                )}
+                              </div>
                               <AutoResizeTextarea
-                                value={item.label}
+                                value={item.value}
                                 onChange={(v) => {
-                                  const nextItems = section.items.map(it => it.id === item.id ? { ...it, label: v } : it);
+                                  const nextItems = section.items.map(it => it.id === item.id ? { ...it, value: v } : it);
                                   handleUpdateSection(selected.id, section.id, { items: nextItems });
                                 }}
-                                placeholder="Label (e.g. Bio)"
-                                className="flex-1 px-3 py-2 text-xs font-bold bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                placeholder="Description"
+                                className="flex-1 px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                               />
-                              {item.label && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleEnhanceField(
-                                    `custom_${item.id}`,
-                                    'custom',
-                                    () => item.value,
-                                    (v) => {
-                                      const nextItems = section.items.map(it => it.id === item.id ? { ...it, value: v } : it);
-                                      handleUpdateSection(selected.id, section.id, { items: nextItems });
-                                    },
-                                    item.label
-                                  )}
-                                  disabled={enhancingField !== null}
-                                  title="Enhance with AI"
-                                  className={cn(
-                                    "p-1.5 rounded-md transition-all flex-shrink-0",
-                                    enhancingField === `custom_${item.id}`
-                                      ? "text-blue-500 animate-pulse cursor-wait"
-                                      : "text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10"
-                                  )}
-                                >
-                                  <Sparkles size={14} />
-                                </button>
-                              )}
                             </div>
-                            <AutoResizeTextarea
-                              value={item.value}
-                              onChange={(v) => {
-                                const nextItems = section.items.map(it => it.id === item.id ? { ...it, value: v } : it);
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const nextItems = section.items.filter(it => it.id !== item.id);
                                 handleUpdateSection(selected.id, section.id, { items: nextItems });
                               }}
-                              placeholder="Value"
-                              className="px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                            />
+                              className="text-red-400 hover:text-red-300 p-1.5 rounded-md hover:bg-red-900/30 mt-1"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const nextItems = section.items.filter(it => it.id !== item.id);
-                              handleUpdateSection(selected.id, section.id, { items: nextItems });
-                            }}
-                            className="text-red-400 hover:text-red-300 p-1.5 rounded-md hover:bg-red-900/30 mt-1"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
                         </div>
-                      </div>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={() => handleAddItem(selected.id, section.id)}
-                      className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border border-dashed border-blue-500/30 hover:border-blue-400 rounded-xl transition-all"
-                    >
-                      <Plus className="w-4 h-4 inline mr-1" /> Add Row
-                    </button>
-                  </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => handleAddItem(selected.id, section.id)}
+                        className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border border-dashed border-blue-500/30 hover:border-blue-400 rounded-xl transition-all"
+                      >
+                        <Plus className="w-4 h-4 inline mr-1" /> Add Row
+                      </button>
+                    </div>
+                  ) : (
+                    // Collapsed view - show label/value summary
+                    (() => {
+                      const hasAnyValue = section.items.some(item => item.label || item.value);
+                      if (!hasAnyValue) {
+                        return <p className="text-zinc-500 text-sm italic">No items</p>;
+                      }
+                      return (
+                        <div className="space-y-4">
+                          {section.items.filter(item => item.label || item.value).map((item) => (
+                            <div key={item.id} className="space-y-1">
+                              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block">
+                                {item.label || 'Untitled'}
+                              </span>
+                              <p className="text-sm text-zinc-400">{item.value || '—'}</p>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           ))}
         </div>
