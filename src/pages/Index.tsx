@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { ScenarioData, TabKey, Character, ScenarioMetadata, Conversation, Message, ConversationMetadata, SideCharacter, UserBackground, ContentThemes, defaultContentThemes } from "@/types";
-import { fetchSavedScenarios, SavedScenario, unsaveScenario, fetchUserPublishedScenarioIds } from "@/services/gallery-data";
+import { fetchSavedScenarios, SavedScenario, unsaveScenario, fetchUserPublishedScenarios, PublishedScenario } from "@/services/gallery-data";
 import { createDefaultScenarioData, now, uid, uuid, truncateLine, resizeImage } from "@/utils";
 import { CharactersTab } from "@/components/chronicle/CharactersTab";
 import { WorldTab } from "@/components/chronicle/WorldTab";
@@ -142,8 +142,14 @@ const IndexContent = () => {
   type HubFilter = "my" | "bookmarked" | "published" | "all";
   const [hubFilter, setHubFilter] = useState<HubFilter>("all");
   const [savedScenarios, setSavedScenarios] = useState<SavedScenario[]>([]);
-  const [publishedScenarioIds, setPublishedScenarioIds] = useState<Set<string>>(new Set());
+  const [publishedScenariosData, setPublishedScenariosData] = useState<Map<string, PublishedScenario>>(new Map());
   const [contentThemesMap, setContentThemesMap] = useState<Map<string, ContentThemes>>(new Map());
+  const [userProfile, setUserProfile] = useState<{ username: string | null } | null>(null);
+
+  // Derive publishedScenarioIds from publishedScenariosData
+  const publishedScenarioIds = useMemo(() => {
+    return new Set(publishedScenariosData.keys());
+  }, [publishedScenariosData]);
 
   useEffect(() => {
     localStorage.setItem('chronicle_sidebar_collapsed', String(sidebarCollapsed));
@@ -163,21 +169,23 @@ const IndexContent = () => {
     async function loadData() {
       setIsLoading(true);
       try {
-        const [scenarios, characters, conversations, backgrounds, imageLibraryBgId, savedScens, publishedIds] = await Promise.all([
+        const [scenarios, characters, conversations, backgrounds, imageLibraryBgId, savedScens, publishedData, profile] = await Promise.all([
           supabaseData.fetchMyScenarios(user.id),
           supabaseData.fetchCharacterLibrary(),
           supabaseData.fetchConversationRegistry(),
           supabaseData.fetchUserBackgrounds(user.id),
           supabaseData.getImageLibraryBackground(user.id),
           fetchSavedScenarios(user.id),
-          fetchUserPublishedScenarioIds(user.id)
+          fetchUserPublishedScenarios(user.id),
+          supabaseData.fetchUserProfile(user.id)
         ]);
         setRegistry(scenarios);
         setLibrary(characters);
         setConversationRegistry(conversations);
         setHubBackgrounds(backgrounds);
         setSavedScenarios(savedScens);
-        setPublishedScenarioIds(publishedIds);
+        setPublishedScenariosData(publishedData);
+        setUserProfile(profile);
         
         // Fetch content themes for all user scenarios
         if (scenarios.length > 0) {
@@ -1396,6 +1404,8 @@ const IndexContent = () => {
                 onCreate={handleCreateNewScenario}
                 publishedScenarioIds={publishedScenarioIds}
                 contentThemesMap={contentThemesMap}
+                publishedScenariosData={publishedScenariosData}
+                ownerUsername={userProfile?.username || undefined}
               />
             </div>
           )}

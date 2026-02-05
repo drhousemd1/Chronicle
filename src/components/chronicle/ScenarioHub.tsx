@@ -1,6 +1,7 @@
 
 import React, { useState } from "react";
 import { ScenarioMetadata, ContentThemes } from "@/types";
+import { Eye, Heart, Bookmark, Play } from "lucide-react";
 import { Button } from "./UI";
 import { ScenarioDetailModal } from "./ScenarioDetailModal";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -17,9 +18,11 @@ interface ScenarioCardProps {
   onViewDetails: (id: string) => void;
   isPublished?: boolean;
   contentThemes?: ContentThemes;
+  publishedData?: PublishedScenario;
+  ownerUsername?: string;
 }
 
-const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDelete, onViewDetails, isPublished, contentThemes }) => {
+const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDelete, onViewDetails, isPublished, contentThemes, publishedData, ownerUsername }) => {
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onDelete(scen.id);
@@ -103,6 +106,33 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDel
           <p className="text-xs text-white/70 line-clamp-3 leading-relaxed italic mt-1 overflow-hidden">
             {scen.description || "No summary provided."}
           </p>
+          
+          {/* Publisher & Stats */}
+          <div className="flex items-center justify-between mt-auto">
+            <span className="text-xs text-white/60 font-medium">
+              by {ownerUsername || 'Anonymous'}
+            </span>
+            {publishedData && (
+              <div className="flex items-center gap-3 text-[10px] text-white/50">
+                <span className="flex items-center gap-1">
+                  <Eye className="w-3 h-3" />
+                  {publishedData.view_count}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Heart className="w-3 h-3" />
+                  {publishedData.like_count}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Bookmark className="w-3 h-3" />
+                  {publishedData.save_count}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Play className="w-3 h-3" />
+                  {publishedData.play_count}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -117,6 +147,8 @@ interface ScenarioHubProps {
   onCreate: () => void;
   publishedScenarioIds?: Set<string>;
   contentThemesMap?: Map<string, ContentThemes>;
+  publishedScenariosData?: Map<string, PublishedScenario>;
+  ownerUsername?: string;
 }
 
 export function ScenarioHub({
@@ -127,6 +159,8 @@ export function ScenarioHub({
   onCreate,
   publishedScenarioIds,
   contentThemesMap,
+  publishedScenariosData,
+  ownerUsername,
 }: ScenarioHubProps) {
   // Detail modal state
   const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -184,6 +218,8 @@ export function ScenarioHub({
             onViewDetails={handleViewDetails}
             isPublished={publishedScenarioIds?.has(scen.id)}
             contentThemes={contentThemesMap?.get(scen.id)}
+            publishedData={publishedScenariosData?.get(scen.id)}
+            ownerUsername={ownerUsername}
           />
         ))}
         {registry.length > 0 && (
