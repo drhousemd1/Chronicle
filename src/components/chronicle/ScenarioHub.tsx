@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { ScenarioMetadata, ContentThemes } from "@/types";
-import { Eye, Heart, Bookmark, Play } from "lucide-react";
+ import { Eye, Heart, Bookmark, Play, Sparkles } from "lucide-react";
 import { Button } from "./UI";
 import { ScenarioDetailModal } from "./ScenarioDetailModal";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -45,6 +45,14 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDel
           {!scen.isBookmarked && isPublished && (
             <div className="px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f] text-emerald-400 uppercase tracking-wide">
               Published
+            </div>
+          )}
+          
+          {/* Remixable badge - shows for published scenarios with allow_remix enabled */}
+          {publishedData?.allow_remix && (
+            <div className="px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f] text-purple-400 uppercase tracking-wide flex items-center gap-1.5">
+              <Sparkles className="w-3 h-3" />
+              Remixable
             </div>
           )}
         </div>
