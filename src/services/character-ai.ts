@@ -223,7 +223,14 @@ function getEmptyCustomSectionItems(character: Character) {
 }
 
 // Build prompt for AI Fill (empty fields only)
-function buildAiFillPrompt(character: Character, emptyFields: Record<string, string[]>, emptyCustomItems: ReturnType<typeof getEmptyCustomSectionItems>, worldContext: string) {
+function buildAiFillPrompt(
+  character: Character, 
+  emptyFields: Record<string, string[]>, 
+  emptyCustomItems: ReturnType<typeof getEmptyCustomSectionItems>, 
+  worldContext: string,
+  userPrompt?: string,
+  useExistingDetails: boolean = true
+) {
   const fieldsToFill: string[] = [];
   
   if (emptyFields.basics.length > 0) {
@@ -243,12 +250,22 @@ function buildAiFillPrompt(character: Character, emptyFields: Record<string, str
     fieldsToFill.push(`Custom Fields: ${customLabels}`);
   }
 
-  return `You are filling in empty character fields for "${character.name || 'a character'}".
+  // Add user prompt section if provided
+  const userPromptSection = userPrompt?.trim() 
+    ? `\nUSER GUIDANCE:\n${userPrompt.trim()}\n\nPay special attention to this guidance when creating the character.\n`
+    : '';
 
+  // Adjust context emphasis based on useExistingDetails
+  const contextEmphasis = useExistingDetails
+    ? 'EXISTING CHARACTER INFO (maintain strong consistency with these details):'
+    : 'EXISTING CHARACTER INFO (use as light reference, prioritize user guidance):';
+
+  return `You are filling in empty character fields for "${character.name || 'a character'}".
+${userPromptSection}
 WORLD CONTEXT:
 ${worldContext}
 
-EXISTING CHARACTER INFO (for context, keep consistency):
+${contextEmphasis}
 - Name: ${character.name || 'Not set'}
 - Age: ${character.age || 'Not set'}
 - Sex/Identity: ${character.sexType || 'Not set'}
@@ -257,6 +274,8 @@ EXISTING CHARACTER INFO (for context, keep consistency):
 
 FIELDS THAT NEED TO BE FILLED:
 ${fieldsToFill.join("\n")}
+
+IMPORTANT: Only fill EMPTY fields. Do NOT modify or overwrite any field that already has content.
 
 Return a JSON object with ONLY the empty fields filled in. Use the exact field names.
 For physical attributes, provide realistic, detailed descriptions.
@@ -278,9 +297,12 @@ ONLY include fields that were listed above as needing to be filled. Return valid
 function buildAiGeneratePrompt(
   character: Character, 
   emptyFields: Record<string, string[]>, 
+  emptyCustomItems: ReturnType<typeof getEmptyCustomSectionItems>,
   existingSectionTitles: string[],
   storyContext: ReturnType<typeof analyzeStoryType>,
-  worldContext: string
+  worldContext: string,
+  userPrompt?: string,
+  useExistingDetails: boolean = true
 ) {
   const sectionsToCreate: string[] = [];
   
@@ -318,8 +340,37 @@ function buildAiGeneratePrompt(
     }
   }
 
-  return `You are creating a complete, well-rounded character profile for "${character.name || 'a character'}".
+  // Add user prompt section if provided
+  const userPromptSection = userPrompt?.trim() 
+    ? `\nUSER GUIDANCE:\n${userPrompt.trim()}\n\nPay special attention to this guidance when creating the character.\n`
+    : '';
 
+  // Adjust context emphasis based on useExistingDetails
+  const contextEmphasis = useExistingDetails
+    ? 'EXISTING CHARACTER INFO (maintain strong consistency with these details):'
+    : 'EXISTING CHARACTER INFO (use as light reference, prioritize user guidance):';
+
+  // List empty fields that need to be filled
+  const emptyFieldsList: string[] = [];
+  if (emptyFields.basics.length > 0) {
+    emptyFieldsList.push(`Basics: ${emptyFields.basics.join(", ")}`);
+  }
+  if (emptyFields.physicalAppearance.length > 0) {
+    emptyFieldsList.push(`Physical Appearance: ${emptyFields.physicalAppearance.join(", ")}`);
+  }
+  if (emptyFields.currentlyWearing.length > 0) {
+    emptyFieldsList.push(`Currently Wearing: ${emptyFields.currentlyWearing.join(", ")}`);
+  }
+  if (emptyFields.preferredClothing.length > 0) {
+    emptyFieldsList.push(`Preferred Clothing: ${emptyFields.preferredClothing.join(", ")}`);
+  }
+  if (emptyCustomItems.length > 0) {
+    const customLabels = emptyCustomItems.map(i => `${i.sectionTitle}/${i.label}`).join(", ");
+    emptyFieldsList.push(`Custom Fields: ${customLabels}`);
+  }
+
+  return `You are creating a complete, well-rounded character profile for "${character.name || 'a character'}".
+${userPromptSection}
 WORLD CONTEXT:
 ${worldContext}
 
@@ -332,12 +383,15 @@ ${storyContext.isRomance ? "- Romance elements" : ""}
 ${storyContext.isSciFi ? "- Sci-Fi/Futuristic setting" : ""}
 ${storyContext.isAction ? "- Action/Combat focus" : ""}
 
-EXISTING CHARACTER INFO:
+${contextEmphasis}
 - Name: ${character.name || 'Not set'}
 - Age: ${character.age || 'Not set'}
 - Sex/Identity: ${character.sexType || 'Not set'}
 - Role: ${character.roleDescription || 'Not set'}
 - Tags: ${character.tags || 'None'}
+
+EMPTY FIELDS TO FILL:
+${emptyFieldsList.length > 0 ? emptyFieldsList.join("\n") : "None"}
 
 EXISTING SECTIONS (add to these if relevant, don't duplicate):
 ${existingSectionTitles.length > 0 ? existingSectionTitles.join(", ") : "None"}
@@ -345,10 +399,13 @@ ${existingSectionTitles.length > 0 ? existingSectionTitles.join(", ") : "None"}
 SECTIONS TO CREATE (create only if not already existing):
 ${sectionsToCreate.join("\n")}
 
+IMPORTANT: Only fill EMPTY fields. Do NOT modify or overwrite any field that already has content.
+
 Return a JSON object with:
-1. "emptyFieldsFill" - Values for any empty hardcoded fields
+1. "emptyFieldsFill" - Values for any empty hardcoded fields (ONLY empty ones)
 2. "newSections" - Array of new sections to create with their items filled in
 3. "existingSectionAdditions" - Object mapping existing section titles to new items to add
+4. "customFieldsFill" - Values for empty items in existing custom sections
 
 Example format:
 {
@@ -369,7 +426,8 @@ Example format:
     "Background": [
       { "label": "Childhood", "value": "Raised in a merchant family" }
     ]
-  }
+  },
+  "customFieldsFill": { "Biography": "Born in a small coastal town..." }
 }
 
 Make all content cohesive, detailed, and appropriate for the detected story themes.
@@ -380,7 +438,9 @@ Return valid JSON only.`;
 export async function aiFillCharacter(
   character: Character,
   appData: ScenarioData,
-  modelId: string
+  modelId: string,
+  userPrompt?: string,
+  useExistingDetails: boolean = true
 ): Promise<Partial<Character>> {
   const emptyFields = getEmptyHardcodedFields(character);
   const emptyCustomItems = getEmptyCustomSectionItems(character);
@@ -403,7 +463,7 @@ Tone: ${appData.world.core.toneThemes || 'Not specified'}
 Scenario: ${appData.world.core.scenarioName || 'Not specified'}
   `.trim();
 
-  const prompt = buildAiFillPrompt(character, emptyFields, emptyCustomItems, worldContext);
+  const prompt = buildAiFillPrompt(character, emptyFields, emptyCustomItems, worldContext, userPrompt, useExistingDetails);
 
   try {
     const { data, error } = await supabase.functions.invoke('chat', {
@@ -494,9 +554,12 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}
 export async function aiGenerateCharacter(
   character: Character,
   appData: ScenarioData,
-  modelId: string
+  modelId: string,
+  userPrompt?: string,
+  useExistingDetails: boolean = true
 ): Promise<Partial<Character>> {
   const emptyFields = getEmptyHardcodedFields(character);
+  const emptyCustomItems = getEmptyCustomSectionItems(character);
   const existingSectionTitles = character.sections.map(s => s.title);
   const storyContext = analyzeStoryType(appData.world.core);
 
@@ -507,7 +570,7 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}
 Plot: ${appData.world.core.plotHooks || 'Not specified'}
   `.trim();
 
-  const prompt = buildAiGeneratePrompt(character, emptyFields, existingSectionTitles, storyContext, worldContext);
+  const prompt = buildAiGeneratePrompt(character, emptyFields, emptyCustomItems, existingSectionTitles, storyContext, worldContext, userPrompt, useExistingDetails);
 
   try {
     const { data, error } = await supabase.functions.invoke('chat', {

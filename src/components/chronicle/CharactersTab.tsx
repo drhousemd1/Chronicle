@@ -20,6 +20,7 @@ interface CharactersTabProps {
   onSelect: (id: string | null) => void;
   onUpdate: (id: string, patch: Partial<Character>) => void;
   onDelete: (id: string) => void;
+  onAddSection?: () => void;
 }
 
 // Auto-resizing textarea that wraps text and grows with content
@@ -132,7 +133,8 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
   selectedId, 
   onSelect, 
   onUpdate, 
-  onDelete
+  onDelete,
+  onAddSection: externalAddSection
 }) => {
   const { user } = useAuth();
   const characters = appData.characters;
@@ -366,6 +368,12 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
   // Handle adding a new custom section
   const handleAddSection = () => {
     if (!selected) return;
+    // If external handler is provided, use it (for scenario builder)
+    if (externalAddSection) {
+      externalAddSection();
+      return;
+    }
+    // Otherwise use internal logic (for chat interface)
     const newSection: CharacterTraitSection = {
       id: uid('sec'),
       title: 'New Section',
@@ -881,6 +889,21 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
               </div>
             </div>
           ))}
+
+          {/* Add Category Button - positioned below all trait sections */}
+          <button
+            type="button"
+            onClick={handleAddSection}
+            className="w-full flex h-10 px-6 items-center justify-center gap-2
+              rounded-xl border border-[hsl(var(--ui-border))] 
+              bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
+              text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider
+              hover:bg-white/5 active:bg-white/10
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20
+              transition-colors"
+          >
+            <Plus className="w-4 h-4" /> Add Category
+          </button>
         </div>
       </div>
 
