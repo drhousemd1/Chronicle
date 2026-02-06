@@ -1,6 +1,7 @@
 import React from 'react';
 import { CharacterGoal, GoalMilestone, TimeOfDay } from '@/types';
 import { Trash2, Plus, X, History, Sun, Sunrise, Sunset, Moon, ChevronDown, ChevronUp } from 'lucide-react';
+import { CircularProgress } from './CircularProgress';
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -241,37 +242,50 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
     return (
       <div className="space-y-6">
         {goals.map((goal) => (
-          <div key={goal.id} className="space-y-4">
-            {/* Goal Name */}
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block">
-                Goal Name
-              </span>
-              <p className="text-sm text-zinc-400">
-                {goal.title || 'Untitled goal'}
-              </p>
-            </div>
-            
-            {/* Desired Outcome - only show if has value */}
-            {goal.desiredOutcome && (
+          <div key={goal.id} className="grid grid-cols-12 gap-4">
+            {/* Left side - Labels and values */}
+            <div className="col-span-9 space-y-4">
+              {/* Goal Name */}
               <div className="space-y-1">
                 <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block">
-                  Desired Outcome
+                  Goal Name
                 </span>
                 <p className="text-sm text-zinc-400">
-                  {goal.desiredOutcome}
+                  {goal.title || 'Untitled goal'}
                 </p>
               </div>
-            )}
+              
+              {/* Desired Outcome - only show if has value */}
+              {goal.desiredOutcome && (
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block">
+                    Desired Outcome
+                  </span>
+                  <p className="text-sm text-zinc-400">
+                    {goal.desiredOutcome}
+                  </p>
+                </div>
+              )}
+              
+              {/* Current Status Summary - show "None" if empty */}
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block">
+                  Current Status Summary
+                </span>
+                <p className="text-sm text-zinc-400">
+                  {goal.currentStatus || 'None'}
+                </p>
+              </div>
+            </div>
             
-            {/* Current Status Summary - show "None" if empty */}
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block">
-                Current Status Summary
-              </span>
-              <p className="text-sm text-zinc-400">
-                {goal.currentStatus || 'None'}
-              </p>
+            {/* Right side - Progress Ring */}
+            <div className="col-span-3 flex items-start justify-center pt-2">
+              <CircularProgress 
+                value={goal.progress} 
+                size={64} 
+                strokeWidth={5} 
+                variant="dark" 
+              />
             </div>
           </div>
         ))}
