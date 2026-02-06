@@ -717,6 +717,31 @@ const IndexContent = () => {
     return handleSaveWithData(null, navigateToHub);
   }, [handleSaveWithData]);
 
+  // Auto-save navigation handler - saves draft before navigating away from scenario builder
+  const handleNavigateAway = useCallback(async (targetTab: TabKey | "library") => {
+    // If we're in the scenario builder with data, auto-save first
+    if (activeId && activeData && (tab === "world" || tab === "characters")) {
+      try {
+        await handleSaveWithData(activeData, false);
+        toast({ title: "Draft saved", description: "Your changes have been saved." });
+      } catch (e) {
+        console.error("Auto-save failed:", e);
+        toast({ 
+          title: "Auto-save failed", 
+          description: "Your draft may not have been saved.", 
+          variant: "destructive" 
+        });
+      }
+    }
+    
+    // Perform the navigation
+    setActiveId(null);
+    setActiveData(null);
+    setSelectedCharacterId(null);
+    setPlayingConversationId(null);
+    setTab(targetTab);
+  }, [activeId, activeData, tab, handleSaveWithData, toast]);
+
   async function handleSaveCharacter() {
     if (!user) return;
     
@@ -1180,10 +1205,10 @@ const IndexContent = () => {
             </div>
           </div>
           <nav className={`flex-1 overflow-y-auto pb-4 mt-4 space-y-1 ${sidebarCollapsed ? 'px-2' : 'px-4'}`}>
-            <SidebarItem active={tab === "gallery"} label="Community Gallery" icon={<IconsList.Gallery />} onClick={() => { setActiveId(null); setTab("gallery"); setPlayingConversationId(null); }} collapsed={sidebarCollapsed} />
-            <SidebarItem active={tab === "hub"} label="Your Stories" icon={<IconsList.Hub />} onClick={() => { setActiveId(null); setTab("hub"); setPlayingConversationId(null); }} collapsed={sidebarCollapsed} />
-            <SidebarItem active={tab === "library"} label="Character Library" icon={<IconsList.Library />} onClick={() => { setActiveId(null); setTab("library"); setSelectedCharacterId(null); setPlayingConversationId(null); }} collapsed={sidebarCollapsed} />
-            <SidebarItem active={tab === "image_library"} label="Image Library" icon={<IconsList.ImageLibrary />} onClick={() => { setActiveId(null); setTab("image_library"); setPlayingConversationId(null); }} collapsed={sidebarCollapsed} />
+            <SidebarItem active={tab === "gallery"} label="Community Gallery" icon={<IconsList.Gallery />} onClick={() => handleNavigateAway("gallery")} collapsed={sidebarCollapsed} />
+            <SidebarItem active={tab === "hub"} label="Your Stories" icon={<IconsList.Hub />} onClick={() => handleNavigateAway("hub")} collapsed={sidebarCollapsed} />
+            <SidebarItem active={tab === "library"} label="Character Library" icon={<IconsList.Library />} onClick={() => handleNavigateAway("library")} collapsed={sidebarCollapsed} />
+            <SidebarItem active={tab === "image_library"} label="Image Library" icon={<IconsList.ImageLibrary />} onClick={() => handleNavigateAway("image_library")} collapsed={sidebarCollapsed} />
             
             <SidebarItem active={tab === "conversations"} label="Chat History" icon={<IconsList.Chat />} onClick={() => { setTab("conversations"); }} collapsed={sidebarCollapsed} />
             
