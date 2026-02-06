@@ -22,7 +22,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { PanelLeftClose, PanelLeft, Settings, Image as ImageIcon } from "lucide-react";
+import { PanelLeftClose, PanelLeft, Settings, Image as ImageIcon, Sparkles } from "lucide-react";
+import { AIPromptModal } from "@/components/chronicle/AIPromptModal";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -124,6 +125,10 @@ const IndexContent = () => {
   // Removed: selectedConversationEntry state - sessions now open directly
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  // AI Prompt Modal state
+  const [aiPromptModal, setAiPromptModal] = useState<{ mode: 'fill' | 'generate' } | null>(null);
+  // Track characters saved to library (by their ID)
+  const [characterInLibrary, setCharacterInLibrary] = useState<Record<string, boolean>>({});
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     return localStorage.getItem('chronicle_sidebar_collapsed') === 'true';
   });
@@ -1029,12 +1034,13 @@ const IndexContent = () => {
     handleUpdateActive({ world: { ...activeData.world, entries: [newEntry, ...activeData.world.entries] } });
   }
 
-  async function handleAiFill() {
+  async function handleAiFill(userPrompt?: string, useExistingDetails: boolean = true) {
     let character = tab === "library" ? library.find(c => c.id === selectedCharacterId) : activeData?.characters.find(c => c.id === selectedCharacterId);
     if (!character) return;
     setIsAiFilling(true);
+    setAiPromptModal(null);
     try {
-      const patch = await aiFillCharacter(character, activeData || createDefaultScenarioData(), globalModelId);
+      const patch = await aiFillCharacter(character, activeData || createDefaultScenarioData(), globalModelId, userPrompt, useExistingDetails);
       if (Object.keys(patch).length > 0) {
         handleUpdateCharacter(character.id, { ...patch, updatedAt: now() });
         toast({ title: "AI Fill complete", description: "Empty fields have been filled." });
@@ -1049,15 +1055,16 @@ const IndexContent = () => {
     }
   }
 
-  async function handleAiGenerate() {
+  async function handleAiGenerate(userPrompt?: string, useExistingDetails: boolean = true) {
     let character = tab === "library" ? library.find(c => c.id === selectedCharacterId) : activeData?.characters.find(c => c.id === selectedCharacterId);
     if (!character) return;
     setIsAiGenerating(true);
+    setAiPromptModal(null);
     try {
-      const patch = await aiGenerateCharacter(character, activeData || createDefaultScenarioData(), globalModelId);
+      const patch = await aiGenerateCharacter(character, activeData || createDefaultScenarioData(), globalModelId, userPrompt, useExistingDetails);
       if (Object.keys(patch).length > 0) {
         handleUpdateCharacter(character.id, { ...patch, updatedAt: now() });
-        toast({ title: "AI Generate complete", description: "Character has been enhanced with new sections." });
+        toast({ title: "AI Generate complete", description: "Character has been enhanced with new sections and filled fields." });
       } else {
         toast({ title: "Generation complete", description: "No new content was needed." });
       }
@@ -1068,6 +1075,57 @@ const IndexContent = () => {
       setIsAiGenerating(false);
     }
   }
+
+  // Handle AI prompt modal submission
+  function handleAIPromptSubmit(prompt: string, useExistingDetails: boolean) {
+    if (aiPromptModal?.mode === 'fill') {
+      handleAiFill(prompt, useExistingDetails);
+    } else if (aiPromptModal?.mode === 'generate') {
+      handleAiGenerate(prompt, useExistingDetails);
+    }
+  }
+
+  // Handle saving character to library
+  async function handleSaveToLibrary() {
+    if (!selectedCharacterId) return;
+    const sourceList = tab === "library" ? library : activeData?.characters;
+    const selected = sourceList?.find(c => c.id === selectedCharacterId);
+    if (!selected || !user) return;
+    
+    setIsSaving(true);
+    try {
+      // Check if character is already in library (by tracking state or if tab is library)
+      const isInLib = characterInLibrary[selected.id] || tab === "library";
+      
+      // Save or update character in library
+      await supabaseData.saveCharacterToLibrary(selected, user.id);
+      
+      if (!isInLib) {
+        // Only add to local library list if this is a new save
+        setLibrary(prev => {
+          // Don't duplicate if already in the list
+          const exists = prev.some(c => c.id === selected.id);
+          if (exists) return prev;
+          return [selected, ...prev];
+        });
+        setCharacterInLibrary(prev => ({ ...prev, [selected.id]: true }));
+        toast({ title: "Added to library", description: "Character has been added to your library." });
+      } else {
+        toast({ title: "Character updated", description: "Character profile updated in library." });
+      }
+    } catch (e: any) {
+      console.error(e);
+      toast({ title: "Save failed", description: e.message, variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  // Check if current character is in library
+  const selectedCharacterIsInLibrary = useMemo(() => {
+    if (!selectedCharacterId) return false;
+    return characterInLibrary[selectedCharacterId] || tab === "library";
+  }, [selectedCharacterId, characterInLibrary, tab]);
 
   function handleAddSection() {
      if (!selectedCharacterId) return;
@@ -1364,11 +1422,137 @@ const IndexContent = () => {
                 <>
                   {selectedCharacterId && (
                     <>
-                      <Button variant="primary" onClick={handleAddSection}>+ Category</Button>
-                      <Button variant="primary" onClick={handleAiFill} disabled={isAiFilling} className={isAiFilling ? "cursor-wait" : ""}>AI Fill</Button>
-                      <Button variant="primary" onClick={handleAiGenerate} disabled={isAiGenerating} className={isAiGenerating ? "cursor-wait" : ""}>AI Generate</Button>
-                      <Button variant="primary" onClick={handleCancelCharacterEdit}>Cancel</Button>
-                      <Button variant="primary" onClick={handleSaveCharacter}>Save</Button>
+                      {/* AI Fill Button with tooltip - Premium iridescent style */}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={() => setAiPromptModal({ mode: 'fill' })}
+                            disabled={isAiFilling}
+                            className="group relative flex h-10 px-4 rounded-xl overflow-hidden
+                              text-white text-[10px] font-bold leading-none uppercase tracking-wider
+                              shadow-[0_12px_40px_rgba(0,0,0,0.45)]
+                              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/45
+                              disabled:opacity-50"
+                          >
+                            {/* Layer 1: Iridescent outer border ring */}
+                            <span
+                              aria-hidden
+                              className="absolute inset-0 rounded-xl"
+                              style={{
+                                background:
+                                  "linear-gradient(90deg, rgba(255,255,255,0.34) 0%, rgba(34,184,200,0.62) 18%, rgba(255,255,255,0.22) 44%, rgba(109,94,247,0.64) 78%, rgba(255,255,255,0.28) 100%)",
+                                filter:
+                                  "drop-shadow(0 0 10px rgba(255,255,255,0.10)) drop-shadow(0 0 18px rgba(109,94,247,0.10)) drop-shadow(0 0 18px rgba(34,184,200,0.10))",
+                              }}
+                            />
+                            {/* Layer 2: Mask to create 2px border effect */}
+                            <span aria-hidden className="absolute inset-[2px] rounded-[10px]" style={{ background: "#2B2D33" }} />
+                            {/* Layer 3: Button surface with gradient */}
+                            <span aria-hidden className="absolute inset-[2px] rounded-[10px]" style={{ background: "linear-gradient(90deg, rgba(34,184,200,0.22), rgba(109,94,247,0.22)), #2B2D33" }} />
+                            {/* Layer 4: Soft top sheen */}
+                            <span aria-hidden className="absolute inset-[2px] rounded-[10px]" style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.11), rgba(255,255,255,0.00) 46%, rgba(0,0,0,0.16))" }} />
+                            {/* Layer 5: Border sheen */}
+                            <span aria-hidden className="absolute inset-0 rounded-xl pointer-events-none" style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.26), inset 0 -1px 0 rgba(0,0,0,0.22)", background: "linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.00) 55%)", mixBlendMode: "screen" }} />
+                            {/* Layer 6: Teal bloom */}
+                            <span aria-hidden className="absolute -left-8 -top-8 h-32 w-32 rounded-full blur-2xl pointer-events-none" style={{ background: "radial-gradient(circle, rgba(34,184,200,0.28), transparent 62%)" }} />
+                            {/* Layer 7: Purple bloom */}
+                            <span aria-hidden className="absolute -right-10 -bottom-10 h-40 w-40 rounded-full blur-3xl pointer-events-none" style={{ background: "radial-gradient(circle, rgba(109,94,247,0.26), transparent 65%)" }} />
+                            {/* Layer 8: Crisp inner edge */}
+                            <span aria-hidden className="absolute inset-0 rounded-xl pointer-events-none" style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -1px 0 rgba(0,0,0,0.26), 0 0 0 1px rgba(255,255,255,0.06)" }} />
+                            {/* Content layer */}
+                            <span className="relative z-10 flex items-center justify-center gap-2">
+                              <Sparkles className="w-3.5 h-3.5 shrink-0 text-cyan-200" style={{ filter: "drop-shadow(0 0 10px rgba(34,184,200,0.35))" }} />
+                              <span className="min-w-0 truncate drop-shadow-[0_1px_0_rgba(0,0,0,0.35)]">
+                                {isAiFilling ? "Filling..." : "AI Fill"}
+                              </span>
+                            </span>
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>Have AI generate text for empty fields</TooltipContent>
+                      </Tooltip>
+
+                      {/* AI Generate Button with tooltip - Premium iridescent style */}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={() => setAiPromptModal({ mode: 'generate' })}
+                            disabled={isAiGenerating}
+                            className="group relative flex h-10 px-4 rounded-xl overflow-hidden
+                              text-white text-[10px] font-bold leading-none uppercase tracking-wider
+                              shadow-[0_12px_40px_rgba(0,0,0,0.45)]
+                              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/45
+                              disabled:opacity-50"
+                          >
+                            {/* Layer 1: Iridescent outer border ring */}
+                            <span
+                              aria-hidden
+                              className="absolute inset-0 rounded-xl"
+                              style={{
+                                background:
+                                  "linear-gradient(90deg, rgba(255,255,255,0.34) 0%, rgba(34,184,200,0.62) 18%, rgba(255,255,255,0.22) 44%, rgba(109,94,247,0.64) 78%, rgba(255,255,255,0.28) 100%)",
+                                filter:
+                                  "drop-shadow(0 0 10px rgba(255,255,255,0.10)) drop-shadow(0 0 18px rgba(109,94,247,0.10)) drop-shadow(0 0 18px rgba(34,184,200,0.10))",
+                              }}
+                            />
+                            {/* Layer 2-8: Same layers as AI Fill */}
+                            <span aria-hidden className="absolute inset-[2px] rounded-[10px]" style={{ background: "#2B2D33" }} />
+                            <span aria-hidden className="absolute inset-[2px] rounded-[10px]" style={{ background: "linear-gradient(90deg, rgba(34,184,200,0.22), rgba(109,94,247,0.22)), #2B2D33" }} />
+                            <span aria-hidden className="absolute inset-[2px] rounded-[10px]" style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.11), rgba(255,255,255,0.00) 46%, rgba(0,0,0,0.16))" }} />
+                            <span aria-hidden className="absolute inset-0 rounded-xl pointer-events-none" style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.26), inset 0 -1px 0 rgba(0,0,0,0.22)", background: "linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.00) 55%)", mixBlendMode: "screen" }} />
+                            <span aria-hidden className="absolute -left-8 -top-8 h-32 w-32 rounded-full blur-2xl pointer-events-none" style={{ background: "radial-gradient(circle, rgba(34,184,200,0.28), transparent 62%)" }} />
+                            <span aria-hidden className="absolute -right-10 -bottom-10 h-40 w-40 rounded-full blur-3xl pointer-events-none" style={{ background: "radial-gradient(circle, rgba(109,94,247,0.26), transparent 65%)" }} />
+                            <span aria-hidden className="absolute inset-0 rounded-xl pointer-events-none" style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -1px 0 rgba(0,0,0,0.26), 0 0 0 1px rgba(255,255,255,0.06)" }} />
+                            {/* Content layer */}
+                            <span className="relative z-10 flex items-center justify-center gap-2">
+                              <Sparkles className="w-3.5 h-3.5 shrink-0 text-cyan-200" style={{ filter: "drop-shadow(0 0 10px rgba(34,184,200,0.35))" }} />
+                              <span className="min-w-0 truncate drop-shadow-[0_1px_0_rgba(0,0,0,0.35)]">
+                                {isAiGenerating ? "Generating..." : "AI Generate"}
+                              </span>
+                            </span>
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>Have AI add new categories and fill all empty text fields</TooltipContent>
+                      </Tooltip>
+
+                      {/* Cancel Button - Dark surface style */}
+                      <button
+                        type="button"
+                        onClick={handleCancelCharacterEdit}
+                        className="flex h-10 px-6 items-center justify-center gap-2
+                          rounded-xl border border-[hsl(var(--ui-border))] 
+                          bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
+                          text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider
+                          hover:bg-white/5 active:bg-white/10
+                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20
+                          transition-colors"
+                      >
+                        Cancel
+                      </button>
+
+                      {/* Character Library Button with tooltip - Slate Blue style */}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={handleSaveToLibrary}
+                            disabled={isSaving}
+                            className="flex h-10 px-6 items-center justify-center gap-2
+                              rounded-xl border border-[#5a6f8f] 
+                              bg-[#4a5f7f] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
+                              text-white text-[10px] font-bold leading-none uppercase tracking-wider
+                              hover:bg-[#5a6f8f] active:bg-[#6a7f9f] disabled:opacity-50
+                              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5a6f8f]/40
+                              transition-colors"
+                          >
+                            {isSaving ? 'Saving...' : selectedCharacterIsInLibrary ? 'Update Character' : '+ Character Library'}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {selectedCharacterIsInLibrary ? 'Update character profile in library' : 'Add character to library'}
+                        </TooltipContent>
+                      </Tooltip>
                     </>
                   )}
                   {!selectedCharacterId && (
@@ -1438,6 +1622,7 @@ const IndexContent = () => {
                 onSelect={setSelectedCharacterId}
                 onUpdate={handleUpdateCharacter}
                 onDelete={handleDeleteCharacterFromList}
+                onAddSection={handleAddSection}
               />
             </div>
           )}
@@ -1450,6 +1635,7 @@ const IndexContent = () => {
                 onSelect={setSelectedCharacterId}
                 onUpdate={handleUpdateCharacter}
                 onDelete={handleDeleteCharacterFromList}
+                onAddSection={handleAddSection}
               />
             </div>
           )}
@@ -1587,6 +1773,15 @@ const IndexContent = () => {
         onUpload={handleUploadBackground}
         onDelete={handleDeleteBackground}
         isUploading={isUploadingBackground}
+      />
+
+      {/* AI Prompt Modal */}
+      <AIPromptModal
+        isOpen={aiPromptModal !== null}
+        onClose={() => setAiPromptModal(null)}
+        onSubmit={handleAIPromptSubmit}
+        mode={aiPromptModal?.mode || 'fill'}
+        isProcessing={isAiFilling || isAiGenerating}
       />
       </div>
     </TooltipProvider>
