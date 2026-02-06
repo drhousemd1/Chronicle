@@ -1317,7 +1317,8 @@ const IndexContent = () => {
                     <button 
                       onClick={() => {
                         if (selectedCharacterId) {
-                          handleCancelCharacterEdit();
+                          // Just deselect - don't remove the character
+                          setSelectedCharacterId(null);
                         } else {
                           setTab("world");
                         }
