@@ -1,27 +1,47 @@
 
 
-# Auto-Save for Scenario Builder Navigation
+# Fix Character Creation Persistence When Navigating Back
 
 ## Summary
 
-Implement automatic saving of the scenario builder state when the user navigates away (to Hub, Gallery, Character Library, etc.) without manually clicking "Save Scenario". This prevents data loss that occurs when users forget to save before navigating.
+When creating a new character in the Scenario Builder, clicking the back button in the header removes the character instead of preserving it. This is because the back button calls `handleCancelCharacterEdit()` which explicitly deletes the character. We need to change this behavior so that navigating back preserves the character changes (similar to how the auto-save works for sidebar navigation).
 
 ---
 
-## Problem Analysis
+## Root Cause
 
-Currently when users navigate between scenario builder sections:
-1. **WorldTab to CharactersTab**: Data persists in React state - works correctly
-2. **CharactersTab to WorldTab**: Data persists - works correctly  
-3. **Scenario Builder to Hub/Gallery/etc.**: `setActiveId(null)` clears all unsaved work
+**Location:** `src/pages/Index.tsx`, lines 1316-1328
 
-The sidebar navigation items (Hub, Gallery, Character Library, Image Library) all call `setActiveId(null)` which discards unsaved `activeData`.
+**Current behavior:**
+```tsx
+<button 
+  onClick={() => {
+    if (selectedCharacterId) {
+      handleCancelCharacterEdit(); // ← This REMOVES the character!
+    } else {
+      setTab("world");
+    }
+  }} 
+  ...
+>
+```
+
+When clicking the back button with a character selected, it calls `handleCancelCharacterEdit()` which:
+1. Removes the character from `activeData.characters` (line 776-778)
+2. Clears `selectedCharacterId`
+3. Navigates to "world" tab
+
+This explains why "Jim" disappears - the back button is designed to cancel/discard changes, not save them.
 
 ---
 
 ## Proposed Solution
 
-**Implement auto-save before navigation** - When navigating away from the scenario builder (world/characters tabs), automatically trigger a save operation before clearing the active scenario data.
+Change the back button behavior to **preserve changes** instead of canceling them:
+
+1. If a character is selected, just deselect it (don't delete it)
+2. Navigate back to the world tab
+3. Optionally trigger an auto-save to persist the changes
 
 ---
 
@@ -29,119 +49,73 @@ The sidebar navigation items (Hub, Gallery, Character Library, Image Library) al
 
 ### File to Modify: `src/pages/Index.tsx`
 
-### 1. Create a Navigation Handler with Auto-Save
+### Option 1: Simple Navigation (Recommended)
 
-Create a new function that handles navigation with optional auto-save:
+Change the back button behavior from canceling to simple navigation:
 
-```typescript
-const handleNavigateAway = useCallback(async (
-  targetTab: TabKey | "library",
-  clearActiveData: boolean = true
-) => {
-  // If we're in the scenario builder with unsaved data, auto-save first
-  if (activeId && activeData && (tab === "world" || tab === "characters")) {
-    try {
-      await handleSaveWithData(activeData, false); // Save without navigating to hub
-    } catch (e) {
-      console.error("Auto-save failed:", e);
-      // Continue with navigation even if save fails - user has manual save option
-    }
-  }
-  
-  // Now perform the navigation
-  if (clearActiveData) {
-    setActiveId(null);
-    setActiveData(null);
-  }
-  setSelectedCharacterId(null);
-  setPlayingConversationId(null);
-  setTab(targetTab);
-}, [activeId, activeData, tab, handleSaveWithData]);
-```
+**Lines 1316-1328 - Update the back button onClick:**
 
-### 2. Update Sidebar Navigation Items
-
-Update the sidebar onClick handlers to use the new auto-save navigation:
-
-**Current (lines 1183-1186):**
 ```tsx
-<SidebarItem ... onClick={() => { setActiveId(null); setTab("gallery"); setPlayingConversationId(null); }} />
-<SidebarItem ... onClick={() => { setActiveId(null); setTab("hub"); setPlayingConversationId(null); }} />
-<SidebarItem ... onClick={() => { setActiveId(null); setTab("library"); setSelectedCharacterId(null); setPlayingConversationId(null); }} />
-<SidebarItem ... onClick={() => { setActiveId(null); setTab("image_library"); setPlayingConversationId(null); }} />
-```
-
-**Updated:**
-```tsx
-<SidebarItem ... onClick={() => handleNavigateAway("gallery")} />
-<SidebarItem ... onClick={() => handleNavigateAway("hub")} />
-<SidebarItem ... onClick={() => handleNavigateAway("library")} />
-<SidebarItem ... onClick={() => handleNavigateAway("image_library")} />
-```
-
-### 3. Optional: Add Visual Feedback
-
-Show a brief toast notification when auto-save occurs:
-
-```typescript
-const handleNavigateAway = useCallback(async (...) => {
-  if (activeId && activeData && (tab === "world" || tab === "characters")) {
-    try {
-      await handleSaveWithData(activeData, false);
-      toast({ title: "Draft saved", description: "Your changes have been saved." });
-    } catch (e) {
-      console.error("Auto-save failed:", e);
-      toast({ 
-        title: "Auto-save failed", 
-        description: "Your draft may not have been saved.", 
-        variant: "destructive" 
-      });
+<button 
+  onClick={() => {
+    if (selectedCharacterId) {
+      // Just deselect - don't remove the character
+      setSelectedCharacterId(null);
+    } else {
+      setTab("world");
     }
-  }
-  // ... navigation logic
-}, [...]);
+  }} 
+  className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+>
+```
+
+This keeps the character in the list when clicking back, allowing the user to continue editing or navigate elsewhere.
+
+### Option 2: Navigate Back with Auto-Save
+
+If we want to also trigger a save when going back:
+
+```tsx
+<button 
+  onClick={async () => {
+    if (selectedCharacterId) {
+      setSelectedCharacterId(null);
+      // Stay on characters tab with no selection
+    } else {
+      // When going from characters tab to world tab, auto-save first
+      if (activeId && activeData) {
+        try {
+          await handleSaveWithData(activeData, false);
+        } catch (e) {
+          console.error("Auto-save failed:", e);
+        }
+      }
+      setTab("world");
+    }
+  }} 
+  className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+>
 ```
 
 ---
 
-## Alternative: Add a Header Save Button
+## Additional Consideration: Cancel Button Behavior
 
-If preferred over auto-save, we could add a prominent "Save" button to the Scenario Builder header (in addition to the sidebar save button):
+The "Cancel" button in the character editor footer should keep its current behavior (removing the character) since it's explicitly labeled as "Cancel":
 
-**Location:** Lines 1289-1309 (header section for world/characters tabs)
+**Location:** Lines 1600-1610 (approximately)
 
-```tsx
-{(tab === "world" || tab === "characters") && (
-  <div className="flex items-center gap-3">
-    {/* ... existing back button logic ... */}
-    <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
-      Scenario Builder
-    </h1>
-  </div>
-)}
-
-{/* Add header save button when in scenario builder */}
-{(tab === "world" || tab === "characters") && activeId && (
-  <Button 
-    variant="primary" 
-    onClick={() => handleSave(false)}
-    disabled={isSaving}
-    className="ml-auto"
-  >
-    {isSaving ? "Saving..." : "Save Draft"}
-  </Button>
-)}
-```
+This button should continue to call `handleCancelCharacterEdit()` since users clicking "Cancel" expect their changes to be discarded.
 
 ---
 
-## Recommended Approach
+## Summary of Changes
 
-**Implement auto-save** as the primary solution because:
-1. It prevents accidental data loss without requiring user action
-2. The save operation is already fast (existing `handleSaveWithData` function)
-3. Users don't need to remember to click a button
-4. The "Save Scenario" button in the sidebar already exists for explicit saves
+| Element | Current Behavior | New Behavior |
+|---------|------------------|--------------|
+| Back button (← arrow) | Removes character from list | Deselects character, preserves data |
+| Cancel button | Removes character from list | No change - keeps removing |
+| Sidebar navigation | Now auto-saves | No change needed |
 
 ---
 
@@ -149,14 +123,14 @@ If preferred over auto-save, we could add a prominent "Save" button to the Scena
 
 | File | Changes |
 |------|---------|
-| `src/pages/Index.tsx` | Add `handleNavigateAway` function, update sidebar navigation onClick handlers |
+| `src/pages/Index.tsx` | Update back button onClick handler (lines 1316-1328) |
 
 ---
 
 ## Implementation Order
 
-1. Add the `handleNavigateAway` callback function (after `handleSaveWithData` around line 718)
-2. Update the four sidebar navigation items to use the new handler (lines 1183-1186)
-3. Test navigation from scenario builder to hub, gallery, character library, and image library
-4. Verify that scenario data is persisted correctly after navigating away and back
+1. Update the back button onClick handler to deselect instead of cancel
+2. Test creating a new character, typing a name, clicking back - character should persist
+3. Verify the Cancel button still removes characters as expected
+4. Test navigating to sidebar items (Hub, Gallery) - auto-save should still work
 
