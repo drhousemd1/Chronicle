@@ -1,104 +1,162 @@
 
 
-# Restore Progress Indicator in Collapsed Goals View
+# Auto-Save for Scenario Builder Navigation
 
 ## Summary
 
-Add back the progress indicator to the collapsed view of the Character Goals section. The progress bar was accidentally removed when redesigning the collapsed view to match the labeled field format.
+Implement automatic saving of the scenario builder state when the user navigates away (to Hub, Gallery, Character Library, etc.) without manually clicking "Save Scenario". This prevents data loss that occurs when users forget to save before navigating.
 
 ---
 
-## File to Modify
+## Problem Analysis
 
-`src/components/chronicle/CharacterGoalsSection.tsx`
+Currently when users navigate between scenario builder sections:
+1. **WorldTab to CharactersTab**: Data persists in React state - works correctly
+2. **CharactersTab to WorldTab**: Data persists - works correctly  
+3. **Scenario Builder to Hub/Gallery/etc.**: `setActiveId(null)` clears all unsaved work
+
+The sidebar navigation items (Hub, Gallery, Character Library, Image Library) all call `setActiveId(null)` which discards unsaved `activeData`.
+
+---
+
+## Proposed Solution
+
+**Implement auto-save before navigation** - When navigating away from the scenario builder (world/characters tabs), automatically trigger a save operation before clearing the active scenario data.
 
 ---
 
 ## Technical Changes
 
-### Update CollapsedGoalsView (Lines 236-280)
+### File to Modify: `src/pages/Index.tsx`
 
-Add a grid layout to display the labeled fields on the left and a compact progress ring on the right for each goal.
+### 1. Create a Navigation Handler with Auto-Save
 
-**Current structure:**
-```tsx
-<div className="space-y-6">
-  {goals.map((goal) => (
-    <div key={goal.id} className="space-y-4">
-      {/* Goal Name, Desired Outcome, Current Status Summary */}
-    </div>
-  ))}
-</div>
+Create a new function that handles navigation with optional auto-save:
+
+```typescript
+const handleNavigateAway = useCallback(async (
+  targetTab: TabKey | "library",
+  clearActiveData: boolean = true
+) => {
+  // If we're in the scenario builder with unsaved data, auto-save first
+  if (activeId && activeData && (tab === "world" || tab === "characters")) {
+    try {
+      await handleSaveWithData(activeData, false); // Save without navigating to hub
+    } catch (e) {
+      console.error("Auto-save failed:", e);
+      // Continue with navigation even if save fails - user has manual save option
+    }
+  }
+  
+  // Now perform the navigation
+  if (clearActiveData) {
+    setActiveId(null);
+    setActiveData(null);
+  }
+  setSelectedCharacterId(null);
+  setPlayingConversationId(null);
+  setTab(targetTab);
+}, [activeId, activeData, tab, handleSaveWithData]);
 ```
 
-**Updated structure:**
+### 2. Update Sidebar Navigation Items
+
+Update the sidebar onClick handlers to use the new auto-save navigation:
+
+**Current (lines 1183-1186):**
 ```tsx
-<div className="space-y-6">
-  {goals.map((goal) => (
-    <div key={goal.id} className="grid grid-cols-12 gap-4">
-      {/* Left side - Labels and values (col-span-9) */}
-      <div className="col-span-9 space-y-4">
-        {/* Goal Name */}
-        <div className="space-y-1">
-          <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block">
-            Goal Name
-          </span>
-          <p className="text-sm text-zinc-400">
-            {goal.title || 'Untitled goal'}
-          </p>
-        </div>
-        
-        {/* Desired Outcome - only show if has value */}
-        {goal.desiredOutcome && (
-          <div className="space-y-1">
-            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block">
-              Desired Outcome
-            </span>
-            <p className="text-sm text-zinc-400">
-              {goal.desiredOutcome}
-            </p>
-          </div>
-        )}
-        
-        {/* Current Status Summary - show "None" if empty */}
-        <div className="space-y-1">
-          <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block">
-            Current Status Summary
-          </span>
-          <p className="text-sm text-zinc-400">
-            {goal.currentStatus || 'None'}
-          </p>
-        </div>
-      </div>
-      
-      {/* Right side - Progress Ring (col-span-3) */}
-      <div className="col-span-3 flex items-start justify-center pt-2">
-        <CircularProgress 
-          value={goal.progress} 
-          size={64} 
-          strokeWidth={5} 
-          variant="dark" 
-        />
-      </div>
-    </div>
-  ))}
-</div>
+<SidebarItem ... onClick={() => { setActiveId(null); setTab("gallery"); setPlayingConversationId(null); }} />
+<SidebarItem ... onClick={() => { setActiveId(null); setTab("hub"); setPlayingConversationId(null); }} />
+<SidebarItem ... onClick={() => { setActiveId(null); setTab("library"); setSelectedCharacterId(null); setPlayingConversationId(null); }} />
+<SidebarItem ... onClick={() => { setActiveId(null); setTab("image_library"); setPlayingConversationId(null); }} />
 ```
 
-### Add Import for CircularProgress
-
-Add the import at the top of the file:
+**Updated:**
 ```tsx
-import { CircularProgress } from './CircularProgress';
+<SidebarItem ... onClick={() => handleNavigateAway("gallery")} />
+<SidebarItem ... onClick={() => handleNavigateAway("hub")} />
+<SidebarItem ... onClick={() => handleNavigateAway("library")} />
+<SidebarItem ... onClick={() => handleNavigateAway("image_library")} />
+```
+
+### 3. Optional: Add Visual Feedback
+
+Show a brief toast notification when auto-save occurs:
+
+```typescript
+const handleNavigateAway = useCallback(async (...) => {
+  if (activeId && activeData && (tab === "world" || tab === "characters")) {
+    try {
+      await handleSaveWithData(activeData, false);
+      toast({ title: "Draft saved", description: "Your changes have been saved." });
+    } catch (e) {
+      console.error("Auto-save failed:", e);
+      toast({ 
+        title: "Auto-save failed", 
+        description: "Your draft may not have been saved.", 
+        variant: "destructive" 
+      });
+    }
+  }
+  // ... navigation logic
+}, [...]);
 ```
 
 ---
 
-## Visual Result
+## Alternative: Add a Header Save Button
 
-The collapsed goals view will now show:
-- **Left side (75% width)**: Labeled fields for Goal Name, Desired Outcome, and Current Status Summary
-- **Right side (25% width)**: Compact circular progress indicator (64x64 size) showing the goal's progress percentage
+If preferred over auto-save, we could add a prominent "Save" button to the Scenario Builder header (in addition to the sidebar save button):
 
-This restores the progress visibility while maintaining the new labeled field format that matches other sections.
+**Location:** Lines 1289-1309 (header section for world/characters tabs)
+
+```tsx
+{(tab === "world" || tab === "characters") && (
+  <div className="flex items-center gap-3">
+    {/* ... existing back button logic ... */}
+    <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
+      Scenario Builder
+    </h1>
+  </div>
+)}
+
+{/* Add header save button when in scenario builder */}
+{(tab === "world" || tab === "characters") && activeId && (
+  <Button 
+    variant="primary" 
+    onClick={() => handleSave(false)}
+    disabled={isSaving}
+    className="ml-auto"
+  >
+    {isSaving ? "Saving..." : "Save Draft"}
+  </Button>
+)}
+```
+
+---
+
+## Recommended Approach
+
+**Implement auto-save** as the primary solution because:
+1. It prevents accidental data loss without requiring user action
+2. The save operation is already fast (existing `handleSaveWithData` function)
+3. Users don't need to remember to click a button
+4. The "Save Scenario" button in the sidebar already exists for explicit saves
+
+---
+
+## Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/pages/Index.tsx` | Add `handleNavigateAway` function, update sidebar navigation onClick handlers |
+
+---
+
+## Implementation Order
+
+1. Add the `handleNavigateAway` callback function (after `handleSaveWithData` around line 718)
+2. Update the four sidebar navigation items to use the new handler (lines 1183-1186)
+3. Test navigation from scenario builder to hub, gallery, character library, and image library
+4. Verify that scenario data is persisted correctly after navigating away and back
 
