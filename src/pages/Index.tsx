@@ -1531,7 +1531,7 @@ const IndexContent = () => {
                         Cancel
                       </button>
 
-                      {/* Character Library Button with tooltip - Slate Blue style */}
+                      {/* Character Library Button with tooltip - matching Cancel button style */}
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <button
@@ -1539,11 +1539,11 @@ const IndexContent = () => {
                             onClick={handleSaveToLibrary}
                             disabled={isSaving}
                             className="flex h-10 px-6 items-center justify-center gap-2
-                              rounded-xl border border-[#5a6f8f] 
-                              bg-[#4a5f7f] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
-                              text-white text-[10px] font-bold leading-none uppercase tracking-wider
-                              hover:bg-[#5a6f8f] active:bg-[#6a7f9f] disabled:opacity-50
-                              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5a6f8f]/40
+                              rounded-xl border border-[hsl(var(--ui-border))] 
+                              bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
+                              text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider
+                              hover:bg-white/5 active:bg-white/10 disabled:opacity-50
+                              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20
                               transition-colors"
                           >
                             {isSaving ? 'Saving...' : selectedCharacterIsInLibrary ? 'Update Character' : '+ Character Library'}

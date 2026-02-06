@@ -233,26 +233,45 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
   const isViewMode = !isExpanded || readOnly;
   const isEditMode = isExpanded && !readOnly;
 
-  // Condensed view for collapsed state
+  // Condensed view for collapsed state - matching other sections' format
   const CollapsedGoalsView = () => {
     if (goals.length === 0) {
       return <p className="text-zinc-500 text-sm italic">No goals defined</p>;
     }
     return (
-      <div className="space-y-2">
+      <div className="space-y-6">
         {goals.map((goal) => (
-          <div key={goal.id} className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="text-sm text-zinc-200 truncate">{goal.title || 'Untitled goal'}</span>
+          <div key={goal.id} className="space-y-4">
+            {/* Goal Name */}
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block">
+                Goal Name
+              </span>
+              <p className="text-sm text-zinc-400">
+                {goal.title || 'Untitled goal'}
+              </p>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <div className="w-24 h-2 bg-zinc-700 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-blue-500 transition-all" 
-                  style={{ width: `${goal.progress}%` }}
-                />
+            
+            {/* Desired Outcome - only show if has value */}
+            {goal.desiredOutcome && (
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block">
+                  Desired Outcome
+                </span>
+                <p className="text-sm text-zinc-400">
+                  {goal.desiredOutcome}
+                </p>
               </div>
-              <span className="text-xs font-bold text-zinc-400 w-10 text-right">{goal.progress}%</span>
+            )}
+            
+            {/* Current Status Summary - show "None" if empty */}
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block">
+                Current Status Summary
+              </span>
+              <p className="text-sm text-zinc-400">
+                {goal.currentStatus || 'None'}
+              </p>
             </div>
           </div>
         ))}
