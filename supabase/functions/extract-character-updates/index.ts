@@ -24,6 +24,7 @@ function normalizeModelId(modelId: string): string {
 
 interface CharacterGoalData {
   title: string;
+  desiredOutcome?: string;
   currentStatus: string;
   progress: number;
 }
@@ -98,7 +99,8 @@ function buildCharacterStateBlock(c: CharacterData): string {
   if (c.goals?.length) {
     lines.push(`  [GOALS]`);
     for (const g of c.goals) {
-      lines.push(`    ${g.title}: ${g.currentStatus || 'No status'} (progress: ${g.progress}%)`);
+      const outcome = g.desiredOutcome ? ` | desired_outcome: ${g.desiredOutcome}` : '';
+      lines.push(`    ${g.title}: ${g.currentStatus || 'No status'} (progress: ${g.progress}%)${outcome}`);
     }
   }
   
@@ -152,23 +154,19 @@ TRACKABLE FIELDS:
 - currentMood (emotional state)
 
 GOALS TRACKING:
-- goals.GoalTitle = "current status text | progress: XX"
+- goals.GoalTitle = "desired_outcome: What success looks like | current_status: Latest progress description | progress: XX"
   Examples:
-  - goals.Move Out of City = "Found apartment listings online | progress: 15"
-  - goals.Get Promoted = "Completed the training program | progress: 60"
-  - goals.Win Tournament = "Lost in semi-finals, reconsidering strategy | progress: 40"
+  - goals.Move Out of City = "desired_outcome: Find affordable apartment downtown | current_status: Found apartment listings online | progress: 15"
+  - goals.Get Promoted = "desired_outcome: Become team lead by year end | current_status: Completed the training program | progress: 60"
+  - goals.Win Tournament = "desired_outcome: Win the championship trophy | current_status: Lost in semi-finals, reconsidering strategy | progress: 40"
   If progress is not clear, estimate based on context. Use 0 for new goals, 100 for completed ones.
+  IMPORTANT: Always include ALL THREE sub-fields (desired_outcome, current_status, progress) for every goal update.
 
 CUSTOM SECTIONS (DYNAMIC):
 - sections.SectionTitle.ItemLabel = value
   Examples:
   - sections.Background.Occupation = "Doctor at City Hospital"
   - sections.Secrets.Hidden Fear = "Afraid of being rejected"
-
-SESSION SUMMARY (maintain per character when possible):
-- sections.Session Summary.Current Situation = brief description of what the character is doing right now
-- sections.Session Summary.Recent Events = 1-2 sentences of what just happened
-- sections.Session Summary.Active Goals = comma-separated list of current goals
 
 EXTRACTION PHILOSOPHY:
 
@@ -190,11 +188,22 @@ GOALS:
 - Track new goals when characters express intentions, desires, or objectives
 - Update existing goals when progress is made or status changes
 - Set progress to 100 when a goal is achieved, 0 when abandoned or failed
+- Character objectives, plans, ambitions, and intentions MUST ALWAYS use "goals." format
+- NEVER create a custom section for plans, objectives, ambitions, or intentions (e.g., NEVER use "sections.Plans" or "sections.Ambitions")
 
-SESSION SUMMARY:
-- Update "Current Situation" whenever the character's immediate context changes
-- Update "Recent Events" to reflect the latest significant plot points
-- Update "Active Goals" to list current active goals by title
+SECTION MANAGEMENT RULES:
+- ALWAYS prefer updating items in EXISTING sections over creating new sections
+- Only create a new custom section if the information genuinely does NOT fit any existing section
+- If a section already exists with a similar name (e.g., "Background" vs "Backstory"), use the EXISTING one
+- NEVER create a "Session Summary" section — this is NOT a valid section type
+- NEVER create sections named "Plans", "Objectives", "Ambitions", or "Intentions" — use goals instead
+- When information could be a goal (has a desired end state or objective), it MUST be a goal, not a section item
+- Group related information into existing sections rather than creating one-liner sections for each fact
+
+STALENESS CORRECTION:
+- If a stored value is CONTRADICTED by the dialogue (e.g., a secret says "unbeknownst to X" but X now knows), UPDATE it with corrected information
+- Check existing custom section items for accuracy against the current dialogue context
+- Correct outdated information even if the exact topic isn't directly being discussed in the current messages
 
 RULES:
 1. SCAN the user message AND AI response for character state changes
@@ -205,9 +214,10 @@ RULES:
 6. For appearance details in action text like "*runs hand through short brown hair*", extract the trait
 7. For clothing described like "wearing navy blue scrubs", extract to currentlyWearing fields
 8. For new nicknames/aliases, add to nicknames as comma-separated
-9. For new character facts, goals, secrets, or backstory revealed in dialogue, create appropriate entries
+9. For new character facts, secrets, or backstory revealed in dialogue, add them to an EXISTING section if one fits, or create a new section only as a last resort
 10. Do NOT hallucinate updates — only track what is supported by the text
-11. Do NOT repeat current values if they haven't changed
+11. Do NOT repeat current values if they haven't changed AND are still accurate
+12. When updating existing section items, provide the COMPLETE updated value, not just the change
 
 RESPONSE FORMAT (JSON only):
 {
@@ -215,8 +225,8 @@ RESPONSE FORMAT (JSON only):
     { "character": "CharacterName", "field": "currentMood", "value": "Nervous but excited" },
     { "character": "CharacterName", "field": "location", "value": "Downtown coffee shop" },
     { "character": "CharacterName", "field": "currentlyWearing.top", "value": "Navy blue scrubs" },
-    { "character": "CharacterName", "field": "goals.Save Enough Money", "value": "Got first paycheck, opened savings | progress: 10" },
-    { "character": "CharacterName", "field": "sections.Session Summary.Current Situation", "value": "Having coffee with Sarah after work" }
+    { "character": "CharacterName", "field": "goals.Save Enough Money", "value": "desired_outcome: Build a $10,000 emergency fund | current_status: Got first paycheck, opened savings account | progress: 10" },
+    { "character": "CharacterName", "field": "sections.Background.Occupation", "value": "Doctor at City Hospital" }
   ]
 }
 

@@ -125,6 +125,7 @@ const IndexContent = () => {
   // Removed: selectedConversationEntry state - sessions now open directly
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isResuming, setIsResuming] = useState(false);
   // AI Prompt Modal state
   const [aiPromptModal, setAiPromptModal] = useState<{ mode: 'fill' | 'generate' } | null>(null);
   // Track characters saved to library (by their ID)
@@ -170,22 +171,22 @@ const IndexContent = () => {
   // Track whether conversation previews have been enriched
   const [conversationsEnriched, setConversationsEnriched] = useState(false);
 
+  // Wrap each promise with a timeout so one slow request can't block the whole app
+  function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T, label: string): Promise<T> {
+    return Promise.race([
+      promise,
+      new Promise<T>((resolve) => {
+        setTimeout(() => {
+          console.warn(`[withTimeout] ${label} timed out after ${ms}ms, using fallback`);
+          resolve(fallback);
+        }, ms);
+      })
+    ]);
+  }
+
   // Load data from Supabase when authenticated
   useEffect(() => {
     if (!isAuthenticated || !user) return;
-    
-    // Wrap each promise with a timeout so one slow request can't block the whole app
-    function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T, label: string): Promise<T> {
-      return Promise.race([
-        promise,
-        new Promise<T>((resolve) => {
-          setTimeout(() => {
-            console.warn(`[loadData] ${label} timed out after ${ms}ms, using fallback`);
-            resolve(fallback);
-          }, ms);
-        })
-      ]);
-    }
 
     async function loadData() {
       setIsLoading(true);
@@ -927,17 +928,20 @@ const IndexContent = () => {
   }
   
   async function handleResumeFromHistory(scenarioId: string, conversationId: string) {
+    setIsResuming(true);
     try {
-      const result = await supabaseData.fetchScenarioById(scenarioId);
-      if (!result) {
-        toast({ title: "Scenario not found", variant: "destructive" });
+      // Fetch scenario (without loading all conversation messages) + thread + side chars in parallel
+      const [scenarioResult, thread, sideCharacters] = await Promise.all([
+        withTimeout(supabaseData.fetchScenarioForPlay(scenarioId), 15000, null, 'fetchScenarioForPlay'),
+        withTimeout(supabaseData.fetchConversationThread(conversationId), 15000, null, 'fetchConversationThread'),
+        withTimeout(supabaseData.fetchSideCharacters(conversationId), 15000, [], 'fetchSideCharacters'),
+      ]);
+      
+      if (!scenarioResult) {
+        toast({ title: "Scenario not found or timed out", variant: "destructive" });
         return;
       }
-      const { data, coverImage, coverImagePosition } = result;
-      
-      // Explicitly fetch the selected conversation thread to ensure we have all messages
-      const thread = await supabaseData.fetchConversationThread(conversationId);
-      console.log('[handleResumeFromHistory] thread:', thread?.id, 'messages:', thread?.messages.length);
+      const { data, coverImage, coverImagePosition } = scenarioResult;
       
       if (thread) {
         // Replace or add the thread in the conversations array
@@ -949,22 +953,21 @@ const IndexContent = () => {
         }
       }
       
-      // Fetch side characters for this specific conversation
-      const sideCharacters = await supabaseData.fetchSideCharacters(conversationId);
       data.sideCharacters = sideCharacters;
       
-      // Set cover image from fetched result
       setActiveCoverImage(coverImage);
       setActiveCoverPosition(coverImagePosition);
-      
       setActiveId(scenarioId);
       setActiveData(data);
       setPlayingConversationId(conversationId);
       setTab("chat_interface");
       
-      console.log('[handleResumeFromHistory] activeData.conversations:', data.conversations.map(c => ({ id: c.id, msgCount: c.messages.length })));
+      console.log('[handleResumeFromHistory] Loaded in parallel, conversations:', data.conversations.map(c => ({ id: c.id, msgCount: c.messages.length })));
     } catch (e: any) {
+      console.error('[handleResumeFromHistory] Error:', e);
       toast({ title: "Failed to load scenario", description: e.message, variant: "destructive" });
+    } finally {
+      setIsResuming(false);
     }
   }
   
@@ -1207,7 +1210,16 @@ const IndexContent = () => {
 
   return (
     <TooltipProvider>
-      <div className="h-screen flex bg-white overflow-hidden">
+      <div className="h-screen flex bg-white overflow-hidden relative">
+        {/* Loading overlay for session resume */}
+        {isResuming && (
+          <div className="absolute inset-0 z-[100] bg-black/60 flex items-center justify-center backdrop-blur-sm">
+            <div className="text-white text-center">
+              <div className="w-10 h-10 rounded-xl bg-[#4a5f7f] flex items-center justify-center text-white font-black text-2xl italic shadow-xl shadow-[#4a5f7f]/30 mx-auto mb-4 animate-pulse">C</div>
+              <p className="text-sm text-white/80">Resuming session...</p>
+            </div>
+          </div>
+        )}
         <aside className={`flex-shrink-0 bg-[#1a1a1a] flex flex-col border-r border-black shadow-2xl z-50 transition-all duration-300 ${sidebarCollapsed ? 'w-[72px]' : 'w-[280px]'}`}>
           <div className={`${sidebarCollapsed ? 'p-4' : 'p-8'}`}>
             <div className="flex items-center justify-between">
