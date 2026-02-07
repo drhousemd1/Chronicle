@@ -1,90 +1,105 @@
 
 
-# Fix Session Resume and Add Scroll-Based Lazy Message Loading
+# Fix Blank White Screen on Story Start/Resume
 
-## Problem
+## Root Cause Found
 
-The current `handleResumeFromHistory` wraps `fetchScenarioForPlay` with a 15-second timeout. When the database is slow, this timeout fires and returns `null`, which triggers the "Scenario not found or timed out" toast and kicks the user back to the hub. Additionally, `fetchConversationThread` loads ALL messages at once, which is slow for long conversations. The save flow (`saveConversation`) also deletes and re-inserts all messages every time, which is destructive and slow.
+The blank white screen is caused by a **render gap** in Index.tsx.
 
-## Solution
+When the user clicks "Play" or "Resume", the code immediately sets `tab = "chat_interface"`, but the ChatInterfaceTab render condition on line 1791 requires ALL of these to be truthy:
 
-### 1. Navigate Immediately, Load in Background (Index.tsx)
+```
+tab === "chat_interface" && activeId && activeData && playingConversationId
+```
 
-Mirror the pattern already used by `handlePlayScenario` (line 468): immediately navigate to the chat tab with a `"loading"` skeleton state, then fetch data in the background. No timeout needed because the user already sees the chat UI. If the fetch fails, show a toast and navigate back.
+The problem is that `activeData` remains `null` during the fetch. Since no tab condition matches, **the entire main content area renders nothing** -- a blank white screen. The loading skeleton inside ChatInterfaceTab never shows because the component itself is never mounted.
 
-### 2. Load Only Last 10 Messages Initially (supabase-data.ts)
+This is the timeline of what happens:
 
-Add a `fetchConversationThreadRecent(conversationId, limit=10)` function that fetches only the most recent N messages. This makes the initial resume nearly instant.
+```text
+1. User clicks "Play"
+2. setActiveId(id)               -- activeId = "abc-123"
+3. setPlayingConversationId("loading")  -- set
+4. setTab("chat_interface")      -- tab switches
+5. RENDER: tab=chat_interface, activeId=set, activeData=NULL, convId="loading"
+   --> Condition fails because activeData is null
+   --> BLANK WHITE SCREEN
+6. ...fetch runs for 5-60 seconds...
+7. setActiveData(data)           -- finally set
+8. RENDER: everything truthy now --> ChatInterfaceTab renders
+```
 
-### 3. Scroll-Based Lazy Loading of Older Messages (ChatInterfaceTab.tsx)
+## Fix
 
-When the user scrolls near the top of the chat, automatically fetch the next batch of older messages and prepend them. No loading indicators or banners -- just seamless prepending that preserves the user's scroll position. The scroll container's `onScroll` event checks if the user is near the top, and if so, triggers a fetch of the next 20 older messages.
+Remove `activeData` from the outer render gate. The ChatInterfaceTab already handles the `conversationId === "loading"` state internally with a spinner. The component just needs to mount so it can show that spinner.
 
-### 4. Incremental Save (supabase-data.ts)
+### Changes
 
-Add a `saveNewMessages(conversationId, messages)` function that uses `.upsert()` with `onConflict: 'id'` to only insert new messages. The existing `saveConversation` (delete-all + re-insert) is kept only for destructive operations like editing or deleting a message.
+**File: `src/pages/Index.tsx`**
+
+Change the render condition from:
+```
+{tab === "chat_interface" && activeId && activeData && playingConversationId && (
+```
+to:
+```
+{tab === "chat_interface" && activeId && playingConversationId && (
+```
+
+Then inside the ChatInterfaceTab props, pass `activeData` with a fallback empty state so the component can render its loading UI without crashing on null access:
+
+```
+appData={activeData || emptyScenarioData}
+```
+
+Where `emptyScenarioData` is a minimal stub:
+```typescript
+const emptyScenarioData: ScenarioData = {
+  version: 3,
+  characters: [],
+  sideCharacters: [],
+  world: { core: { ... }, entries: [] },
+  story: { openingDialog: { enabled: false, text: '', startingDay: 1, startingTimeOfDay: 'day' } },
+  scenes: [],
+  uiSettings: { showBackgrounds: true, transparentBubbles: false, darkMode: false },
+  conversations: [],
+  selectedModel: '',
+  selectedArtStyle: ''
+};
+```
+
+The ChatInterfaceTab already has this early return for the loading state (line 837):
+```
+if (conversationId === "loading" || (!conversation && conversationId !== "loading")) {
+  return <loading spinner>;
+}
+```
+
+So once it mounts, it will immediately show the loading spinner while data fetches in the background.
+
+### Secondary Fix: Save Performance
+
+The `onSaveScenario` callback has a compounding performance problem:
+
+1. Line 1807: `saveNewMessages(modifiedConv.id, modifiedConv.messages)` sends ALL messages (could be 60+), not just the 1-2 new ones
+2. Line 1827: `handleSaveWithData(...)` triggers a FULL scenario save (upserts scenario, characters, codex, scenes) plus refreshes the entire registry and syncs characters to library -- all on every single chat message
+
+Fix: Remove the `handleSaveWithData` call from the chat save path. The incremental `saveNewMessages` + `updateConversationMeta` is sufficient for normal chat. The full save is only needed when leaving the scenario builder.
 
 ---
 
-## Files to Modify
+## Summary of Changes
 
-| File | Changes |
-|------|---------|
-| `src/services/supabase-data.ts` | Add `fetchConversationThreadRecent()`, `fetchOlderMessages()`, `saveNewMessages()` |
-| `src/pages/Index.tsx` | Rewrite `handleResumeFromHistory` to navigate immediately then load in background; update save flow to use `saveNewMessages` for normal chat; add `loadOlderMessagesProgressively` helper |
-| `src/components/chronicle/ChatInterfaceTab.tsx` | Add scroll-based lazy loading: detect scroll near top, call a new `onLoadOlderMessages` prop, prepend results while preserving scroll position |
-
----
+| File | Change |
+|------|--------|
+| `src/pages/Index.tsx` | Remove `activeData` from the chat_interface render condition; pass fallback empty data; remove the `handleSaveWithData` call from the chat save callback |
 
 ## Technical Details
 
-### New Functions in `supabase-data.ts`
+The fix is exactly 3 small edits in one file:
 
-**`fetchConversationThreadRecent(conversationId, limit = 10)`**
-- Fetches conversation metadata + only the last N messages
-- Uses `.order('created_at', { ascending: false }).limit(limit)` then reverses to chronological
-- Returns `{ conversation, hasMore }` where `hasMore` indicates if there are older messages beyond the loaded batch
-
-**`fetchOlderMessages(conversationId, beforeCreatedAt, limit = 20)`**
-- Fetches a batch of messages created before a given ISO timestamp
-- Uses `.lt('created_at', beforeCreatedAt).order('created_at', { ascending: false }).limit(limit)`
-- Reverses to chronological order and maps to app `Message` types
-
-**`saveNewMessages(conversationId, messages)`**
-- Uses `.upsert(messages, { onConflict: 'id' })` to only insert/update new messages
-- Much faster than delete-all + re-insert
-
-### Updated `handleResumeFromHistory` in `Index.tsx`
-
-```
-1. setActiveId(scenarioId)
-2. setPlayingConversationId("loading")  // shows loading skeleton immediately
-3. setTab("chat_interface")             // navigate instantly
-4. Background: fetch scenario + recent 10 messages + side chars in parallel
-5. On success: set data + conversation, swap "loading" to real conversationId
-6. On failure: toast error, navigate back to hub
-7. If hasMore: start background progressive loading
-```
-
-### Scroll-Based Lazy Loading in `ChatInterfaceTab.tsx`
-
-- Add a new prop `onLoadOlderMessages?: (conversationId: string, beforeCreatedAt: string) => Promise<Message[]>`
-- Track `hasMoreMessages` and `isLoadingOlder` state
-- On the existing `scrollRef` div, add an `onScroll` handler that checks if `scrollTop < 200` (near top)
-- When triggered, call `onLoadOlderMessages`, prepend the returned messages to the conversation
-- Preserve scroll position by measuring `scrollHeight` before and after prepend, then adjusting `scrollTop`
-- Use a `useRef` flag to prevent concurrent fetches
-
-### Save Flow Update in `Index.tsx`
-
-In the `onSaveScenario` callback, replace the `saveConversation` call with `saveNewMessages` for normal chat operations. The full `saveConversation` is only needed when editing/deleting messages (which rewrites the conversation).
-
-The `onSaveScenario` callback currently calls `saveConversation(modifiedConv, activeId, user.id)` which deletes ALL messages and re-inserts them. Change this to:
-- Extract only the new messages (last 1-2 messages added since the last save)
-- Call `saveNewMessages(conversationId, newMessages)` instead
-- Also update conversation metadata (day, time) separately via upsert on the `conversations` table
-
-### Auto-Scroll Behavior
-
-The existing auto-scroll effect (`scrollRef.current.scrollTop = scrollRef.current.scrollHeight`) runs on `[conversation?.messages, streamingContent]`. When older messages are prepended, this would normally scroll to bottom. Fix by only auto-scrolling when the user is already near the bottom (within 100px), not when older messages are prepended at the top.
+1. Add an `emptyScenarioData` constant (or use `createDefaultScenarioData()` which already exists in utils.ts)
+2. Change line 1791 render condition to not require `activeData`
+3. Pass `activeData || emptyScenarioData` as the `appData` prop
+4. Remove line 1827 (`handleSaveWithData(...)`) from the `onSaveScenario` callback -- the `saveNewMessages` + `updateConversationMeta` on lines 1807-1815 already handles persistence correctly
 
