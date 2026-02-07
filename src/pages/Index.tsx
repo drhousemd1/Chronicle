@@ -1788,10 +1788,10 @@ const IndexContent = () => {
             </div>
           )}
 
-          {tab === "chat_interface" && activeId && activeData && playingConversationId && (
+          {tab === "chat_interface" && activeId && playingConversationId && (
             <ChatInterfaceTab
               scenarioId={activeId}
-              appData={activeData}
+              appData={activeData || createDefaultScenarioData()}
               conversationId={playingConversationId}
               modelId={globalModelId}
               onUpdate={(convs) => handleUpdateActive({ conversations: convs })}
@@ -1823,13 +1823,18 @@ const IndexContent = () => {
                       });
                   }
                   
-                  // Update local state with the provided conversation data
-                  handleSaveWithData({ ...activeData, conversations });
-                } else {
+                  // Update local state only (no full scenario save during chat)
+                  if (activeData) {
+                    setActiveData({ ...activeData, conversations });
+                  }
+                } else if (activeData) {
                   handleSave();
                 }
               }}
-              onUpdateUiSettings={(patch) => handleUpdateActive({ uiSettings: { ...activeData.uiSettings, ...patch } })}
+              onUpdateUiSettings={(patch) => {
+                const currentSettings = activeData?.uiSettings || createDefaultScenarioData().uiSettings;
+                handleUpdateActive({ uiSettings: { ...currentSettings, ...patch } });
+              }}
               onUpdateSideCharacters={(sideCharacters) => handleUpdateActive({ sideCharacters })}
               onLoadOlderMessages={handleLoadOlderMessages}
               hasMoreMessages={!!(playingConversationId && hasMoreMessagesMap[playingConversationId])}
