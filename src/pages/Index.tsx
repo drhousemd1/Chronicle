@@ -167,26 +167,43 @@ const IndexContent = () => {
     }
   }, [authLoading, isAuthenticated, navigate]);
 
+  // Track whether conversation previews have been enriched
+  const [conversationsEnriched, setConversationsEnriched] = useState(false);
+
   // Load data from Supabase when authenticated
   useEffect(() => {
     if (!isAuthenticated || !user) return;
     
+    // Wrap each promise with a timeout so one slow request can't block the whole app
+    function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T, label: string): Promise<T> {
+      return Promise.race([
+        promise,
+        new Promise<T>((resolve) => {
+          setTimeout(() => {
+            console.warn(`[loadData] ${label} timed out after ${ms}ms, using fallback`);
+            resolve(fallback);
+          }, ms);
+        })
+      ]);
+    }
+
     async function loadData() {
       setIsLoading(true);
       try {
         const [scenarios, characters, conversations, backgrounds, imageLibraryBgId, savedScens, publishedData, profile] = await Promise.all([
-          supabaseData.fetchMyScenarios(user.id),
-          supabaseData.fetchCharacterLibrary(),
-          supabaseData.fetchConversationRegistry(),
-          supabaseData.fetchUserBackgrounds(user.id),
-          supabaseData.getImageLibraryBackground(user.id),
-          fetchSavedScenarios(user.id),
-          fetchUserPublishedScenarios(user.id),
-          supabaseData.fetchUserProfile(user.id)
+          withTimeout(supabaseData.fetchMyScenarios(user.id), 15000, [], 'fetchMyScenarios'),
+          withTimeout(supabaseData.fetchCharacterLibrary(), 15000, [], 'fetchCharacterLibrary'),
+          withTimeout(supabaseData.fetchConversationRegistry(), 15000, [], 'fetchConversationRegistry'),
+          withTimeout(supabaseData.fetchUserBackgrounds(user.id), 15000, [], 'fetchUserBackgrounds'),
+          withTimeout(supabaseData.getImageLibraryBackground(user.id), 15000, null, 'getImageLibraryBackground'),
+          withTimeout(fetchSavedScenarios(user.id), 15000, [], 'fetchSavedScenarios'),
+          withTimeout(fetchUserPublishedScenarios(user.id), 15000, new Map(), 'fetchUserPublishedScenarios'),
+          withTimeout(supabaseData.fetchUserProfile(user.id), 15000, null, 'fetchUserProfile')
         ]);
         setRegistry(scenarios);
         setLibrary(characters);
         setConversationRegistry(conversations);
+        setConversationsEnriched(false);
         setHubBackgrounds(backgrounds);
         setSavedScenarios(savedScens);
         setPublishedScenariosData(publishedData);
@@ -222,6 +239,17 @@ const IndexContent = () => {
     
     loadData();
   }, [isAuthenticated, user, toast]);
+
+  // Lazy-load conversation message previews when the Conversations tab is first viewed
+  useEffect(() => {
+    if (tab !== "conversations" || conversationsEnriched || conversationRegistry.length === 0) return;
+    setConversationsEnriched(true);
+    supabaseData.enrichConversationRegistry(conversationRegistry).then(enriched => {
+      setConversationRegistry(enriched);
+    }).catch(err => {
+      console.warn('[enrichConversationRegistry] Failed:', err);
+    });
+  }, [tab, conversationsEnriched, conversationRegistry]);
 
   // Compute filtered registry based on hubFilter
   const filteredRegistry = useMemo(() => {

@@ -725,41 +725,55 @@ export async function fetchConversationRegistry(): Promise<ConversationMetadata[
 
   if (error) throw error;
 
-  const result: ConversationMetadata[] = [];
+  // Return immediately with default message counts/previews (no N+1 queries)
+  // Message previews will be lazy-loaded when the Conversations tab is viewed
+  return (data || []).map(conv => ({
+    conversationId: conv.id,
+    scenarioId: conv.scenario_id,
+    scenarioTitle: (conv.scenarios as any)?.title || 'Unknown',
+    scenarioImageUrl: (conv.scenarios as any)?.cover_image_url || null,
+    conversationTitle: conv.title,
+    lastMessage: '',
+    messageCount: 0,
+    createdAt: new Date(conv.created_at).getTime(),
+    updatedAt: new Date(conv.updated_at).getTime()
+  }));
+}
 
-  for (const conv of data || []) {
-    // Get message count
-    const { count } = await supabase
-      .from('messages')
-      .select('*', { count: 'exact', head: true })
-      .eq('conversation_id', conv.id);
+/** Lazy-load message counts and last message previews for the conversation registry */
+export async function enrichConversationRegistry(registry: ConversationMetadata[]): Promise<ConversationMetadata[]> {
+  if (registry.length === 0) return registry;
 
-    // Get last message preview - fetch all messages in order and take the last one
-    // (created_at can be the same for batch-inserted messages, so we get all and take the last)
-    const { data: allMessages } = await supabase
-      .from('messages')
-      .select('content')
-      .eq('conversation_id', conv.id)
-      .order('created_at', { ascending: true });
-    
-    const lastMessage = allMessages && allMessages.length > 0 
-      ? allMessages[allMessages.length - 1].content 
-      : '';
+  // Batch fetch: get message counts and last messages for all conversations in parallel
+  const enriched = await Promise.all(
+    registry.map(async (entry) => {
+      try {
+        const [countResult, lastMsgResult] = await Promise.all([
+          supabase
+            .from('messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('conversation_id', entry.conversationId),
+          supabase
+            .from('messages')
+            .select('content')
+            .eq('conversation_id', entry.conversationId)
+            .order('created_at', { ascending: false })
+            .limit(1)
+        ]);
 
-    result.push({
-      conversationId: conv.id,
-      scenarioId: conv.scenario_id,
-      scenarioTitle: (conv.scenarios as any)?.title || 'Unknown',
-      scenarioImageUrl: (conv.scenarios as any)?.cover_image_url || null,
-      conversationTitle: conv.title,
-      lastMessage: lastMessage,
-      messageCount: count || 0,
-      createdAt: new Date(conv.created_at).getTime(),
-      updatedAt: new Date(conv.updated_at).getTime()
-    });
-  }
+        return {
+          ...entry,
+          messageCount: countResult.count || 0,
+          lastMessage: lastMsgResult.data?.[0]?.content || '',
+        };
+      } catch {
+        // If enrichment fails for one conversation, keep defaults
+        return entry;
+      }
+    })
+  );
 
-  return result;
+  return enriched;
 }
 
 export async function saveConversation(
