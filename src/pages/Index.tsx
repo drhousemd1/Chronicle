@@ -126,7 +126,8 @@ const IndexContent = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isResuming, setIsResuming] = useState(false);
-  // AI Prompt Modal state
+  // Track which conversations have more older messages to load
+  const [hasMoreMessagesMap, setHasMoreMessagesMap] = useState<Record<string, boolean>>({});
   const [aiPromptModal, setAiPromptModal] = useState<{ mode: 'fill' | 'generate' } | null>(null);
   // Track characters saved to library (by their ID)
   const [characterInLibrary, setCharacterInLibrary] = useState<Record<string, boolean>>({});
@@ -928,49 +929,84 @@ const IndexContent = () => {
   }
   
   async function handleResumeFromHistory(scenarioId: string, conversationId: string) {
-    setIsResuming(true);
+    // OPTIMIZATION: Navigate immediately, load data in background
+    // This gives instant visual feedback instead of blocking on slow fetches
+    setActiveId(scenarioId);
+    setPlayingConversationId("loading"); // Shows loading skeleton immediately
+    setTab("chat_interface");
+    setSelectedCharacterId(null);
+    
     try {
-      // Fetch scenario (without loading all conversation messages) + thread + side chars in parallel
-      const [scenarioResult, thread, sideCharacters] = await Promise.all([
-        withTimeout(supabaseData.fetchScenarioForPlay(scenarioId), 15000, null, 'fetchScenarioForPlay'),
-        withTimeout(supabaseData.fetchConversationThread(conversationId), 15000, null, 'fetchConversationThread'),
-        withTimeout(supabaseData.fetchSideCharacters(conversationId), 15000, [], 'fetchSideCharacters'),
+      // Fetch scenario (without all messages) + recent 10 messages + side chars in parallel
+      const [scenarioResult, threadResult, sideCharacters] = await Promise.all([
+        supabaseData.fetchScenarioForPlay(scenarioId),
+        supabaseData.fetchConversationThreadRecent(conversationId, 10),
+        supabaseData.fetchSideCharacters(conversationId),
       ]);
       
-      if (!scenarioResult) {
-        toast({ title: "Scenario not found or timed out", variant: "destructive" });
+      if (!scenarioResult || !threadResult) {
+        toast({ title: "Scenario not found", variant: "destructive" });
+        setTab("hub");
+        setPlayingConversationId(null);
+        setActiveId(null);
         return;
       }
+      
       const { data, coverImage, coverImagePosition } = scenarioResult;
       
-      if (thread) {
-        // Replace or add the thread in the conversations array
-        const existingIndex = data.conversations.findIndex(c => c.id === conversationId);
-        if (existingIndex >= 0) {
-          data.conversations[existingIndex] = thread;
-        } else {
-          data.conversations = [thread, ...data.conversations];
-        }
-      }
-      
+      // Set conversation with recent messages
+      data.conversations = [threadResult.conversation];
       data.sideCharacters = sideCharacters;
       
       setActiveCoverImage(coverImage);
       setActiveCoverPosition(coverImagePosition);
-      setActiveId(scenarioId);
       setActiveData(data);
       setPlayingConversationId(conversationId);
-      setTab("chat_interface");
       
-      console.log('[handleResumeFromHistory] Loaded in parallel, conversations:', data.conversations.map(c => ({ id: c.id, msgCount: c.messages.length })));
+      // Store hasMore flag for scroll-based lazy loading
+      if (threadResult.hasMore) {
+        setHasMoreMessagesMap(prev => ({ ...prev, [conversationId]: true }));
+      }
+      
+      console.log('[handleResumeFromHistory] Loaded with recent messages, hasMore:', threadResult.hasMore);
     } catch (e: any) {
       console.error('[handleResumeFromHistory] Error:', e);
       toast({ title: "Failed to load scenario", description: e.message, variant: "destructive" });
-    } finally {
-      setIsResuming(false);
+      setTab("hub");
+      setPlayingConversationId(null);
+      setActiveId(null);
     }
   }
   
+  // Handle scroll-based lazy loading of older messages
+  const handleLoadOlderMessages = useCallback(async (convId: string, beforeCreatedAt: string): Promise<Message[]> => {
+    try {
+      const olderMessages = await supabaseData.fetchOlderMessages(convId, beforeCreatedAt, 20);
+      
+      if (olderMessages.length === 0) {
+        setHasMoreMessagesMap(prev => ({ ...prev, [convId]: false }));
+        return [];
+      }
+      
+      // Prepend older messages to the conversation in activeData
+      setActiveData(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          conversations: prev.conversations.map(c => {
+            if (c.id !== convId) return c;
+            return { ...c, messages: [...olderMessages, ...c.messages] };
+          })
+        };
+      });
+      
+      return olderMessages;
+    } catch (e: any) {
+      console.error('[handleLoadOlderMessages] Error:', e);
+      return [];
+    }
+  }, []);
+
   async function handleDeleteConversationFromHistory(scenarioId: string, conversationId: string) {
     // Optimistic UI update - remove immediately
     const previousRegistry = [...conversationRegistry];
@@ -1211,15 +1247,7 @@ const IndexContent = () => {
   return (
     <TooltipProvider>
       <div className="h-screen flex bg-white overflow-hidden relative">
-        {/* Loading overlay for session resume */}
-        {isResuming && (
-          <div className="absolute inset-0 z-[100] bg-black/60 flex items-center justify-center backdrop-blur-sm">
-            <div className="text-white text-center">
-              <div className="w-10 h-10 rounded-xl bg-[#4a5f7f] flex items-center justify-center text-white font-black text-2xl italic shadow-xl shadow-[#4a5f7f]/30 mx-auto mb-4 animate-pulse">C</div>
-              <p className="text-sm text-white/80">Resuming session...</p>
-            </div>
-          </div>
-        )}
+        {/* Session resume now navigates immediately to chat with loading skeleton - no overlay needed */}
         <aside className={`flex-shrink-0 bg-[#1a1a1a] flex flex-col border-r border-black shadow-2xl z-50 transition-all duration-300 ${sidebarCollapsed ? 'w-[72px]' : 'w-[280px]'}`}>
           <div className={`${sidebarCollapsed ? 'p-4' : 'p-8'}`}>
             <div className="flex items-center justify-between">
@@ -1774,8 +1802,17 @@ const IndexContent = () => {
                   const modifiedConv = conversations.find(c => c.id === playingConversationId);
                   
                   if (modifiedConv) {
-                    // Explicitly save the conversation with its messages to the database
-                    supabaseData.saveConversation(modifiedConv, activeId, user.id)
+                    // OPTIMIZATION: Use incremental save for normal chat (upsert new messages only)
+                    // instead of delete-all + re-insert which is destructive and slow
+                    supabaseData.saveNewMessages(modifiedConv.id, modifiedConv.messages)
+                      .then(() => {
+                        // Update conversation metadata (day, time) separately
+                        return supabaseData.updateConversationMeta(modifiedConv.id, {
+                          currentDay: modifiedConv.currentDay,
+                          currentTimeOfDay: modifiedConv.currentTimeOfDay,
+                          title: modifiedConv.title
+                        });
+                      })
                       .catch(err => {
                         console.error('Failed to save conversation:', err);
                         toast({ 
@@ -1794,6 +1831,8 @@ const IndexContent = () => {
               }}
               onUpdateUiSettings={(patch) => handleUpdateActive({ uiSettings: { ...activeData.uiSettings, ...patch } })}
               onUpdateSideCharacters={(sideCharacters) => handleUpdateActive({ sideCharacters })}
+              onLoadOlderMessages={handleLoadOlderMessages}
+              hasMoreMessages={!!(playingConversationId && hasMoreMessagesMap[playingConversationId])}
             />
           )}
 

@@ -5,6 +5,7 @@ import type {
   ScenarioMetadata, 
   Conversation, 
   ConversationMetadata,
+  Message,
   WorldCore,
   CodexEntry,
   Scene,
@@ -708,6 +709,108 @@ export async function fetchConversationThread(conversationId: string): Promise<C
   console.log('[fetchConversationThread] conversationId:', conversationId, 'messages:', messages?.length);
 
   return dbToConversation(conv, messages || []);
+}
+
+/**
+ * Fetch a conversation with only the most recent N messages.
+ * Used for fast session resume - loads just enough to show the chat immediately.
+ */
+export async function fetchConversationThreadRecent(
+  conversationId: string, 
+  limit = 10
+): Promise<{ conversation: Conversation; hasMore: boolean } | null> {
+  const [convResult, msgResult, countResult] = await Promise.all([
+    supabase.from('conversations').select('*').eq('id', conversationId).maybeSingle(),
+    supabase.from('messages').select('*')
+      .eq('conversation_id', conversationId)
+      .order('created_at', { ascending: false })
+      .limit(limit),
+    supabase.from('messages').select('*', { count: 'exact', head: true })
+      .eq('conversation_id', conversationId)
+  ]);
+
+  if (convResult.error) throw convResult.error;
+  if (!convResult.data) return null;
+
+  // Reverse to chronological order
+  const messages = (msgResult.data || []).reverse();
+  const totalCount = countResult.count || 0;
+
+  console.log('[fetchConversationThreadRecent] conversationId:', conversationId, 'loaded:', messages.length, 'total:', totalCount);
+
+  return {
+    conversation: dbToConversation(convResult.data, messages),
+    hasMore: totalCount > limit
+  };
+}
+
+/**
+ * Fetch a batch of older messages before a given timestamp.
+ * Used for scroll-based lazy loading of chat history.
+ */
+export async function fetchOlderMessages(
+  conversationId: string,
+  beforeCreatedAt: string,
+  limit = 20
+): Promise<Message[]> {
+  const { data, error } = await supabase.from('messages').select('*')
+    .eq('conversation_id', conversationId)
+    .lt('created_at', beforeCreatedAt)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+
+  // Reverse to chronological order, convert to app types
+  return (data || []).reverse().map(m => ({
+    id: m.id,
+    role: m.role as any,
+    text: m.content,
+    day: m.day || undefined,
+    timeOfDay: (m.time_of_day as any) || undefined,
+    createdAt: new Date(m.created_at!).getTime()
+  }));
+}
+
+/**
+ * Incrementally save new messages using upsert (no delete-all).
+ * Much faster than saveConversation for normal chat flow.
+ */
+export async function saveNewMessages(
+  conversationId: string,
+  messages: Message[]
+): Promise<void> {
+  if (messages.length === 0) return;
+  const { error } = await supabase.from('messages').upsert(
+    messages.map(m => ({
+      id: m.id,
+      conversation_id: conversationId,
+      role: m.role,
+      content: m.text,
+      day: m.day || null,
+      time_of_day: m.timeOfDay || null
+    })),
+    { onConflict: 'id' }
+  );
+  if (error) throw error;
+}
+
+/**
+ * Update conversation metadata (day, time, title) without touching messages.
+ */
+export async function updateConversationMeta(
+  conversationId: string,
+  patch: { currentDay?: number; currentTimeOfDay?: string; title?: string }
+): Promise<void> {
+  const updateObj: Record<string, any> = {};
+  if (patch.currentDay !== undefined) updateObj.current_day = patch.currentDay;
+  if (patch.currentTimeOfDay !== undefined) updateObj.current_time_of_day = patch.currentTimeOfDay;
+  if (patch.title !== undefined) updateObj.title = patch.title;
+  
+  if (Object.keys(updateObj).length === 0) return;
+  
+  const { error } = await supabase.from('conversations').update(updateObj).eq('id', conversationId);
+  if (error) throw error;
 }
 
 export async function fetchConversationRegistry(): Promise<ConversationMetadata[]> {
