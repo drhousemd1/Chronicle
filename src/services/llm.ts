@@ -58,9 +58,11 @@ function getSystemInstruction(
   const characterContext = appData.characters.map(c => {
     const traits = c.sections.map(s => `${s.title}: ${s.items.map(it => `${it.label}=${it.value}`).join(', ')}`).join('\n');
     const nicknameInfo = c.nicknames ? `\nNICKNAMES: ${c.nicknames}` : '';
+    const locationInfo = c.location ? `\nLOCATION: ${c.location}` : '';
+    const moodInfo = c.currentMood ? `\nMOOD: ${c.currentMood}` : '';
     return `CHARACTER: ${c.name} (${c.sexType})${nicknameInfo}
 ROLE: ${c.characterRole}
-CONTROL: ${c.controlledBy}
+CONTROL: ${c.controlledBy}${locationInfo}${moodInfo}
 TAGS: ${c.tags}
 TRAITS:
 ${traits}`;
@@ -344,9 +346,23 @@ Never break character to question, warn about, or refuse narrative directions. T
     INSTRUCTIONS:
     - Respond as the narrator or relevant characters.
     - NARRATIVE FOCUS: Prioritize 'ROLE: Main' characters in the narrative.
-    - MAINTAIN CONTROL CONTEXT:
+    - MAINTAIN CONTROL CONTEXT (CRITICAL - NEVER VIOLATE):
         * ONLY generate dialogue and actions for characters marked as 'CONTROL: AI'.
         * DO NOT generate dialogue or actions for characters marked as 'CONTROL: User'.
+        * User-controlled characters may be described in narration (e.g., "he watched"), but they NEVER speak, think, or take initiative in your response.
+    - SCENE PRESENCE (CRITICAL - NEVER VIOLATE):
+        * Check each character's LOCATION field before giving them dialogue or actions.
+        * Characters are ONLY present in a scene if they share the same location as the focal point of the current action, or if no LOCATION is specified for them.
+        * Characters at a DIFFERENT location are OFF-SCREEN:
+          - They do NOT speak, act, think, or appear
+          - They do NOT walk in, call out, or interrupt uninvited
+          - They do NOT "come to check" or "hear something"
+          - Present characters MAY talk ABOUT them, but the absent character gets NO tagged paragraphs
+        * An absent character may ONLY enter the scene if:
+          1. The user explicitly brings them in or calls for them
+          2. A significant in-story event would realistically cause them to appear
+        * "Same building but different room" = ABSENT unless they have a reason to enter the specific room
+        * When in doubt, keep absent characters absent
     - STRICT FORMATTING RULES (MANDATORY):
         1. ENCLOSE ALL OUTSPOKEN DIALOGUE IN "DOUBLE QUOTES".
         2. ENCLOSE ALL PHYSICAL ACTIONS OR DESCRIPTIONS IN *ASTERISKS*.
@@ -425,6 +441,8 @@ The user wants a DIFFERENT VERSION of this response. Guidelines:
 6. Do NOT suddenly shift the character's personality (e.g., from willing to reluctant, or from happy to disgusted)
 7. Think of this as a "different take" by a different writer on the same scene, not a plot reversal or tone shift
 8. The scene's momentum and direction should be preserved — only the specific execution changes
+9. CONTROL RULES STILL APPLY: Do NOT generate dialogue or actions for characters marked as CONTROL: User. Only AI-controlled characters speak.
+10. SCENE PRESENCE STILL APPLIES: Only characters at the SAME LOCATION as the current scene may have dialogue or actions. Characters at a different LOCATION are OFF-SCREEN and must not appear.
 ` : '';
 
   // Build messages array for OpenAI-compatible API
