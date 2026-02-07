@@ -921,6 +921,8 @@ export async function fetchSessionStates(conversationId: string): Promise<Charac
     currentlyWearing: dbCurrentlyWearingToApp(row.currently_wearing),
     preferredClothing: row.preferred_clothing ? dbPreferredClothingToApp(row.preferred_clothing) : undefined,
     customSections: row.custom_sections || undefined,
+    // Goals for session-scoped tracking
+    goals: row.goals || [],
     // Avatar fields for session-scoped updates
     avatarUrl: row.avatar_url || undefined,
     avatarPosition: row.avatar_position || undefined,
@@ -946,7 +948,8 @@ export async function createSessionState(
       location: character.location || '',
       current_mood: character.currentMood || '',
       physical_appearance: appPhysicalAppearanceToDb(character.physicalAppearance || defaultPhysicalAppearance),
-      currently_wearing: appCurrentlyWearingToDb(character.currentlyWearing || defaultCurrentlyWearing)
+      currently_wearing: appCurrentlyWearingToDb(character.currentlyWearing || defaultCurrentlyWearing),
+      goals: character.goals || []
     })
     .select()
     .single();
@@ -962,6 +965,7 @@ export async function createSessionState(
     currentMood: data.current_mood || '',
     physicalAppearance: dbPhysicalAppearanceToApp(data.physical_appearance),
     currentlyWearing: dbCurrentlyWearingToApp(data.currently_wearing),
+    goals: (data.goals as any[]) || [],
     createdAt: new Date(data.created_at).getTime(),
     updatedAt: new Date(data.updated_at).getTime()
   };
@@ -982,6 +986,7 @@ export async function updateSessionState(
     currentlyWearing: CurrentlyWearing;
     preferredClothing: Partial<PreferredClothing>;
     customSections: any[];
+    goals: any[];
     avatarUrl: string;
     avatarPosition: { x: number; y: number };
     controlledBy: string;
@@ -1010,6 +1015,9 @@ export async function updateSessionState(
   }
   if (patch.customSections !== undefined) {
     updateData.custom_sections = patch.customSections;
+  }
+  if (patch.goals !== undefined) {
+    updateData.goals = patch.goals;
   }
   // Avatar fields for session-scoped updates
   if (patch.avatarUrl !== undefined) updateData.avatar_url = patch.avatarUrl;
