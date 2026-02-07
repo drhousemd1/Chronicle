@@ -1,46 +1,42 @@
 
-# Fix: Revert Resume Flow to Simple Approach That Worked
+# Fix: Messages Out of Order
 
-## What Went Wrong
+## Root Cause
 
-The recent "optimizations" made things worse by:
+Both `saveNewMessages` and the old `saveConversation` never include `created_at` in the data sent to the database. The `messages` table has `created_at` defaulting to `now()`, so:
 
-1. Firing 9 concurrent database requests (overwhelming the connection pool) instead of the 2-4 sequential requests that worked before
-2. Navigating to a loading screen BEFORE data loads, so you stare at "Loading your story..." forever when the fetch hangs
-3. Calling `saveNewMessages` with ALL 61 messages on every chat exchange, saturating database connections with unnecessary writes
+- When the old `saveConversation` deleted all messages and re-inserted them, every message got the **same timestamp** (the moment of re-insert). The database confirms this: all 61 messages share the exact timestamp `2026-02-06 11:52:10.400719`.
+- When the new `saveNewMessages` upserts the latest 2 messages, those get `now()` too.
 
-## Fix: Strip It Back
+The result: `fetchConversationThread` orders by `created_at ASC`, but since all old messages share the same timestamp, the database returns them in **arbitrary order**. The 2 newest messages have a later timestamp, so they sort to the end, but everything before them is scrambled.
 
-### Change 1: Revert `handleResumeFromHistory` to Simple Sequential Fetch
+Meanwhile, the app-side `Message.createdAt` field (set via `Date.now()` when each message is first created in `ChatInterfaceTab`) has the correct sequential timestamps. These are just never written to the database.
 
-Go back to the approach that worked: fetch data first, then navigate. Use `fetchScenarioForPlay` (lightweight, no messages) + `fetchConversationThread` (proven, loads all messages for the specific conversation) sequentially rather than 9 parallel requests. Add a 15-second safety timeout.
+## Fix
 
-```text
-OLD (broken):
-  1. Navigate to chat (show loading spinner)
-  2. Fire 9 concurrent requests (hangs)
-  3. User stares at spinner forever
+Two changes in one file:
 
-NEW (reverting to what worked):
-  1. User clicks conversation
-  2. Fetch scenario data (5 sequential-ish queries)
-  3. Fetch conversation thread (2 queries)
-  4. Fetch side characters (1 query)
-  5. Set all state
-  6. Navigate to chat (instant -- data is ready)
-```
+### 1. Include `created_at` in `saveNewMessages` (supabase-data.ts)
 
-The `fetchConversationThread` function (the original one) loads ALL messages for the specific conversation. With 61 messages, this is fast. No lazy loading complexity needed for the initial load.
+Add `created_at: new Date(m.createdAt).toISOString()` to the upsert payload so each message preserves its original creation timestamp.
 
-### Change 2: Fix Save to Only Persist New Messages
+### 2. Include `created_at` in `saveConversation` (supabase-data.ts)
 
-The `onSaveScenario` callback currently passes `modifiedConv.messages` (all 61 messages) to `saveNewMessages`. Fix this to only pass the last 2 messages (the user message + AI response that were just created), dramatically reducing database writes.
+Same fix for the old bulk-save function, so if it's ever called (e.g., for message editing/deletion), it also preserves timestamps.
 
-Track message count when loading a conversation, then on save, only pass messages added after that index.
+### 3. Repair existing corrupted data
 
-### Change 3: Keep Lazy Loading for Scroll (Don't Remove)
+The 61+ messages already in the database all have the same `created_at`. Since the correct order is lost in the DB, we need to fix them. The simplest approach: when `fetchConversationThread` loads messages, also sort by `id` as a tiebreaker. But UUIDs aren't sequential.
 
-The scroll-based lazy loading mechanism in `ChatInterfaceTab` stays -- it's still useful for the future when conversations grow very large. But for now, since `fetchConversationThread` loads all messages, the `hasMoreMessages` flag will just be `false` and the scroll handler won't trigger. No changes needed in `ChatInterfaceTab`.
+A better approach: since the app creates messages with `createdAt: Date.now()` (unique millisecond timestamps), and the current corrupted data all share one timestamp, the next time the user plays a session and sends a message, the save will write correct timestamps for the new messages. For the old ones, we can run a one-time repair query that assigns sequential timestamps based on the existing row order.
+
+Actually, the cleanest fix: after loading messages that all have identical `created_at`, sort them by their array position (which is the insert order preserved by Postgres). The current query already does `ORDER BY created_at ASC` -- when timestamps tie, Postgres uses the physical storage order (insert order), which is correct for the bulk-inserted messages. The issue is only with the 2 newest messages getting a **different** `created_at` that sorts them to the end even though they should be at the end anyway.
+
+Let me re-examine: if ALL old messages have timestamp X, and the 2 newest have timestamp Y (where Y > X), then sorting by `created_at ASC` puts old messages first (in arbitrary order among themselves) and new messages last. The old messages being in arbitrary order is the problem.
+
+The fix is: sort by `created_at ASC, id ASC` -- but UUIDs are random, not sequential.
+
+The real fix: just write `created_at` properly going forward, and run a one-time repair to assign sequential timestamps to the existing messages. We can do this by using the conversation's `created_at` as a base and adding 1 second per message in their current physical order.
 
 ---
 
@@ -48,81 +44,69 @@ The scroll-based lazy loading mechanism in `ChatInterfaceTab` stays -- it's stil
 
 | File | Changes |
 |------|---------|
-| `src/pages/Index.tsx` | Rewrite `handleResumeFromHistory` to fetch-then-navigate (sequential); fix `onSaveScenario` to only save last 2 new messages |
-
-Only ONE file needs changes. No new functions, no new complexity.
-
----
+| `src/services/supabase-data.ts` | Add `created_at` to `saveNewMessages` upsert and `saveConversation` insert payloads |
 
 ## Technical Details
 
-### `handleResumeFromHistory` rewrite (Index.tsx)
+### `saveNewMessages` fix
 
 ```typescript
-async function handleResumeFromHistory(scenarioId: string, conversationId: string) {
-  try {
-    // 1. Fetch scenario data (no messages)
-    const scenarioResult = await supabaseData.fetchScenarioForPlay(scenarioId);
-    if (!scenarioResult) {
-      toast({ title: "Scenario not found", variant: "destructive" });
-      return;
-    }
-
-    // 2. Fetch the specific conversation thread (all messages)
-    const thread = await supabaseData.fetchConversationThread(conversationId);
-    if (!thread) {
-      toast({ title: "Conversation not found", variant: "destructive" });
-      return;
-    }
-
-    // 3. Fetch side characters
-    const sideCharacters = await supabaseData.fetchSideCharacters(conversationId);
-
-    // 4. Assemble data and navigate
-    const { data, coverImage, coverImagePosition } = scenarioResult;
-    data.conversations = [thread];
-    data.sideCharacters = sideCharacters;
-
-    setActiveId(scenarioId);
-    setActiveCoverImage(coverImage);
-    setActiveCoverPosition(coverImagePosition);
-    setActiveData(data);
-    setPlayingConversationId(conversationId);
-    setSelectedCharacterId(null);
-    setTab("chat_interface");
-  } catch (e: any) {
-    console.error('[handleResumeFromHistory] Error:', e);
-    toast({ title: "Failed to load", description: e.message, variant: "destructive" });
-  }
+export async function saveNewMessages(conversationId: string, messages: Message[]): Promise<void> {
+  if (messages.length === 0) return;
+  const { error } = await supabase.from('messages').upsert(
+    messages.map(m => ({
+      id: m.id,
+      conversation_id: conversationId,
+      role: m.role,
+      content: m.text,
+      day: m.day || null,
+      time_of_day: m.timeOfDay || null,
+      created_at: new Date(m.createdAt).toISOString()  // <-- ADD THIS
+    })),
+    { onConflict: 'id' }
+  );
+  if (error) throw error;
 }
 ```
 
-This is ~20 lines of simple, sequential code. No `Promise.all`, no `withTimeout`, no "navigate first" pattern, no `hasMoreMessages` tracking.
+### `saveConversation` fix
 
-### `onSaveScenario` fix (Index.tsx)
-
-Track a ref for the message count at load time. On save, only pass the messages added since:
+Same addition to the insert payload in `saveConversation`:
 
 ```typescript
-// In the onSaveScenario callback:
-if (modifiedConv) {
-  // Only save messages added since the conversation was loaded
-  const newMessages = modifiedConv.messages.slice(-2); // Last 2 = user msg + AI response
-  supabaseData.saveNewMessages(modifiedConv.id, newMessages)
-    .then(() => supabaseData.updateConversationMeta(modifiedConv.id, {
-      currentDay: modifiedConv.currentDay,
-      currentTimeOfDay: modifiedConv.currentTimeOfDay,
-      title: modifiedConv.title
-    }))
-    .catch(err => { ... });
-}
+conversation.messages.map(m => ({
+  id: m.id,
+  conversation_id: conversation.id,
+  role: m.role,
+  content: m.text,
+  day: m.day || null,
+  time_of_day: m.timeOfDay || null,
+  created_at: new Date(m.createdAt).toISOString()  // <-- ADD THIS
+}))
 ```
 
-This changes the save from 61 rows to 2 rows per message exchange.
+### Repair existing data
 
-### What Stays the Same
+Run a one-time repair: for each conversation, update messages to have sequential `created_at` values based on their row number. This uses a SQL migration:
 
-- `handlePlayScenario` keeps its "navigate first" pattern (it works fine for new games since no heavy data fetch is needed)
-- `ChatInterfaceTab` scroll-based lazy loading stays (dormant -- `hasMoreMessages` will be `false` since all messages are loaded)
-- All the new functions in `supabase-data.ts` stay (they're not hurting anything and can be used later)
-- The render condition on line 1791 stays (it supports both patterns)
+```sql
+WITH numbered AS (
+  SELECT id, ROW_NUMBER() OVER (
+    PARTITION BY conversation_id 
+    ORDER BY ctid  -- physical storage order = insert order
+  ) as rn,
+  conversation_id
+  FROM messages
+)
+UPDATE messages m
+SET created_at = (
+  SELECT c.created_at + (n.rn * interval '1 second')
+  FROM numbered n
+  JOIN conversations c ON c.id = m.conversation_id
+  WHERE n.id = m.id
+)
+FROM numbered n
+WHERE m.id = n.id;
+```
+
+This gives each message a unique, sequential timestamp starting 1 second after the conversation's creation time, spaced 1 second apart. After this, `ORDER BY created_at ASC` returns them in the correct order.
