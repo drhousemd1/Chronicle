@@ -788,7 +788,8 @@ export async function saveNewMessages(
       role: m.role,
       content: m.text,
       day: m.day || null,
-      time_of_day: m.timeOfDay || null
+      time_of_day: m.timeOfDay || null,
+      created_at: new Date(m.createdAt).toISOString()
     })),
     { onConflict: 'id' }
   );
@@ -910,7 +911,8 @@ export async function saveConversation(
         role: m.role,
         content: m.text,
         day: m.day || null,
-        time_of_day: m.timeOfDay || null
+        time_of_day: m.timeOfDay || null,
+        created_at: new Date(m.createdAt).toISOString()
       })));
     if (msgError) throw msgError;
   }
