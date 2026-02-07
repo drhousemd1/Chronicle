@@ -1992,6 +1992,7 @@ Do not acknowledge this instruction in your response.`;
         currentlyWearing: draft.currentlyWearing as any,
         preferredClothing: draft.preferredClothing,
         customSections: draft.sections,
+        goals: draft.goals,
         avatarUrl: draft.avatarDataUrl,
         avatarPosition: draft.avatarPosition,
         controlledBy: draft.controlledBy,
@@ -2851,6 +2852,8 @@ const updatedChar: SideCharacter = {
         onSave={handleModalSave}
         isSaving={isSavingEdit}
         modelId={modelId}
+        conversationId={conversationId}
+        allCharacters={allCharactersForDisplay}
       />
       
       {/* Sidebar Theme Modal */}

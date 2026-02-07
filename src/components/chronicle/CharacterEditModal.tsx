@@ -2,7 +2,7 @@
 // Session-scoped: edits persist only within the active playthrough
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Character, SideCharacter, PhysicalAppearance, CurrentlyWearing, PreferredClothing, CharacterTraitSection } from '@/types';
+import { Character, SideCharacter, PhysicalAppearance, CurrentlyWearing, PreferredClothing, CharacterTraitSection, CharacterGoal } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -14,12 +14,20 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Loader2, Plus, Trash2, X, Pencil, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  TooltipProvider,
+} from '@/components/ui/tooltip';
+import { Loader2, Plus, Trash2, X, Pencil, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client'; 
 import * as supabaseData from '@/services/supabase-data'; 
 import { toast } from 'sonner';
 import { AvatarActionButtons } from './AvatarActionButtons';
 import { ChangeNameModal } from './ChangeNameModal';
+import { CharacterGoalsSection } from './CharacterGoalsSection';
+import { uid, now } from '@/utils';
 
 // Unified draft type for both Character and SideCharacter
 export interface CharacterEditDraft {
@@ -37,6 +45,7 @@ export interface CharacterEditDraft {
   currentlyWearing?: Partial<CurrentlyWearing>;
   preferredClothing?: Partial<PreferredClothing>;
   sections?: CharacterTraitSection[];
+  goals?: CharacterGoal[];
   // Avatar fields for session-scoped updates
   avatarDataUrl?: string;
   avatarPosition?: { x: number; y: number };
@@ -63,6 +72,8 @@ interface CharacterEditModalProps {
   isSaving?: boolean;
   modelId?: string; // For AI avatar regeneration
   viewOnly?: boolean; // When true, opens in view mode with edit toggle
+  conversationId?: string; // For deep scan - fetch message history
+  allCharacters?: (Character | SideCharacter)[]; // For deep scan context
 }
 
 // Auto-resizing textarea that wraps text and grows with content
@@ -201,12 +212,15 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
   onSave,
   isSaving = false,
   modelId,
-  viewOnly = false
+  viewOnly = false,
+  conversationId,
+  allCharacters
 }) => {
   const [draft, setDraft] = useState<CharacterEditDraft>({});
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isRegeneratingAvatar, setIsRegeneratingAvatar] = useState(false);
   const [isChangeNameModalOpen, setIsChangeNameModalOpen] = useState(false);
+  const [isDeepScanning, setIsDeepScanning] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Expanded state for collapsible sections
@@ -216,6 +230,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
     physicalAppearance: true,
     currentlyWearing: true,
     preferredClothing: true,
+    goals: true,
     background: true,
     personality: true,
     customCategories: true
@@ -257,6 +272,11 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
         avatarPosition: character.avatarPosition || { x: 50, y: 50 },
       };
 
+      // Add goals (both Character and SideCharacter may not have them)
+      if ('goals' in character) {
+        baseDraft.goals = (character as Character).goals?.map(g => ({ ...g })) || [];
+      }
+
       // Add Character-specific fields
       if ('sections' in character) {
         baseDraft.sections = character.sections?.map(s => ({ ...s, items: [...s.items] })) || [];
@@ -279,6 +299,210 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
       setDraft(baseDraft);
     }
   }, [character, open]);
+
+  // Deep scan handler - fetch conversation history and extract updates via edge function
+  const handleDeepScan = async () => {
+    if (!character || !conversationId) {
+      toast.error('No conversation context available');
+      return;
+    }
+    
+    setIsDeepScanning(true);
+    try {
+      // Fetch the most recent ~50 messages for this conversation
+      const { data: messages, error: msgError } = await supabase
+        .from('messages')
+        .select('role, content')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      
+      if (msgError) throw msgError;
+      if (!messages || messages.length === 0) {
+        toast.info('No messages to analyze');
+        setIsDeepScanning(false);
+        return;
+      }
+      
+      // Reverse to get chronological order and concatenate
+      const chronological = [...messages].reverse();
+      const userMessages: string[] = [];
+      const aiMessages: string[] = [];
+      for (const msg of chronological) {
+        if (msg.role === 'user') {
+          userMessages.push(msg.content);
+        } else if (msg.role === 'assistant') {
+          aiMessages.push(msg.content);
+        }
+      }
+      
+      const concatenatedUser = userMessages.join('\n\n---\n\n');
+      const concatenatedAi = aiMessages.join('\n\n---\n\n');
+      
+      // Build character data for context (same structure as extractCharacterUpdatesFromDialogue)
+      const buildCharData = (c: Character | SideCharacter) => ({
+        name: c.name,
+        previousNames: ('previousNames' in c) ? (c as any).previousNames : [],
+        nicknames: c.nicknames,
+        physicalAppearance: c.physicalAppearance,
+        currentlyWearing: c.currentlyWearing,
+        preferredClothing: c.preferredClothing,
+        location: c.location,
+        currentMood: c.currentMood,
+        goals: ('goals' in c && (c as Character).goals) 
+          ? (c as Character).goals!.map(g => ({
+              title: g.title,
+              currentStatus: g.currentStatus || '',
+              progress: g.progress || 0
+            }))
+          : [],
+        customSections: ('sections' in c && (c as Character).sections)
+          ? (c as Character).sections.map(s => ({
+              title: s.title,
+              items: s.items.map(i => ({ label: i.label, value: i.value }))
+            }))
+          : []
+      });
+      
+      const charactersData = allCharacters 
+        ? allCharacters.map(buildCharData) 
+        : [buildCharData(character)];
+      
+      // Call the existing extract-character-updates edge function
+      const { data, error } = await supabase.functions.invoke('extract-character-updates', {
+        body: {
+          userMessage: concatenatedUser,
+          aiResponse: concatenatedAi,
+          characters: charactersData,
+          modelId: modelId || 'gemini-2.5-flash'
+        }
+      });
+      
+      if (error) throw error;
+      
+      const updates = data?.updates || [];
+      if (updates.length === 0) {
+        toast.info('No updates found from dialogue');
+        setIsDeepScanning(false);
+        return;
+      }
+      
+      // Apply updates to the draft state (same merge logic as applyExtractedUpdates)
+      setDraft(prev => {
+        const next = { ...prev };
+        let updatedSections = [...(prev.sections || [])];
+        let updatedGoals = [...(prev.goals || [])];
+        let sectionsModified = false;
+        let goalsModified = false;
+        
+        for (const update of updates) {
+          // Only apply updates for THIS character
+          const charName = (prev.name || character.name || '').toLowerCase();
+          const updateCharName = (update.character || '').toLowerCase();
+          
+          // Check if this update is for the current character (by name or nickname)
+          const nicknames = (prev.nicknames || '').split(',').map((n: string) => n.trim().toLowerCase()).filter(Boolean);
+          const isMatch = updateCharName === charName || nicknames.includes(updateCharName);
+          if (!isMatch) continue;
+          
+          const { field, value } = update;
+          
+          // Handle goals
+          if (field.startsWith('goals.')) {
+            const goalTitle = field.slice(6);
+            if (goalTitle) {
+              let currentStatus = value;
+              let progress = 0;
+              const progressMatch = value.match(/\|\s*progress:\s*(\d+)/i);
+              if (progressMatch) {
+                progress = Math.min(100, Math.max(0, parseInt(progressMatch[1], 10)));
+                currentStatus = value.replace(/\s*\|\s*progress:\s*\d+\s*/i, '').trim();
+              }
+              
+              const existingIdx = updatedGoals.findIndex(g => g.title.toLowerCase() === goalTitle.toLowerCase());
+              if (existingIdx !== -1) {
+                updatedGoals[existingIdx] = { ...updatedGoals[existingIdx], currentStatus, progress, updatedAt: now() };
+              } else {
+                updatedGoals.push({
+                  id: uid('goal'),
+                  title: goalTitle,
+                  desiredOutcome: '',
+                  currentStatus,
+                  progress,
+                  createdAt: now(),
+                  updatedAt: now()
+                });
+              }
+              goalsModified = true;
+            }
+          }
+          // Handle sections
+          else if (field.startsWith('sections.')) {
+            const parts = field.split('.');
+            if (parts.length >= 3) {
+              const sectionTitle = parts[1];
+              const itemLabel = parts.slice(2).join('.');
+              
+              let sectionIndex = updatedSections.findIndex(s => s.title.toLowerCase() === sectionTitle.toLowerCase());
+              if (sectionIndex === -1) {
+                updatedSections.push({
+                  id: uid('sec'),
+                  title: sectionTitle,
+                  items: [],
+                  createdAt: now(),
+                  updatedAt: now()
+                });
+                sectionIndex = updatedSections.length - 1;
+              }
+              
+              const section = updatedSections[sectionIndex];
+              const itemIndex = section.items.findIndex(i => i.label.toLowerCase() === itemLabel.toLowerCase());
+              if (itemIndex === -1) {
+                section.items.push({
+                  id: uid('item'),
+                  label: itemLabel,
+                  value: value,
+                  createdAt: now(),
+                  updatedAt: now()
+                });
+              } else {
+                section.items[itemIndex] = { ...section.items[itemIndex], value, updatedAt: now() };
+              }
+              section.updatedAt = now();
+              sectionsModified = true;
+            }
+          }
+          // Handle nested fields
+          else if (field.includes('.')) {
+            const [parent, child] = field.split('.');
+            if (parent === 'physicalAppearance') {
+              next.physicalAppearance = { ...next.physicalAppearance, [child]: value };
+            } else if (parent === 'currentlyWearing') {
+              next.currentlyWearing = { ...next.currentlyWearing, [child]: value };
+            } else if (parent === 'preferredClothing') {
+              next.preferredClothing = { ...next.preferredClothing, [child]: value };
+            }
+          }
+          // Handle flat fields
+          else {
+            (next as any)[field] = value;
+          }
+        }
+        
+        if (sectionsModified) next.sections = updatedSections;
+        if (goalsModified) next.goals = updatedGoals;
+        
+        return next;
+      });
+      
+      toast.success('Character card updated from dialogue');
+    } catch (err) {
+      console.error('[handleDeepScan] Failed:', err);
+      toast.error('Failed to scan dialogue');
+    } finally {
+      setIsDeepScanning(false);
+    }
+  };
 
   // Helper to resize image to 512x512
   const resizeImage = (file: File): Promise<Blob> => {
@@ -516,12 +740,131 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[90vh] p-0 gap-0 overflow-hidden bg-[#2a2a2f] border-white/10">
         <DialogHeader className="px-6 py-4 border-b border-white/20 bg-black">
-          <DialogTitle className="text-lg font-bold text-white">
-            Edit Character
-          </DialogTitle>
-          <p className="text-xs text-white/70 mt-1">
-            Changes apply only to this playthrough
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle className="text-lg font-bold text-white">
+                Edit Character
+              </DialogTitle>
+              <p className="text-xs text-white/70 mt-1">
+                Changes apply only to this playthrough
+              </p>
+            </div>
+            
+            {/* AI Update Button - Iridescent premium style */}
+            {conversationId && (
+              <TooltipProvider delayDuration={300}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={handleDeepScan}
+                      disabled={isDeepScanning || isSaving}
+                      className="group relative flex h-10 px-4 rounded-xl overflow-hidden
+                        text-white text-[10px] font-bold leading-none
+                        shadow-[0_12px_40px_rgba(0,0,0,0.45)]
+                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/45
+                        disabled:opacity-50 shrink-0"
+                    >
+                      {/* Layer 1: Iridescent outer border ring */}
+                      <span
+                        aria-hidden
+                        className="absolute inset-0 rounded-xl"
+                        style={{
+                          background:
+                            "linear-gradient(90deg, rgba(255,255,255,0.34) 0%, rgba(34,184,200,0.62) 18%, rgba(255,255,255,0.22) 44%, rgba(109,94,247,0.64) 78%, rgba(255,255,255,0.28) 100%)",
+                          filter:
+                            "drop-shadow(0 0 10px rgba(255,255,255,0.10)) drop-shadow(0 0 18px rgba(109,94,247,0.10)) drop-shadow(0 0 18px rgba(34,184,200,0.10))",
+                        }}
+                      />
+                      {/* Layer 2: Mask to create 2px border effect */}
+                      <span
+                        aria-hidden
+                        className="absolute inset-[2px] rounded-[10px]"
+                        style={{ background: "#2B2D33" }}
+                      />
+                      {/* Layer 3: Button surface with gradient */}
+                      <span
+                        aria-hidden
+                        className="absolute inset-[2px] rounded-[10px]"
+                        style={{
+                          background:
+                            "linear-gradient(90deg, rgba(34,184,200,0.22), rgba(109,94,247,0.22)), #2B2D33",
+                        }}
+                      />
+                      {/* Layer 4: Soft top sheen */}
+                      <span
+                        aria-hidden
+                        className="absolute inset-[2px] rounded-[10px]"
+                        style={{
+                          background:
+                            "linear-gradient(180deg, rgba(255,255,255,0.11), rgba(255,255,255,0.00) 46%, rgba(0,0,0,0.16))",
+                        }}
+                      />
+                      {/* Layer 5: Border sheen (top-left diagonal) */}
+                      <span
+                        aria-hidden
+                        className="absolute inset-0 rounded-xl pointer-events-none"
+                        style={{
+                          boxShadow:
+                            "inset 0 1px 0 rgba(255,255,255,0.26), inset 0 -1px 0 rgba(0,0,0,0.22)",
+                          background:
+                            "linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.00) 55%)",
+                          mixBlendMode: "screen",
+                        }}
+                      />
+                      {/* Layer 6: Teal bloom (top-left) */}
+                      <span
+                        aria-hidden
+                        className="absolute -left-8 -top-8 h-32 w-32 rounded-full blur-2xl pointer-events-none"
+                        style={{
+                          background:
+                            "radial-gradient(circle, rgba(34,184,200,0.28), transparent 62%)",
+                        }}
+                      />
+                      {/* Layer 7: Purple bloom (bottom-right) */}
+                      <span
+                        aria-hidden
+                        className="absolute -right-10 -bottom-10 h-40 w-40 rounded-full blur-3xl pointer-events-none"
+                        style={{
+                          background:
+                            "radial-gradient(circle, rgba(109,94,247,0.26), transparent 65%)",
+                        }}
+                      />
+                      {/* Layer 8: Crisp inner edge */}
+                      <span
+                        aria-hidden
+                        className="absolute inset-0 rounded-xl pointer-events-none"
+                        style={{
+                          boxShadow:
+                            "inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -1px 0 rgba(0,0,0,0.26), 0 0 0 1px rgba(255,255,255,0.06)",
+                        }}
+                      />
+                      {/* Content layer */}
+                      <span className="relative z-10 flex items-center justify-center gap-2 w-full">
+                        {isDeepScanning ? (
+                          <Loader2 
+                            className="w-3.5 h-3.5 shrink-0 animate-spin text-cyan-200" 
+                            style={{ filter: "drop-shadow(0 0 10px rgba(34,184,200,0.35))" }}
+                          />
+                        ) : (
+                          <Sparkles 
+                            className="w-3.5 h-3.5 shrink-0 text-cyan-200" 
+                            style={{ filter: "drop-shadow(0 0 10px rgba(34,184,200,0.35))" }}
+                          />
+                        )}
+                        <span className="min-w-0 truncate drop-shadow-[0_1px_0_rgba(0,0,0,0.35)]">
+                          {isDeepScanning ? "Analyzing..." : "AI Update"}
+                        </span>
+                      </span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-[250px]">
+                    Run additional scan of dialog to update character card
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </div>
         </DialogHeader>
 
         <ScrollArea className="flex-1 max-h-[calc(90vh-160px)] bg-[#2a2a2f]">
@@ -899,6 +1242,16 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     placeholder="Other preferences"
                   />
                 </CollapsibleSection>
+
+                {/* Character Goals Section (Main characters only) */}
+                {!isSideCharacter && (
+                  <CharacterGoalsSection
+                    goals={draft.goals || []}
+                    onChange={(goals) => setDraft(prev => ({ ...prev, goals }))}
+                    isExpanded={expandedSections.goals}
+                    onToggle={() => toggleSection('goals')}
+                  />
+                )}
 
                 {/* Side Character Specific: Background */}
                 {isSideCharacter && (
