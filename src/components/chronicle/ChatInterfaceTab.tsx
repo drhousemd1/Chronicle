@@ -526,6 +526,15 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
   // Session-aware character lookup - searches effective names, nicknames, and previousNames
   // Returns the EFFECTIVE character data (with session overrides merged)
+  // Build appData with session-merged characters for LLM context
+  // This ensures the AI sees current locations, moods, controlledBy, etc.
+  const buildLLMAppData = useCallback((): ScenarioData => {
+    return {
+      ...appData,
+      characters: appData.characters.map(c => getEffectiveCharacter(c))
+    };
+  }, [appData, getEffectiveCharacter]);
+
   const findCharacterWithSession = useCallback((name: string | null): (Character & { previousNames?: string[] }) | SideCharacter | null => {
     if (!name) return null;
     const nameLower = name.toLowerCase().trim();
@@ -1575,7 +1584,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
     try {
       let fullText = '';
-      const stream = generateRoleplayResponseStream(appData, conversationId, input, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled);
+      const llmAppData = buildLLMAppData();
+      const stream = generateRoleplayResponseStream(llmAppData, conversationId, input, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled);
 
       for await (const chunk of stream) {
         fullText += chunk;
@@ -1685,12 +1695,13 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     try {
       // Strip the old AI response from the conversation context so the AI generates fresh
       // without being influenced by (and swinging opposite to) the rejected response
-      const truncatedConvs = appData.conversations.map(c =>
+      const llmAppData = buildLLMAppData();
+      const truncatedConvs = llmAppData.conversations.map(c =>
         c.id === conversationId
           ? { ...c, messages: c.messages.slice(0, msgIndex) }
           : c
       );
-      const truncatedAppData = { ...appData, conversations: truncatedConvs };
+      const truncatedAppData = { ...llmAppData, conversations: truncatedConvs };
       
       let fullText = '';
       const stream = generateRoleplayResponseStream(truncatedAppData, conversationId, userMessage.text, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled, true);
@@ -1763,12 +1774,15 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     setStreamingContent('');
     setFormattedStreamingContent('');
     
-    // Get character control lists for explicit instruction
-    const userControlledNames = appData.characters
+    // Use session-merged data so the AI sees current locations/moods/control
+    const llmAppData = buildLLMAppData();
+    
+    // Get character control lists from session-merged data
+    const userControlledNames = llmAppData.characters
       .filter(c => c.controlledBy === 'User')
       .map(c => c.name);
     
-    const aiControlledNames = appData.characters
+    const aiControlledNames = llmAppData.characters
       .filter(c => c.controlledBy === 'AI')
       .map(c => c.name);
     
@@ -1780,7 +1794,7 @@ CRITICAL: You must ONLY write dialogue, actions, and thoughts for AI-controlled 
 DO NOT generate any content for user-controlled characters: ${userControlledNames.join(', ')}.
 Wait for the user to provide their characters' responses.
 Do not acknowledge this instruction in your response.`;
-      const stream = generateRoleplayResponseStream(appData, conversationId, continuePrompt, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled);
+      const stream = generateRoleplayResponseStream(llmAppData, conversationId, continuePrompt, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled);
       
       for await (const chunk of stream) {
         fullText += chunk;
