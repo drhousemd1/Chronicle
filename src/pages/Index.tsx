@@ -929,52 +929,49 @@ const IndexContent = () => {
   }
   
   async function handleResumeFromHistory(scenarioId: string, conversationId: string) {
-    // OPTIMIZATION: Navigate immediately, load data in background
-    // This gives instant visual feedback instead of blocking on slow fetches
-    setActiveId(scenarioId);
-    setPlayingConversationId("loading"); // Shows loading skeleton immediately
-    setTab("chat_interface");
-    setSelectedCharacterId(null);
+    // SIMPLE SEQUENTIAL: Fetch ALL data first, then navigate.
+    // No Promise.all, no "navigate first" pattern, no lazy loading complexity.
+    setIsResuming(true);
     
     try {
-      // Fetch scenario (without all messages) + recent 10 messages + side chars in parallel
-      const [scenarioResult, threadResult, sideCharacters] = await Promise.all([
-        supabaseData.fetchScenarioForPlay(scenarioId),
-        supabaseData.fetchConversationThreadRecent(conversationId, 10),
-        supabaseData.fetchSideCharacters(conversationId),
-      ]);
-      
-      if (!scenarioResult || !threadResult) {
+      // 1. Fetch scenario data (no messages)
+      const scenarioResult = await supabaseData.fetchScenarioForPlay(scenarioId);
+      if (!scenarioResult) {
         toast({ title: "Scenario not found", variant: "destructive" });
-        setTab("hub");
-        setPlayingConversationId(null);
-        setActiveId(null);
+        setIsResuming(false);
         return;
       }
-      
+
+      // 2. Fetch the specific conversation thread (ALL messages)
+      const thread = await supabaseData.fetchConversationThread(conversationId);
+      if (!thread) {
+        toast({ title: "Conversation not found", variant: "destructive" });
+        setIsResuming(false);
+        return;
+      }
+
+      // 3. Fetch side characters
+      const sideCharacters = await supabaseData.fetchSideCharacters(conversationId);
+
+      // 4. Assemble data and navigate (instant -- data is ready)
       const { data, coverImage, coverImagePosition } = scenarioResult;
-      
-      // Set conversation with recent messages
-      data.conversations = [threadResult.conversation];
+      data.conversations = [thread];
       data.sideCharacters = sideCharacters;
-      
+
+      setActiveId(scenarioId);
       setActiveCoverImage(coverImage);
       setActiveCoverPosition(coverImagePosition);
       setActiveData(data);
       setPlayingConversationId(conversationId);
+      setSelectedCharacterId(null);
+      setTab("chat_interface");
       
-      // Store hasMore flag for scroll-based lazy loading
-      if (threadResult.hasMore) {
-        setHasMoreMessagesMap(prev => ({ ...prev, [conversationId]: true }));
-      }
-      
-      console.log('[handleResumeFromHistory] Loaded with recent messages, hasMore:', threadResult.hasMore);
+      console.log('[handleResumeFromHistory] Loaded', thread.messages.length, 'messages');
     } catch (e: any) {
       console.error('[handleResumeFromHistory] Error:', e);
-      toast({ title: "Failed to load scenario", description: e.message, variant: "destructive" });
-      setTab("hub");
-      setPlayingConversationId(null);
-      setActiveId(null);
+      toast({ title: "Failed to load", description: e.message, variant: "destructive" });
+    } finally {
+      setIsResuming(false);
     }
   }
   
@@ -1804,7 +1801,9 @@ const IndexContent = () => {
                   if (modifiedConv) {
                     // OPTIMIZATION: Use incremental save for normal chat (upsert new messages only)
                     // instead of delete-all + re-insert which is destructive and slow
-                    supabaseData.saveNewMessages(modifiedConv.id, modifiedConv.messages)
+                    // Only save the last 2 messages (user msg + AI response), not the entire history
+                    const newMessages = modifiedConv.messages.slice(-2);
+                    supabaseData.saveNewMessages(modifiedConv.id, newMessages)
                       .then(() => {
                         // Update conversation metadata (day, time) separately
                         return supabaseData.updateConversationMeta(modifiedConv.id, {
