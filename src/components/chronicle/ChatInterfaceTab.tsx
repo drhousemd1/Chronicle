@@ -61,6 +61,9 @@ interface ChatInterfaceTabProps {
   onSaveScenario: (conversations?: Conversation[]) => void;
   onUpdateUiSettings?: (patch: { showBackgrounds?: boolean; transparentBubbles?: boolean; darkMode?: boolean; offsetBubbles?: boolean; proactiveCharacterDiscovery?: boolean; dynamicText?: boolean; proactiveNarrative?: boolean; narrativePov?: 'first' | 'third'; nsfwIntensity?: 'normal' | 'high'; realismMode?: boolean }) => void;
   onUpdateSideCharacters?: (sideCharacters: SideCharacter[]) => void;
+  // Lazy loading props
+  onLoadOlderMessages?: (conversationId: string, beforeCreatedAt: string) => Promise<Message[]>;
+  hasMoreMessages?: boolean;
 }
 
 const FormattedMessage: React.FC<{ text: string; dynamicText?: boolean }> = ({ text, dynamicText = true }) => {
@@ -228,7 +231,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   onBack,
   onSaveScenario,
   onUpdateUiSettings,
-  onUpdateSideCharacters
+  onUpdateSideCharacters,
+  onLoadOlderMessages,
+  hasMoreMessages = false
 }) => {
   const [input, setInput] = useState('');
   const [expandedCharId, setExpandedCharId] = useState<string | null>(null);
@@ -247,6 +252,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   
+  // Lazy loading state for scroll-based message loading
+  const isLoadingOlderRef = useRef(false);
+  const [localHasMore, setLocalHasMore] = useState(hasMoreMessages);
   // Edit modal state for character cards
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [characterToEdit, setCharacterToEdit] = useState<Character | SideCharacter | null>(null);
@@ -613,13 +621,77 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     appData.scenes.find(s => s.id === activeSceneId) || null
   , [appData.scenes, activeSceneId]);
   
-  // Auto-scroll effect
+  // Auto-scroll effect - only scroll to bottom when user is already near bottom
+  // This prevents scroll jumping when older messages are prepended at the top
   // MUST be defined before early return to maintain hooks order
+  const isNearBottomRef = useRef(true);
+  const prevMessageCountRef = useRef(0);
+  
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      const el = scrollRef.current;
+      const currentCount = conversation?.messages?.length || 0;
+      const prevCount = prevMessageCountRef.current;
+      
+      // If messages were added (not prepended older ones), auto-scroll if near bottom
+      if (currentCount >= prevCount || streamingContent) {
+        if (isNearBottomRef.current) {
+          el.scrollTop = el.scrollHeight;
+        }
+      }
+      prevMessageCountRef.current = currentCount;
     }
   }, [conversation?.messages, streamingContent]);
+  
+  // Sync hasMoreMessages prop to local state
+  useEffect(() => {
+    setLocalHasMore(hasMoreMessages);
+  }, [hasMoreMessages]);
+  
+  // Scroll-based lazy loading of older messages
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    
+    // Track if user is near bottom (for auto-scroll logic)
+    isNearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
+    
+    // Check if user scrolled near top and we have more messages to load
+    if (
+      el.scrollTop < 200 && 
+      localHasMore && 
+      !isLoadingOlderRef.current && 
+      onLoadOlderMessages && 
+      conversation?.messages?.length
+    ) {
+      const oldestMessage = conversation.messages[0];
+      if (!oldestMessage) return;
+      
+      isLoadingOlderRef.current = true;
+      const prevScrollHeight = el.scrollHeight;
+      
+      // Convert timestamp to ISO string for the query
+      const beforeCreatedAt = new Date(oldestMessage.createdAt).toISOString();
+      
+      onLoadOlderMessages(conversationId, beforeCreatedAt).then(olderMessages => {
+        if (olderMessages.length === 0) {
+          setLocalHasMore(false);
+        }
+        
+        // After messages are prepended by parent, preserve scroll position
+        requestAnimationFrame(() => {
+          if (scrollRef.current) {
+            const newScrollHeight = scrollRef.current.scrollHeight;
+            scrollRef.current.scrollTop = newScrollHeight - prevScrollHeight;
+          }
+          isLoadingOlderRef.current = false;
+        });
+      }).catch(err => {
+        console.error('[ChatInterfaceTab] Failed to load older messages:', err);
+        isLoadingOlderRef.current = false;
+      });
+    }
+  }, [localHasMore, onLoadOlderMessages, conversation?.messages, conversationId]);
 
   // Sync day/time state from conversation
   // MUST be defined before early return to maintain hooks order
@@ -2443,7 +2515,7 @@ const updatedChar: SideCharacter = {
             </div>
           )}
           
-          <div ref={scrollRef} className="relative z-10 h-full overflow-y-auto px-4 md:px-8 lg:px-12 py-8 space-y-6 custom-scrollbar scrollbar-thin">
+          <div ref={scrollRef} onScroll={handleScroll} className="relative z-10 h-full overflow-y-auto px-4 md:px-8 lg:px-12 py-8 space-y-6 custom-scrollbar scrollbar-thin">
           {conversation?.messages.length === 0 && !streamingContent && (
              <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-6">
                <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center text-4xl shadow-sm border border-slate-100">✨</div>
