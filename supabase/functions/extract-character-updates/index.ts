@@ -95,19 +95,21 @@ function buildCharacterStateBlock(c: CharacterData): string {
     if (preferred) lines.push(`    Preferred Clothing: ${preferred}`);
   }
   
-  // --- GOALS ---
+  // --- GOALS (with full detail including desired_outcome) ---
   if (c.goals?.length) {
-    lines.push(`  [GOALS]`);
+    lines.push(`  [GOALS - REVIEW EACH ONE AGAINST DIALOGUE]`);
     for (const g of c.goals) {
       const outcome = g.desiredOutcome ? ` | desired_outcome: ${g.desiredOutcome}` : '';
-      lines.push(`    ${g.title}: ${g.currentStatus || 'No status'} (progress: ${g.progress}%)${outcome}`);
+      lines.push(`    ${g.title}: current_status: ${g.currentStatus || 'No status'} | progress: ${g.progress}%${outcome}`);
     }
+  } else {
+    lines.push(`  [GOALS - NONE YET. Create goals from any desires, ambitions, or intentions expressed.]`);
   }
   
   // --- CUSTOM SECTIONS ---
   if (c.customSections?.length) {
     for (const section of c.customSections) {
-      lines.push(`  [${section.title}]`);
+      lines.push(`  [${section.title} - CHECK EACH ITEM FOR ACCURACY]`);
       for (const item of section.items) {
         lines.push(`    ${item.label}: ${item.value}`);
       }
@@ -123,7 +125,7 @@ serve(async (req) => {
   }
 
   try {
-    const { userMessage, aiResponse, characters, modelId } = await req.json();
+    const { userMessage, aiResponse, recentContext, characters, modelId } = await req.json();
     
     if (!userMessage && !aiResponse) {
       return new Response(
@@ -140,12 +142,50 @@ serve(async (req) => {
     // Build character state blocks
     const characterContext = (characters || []).map((c: CharacterData) => buildCharacterStateBlock(c)).join('\n\n');
 
-    const systemPrompt = `You are a character state tracker for a roleplay/narrative application. Your job is to extract character attribute changes from dialogue and keep character states current.
+    const systemPrompt = `You are a CHARACTER EVOLUTION ANALYST for a roleplay/narrative application. Your role is to meticulously track how characters change, grow, and develop through dialogue. You are thorough, detail-oriented, and never lazy.
 
 CHARACTERS IN THIS SCENE:
 ${characterContext || 'No character data provided'}
 
-TRACKABLE FIELDS:
+YOUR MANDATORY PROCESS (TWO PHASES - NEVER SKIP PHASE 2):
+
+═══════════════════════════════════════════════════
+PHASE 1 - SCAN FOR NEW INFORMATION
+═══════════════════════════════════════════════════
+Read the dialogue carefully and identify:
+- New facts, traits, or details about any character
+- Changes in mood, location, clothing, or physical state
+- New desires, interests, preferences, or ambitions expressed
+- Actions that reveal or develop character personality
+
+═══════════════════════════════════════════════════
+PHASE 2 - REVIEW EXISTING STATE (MANDATORY - DO NOT SKIP)
+═══════════════════════════════════════════════════
+For EACH character who is present or mentioned in the dialogue:
+
+A) REVIEW EVERY EXISTING GOAL:
+   - Has this goal progressed, even slightly? → Update current_status with new developments APPENDED to existing status
+   - Has the character's attitude toward this goal changed? → Update current_status to reflect the shift
+   - Has the character taken any action related to this goal? → Increment progress and describe the action
+   - Is the desired_outcome still accurate? → Update if the character has refined what they want
+
+B) REVIEW EVERY EXISTING SECTION ITEM:
+   - Is this item still accurate given what just happened? → Update if contradicted or evolved
+   - Has new context made this item outdated? → Update with corrected information
+   - Example: If "Hidden Fear = Afraid of being caught" but the character was caught → Update to reflect new state
+
+C) CHECK FOR MISSING GOALS:
+   - Has the character expressed a desire, want, preference, or ambition that isn't tracked as a goal? → Create one
+   - Has the character repeatedly engaged in or shown enthusiasm for an activity? → Create a goal tracking that interest
+   - Has the character shown a behavioral pattern across multiple exchanges? → Create a goal capturing that pattern
+
+DO NOT return empty updates if the character is actively present. At minimum, mood and location should reflect current scene context.
+
+═══════════════════════════════════════════════════
+TRACKABLE FIELDS
+═══════════════════════════════════════════════════
+
+HARDCODED FIELDS:
 - nicknames (comma-separated alternative names, aliases, pet names)
 - physicalAppearance.hairColor, physicalAppearance.eyeColor, physicalAppearance.build, physicalAppearance.height, physicalAppearance.skinTone, physicalAppearance.bodyHair, physicalAppearance.breastSize, physicalAppearance.genitalia, physicalAppearance.makeup, physicalAppearance.bodyMarkings, physicalAppearance.temporaryConditions
 - currentlyWearing.top, currentlyWearing.bottom, currentlyWearing.undergarments, currentlyWearing.miscellaneous
@@ -153,71 +193,91 @@ TRACKABLE FIELDS:
 - location (current location/place)
 - currentMood (emotional state)
 
-GOALS TRACKING:
-- goals.GoalTitle = "desired_outcome: What success looks like | current_status: Latest progress description | progress: XX"
-  Examples:
-  - goals.Move Out of City = "desired_outcome: Find affordable apartment downtown | current_status: Found apartment listings online | progress: 15"
-  - goals.Get Promoted = "desired_outcome: Become team lead by year end | current_status: Completed the training program | progress: 60"
-  - goals.Win Tournament = "desired_outcome: Win the championship trophy | current_status: Lost in semi-finals, reconsidering strategy | progress: 40"
-  If progress is not clear, estimate based on context. Use 0 for new goals, 100 for completed ones.
+GOALS (structured tracking with progression):
+- goals.GoalTitle = "desired_outcome: What fulfillment looks like | current_status: Where they stand now | progress: XX"
   IMPORTANT: Always include ALL THREE sub-fields (desired_outcome, current_status, progress) for every goal update.
 
-CUSTOM SECTIONS (DYNAMIC):
+CUSTOM SECTIONS (for factual information without progression):
 - sections.SectionTitle.ItemLabel = value
-  Examples:
-  - sections.Background.Occupation = "Doctor at City Hospital"
-  - sections.Secrets.Hidden Fear = "Afraid of being rejected"
 
-EXTRACTION PHILOSOPHY:
+═══════════════════════════════════════════════════
+DESIRES & PREFERENCES AS GOALS (CRITICAL RULE)
+═══════════════════════════════════════════════════
+Any desire, preference, kink, fantasy, or evolving interest a character develops MUST be tracked as a GOAL, not a custom section item. These have natural progression:
+- A character who is curious about something → later tries it → later embraces it = progression
+- A character who desires a particular experience → works toward it → achieves it = progression
 
-Fields are categorized by VOLATILITY:
+NEVER create custom sections named: Desires, Kinks, Preferences, Fantasies, Interests, or Wants.
+These categories ALL belong in the goals system because they have a desired end state and can progress.
+
+Example goal for a desire:
+  goals.Explore Rock Climbing = "desired_outcome: Becomes a confident climber who regularly visits the climbing gym, feels the thrill of completing challenging routes, and has integrated it as a core part of their active lifestyle. | current_status: Mentioned interest after seeing a climbing video. Has not yet visited a gym or tried it, but keeps bringing it up in conversation. Seems genuinely excited about the idea. | progress: 5"
+
+═══════════════════════════════════════════════════
+DESCRIPTION DEPTH REQUIREMENTS (MANDATORY)
+═══════════════════════════════════════════════════
+- desired_outcome: 2-3 sentences minimum. Describe the emotional and behavioral state that represents fulfillment. What does success look like? How does the character feel when this is achieved? What has changed in their life or relationship?
+- current_status: 2-3 sentences minimum. Describe where the character currently stands. What have they done so far? What is their emotional state about it? What is the next likely step?
+- Do NOT write one-liners. "Wants to try X" is NOT an acceptable desired_outcome or current_status.
+- When UPDATING an existing goal's current_status, APPEND new developments to the existing description rather than replacing it entirely. Think of it as adding a new milestone entry.
+
+═══════════════════════════════════════════════════
+GOAL LIFECYCLE (MANDATORY REVIEW EVERY EXCHANGE)
+═══════════════════════════════════════════════════
+- EVERY existing goal must be reviewed against the dialogue
+- Even subtle cues warrant a status update (add a new sentence to current_status describing the latest development)
+- Behavioral patterns imply progress: if a character repeatedly does something enthusiastically, the related goal's progress should increment
+- A goal with no updates for multiple exchanges should still be acknowledged if the character is present — at minimum note "No change this exchange, character remains [state]" in current_status
+- Progress increments should be realistic: small steps = 2-5%, moderate developments = 5-15%, major milestones = 15-30%
+- Set progress to 100 when fully achieved, 0 when abandoned
+
+═══════════════════════════════════════════════════
+FIELD VOLATILITY RULES
+═══════════════════════════════════════════════════
 
 HIGH VOLATILITY (mood, location, clothing, temporaryConditions):
 - These change frequently and should be ACTIVELY tracked
-- Contextual inference is ALLOWED — if a character walks into a bar, update location to the bar
-- If a character removes their jacket, update currentlyWearing accordingly
-- If the dialogue conveys emotion (excitement, anger, sadness), update currentMood even if not explicitly stated
-- If a character is present and active in the scene, at minimum their mood and location should reflect the current context
+- Contextual inference is ALLOWED — if a character walks into a bar, update location
+- If a character removes clothing, update currentlyWearing accordingly
+- If the dialogue conveys emotion, update currentMood even if not explicitly stated
 
 LOW VOLATILITY (hair color, eye color, build, height, skin tone, stable physical traits):
-- These rarely change and should ONLY be updated when EXPLICITLY described
-- Do NOT infer or assume stable traits — if hair color isn't mentioned, don't update it
-- First-time descriptions count as explicit (e.g., "She had auburn hair" → set hairColor)
+- ONLY update when EXPLICITLY described
+- Do NOT infer or assume stable traits
 
-GOALS:
-- Track new goals when characters express intentions, desires, or objectives
-- Update existing goals when progress is made or status changes
-- Set progress to 100 when a goal is achieved, 0 when abandoned or failed
-- Character objectives, plans, ambitions, and intentions MUST ALWAYS use "goals." format
-- NEVER create a custom section for plans, objectives, ambitions, or intentions (e.g., NEVER use "sections.Plans" or "sections.Ambitions")
-
-SECTION MANAGEMENT RULES:
+═══════════════════════════════════════════════════
+SECTION MANAGEMENT RULES
+═══════════════════════════════════════════════════
 - ALWAYS prefer updating items in EXISTING sections over creating new sections
 - Only create a new custom section if the information genuinely does NOT fit any existing section
-- If a section already exists with a similar name (e.g., "Background" vs "Backstory"), use the EXISTING one
-- NEVER create a "Session Summary" section — this is NOT a valid section type
-- NEVER create sections named "Plans", "Objectives", "Ambitions", or "Intentions" — use goals instead
-- When information could be a goal (has a desired end state or objective), it MUST be a goal, not a section item
-- Group related information into existing sections rather than creating one-liner sections for each fact
+- If a section already exists with a similar name, use the EXISTING one
+- NEVER create a "Session Summary" section
+- NEVER create sections named "Plans", "Objectives", "Ambitions", "Intentions", "Desires", "Kinks", "Preferences", "Fantasies", "Interests", or "Wants" — use goals instead
+- When information could be a goal (has a desired end state), it MUST be a goal, not a section item
 
-STALENESS CORRECTION:
-- If a stored value is CONTRADICTED by the dialogue (e.g., a secret says "unbeknownst to X" but X now knows), UPDATE it with corrected information
+═══════════════════════════════════════════════════
+STALENESS CORRECTION
+═══════════════════════════════════════════════════
+- If a stored value is CONTRADICTED by the dialogue, UPDATE it with corrected information
 - Check existing custom section items for accuracy against the current dialogue context
-- Correct outdated information even if the exact topic isn't directly being discussed in the current messages
+- Correct outdated information even if the exact topic isn't directly discussed
 
-RULES:
+═══════════════════════════════════════════════════
+RULES
+═══════════════════════════════════════════════════
 1. SCAN the user message AND AI response for character state changes
 2. Match character names exactly as provided (also check nicknames and previous names)
 3. Use the exact field names from TRACKABLE FIELDS for hardcoded fields
 4. Use sections.SectionTitle.ItemLabel format for custom/dynamic content
-5. Keep values concise but descriptive (e.g., "Short brown" not "He has short brown hair")
-6. For appearance details in action text like "*runs hand through short brown hair*", extract the trait
-7. For clothing described like "wearing navy blue scrubs", extract to currentlyWearing fields
-8. For new nicknames/aliases, add to nicknames as comma-separated
-9. For new character facts, secrets, or backstory revealed in dialogue, add them to an EXISTING section if one fits, or create a new section only as a last resort
+5. Keep values concise but descriptive for hardcoded fields (e.g., "Short brown" for hair)
+6. For goals, write DETAILED multi-sentence descriptions (see DEPTH REQUIREMENTS above)
+7. For appearance details in action text like "*runs hand through short brown hair*", extract the trait
+8. For clothing described like "wearing navy blue scrubs", extract to currentlyWearing fields
+9. For new nicknames/aliases, add to nicknames as comma-separated
 10. Do NOT hallucinate updates — only track what is supported by the text
 11. Do NOT repeat current values if they haven't changed AND are still accurate
-12. When updating existing section items, provide the COMPLETE updated value, not just the change
+12. When updating existing section items, provide the COMPLETE updated value
+13. When updating goal current_status, APPEND new developments rather than replacing
 
 RESPONSE FORMAT (JSON only):
 {
@@ -225,17 +285,19 @@ RESPONSE FORMAT (JSON only):
     { "character": "CharacterName", "field": "currentMood", "value": "Nervous but excited" },
     { "character": "CharacterName", "field": "location", "value": "Downtown coffee shop" },
     { "character": "CharacterName", "field": "currentlyWearing.top", "value": "Navy blue scrubs" },
-    { "character": "CharacterName", "field": "goals.Save Enough Money", "value": "desired_outcome: Build a $10,000 emergency fund | current_status: Got first paycheck, opened savings account | progress: 10" },
+    { "character": "CharacterName", "field": "goals.Save Enough Money", "value": "desired_outcome: Build a $10,000 emergency fund that provides peace of mind and financial security. Feels confident knowing unexpected expenses won't cause panic or debt. Has developed a consistent saving habit that feels natural rather than restrictive. | current_status: Got first paycheck and opened a dedicated savings account. Feeling cautiously optimistic but aware it's a long road. Next step is setting up automatic transfers to make saving effortless. | progress: 10" },
     { "character": "CharacterName", "field": "sections.Background.Occupation", "value": "Doctor at City Hospital" }
   ]
 }
 
 Return ONLY valid JSON. No explanations.`;
 
+    // Build combined text including recent context for pattern detection
     const combinedText = [
-      userMessage ? `USER MESSAGE:\n${userMessage}` : '',
-      aiResponse ? `AI RESPONSE:\n${aiResponse}` : ''
-    ].filter(Boolean).join('\n\n');
+      recentContext ? `RECENT CONVERSATION CONTEXT (for pattern detection):\n${recentContext}` : '',
+      userMessage ? `LATEST USER MESSAGE:\n${userMessage}` : '',
+      aiResponse ? `LATEST AI RESPONSE:\n${aiResponse}` : ''
+    ].filter(Boolean).join('\n\n---\n\n');
 
     const effectiveModelId = modelId || 'google/gemini-2.5-flash-lite';
     const gateway = getGateway(effectiveModelId);
@@ -273,7 +335,7 @@ Return ONLY valid JSON. No explanations.`;
         model: modelForRequest,
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Extract character state changes from this dialogue:\n\n${combinedText}` }
+          { role: "user", content: `Analyze this dialogue and extract ALL character state changes. Remember: Phase 2 (reviewing existing state) is MANDATORY.\n\n${combinedText}` }
         ],
         temperature: 0.3,
       }),

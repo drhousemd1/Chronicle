@@ -1182,6 +1182,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           currentMood: effective.currentMood,
           goals: (effective.goals || []).map(g => ({
             title: g.title,
+            desiredOutcome: g.desiredOutcome || '',
             currentStatus: g.currentStatus || '',
             progress: g.progress || 0
           })),
@@ -1204,10 +1205,18 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       
       const allCharacters = [...charactersData, ...sideCharsData];
       
+      // Build recent context (last 6 messages for pattern detection)
+      const conversation = appData.conversations.find(c => c.id === conversationId);
+      const recentMessages = conversation?.messages.slice(-6) || [];
+      const recentContext = recentMessages
+        .map(m => `${m.role === 'user' ? 'USER' : 'AI'}: ${m.text}`)
+        .join('\n\n');
+      
       const { data, error } = await supabase.functions.invoke('extract-character-updates', {
         body: {
           userMessage,
           aiResponse,
+          recentContext,
           characters: allCharacters,
           modelId
         }
@@ -1306,17 +1315,38 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         for (const update of charUpdates) {
           const { field, value } = update;
           
-          // Handle goals.GoalTitle = "status | progress: XX" format
+          // Handle goals.GoalTitle = "desired_outcome: X | current_status: Y | progress: Z" format
           if (field.startsWith('goals.')) {
             const goalTitle = field.slice(6); // Remove 'goals.' prefix
             if (goalTitle) {
-              // Parse "status text | progress: XX" format
+              // Parse the full three-field format: "desired_outcome: X | current_status: Y | progress: Z"
+              let desiredOutcome = '';
               let currentStatus = value;
               let progress = 0;
-              const progressMatch = value.match(/\|\s*progress:\s*(\d+)/i);
+              
+              // Extract desired_outcome (between "desired_outcome:" and "| current_status:")
+              const desiredMatch = value.match(/desired_outcome:\s*(.*?)\s*\|\s*current_status:/i);
+              if (desiredMatch) {
+                desiredOutcome = desiredMatch[1].trim();
+              }
+              
+              // Extract current_status (between "current_status:" and "| progress:")
+              const statusMatch = value.match(/current_status:\s*(.*?)\s*\|\s*progress:/i);
+              if (statusMatch) {
+                currentStatus = statusMatch[1].trim();
+              } else {
+                // Fallback: if no current_status label, try to strip desired_outcome and progress from raw value
+                currentStatus = value
+                  .replace(/desired_outcome:\s*.*?\s*\|\s*/i, '')
+                  .replace(/\s*\|\s*progress:\s*\d+\s*/i, '')
+                  .replace(/current_status:\s*/i, '')
+                  .trim();
+              }
+              
+              // Extract progress
+              const progressMatch = value.match(/progress:\s*(\d+)/i);
               if (progressMatch) {
                 progress = Math.min(100, Math.max(0, parseInt(progressMatch[1], 10)));
-                currentStatus = value.replace(/\s*\|\s*progress:\s*\d+\s*/i, '').trim();
               }
               
               // Find existing goal or create new one
@@ -1325,26 +1355,27 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
               );
               
               if (existingGoalIndex !== -1) {
-                // Update existing goal
+                // Update existing goal - also update desiredOutcome if AI provided one
                 updatedGoals[existingGoalIndex] = {
                   ...updatedGoals[existingGoalIndex],
                   currentStatus,
                   progress,
+                  ...(desiredOutcome ? { desiredOutcome } : {}),
                   updatedAt: Date.now()
                 };
-                console.log(`[applyExtractedUpdates] Updated goal "${goalTitle}" → ${progress}%`);
+                console.log(`[applyExtractedUpdates] Updated goal "${goalTitle}" → ${progress}% | desiredOutcome: ${desiredOutcome ? 'yes' : 'unchanged'}`);
               } else {
-                // Create new goal
+                // Create new goal with full detail
                 updatedGoals.push({
                   id: `goal_${uuid().slice(0, 12)}`,
                   title: goalTitle,
-                  desiredOutcome: '',
+                  desiredOutcome,
                   currentStatus,
                   progress,
                   createdAt: Date.now(),
                   updatedAt: Date.now()
                 });
-                console.log(`[applyExtractedUpdates] Created new goal "${goalTitle}" → ${progress}%`);
+                console.log(`[applyExtractedUpdates] Created new goal "${goalTitle}" → ${progress}% | desiredOutcome: "${desiredOutcome.slice(0, 50)}..."`);
               }
               goalsModified = true;
             }
@@ -1652,8 +1683,17 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     setFormattedStreamingContent('');
     
     try {
+      // Strip the old AI response from the conversation context so the AI generates fresh
+      // without being influenced by (and swinging opposite to) the rejected response
+      const truncatedConvs = appData.conversations.map(c =>
+        c.id === conversationId
+          ? { ...c, messages: c.messages.slice(0, msgIndex) }
+          : c
+      );
+      const truncatedAppData = { ...appData, conversations: truncatedConvs };
+      
       let fullText = '';
-      const stream = generateRoleplayResponseStream(appData, conversationId, userMessage.text, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled, true);
+      const stream = generateRoleplayResponseStream(truncatedAppData, conversationId, userMessage.text, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled, true);
       
       for await (const chunk of stream) {
         fullText += chunk;

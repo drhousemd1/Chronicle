@@ -412,20 +412,19 @@ export async function* generateRoleplayResponseStream(
 
   const systemInstruction = getSystemInstruction(appData, currentDay, currentTimeOfDay, memories, memoriesEnabled);
   
-  // Regeneration directive - tells AI to take a completely different approach
+  // Regeneration directive - tells AI to provide a different take on the same scene
   const regenerationDirective = isRegeneration ? `
 
-[REGENERATION DIRECTIVE - CRITICAL]
-The user REJECTED your previous response and is requesting a NEW take. You MUST:
-1. Take a COMPLETELY DIFFERENT narrative direction - not a slight variation, but a fundamentally different approach
-2. Have characters make different choices, take different actions, or respond with different emotional tones
-3. Explore an unexpected angle or branch the story in a new direction
-4. Change the pacing - if previous was slow, be more dynamic; if previous was fast, slow down for detail
-5. Shift focus - if previous focused on dialogue, emphasize action; if action-heavy, explore internal thoughts
-6. Do NOT simply rephrase the same ideas with different words
-7. Treat this as an opportunity to surprise the user with fresh creativity
-
-The user wants something DIFFERENT, not something similar but reworded.
+[REGENERATION DIRECTIVE]
+The user wants a DIFFERENT VERSION of this response. Guidelines:
+1. Maintain the same general scene context and emotional tone
+2. Vary the specific dialogue, word choices, actions, and pacing
+3. Try a different focus (e.g., more internal thought, or more physical description, or different dialogue approach)
+4. Keep ONLY the characters who are present in the current scene — do NOT introduce characters who are elsewhere or not already in the scene
+5. Do NOT reverse the character's emotional state or stance — if they were enthusiastic, they should still be enthusiastic but expressed differently
+6. Do NOT suddenly shift the character's personality (e.g., from willing to reluctant, or from happy to disgusted)
+7. Think of this as a "different take" by a different writer on the same scene, not a plot reversal or tone shift
+8. The scene's momentum and direction should be preserved — only the specific execution changes
 ` : '';
 
   // Build messages array for OpenAI-compatible API
