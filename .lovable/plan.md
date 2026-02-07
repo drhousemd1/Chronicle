@@ -1,105 +1,128 @@
 
+# Fix: Revert Resume Flow to Simple Approach That Worked
 
-# Fix Blank White Screen on Story Start/Resume
+## What Went Wrong
 
-## Root Cause Found
+The recent "optimizations" made things worse by:
 
-The blank white screen is caused by a **render gap** in Index.tsx.
+1. Firing 9 concurrent database requests (overwhelming the connection pool) instead of the 2-4 sequential requests that worked before
+2. Navigating to a loading screen BEFORE data loads, so you stare at "Loading your story..." forever when the fetch hangs
+3. Calling `saveNewMessages` with ALL 61 messages on every chat exchange, saturating database connections with unnecessary writes
 
-When the user clicks "Play" or "Resume", the code immediately sets `tab = "chat_interface"`, but the ChatInterfaceTab render condition on line 1791 requires ALL of these to be truthy:
+## Fix: Strip It Back
 
-```
-tab === "chat_interface" && activeId && activeData && playingConversationId
-```
+### Change 1: Revert `handleResumeFromHistory` to Simple Sequential Fetch
 
-The problem is that `activeData` remains `null` during the fetch. Since no tab condition matches, **the entire main content area renders nothing** -- a blank white screen. The loading skeleton inside ChatInterfaceTab never shows because the component itself is never mounted.
-
-This is the timeline of what happens:
+Go back to the approach that worked: fetch data first, then navigate. Use `fetchScenarioForPlay` (lightweight, no messages) + `fetchConversationThread` (proven, loads all messages for the specific conversation) sequentially rather than 9 parallel requests. Add a 15-second safety timeout.
 
 ```text
-1. User clicks "Play"
-2. setActiveId(id)               -- activeId = "abc-123"
-3. setPlayingConversationId("loading")  -- set
-4. setTab("chat_interface")      -- tab switches
-5. RENDER: tab=chat_interface, activeId=set, activeData=NULL, convId="loading"
-   --> Condition fails because activeData is null
-   --> BLANK WHITE SCREEN
-6. ...fetch runs for 5-60 seconds...
-7. setActiveData(data)           -- finally set
-8. RENDER: everything truthy now --> ChatInterfaceTab renders
+OLD (broken):
+  1. Navigate to chat (show loading spinner)
+  2. Fire 9 concurrent requests (hangs)
+  3. User stares at spinner forever
+
+NEW (reverting to what worked):
+  1. User clicks conversation
+  2. Fetch scenario data (5 sequential-ish queries)
+  3. Fetch conversation thread (2 queries)
+  4. Fetch side characters (1 query)
+  5. Set all state
+  6. Navigate to chat (instant -- data is ready)
 ```
 
-## Fix
+The `fetchConversationThread` function (the original one) loads ALL messages for the specific conversation. With 61 messages, this is fast. No lazy loading complexity needed for the initial load.
 
-Remove `activeData` from the outer render gate. The ChatInterfaceTab already handles the `conversationId === "loading"` state internally with a spinner. The component just needs to mount so it can show that spinner.
+### Change 2: Fix Save to Only Persist New Messages
 
-### Changes
+The `onSaveScenario` callback currently passes `modifiedConv.messages` (all 61 messages) to `saveNewMessages`. Fix this to only pass the last 2 messages (the user message + AI response that were just created), dramatically reducing database writes.
 
-**File: `src/pages/Index.tsx`**
+Track message count when loading a conversation, then on save, only pass messages added after that index.
 
-Change the render condition from:
-```
-{tab === "chat_interface" && activeId && activeData && playingConversationId && (
-```
-to:
-```
-{tab === "chat_interface" && activeId && playingConversationId && (
-```
+### Change 3: Keep Lazy Loading for Scroll (Don't Remove)
 
-Then inside the ChatInterfaceTab props, pass `activeData` with a fallback empty state so the component can render its loading UI without crashing on null access:
-
-```
-appData={activeData || emptyScenarioData}
-```
-
-Where `emptyScenarioData` is a minimal stub:
-```typescript
-const emptyScenarioData: ScenarioData = {
-  version: 3,
-  characters: [],
-  sideCharacters: [],
-  world: { core: { ... }, entries: [] },
-  story: { openingDialog: { enabled: false, text: '', startingDay: 1, startingTimeOfDay: 'day' } },
-  scenes: [],
-  uiSettings: { showBackgrounds: true, transparentBubbles: false, darkMode: false },
-  conversations: [],
-  selectedModel: '',
-  selectedArtStyle: ''
-};
-```
-
-The ChatInterfaceTab already has this early return for the loading state (line 837):
-```
-if (conversationId === "loading" || (!conversation && conversationId !== "loading")) {
-  return <loading spinner>;
-}
-```
-
-So once it mounts, it will immediately show the loading spinner while data fetches in the background.
-
-### Secondary Fix: Save Performance
-
-The `onSaveScenario` callback has a compounding performance problem:
-
-1. Line 1807: `saveNewMessages(modifiedConv.id, modifiedConv.messages)` sends ALL messages (could be 60+), not just the 1-2 new ones
-2. Line 1827: `handleSaveWithData(...)` triggers a FULL scenario save (upserts scenario, characters, codex, scenes) plus refreshes the entire registry and syncs characters to library -- all on every single chat message
-
-Fix: Remove the `handleSaveWithData` call from the chat save path. The incremental `saveNewMessages` + `updateConversationMeta` is sufficient for normal chat. The full save is only needed when leaving the scenario builder.
+The scroll-based lazy loading mechanism in `ChatInterfaceTab` stays -- it's still useful for the future when conversations grow very large. But for now, since `fetchConversationThread` loads all messages, the `hasMoreMessages` flag will just be `false` and the scroll handler won't trigger. No changes needed in `ChatInterfaceTab`.
 
 ---
 
-## Summary of Changes
+## Files to Modify
 
-| File | Change |
-|------|--------|
-| `src/pages/Index.tsx` | Remove `activeData` from the chat_interface render condition; pass fallback empty data; remove the `handleSaveWithData` call from the chat save callback |
+| File | Changes |
+|------|---------|
+| `src/pages/Index.tsx` | Rewrite `handleResumeFromHistory` to fetch-then-navigate (sequential); fix `onSaveScenario` to only save last 2 new messages |
+
+Only ONE file needs changes. No new functions, no new complexity.
+
+---
 
 ## Technical Details
 
-The fix is exactly 3 small edits in one file:
+### `handleResumeFromHistory` rewrite (Index.tsx)
 
-1. Add an `emptyScenarioData` constant (or use `createDefaultScenarioData()` which already exists in utils.ts)
-2. Change line 1791 render condition to not require `activeData`
-3. Pass `activeData || emptyScenarioData` as the `appData` prop
-4. Remove line 1827 (`handleSaveWithData(...)`) from the `onSaveScenario` callback -- the `saveNewMessages` + `updateConversationMeta` on lines 1807-1815 already handles persistence correctly
+```typescript
+async function handleResumeFromHistory(scenarioId: string, conversationId: string) {
+  try {
+    // 1. Fetch scenario data (no messages)
+    const scenarioResult = await supabaseData.fetchScenarioForPlay(scenarioId);
+    if (!scenarioResult) {
+      toast({ title: "Scenario not found", variant: "destructive" });
+      return;
+    }
 
+    // 2. Fetch the specific conversation thread (all messages)
+    const thread = await supabaseData.fetchConversationThread(conversationId);
+    if (!thread) {
+      toast({ title: "Conversation not found", variant: "destructive" });
+      return;
+    }
+
+    // 3. Fetch side characters
+    const sideCharacters = await supabaseData.fetchSideCharacters(conversationId);
+
+    // 4. Assemble data and navigate
+    const { data, coverImage, coverImagePosition } = scenarioResult;
+    data.conversations = [thread];
+    data.sideCharacters = sideCharacters;
+
+    setActiveId(scenarioId);
+    setActiveCoverImage(coverImage);
+    setActiveCoverPosition(coverImagePosition);
+    setActiveData(data);
+    setPlayingConversationId(conversationId);
+    setSelectedCharacterId(null);
+    setTab("chat_interface");
+  } catch (e: any) {
+    console.error('[handleResumeFromHistory] Error:', e);
+    toast({ title: "Failed to load", description: e.message, variant: "destructive" });
+  }
+}
+```
+
+This is ~20 lines of simple, sequential code. No `Promise.all`, no `withTimeout`, no "navigate first" pattern, no `hasMoreMessages` tracking.
+
+### `onSaveScenario` fix (Index.tsx)
+
+Track a ref for the message count at load time. On save, only pass the messages added since:
+
+```typescript
+// In the onSaveScenario callback:
+if (modifiedConv) {
+  // Only save messages added since the conversation was loaded
+  const newMessages = modifiedConv.messages.slice(-2); // Last 2 = user msg + AI response
+  supabaseData.saveNewMessages(modifiedConv.id, newMessages)
+    .then(() => supabaseData.updateConversationMeta(modifiedConv.id, {
+      currentDay: modifiedConv.currentDay,
+      currentTimeOfDay: modifiedConv.currentTimeOfDay,
+      title: modifiedConv.title
+    }))
+    .catch(err => { ... });
+}
+```
+
+This changes the save from 61 rows to 2 rows per message exchange.
+
+### What Stays the Same
+
+- `handlePlayScenario` keeps its "navigate first" pattern (it works fine for new games since no heavy data fetch is needed)
+- `ChatInterfaceTab` scroll-based lazy loading stays (dormant -- `hasMoreMessages` will be `false` since all messages are loaded)
+- All the new functions in `supabase-data.ts` stay (they're not hurting anything and can be used later)
+- The render condition on line 1791 stays (it supports both patterns)
