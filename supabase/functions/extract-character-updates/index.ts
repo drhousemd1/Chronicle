@@ -22,14 +22,23 @@ function normalizeModelId(modelId: string): string {
   return modelId;
 }
 
+interface CharacterGoalData {
+  title: string;
+  currentStatus: string;
+  progress: number;
+}
+
 interface CharacterData {
   name: string;
-  previousNames?: string[];  // Hidden field - stores old names for lookup
+  previousNames?: string[];
   nicknames?: string;
   physicalAppearance?: Record<string, string>;
   currentlyWearing?: Record<string, string>;
+  preferredClothing?: Record<string, string>;
   location?: string;
   currentMood?: string;
+  goals?: CharacterGoalData[];
+  customSections?: Array<{ title: string; items: Array<{ label: string; value: string }> }>;
 }
 
 interface ExtractedUpdate {
@@ -38,8 +47,75 @@ interface ExtractedUpdate {
   value: string;
 }
 
+/**
+ * Build a structured "CURRENT STATE" view for each character.
+ * Presents data in a way that emphasizes what the AI should maintain.
+ */
+function buildCharacterStateBlock(c: CharacterData): string {
+  const lines: string[] = [];
+  lines.push(`=== ${c.name} ===`);
+  
+  // Include previous names for lookup
+  if (c.previousNames?.length) {
+    lines.push(`  Previously known as: ${c.previousNames.join(', ')}`);
+  }
+  if (c.nicknames) {
+    lines.push(`  Nicknames: ${c.nicknames}`);
+  }
+  
+  // --- VOLATILE STATE (should be actively maintained) ---
+  lines.push(`  [VOLATILE - maintain actively]`);
+  lines.push(`    Mood: ${c.currentMood || '(not set)'}`);
+  lines.push(`    Location: ${c.location || '(not set)'}`);
+  
+  if (c.currentlyWearing) {
+    const wearing = Object.entries(c.currentlyWearing)
+      .filter(([_, v]) => v)
+      .map(([k, v]) => `${k}: ${v}`)
+      .join(', ');
+    lines.push(`    Currently Wearing: ${wearing || '(not set)'}`);
+  }
+  
+  // --- STABLE STATE (update only when explicitly stated) ---
+  lines.push(`  [STABLE - update only when explicitly described]`);
+  if (c.physicalAppearance) {
+    const appearance = Object.entries(c.physicalAppearance)
+      .filter(([_, v]) => v)
+      .map(([k, v]) => `${k}: ${v}`)
+      .join(', ');
+    if (appearance) lines.push(`    Physical Appearance: ${appearance}`);
+  }
+  
+  if (c.preferredClothing) {
+    const preferred = Object.entries(c.preferredClothing)
+      .filter(([_, v]) => v)
+      .map(([k, v]) => `${k}: ${v}`)
+      .join(', ');
+    if (preferred) lines.push(`    Preferred Clothing: ${preferred}`);
+  }
+  
+  // --- GOALS ---
+  if (c.goals?.length) {
+    lines.push(`  [GOALS]`);
+    for (const g of c.goals) {
+      lines.push(`    ${g.title}: ${g.currentStatus || 'No status'} (progress: ${g.progress}%)`);
+    }
+  }
+  
+  // --- CUSTOM SECTIONS ---
+  if (c.customSections?.length) {
+    for (const section of c.customSections) {
+      lines.push(`  [${section.title}]`);
+      for (const item of section.items) {
+        lines.push(`    ${item.label}: ${item.value}`);
+      }
+    }
+  }
+  
+  return lines.join('\n');
+}
+
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -59,83 +135,88 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Build character context for the extraction prompt
-    const characterContext = (characters || []).map((c: CharacterData) => {
-      const fields: string[] = [];
-      fields.push(`Name: ${c.name}`);
-      // Include previous names so AI can map old names to current character
-      if (c.previousNames?.length) {
-        fields.push(`Previously known as: ${c.previousNames.join(', ')}`);
-      }
-      if (c.nicknames) {
-        fields.push(`Nicknames: ${c.nicknames}`);
-      }
-      if (c.physicalAppearance) {
-        const appearance = Object.entries(c.physicalAppearance)
-          .filter(([_, v]) => v)
-          .map(([k, v]) => `${k}: ${v}`)
-          .join(', ');
-        if (appearance) fields.push(`Appearance: ${appearance}`);
-      }
-      if (c.currentlyWearing) {
-        const wearing = Object.entries(c.currentlyWearing)
-          .filter(([_, v]) => v)
-          .map(([k, v]) => `${k}: ${v}`)
-          .join(', ');
-        if (wearing) fields.push(`Wearing: ${wearing}`);
-      }
-      if (c.location) fields.push(`Location: ${c.location}`);
-      if (c.currentMood) fields.push(`Mood: ${c.currentMood}`);
-      return fields.join(' | ');
-    }).join('\n');
+    // Build character state blocks
+    const characterContext = (characters || []).map((c: CharacterData) => buildCharacterStateBlock(c)).join('\n\n');
 
-    const systemPrompt = `You are a character state tracker for a roleplay/narrative application. Your ONLY job is to extract character attribute changes from dialogue.
+    const systemPrompt = `You are a character state tracker for a roleplay/narrative application. Your job is to extract character attribute changes from dialogue and keep character states current.
 
 CHARACTERS IN THIS SCENE:
 ${characterContext || 'No character data provided'}
 
-TRACKABLE FIELDS (HARDCODED):
-- nicknames (comma-separated alternative names, aliases, pet names the character is called)
+TRACKABLE FIELDS:
+- nicknames (comma-separated alternative names, aliases, pet names)
 - physicalAppearance.hairColor, physicalAppearance.eyeColor, physicalAppearance.build, physicalAppearance.height, physicalAppearance.skinTone, physicalAppearance.bodyHair, physicalAppearance.breastSize, physicalAppearance.genitalia, physicalAppearance.makeup, physicalAppearance.bodyMarkings, physicalAppearance.temporaryConditions
 - currentlyWearing.top, currentlyWearing.bottom, currentlyWearing.undergarments, currentlyWearing.miscellaneous
 - preferredClothing.casual, preferredClothing.work, preferredClothing.sleep, preferredClothing.underwear, preferredClothing.miscellaneous
 - location (current location/place)
 - currentMood (emotional state)
 
+GOALS TRACKING:
+- goals.GoalTitle = "current status text | progress: XX"
+  Examples:
+  - goals.Move Out of City = "Found apartment listings online | progress: 15"
+  - goals.Get Promoted = "Completed the training program | progress: 60"
+  - goals.Win Tournament = "Lost in semi-finals, reconsidering strategy | progress: 40"
+  If progress is not clear, estimate based on context. Use 0 for new goals, 100 for completed ones.
+
 CUSTOM SECTIONS (DYNAMIC):
-You can also update or create custom character sections using this field format:
 - sections.SectionTitle.ItemLabel = value
+  Examples:
+  - sections.Background.Occupation = "Doctor at City Hospital"
+  - sections.Secrets.Hidden Fear = "Afraid of being rejected"
 
-Examples:
-- sections.Background.Occupation = "Doctor at City Hospital"
-- sections.Secrets.Hidden Fear = "Afraid of being rejected"
-- sections.Goals.Current Objective = "Find the missing artifact"
+SESSION SUMMARY (maintain per character when possible):
+- sections.Session Summary.Current Situation = brief description of what the character is doing right now
+- sections.Session Summary.Recent Events = 1-2 sentences of what just happened
+- sections.Session Summary.Active Goals = comma-separated list of current goals
 
-If a section doesn't exist, it will be created automatically.
-If an item label doesn't exist in a section, it will be added as a new row.
+EXTRACTION PHILOSOPHY:
 
-EXTRACTION RULES:
-1. SCAN the user message AND AI response for ANY character state changes
-2. Extract ONLY explicitly stated changes (not implied or assumed)
-3. Match character names exactly as provided (also check nicknames)
-4. Use the exact field names from TRACKABLE FIELDS for hardcoded fields
-5. Use sections.SectionTitle.ItemLabel format for custom/dynamic content
-6. Keep values concise but descriptive (e.g., "Short brown" not "He has short brown hair")
-7. For appearance details described in action text like "*runs hand through short brown hair*", extract the trait
-8. For clothing described like "wearing navy blue scrubs", extract to currentlyWearing fields
-9. For mood/emotion indicators like "(God I love her)" or described feelings, update currentMood
-10. For new nicknames/aliases (e.g., "call me Rhy" or user says "Mom" to refer to Sarah), add to nicknames as comma-separated
-11. For new character facts, goals, secrets, or backstory revealed in dialogue, create appropriate sections.* entries
-12. Return empty updates array if nothing clearly changed
+Fields are categorized by VOLATILITY:
+
+HIGH VOLATILITY (mood, location, clothing, temporaryConditions):
+- These change frequently and should be ACTIVELY tracked
+- Contextual inference is ALLOWED — if a character walks into a bar, update location to the bar
+- If a character removes their jacket, update currentlyWearing accordingly
+- If the dialogue conveys emotion (excitement, anger, sadness), update currentMood even if not explicitly stated
+- If a character is present and active in the scene, at minimum their mood and location should reflect the current context
+
+LOW VOLATILITY (hair color, eye color, build, height, skin tone, stable physical traits):
+- These rarely change and should ONLY be updated when EXPLICITLY described
+- Do NOT infer or assume stable traits — if hair color isn't mentioned, don't update it
+- First-time descriptions count as explicit (e.g., "She had auburn hair" → set hairColor)
+
+GOALS:
+- Track new goals when characters express intentions, desires, or objectives
+- Update existing goals when progress is made or status changes
+- Set progress to 100 when a goal is achieved, 0 when abandoned or failed
+
+SESSION SUMMARY:
+- Update "Current Situation" whenever the character's immediate context changes
+- Update "Recent Events" to reflect the latest significant plot points
+- Update "Active Goals" to list current active goals by title
+
+RULES:
+1. SCAN the user message AND AI response for character state changes
+2. Match character names exactly as provided (also check nicknames and previous names)
+3. Use the exact field names from TRACKABLE FIELDS for hardcoded fields
+4. Use sections.SectionTitle.ItemLabel format for custom/dynamic content
+5. Keep values concise but descriptive (e.g., "Short brown" not "He has short brown hair")
+6. For appearance details in action text like "*runs hand through short brown hair*", extract the trait
+7. For clothing described like "wearing navy blue scrubs", extract to currentlyWearing fields
+8. For new nicknames/aliases, add to nicknames as comma-separated
+9. For new character facts, goals, secrets, or backstory revealed in dialogue, create appropriate entries
+10. Do NOT hallucinate updates — only track what is supported by the text
+11. Do NOT repeat current values if they haven't changed
 
 RESPONSE FORMAT (JSON only):
 {
   "updates": [
-    { "character": "CharacterName", "field": "physicalAppearance.hairColor", "value": "Short brown" },
+    { "character": "CharacterName", "field": "currentMood", "value": "Nervous but excited" },
+    { "character": "CharacterName", "field": "location", "value": "Downtown coffee shop" },
     { "character": "CharacterName", "field": "currentlyWearing.top", "value": "Navy blue scrubs" },
-    { "character": "CharacterName", "field": "currentMood", "value": "Affectionate" },
-    { "character": "CharacterName", "field": "sections.Background.Job", "value": "Bartender at neighborhood bar" },
-    { "character": "CharacterName", "field": "sections.Goals.Current Goal", "value": "Save enough money for nursing school" }
+    { "character": "CharacterName", "field": "goals.Save Enough Money", "value": "Got first paycheck, opened savings | progress: 10" },
+    { "character": "CharacterName", "field": "sections.Session Summary.Current Situation", "value": "Having coffee with Sarah after work" }
   ]
 }
 
@@ -146,7 +227,6 @@ Return ONLY valid JSON. No explanations.`;
       aiResponse ? `AI RESPONSE:\n${aiResponse}` : ''
     ].filter(Boolean).join('\n\n');
 
-    // Use provided modelId to route to correct gateway (respects BYOK)
     const effectiveModelId = modelId || 'google/gemini-2.5-flash-lite';
     const gateway = getGateway(effectiveModelId);
 
@@ -185,7 +265,7 @@ Return ONLY valid JSON. No explanations.`;
           { role: "system", content: systemPrompt },
           { role: "user", content: `Extract character state changes from this dialogue:\n\n${combinedText}` }
         ],
-        temperature: 0.2,
+        temperature: 0.3,
       }),
     });
 
@@ -210,10 +290,8 @@ Return ONLY valid JSON. No explanations.`;
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || '{"updates":[]}';
     
-    // Parse the JSON response
     let extractedUpdates: ExtractedUpdate[] = [];
     try {
-      // Try to find JSON object in the response
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
@@ -235,6 +313,9 @@ Return ONLY valid JSON. No explanations.`;
     );
 
     console.log(`[extract-character-updates] Extracted ${extractedUpdates.length} updates from dialogue`);
+    if (extractedUpdates.length > 0) {
+      console.log(`[extract-character-updates] Updates:`, JSON.stringify(extractedUpdates));
+    }
 
     return new Response(
       JSON.stringify({ updates: extractedUpdates }),

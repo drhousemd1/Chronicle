@@ -505,6 +505,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         ? { ...baseChar.preferredClothing, ...sessionState.preferredClothing }
         : baseChar.preferredClothing,
       sections: sessionState.customSections || baseChar.sections,
+      // Session-scoped goals overrides
+      goals: sessionState.goals?.length ? sessionState.goals : (baseChar.goals || []),
       // Session-scoped avatar overrides
       avatarDataUrl: sessionState.avatarUrl || baseChar.avatarDataUrl,
       avatarPosition: sessionState.avatarPosition || baseChar.avatarPosition,
@@ -1099,19 +1101,29 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         const effective = getEffectiveCharacter(c);
         return {
           name: effective.name,
-          previousNames: effective.previousNames || [],  // Include for AI context
-          nicknames: effective.nicknames,  // Include for AI context
+          previousNames: effective.previousNames || [],
+          nicknames: effective.nicknames,
           physicalAppearance: effective.physicalAppearance,
           currentlyWearing: effective.currentlyWearing,
+          preferredClothing: effective.preferredClothing,
           location: effective.location,
-          currentMood: effective.currentMood
+          currentMood: effective.currentMood,
+          goals: (effective.goals || []).map(g => ({
+            title: g.title,
+            currentStatus: g.currentStatus || '',
+            progress: g.progress || 0
+          })),
+          customSections: (effective.sections || []).map(s => ({
+            title: s.title,
+            items: s.items.map(i => ({ label: i.label, value: i.value }))
+          }))
         };
       });
       
       // Also include side characters
       const sideCharsData = (appData.sideCharacters || []).map(sc => ({
         name: sc.name,
-        nicknames: sc.nicknames,  // Include for AI context
+        nicknames: sc.nicknames,
         physicalAppearance: sc.physicalAppearance,
         currentlyWearing: sc.currentlyWearing,
         location: sc.location,
@@ -1215,13 +1227,58 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         // Build patch from updates
         const patch: Record<string, any> = {};
         let sectionsModified = false;
+        let goalsModified = false;
         let updatedSections = [...(sessionState.customSections || mainChar.sections || [])];
+        let updatedGoals = [...(sessionState.goals || mainChar.goals || [])];
         
         for (const update of charUpdates) {
           const { field, value } = update;
           
+          // Handle goals.GoalTitle = "status | progress: XX" format
+          if (field.startsWith('goals.')) {
+            const goalTitle = field.slice(6); // Remove 'goals.' prefix
+            if (goalTitle) {
+              // Parse "status text | progress: XX" format
+              let currentStatus = value;
+              let progress = 0;
+              const progressMatch = value.match(/\|\s*progress:\s*(\d+)/i);
+              if (progressMatch) {
+                progress = Math.min(100, Math.max(0, parseInt(progressMatch[1], 10)));
+                currentStatus = value.replace(/\s*\|\s*progress:\s*\d+\s*/i, '').trim();
+              }
+              
+              // Find existing goal or create new one
+              const existingGoalIndex = updatedGoals.findIndex(g => 
+                g.title.toLowerCase() === goalTitle.toLowerCase()
+              );
+              
+              if (existingGoalIndex !== -1) {
+                // Update existing goal
+                updatedGoals[existingGoalIndex] = {
+                  ...updatedGoals[existingGoalIndex],
+                  currentStatus,
+                  progress,
+                  updatedAt: Date.now()
+                };
+                console.log(`[applyExtractedUpdates] Updated goal "${goalTitle}" → ${progress}%`);
+              } else {
+                // Create new goal
+                updatedGoals.push({
+                  id: `goal_${uuid().slice(0, 12)}`,
+                  title: goalTitle,
+                  desiredOutcome: '',
+                  currentStatus,
+                  progress,
+                  createdAt: Date.now(),
+                  updatedAt: Date.now()
+                });
+                console.log(`[applyExtractedUpdates] Created new goal "${goalTitle}" → ${progress}%`);
+              }
+              goalsModified = true;
+            }
+          }
           // Handle sections.SectionTitle.ItemLabel format
-          if (field.startsWith('sections.')) {
+          else if (field.startsWith('sections.')) {
             const parts = field.split('.');
             if (parts.length >= 3) {
               const sectionTitle = parts[1];
@@ -1287,6 +1344,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         // Add sections to patch if modified
         if (sectionsModified) {
           patch.customSections = updatedSections;
+        }
+        // Add goals to patch if modified
+        if (goalsModified) {
+          patch.goals = updatedGoals;
         }
         
         if (Object.keys(patch).length > 0) {
