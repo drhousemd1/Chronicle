@@ -27,6 +27,7 @@ interface CharacterGoalData {
   desiredOutcome?: string;
   currentStatus: string;
   progress: number;
+  steps?: Array<{ id: string; description: string; completed: boolean }>;
 }
 
 interface CharacterData {
@@ -95,12 +96,20 @@ function buildCharacterStateBlock(c: CharacterData): string {
     if (preferred) lines.push(`    Preferred Clothing: ${preferred}`);
   }
   
-  // --- GOALS (with full detail including desired_outcome) ---
+  // --- GOALS (with full detail including steps) ---
   if (c.goals?.length) {
     lines.push(`  [GOALS - REVIEW EACH ONE AGAINST DIALOGUE]`);
     for (const g of c.goals) {
       const outcome = g.desiredOutcome ? ` | desired_outcome: ${g.desiredOutcome}` : '';
-      lines.push(`    ${g.title}: current_status: ${g.currentStatus || 'No status'} | progress: ${g.progress}%${outcome}`);
+      if (g.steps?.length) {
+        const completedCount = g.steps.filter(s => s.completed).length;
+        const stepList = g.steps.map((s, i) => `      ${s.completed ? '[x]' : '[ ]'} Step ${i + 1}: ${s.description}`).join('\n');
+        const calcProgress = Math.round((completedCount / g.steps.length) * 100);
+        lines.push(`    ${g.title}: current_status: ${g.currentStatus || 'No status'} | progress: ${calcProgress}% (${completedCount}/${g.steps.length} steps)${outcome}`);
+        lines.push(`    steps:\n${stepList}`);
+      } else {
+        lines.push(`    ${g.title}: current_status: ${g.currentStatus || 'No status'} | progress: ${g.progress}%${outcome}`);
+      }
     }
   } else {
     lines.push(`  [GOALS - NONE YET. Create goals from any desires, ambitions, or intentions expressed.]`);
@@ -193,9 +202,11 @@ HARDCODED FIELDS:
 - location (current location/place)
 - currentMood (emotional state)
 
-GOALS (structured tracking with progression):
-- goals.GoalTitle = "desired_outcome: What fulfillment looks like | current_status: Where they stand now | progress: XX"
-  IMPORTANT: Always include ALL THREE sub-fields (desired_outcome, current_status, progress) for every goal update.
+GOALS (structured tracking with progression and steps):
+- goals.GoalTitle = "desired_outcome: What fulfillment looks like | current_status: Where they stand now | progress: XX | complete_steps: 1,3 | new_steps: Step 7: Two-sentence description of this new step."
+  IMPORTANT: Always include desired_outcome, current_status, and progress for every goal update.
+  Use complete_steps to mark step numbers (1-indexed) that were achieved in the dialogue.
+  Use new_steps to propose new steps for tracking (each step MUST be 2+ sentences describing a discrete actionable milestone).
 
 CUSTOM SECTIONS (for factual information without progression):
 - sections.SectionTitle.ItemLabel = value

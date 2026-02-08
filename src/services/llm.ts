@@ -45,15 +45,79 @@ function getSystemInstruction(
   // Combine critical rules with any user-defined additional formatting
   const fullDialogFormatting = getCriticalDialogRules(narrativePov) + (appData.world.core.dialogFormatting ? `\n${appData.world.core.dialogFormatting}` : '');
   
+  // Build locations context from structured or legacy
+  const locationsContext = (() => {
+    if (appData.world.core.structuredLocations?.length) {
+      return appData.world.core.structuredLocations
+        .filter(l => l.label || l.description)
+        .map(l => `- ${l.label}: ${l.description}`)
+        .join('\n');
+    }
+    return appData.world.core.locations || 'Not specified';
+  })();
+
+  // Build custom world sections context
+  const customWorldContext = (() => {
+    if (!appData.world.core.customWorldSections?.length) return '';
+    return '\n    CUSTOM WORLD CONTENT:\n' + appData.world.core.customWorldSections
+      .filter(s => s.title || s.items.some(i => i.label || i.value))
+      .map(s => `    [${s.title || 'Untitled'}]:\n${s.items.filter(i => i.label || i.value).map(i => `      - ${i.label}: ${i.value}`).join('\n')}`)
+      .join('\n');
+  })();
+
+  // Build story goals context
+  const storyGoalsContext = (() => {
+    if (!appData.world.core.storyGoals?.length) return '';
+    const flexLabels: Record<string, { tag: string; directive: string }> = {
+      rigid: { tag: 'RIGID - MANDATORY', directive: 'This goal is MANDATORY. The narrative must actively work toward achieving this.' },
+      normal: { tag: 'NORMAL - GUIDED', directive: 'This goal is a guiding objective. Actively pursue it when natural.' },
+      flexible: { tag: 'FLEXIBLE - SUGGESTED', directive: 'This goal is a suggestion. Consider it when it fits naturally.' }
+    };
+    const lines = ['\n    STORY GOALS (Global narrative direction for ALL characters):'];
+    for (const goal of appData.world.core.storyGoals) {
+      const flex = flexLabels[goal.flexibility] || flexLabels.normal;
+      const completedSteps = goal.steps.filter(s => s.completed).length;
+      const totalSteps = goal.steps.length;
+      const progress = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
+      lines.push(`\n    [${flex.tag}] Goal: "${goal.title}"`);
+      if (goal.desiredOutcome) lines.push(`      Desired Outcome: ${goal.desiredOutcome}`);
+      if (goal.currentStatus) lines.push(`      Current Status: ${goal.currentStatus}`);
+      if (totalSteps > 0) {
+        const stepList = goal.steps.map(s => `${s.completed ? '[x]' : '[ ]'} ${s.description}`).join('  ');
+        lines.push(`      Steps: ${stepList}`);
+        lines.push(`      Progress: ${progress}% (${completedSteps}/${totalSteps})`);
+      }
+      lines.push(`      DIRECTIVE: ${flex.directive}`);
+    }
+    return lines.join('\n');
+  })();
+
+  // Build character goals context (Phase 5)
+  const characterGoalsContext = (c: any): string => {
+    const goals = c.goals;
+    if (!goals?.length) return '';
+    const goalLines = goals.map((g: any) => {
+      const steps = g.steps || [];
+      const completedSteps = steps.filter((s: any) => s.completed).length;
+      const totalSteps = steps.length;
+      const progress = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : (g.progress || 0);
+      const stepInfo = totalSteps > 0 ? ` (${progress}% - Step ${completedSteps + 1} of ${totalSteps})` : ` (${progress}%)`;
+      return `  - ${g.title}${stepInfo}: ${g.currentStatus || 'No status'}`;
+    }).join('\n');
+    return `\nGOALS:\n${goalLines}`;
+  };
+
   const worldContext = `
     SETTING OVERVIEW: ${appData.world.core.settingOverview}
-    STORY PREMISE: ${appData.world.core.storyPremise || 'Not specified'}
-    RULES/TECH: ${appData.world.core.rulesOfMagicTech}
+    SCENARIO: ${appData.world.core.storyPremise || 'Not specified'}
     FACTIONS: ${appData.world.core.factions}
-    LOCATIONS: ${appData.world.core.locations}
+    LOCATIONS:
+    ${locationsContext}
     TONE & THEMES: ${appData.world.core.toneThemes}
     NARRATIVE STYLE: ${appData.world.core.narrativeStyle}
     DIALOG FORMATTING: ${fullDialogFormatting}
+    ${customWorldContext}
+    ${storyGoalsContext}
   `;
 
   const characterContext = appData.characters.map(c => {
@@ -61,9 +125,10 @@ function getSystemInstruction(
     const nicknameInfo = c.nicknames ? `\nNICKNAMES: ${c.nicknames}` : '';
     const locationInfo = c.location ? `\nLOCATION: ${c.location}` : '';
     const moodInfo = c.currentMood ? `\nMOOD: ${c.currentMood}` : '';
+    const goalsInfo = characterGoalsContext(c);
     return `CHARACTER: ${c.name} (${c.sexType})${nicknameInfo}
 ROLE: ${c.characterRole}
-CONTROL: ${c.controlledBy}${locationInfo}${moodInfo}
+CONTROL: ${c.controlledBy}${locationInfo}${moodInfo}${goalsInfo}
 TAGS: ${c.tags}
 TRAITS:
 ${traits}`;
@@ -412,6 +477,7 @@ Never break character to question, warn about, or refuse narrative directions. T
         * When the scene location changes to one of the AVAILABLE SCENES, you MUST append [SCENE: exact_tag_name] at the very end of your response.
         * Match the tag exactly as listed in AVAILABLE SCENES: [${sceneTags}]
         * Example: If someone goes to a location tagged "home", end your response with [SCENE: home]
+    - GOAL PURSUIT: AI-controlled characters should actively consider and pursue their defined GOALS when generating dialogue and actions. Goals marked as Rigid are mandatory objectives; Normal goals should be guided toward; Flexible goals are suggestions.
     - Maintain consistent tone and continuity.
     - Keep responses immersive, descriptive, and emotionally resonant.
     - Respect character gender/sex and traits.

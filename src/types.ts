@@ -30,19 +30,65 @@ export type OpeningDialog = {
   startingTimeOfDay: TimeOfDay;
 };
 
+// Structured location entry for label + description rows
+export type LocationEntry = {
+  id: string;
+  label: string;
+  description: string;
+};
+
+// Custom world-building section
+export type WorldCustomSection = {
+  id: string;
+  title: string;
+  items: WorldCustomItem[];
+};
+
+export type WorldCustomItem = {
+  id: string;
+  label: string;
+  value: string;
+};
+
+// Goal flexibility levels for story goals
+export type GoalFlexibility = 'rigid' | 'normal' | 'flexible';
+
+// Shared step type for both Story Goals and Character Goals
+export type GoalStep = {
+  id: string;
+  description: string;
+  completed: boolean;
+  completedAt?: number;
+};
+
+// Story-level goal (global narrative direction)
+export type StoryGoal = {
+  id: string;
+  title: string;
+  desiredOutcome: string;
+  currentStatus: string;
+  steps: GoalStep[];
+  flexibility: GoalFlexibility;
+  createdAt: number;
+  updatedAt: number;
+};
+
 export type WorldCore = {
   scenarioName: string;
   briefDescription: string;
-  storyPremise: string;  // Central conflict/plot/situation
+  storyPremise: string;  // Central conflict/plot/situation (renamed to "Scenario" in UI)
   settingOverview: string;
-  rulesOfMagicTech: string;
+  rulesOfMagicTech: string;  // Deprecated - kept for backward compatibility
   factions: string;
-  locations: string;
+  locations: string;  // Legacy plain text locations
+  structuredLocations?: LocationEntry[];  // New structured locations
   historyTimeline: string;
   toneThemes: string;
   plotHooks: string;
   narrativeStyle: string;
   dialogFormatting: string;
+  customWorldSections?: WorldCustomSection[];  // User-created custom content
+  storyGoals?: StoryGoal[];  // Global narrative goals
 };
 
 export type CodexEntry = {
@@ -130,8 +176,9 @@ export type CharacterGoal = {
   title: string;           // Short goal name (e.g., "Move out of the city")
   desiredOutcome: string;  // What success looks like
   currentStatus: string;   // What has been done so far
-  progress: number;        // 0-100 percentage
-  milestones?: GoalMilestone[];  // Milestone history
+  progress: number;        // 0-100 percentage (auto-calculated from steps when steps exist)
+  milestones?: GoalMilestone[];  // Deprecated - kept for backward compatibility
+  steps?: GoalStep[];      // Step-based planning (replaces milestones)
   createdAt: number;
   updatedAt: number;
 };

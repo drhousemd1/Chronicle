@@ -1,8 +1,11 @@
 import { WorldCore } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 
+// Only include string fields that can be AI-enhanced
+export type EnhanceableWorldFields = Extract<keyof WorldCore, 'scenarioName' | 'briefDescription' | 'storyPremise' | 'settingOverview' | 'factions' | 'locations' | 'historyTimeline' | 'toneThemes' | 'plotHooks' | 'narrativeStyle' | 'dialogFormatting'>;
+
 // Field-specific prompts that enforce structured expansion
-const FIELD_PROMPTS: Record<keyof WorldCore, { label: string; instruction: string; maxSentences: number }> = {
+const FIELD_PROMPTS: Record<EnhanceableWorldFields, { label: string; instruction: string; maxSentences: number }> = {
   scenarioName: {
     label: "Scenario Name",
     instruction: "Generate a compelling scenario/story name. Be evocative but concise (2-5 words). Examples: 'Echoes of Ashenvale', 'The Crimson Inheritance', 'Neon Shadows'.",
@@ -14,7 +17,7 @@ const FIELD_PROMPTS: Record<keyof WorldCore, { label: string; instruction: strin
     maxSentences: 2
   },
   storyPremise: {
-    label: "Story Premise",
+    label: "Scenario",
     instruction: "Describe the central conflict and stakes. Format: Situation + Tension + Stakes. What's happening, why it matters, what could go wrong.",
     maxSentences: 4
   },
@@ -22,11 +25,6 @@ const FIELD_PROMPTS: Record<keyof WorldCore, { label: string; instruction: strin
     label: "Setting Overview",
     instruction: "Describe the physical and cultural landscape. Format: Geography + Culture + Atmosphere. Be factual and concise about what defines this world.",
     maxSentences: 5
-  },
-  rulesOfMagicTech: {
-    label: "Rules of Magic & Technology",
-    instruction: "List the rules governing supernatural or technological systems. Format: What exists + How it works + Limitations/costs.",
-    maxSentences: 4
   },
   factions: {
     label: "Factions",
@@ -69,7 +67,7 @@ const FIELD_PROMPTS: Record<keyof WorldCore, { label: string; instruction: strin
  * Build a structured expansion prompt for the AI
  */
 function buildPrompt(
-  fieldName: keyof WorldCore,
+  fieldName: EnhanceableWorldFields,
   currentValue: string,
   worldContext: Partial<WorldCore>
 ): string {
@@ -91,9 +89,6 @@ function buildPrompt(
   }
   if (worldContext.toneThemes && fieldName !== 'toneThemes') {
     contextParts.push(`- Tone: ${worldContext.toneThemes}`);
-  }
-  if (worldContext.rulesOfMagicTech && fieldName !== 'rulesOfMagicTech') {
-    contextParts.push(`- Magic/Tech: ${worldContext.rulesOfMagicTech}`);
   }
 
   const contextSection = contextParts.length > 0 
@@ -123,7 +118,7 @@ Return ONLY the enhanced text. No explanations, no prefixes, no markdown formatt
  * Enhance a single World Core field using AI
  */
 export async function aiEnhanceWorldField(
-  fieldName: keyof WorldCore,
+  fieldName: EnhanceableWorldFields,
   currentValue: string,
   worldContext: Partial<WorldCore>,
   modelId: string
