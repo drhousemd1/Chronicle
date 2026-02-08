@@ -2,7 +2,7 @@
 // Session-scoped: edits persist only within the active playthrough
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Character, SideCharacter, PhysicalAppearance, CurrentlyWearing, PreferredClothing, CharacterTraitSection, CharacterGoal } from '@/types';
+import { Character, SideCharacter, PhysicalAppearance, CurrentlyWearing, PreferredClothing, CharacterTraitSection, CharacterGoal, WorldCore, LocationEntry, WorldCustomSection, WorldCustomItem, StoryGoal } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -19,14 +19,18 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Loader2, Plus, Trash2, X, Pencil, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
+import { Loader2, Plus, Trash2, X, Pencil, ChevronDown, ChevronUp, Sparkles, Globe } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client'; 
 import * as supabaseData from '@/services/supabase-data'; 
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import { AvatarActionButtons } from './AvatarActionButtons';
 import { ChangeNameModal } from './ChangeNameModal';
 import { CharacterGoalsSection } from './CharacterGoalsSection';
+import { StoryGoalsSection } from './StoryGoalsSection';
+import { ScenarioCardView } from './ScenarioCardView';
 import { uid, now } from '@/utils';
+import { Input } from '@/components/ui/input';
 
 // Unified draft type for both Character and SideCharacter
 export interface CharacterEditDraft {
@@ -73,6 +77,9 @@ interface CharacterEditModalProps {
   viewOnly?: boolean; // When true, opens in view mode with edit toggle
   conversationId?: string; // For deep scan - fetch message history
   allCharacters?: (Character | SideCharacter)[]; // For deep scan context
+  // Scenario Card props (session-scoped world core)
+  scenarioWorldCore?: WorldCore;
+  onSaveScenarioCard?: (patch: Partial<WorldCore>) => void;
 }
 
 // Auto-resizing textarea that wraps text and grows with content
@@ -213,7 +220,9 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
   modelId,
   viewOnly = false,
   conversationId,
-  allCharacters
+  allCharacters,
+  scenarioWorldCore,
+  onSaveScenarioCard
 }) => {
   const [draft, setDraft] = useState<CharacterEditDraft>({});
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
@@ -223,6 +232,38 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
   const [isTooltipOpen, setIsTooltipOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
+  // View mode toggle: 'character' or 'scenario'
+  type ViewMode = 'character' | 'scenario';
+  const [viewMode, setViewMode] = useState<ViewMode>('character');
+  
+  // Local scenario draft for editing
+  const [scenarioDraft, setScenarioDraft] = useState<Partial<WorldCore>>({});
+  
+  // Reset view mode when modal opens
+  useEffect(() => {
+    if (open) {
+      setViewMode('character');
+    }
+  }, [open]);
+  
+  // Initialize scenario draft from props
+  useEffect(() => {
+    if (scenarioWorldCore && open) {
+      setScenarioDraft({
+        storyPremise: scenarioWorldCore.storyPremise,
+        settingOverview: scenarioWorldCore.settingOverview,
+        structuredLocations: scenarioWorldCore.structuredLocations?.map(l => ({ ...l })),
+        customWorldSections: scenarioWorldCore.customWorldSections?.map(s => ({ ...s, items: s.items.map(i => ({ ...i })) })),
+        storyGoals: scenarioWorldCore.storyGoals?.map(g => ({ ...g, steps: g.steps.map(s => ({ ...s })) })),
+      });
+    }
+  }, [scenarioWorldCore, open]);
+  
+  const handleSaveScenarioCard = () => {
+    if (onSaveScenarioCard) {
+      onSaveScenarioCard(scenarioDraft);
+    }
+  };
   // Expanded state for collapsible sections
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     avatar: true,
@@ -813,13 +854,47 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
       <DialogContent className="max-w-6xl max-h-[90vh] p-0 gap-0 overflow-hidden bg-[#2a2a2f] border-white/10">
         <DialogHeader className="px-6 py-4 border-b border-white/20 bg-black">
           <div className="flex items-center justify-between">
-            <div>
-              <DialogTitle className="text-lg font-bold text-white">
-                Edit Character
-              </DialogTitle>
-              <p className="text-xs text-white/70 mt-1">
-                Changes apply only to this playthrough
-              </p>
+            <div className="flex items-center gap-4">
+              <div>
+                <DialogTitle className="text-lg font-bold text-white">
+                  {viewMode === 'character' ? 'Edit Character' : 'Scenario Card'}
+                </DialogTitle>
+                <p className="text-xs text-white/70 mt-1">
+                  {viewMode === 'character' 
+                    ? 'Changes apply only to this playthrough' 
+                    : 'Global scenario settings for this playthrough'}
+                </p>
+              </div>
+              
+              {/* View Mode Toggle - Gallery Hub pill style */}
+              {scenarioWorldCore && (
+                <div className="flex items-center bg-white/10 rounded-full p-1 gap-0.5 border border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('character')}
+                    className={cn(
+                      "px-3 py-1.5 rounded-full text-xs font-bold transition-all",
+                      viewMode === 'character' 
+                        ? "bg-[#4a5f7f] text-white shadow-sm" 
+                        : "text-zinc-400 hover:text-zinc-200"
+                    )}
+                  >
+                    Character Card
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('scenario')}
+                    className={cn(
+                      "px-3 py-1.5 rounded-full text-xs font-bold transition-all",
+                      viewMode === 'scenario' 
+                        ? "bg-[#4a5f7f] text-white shadow-sm" 
+                        : "text-zinc-400 hover:text-zinc-200"
+                    )}
+                  >
+                    Scenario Card
+                  </button>
+                </div>
+              )}
             </div>
             
             {/* AI Update Button - Iridescent premium style */}
@@ -941,6 +1016,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
 
         <ScrollArea className="flex-1 max-h-[calc(90vh-160px)] bg-[#2a2a2f]">
           <div className="p-6">
+          {viewMode === 'character' ? (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Left Column - Avatar & Basic Info */}
               <div className="space-y-6">
@@ -1526,6 +1602,15 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                 )}
               </div>
             </div>
+          ) : (
+            /* ========= SCENARIO CARD VIEW ========= */
+            <ScenarioCardView
+              scenarioDraft={scenarioDraft}
+              onUpdateScenarioDraft={setScenarioDraft}
+              expandedSections={expandedSections}
+              toggleSection={toggleSection}
+            />
+          )}
           </div>
         </ScrollArea>
 
@@ -1546,7 +1631,12 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
           </button>
           <button
             type="button"
-            onClick={handleSave}
+            onClick={() => {
+              if (viewMode === 'scenario') {
+                handleSaveScenarioCard();
+              }
+              handleSave();
+            }}
             disabled={isSaving}
             className="flex h-10 px-6 items-center justify-center gap-2
               rounded-xl border border-[#5a6f8f] 

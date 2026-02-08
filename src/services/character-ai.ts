@@ -140,7 +140,7 @@ export async function aiEnhanceCharacterField(
 
 // Analyze story type from world context
 function analyzeStoryType(worldCore: WorldCore) {
-  const text = `${worldCore.toneThemes || ''} ${worldCore.briefDescription || ''} ${worldCore.settingOverview || ''} ${worldCore.plotHooks || ''}`.toLowerCase();
+  const text = `${worldCore.briefDescription || ''} ${worldCore.settingOverview || ''} ${worldCore.plotHooks || ''}`.toLowerCase();
   
   return {
     isNSFW: /nsfw|adult|mature|erotic|sensual|intimate|sexual/.test(text),
@@ -459,7 +459,6 @@ export async function aiFillCharacter(
 
   const worldContext = `
 Setting: ${appData.world.core.settingOverview || 'Not specified'}
-Tone: ${appData.world.core.toneThemes || 'Not specified'}
 Scenario: ${appData.world.core.scenarioName || 'Not specified'}
   `.trim();
 
@@ -565,7 +564,6 @@ export async function aiGenerateCharacter(
 
   const worldContext = `
 Setting: ${appData.world.core.settingOverview || 'Not specified'}
-Tone: ${appData.world.core.toneThemes || 'Not specified'}
 Scenario: ${appData.world.core.scenarioName || 'Not specified'}
 Plot: ${appData.world.core.plotHooks || 'Not specified'}
   `.trim();
