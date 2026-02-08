@@ -1,205 +1,142 @@
 
-# Implementation Plan: Phases 2-5 (Continuing from Completed Phase 1)
 
-Phase 1 (Content Theme Tag Injection) is complete. This plan covers the remaining four phases in sequence.
+# Plan: Story Card Layout Tweaks, Remove Tone/Themes, and Scenario Card View in Chat Modal
 
----
+## 1. Story Card Layout Restructure (WorldTab.tsx)
 
-## Phase 2: Scenario Builder UI Restructure
+**Remove the HintBox** from the Story Card section (the "This image appears on your story card..." hint at line 428-430).
 
-### 2A: Story Card Container
-**File: `src/components/chronicle/WorldTab.tsx`**
-- Rename the "Cover Image" section header (line 377) from "Cover Image" to "Story Card"
-- Move the "Scenario Name" field (lines 487-489) and "Brief Description" field (lines 491-493) from inside the World Core section into the Cover Image/Story Card section, placing them below the cover image controls (after line 470, before the closing divs)
-- The World Core section now starts directly with "Scenario" (formerly Story Premise)
+**Rearrange to a side-by-side layout**: Instead of the current stacked layout (image on left, hint+buttons on right, then name/description below), change to:
+- Left side: Cover image placeholder (keep existing `w-48 aspect-[2/3]` portrait)
+- Right side (vertically stacked):
+  - Upload Image + AI Generate buttons (CoverImageActionButtons) at top
+  - Scenario Name field
+  - Brief Description field
+  - Reposition/Remove buttons (if cover exists)
 
-### 2B: Rename "Story Premise" to "Scenario"
-**File: `src/components/chronicle/WorldTab.tsx`**
-- Line 496: Change FieldLabel from "Story Premise" to "Scenario" (fieldName prop stays `storyPremise`)
+This means the `mt-8 space-y-6` block (lines 476-485) moves into the right-side column next to the image, and the HintBox is deleted entirely.
 
-**File: `src/services/llm.ts`**
-- Line 50: Change `STORY PREMISE:` to `SCENARIO:`
-
-**File: `src/services/world-ai.ts`**
-- Line 16-19: Update `FIELD_PROMPTS.storyPremise` label from "Story Premise" to "Scenario" and update instruction text accordingly
-
-### 2C: Remove "Rules of Magic and Technology"
-**File: `src/components/chronicle/WorldTab.tsx`**
-- Remove lines 503-505 (the FieldLabel and TextArea for "Rules of Magic & Technology")
-- Keep the field in the `WorldCore` type as dead data for backward compatibility
-
-**File: `src/services/llm.ts`**
-- Remove line 51: `RULES/TECH: ${appData.world.core.rulesOfMagicTech}`
-
-**File: `src/services/world-ai.ts`**
-- Remove the `rulesOfMagicTech` entry from `FIELD_PROMPTS` (lines 26-30)
-- Remove the context reference in `buildPrompt()` (lines 95-97)
-
-### 2D: Structured Locations
-**File: `src/types.ts`**
-- Add type: `LocationEntry = { id: string; label: string; description: string }`
-- Add `structuredLocations?: LocationEntry[]` to `WorldCore`
-- Keep existing `locations: string` field for backward compatibility
-
-**File: `src/components/chronicle/WorldTab.tsx`**
-- Replace the single "Primary Locations" TextArea (lines 507-509) with a structured row-based UI:
-  - Each row: Label input (1/3 width) + Description AutoResizeTextarea (2/3 width) + Delete button
-  - Two empty rows by default with ghost text placeholders
-  - "Add Location" button below
-- Manage `structuredLocations` in `world.core`, fall back to legacy `locations` string if empty
-
-**File: `src/services/llm.ts`**
-- Update the LOCATIONS line in `worldContext` to format structured locations as `- Label: Description` entries
-- Fall back to raw string if no structured locations exist
-
-**File: `src/services/world-ai.ts`**
-- Update `FIELD_PROMPTS.locations` to reflect the new structured format
-
-### 2E: Custom Content Sections
-**File: `src/types.ts`**
-- Add types: `WorldCustomSection = { id: string; title: string; items: WorldCustomItem[] }` and `WorldCustomItem = { id: string; label: string; value: string }`
-- Add `customWorldSections?: WorldCustomSection[]` to `WorldCore`
-
-**File: `src/components/chronicle/WorldTab.tsx`**
-- After the Tone and Themes field (line 514), add:
-  - Render existing custom world sections as collapsible containers with editable title, label+description rows, and delete controls
-  - "Add Custom Content" button (elongated dark button style, matching the existing pattern from CharactersTab)
-
-**File: `src/services/llm.ts`**
-- Add custom world sections to the world context block in the system prompt
+**Files changed:**
+- `src/components/chronicle/WorldTab.tsx` -- restructure the Story Card inner layout
 
 ---
 
-## Phase 3: Story Goals System
+## 2. Remove "Tone & Central Themes" Field Everywhere
 
-### 3A: Type Definitions
-**File: `src/types.ts`**
-- Add: `GoalFlexibility = 'rigid' | 'normal' | 'flexible'`
-- Add: `GoalStep = { id: string; description: string; completed: boolean; completedAt?: number }`
-- Add: `StoryGoal = { id: string; title: string; desiredOutcome: string; currentStatus: string; steps: GoalStep[]; flexibility: GoalFlexibility; createdAt: number; updatedAt: number }`
-- Add `storyGoals?: StoryGoal[]` to `WorldCore`
+The `toneThemes` field appears in 8 files. It needs to be removed from UI rendering and from LLM/AI injection, while keeping the field in the type definition as dead data for backward compatibility.
 
-### 3B: Story Goals UI Component
-**New file: `src/components/chronicle/StoryGoalsSection.tsx`**
-- Dark-theme container matching all other Scenario Builder sections (steel-blue `#4a5f7f` header, `#2a2a2f` body)
-- Each goal card includes:
-  - Goal Title (input)
-  - Desired Outcome (textarea)
-  - Current Status Summary (textarea)
-  - Flexibility Toggle: three-button segmented control (Rigid / Normal / Flexible)
-    - Rigid: red/amber accent -- "Must pursue"
-    - Normal: blue accent -- "Guide toward"
-    - Flexible: green/gray accent -- "Suggest if fitting"
-  - Steps section with checkboxes, description text, delete button per step
-  - "Add Step" button
-  - Progress ring: `completedSteps / totalSteps * 100`
-  - Delete Goal button
-- "Add Story Goal" button at the bottom of the section
-
-### 3C: Wire into WorldTab
-**File: `src/components/chronicle/WorldTab.tsx`**
-- Import and render `StoryGoalsSection` between the World Core section and the Opening Dialog section
-- Pass `world.core.storyGoals` and an update handler that patches `world.core`
-
-### 3D: Inject into LLM System Prompt
-**File: `src/services/llm.ts`**
-- Add `buildStoryGoalsContext()` function
-- Insert between WORLD CONTEXT and CODEX, organized by flexibility level with directives:
-  - RIGID: "This goal is MANDATORY. The narrative must actively work toward achieving this."
-  - NORMAL: "This goal is a guiding objective. Actively pursue it when natural."
-  - FLEXIBLE: "This goal is a suggestion. Consider it when it fits naturally."
+**Changes:**
+- `src/components/chronicle/WorldTab.tsx` (lines 568-571) -- remove the FieldLabel and TextArea for "Tone & Central Themes"
+- `src/services/llm.ts` (line 116) -- remove `TONE & THEMES: ${appData.world.core.toneThemes}` from the system prompt
+- `src/services/world-ai.ts`:
+  - Remove `toneThemes` from the `EnhanceableWorldFields` type union (line 5)
+  - Remove the `toneThemes` entry from `FIELD_PROMPTS` (lines 44-48)
+  - Remove the context reference `if (worldContext.toneThemes...)` block (lines 90-92)
+- `src/services/character-ai.ts` (lines 143, 462, 568) -- remove references to `toneThemes` from `analyzeStoryType()` and world context builders
+- `src/components/chronicle/CharactersTab.tsx` (line 174) -- remove `toneThemes` from `buildWorldContext()`
+- `src/types.ts` -- keep `toneThemes: string` in `WorldCore` (dead data, no migration needed)
+- `src/utils.ts` -- keep the normalization for backward compat
+- `src/services/supabase-data.ts` -- keep default values for backward compat
 
 ---
 
-## Phase 4: Redesign Character Goals to Step-Based Planning
+## 3. Scenario Card View Toggle in Character Edit Modal
 
-### 4A: Update Type Definitions
-**File: `src/types.ts`**
-- Add `steps?: GoalStep[]` to `CharacterGoal` (reuses `GoalStep` from Phase 3)
-- Keep `milestones?: GoalMilestone[]` for backward compatibility (stop rendering)
-- Keep `progress` stored but auto-calculate from steps when steps exist
+This is the largest change. When a user opens the CharacterEditModal during a chat session, they should be able to toggle between "Character Card" (current view) and "Scenario Card" (new view) using a pill-style toggle in the header.
 
-### 4B: Redesign CharacterGoalsSection
-**File: `src/components/chronicle/CharacterGoalsSection.tsx`**
-- Full redesign replacing the milestone timeline with step-based checkboxes:
-  - Goal Title (input)
-  - Desired Outcome (textarea)
-  - Current Status Summary (textarea)
-  - Steps section: ordered list with checkboxes, description textarea, delete button, "Add Step" button
-  - Progress ring: calculated as `completedSteps / totalSteps * 100` (replaces the manual slider)
-  - Remove the milestone history timeline UI entirely
-  - Remove the progress slider
-- Both collapsed and expanded views updated
-- Note: This component is shared between CharactersTab and CharacterEditModal, so changes propagate automatically
+### 3A. Toggle UI in Modal Header
 
-### 4C: Update CharacterEditModal Goal Merge Logic
-**File: `src/components/chronicle/CharacterEditModal.tsx`**
-- Update the deep scan merge logic (around lines 412-460) to handle the new step-based format:
-  - Parse `complete_steps` from extraction response to toggle step checkboxes
-  - Parse `new_steps` to append new steps to goals
-  - Recalculate progress from completed steps count
+Add a pill-style toggle bar in the `DialogHeader` (line 814-940 area), positioned to the left of the AI Update button. The toggle uses the same styling as the Gallery Hub sort filter:
 
-### 4D: Update Extraction Service
-**File: `supabase/functions/extract-character-updates/index.ts`**
-- Update `CharacterGoalData` interface to include `steps`
-- Update `buildCharacterStateBlock()` to present steps with checkbox notation:
-  ```
-  [x] Step 1: Description...
-  [ ] Step 2: Description...
-  ```
-- Update the extraction prompt to instruct the AI to:
-  - Review each step against dialogue and mark completed ones
-  - Silently propose 5-10 narrative-quality steps (2+ sentences each) for new goals
-  - No confirmation pop-ups -- updates apply directly
-- Update the response format: `"complete_steps: 1,2,3 | new_steps: Step 7: Description..."` appended to the goal value string
+```
+bg-white/10 rounded-full p-1 border border-white/10
+```
 
-### 4E: Update ChatInterfaceTab Goal Application
-**File: `src/components/chronicle/ChatInterfaceTab.tsx`**
-- Update `applyExtractedUpdates` (around lines 1328-1390) to handle:
-  - `complete_steps` field in goal value string: toggle matching step checkboxes to completed
-  - `new_steps` field: parse and append new GoalStep objects
-  - Recalculate progress from completed/total steps ratio
+Two options:
+- "Character Card" (active by default)
+- "Scenario Card"
 
-### 4F: Verify CharactersTab
-**File: `src/components/chronicle/CharactersTab.tsx`**
-- Uses `CharacterGoalsSection` component, so most changes propagate automatically
-- Verify that goal saving/loading handles the new `steps` field without issues
+The active pill gets `bg-[#4a5f7f] text-white shadow-sm`, inactive gets `text-zinc-400 hover:text-zinc-200`.
+
+### 3B. New Props for CharacterEditModal
+
+The modal needs access to the scenario's world data to render the Scenario Card view:
+
+```typescript
+// New props added:
+scenarioWorldCore?: WorldCore;           // The world core data (from session or base)
+onSaveScenarioCard?: (patch: Partial<WorldCore>) => void;  // Save handler for scenario card edits
+```
+
+These are session-scoped, meaning edits to the scenario card during a chat session do NOT modify the saved base scenario. Instead, they persist in session state -- similar to how character edits work with `character_session_states`.
+
+### 3C. Session-Scoped World Core State
+
+In `ChatInterfaceTab.tsx`:
+- Add a new state: `worldCoreSessionOverrides` (type: `Partial<WorldCore> | null`)
+- Build an `effectiveWorldCore` by merging `appData.world.core` with session overrides (same pattern as character session states)
+- Pass this to `CharacterEditModal` as `scenarioWorldCore`
+- The `onSaveScenarioCard` callback merges the patch into `worldCoreSessionOverrides`
+- The `buildLLMAppData()` function already builds from `appData` -- update it to also merge world core session overrides so the LLM sees the session-scoped scenario changes
+
+### 3D. Scenario Card View Content
+
+When "Scenario Card" is selected, the modal body replaces the character editing content with scenario-relevant fields, styled identically using the existing `CollapsibleSection` components:
+
+**Sections displayed:**
+1. **Scenario** -- The main scenario/premise textarea (from `worldCore.storyPremise`)
+2. **Setting Overview** -- `worldCore.settingOverview`
+3. **Locations** -- Structured locations (label + description rows, same UI as WorldTab)
+4. **Custom World Content** -- Any custom sections the user added
+5. **Story Goals** -- The `StoryGoalsSection` component (already built), showing global goals with flexibility toggles and step checkboxes
+
+The header subtitle changes from "Changes apply only to this playthrough" to "Global scenario settings for this playthrough" when Scenario Card is active.
+
+The AI Update button remains visible in both views (it scans dialogue regardless of which card is shown).
+
+### 3E. Data Flow Summary
+
+```
+ChatInterfaceTab
+  |-- worldCoreSessionOverrides (state)
+  |-- effectiveWorldCore = merge(appData.world.core, overrides)
+  |-- passes to CharacterEditModal:
+  |     scenarioWorldCore={effectiveWorldCore}
+  |     onSaveScenarioCard={(patch) => mergeIntoOverrides(patch)}
+  |-- passes to buildLLMAppData():
+  |     world.core = effectiveWorldCore (so AI sees session changes)
+```
+
+### Files Changed (Section 3)
+
+| File | Change |
+|------|--------|
+| `src/components/chronicle/CharacterEditModal.tsx` | Add view toggle state, new props, conditional rendering of Character Card vs Scenario Card content |
+| `src/components/chronicle/ChatInterfaceTab.tsx` | Add `worldCoreSessionOverrides` state, `effectiveWorldCore` memo, pass new props to modal, update `buildLLMAppData` |
 
 ---
 
-## Phase 5: Inject Character Goals into LLM System Prompt
+## Technical Details
 
-**File: `src/services/llm.ts`**
-- Update the `characterContext` builder (lines 59-70) to include goals for each character:
-  ```
-  GOALS:
-    - GoalTitle [Flexibility] (Progress% - Step X of Y): Current status summary
-  ```
-- Add a GOAL PURSUIT rule to the INSTRUCTIONS section telling the AI to consider character goals when generating dialogue and actions
-- Characters with goals should actively pursue them in narration
+### WorldTab.tsx Story Card Layout (Section 1)
 
----
+The inner `flex flex-col md:flex-row gap-8` block keeps the image on the left. The right column (`flex flex-col gap-4 flex-1`) loses the HintBox and gains the Scenario Name and Brief Description fields moved up from below. The `mt-8 space-y-6` wrapper (lines 476-485) is removed; those fields go directly into the right column after the action buttons.
 
-## Files Changed Summary (All Phases)
+### Tone/Themes Removal Scope (Section 2)
 
-| File | Phases | Changes |
-|------|--------|---------|
-| `src/types.ts` | 2, 3, 4 | Add LocationEntry, WorldCustomSection, WorldCustomItem, GoalFlexibility, GoalStep, StoryGoal types; update WorldCore and CharacterGoal |
-| `src/components/chronicle/WorldTab.tsx` | 2, 3 | Story Card consolidation, rename Story Premise, remove Rules of Magic, structured Locations, Custom Content, wire in StoryGoalsSection |
-| `src/services/llm.ts` | 2, 3, 4, 5 | Rename STORY PREMISE, remove RULES/TECH, structured locations, custom world sections, story goals injection, character goals injection |
-| `src/services/world-ai.ts` | 2 | Update field prompts and context building |
-| `src/components/chronicle/StoryGoalsSection.tsx` | 3 | New component -- Story Goals UI |
-| `src/components/chronicle/CharacterGoalsSection.tsx` | 4 | Full redesign from milestones to step-based checkboxes |
-| `src/components/chronicle/CharacterEditModal.tsx` | 4 | Update goal merge logic for steps |
-| `src/components/chronicle/ChatInterfaceTab.tsx` | 4 | Update applyExtractedUpdates for step-based format |
-| `src/components/chronicle/CharactersTab.tsx` | 4 | Verify goals rendering with new structure |
-| `supabase/functions/extract-character-updates/index.ts` | 4 | Update goal data format, extraction prompt, response parsing |
+Full audit results:
+- **WorldTab.tsx line 569**: UI render -- REMOVE
+- **llm.ts line 116**: LLM prompt injection -- REMOVE
+- **world-ai.ts lines 5, 44-48, 90-92**: AI enhancement config -- REMOVE from type union and FIELD_PROMPTS
+- **character-ai.ts lines 143, 462, 568**: Character generation context -- REMOVE references
+- **CharactersTab.tsx line 174**: World context builder -- REMOVE reference
+- **types.ts line 86**: Type definition -- KEEP (dead data)
+- **utils.ts lines 197, 318**: Normalization -- KEEP (backward compat)
+- **supabase-data.ts lines 289, 366**: Default values -- KEEP (backward compat)
 
-## Deferred Items (Not in This Implementation)
-1. Trait/Kink Registry System (pending Admin Panel)
-2. Admin Panel (separate future plan)
-3. Numerical Personality Scales (0-100)
-4. Event-Based Trigger System
-5. Decay Mechanisms
-6. Contradiction Detection
-7. Story Goal Progress Updates via Extraction Service
+### Scenario Card Session State (Section 3)
+
+The session overrides pattern mirrors the existing `characterSessionStates` system. The key difference is that world core session overrides are global (shared across all characters), while character session states are per-character. When a user toggles to "Scenario Card" on any character and edits, the changes persist in a single `worldCoreSessionOverrides` state object for the entire chat session.
+
+The scenario card uses the same `CollapsibleSection` component already defined inside `CharacterEditModal.tsx`. For Story Goals, we import and render `StoryGoalsSection` directly. For structured locations, we replicate the same row-based UI pattern from `WorldTab.tsx` (label input + description textarea + delete button per row).
+
