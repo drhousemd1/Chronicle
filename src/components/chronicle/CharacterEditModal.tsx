@@ -499,12 +499,15 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                 if (newStepsMatch) {
                   const newStepsRaw = newStepsMatch[1].trim();
                   const stepEntries = newStepsRaw.split(/Step\s+\d+:\s*/i).filter(Boolean);
+                  console.log(`[deep-scan] Goal "${existingGoal.title}" - parsing ${stepEntries.length} new steps from AI`);
                   for (const desc of stepEntries) {
                     const trimmed = desc.trim().replace(/\|$/, '').trim();
                     if (trimmed) {
                       updatedSteps.push({ id: uid('step'), description: trimmed, completed: false });
                     }
                   }
+                } else {
+                  console.log(`[deep-scan] Goal "${existingGoal.title}" - no new_steps found in AI response`);
                 }
                 
                 // Recalculate progress from steps if steps exist
@@ -527,12 +530,15 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                 if (newStepsMatch) {
                   const newStepsRaw = newStepsMatch[1].trim();
                   const stepEntries = newStepsRaw.split(/Step\s+\d+:\s*/i).filter(Boolean);
+                  console.log(`[deep-scan] NEW goal "${goalTitle}" - parsing ${stepEntries.length} steps from AI`);
                   for (const desc of stepEntries) {
                     const trimmed = desc.trim().replace(/\|$/, '').trim();
                     if (trimmed) {
                       newSteps.push({ id: uid('step'), description: trimmed, completed: false });
                     }
                   }
+                } else {
+                  console.log(`[deep-scan] NEW goal "${goalTitle}" - WARNING: no new_steps in AI response`);
                 }
                 
                 updatedGoals.push({

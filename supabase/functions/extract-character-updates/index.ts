@@ -203,10 +203,12 @@ HARDCODED FIELDS:
 - currentMood (emotional state)
 
 GOALS (structured tracking with progression and steps):
-- goals.GoalTitle = "desired_outcome: What fulfillment looks like | current_status: Where they stand now | progress: XX | complete_steps: 1,3 | new_steps: Step 7: Two-sentence description of this new step."
+- goals.GoalTitle = "desired_outcome: What fulfillment looks like | current_status: Where they stand now | progress: XX | complete_steps: 1,3 | new_steps: Step 1: Two-sentence description. Step 2: Two-sentence description."
   IMPORTANT: Always include desired_outcome, current_status, and progress for every goal update.
   Use complete_steps to mark step numbers (1-indexed) that were achieved in the dialogue.
   Use new_steps to propose new steps for tracking (each step MUST be 2+ sentences describing a discrete actionable milestone).
+  MANDATORY: When creating a NEW goal, you MUST include new_steps with 5-8 narrative-quality steps that map out the journey from current state to desired outcome. Never create a goal without steps.
+  When UPDATING an existing goal that has fewer than 3 steps, propose additional new_steps to flesh out the journey.
 
 CUSTOM SECTIONS (for factual information without progression):
 - sections.SectionTitle.ItemLabel = value
@@ -267,11 +269,14 @@ SECTION MANAGEMENT RULES
 - When information could be a goal (has a desired end state), it MUST be a goal, not a section item
 
 ═══════════════════════════════════════════════════
-STALENESS CORRECTION
+STALENESS CORRECTION & PLACEHOLDER DETECTION
 ═══════════════════════════════════════════════════
 - If a stored value is CONTRADICTED by the dialogue, UPDATE it with corrected information
 - Check existing custom section items for accuracy against the current dialogue context
 - Correct outdated information even if the exact topic isn't directly discussed
+- If a stored value contains obvious PLACEHOLDER text (e.g., "trait one", "trait two", "trait three", "example text", "placeholder", or generic numbered filler), treat it as EMPTY and generate real content based on dialogue context
+- Replace any generic or template-style values with specific, dialogue-informed content
+- Do NOT preserve placeholder values — always overwrite them with meaningful data
 
 ═══════════════════════════════════════════════════
 RULES
@@ -296,7 +301,7 @@ RESPONSE FORMAT (JSON only):
     { "character": "CharacterName", "field": "currentMood", "value": "Nervous but excited" },
     { "character": "CharacterName", "field": "location", "value": "Downtown coffee shop" },
     { "character": "CharacterName", "field": "currentlyWearing.top", "value": "Navy blue scrubs" },
-    { "character": "CharacterName", "field": "goals.Save Enough Money", "value": "desired_outcome: Build a $10,000 emergency fund that provides peace of mind and financial security. Feels confident knowing unexpected expenses won't cause panic or debt. Has developed a consistent saving habit that feels natural rather than restrictive. | current_status: Got first paycheck and opened a dedicated savings account. Feeling cautiously optimistic but aware it's a long road. Next step is setting up automatic transfers to make saving effortless. | progress: 10" },
+    { "character": "CharacterName", "field": "goals.Save Enough Money", "value": "desired_outcome: Build a $10,000 emergency fund that provides peace of mind and financial security. Feels confident knowing unexpected expenses won't cause panic or debt. Has developed a consistent saving habit that feels natural rather than restrictive. | current_status: Got first paycheck and opened a dedicated savings account. Feeling cautiously optimistic but aware it's a long road. Next step is setting up automatic transfers to make saving effortless. | progress: 0 | new_steps: Step 1: Research high-yield savings accounts and compare interest rates to find the best option for building an emergency fund. Make a shortlist of three candidates. Step 2: Open the chosen savings account and set up automatic transfers from each paycheck, starting with a comfortable amount. Step 3: Track monthly spending for one full month to identify discretionary expenses that could be redirected toward savings. Step 4: Cut two identified discretionary expenses and increase the automatic transfer amount accordingly. Step 5: Reach the first $1,000 milestone and celebrate the achievement to reinforce the habit. Step 6: Review and adjust the savings plan quarterly, increasing contributions as income grows or expenses decrease." },
     { "character": "CharacterName", "field": "sections.Background.Occupation", "value": "Doctor at City Hospital" }
   ]
 }
@@ -310,7 +315,7 @@ Return ONLY valid JSON. No explanations.`;
       aiResponse ? `LATEST AI RESPONSE:\n${aiResponse}` : ''
     ].filter(Boolean).join('\n\n---\n\n');
 
-    const effectiveModelId = modelId || 'google/gemini-2.5-flash-lite';
+    const effectiveModelId = modelId || 'google/gemini-2.5-flash';
     const gateway = getGateway(effectiveModelId);
 
     let apiKey: string | undefined;
@@ -349,6 +354,7 @@ Return ONLY valid JSON. No explanations.`;
           { role: "user", content: `Analyze this dialogue and extract ALL character state changes. Remember: Phase 2 (reviewing existing state) is MANDATORY.\n\n${combinedText}` }
         ],
         temperature: 0.3,
+        max_tokens: 8192,
       }),
     });
 
