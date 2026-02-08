@@ -485,29 +485,42 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                 const existingGoal = updatedGoals[existingIdx];
                 let updatedSteps = [...(existingGoal.steps || [])];
                 
-                // Handle complete_steps: mark specified step indices as completed (1-indexed)
-                if (completeStepsMatch) {
-                  const indices = completeStepsMatch[1].trim().split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
-                  for (const idx of indices) {
-                    if (idx >= 1 && idx <= updatedSteps.length) {
-                      updatedSteps[idx - 1] = { ...updatedSteps[idx - 1], completed: true, completedAt: now() };
-                    }
-                  }
-                }
-                
-                // Handle new_steps: parse and append new steps
+                // Handle new_steps: AI now sends the COMPLETE step list (5-8 steps from Step 1)
+                // Replace entire step list rather than appending to prevent duplicates
                 if (newStepsMatch) {
                   const newStepsRaw = newStepsMatch[1].trim();
                   const stepEntries = newStepsRaw.split(/Step\s+\d+:\s*/i).filter(Boolean);
-                  console.log(`[deep-scan] Goal "${existingGoal.title}" - parsing ${stepEntries.length} new steps from AI`);
+                  console.log(`[deep-scan] Goal "${existingGoal.title}" - received ${stepEntries.length} steps from AI (full replacement)`);
+                  
+                  // Replace entire step list with AI's complete plan
+                  updatedSteps = [];
                   for (const desc of stepEntries) {
                     const trimmed = desc.trim().replace(/\|$/, '').trim();
                     if (trimmed) {
                       updatedSteps.push({ id: uid('step'), description: trimmed, completed: false });
                     }
                   }
+                  
+                  // Re-apply complete_steps marking on the fresh list
+                  if (completeStepsMatch) {
+                    const indices = completeStepsMatch[1].trim().split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
+                    for (const idx of indices) {
+                      if (idx >= 1 && idx <= updatedSteps.length) {
+                        updatedSteps[idx - 1] = { ...updatedSteps[idx - 1], completed: true, completedAt: now() };
+                      }
+                    }
+                  }
                 } else {
                   console.log(`[deep-scan] Goal "${existingGoal.title}" - no new_steps found in AI response`);
+                  // If no new_steps but complete_steps provided, still mark completions on existing steps
+                  if (completeStepsMatch) {
+                    const indices = completeStepsMatch[1].trim().split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
+                    for (const idx of indices) {
+                      if (idx >= 1 && idx <= updatedSteps.length) {
+                        updatedSteps[idx - 1] = { ...updatedSteps[idx - 1], completed: true, completedAt: now() };
+                      }
+                    }
+                  }
                 }
                 
                 // Recalculate progress from steps if steps exist
