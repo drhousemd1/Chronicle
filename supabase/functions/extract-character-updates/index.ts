@@ -191,6 +191,20 @@ C) CHECK FOR MISSING GOALS:
 DO NOT return empty updates if the character is actively present. At minimum, mood and location should reflect current scene context.
 
 ═══════════════════════════════════════════════════
+PHASE 3 - PLACEHOLDER SCAN (MANDATORY - DO NOT SKIP)
+═══════════════════════════════════════════════════
+For EACH character, scan ALL custom section items in their current state:
+- If an item has a PLACEHOLDER LABEL (e.g., "Trait 1", "Trait 2", "Item 1", or any generic numbered label):
+  -> You MUST output a replacement using a DESCRIPTIVE label and a dialogue-informed value
+  -> Example: If you see "Trait 1: trait one" in a Personality section, output:
+     sections.Personality.Nurturing Nature = "Nurturing and protective, especially toward family members. Shows warmth through physical affection and verbal reassurance."
+- If an item has a PLACEHOLDER VALUE (e.g., "trait one", "trait two", "example text", empty/generic filler):
+  -> You MUST output a replacement with real, dialogue-informed content
+- Generate content based on what the dialogue reveals about the character's personality, background, or status
+- This phase ensures NO placeholder content survives a scan
+- You must output one update per placeholder item found
+
+═══════════════════════════════════════════════════
 TRACKABLE FIELDS
 ═══════════════════════════════════════════════════
 
@@ -203,12 +217,18 @@ HARDCODED FIELDS:
 - currentMood (emotional state)
 
 GOALS (structured tracking with progression and steps):
-- goals.GoalTitle = "desired_outcome: What fulfillment looks like | current_status: Where they stand now | progress: XX | complete_steps: 1,3 | new_steps: Step 1: Two-sentence description. Step 2: Two-sentence description."
+- goals.GoalTitle = "desired_outcome: What fulfillment looks like | current_status: Where they stand now | progress: XX | complete_steps: 1,3 | new_steps: Step 1: Two-sentence description. Step 2: Two-sentence description. Step 3: ... Step 4: ... Step 5: ..."
   IMPORTANT: Always include desired_outcome, current_status, and progress for every goal update.
   Use complete_steps to mark step numbers (1-indexed) that were achieved in the dialogue.
-  Use new_steps to propose new steps for tracking (each step MUST be 2+ sentences describing a discrete actionable milestone).
-  MANDATORY: When creating a NEW goal, you MUST include new_steps with 5-8 narrative-quality steps that map out the journey from current state to desired outcome. Never create a goal without steps.
-  When UPDATING an existing goal that has fewer than 3 steps, propose additional new_steps to flesh out the journey.
+
+  new_steps RULES (CRITICAL - READ CAREFULLY):
+  - new_steps must contain the COMPLETE list of ALL steps for the goal, numbered from Step 1
+  - Include BOTH already-completed steps AND future steps in new_steps
+  - The total count must be 5-8 steps that map the FULL journey from start to desired outcome
+  - Do NOT only include "continuation" steps -- always include the full plan from Step 1
+  - Use complete_steps to indicate which of these steps are already done
+  - Every goal update MUST include new_steps with 5-8 steps. No exceptions.
+  - Each step MUST be 2+ sentences describing a discrete actionable milestone.
 
 CUSTOM SECTIONS (for factual information without progression):
 - sections.SectionTitle.ItemLabel = value
@@ -353,7 +373,7 @@ Return ONLY valid JSON. No explanations.`;
         model: modelForRequest,
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Analyze this dialogue and extract ALL character state changes. Remember: Phase 2 (reviewing existing state) is MANDATORY. For EVERY goal (new or existing with <3 steps), you MUST include new_steps. Replace any placeholder labels (e.g. "Trait 1") with descriptive labels.\n\n${combinedText}` }
+          { role: "user", content: `Analyze this dialogue and extract ALL character state changes. Remember: Phase 2 (reviewing existing state) is MANDATORY. Phase 3 (placeholder scan) is MANDATORY -- check every custom section item for placeholder labels or values and replace them with descriptive, dialogue-informed content. For EVERY goal (new or existing), new_steps must contain the FULL list of 5-8 steps starting from Step 1 (the complete journey, not just continuation steps).\n\n${combinedText}` }
         ],
         temperature: 0.3,
         max_tokens: 8192,
