@@ -113,7 +113,6 @@ function getSystemInstruction(
     FACTIONS: ${appData.world.core.factions}
     LOCATIONS:
     ${locationsContext}
-    TONE & THEMES: ${appData.world.core.toneThemes}
     NARRATIVE STYLE: ${appData.world.core.narrativeStyle}
     DIALOG FORMATTING: ${fullDialogFormatting}
     ${customWorldContext}

@@ -2,7 +2,7 @@ import { WorldCore } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 
 // Only include string fields that can be AI-enhanced
-export type EnhanceableWorldFields = Extract<keyof WorldCore, 'scenarioName' | 'briefDescription' | 'storyPremise' | 'settingOverview' | 'factions' | 'locations' | 'historyTimeline' | 'toneThemes' | 'plotHooks' | 'narrativeStyle' | 'dialogFormatting'>;
+export type EnhanceableWorldFields = Extract<keyof WorldCore, 'scenarioName' | 'briefDescription' | 'storyPremise' | 'settingOverview' | 'factions' | 'locations' | 'historyTimeline' | 'plotHooks' | 'narrativeStyle' | 'dialogFormatting'>;
 
 // Field-specific prompts that enforce structured expansion
 const FIELD_PROMPTS: Record<EnhanceableWorldFields, { label: string; instruction: string; maxSentences: number }> = {
@@ -40,11 +40,6 @@ const FIELD_PROMPTS: Record<EnhanceableWorldFields, { label: string; instruction
     label: "History & Timeline",
     instruction: "Summarize key historical events that impact the current story. Format: chronological bullet points of important past events.",
     maxSentences: 5
-  },
-  toneThemes: {
-    label: "Tone & Central Themes",
-    instruction: "Define the emotional tone and thematic elements. Format: Tone keywords + Central themes + Content notes if applicable.",
-    maxSentences: 3
   },
   plotHooks: {
     label: "Plot Hooks",
@@ -86,9 +81,6 @@ function buildPrompt(
   }
   if (worldContext.settingOverview && fieldName !== 'settingOverview') {
     contextParts.push(`- Setting: ${worldContext.settingOverview}`);
-  }
-  if (worldContext.toneThemes && fieldName !== 'toneThemes') {
-    contextParts.push(`- Tone: ${worldContext.toneThemes}`);
   }
 
   const contextSection = contextParts.length > 0 

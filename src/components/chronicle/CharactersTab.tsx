@@ -171,7 +171,6 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
   // Build world context for AI enhancement
   const buildWorldContext = () => {
     return `Setting: ${appData.world.core.settingOverview || 'Not specified'}
-Tone: ${appData.world.core.toneThemes || 'Not specified'}
 Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
   };
 

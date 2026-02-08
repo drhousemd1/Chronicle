@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { ScenarioData, Character, Conversation, Message, CharacterTraitSection, Scene, TimeOfDay, SideCharacter, CharacterSessionState, Memory } from '../../types';
+import { ScenarioData, Character, Conversation, Message, CharacterTraitSection, Scene, TimeOfDay, SideCharacter, CharacterSessionState, Memory, WorldCore } from '../../types';
 import { Button, TextArea } from './UI';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -285,6 +285,22 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const [characterToDelete, setCharacterToDelete] = useState<string | null>(null);
   const [isMainCharacterDelete, setIsMainCharacterDelete] = useState(false);
   
+  // Session-scoped world core overrides (global across all characters)
+  const [worldCoreSessionOverrides, setWorldCoreSessionOverrides] = useState<Partial<WorldCore> | null>(null);
+  
+  // Build effective world core by merging base with session overrides
+  const effectiveWorldCore = useMemo((): WorldCore => {
+    if (!worldCoreSessionOverrides) return appData.world.core;
+    return {
+      ...appData.world.core,
+      ...worldCoreSessionOverrides,
+      // Deep merge arrays that may have been overridden
+      structuredLocations: worldCoreSessionOverrides.structuredLocations ?? appData.world.core.structuredLocations,
+      customWorldSections: worldCoreSessionOverrides.customWorldSections ?? appData.world.core.customWorldSections,
+      storyGoals: worldCoreSessionOverrides.storyGoals ?? appData.world.core.storyGoals,
+    };
+  }, [appData.world.core, worldCoreSessionOverrides]);
+  
   // Persistent map for placeholder name replacements (ensures consistency across the conversation)
   const placeholderMapRef = useRef<PlaceholderNameMap>({});
   
@@ -531,9 +547,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const buildLLMAppData = useCallback((): ScenarioData => {
     return {
       ...appData,
-      characters: appData.characters.map(c => getEffectiveCharacter(c))
+      characters: appData.characters.map(c => getEffectiveCharacter(c)),
+      world: { ...appData.world, core: effectiveWorldCore }
     };
-  }, [appData, getEffectiveCharacter]);
+  }, [appData, getEffectiveCharacter, effectiveWorldCore]);
 
   const findCharacterWithSession = useCallback((name: string | null): (Character & { previousNames?: string[] }) | SideCharacter | null => {
     if (!name) return null;
@@ -3025,6 +3042,10 @@ const updatedChar: SideCharacter = {
         modelId={modelId}
         conversationId={conversationId}
         allCharacters={allCharactersForDisplay}
+        scenarioWorldCore={effectiveWorldCore}
+        onSaveScenarioCard={(patch) => {
+          setWorldCoreSessionOverrides(prev => prev ? { ...prev, ...patch } : patch);
+        }}
       />
       
       {/* Sidebar Theme Modal */}

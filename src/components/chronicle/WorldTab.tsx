@@ -423,12 +423,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                       )}
                     </div>
                     
-                    {/* Controls */}
+                    {/* Right column: buttons + fields */}
                     <div className="flex flex-col gap-4 flex-1">
-                      <HintBox hints={[
-                        "This image appears on your story card in the hub. For best results, use a portrait-oriented image (2:3 aspect ratio)."
-                      ]} />
-                      
                       <CoverImageActionButtons
                         onUploadFromDevice={() => coverFileInputRef.current?.click()}
                         onSelectFromLibrary={(imageUrl) => {
@@ -440,6 +436,15 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                         isUploading={isUploadingCover}
                         isGenerating={isGeneratingCover}
                       />
+                      
+                      <div>
+                        <FieldLabel label="Scenario Name" fieldName="scenarioName" />
+                        <Input value={world.core.scenarioName} onChange={(v) => updateCore({ scenarioName: v })} placeholder="e.g. Chronicles of Eldoria" className="bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500" />
+                      </div>
+                      <div>
+                        <FieldLabel label="Brief Description" fieldName="briefDescription" />
+                        <TextArea value={world.core.briefDescription || ''} onChange={(v) => updateCore({ briefDescription: v })} rows={2} placeholder="A short summary that appears on your story card (1-2 sentences)..." className="bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500" />
+                      </div>
                       
                       {coverImage && (
                         <div className="flex flex-wrap gap-3">
@@ -469,18 +474,6 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                         accept="image/*" 
                         onChange={handleCoverUpload} 
                       />
-                    </div>
-                  </div>
-                  
-                  {/* Scenario Name & Brief Description - moved into Story Card */}
-                  <div className="mt-8 space-y-6">
-                    <div>
-                      <FieldLabel label="Scenario Name" fieldName="scenarioName" />
-                      <Input value={world.core.scenarioName} onChange={(v) => updateCore({ scenarioName: v })} placeholder="e.g. Chronicles of Eldoria" className="bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500" />
-                    </div>
-                    <div>
-                      <FieldLabel label="Brief Description" fieldName="briefDescription" />
-                      <TextArea value={world.core.briefDescription || ''} onChange={(v) => updateCore({ briefDescription: v })} rows={2} placeholder="A short summary that appears on your story card (1-2 sentences)..." className="bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500" />
                     </div>
                   </div>
                 </div>
@@ -565,10 +558,6 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                       </div>
                     </div>
                     
-                    <div>
-                      <FieldLabel label="Tone & Central Themes" fieldName="toneThemes" />
-                      <TextArea value={world.core.toneThemes} onChange={(v) => updateCore({ toneThemes: v })} rows={3} placeholder="What feelings and ideas should define the story?" className="bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500" />
-                    </div>
                     
                     {/* Custom World Content Sections */}
                     {(world.core.customWorldSections || []).map((section, sIdx) => (
