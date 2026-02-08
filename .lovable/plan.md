@@ -1,37 +1,89 @@
 
-# Fix: Remove Double-Nesting of Story Goals Container
+# Fix: Steps Not Generated and Personality Not Updated by AI Update
 
-## Problem
+## Root Cause Analysis
 
-The `StoryGoalsSection` component already renders its own complete container with a steel-blue header, rounded corners, and internal padding (lines 82-88 of `StoryGoalsSection.tsx`). However, in `ScenarioCardView.tsx` (lines 305-328), it is additionally wrapped inside a `CollapsibleSection` component which renders a SECOND container with another "Story Goals" header. This creates the nested double-header appearance shown in Image 1.
+### Problem 1: Steps Never Generated
+The extraction AI returns goals with `desired_outcome`, `current_status`, and `progress` but never includes `new_steps` in its output. This happens because:
 
-The `WorldTab.tsx` does not have this problem because it renders `StoryGoalsSection` directly at line 666 without any wrapping container.
+1. The response format example (line 299 of the edge function) shows a goal WITHOUT any `new_steps` -- the AI mimics examples more than instructions
+2. No explicit mandatory rule states "ALWAYS propose new_steps for every goal"
+3. The `gemini-2.5-flash-lite` default model may lack the capacity for this complex multi-format output
 
-## Fix
+### Problem 2: Placeholder Personality Not Updated
+The character has "trait one, trait two, trait three" in custom sections. The AI doesn't update these because:
+1. Placeholder text isn't "contradicted" by dialogue -- it's just empty/generic
+2. The prompt tells the AI to correct "stale" data but doesn't tell it to replace obvious placeholder content
 
-**File: `src/components/chronicle/ScenarioCardView.tsx`** (lines 304-328)
+---
 
-Replace the `CollapsibleSection` wrapper around `StoryGoalsSection` with a direct render of the component -- matching the pattern used in `WorldTab.tsx`.
+## Fix 1: Update Extraction Prompt (Edge Function)
 
-Before:
+**File: `supabase/functions/extract-character-updates/index.ts`**
+
+### A) Make `new_steps` mandatory for ALL goal updates
+
+Add an explicit rule in the GOALS section after the format description (around line 209):
+
 ```
-<CollapsibleSection
-  title="Story Goals"
-  isExpanded={...}
-  onToggle={...}
-  collapsedContent={...}
->
-  <StoryGoalsSection goals={storyGoals} onChange={...} />
-</CollapsibleSection>
+MANDATORY: When creating a NEW goal, you MUST include new_steps with 5-8 narrative-quality steps.
+When UPDATING an existing goal that has fewer than 3 steps, propose additional new_steps to flesh it out.
 ```
 
-After:
+### B) Update the response format example to include `new_steps`
+
+Change the example at line 299 from:
+```json
+{ "character": "CharacterName", "field": "goals.Save Enough Money", "value": "desired_outcome: ... | current_status: ... | progress: 10" }
 ```
-<StoryGoalsSection goals={storyGoals} onChange={...} />
+to:
+```json
+{ "character": "CharacterName", "field": "goals.Save Enough Money", "value": "desired_outcome: ... | current_status: ... | progress: 10 | new_steps: Step 1: Research high-yield savings accounts and compare interest rates to find the best option for building an emergency fund. Step 2: Set up automatic transfers from checking to savings each payday, starting with a comfortable amount that doesn't cause financial strain. Step 3: Track monthly spending to identify areas where expenses can be reduced, redirecting savings toward the emergency fund goal." }
 ```
 
-This is a single-line change that removes the redundant outer wrapper while keeping the `StoryGoalsSection`'s own styled container intact -- matching Image 2 exactly.
+### C) Add placeholder detection rule
 
-## Technical Note
+Add to the STALENESS CORRECTION section:
+```
+- If a stored value contains obvious PLACEHOLDER text (e.g., "trait one", "trait two", "example text", or generic filler), treat it as EMPTY and generate real content based on dialogue context.
+- Replace any generic or template-style values with specific, dialogue-informed content.
+```
 
-No other files need changes. The `StoryGoalsSection` component is self-contained with its own dark-theme container (`bg-[#2a2a2f]`, rounded-[24px], steel-blue header with Target icon). The collapsible behavior for Story Goals within the Scenario Card modal is not needed since the section is always visible when toggled to the Scenario Card view.
+### D) Upgrade default model
+
+Change the default model from `gemini-2.5-flash-lite` (line 313) to `gemini-2.5-flash`. The lite model struggles with the complex multi-field extraction format. The standard flash model handles structured output much more reliably.
+
+### E) Add `max_tokens` parameter
+
+Add `max_tokens: 8192` to the API request body (line 345-352) to prevent output truncation on long extractions with multiple characters and goals.
+
+---
+
+## Fix 2: Update Deep Scan in CharacterEditModal
+
+**File: `src/components/chronicle/CharacterEditModal.tsx`**
+
+### A) Upgrade model for deep scan
+
+The deep scan call at line 420 sends `modelId: modelId || 'gemini-2.5-flash'`. This is already correct (using standard flash, not lite). No change needed here.
+
+### B) Add logging for step parsing
+
+Add console.log statements inside the goal merge logic (around line 498-508) to log when `new_steps` are parsed and how many are added. This helps debug future issues without needing to check edge function logs.
+
+---
+
+## Files Changed
+
+| File | Change |
+|------|--------|
+| `supabase/functions/extract-character-updates/index.ts` | Update prompt: mandatory new_steps rule, fix response example, add placeholder detection, upgrade default model to flash, add max_tokens |
+| `src/components/chronicle/CharacterEditModal.tsx` | Add debug logging for step parsing in deep scan merge |
+
+## Expected Behavior After Fix
+
+1. When the AI creates a new goal, it will include 5-8 narrative steps
+2. When updating an existing goal with fewer than 3 steps, it will propose additional steps
+3. Placeholder text like "trait one, trait two" will be detected and replaced with real content from dialogue
+4. Output will not be truncated thanks to the increased max_tokens limit
+5. The standard flash model provides more reliable structured output than flash-lite
