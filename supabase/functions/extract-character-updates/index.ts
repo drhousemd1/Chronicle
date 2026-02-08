@@ -224,7 +224,7 @@ NEVER create custom sections named: Desires, Kinks, Preferences, Fantasies, Inte
 These categories ALL belong in the goals system because they have a desired end state and can progress.
 
 Example goal for a desire:
-  goals.Explore Rock Climbing = "desired_outcome: Becomes a confident climber who regularly visits the climbing gym, feels the thrill of completing challenging routes, and has integrated it as a core part of their active lifestyle. | current_status: Mentioned interest after seeing a climbing video. Has not yet visited a gym or tried it, but keeps bringing it up in conversation. Seems genuinely excited about the idea. | progress: 5"
+  goals.Explore Rock Climbing = "desired_outcome: Becomes a confident climber who regularly visits the climbing gym, feels the thrill of completing challenging routes, and has integrated it as a core part of their active lifestyle. | current_status: Mentioned interest after seeing a climbing video. Has not yet visited a gym or tried it, but keeps bringing it up in conversation. Seems genuinely excited about the idea. | progress: 5 | new_steps: Step 1: Research local climbing gyms and indoor bouldering walls, comparing prices and beginner-friendly options. Make a shortlist of two or three places worth visiting. Step 2: Visit the top-choice climbing gym for the first time, try a beginner route, and get a feel for the sport. Step 3: Sign up for a beginner climbing class or workshop to learn proper technique, safety, and belaying skills. Step 4: Start climbing regularly at least once a week, gradually increasing difficulty levels as confidence grows. Step 5: Invest in personal climbing gear (shoes, chalk bag) as a commitment to the hobby. Step 6: Attempt an intermediate-level route and complete it successfully, marking a major skill milestone."
 
 ═══════════════════════════════════════════════════
 DESCRIPTION DEPTH REQUIREMENTS (MANDATORY)
@@ -277,6 +277,8 @@ STALENESS CORRECTION & PLACEHOLDER DETECTION
 - If a stored value contains obvious PLACEHOLDER text (e.g., "trait one", "trait two", "trait three", "example text", "placeholder", or generic numbered filler), treat it as EMPTY and generate real content based on dialogue context
 - Replace any generic or template-style values with specific, dialogue-informed content
 - Do NOT preserve placeholder values — always overwrite them with meaningful data
+- If a custom section item has a PLACEHOLDER LABEL (e.g., "Trait 1", "Trait 2", "Item 1", or any generic numbered label), you MUST use a DESCRIPTIVE label instead. Example: Instead of "sections.Personality.Trait 1 = Nurturing", use "sections.Personality.Nurturing Nature = Nurturing and protective...".
+- NEVER use generic labels like "Trait 1", "Trait 2", "Item 1", "Item 2" in your output. Always use meaningful, descriptive labels.
 
 ═══════════════════════════════════════════════════
 RULES
@@ -351,7 +353,7 @@ Return ONLY valid JSON. No explanations.`;
         model: modelForRequest,
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Analyze this dialogue and extract ALL character state changes. Remember: Phase 2 (reviewing existing state) is MANDATORY.\n\n${combinedText}` }
+          { role: "user", content: `Analyze this dialogue and extract ALL character state changes. Remember: Phase 2 (reviewing existing state) is MANDATORY. For EVERY goal (new or existing with <3 steps), you MUST include new_steps. Replace any placeholder labels (e.g. "Trait 1") with descriptive labels.\n\n${combinedText}` }
         ],
         temperature: 0.3,
         max_tokens: 8192,

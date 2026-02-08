@@ -577,13 +577,27 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
               const section = updatedSections[sectionIndex];
               const itemIndex = section.items.findIndex(i => i.label.toLowerCase() === itemLabel.toLowerCase());
               if (itemIndex === -1) {
-                section.items.push({
-                  id: uid('item'),
-                  label: itemLabel,
-                  value: value,
-                  createdAt: now(),
-                  updatedAt: now()
-                });
+                // Check for placeholder labels to replace (e.g. "Trait 1", "Item 2")
+                const placeholderPattern = /^(trait|item|entry|row|example|placeholder)\s*\d*$/i;
+                const placeholderIdx = section.items.findIndex(i => placeholderPattern.test(i.label.trim()));
+                
+                if (placeholderIdx !== -1) {
+                  console.log(`[deep-scan] Replacing placeholder label "${section.items[placeholderIdx].label}" with "${itemLabel}"`);
+                  section.items[placeholderIdx] = { 
+                    ...section.items[placeholderIdx], 
+                    label: itemLabel, 
+                    value, 
+                    updatedAt: now() 
+                  };
+                } else {
+                  section.items.push({
+                    id: uid('item'),
+                    label: itemLabel,
+                    value: value,
+                    createdAt: now(),
+                    updatedAt: now()
+                  });
+                }
               } else {
                 section.items[itemIndex] = { ...section.items[itemIndex], value, updatedAt: now() };
               }
