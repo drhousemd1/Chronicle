@@ -1,6 +1,7 @@
 
 import React, { useRef, useState, useCallback } from 'react';
-import { World, OpeningDialog, CodexEntry, Character, Scene, TimeOfDay, WorldCore, ContentThemes, defaultContentThemes } from '@/types';
+import { World, OpeningDialog, CodexEntry, Character, Scene, TimeOfDay, WorldCore, ContentThemes, defaultContentThemes, LocationEntry, WorldCustomSection, WorldCustomItem, StoryGoal } from '@/types';
+import { EnhanceableWorldFields } from '@/services/world-ai';
 import { Button, Input, TextArea, Card } from './UI';
 import { Icons } from '@/constants';
 import { uid, now, resizeImage, uuid, clamp } from '@/utils';
@@ -8,7 +9,8 @@ import { useAuth } from '@/hooks/use-auth';
 import { uploadSceneImage, uploadCoverImage, dataUrlToBlob } from '@/services/supabase-data';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Sunrise, Sun, Sunset, Moon, ChevronUp, ChevronDown, Pencil, Sparkles, Share2 } from 'lucide-react';
+import { Sunrise, Sun, Sunset, Moon, ChevronUp, ChevronDown, Pencil, Sparkles, Share2, Trash2, Plus, X } from 'lucide-react';
+import { StoryGoalsSection } from './StoryGoalsSection';
 import { AVATAR_STYLES, DEFAULT_STYLE_ID } from '@/constants/avatar-styles';
 import { cn } from '@/lib/utils';
 import { SceneTagEditorModal } from './SceneTagEditorModal';
@@ -107,7 +109,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   const [showSceneGenModal, setShowSceneGenModal] = useState(false);
   const [isGeneratingScene, setIsGeneratingScene] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
-  const [enhancingField, setEnhancingField] = useState<keyof WorldCore | null>(null);
+  const [enhancingField, setEnhancingField] = useState<EnhanceableWorldFields | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverFileInputRef = useRef<HTMLInputElement>(null);
   const coverContainerRef = useRef<HTMLDivElement>(null);
@@ -117,7 +119,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   };
 
   // AI enhancement handler for World Core fields
-  const handleEnhanceField = async (fieldName: keyof WorldCore) => {
+  const handleEnhanceField = async (fieldName: EnhanceableWorldFields) => {
     if (!modelId) {
       toast.error("No model selected. Please select a model in settings.");
       return;
@@ -127,7 +129,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
     try {
       const enhanced = await aiEnhanceWorldField(
         fieldName,
-        world.core[fieldName] || '',
+        (world.core[fieldName] as string) || '',
         world.core,
         modelId
       );
@@ -144,7 +146,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   // Reusable field label with AI enhance button (dark theme)
   const FieldLabel: React.FC<{
     label: string;
-    fieldName: keyof WorldCore;
+    fieldName: EnhanceableWorldFields;
   }> = ({ label, fieldName }) => {
     const isLoading = enhancingField === fieldName;
     return (
@@ -374,7 +376,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
               {/* Section Header - Steel Blue */}
               <div className="bg-[#4a5f7f] border-b border-white/20 px-6 py-4 flex items-center gap-3 shadow-lg">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-white"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-                <h2 className="text-white text-xl font-bold tracking-tight">Cover Image</h2>
+                <h2 className="text-white text-xl font-bold tracking-tight">Story Card</h2>
               </div>
               
               {/* Content */}
@@ -469,6 +471,18 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                       />
                     </div>
                   </div>
+                  
+                  {/* Scenario Name & Brief Description - moved into Story Card */}
+                  <div className="mt-8 space-y-6">
+                    <div>
+                      <FieldLabel label="Scenario Name" fieldName="scenarioName" />
+                      <Input value={world.core.scenarioName} onChange={(v) => updateCore({ scenarioName: v })} placeholder="e.g. Chronicles of Eldoria" className="bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500" />
+                    </div>
+                    <div>
+                      <FieldLabel label="Brief Description" fieldName="briefDescription" />
+                      <TextArea value={world.core.briefDescription || ''} onChange={(v) => updateCore({ briefDescription: v })} rows={2} placeholder="A short summary that appears on your story card (1-2 sentences)..." className="bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500" />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -485,38 +499,185 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                 <div className="p-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
                   <div className="grid grid-cols-1 gap-8">
                     <div>
-                      <FieldLabel label="Scenario Name" fieldName="scenarioName" />
-                      <Input value={world.core.scenarioName} onChange={(v) => updateCore({ scenarioName: v })} placeholder="e.g. Chronicles of Eldoria" className="bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500" />
-                    </div>
-                    <div>
-                      <FieldLabel label="Brief Description" fieldName="briefDescription" />
-                      <TextArea value={world.core.briefDescription || ''} onChange={(v) => updateCore({ briefDescription: v })} rows={2} placeholder="A short summary that appears on your story card (1-2 sentences)..." className="bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500" />
-                    </div>
-                    <div>
-                      <FieldLabel label="Story Premise" fieldName="storyPremise" />
+                      <FieldLabel label="Scenario" fieldName="storyPremise" />
                       <TextArea value={world.core.storyPremise || ''} onChange={(v) => updateCore({ storyPremise: v })} rows={4} placeholder="What's the central situation or conflict? What's at stake? Describe the overall narrative the AI should understand..." className="bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500" />
                     </div>
                     <div>
                       <FieldLabel label="Setting Overview" fieldName="settingOverview" />
                       <TextArea value={world.core.settingOverview} onChange={(v) => updateCore({ settingOverview: v })} rows={4} placeholder="Describe the physical and cultural landscape of your world..." className="bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500" />
                     </div>
+                    
+                    {/* Structured Locations */}
                     <div>
-                      <FieldLabel label="Rules of Magic & Technology" fieldName="rulesOfMagicTech" />
-                      <TextArea value={world.core.rulesOfMagicTech} onChange={(v) => updateCore({ rulesOfMagicTech: v })} rows={3} placeholder="How do supernatural or advanced systems function?" className="bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500" />
+                      <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-3 block">Primary Locations</label>
+                      <div className="space-y-3">
+                        {(world.core.structuredLocations && world.core.structuredLocations.length > 0 
+                          ? world.core.structuredLocations 
+                          : [{ id: 'loc_default_1', label: '', description: '' }, { id: 'loc_default_2', label: '', description: '' }]
+                        ).map((loc, idx) => (
+                          <div key={loc.id} className="flex items-start gap-3">
+                            <Input 
+                              value={loc.label} 
+                              onChange={(v) => {
+                                const locs = [...(world.core.structuredLocations || [{ id: 'loc_default_1', label: '', description: '' }, { id: 'loc_default_2', label: '', description: '' }])];
+                                locs[idx] = { ...locs[idx], label: v };
+                                updateCore({ structuredLocations: locs });
+                              }}
+                              placeholder={idx === 0 ? "e.g. The Lakehouse" : "Location name..."}
+                              className="w-1/3 bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500"
+                            />
+                            <TextArea 
+                              value={loc.description} 
+                              onChange={(v) => {
+                                const locs = [...(world.core.structuredLocations || [{ id: 'loc_default_1', label: '', description: '' }, { id: 'loc_default_2', label: '', description: '' }])];
+                                locs[idx] = { ...locs[idx], description: v };
+                                updateCore({ structuredLocations: locs });
+                              }}
+                              rows={1}
+                              placeholder={idx === 0 ? "A secluded cabin by the lake..." : "Describe this location..."}
+                              className="flex-1 bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const locs = [...(world.core.structuredLocations || [])];
+                                locs.splice(idx, 1);
+                                updateCore({ structuredLocations: locs.length > 0 ? locs : undefined });
+                              }}
+                              className="mt-2 text-zinc-500 hover:text-rose-400 transition-colors p-1"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const locs = [...(world.core.structuredLocations || [{ id: 'loc_default_1', label: '', description: '' }, { id: 'loc_default_2', label: '', description: '' }])];
+                            locs.push({ id: uid('loc'), label: '', description: '' });
+                            updateCore({ structuredLocations: locs });
+                          }}
+                          className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm transition-colors"
+                        >
+                          <Plus size={16} />
+                          <span>Add Location</span>
+                        </button>
+                      </div>
                     </div>
-                    <div>
-                      <FieldLabel label="Primary Locations" fieldName="locations" />
-                      <TextArea value={world.core.locations} onChange={(v) => updateCore({ locations: v })} rows={3} placeholder="List key cities, landmarks, or regions..." className="bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500" />
-                    </div>
+                    
                     <div>
                       <FieldLabel label="Tone & Central Themes" fieldName="toneThemes" />
                       <TextArea value={world.core.toneThemes} onChange={(v) => updateCore({ toneThemes: v })} rows={3} placeholder="What feelings and ideas should define the story?" className="bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500" />
                     </div>
+                    
+                    {/* Custom World Content Sections */}
+                    {(world.core.customWorldSections || []).map((section, sIdx) => (
+                      <div key={section.id} className="p-5 bg-blue-900/40 rounded-2xl border border-white/5 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <Input
+                            value={section.title}
+                            onChange={(v) => {
+                              const sections = [...(world.core.customWorldSections || [])];
+                              sections[sIdx] = { ...sections[sIdx], title: v };
+                              updateCore({ customWorldSections: sections });
+                            }}
+                            placeholder="Section Title..."
+                            className="bg-transparent border-none text-white font-bold text-lg px-0 focus:ring-0 placeholder:text-zinc-500"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const sections = (world.core.customWorldSections || []).filter((_, i) => i !== sIdx);
+                              updateCore({ customWorldSections: sections.length > 0 ? sections : undefined });
+                            }}
+                            className="text-zinc-500 hover:text-rose-400 transition-colors p-1"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                        {section.items.map((item, iIdx) => (
+                          <div key={item.id} className="flex items-start gap-3">
+                            <Input
+                              value={item.label}
+                              onChange={(v) => {
+                                const sections = [...(world.core.customWorldSections || [])];
+                                const items = [...sections[sIdx].items];
+                                items[iIdx] = { ...items[iIdx], label: v };
+                                sections[sIdx] = { ...sections[sIdx], items };
+                                updateCore({ customWorldSections: sections });
+                              }}
+                              placeholder="Label..."
+                              className="w-1/3 bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500"
+                            />
+                            <TextArea
+                              value={item.value}
+                              onChange={(v) => {
+                                const sections = [...(world.core.customWorldSections || [])];
+                                const items = [...sections[sIdx].items];
+                                items[iIdx] = { ...items[iIdx], value: v };
+                                sections[sIdx] = { ...sections[sIdx], items };
+                                updateCore({ customWorldSections: sections });
+                              }}
+                              rows={1}
+                              placeholder="Description..."
+                              className="flex-1 bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const sections = [...(world.core.customWorldSections || [])];
+                                sections[sIdx] = { ...sections[sIdx], items: sections[sIdx].items.filter((_, i) => i !== iIdx) };
+                                updateCore({ customWorldSections: sections });
+                              }}
+                              className="mt-2 text-zinc-500 hover:text-rose-400 transition-colors p-1"
+                            >
+                              <X size={16} />
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const sections = [...(world.core.customWorldSections || [])];
+                            sections[sIdx] = { ...sections[sIdx], items: [...sections[sIdx].items, { id: uid('wci'), label: '', value: '' }] };
+                            updateCore({ customWorldSections: sections });
+                          }}
+                          className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm transition-colors"
+                        >
+                          <Plus size={16} />
+                          <span>Add Item</span>
+                        </button>
+                      </div>
+                    ))}
+                    
+                    {/* Add Custom Content Button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const sections = [...(world.core.customWorldSections || [])];
+                        sections.push({
+                          id: uid('wcs'),
+                          title: '',
+                          items: [{ id: uid('wci'), label: '', value: '' }]
+                        });
+                        updateCore({ customWorldSections: sections });
+                      }}
+                      className="w-full py-3 bg-transparent border-2 border-dashed border-zinc-500 text-blue-400 hover:border-blue-400 hover:bg-blue-500/5 font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Plus size={16} />
+                      Add Custom Content
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
           </section>
+
+          {/* Story Goals Section */}
+          <StoryGoalsSection
+            goals={world.core.storyGoals || []}
+            onChange={(goals) => updateCore({ storyGoals: goals })}
+          />
 
           {/* Opening Dialog Section - Dark Theme */}
           <section>
