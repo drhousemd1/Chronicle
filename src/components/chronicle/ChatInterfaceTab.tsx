@@ -1193,7 +1193,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
             title: g.title,
             desiredOutcome: g.desiredOutcome || '',
             currentStatus: g.currentStatus || '',
-            progress: g.progress || 0
+            progress: g.progress || 0,
+            steps: (g.steps || []).map(s => ({ id: s.id, description: s.description, completed: s.completed }))
           })),
           customSections: (effective.sections || []).map(s => ({
             title: s.title,
@@ -1324,39 +1325,39 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         for (const update of charUpdates) {
           const { field, value } = update;
           
-          // Handle goals.GoalTitle = "desired_outcome: X | current_status: Y | progress: Z" format
+          // Handle goals.GoalTitle = "desired_outcome: X | current_status: Y | progress: Z | complete_steps: 1,2 | new_steps: Step 7: ..." format
           if (field.startsWith('goals.')) {
             const goalTitle = field.slice(6); // Remove 'goals.' prefix
             if (goalTitle) {
-              // Parse the full three-field format: "desired_outcome: X | current_status: Y | progress: Z"
               let desiredOutcome = '';
               let currentStatus = value;
               let progress = 0;
               
-              // Extract desired_outcome (between "desired_outcome:" and "| current_status:")
+              // Parse all fields from the value string
               const desiredMatch = value.match(/desired_outcome:\s*(.*?)\s*\|\s*current_status:/i);
               if (desiredMatch) {
                 desiredOutcome = desiredMatch[1].trim();
               }
               
-              // Extract current_status (between "current_status:" and "| progress:")
               const statusMatch = value.match(/current_status:\s*(.*?)\s*\|\s*progress:/i);
               if (statusMatch) {
                 currentStatus = statusMatch[1].trim();
               } else {
-                // Fallback: if no current_status label, try to strip desired_outcome and progress from raw value
                 currentStatus = value
                   .replace(/desired_outcome:\s*.*?\s*\|\s*/i, '')
-                  .replace(/\s*\|\s*progress:\s*\d+\s*/i, '')
+                  .replace(/\s*\|\s*progress:\s*\d+.*/i, '')
                   .replace(/current_status:\s*/i, '')
                   .trim();
               }
               
-              // Extract progress
               const progressMatch = value.match(/progress:\s*(\d+)/i);
               if (progressMatch) {
                 progress = Math.min(100, Math.max(0, parseInt(progressMatch[1], 10)));
               }
+              
+              // Parse step operations
+              const completeStepsMatch = value.match(/complete_steps:\s*([^|]+)/i);
+              const newStepsMatch = value.match(/new_steps:\s*(.*)/i);
               
               // Find existing goal or create new one
               const existingGoalIndex = updatedGoals.findIndex(g => 
@@ -1364,27 +1365,71 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
               );
               
               if (existingGoalIndex !== -1) {
-                // Update existing goal - also update desiredOutcome if AI provided one
+                const existingGoal = updatedGoals[existingGoalIndex];
+                let updatedSteps = [...(existingGoal.steps || [])];
+                
+                // Handle complete_steps: mark specified step indices as completed (1-indexed)
+                if (completeStepsMatch) {
+                  const indices = completeStepsMatch[1].trim().split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
+                  for (const idx of indices) {
+                    if (idx >= 1 && idx <= updatedSteps.length) {
+                      updatedSteps[idx - 1] = { ...updatedSteps[idx - 1], completed: true, completedAt: Date.now() };
+                    }
+                  }
+                }
+                
+                // Handle new_steps: parse and append new steps
+                if (newStepsMatch) {
+                  const newStepsRaw = newStepsMatch[1].trim();
+                  const stepEntries = newStepsRaw.split(/Step\s+\d+:\s*/i).filter(Boolean);
+                  for (const desc of stepEntries) {
+                    const trimmed = desc.trim().replace(/\|$/, '').trim();
+                    if (trimmed) {
+                      updatedSteps.push({ id: `step_${uuid().slice(0, 12)}`, description: trimmed, completed: false });
+                    }
+                  }
+                }
+                
+                // Recalculate progress from steps if steps exist
+                if (updatedSteps.length > 0) {
+                  const completedCount = updatedSteps.filter(s => s.completed).length;
+                  progress = Math.round((completedCount / updatedSteps.length) * 100);
+                }
+                
                 updatedGoals[existingGoalIndex] = {
-                  ...updatedGoals[existingGoalIndex],
+                  ...existingGoal,
                   currentStatus,
                   progress,
+                  steps: updatedSteps,
                   ...(desiredOutcome ? { desiredOutcome } : {}),
                   updatedAt: Date.now()
                 };
-                console.log(`[applyExtractedUpdates] Updated goal "${goalTitle}" → ${progress}% | desiredOutcome: ${desiredOutcome ? 'yes' : 'unchanged'}`);
+                console.log(`[applyExtractedUpdates] Updated goal "${goalTitle}" → ${progress}% (${updatedSteps.filter(s => s.completed).length}/${updatedSteps.length} steps)`);
               } else {
-                // Create new goal with full detail
+                // Create new goal - parse any new_steps
+                const newSteps: Array<{ id: string; description: string; completed: boolean }> = [];
+                if (newStepsMatch) {
+                  const newStepsRaw = newStepsMatch[1].trim();
+                  const stepEntries = newStepsRaw.split(/Step\s+\d+:\s*/i).filter(Boolean);
+                  for (const desc of stepEntries) {
+                    const trimmed = desc.trim().replace(/\|$/, '').trim();
+                    if (trimmed) {
+                      newSteps.push({ id: `step_${uuid().slice(0, 12)}`, description: trimmed, completed: false });
+                    }
+                  }
+                }
+                
                 updatedGoals.push({
                   id: `goal_${uuid().slice(0, 12)}`,
                   title: goalTitle,
                   desiredOutcome,
                   currentStatus,
                   progress,
+                  steps: newSteps,
                   createdAt: Date.now(),
                   updatedAt: Date.now()
                 });
-                console.log(`[applyExtractedUpdates] Created new goal "${goalTitle}" → ${progress}% | desiredOutcome: "${desiredOutcome.slice(0, 50)}..."`);
+                console.log(`[applyExtractedUpdates] Created new goal "${goalTitle}" → ${progress}% with ${newSteps.length} steps`);
               }
               goalsModified = true;
             }

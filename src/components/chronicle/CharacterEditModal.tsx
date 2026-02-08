@@ -354,7 +354,8 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
               title: g.title,
               desiredOutcome: g.desiredOutcome || '',
               currentStatus: g.currentStatus || '',
-              progress: g.progress || 0
+              progress: g.progress || 0,
+              steps: (g.steps || []).map(s => ({ id: s.id, description: s.description, completed: s.completed }))
             }))
           : [],
         customSections: ('sections' in c && (c as Character).sections)
@@ -408,7 +409,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
           
           const { field, value } = update;
           
-          // Handle goals
+           // Handle goals
           if (field.startsWith('goals.')) {
             const goalTitle = field.slice(6);
             if (goalTitle) {
@@ -416,10 +417,12 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
               let desiredOutcome = '';
               let progress = 0;
               
-              // Parse new format: "desired_outcome: X | current_status: Y | progress: Z"
+              // Parse format: "desired_outcome: X | current_status: Y | progress: Z | complete_steps: 1,2 | new_steps: Step 7: ..."
               const desiredOutcomeMatch = value.match(/desired_outcome:\s*([^|]+)/i);
               const currentStatusMatch = value.match(/current_status:\s*([^|]+)/i);
               const progressMatch = value.match(/progress:\s*(\d+)/i);
+              const completeStepsMatch = value.match(/complete_steps:\s*([^|]+)/i);
+              const newStepsMatch = value.match(/new_steps:\s*(.*)/i);
               
               if (desiredOutcomeMatch) {
                 desiredOutcome = desiredOutcomeMatch[1].trim();
@@ -427,7 +430,6 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
               if (currentStatusMatch) {
                 currentStatus = currentStatusMatch[1].trim();
               } else if (progressMatch) {
-                // Fallback: legacy format "status text | progress: XX"
                 currentStatus = value.replace(/\s*\|\s*progress:\s*\d+\s*/i, '').trim();
                 if (desiredOutcomeMatch) {
                   currentStatus = currentStatus.replace(/desired_outcome:\s*[^|]+\|?\s*/i, '').trim();
@@ -439,20 +441,66 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
               
               const existingIdx = updatedGoals.findIndex(g => g.title.toLowerCase() === goalTitle.toLowerCase());
               if (existingIdx !== -1) {
+                const existingGoal = updatedGoals[existingIdx];
+                let updatedSteps = [...(existingGoal.steps || [])];
+                
+                // Handle complete_steps: mark specified step indices as completed (1-indexed)
+                if (completeStepsMatch) {
+                  const indices = completeStepsMatch[1].trim().split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
+                  for (const idx of indices) {
+                    if (idx >= 1 && idx <= updatedSteps.length) {
+                      updatedSteps[idx - 1] = { ...updatedSteps[idx - 1], completed: true, completedAt: now() };
+                    }
+                  }
+                }
+                
+                // Handle new_steps: parse and append new steps
+                if (newStepsMatch) {
+                  const newStepsRaw = newStepsMatch[1].trim();
+                  const stepEntries = newStepsRaw.split(/Step\s+\d+:\s*/i).filter(Boolean);
+                  for (const desc of stepEntries) {
+                    const trimmed = desc.trim().replace(/\|$/, '').trim();
+                    if (trimmed) {
+                      updatedSteps.push({ id: uid('step'), description: trimmed, completed: false });
+                    }
+                  }
+                }
+                
+                // Recalculate progress from steps if steps exist
+                if (updatedSteps.length > 0) {
+                  const completedCount = updatedSteps.filter(s => s.completed).length;
+                  progress = Math.round((completedCount / updatedSteps.length) * 100);
+                }
+                
                 updatedGoals[existingIdx] = { 
-                  ...updatedGoals[existingIdx], 
+                  ...existingGoal, 
                   currentStatus, 
                   progress, 
+                  steps: updatedSteps,
                   updatedAt: now(),
                   ...(desiredOutcome ? { desiredOutcome } : {})
                 };
               } else {
+                // New goal - parse any new_steps
+                const newSteps: Array<{ id: string; description: string; completed: boolean }> = [];
+                if (newStepsMatch) {
+                  const newStepsRaw = newStepsMatch[1].trim();
+                  const stepEntries = newStepsRaw.split(/Step\s+\d+:\s*/i).filter(Boolean);
+                  for (const desc of stepEntries) {
+                    const trimmed = desc.trim().replace(/\|$/, '').trim();
+                    if (trimmed) {
+                      newSteps.push({ id: uid('step'), description: trimmed, completed: false });
+                    }
+                  }
+                }
+                
                 updatedGoals.push({
                   id: uid('goal'),
                   title: goalTitle,
                   desiredOutcome,
                   currentStatus,
                   progress,
+                  steps: newSteps,
                   createdAt: now(),
                   updatedAt: now()
                 });
