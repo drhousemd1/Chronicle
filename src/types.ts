@@ -259,6 +259,7 @@ export type ScenarioData = {
   world: World;
   story: { openingDialog: OpeningDialog };
   scenes: Scene[];
+  contentThemes?: ContentThemes;     // Scenario content theme tags for LLM injection
   uiSettings?: {
     showBackgrounds: boolean;
     transparentBubbles: boolean;

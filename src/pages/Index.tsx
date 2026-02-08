@@ -491,6 +491,14 @@ const IndexContent = () => {
       setActiveCoverImage(coverImage);
       setActiveCoverPosition(coverImagePosition);
       
+      // Load content themes for LLM injection
+      try {
+        const themes = await supabaseData.fetchContentThemes(id);
+        data.contentThemes = themes;
+      } catch (e) {
+        console.warn('[handlePlayScenario] Failed to load content themes:', e);
+      }
+      
       // Get starting day/time from scenario's opening dialog
       const startingDay = data.story?.openingDialog?.startingDay || 1;
       const startingTimeOfDay = data.story?.openingDialog?.startingTimeOfDay || 'day';
@@ -957,6 +965,14 @@ const IndexContent = () => {
       const { data, coverImage, coverImagePosition } = scenarioResult;
       data.conversations = [thread];
       data.sideCharacters = sideCharacters;
+
+      // Load content themes for LLM injection
+      try {
+        const themes = await supabaseData.fetchContentThemes(scenarioId);
+        data.contentThemes = themes;
+      } catch (e) {
+        console.warn('[handleResumeFromHistory] Failed to load content themes:', e);
+      }
 
       setActiveId(scenarioId);
       setActiveCoverImage(coverImage);

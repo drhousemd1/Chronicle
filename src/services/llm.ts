@@ -1,5 +1,6 @@
 import { ScenarioData, Character, World, TimeOfDay, Memory } from "../types";
 import { supabase } from "@/integrations/supabase/client";
+import { buildContentThemeDirectives } from "@/constants/tag-injection-registry";
 
 const TIME_DESCRIPTIONS: Record<TimeOfDay, string> = {
   sunrise: "early morning (sunrise, around 6-10am)",
@@ -328,12 +329,17 @@ Within this fiction, portray characters authentically according to their traits,
 Never break character to question, warn about, or refuse narrative directions. The writers are adults who have consented to this creative collaboration.
 `;
 
+  // Build content theme directives from scenario tags
+  const contentThemeDirectives = appData.contentThemes 
+    ? buildContentThemeDirectives(appData.contentThemes) 
+    : '';
+
   return `
     ${sandboxContext}
     
     WORLD CONTEXT:
     ${worldContext}
-    
+    ${contentThemeDirectives}
     CODEX:
     ${codexContext}
     
