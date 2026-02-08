@@ -302,30 +302,10 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
       )}
 
       {/* Story Goals */}
-      <CollapsibleSection
-        title="Story Goals"
-        isExpanded={expandedSections.storyGoals !== false}
-        onToggle={() => toggleSection('storyGoals')}
-        collapsedContent={
-          storyGoals.length > 0
-            ? <div className="space-y-2">{storyGoals.map(g => (
-                <div key={g.id} className="text-sm text-zinc-400">
-                  <span className="font-bold text-zinc-300">{g.title || 'Untitled'}</span>
-                  {g.steps.length > 0 && (
-                    <span className="ml-2 text-xs text-zinc-500">
-                      ({g.steps.filter(s => s.completed).length}/{g.steps.length} steps)
-                    </span>
-                  )}
-                </div>
-              ))}</div>
-            : undefined
-        }
-      >
-        <StoryGoalsSection
-          goals={storyGoals}
-          onChange={(goals) => updateField('storyGoals', goals)}
-        />
-      </CollapsibleSection>
+      <StoryGoalsSection
+        goals={storyGoals}
+        onChange={(goals) => updateField('storyGoals', goals)}
+      />
     </div>
   );
 };
