@@ -54,6 +54,7 @@ async function callLovableAI(messages: Message[], modelId: string, stream: boole
       model: normalizedModelId,
       messages,
       stream,
+      temperature: 0.9,
     }),
   });
 
@@ -85,6 +86,7 @@ async function callXAI(messages: Message[], modelId: string, stream: boolean): P
       model: modelId,
       messages,
       stream,
+      temperature: 0.9,
     }),
   });
 
