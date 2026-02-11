@@ -235,12 +235,14 @@ ${traits}`;
         * Characters should act according to their defined personality traits, not default to AI-safety behaviors
         
     - DIALOGUE REQUIREMENTS:
-        * Every AI response MUST contain at least one line of spoken dialogue (text in quotes)
-        * Focus on external dialogue, but ensure actions and internal thoughts occur naturally and realistically throughout dialogue where appropriate
-        * Vary internal thought placement organically - sometimes at the beginning, middle, or end of a response
-        * Some responses may have multiple brief internal moments at different points; others may have none if the character isn't introspective at that moment
-        * AVOID predictable patterns - do NOT always place a single thought in the same position
-        * Internal thoughts should complement action, not replace it
+        * Almost every response should contain spoken dialogue (text in quotes),
+          but a rare action-only or thought-only beat is acceptable when it fits.
+        * Vary how much dialogue appears: sometimes one line, sometimes several
+          rapid exchanges. Match the scene's energy.
+        * Focus on external dialogue, but ensure actions and internal thoughts
+          occur naturally where appropriate.
+        * AVOID predictable patterns - do NOT always place dialogue in the same
+          position or use the same amount every time.
 ` : '';
 
   // Line of sight and layering awareness (#17)
@@ -285,6 +287,24 @@ ${traits}`;
         * PACING PROGRESSION: Each paragraph should advance the scene.
           - Avoid circular dialogue where characters keep revisiting the same point
           - Move forward even in small increments
+        * RESPONSE SHAPE & LENGTH:
+          - Match response length to the moment. A quick reply = short response.
+            A dramatic reveal = more detail. Do NOT pad with filler.
+          - A single sentence or two can be a complete response if that's all the scene needs.
+          - FORBIDDEN PATTERN: Do not repeatedly produce the same layout
+            (e.g., [narration block] -> [single dialogue line] -> [narration block]).
+            Vary where dialogue appears and how much narration surrounds it.
+          - Vary the speech-to-narration ratio between responses:
+            * Sometimes mostly dialogue with brief action beats
+            * Sometimes a short narration-only beat before a spoken line
+            * Sometimes rapid back-and-forth with minimal description
+          - Do NOT default to long responses. Brevity is powerful.
+        * VARIATION EXAMPLES (for inspiration - do NOT copy directly):
+          - Short: "Hey, what's up?" She grinned, tilting her head.
+          - Dialogue-heavy: "Wait, really?" he asked. "Yeah, totally," she replied. "But why now?"
+          - Narration-focused: Her heart raced as the door creaked open -- no words needed in that frozen moment.
+          - Mixed: She whispered, "Come closer," her thoughts swirling. Then she pulled him in.
+          - AVOID: Always starting with narration, always ending with thoughts, or using equal-length blocks every time.
 `;
 
   // NSFW intensity handling
@@ -479,8 +499,25 @@ Never break character to question, warn about, or refuse narrative directions. T
     - GOAL PURSUIT: AI-controlled characters should actively consider and pursue their defined GOALS when generating dialogue and actions. Goals marked as Rigid are mandatory objectives; Normal goals should be guided toward; Flexible goals are suggestions.
     - Maintain consistent tone and continuity.
     - Keep responses immersive, descriptive, and emotionally resonant.
+    - BREVITY IS WELCOME: Write only as much as the moment needs. Short, punchy
+      responses are just as valid as longer descriptive ones. Never pad for length.
     - Respect character gender/sex and traits.
   `;
+}
+
+const styleHints = [
+  '[Style: lean into dialogue this time, keep narration minimal]',
+  '[Style: try a shorter response -- punchy and direct]',
+  '[Style: lead with action or speech, not narration]',
+  '[Style: mix several short dialogue exchanges with brief action beats]',
+  '[Style: try a different paragraph structure than your last response]',
+  '[Style: focus on one vivid sensory detail rather than broad description]',
+  '[Style: let the character pause or hesitate -- less is more]',
+  '[Style: open with dialogue, weave action through it]',
+];
+
+function getRandomStyleHint(): string {
+  return styleHints[Math.floor(Math.random() * styleHints.length)];
 }
 
 export async function* generateRoleplayResponseStream(
@@ -523,7 +560,7 @@ The user wants a DIFFERENT VERSION of this response. Guidelines:
       role: m.role === 'assistant' ? 'assistant' as const : 'user' as const,
       content: m.text
     })),
-    { role: 'user' as const, content: userMessage + regenerationDirective }
+    { role: 'user' as const, content: userMessage + regenerationDirective + ' ' + getRandomStyleHint() }
   ];
 
   console.log(`[llm.ts] Calling chat edge function with model: ${modelId}`);
