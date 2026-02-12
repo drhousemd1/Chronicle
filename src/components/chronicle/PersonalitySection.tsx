@@ -61,7 +61,7 @@ const AutoResizeTextarea: React.FC<{
       placeholder={placeholder}
       rows={1}
       spellCheck={true}
-      className={`w-full min-w-0 resize-none overflow-hidden whitespace-pre-wrap break-words ${className}`}
+      className={cn("w-full min-w-0 resize-none overflow-hidden whitespace-pre-wrap break-words", className)}
     />
   );
 };
@@ -226,6 +226,7 @@ export const PersonalitySection: React.FC<PersonalitySectionProps> = ({
                   <Switch
                     checked={personality.splitMode}
                     onCheckedChange={(checked) => onChange({ ...personality, splitMode: checked })}
+                    className="data-[state=unchecked]:bg-zinc-700 data-[state=checked]:bg-[#60A5FA]"
                   />
                   <span className="text-xs text-zinc-400 font-medium">Split into Outward & Inward Personalities</span>
                 </div>
