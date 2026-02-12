@@ -33,30 +33,33 @@ export const GuidanceStrengthSlider: React.FC<GuidanceStrengthSliderProps> = ({ 
       </div>
 
       {/* Slider track */}
-      <div className="relative pt-2 pb-1">
+      <div className="relative pt-2 pb-6">
         {/* Track background - gradient blue */}
         <div className="h-2.5 rounded-full overflow-hidden"
           style={{ background: 'linear-gradient(to right, #1a2a4a, #2563eb, #60a5fa)' }}
         />
 
-        {/* Clickable zones + thumb */}
-        <div className="absolute inset-x-0 top-0 h-8 flex">
-          {LEVELS.map((level, idx) => (
+        {/* Thumb positions at 0%, 50%, 100% */}
+        {LEVELS.map((level, idx) => {
+          const leftPercent = idx === 0 ? '0%' : idx === 1 ? '50%' : '100%';
+          const isActive = activeIdx === idx;
+          return (
             <button
               key={level.value}
               type="button"
               onClick={() => onChange(level.value)}
-              className="flex-1 relative"
+              className="absolute top-[17px]"
+              style={{ left: leftPercent, transform: 'translateX(-50%) translateY(-50%)' }}
               aria-label={level.label}
             >
-              {activeIdx === idx && (
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 mt-[1px]">
-                  <div className="w-5 h-5 rounded-full bg-white border-2 border-blue-500 shadow-lg shadow-blue-500/30" />
-                </div>
+              {isActive ? (
+                <div className="w-5 h-5 rounded-full bg-white border-2 border-blue-500 shadow-lg shadow-blue-500/30" />
+              ) : (
+                <div className="w-3.5 h-3.5 rounded-full border-2 border-zinc-500 bg-zinc-800" />
               )}
             </button>
-          ))}
-        </div>
+          );
+        })}
       </div>
 
       {/* Labels */}
