@@ -25,7 +25,7 @@ export const GuidanceStrengthSlider: React.FC<GuidanceStrengthSliderProps> = ({ 
   const activeIdx = valueToIndex(value);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {/* Header */}
       <div>
         <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Guidance Strength</h4>
@@ -33,37 +33,36 @@ export const GuidanceStrengthSlider: React.FC<GuidanceStrengthSliderProps> = ({ 
       </div>
 
       {/* Slider track */}
-      <div className="relative pt-2 pb-6">
-        {/* Track background - gradient blue */}
-        <div className="h-2.5 rounded-full overflow-hidden"
+      <div className="relative flex items-center h-8">
+        {/* Gradient track */}
+        <div className="absolute w-full h-2.5 rounded-full"
           style={{ background: 'linear-gradient(to right, #1a2a4a, #2563eb, #60a5fa)' }}
         />
-
-        {/* Thumb positions at 0%, 50%, 100% */}
-        {LEVELS.map((level, idx) => {
-          const leftPercent = idx === 0 ? '0%' : idx === 1 ? '50%' : '100%';
-          const isActive = activeIdx === idx;
-          return (
-            <button
-              key={level.value}
-              type="button"
-              onClick={() => onChange(level.value)}
-              className="absolute top-[17px]"
-              style={{ left: leftPercent, transform: 'translateX(-50%) translateY(-50%)' }}
-              aria-label={level.label}
-            >
-              {isActive ? (
-                <div className="w-5 h-5 rounded-full bg-white border-2 border-blue-500 shadow-lg shadow-blue-500/30" />
-              ) : (
-                <div className="w-3.5 h-3.5 rounded-full border-2 border-zinc-500 bg-zinc-800" />
-              )}
-            </button>
-          );
-        })}
+        {/* Dot positions */}
+        <div className="absolute inset-0 flex items-center justify-between">
+          {LEVELS.map((level, idx) => {
+            const isActive = activeIdx === idx;
+            return (
+              <button
+                key={level.value}
+                type="button"
+                onClick={() => onChange(level.value)}
+                className="flex items-center justify-center"
+                aria-label={level.label}
+              >
+                {isActive ? (
+                  <div className="w-[18px] h-[18px] rounded-full bg-white border-2 border-blue-500 shadow-lg shadow-blue-500/30" />
+                ) : (
+                  <div className="w-[14px] h-[14px] rounded-full border-2 border-zinc-500 bg-zinc-800" />
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Labels */}
-      <div className="flex justify-between px-1">
+      <div className="flex justify-between mt-1">
         {LEVELS.map((level) => (
           <span
             key={level.value}
@@ -79,7 +78,7 @@ export const GuidanceStrengthSlider: React.FC<GuidanceStrengthSliderProps> = ({ 
       </div>
 
       {/* Hint text */}
-      <div className="bg-zinc-800/60 border border-white/5 rounded-xl px-4 py-3">
+      <div className="bg-zinc-800/60 border border-white/5 rounded-lg px-5 py-3 mt-2">
         <p className="text-xs text-zinc-400 leading-relaxed">{DESCRIPTIONS[value]}</p>
       </div>
     </div>
