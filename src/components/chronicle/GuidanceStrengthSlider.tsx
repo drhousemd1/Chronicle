@@ -62,12 +62,13 @@ export const GuidanceStrengthSlider: React.FC<GuidanceStrengthSliderProps> = ({ 
       </div>
 
       {/* Labels */}
-      <div className="flex justify-between mt-1">
-        {LEVELS.map((level) => (
+      <div className="flex mt-1">
+        {LEVELS.map((level, idx) => (
           <span
             key={level.value}
             className={cn(
-              "text-[10px] font-black uppercase tracking-widest transition-colors cursor-pointer",
+              "flex-1 text-[10px] font-black uppercase tracking-widest transition-colors cursor-pointer",
+              idx === 0 ? "text-left" : idx === 1 ? "text-center" : "text-right",
               value === level.value ? "text-blue-400" : "text-zinc-600"
             )}
             onClick={() => onChange(level.value)}
@@ -78,7 +79,7 @@ export const GuidanceStrengthSlider: React.FC<GuidanceStrengthSliderProps> = ({ 
       </div>
 
       {/* Hint text */}
-      <div className="bg-zinc-800/60 border border-white/5 rounded-lg px-5 py-3 mt-2">
+      <div className="w-full bg-zinc-800/60 border border-white/5 rounded-lg px-5 py-3">
         <p className="text-xs text-zinc-400 leading-relaxed">{DESCRIPTIONS[value]}</p>
       </div>
     </div>
