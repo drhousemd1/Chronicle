@@ -1,57 +1,45 @@
 
 
-# Fix: Guidance Strength Slider Alignment
+# Fix: Center "NORMAL" Label and Extend Hint Box
 
-## Problems
-1. Circles not vertically centered on the gradient bar
-2. Labels ("RIGID", "NORMAL", "FLEXIBLE") too far from the bar -- they look attached to the hint box
-3. Hint box has side padding creating unused space
+## Problem 1: "NORMAL" label not centered under its dot
+The labels use `flex justify-between` which distributes three items at left, center, and right edges. But each label's text starts at its position rather than being centered on it. "RIGID" looks correct because it's left-aligned at the left edge, and "FLEXIBLE" looks correct because it's right-aligned at the right edge, but "NORMAL" appears shifted left because its text starts at center rather than being centered on center.
 
-## Solution
+## Solution 1
+Give each label explicit text alignment:
+- RIGID (first): `text-left`
+- NORMAL (middle): `text-center`
+- FLEXIBLE (last): `text-right`
 
-Rewrite the slider section of `GuidanceStrengthSlider.tsx` to match the mockup's approach:
-
-### Track + Dots
-Use the mockup's pattern: a container with `flex items-center` and `h-8`, with the gradient track as an absolute background, and dots overlaid via a second absolute `flex justify-between` div. This naturally centers everything vertically.
+And make each label a `flex-1` item so they have equal widths to align with, rather than being auto-sized.
 
 ```tsx
-{/* Slider track */}
-<div className="relative flex items-center h-8">
-  {/* Gradient track */}
-  <div className="absolute w-full h-2.5 rounded-full"
-    style={{ background: 'linear-gradient(to right, #1a2a4a, #2563eb, #60a5fa)' }}
-  />
-  {/* Dot positions */}
-  <div className="absolute inset-0 flex items-center justify-between">
-    {LEVELS.map((level, idx) => {
-      const isActive = activeIdx === idx;
-      return (
-        <button key={level.value} type="button" onClick={() => onChange(level.value)} ...>
-          {isActive ? (
-            <div className="w-[18px] h-[18px] rounded-full bg-white border-2 border-blue-500 shadow-lg shadow-blue-500/30" />
-          ) : (
-            <div className="w-[14px] h-[14px] rounded-full border-2 border-zinc-500 bg-zinc-800" />
-          )}
-        </button>
-      );
-    })}
-  </div>
+<div className="flex mt-1">
+  {LEVELS.map((level, idx) => (
+    <span
+      key={level.value}
+      className={cn(
+        "flex-1 text-[10px] font-black uppercase tracking-widest transition-colors cursor-pointer",
+        idx === 0 ? "text-left" : idx === 1 ? "text-center" : "text-right",
+        value === level.value ? "text-blue-400" : "text-zinc-600"
+      )}
+      onClick={() => onChange(level.value)}
+    >
+      {level.label}
+    </span>
+  ))}
 </div>
 ```
 
-This is exactly how the mockup positions dots -- `justify-between` puts them at 0%, 50%, 100% and `items-center` keeps them on the bar.
+## Problem 2: Hint box not full width
+The hint box has internal padding (`px-5`) but the box itself doesn't extend to the container edges -- there's a visible gap on the right side.
 
-### Labels closer to bar
-Remove the `pb-6` spacer and reduce gap. Change outer `space-y-3` to `space-y-2`. Labels div gets `mt-1` instead of being separated by the large padding.
-
-### Hint box wider
-Change `px-4` to `px-5` and `rounded-xl` to `rounded-lg` to match mockup. Add `mt-2` for small gap from labels.
+## Solution 2
+Remove the `mt-2` (the parent `space-y-2` already handles spacing) and ensure the box stretches properly with `w-full`.
 
 ## File Changed
 
 | File | Change |
 |------|--------|
-| `src/components/chronicle/GuidanceStrengthSlider.tsx` | Rewrite slider track to use flex-based centering matching mockup; tighten label spacing; widen hint box |
-
-Single file fix -- this component is shared across all goal sections.
+| `src/components/chronicle/GuidanceStrengthSlider.tsx` | Fix label alignment with flex-1 + text alignment per position; ensure hint box is full width |
 
