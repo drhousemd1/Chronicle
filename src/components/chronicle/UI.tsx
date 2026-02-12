@@ -84,7 +84,7 @@ export function Input({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         spellCheck={true}
-        className={cn("w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all", className)}
+        className={cn("w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all", className, "w-full")}
       />
     </div>
   );
@@ -131,7 +131,7 @@ export function TextArea({
         placeholder={placeholder}
         rows={rows}
         spellCheck={true}
-        className={cn("w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all", autoResize ? 'resize-none overflow-hidden' : 'resize-none', className)}
+        className={cn("w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all", autoResize ? 'resize-none overflow-hidden' : 'resize-none', className, "w-full")}
       />
     </div>
   );
