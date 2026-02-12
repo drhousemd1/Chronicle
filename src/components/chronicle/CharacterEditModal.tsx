@@ -2,7 +2,7 @@
 // Session-scoped: edits persist only within the active playthrough
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Character, SideCharacter, PhysicalAppearance, CurrentlyWearing, PreferredClothing, CharacterTraitSection, CharacterGoal, WorldCore, LocationEntry, WorldCustomSection, WorldCustomItem, StoryGoal } from '@/types';
+import { Character, SideCharacter, PhysicalAppearance, CurrentlyWearing, PreferredClothing, CharacterTraitSection, CharacterGoal, CharacterPersonality, WorldCore, LocationEntry, WorldCustomSection, WorldCustomItem, StoryGoal } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -29,6 +29,8 @@ import { ChangeNameModal } from './ChangeNameModal';
 import { CharacterGoalsSection } from './CharacterGoalsSection';
 import { StoryGoalsSection } from './StoryGoalsSection';
 import { ScenarioCardView } from './ScenarioCardView';
+import { PersonalitySection } from './PersonalitySection';
+import { defaultPersonality } from './PersonalitySection';
 import { uid, now } from '@/utils';
 import { Input } from '@/components/ui/input';
 
@@ -49,6 +51,8 @@ export interface CharacterEditDraft {
   preferredClothing?: Partial<PreferredClothing>;
   sections?: CharacterTraitSection[];
   goals?: CharacterGoal[];
+  // Personality (main characters)
+  mainPersonality?: CharacterPersonality;
   // Avatar fields for session-scoped updates
   avatarDataUrl?: string;
   avatarPosition?: { x: number; y: number };
@@ -316,6 +320,11 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
       // Add goals (both Character and SideCharacter may not have them)
       if ('goals' in character) {
         baseDraft.goals = (character as Character).goals?.map(g => ({ ...g })) || [];
+      }
+
+      // Add personality (main characters)
+      if ('personality' in character && (character as Character).personality) {
+        baseDraft.mainPersonality = JSON.parse(JSON.stringify((character as Character).personality));
       }
 
       // Add Character-specific fields
@@ -1423,6 +1432,16 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     placeholder="Other preferences"
                   />
                 </CollapsibleSection>
+
+                {/* Personality Section (Main characters only) */}
+                {!isSideCharacter && (
+                  <PersonalitySection
+                    personality={draft.mainPersonality || defaultPersonality}
+                    onChange={(personality) => setDraft(prev => ({ ...prev, mainPersonality: personality }))}
+                    isExpanded={expandedSections.personality}
+                    onToggle={() => toggleSection('personality')}
+                  />
+                )}
 
                 {/* Character Goals Section (Main characters only) */}
                 {!isSideCharacter && (

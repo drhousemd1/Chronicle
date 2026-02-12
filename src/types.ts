@@ -50,8 +50,25 @@ export type WorldCustomItem = {
   value: string;
 };
 
-// Goal flexibility levels for story goals
+// Goal flexibility levels for story goals and character goals
 export type GoalFlexibility = 'rigid' | 'normal' | 'flexible';
+
+// Personality trait flexibility
+export type PersonalityTraitFlexibility = 'rigid' | 'normal' | 'flexible';
+
+export type PersonalityTrait = {
+  id: string;
+  label: string;
+  value: string;
+  flexibility: PersonalityTraitFlexibility;
+};
+
+export type CharacterPersonality = {
+  splitMode: boolean;
+  traits: PersonalityTrait[];
+  outwardTraits: PersonalityTrait[];
+  inwardTraits: PersonalityTrait[];
+};
 
 // Shared step type for both Story Goals and Character Goals
 export type GoalStep = {
@@ -66,7 +83,7 @@ export type StoryGoal = {
   id: string;
   title: string;
   desiredOutcome: string;
-  currentStatus: string;
+  currentStatus?: string;  // Deprecated - kept for backward compat
   steps: GoalStep[];
   flexibility: GoalFlexibility;
   createdAt: number;
@@ -175,8 +192,9 @@ export type CharacterGoal = {
   id: string;
   title: string;           // Short goal name (e.g., "Move out of the city")
   desiredOutcome: string;  // What success looks like
-  currentStatus: string;   // What has been done so far
+  currentStatus?: string;  // Deprecated - kept for backward compat
   progress: number;        // 0-100 percentage (auto-calculated from steps when steps exist)
+  flexibility?: GoalFlexibility;  // Guidance strength for this goal
   milestones?: GoalMilestone[];  // Deprecated - kept for backward compatibility
   steps?: GoalStep[];      // Step-based planning (replaces milestones)
   createdAt: number;
@@ -202,6 +220,9 @@ export type Character = {
   physicalAppearance: PhysicalAppearance;
   currentlyWearing: CurrentlyWearing;
   preferredClothing: PreferredClothing;
+  
+  // Hardcoded personality section
+  personality?: CharacterPersonality;
   
   // Character goals tracking
   goals?: CharacterGoal[];
@@ -233,6 +254,8 @@ export type CharacterSessionState = {
   currentlyWearing: CurrentlyWearing;
   preferredClothing?: Partial<PreferredClothing>;
   customSections?: CharacterTraitSection[];
+  // Personality overrides (session-scoped)
+  personality?: CharacterPersonality;
   // Goals overrides (session-scoped)
   goals?: CharacterGoal[];
   // Avatar overrides (session-scoped)

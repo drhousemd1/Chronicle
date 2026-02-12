@@ -105,10 +105,10 @@ function buildCharacterStateBlock(c: CharacterData): string {
         const completedCount = g.steps.filter(s => s.completed).length;
         const stepList = g.steps.map((s, i) => `      ${s.completed ? '[x]' : '[ ]'} Step ${i + 1}: ${s.description}`).join('\n');
         const calcProgress = Math.round((completedCount / g.steps.length) * 100);
-        lines.push(`    ${g.title}: current_status: ${g.currentStatus || 'No status'} | progress: ${calcProgress}% (${completedCount}/${g.steps.length} steps)${outcome}`);
+        lines.push(`    ${g.title}: progress: ${calcProgress}% (${completedCount}/${g.steps.length} steps)${outcome}`);
         lines.push(`    steps:\n${stepList}`);
       } else {
-        lines.push(`    ${g.title}: current_status: ${g.currentStatus || 'No status'} | progress: ${g.progress}%${outcome}`);
+        lines.push(`    ${g.title}: progress: ${g.progress}%${outcome}`);
       }
     }
   } else {
@@ -217,8 +217,8 @@ HARDCODED FIELDS:
 - currentMood (emotional state)
 
 GOALS (structured tracking with progression and steps):
-- goals.GoalTitle = "desired_outcome: What fulfillment looks like | current_status: Where they stand now | progress: XX | complete_steps: 1,3 | new_steps: Step 1: Two-sentence description. Step 2: Two-sentence description. Step 3: ... Step 4: ... Step 5: ..."
-  IMPORTANT: Always include desired_outcome, current_status, and progress for every goal update.
+- goals.GoalTitle = "desired_outcome: What fulfillment looks like | progress: XX | complete_steps: 1,3 | new_steps: Step 1: Two-sentence description. Step 2: Two-sentence description. Step 3: ... Step 4: ... Step 5: ..."
+  IMPORTANT: Always include desired_outcome and progress for every goal update.
   Use complete_steps to mark step numbers (1-indexed) that were achieved in the dialogue.
 
   new_steps RULES (CRITICAL - READ CAREFULLY):
@@ -244,23 +244,20 @@ NEVER create custom sections named: Desires, Kinks, Preferences, Fantasies, Inte
 These categories ALL belong in the goals system because they have a desired end state and can progress.
 
 Example goal for a desire:
-  goals.Explore Rock Climbing = "desired_outcome: Becomes a confident climber who regularly visits the climbing gym, feels the thrill of completing challenging routes, and has integrated it as a core part of their active lifestyle. | current_status: Mentioned interest after seeing a climbing video. Has not yet visited a gym or tried it, but keeps bringing it up in conversation. Seems genuinely excited about the idea. | progress: 5 | new_steps: Step 1: Research local climbing gyms and indoor bouldering walls, comparing prices and beginner-friendly options. Make a shortlist of two or three places worth visiting. Step 2: Visit the top-choice climbing gym for the first time, try a beginner route, and get a feel for the sport. Step 3: Sign up for a beginner climbing class or workshop to learn proper technique, safety, and belaying skills. Step 4: Start climbing regularly at least once a week, gradually increasing difficulty levels as confidence grows. Step 5: Invest in personal climbing gear (shoes, chalk bag) as a commitment to the hobby. Step 6: Attempt an intermediate-level route and complete it successfully, marking a major skill milestone."
+  goals.Explore Rock Climbing = "desired_outcome: Becomes a confident climber who regularly visits the climbing gym, feels the thrill of completing challenging routes, and has integrated it as a core part of their active lifestyle. | progress: 5 | new_steps: Step 1: Research local climbing gyms and indoor bouldering walls, comparing prices and beginner-friendly options. Make a shortlist of two or three places worth visiting. Step 2: Visit the top-choice climbing gym for the first time, try a beginner route, and get a feel for the sport. Step 3: Sign up for a beginner climbing class or workshop to learn proper technique, safety, and belaying skills. Step 4: Start climbing regularly at least once a week, gradually increasing difficulty levels as confidence grows. Step 5: Invest in personal climbing gear (shoes, chalk bag) as a commitment to the hobby. Step 6: Attempt an intermediate-level route and complete it successfully, marking a major skill milestone."
 
 ═══════════════════════════════════════════════════
 DESCRIPTION DEPTH REQUIREMENTS (MANDATORY)
 ═══════════════════════════════════════════════════
 - desired_outcome: 2-3 sentences minimum. Describe the emotional and behavioral state that represents fulfillment. What does success look like? How does the character feel when this is achieved? What has changed in their life or relationship?
-- current_status: 2-3 sentences minimum. Describe where the character currently stands. What have they done so far? What is their emotional state about it? What is the next likely step?
-- Do NOT write one-liners. "Wants to try X" is NOT an acceptable desired_outcome or current_status.
-- When UPDATING an existing goal's current_status, APPEND new developments to the existing description rather than replacing it entirely. Think of it as adding a new milestone entry.
+- Do NOT write one-liners. "Wants to try X" is NOT an acceptable desired_outcome.
 
 ═══════════════════════════════════════════════════
 GOAL LIFECYCLE (MANDATORY REVIEW EVERY EXCHANGE)
 ═══════════════════════════════════════════════════
 - EVERY existing goal must be reviewed against the dialogue
-- Even subtle cues warrant a status update (add a new sentence to current_status describing the latest development)
+- Even subtle cues warrant a progress update
 - Behavioral patterns imply progress: if a character repeatedly does something enthusiastically, the related goal's progress should increment
-- A goal with no updates for multiple exchanges should still be acknowledged if the character is present — at minimum note "No change this exchange, character remains [state]" in current_status
 - Progress increments should be realistic: small steps = 2-5%, moderate developments = 5-15%, major milestones = 15-30%
 - Set progress to 100 when fully achieved, 0 when abandoned
 
@@ -323,7 +320,7 @@ RESPONSE FORMAT (JSON only):
     { "character": "CharacterName", "field": "currentMood", "value": "Nervous but excited" },
     { "character": "CharacterName", "field": "location", "value": "Downtown coffee shop" },
     { "character": "CharacterName", "field": "currentlyWearing.top", "value": "Navy blue scrubs" },
-    { "character": "CharacterName", "field": "goals.Save Enough Money", "value": "desired_outcome: Build a $10,000 emergency fund that provides peace of mind and financial security. Feels confident knowing unexpected expenses won't cause panic or debt. Has developed a consistent saving habit that feels natural rather than restrictive. | current_status: Got first paycheck and opened a dedicated savings account. Feeling cautiously optimistic but aware it's a long road. Next step is setting up automatic transfers to make saving effortless. | progress: 0 | new_steps: Step 1: Research high-yield savings accounts and compare interest rates to find the best option for building an emergency fund. Make a shortlist of three candidates. Step 2: Open the chosen savings account and set up automatic transfers from each paycheck, starting with a comfortable amount. Step 3: Track monthly spending for one full month to identify discretionary expenses that could be redirected toward savings. Step 4: Cut two identified discretionary expenses and increase the automatic transfer amount accordingly. Step 5: Reach the first $1,000 milestone and celebrate the achievement to reinforce the habit. Step 6: Review and adjust the savings plan quarterly, increasing contributions as income grows or expenses decrease." },
+    { "character": "CharacterName", "field": "goals.Save Enough Money", "value": "desired_outcome: Build a $10,000 emergency fund that provides peace of mind and financial security. Feels confident knowing unexpected expenses won't cause panic or debt. Has developed a consistent saving habit that feels natural rather than restrictive. | progress: 0 | new_steps: Step 1: Research high-yield savings accounts and compare interest rates to find the best option for building an emergency fund. Make a shortlist of three candidates. Step 2: Open the chosen savings account and set up automatic transfers from each paycheck, starting with a comfortable amount. Step 3: Track monthly spending for one full month to identify discretionary expenses that could be redirected toward savings. Step 4: Cut two identified discretionary expenses and increase the automatic transfer amount accordingly. Step 5: Reach the first $1,000 milestone and celebrate the achievement to reinforce the habit. Step 6: Review and adjust the savings plan quarterly, increasing contributions as income grows or expenses decrease." },
     { "character": "CharacterName", "field": "sections.Background.Occupation", "value": "Doctor at City Hospital" }
   ]
 }

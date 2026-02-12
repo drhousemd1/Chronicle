@@ -81,7 +81,6 @@ function getSystemInstruction(
       const progress = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
       lines.push(`\n    [${flex.tag}] Goal: "${goal.title}"`);
       if (goal.desiredOutcome) lines.push(`      Desired Outcome: ${goal.desiredOutcome}`);
-      if (goal.currentStatus) lines.push(`      Current Status: ${goal.currentStatus}`);
       if (totalSteps > 0) {
         const stepList = goal.steps.map(s => `${s.completed ? '[x]' : '[ ]'} ${s.description}`).join('  ');
         lines.push(`      Steps: ${stepList}`);
@@ -92,19 +91,43 @@ function getSystemInstruction(
     return lines.join('\n');
   })();
 
-  // Build character goals context (Phase 5)
+  // Build character goals context with flexibility
   const characterGoalsContext = (c: any): string => {
     const goals = c.goals;
     if (!goals?.length) return '';
+    const flexLabels: Record<string, string> = {
+      rigid: 'RIGID',
+      normal: 'NORMAL',
+      flexible: 'FLEXIBLE'
+    };
     const goalLines = goals.map((g: any) => {
       const steps = g.steps || [];
       const completedSteps = steps.filter((s: any) => s.completed).length;
       const totalSteps = steps.length;
       const progress = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : (g.progress || 0);
       const stepInfo = totalSteps > 0 ? ` (${progress}% - Step ${completedSteps + 1} of ${totalSteps})` : ` (${progress}%)`;
-      return `  - ${g.title}${stepInfo}: ${g.currentStatus || 'No status'}`;
+      const flex = flexLabels[g.flexibility || 'normal'] || 'NORMAL';
+      return `  - [${flex}] ${g.title}${stepInfo}: ${g.desiredOutcome || 'No outcome defined'}`;
     }).join('\n');
     return `\nGOALS:\n${goalLines}`;
+  };
+
+  // Build personality context
+  const personalityContext = (c: any): string => {
+    const p = c.personality;
+    if (!p) return '';
+    const formatTrait = (t: any) => `  - [${(t.flexibility || 'normal').toUpperCase()}] ${t.label}: "${t.value}"`;
+    if (p.splitMode) {
+      const outward = (p.outwardTraits || []).filter((t: any) => t.label || t.value).map(formatTrait).join('\n');
+      const inward = (p.inwardTraits || []).filter((t: any) => t.label || t.value).map(formatTrait).join('\n');
+      const lines: string[] = [];
+      if (outward) lines.push(`\nOUTWARD PERSONALITY:\n${outward}`);
+      if (inward) lines.push(`\nINWARD PERSONALITY:\n${inward}`);
+      return lines.join('');
+    } else {
+      const traits = (p.traits || []).filter((t: any) => t.label || t.value).map(formatTrait).join('\n');
+      return traits ? `\nPERSONALITY:\n${traits}` : '';
+    }
   };
 
   const worldContext = `
@@ -125,9 +148,10 @@ function getSystemInstruction(
     const locationInfo = c.location ? `\nLOCATION: ${c.location}` : '';
     const moodInfo = c.currentMood ? `\nMOOD: ${c.currentMood}` : '';
     const goalsInfo = characterGoalsContext(c);
+    const personalityInfo = personalityContext(c);
     return `CHARACTER: ${c.name} (${c.sexType})${nicknameInfo}
 ROLE: ${c.characterRole}
-CONTROL: ${c.controlledBy}${locationInfo}${moodInfo}${goalsInfo}
+CONTROL: ${c.controlledBy}${locationInfo}${moodInfo}${personalityInfo}${goalsInfo}
 TAGS: ${c.tags}
 TRAITS:
 ${traits}`;

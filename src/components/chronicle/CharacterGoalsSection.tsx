@@ -1,6 +1,7 @@
 import React from 'react';
-import { CharacterGoal, GoalStep, TimeOfDay } from '@/types';
+import { CharacterGoal, GoalStep, GoalFlexibility, TimeOfDay } from '@/types';
 import { Trash2, Plus, X, ChevronDown, ChevronUp, CheckSquare } from 'lucide-react';
+import { GuidanceStrengthSlider } from './GuidanceStrengthSlider';
 import { CircularProgress } from './CircularProgress';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -61,8 +62,8 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
       id: uid('goal'),
       title: '',
       desiredOutcome: '',
-      currentStatus: '',
       progress: 0,
+      flexibility: 'normal',
       steps: [],
       createdAt: now(),
       updatedAt: now()
@@ -132,10 +133,6 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
                     <p className="text-sm text-zinc-400">{goal.desiredOutcome}</p>
                   </div>
                 )}
-                <div className="space-y-1">
-                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block">Current Status Summary</span>
-                  <p className="text-sm text-zinc-400">{goal.currentStatus || 'None'}</p>
-                </div>
                 {(goal.steps?.length || 0) > 0 && (
                   <div className="space-y-1">
                     <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block">Steps</span>
@@ -211,15 +208,13 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
                       )}
                     </div>
 
-                    {/* Current Status */}
-                    <div>
-                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Current Status Summary</label>
-                      {isEditMode ? (
-                        <Textarea value={goal.currentStatus} onChange={(e) => updateGoal(goal.id, { currentStatus: e.target.value })} placeholder="Progress so far..." className="mt-1 bg-zinc-900/50 border-white/10 text-white placeholder:text-zinc-600 min-h-[60px]" />
-                      ) : (
-                        <p className="text-sm text-zinc-300 mt-0.5">{goal.currentStatus || 'No status update'}</p>
-                      )}
-                    </div>
+                    {/* Guidance Strength Slider */}
+                    {isEditMode && (
+                      <GuidanceStrengthSlider
+                        value={goal.flexibility || 'normal'}
+                        onChange={(flexibility) => updateGoal(goal.id, { flexibility })}
+                      />
+                    )}
 
                     {/* Steps Section */}
                     <div className="mt-4 pt-4 border-t border-white/5">
