@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Trash2, Plus, ChevronDown, ChevronUp } from 'lucide-react';
 import { StoryGoalsSection } from './StoryGoalsSection';
 import { uid } from '@/utils';
+import { cn } from '@/lib/utils';
 
 // Reuse the same CollapsibleSection style from CharacterEditModal
 const CollapsibleSection: React.FC<{
@@ -70,7 +71,7 @@ const AutoResizeTextarea: React.FC<{
       placeholder={placeholder}
       rows={rows}
       spellCheck={true}
-      className={`w-full min-w-0 resize-none overflow-hidden whitespace-pre-wrap break-words ${className}`}
+      className={cn("w-full min-w-0 resize-none overflow-hidden whitespace-pre-wrap break-words", className)}
     />
   );
 };
