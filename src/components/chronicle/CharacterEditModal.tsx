@@ -111,7 +111,7 @@ const AutoResizeTextarea: React.FC<{
       placeholder={placeholder}
       rows={rows}
       spellCheck={true}
-      className={`w-full min-w-0 resize-none overflow-hidden whitespace-pre-wrap break-words ${className}`}
+      className={cn("w-full min-w-0 resize-none overflow-hidden whitespace-pre-wrap break-words", className)}
     />
   );
 };

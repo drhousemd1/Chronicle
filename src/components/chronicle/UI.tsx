@@ -1,4 +1,5 @@
 import React, { forwardRef } from "react";
+import { cn } from "@/lib/utils";
 
 export type ButtonVariant = "primary" | "secondary" | "danger" | "ghost" | "brand" | "outlineDark" | "gradient";
 
@@ -76,14 +77,14 @@ export function Input({
   className?: string;
 }) {
   return (
-    <div className="w-full">
+    <div className={cn("w-full", className)}>
       {label && <label className={`block text-xs font-bold uppercase mb-1 ${labelClassName}`}>{label}</label>}
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         spellCheck={true}
-        className={`w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all ${className}`}
+        className={cn("w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all", className)}
       />
     </div>
   );
@@ -120,7 +121,7 @@ export function TextArea({
   }, [value, autoResize]);
 
   return (
-    <div className="w-full">
+    <div className={cn("w-full", className)}>
       {label && <label className={`block text-xs font-bold uppercase mb-1 ${labelClassName}`}>{label}</label>}
       <textarea
         ref={ref}
@@ -130,7 +131,7 @@ export function TextArea({
         placeholder={placeholder}
         rows={rows}
         spellCheck={true}
-        className={`w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all ${autoResize ? 'resize-none overflow-hidden' : 'resize-none'} ${className}`}
+        className={cn("w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all", autoResize ? 'resize-none overflow-hidden' : 'resize-none', className)}
       />
     </div>
   );
