@@ -2,7 +2,7 @@
 import React, { useRef, useState, useCallback } from 'react';
 import { World, OpeningDialog, CodexEntry, Character, Scene, TimeOfDay, WorldCore, ContentThemes, defaultContentThemes, LocationEntry, WorldCustomSection, WorldCustomItem, StoryGoal } from '@/types';
 import { EnhanceableWorldFields } from '@/services/world-ai';
-import { Button, Input, TextArea, Card } from './UI';
+import { Button, Card } from './UI';
 import { Icons } from '@/constants';
 import { uid, now, resizeImage, uuid, clamp } from '@/utils';
 import { useAuth } from '@/hooks/use-auth';
@@ -54,6 +54,34 @@ const HintBox: React.FC<{ hints: string[] }> = ({ hints }) => (
     ))}
   </div>
 );
+
+// Auto-resizing textarea that wraps text and grows with content (no wrapper div)
+const AutoResizeTextarea: React.FC<{
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  className?: string;
+  rows?: number;
+}> = ({ value, onChange, placeholder, className = '', rows = 1 }) => {
+  const ref = React.useRef<HTMLTextAreaElement>(null);
+  React.useEffect(() => {
+    if (ref.current) {
+      ref.current.style.height = 'auto';
+      ref.current.style.height = `${ref.current.scrollHeight}px`;
+    }
+  }, [value]);
+  return (
+    <textarea
+      ref={ref}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      rows={rows}
+      spellCheck={true}
+      className={cn("w-full min-w-0 resize-none overflow-hidden whitespace-pre-wrap break-words", className)}
+    />
+  );
+};
 
 const CharacterButton: React.FC<{ char: Character; onSelect: (id: string) => void }> = ({ char, onSelect }) => (
   <button 
@@ -439,11 +467,11 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                       
                       <div>
                         <FieldLabel label="Scenario Name" fieldName="scenarioName" />
-                        <Input value={world.core.scenarioName} onChange={(v) => updateCore({ scenarioName: v })} placeholder="e.g. Chronicles of Eldoria" className="bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500" />
+                        <AutoResizeTextarea value={world.core.scenarioName} onChange={(v) => updateCore({ scenarioName: v })} placeholder="e.g. Chronicles of Eldoria" className="px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                       </div>
                       <div>
                         <FieldLabel label="Brief Description" fieldName="briefDescription" />
-                        <TextArea value={world.core.briefDescription || ''} onChange={(v) => updateCore({ briefDescription: v })} rows={2} placeholder="A short summary that appears on your story card (1-2 sentences)..." className="bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500" />
+                        <AutoResizeTextarea value={world.core.briefDescription || ''} onChange={(v) => updateCore({ briefDescription: v })} rows={2} placeholder="A short summary that appears on your story card (1-2 sentences)..." className="px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                       </div>
                       
                       {coverImage && (
@@ -493,11 +521,11 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                   <div className="grid grid-cols-1 gap-8">
                     <div>
                       <FieldLabel label="Scenario" fieldName="storyPremise" />
-                      <TextArea value={world.core.storyPremise || ''} onChange={(v) => updateCore({ storyPremise: v })} rows={4} placeholder="What's the central situation or conflict? What's at stake? Describe the overall narrative the AI should understand..." className="bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500" />
+                      <AutoResizeTextarea value={world.core.storyPremise || ''} onChange={(v) => updateCore({ storyPremise: v })} rows={4} placeholder="What's the central situation or conflict? What's at stake? Describe the overall narrative the AI should understand..." className="px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                     </div>
                     <div>
                       <FieldLabel label="Setting Overview" fieldName="settingOverview" />
-                      <TextArea value={world.core.settingOverview} onChange={(v) => updateCore({ settingOverview: v })} rows={4} placeholder="Describe the physical and cultural landscape of your world..." className="bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500" />
+                      <AutoResizeTextarea value={world.core.settingOverview} onChange={(v) => updateCore({ settingOverview: v })} rows={4} placeholder="Describe the physical and cultural landscape of your world..." className="px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                     </div>
                     
                     {/* Structured Locations */}
@@ -509,7 +537,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                           : [{ id: 'loc_default_1', label: '', description: '' }, { id: 'loc_default_2', label: '', description: '' }]
                         ).map((loc, idx) => (
                           <div key={loc.id} className="flex items-start gap-3">
-                            <Input 
+                            <AutoResizeTextarea 
                               value={loc.label} 
                               onChange={(v) => {
                                 const locs = [...(world.core.structuredLocations || [{ id: 'loc_default_1', label: '', description: '' }, { id: 'loc_default_2', label: '', description: '' }])];
@@ -517,9 +545,9 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                                 updateCore({ structuredLocations: locs });
                               }}
                               placeholder={idx === 0 ? "e.g. The Lakehouse" : "Location name..."}
-                              className="w-1/3 bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500"
+                              className="w-2/5 px-3 py-2 text-xs font-bold bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                             />
-                            <TextArea 
+                            <AutoResizeTextarea 
                               value={loc.description} 
                               onChange={(v) => {
                                 const locs = [...(world.core.structuredLocations || [{ id: 'loc_default_1', label: '', description: '' }, { id: 'loc_default_2', label: '', description: '' }])];
@@ -528,7 +556,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                               }}
                               rows={1}
                               placeholder={idx === 0 ? "A secluded cabin by the lake..." : "Describe this location..."}
-                              className="flex-1 bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500"
+                              className="flex-1 px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                             />
                             <button
                               type="button"
@@ -563,7 +591,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                     {(world.core.customWorldSections || []).map((section, sIdx) => (
                       <div key={section.id} className="p-5 bg-blue-900/40 rounded-2xl border border-white/5 space-y-4">
                         <div className="flex items-center justify-between">
-                          <Input
+                          <AutoResizeTextarea
                             value={section.title}
                             onChange={(v) => {
                               const sections = [...(world.core.customWorldSections || [])];
@@ -586,7 +614,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                         </div>
                         {section.items.map((item, iIdx) => (
                           <div key={item.id} className="flex items-start gap-3">
-                            <Input
+                            <AutoResizeTextarea
                               value={item.label}
                               onChange={(v) => {
                                 const sections = [...(world.core.customWorldSections || [])];
@@ -596,9 +624,9 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                                 updateCore({ customWorldSections: sections });
                               }}
                               placeholder="Label..."
-                              className="w-1/3 bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500"
+                              className="w-2/5 px-3 py-2 text-xs font-bold bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                             />
-                            <TextArea
+                            <AutoResizeTextarea
                               value={item.value}
                               onChange={(v) => {
                                 const sections = [...(world.core.customWorldSections || [])];
@@ -609,7 +637,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                               }}
                               rows={1}
                               placeholder="Description..."
-                              className="flex-1 bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500"
+                              className="flex-1 px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                             />
                             <button
                               type="button"
@@ -687,12 +715,12 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                     ]} />
                     <div>
                       <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1 block">Opening Dialog</label>
-                      <TextArea 
+                      <AutoResizeTextarea 
                         value={openingDialog.text} 
                         onChange={(v) => onUpdateOpening({ text: v })} 
                         rows={8} 
                         placeholder='James: *James looked up from where he sat on the ground* (What was that?) "Hello? Is anyone there?"'
-                        className="bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500"
+                        className="px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                       />
                     </div>
                     
@@ -964,12 +992,12 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                   <div className="space-y-8">
                     <div>
                       <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1 block">Narrative Style</label>
-                      <TextArea 
+                      <AutoResizeTextarea 
                         value={world.core.narrativeStyle} 
                         onChange={(v) => updateCore({ narrativeStyle: v })} 
                         rows={4} 
                         placeholder="Detailed descriptions of environments and character actions..."
-                        className="bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500"
+                        className="px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                       />
                     </div>
                     
@@ -986,12 +1014,12 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                       {/* User's additional formatting preferences - editable */}
                       <div>
                         <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1 block">Additional Formatting Rules (Optional)</label>
-                        <TextArea 
+                        <AutoResizeTextarea 
                           value={world.core.dialogFormatting} 
                           onChange={(v) => updateCore({ dialogFormatting: v })} 
                           rows={3} 
                           placeholder="Add any custom formatting preferences here..."
-                          className="bg-zinc-900/50 border-zinc-700 text-white placeholder:text-zinc-500"
+                          className="px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                         />
                       </div>
                     </div>
@@ -1004,11 +1032,11 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                             <div key={entry.id} className="p-6 space-y-4 group rounded-2xl bg-zinc-800/50 border border-zinc-700">
                               <div className="flex justify-between items-center">
                                 <div className="flex-1">
-                                  <Input 
+                                  <AutoResizeTextarea 
                                     value={entry.title} 
                                     onChange={(v) => handleUpdateEntry(entry.id, { title: v })} 
                                     placeholder="Entry Title..." 
-                                    className="!text-sm font-bold !bg-transparent !border-none !px-0 focus:!ring-0 text-white placeholder:text-zinc-500"
+                                    className="text-sm font-bold bg-transparent border-none px-0 focus:ring-0 text-white placeholder:text-zinc-500"
                                   />
                                 </div>
                                 <Button variant="ghost" className="text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 !p-0 hover:text-rose-300 hover:bg-rose-500/10" onClick={() => {
@@ -1016,7 +1044,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                                   onUpdateWorld({ entries: next });
                                 }}><Icons.Trash /></Button>
                               </div>
-                              <TextArea value={entry.body} onChange={(v) => handleUpdateEntry(entry.id, { body: v })} placeholder="Detail the specifics..." rows={4} className="!bg-transparent border-zinc-700 text-white placeholder:text-zinc-500" />
+                              <AutoResizeTextarea value={entry.body} onChange={(v) => handleUpdateEntry(entry.id, { body: v })} placeholder="Detail the specifics..." rows={4} className="px-3 py-2 text-sm bg-transparent border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                             </div>
                           ))}
                         </div>
