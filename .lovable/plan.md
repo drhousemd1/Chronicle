@@ -1,45 +1,31 @@
 
 
-# Fix: Label/Description Gap in Location & Custom Content Tables
-
-## Problem
-The label fields (e.g., location names, custom content labels) are tiny and there's a huge gap before the description fields. This affects:
-- **Scenario Builder** (WorldTab.tsx) -- Locations and Custom World Content
-- **Scenario Card View** (ScenarioCardView.tsx) -- Locations and Custom World Content
-- **Character Builder** (CharactersTab.tsx, CharacterEditModal.tsx) -- Custom categories
+# Fix: Nested Width Classes Causing Tiny Input Bubbles
 
 ## Root Cause
-Two related issues:
-1. The `AutoResizeTextarea` component in `ScenarioCardView.tsx`, `CharactersTab.tsx`, and `CharacterEditModal.tsx` uses plain string concatenation (`${className}`) instead of `cn()` for merging Tailwind classes. This means `w-2/5` or `w-1/3` can't override the base `w-full`.
-2. The `Input` and `TextArea` components in `UI.tsx` wrap their elements in a `<div className="w-full">` container. Even if the width class on the inner element works, the outer div forces full width, creating the gap.
+
+The previous fix in `UI.tsx` applied `className` to both the wrapper `<div>` and the inner `<input>`/`<textarea>`. When a caller passes `className="w-1/3 bg-zinc-900/50 ..."`:
+
+- **Wrapper div**: `cn("w-full", "w-1/3 ...")` resolves to `w-1/3` (correct -- controls the component's width)
+- **Inner input**: `cn("w-full rounded-2xl ...", "w-1/3 ...")` resolves to `w-1/3` (WRONG -- input is now 1/3 of an already 1/3 container = tiny bubble)
+
+The visual classes (bg, border, text, placeholder) need to reach the inner element, but width classes must NOT.
 
 ## Solution
 
-### File 1: `ScenarioCardView.tsx`
-- Import `cn` from `@/lib/utils`
-- Change `AutoResizeTextarea` className from string concat to `cn()` (same fix we did in PersonalitySection.tsx)
+Force `w-full` on the inner element by appending it LAST in the `cn()` call, so it always wins over any width class in `className`:
 
-### File 2: `CharactersTab.tsx`
-- Import `cn` from `@/lib/utils`
-- Same `cn()` fix in its `AutoResizeTextarea`
+```tsx
+// Inner element: visual classes from className apply, but width is always full
+className={cn(baseClasses, className, "w-full")}
+```
 
-### File 3: `CharacterEditModal.tsx`
-- Import `cn` from `@/lib/utils`
-- Same `cn()` fix in its `AutoResizeTextarea`
+Tailwind Merge processes left-to-right, so the final `"w-full"` overrides any `w-1/3` or `w-2/5` from className.
 
-### File 4: `UI.tsx` (Input and TextArea components)
-- Import `cn` from `@/lib/utils`
-- Change the wrapping `<div className="w-full">` to `<div className={cn("w-full", className)}>`  so width classes pass through to the container
-- Use `cn()` for the inner element class merging so `w-1/3` properly overrides `w-full`
-
-This is the same pattern that fixed the PersonalitySection -- using Tailwind Merge via `cn()` to let specific width classes override the base `w-full`.
-
-## Files Changed
+## File Changed
 
 | File | Change |
 |------|--------|
-| `src/components/chronicle/ScenarioCardView.tsx` | Import `cn`, use it in AutoResizeTextarea |
-| `src/components/chronicle/CharactersTab.tsx` | Import `cn`, use it in AutoResizeTextarea |
-| `src/components/chronicle/CharacterEditModal.tsx` | Import `cn`, use it in AutoResizeTextarea |
-| `src/components/chronicle/UI.tsx` | Import `cn`, fix Input and TextArea wrapper div and inner element class merging |
+| `src/components/chronicle/UI.tsx` | Add `"w-full"` as last argument in `cn()` for inner `<input>` and `<textarea>` elements, forcing them to always fill their wrapper |
 
+This is a two-line fix in the `Input` and `TextArea` components.
