@@ -13,6 +13,8 @@ import { Sparkles, ChevronDown, ChevronUp, Trash2, Plus, X } from 'lucide-react'
 import { cn } from '@/lib/utils';
 import { aiEnhanceCharacterField } from '@/services/character-ai';
 import { CharacterGoalsSection } from './CharacterGoalsSection';
+import { PersonalitySection } from './PersonalitySection';
+import { defaultPersonality } from './PersonalitySection';
 
 interface CharactersTabProps {
   appData: ScenarioData;
@@ -149,6 +151,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
     physicalAppearance: true,
     currentlyWearing: true,
     preferredClothing: true,
+    personality: true,
     characterGoals: true
   });
   const [expandedCustomSections, setExpandedCustomSections] = useState<Record<string, boolean>>({});
@@ -748,7 +751,15 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
             <HardcodedInput label="Miscellaneous" value={selected.preferredClothing?.miscellaneous || ''} onChange={(v) => handlePreferredClothingChange('miscellaneous', v)} placeholder="Formal, athletic, swimwear, etc." onEnhance={() => handleEnhanceField('pc_miscellaneous', 'preferredClothing', () => selected.preferredClothing?.miscellaneous || '', (v) => handlePreferredClothingChange('miscellaneous', v))} isEnhancing={enhancingField === 'pc_miscellaneous'} />
           </HardcodedSection>
 
-          {/* HARDCODED SECTION 4: Character Goals */}
+          {/* HARDCODED SECTION 4: Personality */}
+          <PersonalitySection
+            personality={selected.personality || defaultPersonality}
+            onChange={(personality) => onUpdate(selected.id, { personality })}
+            isExpanded={expandedSections.personality}
+            onToggle={() => toggleSection('personality')}
+          />
+
+          {/* HARDCODED SECTION 5: Character Goals */}
           <CharacterGoalsSection
             goals={selected.goals || []}
             onChange={(goals) => onUpdate(selected.id, { goals })}

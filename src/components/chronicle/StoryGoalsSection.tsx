@@ -2,6 +2,7 @@ import React from 'react';
 import { StoryGoal, GoalStep, GoalFlexibility } from '@/types';
 import { Trash2, Plus, X, ChevronDown, ChevronUp, Target, CheckSquare } from 'lucide-react';
 import { CircularProgress } from './CircularProgress';
+import { GuidanceStrengthSlider } from './GuidanceStrengthSlider';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -13,11 +14,7 @@ interface StoryGoalsSectionProps {
   onChange: (goals: StoryGoal[]) => void;
 }
 
-const FLEXIBILITY_OPTIONS: { value: GoalFlexibility; label: string; description: string; color: string; activeBg: string; activeBorder: string }[] = [
-  { value: 'rigid', label: 'Rigid', description: 'Must pursue', color: 'text-red-400', activeBg: 'bg-red-500/15', activeBorder: 'border-red-500/30' },
-  { value: 'normal', label: 'Normal', description: 'Guide toward', color: 'text-blue-400', activeBg: 'bg-blue-500/15', activeBorder: 'border-blue-500/30' },
-  { value: 'flexible', label: 'Flexible', description: 'Suggest if fitting', color: 'text-emerald-400', activeBg: 'bg-emerald-500/15', activeBorder: 'border-emerald-500/30' },
-];
+// FLEXIBILITY_OPTIONS kept for reference but slider replaces the button UI
 
 const calculateProgress = (steps: GoalStep[]): number => {
   if (steps.length === 0) return 0;
@@ -30,7 +27,6 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
       id: uid('sgoal'),
       title: '',
       desiredOutcome: '',
-      currentStatus: '',
       steps: [],
       flexibility: 'normal',
       createdAt: now(),
@@ -110,34 +106,11 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                       <Textarea value={goal.desiredOutcome} onChange={(e) => updateGoal(goal.id, { desiredOutcome: e.target.value })} placeholder="What success looks like..." className="mt-1 bg-zinc-900/50 border-white/10 text-white placeholder:text-zinc-600 min-h-[60px]" />
                     </div>
 
-                    {/* Current Status */}
-                    <div>
-                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Current Status Summary</label>
-                      <Textarea value={goal.currentStatus} onChange={(e) => updateGoal(goal.id, { currentStatus: e.target.value })} placeholder="Progress so far..." className="mt-1 bg-zinc-900/50 border-white/10 text-white placeholder:text-zinc-600 min-h-[60px]" />
-                    </div>
-
-                    {/* Flexibility Toggle */}
-                    <div>
-                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-2 block">Flexibility</label>
-                      <div className="flex gap-2">
-                        {FLEXIBILITY_OPTIONS.map((opt) => (
-                          <button
-                            key={opt.value}
-                            type="button"
-                            onClick={() => updateGoal(goal.id, { flexibility: opt.value })}
-                            className={cn(
-                              "px-4 py-2 rounded-lg text-xs font-bold transition-all border",
-                              goal.flexibility === opt.value
-                                ? cn(opt.activeBg, opt.activeBorder, opt.color)
-                                : "bg-zinc-800/50 border-white/5 text-zinc-500 hover:text-zinc-300"
-                            )}
-                          >
-                            {opt.label}
-                            <span className="block text-[9px] font-normal mt-0.5 opacity-70">{opt.description}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+                    {/* Guidance Strength Slider */}
+                    <GuidanceStrengthSlider
+                      value={goal.flexibility}
+                      onChange={(flexibility) => updateGoal(goal.id, { flexibility })}
+                    />
 
                     {/* Steps */}
                     <div className="mt-4 pt-4 border-t border-white/5">

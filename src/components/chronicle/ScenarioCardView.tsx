@@ -171,7 +171,7 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
                   updateField('structuredLocations', locs);
                 }}
                 placeholder={idx === 0 ? "e.g. The Lakehouse" : "Location name..."}
-                className="w-1/3 bg-zinc-900/50 border-white/10 text-white placeholder:text-zinc-500 text-sm"
+                className="w-2/5 bg-zinc-900/50 border-white/10 text-white placeholder:text-zinc-500 text-sm"
               />
               <AutoResizeTextarea
                 value={loc.description}
@@ -254,7 +254,7 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
                         updateField('customWorldSections', updated);
                       }}
                       placeholder="Label..."
-                      className="w-1/3 bg-zinc-900/50 border-white/10 text-white placeholder:text-zinc-500 text-sm"
+                      className="w-2/5 bg-zinc-900/50 border-white/10 text-white placeholder:text-zinc-500 text-sm"
                     />
                     <AutoResizeTextarea
                       value={item.value}
