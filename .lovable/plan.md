@@ -1,31 +1,43 @@
 
 
-# Fix: Nested Width Classes Causing Tiny Input Bubbles
+# Fix: Nested Input Styling and Scrolling on Scenario Builder
+
+## Problem
+Every text field on the Scenario Builder page shows "a box inside a box" -- a styled rectangle container with another styled input element inside it. Text areas also scroll instead of expanding downward.
 
 ## Root Cause
+The `Input` and `TextArea` components in `UI.tsx` apply `className` to BOTH a wrapper `<div>` AND the inner element. When WorldTab passes dark-theme classes like `bg-zinc-900/50 border-zinc-700`, both the wrapper div and the inner input render with borders and backgrounds, creating the nested bubble effect. The inner input also has hardcoded light-theme base styles (`bg-slate-50`, `border-slate-200`, `rounded-2xl`) that clash with the dark theme.
 
-The previous fix in `UI.tsx` applied `className` to both the wrapper `<div>` and the inner `<input>`/`<textarea>`. When a caller passes `className="w-1/3 bg-zinc-900/50 ..."`:
-
-- **Wrapper div**: `cn("w-full", "w-1/3 ...")` resolves to `w-1/3` (correct -- controls the component's width)
-- **Inner input**: `cn("w-full rounded-2xl ...", "w-1/3 ...")` resolves to `w-1/3` (WRONG -- input is now 1/3 of an already 1/3 container = tiny bubble)
-
-The visual classes (bg, border, text, placeholder) need to reach the inner element, but width classes must NOT.
+The Character Builder works correctly because it uses `AutoResizeTextarea` -- a plain `<textarea>` with no wrapper div.
 
 ## Solution
+Replace `Input` and `TextArea` from UI.tsx with `AutoResizeTextarea` in WorldTab.tsx for all inline table fields (locations, custom content items, section titles). For the larger text areas (Scenario, Setting Overview, Opening Dialog), add `autoResize` prop to existing `TextArea` calls so they expand instead of scrolling.
 
-Force `w-full` on the inner element by appending it LAST in the `cn()` call, so it always wins over any width class in `className`:
+### Detailed Changes
 
-```tsx
-// Inner element: visual classes from className apply, but width is always full
-className={cn(baseClasses, className, "w-full")}
-```
+**File: `src/components/chronicle/WorldTab.tsx`**
 
-Tailwind Merge processes left-to-right, so the final `"w-full"` overrides any `w-1/3` or `w-2/5` from className.
+1. **Locations section (lines 511-531)**: Replace `Input` for location label and `TextArea` for location description with `AutoResizeTextarea` styled identically to CharactersTab's custom sections.
 
-## File Changed
+2. **Custom World Content sections (lines 566-612)**: Replace `Input` for section title, `Input` for item label, and `TextArea` for item value with `AutoResizeTextarea`.
+
+3. **Large text areas -- Scenario, Setting Overview, Opening Dialog (lines 496, 500, 690)**: Add `autoResize` prop to `TextArea` calls so they expand vertically instead of scrolling.
+
+4. **Scenario Name input (line 442)**: Replace `Input` with `AutoResizeTextarea` styled as a single-line field.
+
+5. **Brief Description textarea (line 446)**: Add `autoResize` to the `TextArea` call.
+
+6. **Add a local `AutoResizeTextarea` component** to WorldTab.tsx (same pattern as CharactersTab) -- a simple `<textarea>` with auto-height behavior, using `cn()` for class merging, and no wrapper div.
+
+### What This Fixes
+- Eliminates the double-border/double-background "bubble in bubble" effect
+- Text areas expand downward as the user types instead of scrolling
+- Matches the visual consistency of the Character Builder page
+- Label/description proportions work correctly since there's no wrapper div interfering with width classes
+
+### Files Changed
 
 | File | Change |
 |------|--------|
-| `src/components/chronicle/UI.tsx` | Add `"w-full"` as last argument in `cn()` for inner `<input>` and `<textarea>` elements, forcing them to always fill their wrapper |
+| `src/components/chronicle/WorldTab.tsx` | Add local AutoResizeTextarea; replace Input/TextArea with AutoResizeTextarea for inline fields; add autoResize to large TextAreas |
 
-This is a two-line fix in the `Input` and `TextArea` components.
