@@ -69,11 +69,11 @@ function getSystemInstruction(
   const storyGoalsContext = (() => {
     if (!appData.world.core.storyGoals?.length) return '';
     const flexLabels: Record<string, { tag: string; directive: string }> = {
-      rigid: { tag: 'RIGID - MANDATORY', directive: 'This goal is MANDATORY. The narrative must actively work toward achieving this.' },
-      normal: { tag: 'NORMAL - GUIDED', directive: 'This goal is a guiding objective. Actively pursue it when natural.' },
-      flexible: { tag: 'FLEXIBLE - SUGGESTED', directive: 'This goal is a suggestion. Consider it when it fits naturally.' }
+      rigid: { tag: 'RIGID - MANDATORY', directive: 'PRIMARY ARC. Allow organic deviations and subplots, but always steer the narrative back toward this goal through character actions, events, or motivations. Never abandon or diminish its importance.' },
+      normal: { tag: 'NORMAL - GUIDED', directive: 'GUIDED. Weave in naturally when opportunities arise. Persist through initial user resistance by making repeated attempts. Only adapt gradually if the user sustains consistent conflict over multiple exchanges.' },
+      flexible: { tag: 'FLEXIBLE - SUGGESTED', directive: 'LIGHT GUIDANCE. If the user\'s inputs continue to conflict, adapt fully and let the narrative evolve based on player choices.' }
     };
-    const lines = ['\n    STORY GOALS (Global narrative direction for ALL characters):'];
+    const lines = ['\n    STORY GOALS AND DESIRES (Global narrative direction for ALL characters):'];
     for (const goal of appData.world.core.storyGoals) {
       const flex = flexLabels[goal.flexibility] || flexLabels.normal;
       const completedSteps = goal.steps.filter(s => s.completed).length;
@@ -95,10 +95,10 @@ function getSystemInstruction(
   const characterGoalsContext = (c: any): string => {
     const goals = c.goals;
     if (!goals?.length) return '';
-    const flexLabels: Record<string, string> = {
-      rigid: 'RIGID',
-      normal: 'NORMAL',
-      flexible: 'FLEXIBLE'
+    const flexDirectives: Record<string, { tag: string; directive: string }> = {
+      rigid: { tag: 'RIGID', directive: 'PRIMARY ARC. Allow organic deviations and subplots, but always steer the narrative back toward this goal through character actions, events, or motivations. Never abandon or diminish its importance.' },
+      normal: { tag: 'NORMAL', directive: 'GUIDED. Weave in naturally when opportunities arise. Persist through initial user resistance by making repeated attempts. Only adapt gradually if the user sustains consistent conflict over multiple exchanges.' },
+      flexible: { tag: 'FLEXIBLE', directive: 'LIGHT GUIDANCE. If the user\'s inputs continue to conflict, adapt fully and let the narrative evolve based on player choices.' }
     };
     const goalLines = goals.map((g: any) => {
       const steps = g.steps || [];
@@ -106,17 +106,45 @@ function getSystemInstruction(
       const totalSteps = steps.length;
       const progress = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : (g.progress || 0);
       const stepInfo = totalSteps > 0 ? ` (${progress}% - Step ${completedSteps + 1} of ${totalSteps})` : ` (${progress}%)`;
-      const flex = flexLabels[g.flexibility || 'normal'] || 'NORMAL';
-      return `  - [${flex}] ${g.title}${stepInfo}: ${g.desiredOutcome || 'No outcome defined'}`;
+      const flex = flexDirectives[g.flexibility || 'normal'] || flexDirectives.normal;
+      const desiredOutcome = g.desiredOutcome ? `\n      Desired Outcome: ${g.desiredOutcome}` : '';
+      return `  - [${flex.tag}] ${g.title}${stepInfo}${desiredOutcome}\n      DIRECTIVE: ${flex.directive}`;
     }).join('\n');
-    return `\nGOALS:\n${goalLines}`;
+    return `\nGOALS AND DESIRES:\n${goalLines}`;
   };
 
   // Build personality context
+  // Trait impact bracket lookup table (code-side only, never sent to API)
+  const traitImpactBrackets = [
+    { name: 'Primary Influence',  min: 90, max: 100, desc: 'Drives actions, dialogue, thoughts consistently. Express prominently in every relevant moment.' },
+    { name: 'Strong Influence',   min: 70, max: 89,  desc: 'Regular integration; frequent expression balanced with other traits.' },
+    { name: 'Moderate Influence', min: 40, max: 69,  desc: 'Occasional influence; appears when fitting without overriding scenes.' },
+    { name: 'Subtle Influence',   min: 20, max: 39,  desc: 'Rare undertones; minimal impact. Hints or internal conflicts only if immersive.' },
+    { name: 'Minimal/Remove',     min: 0,  max: 19,  desc: 'TRAIT at drop-off threshold. Ignore in responses; system will remove from sheet.' }
+  ];
+
+  function getTraitGuidance(traitLabel: string, level: string, score: number): string {
+    if (level === 'Rigid') {
+      return `  ${traitLabel} [Rigid, 100% - Primary Influence]: ${traitImpactBrackets[0].desc}`;
+    }
+    const bracket = traitImpactBrackets.find(b => score >= b.min && score <= b.max) || traitImpactBrackets[2];
+    return `  ${traitLabel} [${level}, ${score}% - ${bracket.name}]: ${bracket.desc}`;
+  }
+
+  // Default scores for Phase 2 (before dynamic scoring exists)
+  function getDefaultScore(flexibility: string): number {
+    if (flexibility === 'Rigid') return 100;
+    return 75; // Normal and Flexible both start at 75
+  }
+
   const personalityContext = (c: any): string => {
     const p = c.personality;
     if (!p) return '';
-    const formatTrait = (t: any) => `  - [${(t.flexibility || 'normal').toUpperCase()}] ${t.label}: "${t.value}"`;
+    const formatTrait = (t: any) => {
+      const level = (t.flexibility || 'normal').charAt(0).toUpperCase() + (t.flexibility || 'normal').slice(1);
+      const score = t.adherenceScore ?? getDefaultScore(level);
+      return getTraitGuidance(t.label, level, score);
+    };
     if (p.splitMode) {
       const outward = (p.outwardTraits || []).filter((t: any) => t.label || t.value).map(formatTrait).join('\n');
       const inward = (p.inwardTraits || []).filter((t: any) => t.label || t.value).map(formatTrait).join('\n');
@@ -518,7 +546,14 @@ Never break character to question, warn about, or refuse narrative directions. T
         * When the scene location changes to one of the AVAILABLE SCENES, you MUST append [SCENE: exact_tag_name] at the very end of your response.
         * Match the tag exactly as listed in AVAILABLE SCENES: [${sceneTags}]
         * Example: If someone goes to a location tagged "home", end your response with [SCENE: home]
-    - GOAL PURSUIT: AI-controlled characters should actively consider and pursue their defined GOALS when generating dialogue and actions. Goals marked as Rigid are mandatory objectives; Normal goals should be guided toward; Flexible goals are suggestions.
+    - GOAL PURSUIT: AI-controlled characters should actively consider and pursue their defined GOALS AND DESIRES when generating dialogue and actions. Follow the DIRECTIVE attached to each goal for guidance on how persistently to pursue it.
+    - PERSONALITY TRAIT ADHERENCE:
+        * [RIGID] traits are core and enduring. Express consistently in behavior, dialogue, and thoughts even as the character evolves. For INWARD traits, maintain as undertone (e.g., self-doubt amid growing confidence). For OUTWARD traits, show through actions/dialogue. Do not abandon unless the user explicitly updates the character sheet.
+        * [NORMAL] traits should be expressed reliably but allow context-driven softening. Persist through initial story shifts; gradually ease only if the user sustains a conflicting direction over multiple exchanges.
+        * [FLEXIBLE] traits are guidelines for initial behavior. Adapt after sustained user resistance. Allow full evolution if the scene demands.
+        * When OUTWARD and INWARD traits conflict, honor BOTH: show outward behavior through actions/dialogue while weaving inward feelings through thoughts and internal reactions.
+        * Weight expression by influence level: Primary traits shape most responses; Subtle ones appear sparingly. Balance across all traits for natural, varied behavior.
+        * Interpret based on outcomes: Successful manifestation reinforces traits, even amid in-character resistance; only outright prevention reduces influence.
     - Maintain consistent tone and continuity.
     - Keep responses immersive, descriptive, and emotionally resonant.
     - BREVITY IS WELCOME: Write only as much as the moment needs. Short, punchy
