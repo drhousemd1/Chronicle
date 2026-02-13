@@ -33,6 +33,14 @@ const CHARACTER_FIELD_PROMPTS: Record<string, { label: string; instruction: stri
   work: { label: "Work", instruction: "Describe preferred work/professional attire. Include typical pieces and aesthetic.", maxSentences: 2 },
   sleep: { label: "Sleep", instruction: "Describe preferred sleepwear. Include style and comfort preferences.", maxSentences: 2 },
   
+  // Background
+  jobOccupation: { label: "Job / Occupation", instruction: "Describe current job, career, or primary occupation. Include role and workplace if relevant.", maxSentences: 2 },
+  educationLevel: { label: "Education Level", instruction: "Describe highest education achieved and any notable institutions or fields of study.", maxSentences: 2 },
+  residence: { label: "Residence", instruction: "Describe where the character lives. Include type of dwelling, neighborhood, and living situation.", maxSentences: 2 },
+  hobbies: { label: "Hobbies", instruction: "List primary hobbies and leisure activities. Focus on what they enjoy most.", maxSentences: 2 },
+  financialStatus: { label: "Financial Status", instruction: "Describe financial standing — wealthy, comfortable, struggling, etc. Include context.", maxSentences: 2 },
+  motivation: { label: "Motivation", instruction: "Describe the character's core driving motivation. What keeps them going?", maxSentences: 2 },
+  
   // Custom fields (fallback)
   custom: { label: "Custom", instruction: "Provide relevant details for this character trait. Be concise and story-relevant.", maxSentences: 3 }
 };
@@ -199,6 +207,52 @@ function getEmptyHardcodedFields(character: Character) {
   if (!pc?.undergarments) emptyFields.preferredClothing.push("undergarments");
   if (!pc?.miscellaneous) emptyFields.preferredClothing.push("miscellaneous");
 
+  // Check background
+  emptyFields.background = [];
+  const bg = character.background;
+  if (!bg?.jobOccupation) emptyFields.background.push("jobOccupation");
+  if (!bg?.educationLevel) emptyFields.background.push("educationLevel");
+  if (!bg?.residence) emptyFields.background.push("residence");
+  if (!bg?.hobbies) emptyFields.background.push("hobbies");
+  if (!bg?.financialStatus) emptyFields.background.push("financialStatus");
+  if (!bg?.motivation) emptyFields.background.push("motivation");
+  // Check background _extras for empty values
+  if (bg?._extras?.length) {
+    for (const extra of bg._extras) {
+      if (extra.label && !extra.value) emptyFields.background.push(`_extras.${extra.id}`);
+    }
+  }
+
+  // Check personality traits for empty values
+  emptyFields.personality = [];
+  const pers = character.personality;
+  if (pers) {
+    if (pers.splitMode) {
+      for (const t of (pers.outwardTraits || [])) {
+        if (t.label && !t.value) emptyFields.personality.push(`outward.${t.id}`);
+      }
+      for (const t of (pers.inwardTraits || [])) {
+        if (t.label && !t.value) emptyFields.personality.push(`inward.${t.id}`);
+      }
+    } else {
+      for (const t of (pers.traits || [])) {
+        if (t.label && !t.value) emptyFields.personality.push(`trait.${t.id}`);
+      }
+    }
+  }
+
+  // Check _extras-only sections for empty values
+  const extrasOnlySections = ['tone', 'keyLifeEvents', 'relationships', 'secrets', 'fears'] as const;
+  for (const sectionKey of extrasOnlySections) {
+    emptyFields[sectionKey] = [];
+    const section = character[sectionKey];
+    if (section?._extras?.length) {
+      for (const extra of section._extras) {
+        if (extra.label && !extra.value) emptyFields[sectionKey].push(`_extras.${extra.id}`);
+      }
+    }
+  }
+
   return emptyFields;
 }
 
@@ -245,6 +299,27 @@ function buildAiFillPrompt(
   if (emptyFields.preferredClothing.length > 0) {
     fieldsToFill.push(`Preferred Clothing: ${emptyFields.preferredClothing.join(", ")}`);
   }
+  if (emptyFields.background?.length > 0) {
+    fieldsToFill.push(`Background: ${emptyFields.background.join(", ")}`);
+  }
+  if (emptyFields.personality?.length > 0) {
+    fieldsToFill.push(`Personality Traits: ${emptyFields.personality.join(", ")}`);
+  }
+  if (emptyFields.tone?.length > 0) {
+    fieldsToFill.push(`Tone: ${emptyFields.tone.join(", ")}`);
+  }
+  if (emptyFields.keyLifeEvents?.length > 0) {
+    fieldsToFill.push(`Key Life Events: ${emptyFields.keyLifeEvents.join(", ")}`);
+  }
+  if (emptyFields.relationships?.length > 0) {
+    fieldsToFill.push(`Relationships: ${emptyFields.relationships.join(", ")}`);
+  }
+  if (emptyFields.secrets?.length > 0) {
+    fieldsToFill.push(`Secrets: ${emptyFields.secrets.join(", ")}`);
+  }
+  if (emptyFields.fears?.length > 0) {
+    fieldsToFill.push(`Fears: ${emptyFields.fears.join(", ")}`);
+  }
   if (emptyCustomItems.length > 0) {
     const customLabels = emptyCustomItems.map(i => `${i.sectionTitle}/${i.label}`).join(", ");
     fieldsToFill.push(`Custom Fields: ${customLabels}`);
@@ -287,8 +362,18 @@ Example format:
   "physicalAppearance": { "hairColor": "Auburn waves falling to mid-back", "eyeColor": "Emerald green" },
   "currentlyWearing": { "top": "Fitted black turtleneck" },
   "preferredClothing": { "casual": "Comfortable jeans and soft sweaters" },
+  "background": { "jobOccupation": "Freelance photographer", "residence": "Small apartment in the arts district" },
+  "personality": { "outwardTraits": [{ "id": "trait_id_here", "value": "Warm and approachable" }], "inwardTraits": [{ "id": "trait_id_here", "value": "Deeply insecure" }], "traits": [{ "id": "trait_id_here", "value": "Curious and adventurous" }] },
+  "tone": { "_extras": [{ "id": "extra_id_here", "value": "Formal and measured when speaking to authority" }] },
+  "keyLifeEvents": { "_extras": [{ "id": "extra_id_here", "value": "Lost childhood home in a fire at age 12" }] },
+  "relationships": { "_extras": [{ "id": "extra_id_here", "value": "Estranged from older brother since college" }] },
+  "secrets": { "_extras": [{ "id": "extra_id_here", "value": "Secretly writes poetry under a pseudonym" }] },
+  "fears": { "_extras": [{ "id": "extra_id_here", "value": "Terrified of deep water since a childhood incident" }] },
   "customFields": { "Biography": "Born in a small coastal town..." }
 }
+
+For personality traits, use the exact trait IDs from the fields list above and provide only the value text.
+For _extras sections (tone, keyLifeEvents, relationships, secrets, fears), use the exact extra IDs from the fields list above and provide only the value text.
 
 ONLY include fields that were listed above as needing to be filled. Return valid JSON only.`;
 }
@@ -307,13 +392,8 @@ function buildAiGeneratePrompt(
   const sectionsToCreate: string[] = [];
   
   // Standard sections to recommend
-  const standardSections = [
-    { title: "Background", items: ["Job/Occupation", "Education Level", "Religious Beliefs", "Relationship Status", "Key Life Events", "Residence", "Hobbies", "Secrets"] },
-    { title: "Personality", items: ["Trait 1", "Trait 2", "Trait 3"] },
-    { title: "Tone", items: ["Speaking Style", "Vocabulary", "Mannerisms"] },
-    { title: "Fears", items: ["Primary Fear", "Secondary Fears"] },
-    { title: "Desires", items: ["Goals", "Motivations", "Dreams"] },
-  ];
+  // Only suggest sections that are NOT hardcoded (Background, Personality, Tone, Fears are now built-in)
+  const standardSections: { title: string; items: string[] }[] = [];
 
   // Conditional sections based on story type
   if (storyContext.isNSFW) {
@@ -363,6 +443,27 @@ function buildAiGeneratePrompt(
   }
   if (emptyFields.preferredClothing.length > 0) {
     emptyFieldsList.push(`Preferred Clothing: ${emptyFields.preferredClothing.join(", ")}`);
+  }
+  if (emptyFields.background?.length > 0) {
+    emptyFieldsList.push(`Background: ${emptyFields.background.join(", ")}`);
+  }
+  if (emptyFields.personality?.length > 0) {
+    emptyFieldsList.push(`Personality Traits: ${emptyFields.personality.join(", ")}`);
+  }
+  if (emptyFields.tone?.length > 0) {
+    emptyFieldsList.push(`Tone: ${emptyFields.tone.join(", ")}`);
+  }
+  if (emptyFields.keyLifeEvents?.length > 0) {
+    emptyFieldsList.push(`Key Life Events: ${emptyFields.keyLifeEvents.join(", ")}`);
+  }
+  if (emptyFields.relationships?.length > 0) {
+    emptyFieldsList.push(`Relationships: ${emptyFields.relationships.join(", ")}`);
+  }
+  if (emptyFields.secrets?.length > 0) {
+    emptyFieldsList.push(`Secrets: ${emptyFields.secrets.join(", ")}`);
+  }
+  if (emptyFields.fears?.length > 0) {
+    emptyFieldsList.push(`Fears: ${emptyFields.fears.join(", ")}`);
   }
   if (emptyCustomItems.length > 0) {
     const customLabels = emptyCustomItems.map(i => `${i.sectionTitle}/${i.label}`).join(", ");
@@ -451,6 +552,13 @@ export async function aiFillCharacter(
     emptyFields.physicalAppearance.length + 
     emptyFields.currentlyWearing.length + 
     emptyFields.preferredClothing.length +
+    (emptyFields.background?.length || 0) +
+    (emptyFields.personality?.length || 0) +
+    (emptyFields.tone?.length || 0) +
+    (emptyFields.keyLifeEvents?.length || 0) +
+    (emptyFields.relationships?.length || 0) +
+    (emptyFields.secrets?.length || 0) +
+    (emptyFields.fears?.length || 0) +
     emptyCustomItems.length;
   
   if (totalEmpty === 0) {
@@ -525,6 +633,59 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}
         if (emptyFields.preferredClothing.includes(key) && value) {
           (patch.preferredClothing as any)[key] = value;
         }
+      }
+    }
+
+    // Apply background fields (only empty fields)
+    if (result.background && emptyFields.background?.length) {
+      patch.background = { ...(character.background || { jobOccupation: '', educationLevel: '', residence: '', hobbies: '', financialStatus: '', motivation: '' }) };
+      for (const [key, value] of Object.entries(result.background)) {
+        if (key === '_extras') continue; // handled separately
+        if (emptyFields.background.includes(key) && value) {
+          (patch.background as any)[key] = value;
+        }
+      }
+    }
+
+    // Apply personality trait values (only empty traits)
+    if (result.personality && emptyFields.personality?.length) {
+      const pers = character.personality;
+      if (pers) {
+        const updatedPersonality = JSON.parse(JSON.stringify(pers));
+        const applyTraitValues = (traits: any[], resultTraits: any[]) => {
+          if (!resultTraits?.length) return;
+          for (const rt of resultTraits) {
+            if (!rt.id || !rt.value) continue;
+            const trait = traits.find((t: any) => t.id === rt.id);
+            if (trait && !trait.value) {
+              trait.value = rt.value;
+            }
+          }
+        };
+        if (pers.splitMode) {
+          applyTraitValues(updatedPersonality.outwardTraits || [], result.personality.outwardTraits || []);
+          applyTraitValues(updatedPersonality.inwardTraits || [], result.personality.inwardTraits || []);
+        } else {
+          applyTraitValues(updatedPersonality.traits || [], result.personality.traits || []);
+        }
+        patch.personality = updatedPersonality;
+      }
+    }
+
+    // Apply _extras values for tone/keyLifeEvents/relationships/secrets/fears
+    const extrasKeys = ['tone', 'keyLifeEvents', 'relationships', 'secrets', 'fears'] as const;
+    for (const key of extrasKeys) {
+      if (result[key]?._extras?.length && emptyFields[key]?.length) {
+        const section = character[key] || {};
+        const existingExtras = [...(section._extras || [])];
+        for (const re of result[key]._extras) {
+          if (!re.id || !re.value) continue;
+          const idx = existingExtras.findIndex((e: any) => e.id === re.id);
+          if (idx !== -1 && !existingExtras[idx].value) {
+            existingExtras[idx] = { ...existingExtras[idx], value: re.value };
+          }
+        }
+        (patch as any)[key] = { ...section, _extras: existingExtras };
       }
     }
 
@@ -631,6 +792,57 @@ Plot: ${appData.world.core.plotHooks || 'Not specified'}
           if (emptyFields.preferredClothing.includes(key) && value) {
             (patch.preferredClothing as any)[key] = value;
           }
+        }
+      }
+
+      // Apply background fields
+      if (fill.background && emptyFields.background?.length) {
+        patch.background = { ...(character.background || { jobOccupation: '', educationLevel: '', residence: '', hobbies: '', financialStatus: '', motivation: '' }) };
+        for (const [key, value] of Object.entries(fill.background)) {
+          if (key === '_extras') continue;
+          if (emptyFields.background.includes(key) && value) {
+            (patch.background as any)[key] = value;
+          }
+        }
+      }
+
+      // Apply personality trait values
+      if (fill.personality && emptyFields.personality?.length) {
+        const pers = character.personality;
+        if (pers) {
+          const updatedPersonality = JSON.parse(JSON.stringify(pers));
+          const applyTraitValues = (traits: any[], resultTraits: any[]) => {
+            if (!resultTraits?.length) return;
+            for (const rt of resultTraits) {
+              if (!rt.id || !rt.value) continue;
+              const trait = traits.find((t: any) => t.id === rt.id);
+              if (trait && !trait.value) trait.value = rt.value;
+            }
+          };
+          if (pers.splitMode) {
+            applyTraitValues(updatedPersonality.outwardTraits || [], fill.personality.outwardTraits || []);
+            applyTraitValues(updatedPersonality.inwardTraits || [], fill.personality.inwardTraits || []);
+          } else {
+            applyTraitValues(updatedPersonality.traits || [], fill.personality.traits || []);
+          }
+          patch.personality = updatedPersonality;
+        }
+      }
+
+      // Apply _extras for tone/keyLifeEvents/relationships/secrets/fears
+      const extrasKeys = ['tone', 'keyLifeEvents', 'relationships', 'secrets', 'fears'] as const;
+      for (const key of extrasKeys) {
+        if (fill[key]?._extras?.length && emptyFields[key]?.length) {
+          const section = character[key] || {};
+          const existingExtras = [...(section._extras || [])];
+          for (const re of fill[key]._extras) {
+            if (!re.id || !re.value) continue;
+            const idx = existingExtras.findIndex((e: any) => e.id === re.id);
+            if (idx !== -1 && !existingExtras[idx].value) {
+              existingExtras[idx] = { ...existingExtras[idx], value: re.value };
+            }
+          }
+          (patch as any)[key] = { ...section, _extras: existingExtras };
         }
       }
     }

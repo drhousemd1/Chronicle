@@ -1216,7 +1216,20 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           customSections: (effective.sections || []).map(s => ({
             title: s.title,
             items: s.items.map(i => ({ label: i.label, value: i.value }))
-          }))
+          })),
+          // New sections
+          background: effective.background,
+          personality: effective.personality ? {
+            splitMode: effective.personality.splitMode,
+            traits: (effective.personality.traits || []).map(t => ({ label: t.label, value: t.value })),
+            outwardTraits: (effective.personality.outwardTraits || []).map(t => ({ label: t.label, value: t.value })),
+            inwardTraits: (effective.personality.inwardTraits || []).map(t => ({ label: t.label, value: t.value })),
+          } : undefined,
+          tone: effective.tone,
+          keyLifeEvents: effective.keyLifeEvents,
+          relationships: effective.relationships,
+          secrets: effective.secrets,
+          fears: effective.fears,
         };
       });
       
@@ -1509,6 +1522,19 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
               patch.currentlyWearing = { ...(sessionState.currentlyWearing || {}), ...(patch.currentlyWearing || {}), [child]: value };
             } else if (parent === 'preferredClothing') {
               patch.preferredClothing = { ...(sessionState.preferredClothing || {}), ...(patch.preferredClothing || {}), [child]: value };
+            } else if (parent === 'background') {
+              // Update background hardcoded fields in session state
+              const bg = patch.background || sessionState.background || mainChar.background || { jobOccupation: '', educationLevel: '', residence: '', hobbies: '', financialStatus: '', motivation: '' };
+              (bg as any)[child] = value;
+              patch.background = bg;
+            } else if (['tone', 'keyLifeEvents', 'relationships', 'secrets', 'fears'].includes(parent) && child === '_extras') {
+              // Append to _extras
+              const sectionKey = parent as 'tone' | 'keyLifeEvents' | 'relationships' | 'secrets' | 'fears';
+              const existing = (patch as any)[sectionKey] || (sessionState as any)[sectionKey] || (mainChar as any)[sectionKey] || {};
+              const extras = [...(existing._extras || [])];
+              const parts = value.split(':');
+              extras.push({ id: `extra_${Date.now()}`, label: parts[0]?.trim() || 'New', value: parts.slice(1).join(':')?.trim() || value });
+              (patch as any)[sectionKey] = { ...existing, _extras: extras };
             }
           } else {
             patch[field] = value;

@@ -461,31 +461,48 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
       const concatenatedAi = aiMessages.join('\n\n---\n\n');
       
       // Build character data for context (same structure as extractCharacterUpdatesFromDialogue)
-      const buildCharData = (c: Character | SideCharacter) => ({
-        name: c.name,
-        previousNames: ('previousNames' in c) ? (c as any).previousNames : [],
-        nicknames: c.nicknames,
-        physicalAppearance: c.physicalAppearance,
-        currentlyWearing: c.currentlyWearing,
-        preferredClothing: c.preferredClothing,
-        location: c.location,
-        currentMood: c.currentMood,
-        goals: ('goals' in c && (c as Character).goals) 
-          ? (c as Character).goals!.map(g => ({
-              title: g.title,
-              desiredOutcome: g.desiredOutcome || '',
-              currentStatus: g.currentStatus || '',
-              progress: g.progress || 0,
-              steps: (g.steps || []).map(s => ({ id: s.id, description: s.description, completed: s.completed }))
-            }))
-          : [],
-        customSections: ('sections' in c && (c as Character).sections)
-          ? (c as Character).sections.map(s => ({
-              title: s.title,
-              items: s.items.map(i => ({ label: i.label, value: i.value }))
-            }))
-          : []
-      });
+      const buildCharData = (c: Character | SideCharacter) => {
+        const isMain = 'sections' in c;
+        const mainChar = isMain ? c as Character : null;
+        return {
+          name: c.name,
+          previousNames: ('previousNames' in c) ? (c as any).previousNames : [],
+          nicknames: c.nicknames,
+          physicalAppearance: c.physicalAppearance,
+          currentlyWearing: c.currentlyWearing,
+          preferredClothing: c.preferredClothing,
+          location: c.location,
+          currentMood: c.currentMood,
+          goals: ('goals' in c && (c as Character).goals) 
+            ? (c as Character).goals!.map(g => ({
+                title: g.title,
+                desiredOutcome: g.desiredOutcome || '',
+                currentStatus: g.currentStatus || '',
+                progress: g.progress || 0,
+                steps: (g.steps || []).map(s => ({ id: s.id, description: s.description, completed: s.completed }))
+              }))
+            : [],
+          customSections: (mainChar?.sections)
+            ? mainChar.sections.map(s => ({
+                title: s.title,
+                items: s.items.map(i => ({ label: i.label, value: i.value }))
+              }))
+            : [],
+          // New sections (main characters only)
+          background: mainChar?.background,
+          personality: mainChar?.personality ? {
+            splitMode: mainChar.personality.splitMode,
+            traits: (mainChar.personality.traits || []).map(t => ({ label: t.label, value: t.value })),
+            outwardTraits: (mainChar.personality.outwardTraits || []).map(t => ({ label: t.label, value: t.value })),
+            inwardTraits: (mainChar.personality.inwardTraits || []).map(t => ({ label: t.label, value: t.value })),
+          } : undefined,
+          tone: mainChar?.tone,
+          keyLifeEvents: mainChar?.keyLifeEvents,
+          relationships: mainChar?.relationships,
+          secrets: mainChar?.secrets,
+          fears: mainChar?.fears,
+        };
+      };
       
       const charactersData = allCharacters 
         ? allCharacters.map(buildCharData) 
@@ -707,6 +724,18 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
               next.currentlyWearing = { ...next.currentlyWearing, [child]: value };
             } else if (parent === 'preferredClothing') {
               next.preferredClothing = { ...next.preferredClothing, [child]: value };
+            } else if (parent === 'background') {
+              // Update background hardcoded fields
+              const bg = next.mainBackground || { jobOccupation: '', educationLevel: '', residence: '', hobbies: '', financialStatus: '', motivation: '' };
+              (bg as any)[child] = value;
+              next.mainBackground = bg;
+            } else if (['tone', 'keyLifeEvents', 'relationships', 'secrets', 'fears'].includes(parent) && child === '_extras') {
+              // For _extras append, the value is treated as a new entry
+              const sectionKey = parent as 'tone' | 'keyLifeEvents' | 'relationships' | 'secrets' | 'fears';
+              const section = next[sectionKey] || {};
+              const extras = [...(section._extras || [])];
+              extras.push({ id: uid('extra'), label: value.split(':')[0]?.trim() || 'New', value: value.split(':').slice(1).join(':')?.trim() || value });
+              (next as any)[sectionKey] = { ...section, _extras: extras };
             }
           }
           // Handle flat fields
