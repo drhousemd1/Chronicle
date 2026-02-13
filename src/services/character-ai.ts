@@ -148,7 +148,7 @@ export async function aiEnhanceCharacterField(
 
 // Analyze story type from world context
 function analyzeStoryType(worldCore: WorldCore) {
-  const text = `${worldCore.briefDescription || ''} ${worldCore.settingOverview || ''} ${worldCore.plotHooks || ''}`.toLowerCase();
+  const text = `${worldCore.briefDescription || ''} ${worldCore.storyPremise || ''} ${worldCore.toneThemes || ''} ${worldCore.plotHooks || ''}`.toLowerCase();
   
   return {
     isNSFW: /nsfw|adult|mature|erotic|sensual|intimate|sexual/.test(text),
@@ -223,32 +223,38 @@ function getEmptyHardcodedFields(character: Character) {
     }
   }
 
-  // Check personality traits for empty values
+  // Check personality traits for empty values (include label for AI context)
   emptyFields.personality = [];
   const pers = character.personality;
   if (pers) {
     if (pers.splitMode) {
       for (const t of (pers.outwardTraits || [])) {
-        if (t.label && !t.value) emptyFields.personality.push(`outward.${t.id}`);
+        if (t.label && !t.value) emptyFields.personality.push(`outward.${t.id}:${t.label}`);
       }
       for (const t of (pers.inwardTraits || [])) {
-        if (t.label && !t.value) emptyFields.personality.push(`inward.${t.id}`);
+        if (t.label && !t.value) emptyFields.personality.push(`inward.${t.id}:${t.label}`);
       }
     } else {
       for (const t of (pers.traits || [])) {
-        if (t.label && !t.value) emptyFields.personality.push(`trait.${t.id}`);
+        if (t.label && !t.value) emptyFields.personality.push(`trait.${t.id}:${t.label}`);
       }
     }
   }
 
-  // Check _extras-only sections for empty values
+  // Check _extras-only sections for empty values (include label for AI context)
   const extrasOnlySections = ['tone', 'keyLifeEvents', 'relationships', 'secrets', 'fears'] as const;
   for (const sectionKey of extrasOnlySections) {
     emptyFields[sectionKey] = [];
     const section = character[sectionKey];
     if (section?._extras?.length) {
       for (const extra of section._extras) {
-        if (extra.label && !extra.value) emptyFields[sectionKey].push(`_extras.${extra.id}`);
+        if (extra.label && !extra.value) {
+          // Has label but no value - AI needs to fill the value
+          emptyFields[sectionKey].push(`_extras.${extra.id}:${extra.label}`);
+        } else if (!extra.label && !extra.value) {
+          // Both empty - AI needs to generate both label and value
+          emptyFields[sectionKey].push(`_extras.${extra.id}:__empty__`);
+        }
       }
     }
   }
@@ -285,6 +291,20 @@ function buildAiFillPrompt(
   userPrompt?: string,
   useExistingDetails: boolean = true
 ) {
+  // Helper to format enriched field descriptors for the prompt
+  const formatEnrichedFields = (fields: string[], sectionName: string): string | null => {
+    if (!fields.length) return null;
+    const formatted = fields.map(f => {
+      const colonIdx = f.indexOf(':');
+      if (colonIdx === -1) return f; // plain field like "jobOccupation"
+      const id = f.substring(0, colonIdx);
+      const label = f.substring(colonIdx + 1);
+      if (label === '__empty__') return `${id} (GENERATE BOTH LABEL AND VALUE)`;
+      return `"${label}" (${id})`;
+    }).join(', ');
+    return `${sectionName}: ${formatted}`;
+  };
+
   const fieldsToFill: string[] = [];
   
   if (emptyFields.basics.length > 0) {
@@ -302,24 +322,18 @@ function buildAiFillPrompt(
   if (emptyFields.background?.length > 0) {
     fieldsToFill.push(`Background: ${emptyFields.background.join(", ")}`);
   }
-  if (emptyFields.personality?.length > 0) {
-    fieldsToFill.push(`Personality Traits: ${emptyFields.personality.join(", ")}`);
-  }
-  if (emptyFields.tone?.length > 0) {
-    fieldsToFill.push(`Tone: ${emptyFields.tone.join(", ")}`);
-  }
-  if (emptyFields.keyLifeEvents?.length > 0) {
-    fieldsToFill.push(`Key Life Events: ${emptyFields.keyLifeEvents.join(", ")}`);
-  }
-  if (emptyFields.relationships?.length > 0) {
-    fieldsToFill.push(`Relationships: ${emptyFields.relationships.join(", ")}`);
-  }
-  if (emptyFields.secrets?.length > 0) {
-    fieldsToFill.push(`Secrets: ${emptyFields.secrets.join(", ")}`);
-  }
-  if (emptyFields.fears?.length > 0) {
-    fieldsToFill.push(`Fears: ${emptyFields.fears.join(", ")}`);
-  }
+  const personalityLine = formatEnrichedFields(emptyFields.personality || [], 'Personality Traits');
+  if (personalityLine) fieldsToFill.push(personalityLine);
+  const toneLine = formatEnrichedFields(emptyFields.tone || [], 'Tone');
+  if (toneLine) fieldsToFill.push(toneLine);
+  const kleLine = formatEnrichedFields(emptyFields.keyLifeEvents || [], 'Key Life Events');
+  if (kleLine) fieldsToFill.push(kleLine);
+  const relLine = formatEnrichedFields(emptyFields.relationships || [], 'Relationships');
+  if (relLine) fieldsToFill.push(relLine);
+  const secLine = formatEnrichedFields(emptyFields.secrets || [], 'Secrets');
+  if (secLine) fieldsToFill.push(secLine);
+  const fearLine = formatEnrichedFields(emptyFields.fears || [], 'Fears');
+  if (fearLine) fieldsToFill.push(fearLine);
   if (emptyCustomItems.length > 0) {
     const customLabels = emptyCustomItems.map(i => `${i.sectionTitle}/${i.label}`).join(", ");
     fieldsToFill.push(`Custom Fields: ${customLabels}`);
@@ -374,6 +388,7 @@ Example format:
 
 For personality traits, use the exact trait IDs from the fields list above and provide only the value text.
 For _extras sections (tone, keyLifeEvents, relationships, secrets, fears), use the exact extra IDs from the fields list above and provide only the value text.
+For entries marked "GENERATE BOTH LABEL AND VALUE", return objects with BOTH "id", "label", and "value" keys. The label should be a short descriptor (2-4 words) and the value should be the detailed description.
 
 ONLY include fields that were listed above as needing to be filled. Return valid JSON only.`;
 }
@@ -430,6 +445,20 @@ function buildAiGeneratePrompt(
     ? 'EXISTING CHARACTER INFO (maintain strong consistency with these details):'
     : 'EXISTING CHARACTER INFO (use as light reference, prioritize user guidance):';
 
+  // Helper to format enriched field descriptors for the prompt
+  const formatEnrichedFields = (fields: string[], sectionName: string): string | null => {
+    if (!fields.length) return null;
+    const formatted = fields.map(f => {
+      const colonIdx = f.indexOf(':');
+      if (colonIdx === -1) return f;
+      const id = f.substring(0, colonIdx);
+      const label = f.substring(colonIdx + 1);
+      if (label === '__empty__') return `${id} (GENERATE BOTH LABEL AND VALUE)`;
+      return `"${label}" (${id})`;
+    }).join(', ');
+    return `${sectionName}: ${formatted}`;
+  };
+
   // List empty fields that need to be filled
   const emptyFieldsList: string[] = [];
   if (emptyFields.basics.length > 0) {
@@ -447,24 +476,18 @@ function buildAiGeneratePrompt(
   if (emptyFields.background?.length > 0) {
     emptyFieldsList.push(`Background: ${emptyFields.background.join(", ")}`);
   }
-  if (emptyFields.personality?.length > 0) {
-    emptyFieldsList.push(`Personality Traits: ${emptyFields.personality.join(", ")}`);
-  }
-  if (emptyFields.tone?.length > 0) {
-    emptyFieldsList.push(`Tone: ${emptyFields.tone.join(", ")}`);
-  }
-  if (emptyFields.keyLifeEvents?.length > 0) {
-    emptyFieldsList.push(`Key Life Events: ${emptyFields.keyLifeEvents.join(", ")}`);
-  }
-  if (emptyFields.relationships?.length > 0) {
-    emptyFieldsList.push(`Relationships: ${emptyFields.relationships.join(", ")}`);
-  }
-  if (emptyFields.secrets?.length > 0) {
-    emptyFieldsList.push(`Secrets: ${emptyFields.secrets.join(", ")}`);
-  }
-  if (emptyFields.fears?.length > 0) {
-    emptyFieldsList.push(`Fears: ${emptyFields.fears.join(", ")}`);
-  }
+  const personalityLine = formatEnrichedFields(emptyFields.personality || [], 'Personality Traits');
+  if (personalityLine) emptyFieldsList.push(personalityLine);
+  const toneLine = formatEnrichedFields(emptyFields.tone || [], 'Tone');
+  if (toneLine) emptyFieldsList.push(toneLine);
+  const kleLine = formatEnrichedFields(emptyFields.keyLifeEvents || [], 'Key Life Events');
+  if (kleLine) emptyFieldsList.push(kleLine);
+  const relLine = formatEnrichedFields(emptyFields.relationships || [], 'Relationships');
+  if (relLine) emptyFieldsList.push(relLine);
+  const secLine = formatEnrichedFields(emptyFields.secrets || [], 'Secrets');
+  if (secLine) emptyFieldsList.push(secLine);
+  const fearLine = formatEnrichedFields(emptyFields.fears || [], 'Fears');
+  if (fearLine) emptyFieldsList.push(fearLine);
   if (emptyCustomItems.length > 0) {
     const customLabels = emptyCustomItems.map(i => `${i.sectionTitle}/${i.label}`).join(", ");
     emptyFieldsList.push(`Custom Fields: ${customLabels}`);
@@ -565,10 +588,16 @@ export async function aiFillCharacter(
     return {}; // Nothing to fill
   }
 
-  const worldContext = `
-Setting: ${appData.world.core.settingOverview || 'Not specified'}
-Scenario: ${appData.world.core.scenarioName || 'Not specified'}
-  `.trim();
+  const worldContext = [
+    appData.world.core.scenarioName ? `Scenario: ${appData.world.core.scenarioName}` : null,
+    appData.world.core.briefDescription ? `Setting: ${appData.world.core.briefDescription}` : null,
+    appData.world.core.storyPremise ? `Premise: ${appData.world.core.storyPremise}` : null,
+    appData.world.core.toneThemes ? `Tone & Themes: ${appData.world.core.toneThemes}` : null,
+    appData.world.core.factions ? `Factions: ${appData.world.core.factions}` : null,
+    appData.world.core.historyTimeline ? `History: ${appData.world.core.historyTimeline}` : null,
+    appData.world.core.plotHooks ? `Plot Hooks: ${appData.world.core.plotHooks}` : null,
+    appData.world.core.dialogFormatting ? `Dialog Formatting: ${appData.world.core.dialogFormatting}` : null,
+  ].filter(Boolean).join('\n') || 'Not specified';
 
   const prompt = buildAiFillPrompt(character, emptyFields, emptyCustomItems, worldContext, userPrompt, useExistingDetails);
 
@@ -681,8 +710,13 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}
         for (const re of result[key]._extras) {
           if (!re.id || !re.value) continue;
           const idx = existingExtras.findIndex((e: any) => e.id === re.id);
-          if (idx !== -1 && !existingExtras[idx].value) {
-            existingExtras[idx] = { ...existingExtras[idx], value: re.value };
+          if (idx !== -1) {
+            // Write value, and also write label if it was an __empty__ entry
+            const update: any = { ...existingExtras[idx], value: re.value };
+            if (!existingExtras[idx].label && re.label) {
+              update.label = re.label;
+            }
+            existingExtras[idx] = update;
           }
         }
         (patch as any)[key] = { ...section, _extras: existingExtras };
@@ -723,11 +757,16 @@ export async function aiGenerateCharacter(
   const existingSectionTitles = character.sections.map(s => s.title);
   const storyContext = analyzeStoryType(appData.world.core);
 
-  const worldContext = `
-Setting: ${appData.world.core.settingOverview || 'Not specified'}
-Scenario: ${appData.world.core.scenarioName || 'Not specified'}
-Plot: ${appData.world.core.plotHooks || 'Not specified'}
-  `.trim();
+  const worldContext = [
+    appData.world.core.scenarioName ? `Scenario: ${appData.world.core.scenarioName}` : null,
+    appData.world.core.briefDescription ? `Setting: ${appData.world.core.briefDescription}` : null,
+    appData.world.core.storyPremise ? `Premise: ${appData.world.core.storyPremise}` : null,
+    appData.world.core.toneThemes ? `Tone & Themes: ${appData.world.core.toneThemes}` : null,
+    appData.world.core.factions ? `Factions: ${appData.world.core.factions}` : null,
+    appData.world.core.historyTimeline ? `History: ${appData.world.core.historyTimeline}` : null,
+    appData.world.core.plotHooks ? `Plot Hooks: ${appData.world.core.plotHooks}` : null,
+    appData.world.core.dialogFormatting ? `Dialog Formatting: ${appData.world.core.dialogFormatting}` : null,
+  ].filter(Boolean).join('\n') || 'Not specified';
 
   const prompt = buildAiGeneratePrompt(character, emptyFields, emptyCustomItems, existingSectionTitles, storyContext, worldContext, userPrompt, useExistingDetails);
 
@@ -838,8 +877,12 @@ Plot: ${appData.world.core.plotHooks || 'Not specified'}
           for (const re of fill[key]._extras) {
             if (!re.id || !re.value) continue;
             const idx = existingExtras.findIndex((e: any) => e.id === re.id);
-            if (idx !== -1 && !existingExtras[idx].value) {
-              existingExtras[idx] = { ...existingExtras[idx], value: re.value };
+            if (idx !== -1) {
+              const update: any = { ...existingExtras[idx], value: re.value };
+              if (!existingExtras[idx].label && re.label) {
+                update.label = re.label;
+              }
+              existingExtras[idx] = update;
             }
           }
           (patch as any)[key] = { ...section, _extras: existingExtras };
