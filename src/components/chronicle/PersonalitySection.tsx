@@ -152,7 +152,7 @@ const TraitList: React.FC<{
       <button
         type="button"
         onClick={onAddTrait}
-        className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border border-dashed border-blue-500/30 hover:border-blue-400 rounded-xl transition-all flex items-center justify-center gap-1"
+        className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all flex items-center justify-center gap-1"
       >
         <Plus className="w-4 h-4" /> Add Trait
       </button>
