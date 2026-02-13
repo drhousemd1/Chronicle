@@ -133,6 +133,8 @@ const HardcodedRow: React.FC<{
       placeholder={placeholder}
       className="flex-1 px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
     />
+    {/* Invisible spacer matching ModalExtraRow's delete button width */}
+    <div className="w-7 flex-shrink-0" />
   </div>
 );
 
