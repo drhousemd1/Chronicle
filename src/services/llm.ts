@@ -131,12 +131,10 @@ function getSystemInstruction(
   };
 
   const worldContext = `
-    SETTING OVERVIEW: ${appData.world.core.settingOverview}
     SCENARIO: ${appData.world.core.storyPremise || 'Not specified'}
     FACTIONS: ${appData.world.core.factions}
     LOCATIONS:
     ${locationsContext}
-    NARRATIVE STYLE: ${appData.world.core.narrativeStyle}
     DIALOG FORMATTING: ${fullDialogFormatting}
     ${customWorldContext}
     ${storyGoalsContext}

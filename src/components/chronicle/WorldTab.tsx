@@ -521,11 +521,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                   <div className="grid grid-cols-1 gap-8">
                     <div>
                       <FieldLabel label="Scenario" fieldName="storyPremise" />
-                      <AutoResizeTextarea value={world.core.storyPremise || ''} onChange={(v) => updateCore({ storyPremise: v })} rows={4} placeholder="What's the central situation or conflict? What's at stake? Describe the overall narrative the AI should understand..." className="px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
-                    </div>
-                    <div>
-                      <FieldLabel label="Setting Overview" fieldName="settingOverview" />
-                      <AutoResizeTextarea value={world.core.settingOverview} onChange={(v) => updateCore({ settingOverview: v })} rows={4} placeholder="Describe the physical and cultural landscape of your world..." className="px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                      <AutoResizeTextarea value={world.core.storyPremise || ''} onChange={(v) => updateCore({ storyPremise: v })} rows={8} placeholder="What's the central situation or conflict? What's at stake? Describe the overall narrative the AI should understand..." className="px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                     </div>
                     
                     {/* Structured Locations */}
@@ -589,7 +585,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                     
                     {/* Custom World Content Sections */}
                     {(world.core.customWorldSections || []).map((section, sIdx) => (
-                      <div key={section.id} className="p-5 bg-blue-900/40 rounded-2xl border border-white/5 space-y-4">
+                      <div key={section.id} className="border-l-2 border-blue-500/30 pl-5 space-y-4">
                         <div className="flex items-center justify-between">
                           <AutoResizeTextarea
                             value={section.title}
@@ -599,7 +595,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                               updateCore({ customWorldSections: sections });
                             }}
                             placeholder="Section Title..."
-                            className="bg-transparent border-none text-white font-bold text-lg px-0 focus:ring-0 placeholder:text-zinc-500"
+                            className="bg-transparent border-none text-[10px] font-black text-zinc-400 uppercase tracking-widest px-0 focus:ring-0 placeholder:text-zinc-500"
                           />
                           <button
                             type="button"
@@ -990,16 +986,6 @@ export const WorldTab: React.FC<WorldTabProps> = ({
               <div className="p-6">
                 <div className="p-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
                   <div className="space-y-8">
-                    <div>
-                      <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1 block">Narrative Style</label>
-                      <AutoResizeTextarea 
-                        value={world.core.narrativeStyle} 
-                        onChange={(v) => updateCore({ narrativeStyle: v })} 
-                        rows={4} 
-                        placeholder="Detailed descriptions of environments and character actions..."
-                        className="px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                      />
-                    </div>
                     
                     <div className="space-y-4">
                       <label className="block text-[10px] font-black uppercase text-zinc-400 tracking-widest">Dialog Formatting</label>

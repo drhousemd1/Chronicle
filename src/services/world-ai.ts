@@ -2,7 +2,7 @@ import { WorldCore } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 
 // Only include string fields that can be AI-enhanced
-export type EnhanceableWorldFields = Extract<keyof WorldCore, 'scenarioName' | 'briefDescription' | 'storyPremise' | 'settingOverview' | 'factions' | 'locations' | 'historyTimeline' | 'plotHooks' | 'narrativeStyle' | 'dialogFormatting'>;
+export type EnhanceableWorldFields = Extract<keyof WorldCore, 'scenarioName' | 'briefDescription' | 'storyPremise' | 'factions' | 'locations' | 'historyTimeline' | 'plotHooks' | 'dialogFormatting'>;
 
 // Field-specific prompts that enforce structured expansion
 const FIELD_PROMPTS: Record<EnhanceableWorldFields, { label: string; instruction: string; maxSentences: number }> = {
@@ -20,11 +20,6 @@ const FIELD_PROMPTS: Record<EnhanceableWorldFields, { label: string; instruction
     label: "Scenario",
     instruction: "Describe the central conflict and stakes. Format: Situation + Tension + Stakes. What's happening, why it matters, what could go wrong.",
     maxSentences: 4
-  },
-  settingOverview: {
-    label: "Setting Overview",
-    instruction: "Describe the physical and cultural landscape. Format: Geography + Culture + Atmosphere. Be factual and concise about what defines this world.",
-    maxSentences: 5
   },
   factions: {
     label: "Factions",
@@ -45,11 +40,6 @@ const FIELD_PROMPTS: Record<EnhanceableWorldFields, { label: string; instruction
     label: "Plot Hooks",
     instruction: "List potential story hooks or quests. Format: 'Hook Name - Brief setup and what's at stake'.",
     maxSentences: 5
-  },
-  narrativeStyle: {
-    label: "Narrative Style",
-    instruction: "Describe the narrative voice and writing style. Format: POV + Prose style + Descriptive focus areas.",
-    maxSentences: 3
   },
   dialogFormatting: {
     label: "Dialog Formatting",
@@ -78,9 +68,6 @@ function buildPrompt(
   }
   if (worldContext.storyPremise && fieldName !== 'storyPremise') {
     contextParts.push(`- Premise: ${worldContext.storyPremise}`);
-  }
-  if (worldContext.settingOverview && fieldName !== 'settingOverview') {
-    contextParts.push(`- Setting: ${worldContext.settingOverview}`);
   }
 
   const contextSection = contextParts.length > 0 

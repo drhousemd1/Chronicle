@@ -1,13 +1,39 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { CharacterGoal, GoalStep, GoalFlexibility, TimeOfDay } from '@/types';
 import { Trash2, Plus, X, ChevronDown, ChevronUp, CheckSquare } from 'lucide-react';
 import { GuidanceStrengthSlider } from './GuidanceStrengthSlider';
 import { CircularProgress } from './CircularProgress';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { uid, now } from '@/utils';
 import { cn } from '@/lib/utils';
+
+// Auto-resizing textarea for goals
+const AutoResizeTextarea: React.FC<{
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  className?: string;
+  rows?: number;
+}> = ({ value, onChange, placeholder, className = '', rows = 1 }) => {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    if (ref.current) {
+      ref.current.style.height = 'auto';
+      ref.current.style.height = `${ref.current.scrollHeight}px`;
+    }
+  }, [value]);
+  return (
+    <textarea
+      ref={ref}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      rows={rows}
+      spellCheck={true}
+      className={cn("w-full min-w-0 resize-none overflow-hidden whitespace-pre-wrap break-words", className)}
+    />
+  );
+};
 
 interface CharacterGoalsSectionProps {
   goals: CharacterGoal[];
@@ -156,7 +182,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
     <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
       {/* Section Header */}
       <div className="bg-[#4a5f7f] border-b border-white/20 px-5 py-3 flex items-center justify-between shadow-lg">
-        <h2 className="text-white text-xl font-bold tracking-tight">Character Goals</h2>
+        <h2 className="text-white text-xl font-bold tracking-tight">Goals and Desires</h2>
         {onToggle && (
           <button onClick={onToggle} className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-white/10">
             {isExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
@@ -192,7 +218,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
                     <div>
                       <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Goal Name</label>
                       {isEditMode ? (
-                        <Input value={goal.title} onChange={(e) => updateGoal(goal.id, { title: e.target.value })} placeholder="Enter goal name..." className="mt-1 bg-zinc-900/50 border-white/10 text-white placeholder:text-zinc-600" />
+                        <AutoResizeTextarea value={goal.title} onChange={(v) => updateGoal(goal.id, { title: v })} placeholder="Enter goal name..." className="mt-1 px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
                       ) : (
                         <h3 className="text-lg font-bold text-white mt-0.5">{goal.title || 'No goal name set'}</h3>
                       )}
@@ -202,7 +228,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
                     <div>
                       <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Desired Outcome</label>
                       {isEditMode ? (
-                        <Textarea value={goal.desiredOutcome} onChange={(e) => updateGoal(goal.id, { desiredOutcome: e.target.value })} placeholder="What success looks like..." className="mt-1 bg-zinc-900/50 border-white/10 text-white placeholder:text-zinc-600 min-h-[60px]" />
+                        <AutoResizeTextarea value={goal.desiredOutcome} onChange={(v) => updateGoal(goal.id, { desiredOutcome: v })} placeholder="What success looks like..." className="mt-1 px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20" rows={2} />
                       ) : (
                         <p className="text-sm text-zinc-300 mt-0.5">{goal.desiredOutcome || 'No outcome defined'}</p>
                       )}
@@ -234,11 +260,11 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
                                 className="mt-2.5 border-zinc-600 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
                               />
                               {isEditMode ? (
-                                <Textarea
+                                <AutoResizeTextarea
                                   value={step.description}
-                                  onChange={(e) => updateStep(goal.id, step.id, { description: e.target.value })}
+                                  onChange={(v) => updateStep(goal.id, step.id, { description: v })}
                                   placeholder={`Step ${stepIdx + 1}: Describe this step...`}
-                                  className={cn("flex-1 bg-zinc-900/50 border-white/10 text-white placeholder:text-zinc-600 min-h-[40px] text-sm", step.completed && "line-through text-zinc-500")}
+                                  className={cn("flex-1 px-3 py-2 bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20", step.completed && "line-through text-zinc-500")}
                                 />
                               ) : (
                                 <span className={cn("text-sm text-zinc-200 pt-2", step.completed && "line-through text-zinc-500")}>

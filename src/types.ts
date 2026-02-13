@@ -94,7 +94,7 @@ export type WorldCore = {
   scenarioName: string;
   briefDescription: string;
   storyPremise: string;  // Central conflict/plot/situation (renamed to "Scenario" in UI)
-  settingOverview: string;
+  settingOverview?: string;  // Deprecated - kept for backward compatibility
   rulesOfMagicTech: string;  // Deprecated - kept for backward compatibility
   factions: string;
   locations: string;  // Legacy plain text locations
@@ -102,7 +102,7 @@ export type WorldCore = {
   historyTimeline: string;
   toneThemes: string;
   plotHooks: string;
-  narrativeStyle: string;
+  narrativeStyle?: string;  // Deprecated - kept for backward compatibility
   dialogFormatting: string;
   customWorldSections?: WorldCustomSection[];  // User-created custom content
   storyGoals?: StoryGoal[];  // Global narrative goals
