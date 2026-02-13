@@ -585,18 +585,20 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                     
                     {/* Custom World Content Sections */}
                     {(world.core.customWorldSections || []).map((section, sIdx) => (
-                      <div key={section.id} className="border-l-2 border-blue-500/30 pl-5 space-y-4">
-                        <div className="flex items-center justify-between">
-                          <AutoResizeTextarea
-                            value={section.title}
-                            onChange={(v) => {
-                              const sections = [...(world.core.customWorldSections || [])];
-                              sections[sIdx] = { ...sections[sIdx], title: v };
-                              updateCore({ customWorldSections: sections });
-                            }}
-                            placeholder="Section Title..."
-                            className="bg-transparent border-none text-[10px] font-black text-zinc-400 uppercase tracking-widest px-0 focus:ring-0 placeholder:text-zinc-500"
-                          />
+                      <div key={section.id} className="space-y-4">
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 bg-[#1e293b] rounded-xl border border-white/5 px-4 py-3">
+                            <AutoResizeTextarea
+                              value={section.title}
+                              onChange={(v) => {
+                                const sections = [...(world.core.customWorldSections || [])];
+                                sections[sIdx] = { ...sections[sIdx], title: v };
+                                updateCore({ customWorldSections: sections });
+                              }}
+                              placeholder="Section Title..."
+                              className="bg-transparent border-none text-[10px] font-black text-zinc-400 uppercase tracking-widest px-0 focus:ring-0 placeholder:text-zinc-500 w-full"
+                            />
+                          </div>
                           <button
                             type="button"
                             onClick={() => {
