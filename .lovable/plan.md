@@ -1,36 +1,32 @@
 
 
-# Fix Row Alignment in Character Builder Sections
+# Add Lock Icon to Hard-Coded Rows
 
-## Problem
-Hard-coded rows (Hair Color, Eye Color, etc.) extend further than user-added extra rows because extra rows have an X delete button that takes up space, while hard-coded rows have no spacer in that column. This creates a visually uneven layout.
-
-## Solution
-Add an invisible spacer element to `HardcodedRow` that matches the exact width of the X button in `ExtraRow`, ensuring both row types have identical total widths.
+## What Changes
+Replace the invisible spacer `div` in `HardcodedRow` with a small `Lock` icon from lucide-react. This serves two purposes: it fills the previously empty column space, and it gives users a clear visual cue that the label is not editable.
 
 ## Changes
 
-### File: `src/components/chronicle/CharactersTab.tsx`
+### `src/components/chronicle/CharactersTab.tsx` (line ~128-129)
 
-**`HardcodedRow` component (lines 102-131):** Add a transparent spacer div after the value textarea, matching the X button's dimensions (`p-1.5` padding + `w-4` icon = roughly `w-7` or `28px`). This creates a consistent right-side column for alignment.
-
-Before:
-```
-[Label w-2/5] [sparkle] [Value flex-1]
+Replace:
+```tsx
+<div className="w-7 flex-shrink-0" />
 ```
 
-After:
+With:
+```tsx
+<div className="w-7 flex-shrink-0 flex items-center justify-center">
+  <Lock className="w-3.5 h-3.5 text-zinc-600" />
+</div>
 ```
-[Label w-2/5] [sparkle] [Value flex-1] [spacer w-7]
-```
 
-The spacer is invisible but reserves the same horizontal space as the delete button in `ExtraRow`.
+Add `Lock` to the existing lucide-react import.
 
-### File: `src/components/chronicle/CharacterEditModal.tsx`
+### `src/components/chronicle/CharacterEditModal.tsx` (line ~134-135)
 
-Apply the same spacer fix to the modal's hardcoded row component for consistency.
+Same replacement -- swap the invisible spacer for the Lock icon. Add `Lock` to the lucide-react import.
 
 ---
 
-No other files are affected. This is a CSS/layout-only change.
-
+Two lines changed per file. No other files affected.
