@@ -122,28 +122,6 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
         </div>
       </CollapsibleSection>
 
-      {/* Setting Overview */}
-      <CollapsibleSection
-        title="Setting Overview"
-        isExpanded={expandedSections.settingOverview !== false}
-        onToggle={() => toggleSection('settingOverview')}
-        collapsedContent={
-          scenarioDraft.settingOverview 
-            ? <p className="text-sm text-zinc-400 line-clamp-3">{scenarioDraft.settingOverview}</p>
-            : undefined
-        }
-      >
-        <div className="space-y-1.5">
-          <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Setting</Label>
-          <Textarea
-            value={scenarioDraft.settingOverview || ''}
-            onChange={(e) => updateField('settingOverview', e.target.value)}
-            placeholder="Describe the physical and cultural landscape..."
-            rows={4}
-            className="text-sm resize-none bg-zinc-900/50 border-white/10 text-white placeholder:text-zinc-500 focus:ring-blue-500/20 focus:border-blue-500"
-          />
-        </div>
-      </CollapsibleSection>
 
       {/* Locations */}
       <CollapsibleSection

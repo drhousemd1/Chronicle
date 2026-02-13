@@ -255,7 +255,6 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
     if (scenarioWorldCore && open) {
       setScenarioDraft({
         storyPremise: scenarioWorldCore.storyPremise,
-        settingOverview: scenarioWorldCore.settingOverview,
         structuredLocations: scenarioWorldCore.structuredLocations?.map(l => ({ ...l })),
         customWorldSections: scenarioWorldCore.customWorldSections?.map(s => ({ ...s, items: s.items.map(i => ({ ...i })) })),
         storyGoals: scenarioWorldCore.storyGoals?.map(g => ({ ...g, steps: g.steps.map(s => ({ ...s })) })),
