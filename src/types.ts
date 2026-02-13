@@ -30,6 +30,13 @@ export type OpeningDialog = {
   startingTimeOfDay: TimeOfDay;
 };
 
+// User-added extra row for hardcoded sections (Physical Appearance, Clothing)
+export type CharacterExtraRow = {
+  id: string;
+  label: string;
+  value: string;
+};
+
 // Structured location entry for label + description rows
 export type LocationEntry = {
   id: string;
@@ -161,6 +168,7 @@ export type PhysicalAppearance = {
   makeup: string;
   bodyMarkings: string;
   temporaryConditions: string;
+  _extras?: CharacterExtraRow[];
 };
 
 export type CurrentlyWearing = {
@@ -168,6 +176,7 @@ export type CurrentlyWearing = {
   bottom: string;
   undergarments: string;
   miscellaneous: string;
+  _extras?: CharacterExtraRow[];
 };
 
 export type PreferredClothing = {
@@ -176,6 +185,7 @@ export type PreferredClothing = {
   sleep: string;
   undergarments: string;  // Changed from 'underwear' for consistency
   miscellaneous: string;
+  _extras?: CharacterExtraRow[];
 };
 
 // Goal milestone tracking

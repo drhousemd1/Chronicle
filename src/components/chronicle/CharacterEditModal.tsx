@@ -2,7 +2,7 @@
 // Session-scoped: edits persist only within the active playthrough
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Character, SideCharacter, PhysicalAppearance, CurrentlyWearing, PreferredClothing, CharacterTraitSection, CharacterGoal, CharacterPersonality, WorldCore, LocationEntry, WorldCustomSection, WorldCustomItem, StoryGoal } from '@/types';
+import { Character, SideCharacter, PhysicalAppearance, CurrentlyWearing, PreferredClothing, CharacterTraitSection, CharacterGoal, CharacterPersonality, WorldCore, LocationEntry, WorldCustomSection, WorldCustomItem, StoryGoal, CharacterExtraRow } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -116,7 +116,56 @@ const AutoResizeTextarea: React.FC<{
   );
 };
 
-// Reusable input field component
+// Horizontal row for hardcoded fields: [Read-only Label] [Value]
+const HardcodedRow: React.FC<{
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+}> = ({ label, value, onChange, placeholder }) => (
+  <div className="flex items-start gap-2">
+    <div className="w-2/5 px-3 py-2 text-xs font-bold bg-zinc-900/50 border border-white/10 text-zinc-400 rounded-lg uppercase tracking-widest min-w-0 break-words">
+      {label}
+    </div>
+    <AutoResizeTextarea
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      className="flex-1 px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
+    />
+  </div>
+);
+
+// User-added extra row for hardcoded sections: [Editable Label] [Editable Value] [Delete]
+const ModalExtraRow: React.FC<{
+  extra: CharacterExtraRow;
+  onUpdate: (patch: Partial<CharacterExtraRow>) => void;
+  onDelete: () => void;
+}> = ({ extra, onUpdate, onDelete }) => (
+  <div className="flex items-start gap-2">
+    <AutoResizeTextarea
+      value={extra.label}
+      onChange={(v) => onUpdate({ label: v })}
+      placeholder="Label"
+      className="w-2/5 px-3 py-2 text-xs font-bold bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
+    />
+    <AutoResizeTextarea
+      value={extra.value}
+      onChange={(v) => onUpdate({ value: v })}
+      placeholder="Description"
+      className="flex-1 px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
+    />
+    <button
+      type="button"
+      onClick={onDelete}
+      className="text-red-400 hover:text-red-300 p-1.5 rounded-md hover:bg-red-900/30 mt-1 flex-shrink-0"
+    >
+      <X className="w-4 h-4" />
+    </button>
+  </div>
+);
+
+// Reusable stacked input field (label above input) for basic info fields
 const FieldInput: React.FC<{
   label: string;
   value: string;
@@ -791,6 +840,31 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
     }));
   };
 
+  // Extras handlers for hardcoded sections in modal
+  const addModalExtra = (section: 'physicalAppearance' | 'currentlyWearing' | 'preferredClothing') => {
+    setDraft(prev => {
+      const current = (prev[section] || {}) as any;
+      const extras = [...(current._extras || []), { id: `extra-${Date.now()}`, label: '', value: '' }];
+      return { ...prev, [section]: { ...current, _extras: extras } };
+    });
+  };
+
+  const updateModalExtra = (section: 'physicalAppearance' | 'currentlyWearing' | 'preferredClothing', extraId: string, patch: Partial<CharacterExtraRow>) => {
+    setDraft(prev => {
+      const current = (prev[section] || {}) as any;
+      const extras = (current._extras || []).map((e: CharacterExtraRow) => e.id === extraId ? { ...e, ...patch } : e);
+      return { ...prev, [section]: { ...current, _extras: extras } };
+    });
+  };
+
+  const deleteModalExtra = (section: 'physicalAppearance' | 'currentlyWearing' | 'preferredClothing', extraId: string) => {
+    setDraft(prev => {
+      const current = (prev[section] || {}) as any;
+      const extras = (current._extras || []).filter((e: CharacterExtraRow) => e.id !== extraId);
+      return { ...prev, [section]: { ...current, _extras: extras } };
+    });
+  };
+
   const updateBackground = (field: string, value: string) => {
     setDraft(prev => ({
       ...prev,
@@ -1277,72 +1351,23 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     ]} />
                   }
                 >
-                  <FieldInput
-                    label="Hair Color"
-                    value={draft.physicalAppearance?.hairColor || ''}
-                    onChange={(v) => updatePhysicalAppearance('hairColor', v)}
-                    placeholder="e.g., Brown"
-                  />
-                  <FieldInput
-                    label="Eye Color"
-                    value={draft.physicalAppearance?.eyeColor || ''}
-                    onChange={(v) => updatePhysicalAppearance('eyeColor', v)}
-                    placeholder="e.g., Blue"
-                  />
-                  <FieldInput
-                    label="Build"
-                    value={draft.physicalAppearance?.build || ''}
-                    onChange={(v) => updatePhysicalAppearance('build', v)}
-                    placeholder="e.g., Athletic"
-                  />
-                  <FieldInput
-                    label="Body Hair"
-                    value={draft.physicalAppearance?.bodyHair || ''}
-                    onChange={(v) => updatePhysicalAppearance('bodyHair', v)}
-                    placeholder="e.g., Light"
-                  />
-                  <FieldInput
-                    label="Height"
-                    value={draft.physicalAppearance?.height || ''}
-                    onChange={(v) => updatePhysicalAppearance('height', v)}
-                    placeholder="e.g., 5ft 8in"
-                  />
-                  <FieldInput
-                    label="Breast Size"
-                    value={draft.physicalAppearance?.breastSize || ''}
-                    onChange={(v) => updatePhysicalAppearance('breastSize', v)}
-                    placeholder="e.g., Medium"
-                  />
-                  <FieldInput
-                    label="Genitalia"
-                    value={draft.physicalAppearance?.genitalia || ''}
-                    onChange={(v) => updatePhysicalAppearance('genitalia', v)}
-                    placeholder="Description"
-                  />
-                  <FieldInput
-                    label="Skin Tone"
-                    value={draft.physicalAppearance?.skinTone || ''}
-                    onChange={(v) => updatePhysicalAppearance('skinTone', v)}
-                    placeholder="e.g., Fair"
-                  />
-                  <FieldInput
-                    label="Makeup"
-                    value={draft.physicalAppearance?.makeup || ''}
-                    onChange={(v) => updatePhysicalAppearance('makeup', v)}
-                    placeholder="e.g., Natural"
-                  />
-                  <FieldInput
-                    label="Body Markings"
-                    value={draft.physicalAppearance?.bodyMarkings || ''}
-                    onChange={(v) => updatePhysicalAppearance('bodyMarkings', v)}
-                    placeholder="Tattoos, scars..."
-                  />
-                  <FieldInput
-                    label="Temporary Conditions"
-                    value={draft.physicalAppearance?.temporaryConditions || ''}
-                    onChange={(v) => updatePhysicalAppearance('temporaryConditions', v)}
-                    placeholder="Injuries, etc."
-                  />
+                  <HardcodedRow label="Hair Color" value={draft.physicalAppearance?.hairColor || ''} onChange={(v) => updatePhysicalAppearance('hairColor', v)} placeholder="e.g., Brown" />
+                  <HardcodedRow label="Eye Color" value={draft.physicalAppearance?.eyeColor || ''} onChange={(v) => updatePhysicalAppearance('eyeColor', v)} placeholder="e.g., Blue" />
+                  <HardcodedRow label="Build" value={draft.physicalAppearance?.build || ''} onChange={(v) => updatePhysicalAppearance('build', v)} placeholder="e.g., Athletic" />
+                  <HardcodedRow label="Body Hair" value={draft.physicalAppearance?.bodyHair || ''} onChange={(v) => updatePhysicalAppearance('bodyHair', v)} placeholder="e.g., Light" />
+                  <HardcodedRow label="Height" value={draft.physicalAppearance?.height || ''} onChange={(v) => updatePhysicalAppearance('height', v)} placeholder="e.g., 5ft 8in" />
+                  <HardcodedRow label="Breast Size" value={draft.physicalAppearance?.breastSize || ''} onChange={(v) => updatePhysicalAppearance('breastSize', v)} placeholder="e.g., Medium" />
+                  <HardcodedRow label="Genitalia" value={draft.physicalAppearance?.genitalia || ''} onChange={(v) => updatePhysicalAppearance('genitalia', v)} placeholder="Description" />
+                  <HardcodedRow label="Skin Tone" value={draft.physicalAppearance?.skinTone || ''} onChange={(v) => updatePhysicalAppearance('skinTone', v)} placeholder="e.g., Fair" />
+                  <HardcodedRow label="Makeup" value={draft.physicalAppearance?.makeup || ''} onChange={(v) => updatePhysicalAppearance('makeup', v)} placeholder="e.g., Natural" />
+                  <HardcodedRow label="Body Markings" value={draft.physicalAppearance?.bodyMarkings || ''} onChange={(v) => updatePhysicalAppearance('bodyMarkings', v)} placeholder="Tattoos, scars..." />
+                  <HardcodedRow label="Temporary Conditions" value={draft.physicalAppearance?.temporaryConditions || ''} onChange={(v) => updatePhysicalAppearance('temporaryConditions', v)} placeholder="Injuries, etc." />
+                  {((draft.physicalAppearance as any)?._extras || []).map((extra: CharacterExtraRow) => (
+                    <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('physicalAppearance', extra.id, patch)} onDelete={() => deleteModalExtra('physicalAppearance', extra.id)} />
+                  ))}
+                  <Button variant="ghost" size="sm" onClick={() => addModalExtra('physicalAppearance')} className="text-blue-400 hover:text-blue-300 w-full border border-dashed border-blue-500/30 hover:border-blue-400">
+                    <Plus className="w-4 h-4 mr-1" /> Add Row
+                  </Button>
                 </CollapsibleSection>
 
                 {/* Currently Wearing */}
@@ -1359,30 +1384,16 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     ]} />
                   }
                 >
-                  <FieldInput
-                    label="Shirt / Top"
-                    value={draft.currentlyWearing?.top || ''}
-                    onChange={(v) => updateCurrentlyWearing('top', v)}
-                    placeholder="e.g., White blouse"
-                  />
-                  <FieldInput
-                    label="Pants / Bottoms"
-                    value={draft.currentlyWearing?.bottom || ''}
-                    onChange={(v) => updateCurrentlyWearing('bottom', v)}
-                    placeholder="e.g., Blue jeans"
-                  />
-                  <FieldInput
-                    label="Undergarments"
-                    value={draft.currentlyWearing?.undergarments || ''}
-                    onChange={(v) => updateCurrentlyWearing('undergarments', v)}
-                    placeholder="Description"
-                  />
-                  <FieldInput
-                    label="Miscellaneous"
-                    value={draft.currentlyWearing?.miscellaneous || ''}
-                    onChange={(v) => updateCurrentlyWearing('miscellaneous', v)}
-                    placeholder="Accessories, etc."
-                  />
+                  <HardcodedRow label="Shirt / Top" value={draft.currentlyWearing?.top || ''} onChange={(v) => updateCurrentlyWearing('top', v)} placeholder="e.g., White blouse" />
+                  <HardcodedRow label="Pants / Bottoms" value={draft.currentlyWearing?.bottom || ''} onChange={(v) => updateCurrentlyWearing('bottom', v)} placeholder="e.g., Blue jeans" />
+                  <HardcodedRow label="Undergarments" value={draft.currentlyWearing?.undergarments || ''} onChange={(v) => updateCurrentlyWearing('undergarments', v)} placeholder="Description" />
+                  <HardcodedRow label="Miscellaneous" value={draft.currentlyWearing?.miscellaneous || ''} onChange={(v) => updateCurrentlyWearing('miscellaneous', v)} placeholder="Accessories, etc." />
+                  {((draft.currentlyWearing as any)?._extras || []).map((extra: CharacterExtraRow) => (
+                    <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('currentlyWearing', extra.id, patch)} onDelete={() => deleteModalExtra('currentlyWearing', extra.id)} />
+                  ))}
+                  <Button variant="ghost" size="sm" onClick={() => addModalExtra('currentlyWearing')} className="text-blue-400 hover:text-blue-300 w-full border border-dashed border-blue-500/30 hover:border-blue-400">
+                    <Plus className="w-4 h-4 mr-1" /> Add Row
+                  </Button>
                 </CollapsibleSection>
 
                 {/* Preferred Clothing */}
@@ -1400,36 +1411,17 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     ]} />
                   }
                 >
-                  <FieldInput
-                    label="Casual"
-                    value={draft.preferredClothing?.casual || ''}
-                    onChange={(v) => updatePreferredClothing('casual', v)}
-                    placeholder="Casual wear"
-                  />
-                  <FieldInput
-                    label="Work"
-                    value={draft.preferredClothing?.work || ''}
-                    onChange={(v) => updatePreferredClothing('work', v)}
-                    placeholder="Work attire"
-                  />
-                  <FieldInput
-                    label="Sleep"
-                    value={draft.preferredClothing?.sleep || ''}
-                    onChange={(v) => updatePreferredClothing('sleep', v)}
-                    placeholder="Sleepwear"
-                  />
-                  <FieldInput
-                    label="Undergarments"
-                    value={draft.preferredClothing?.undergarments || ''}
-                    onChange={(v) => updatePreferredClothing('undergarments', v)}
-                    placeholder="Preferred underwear"
-                  />
-                  <FieldInput
-                    label="Miscellaneous"
-                    value={draft.preferredClothing?.miscellaneous || ''}
-                    onChange={(v) => updatePreferredClothing('miscellaneous', v)}
-                    placeholder="Other preferences"
-                  />
+                  <HardcodedRow label="Casual" value={draft.preferredClothing?.casual || ''} onChange={(v) => updatePreferredClothing('casual', v)} placeholder="Casual wear" />
+                  <HardcodedRow label="Work" value={draft.preferredClothing?.work || ''} onChange={(v) => updatePreferredClothing('work', v)} placeholder="Work attire" />
+                  <HardcodedRow label="Sleep" value={draft.preferredClothing?.sleep || ''} onChange={(v) => updatePreferredClothing('sleep', v)} placeholder="Sleepwear" />
+                  <HardcodedRow label="Undergarments" value={draft.preferredClothing?.undergarments || ''} onChange={(v) => updatePreferredClothing('undergarments', v)} placeholder="Preferred underwear" />
+                  <HardcodedRow label="Miscellaneous" value={draft.preferredClothing?.miscellaneous || ''} onChange={(v) => updatePreferredClothing('miscellaneous', v)} placeholder="Other preferences" />
+                  {((draft.preferredClothing as any)?._extras || []).map((extra: CharacterExtraRow) => (
+                    <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('preferredClothing', extra.id, patch)} onDelete={() => deleteModalExtra('preferredClothing', extra.id)} />
+                  ))}
+                  <Button variant="ghost" size="sm" onClick={() => addModalExtra('preferredClothing')} className="text-blue-400 hover:text-blue-300 w-full border border-dashed border-blue-500/30 hover:border-blue-400">
+                    <Plus className="w-4 h-4 mr-1" /> Add Row
+                  </Button>
                 </CollapsibleSection>
 
                 {/* Personality Section (Main characters only) */}

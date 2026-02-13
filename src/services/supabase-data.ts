@@ -49,7 +49,8 @@ function dbPhysicalAppearanceToApp(db: any): PhysicalAppearance {
     skinTone: db?.skin_tone || '',
     makeup: db?.makeup || '',
     bodyMarkings: db?.body_markings || '',
-    temporaryConditions: db?.temporary_conditions || ''
+    temporaryConditions: db?.temporary_conditions || '',
+    _extras: db?._extras || undefined
   };
 }
 
@@ -65,7 +66,8 @@ function appPhysicalAppearanceToDb(app: PhysicalAppearance) {
     skin_tone: app.skinTone,
     makeup: app.makeup,
     body_markings: app.bodyMarkings,
-    temporary_conditions: app.temporaryConditions
+    temporary_conditions: app.temporaryConditions,
+    _extras: app._extras || undefined
   };
 }
 
@@ -74,7 +76,8 @@ function dbCurrentlyWearingToApp(db: any): CurrentlyWearing {
     top: db?.top || '',
     bottom: db?.bottom || '',
     undergarments: db?.undergarments || '',
-    miscellaneous: db?.miscellaneous || ''
+    miscellaneous: db?.miscellaneous || '',
+    _extras: db?._extras || undefined
   };
 }
 
@@ -83,7 +86,8 @@ function appCurrentlyWearingToDb(app: CurrentlyWearing) {
     top: app.top,
     bottom: app.bottom,
     undergarments: app.undergarments,
-    miscellaneous: app.miscellaneous
+    miscellaneous: app.miscellaneous,
+    _extras: app._extras || undefined
   };
 }
 
@@ -92,8 +96,9 @@ function dbPreferredClothingToApp(db: any): PreferredClothing {
     casual: db?.casual || '',
     work: db?.work || '',
     sleep: db?.sleep || '',
-    undergarments: db?.underwear || db?.undergarments || '',  // Support both old and new field names
-    miscellaneous: db?.miscellaneous || ''
+    undergarments: db?.underwear || db?.undergarments || '',
+    miscellaneous: db?.miscellaneous || '',
+    _extras: db?._extras || undefined
   };
 }
 
@@ -102,8 +107,9 @@ function appPreferredClothingToDb(app: PreferredClothing) {
     casual: app.casual,
     work: app.work,
     sleep: app.sleep,
-    underwear: app.undergarments,  // Store as 'underwear' in DB for backward compatibility
-    miscellaneous: app.miscellaneous
+    underwear: app.undergarments,
+    miscellaneous: app.miscellaneous,
+    _extras: app._extras || undefined
   };
 }
 
