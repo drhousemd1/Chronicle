@@ -786,7 +786,7 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
             {(selected.physicalAppearance?._extras || []).map(extra => (
               <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('physicalAppearance', extra.id, patch)} onDelete={() => handleDeleteExtra('physicalAppearance', extra.id)} />
             ))}
-            <button type="button" onClick={() => handleAddExtra('physicalAppearance')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border border-dashed border-blue-500/30 hover:border-blue-400 rounded-xl transition-all">
+            <button type="button" onClick={() => handleAddExtra('physicalAppearance')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
             </button>
           </HardcodedSection>
@@ -806,7 +806,7 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
             {(selected.currentlyWearing?._extras || []).map(extra => (
               <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('currentlyWearing', extra.id, patch)} onDelete={() => handleDeleteExtra('currentlyWearing', extra.id)} />
             ))}
-            <button type="button" onClick={() => handleAddExtra('currentlyWearing')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border border-dashed border-blue-500/30 hover:border-blue-400 rounded-xl transition-all">
+            <button type="button" onClick={() => handleAddExtra('currentlyWearing')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
             </button>
           </HardcodedSection>
@@ -827,7 +827,7 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
             {(selected.preferredClothing?._extras || []).map(extra => (
               <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('preferredClothing', extra.id, patch)} onDelete={() => handleDeleteExtra('preferredClothing', extra.id)} />
             ))}
-            <button type="button" onClick={() => handleAddExtra('preferredClothing')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border border-dashed border-blue-500/30 hover:border-blue-400 rounded-xl transition-all">
+            <button type="button" onClick={() => handleAddExtra('preferredClothing')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
             </button>
           </HardcodedSection>
@@ -950,7 +950,7 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
                       <button
                         type="button"
                         onClick={() => handleAddItem(selected.id, section.id)}
-                        className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border border-dashed border-blue-500/30 hover:border-blue-400 rounded-xl transition-all"
+                        className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all"
                       >
                         <Plus className="w-4 h-4 inline mr-1" /> Add Row
                       </button>
