@@ -1,97 +1,56 @@
 
+# Fix AI Fill/Generate for New Character Sections
 
-# Update AI Fill, Generate, and Update for New Character Sections
+## Problems Found
 
-## Problem
-The AI Fill, AI Generate (Scenario Builder), and AI Update (Chat Edit Modal) features were built before the six new character sections were added. They currently only know about basics, physicalAppearance, currentlyWearing, preferredClothing, and custom sections. The new hardcoded sections (Background, Tone, Key Life Events, Relationships, Secrets, Fears) and Personality are completely invisible to all three AI tools.
+### 1. Personality traits and _extras are listed as opaque IDs without labels
+When the prompt tells the AI what to fill, it says things like `Personality Traits: outward.abc123, inward.def456`. The AI has no idea what "abc123" refers to -- it doesn't know the trait is called "Nurturing" or "Caring". Same for Tone/Relationships/etc _extras: it just sees `_extras.xyz789` with no context. The AI either skips these or generates nonsense.
 
-## What Will Be Fixed
+**Fix**: Include the human-readable label alongside each ID in the fields-to-fill list, e.g. `outward.abc123 (Nurturing), inward.def456 (Horny)`.
 
-### 1. AI Fill (fills empty fields only)
-- Will now detect and fill empty Background fields (Job/Occupation, Education Level, Residence, Hobbies, Financial Status, Motivation)
-- Will now detect and fill empty Personality trait values (both outward and inward)
-- The prompt will list these new empty fields so the AI knows to generate content for them
+### 2. Tone _extras with empty labels are silently skipped
+The detection check requires `extra.label && !extra.value` -- if the user added a Tone row but left the label blank (just the placeholder), it's invisible to the AI. This is actually correct behavior for truly empty rows (how can the AI know what to fill?), but the sections themselves should still be mentioned in the prompt as empty sections the AI could populate with both label AND value.
 
-### 2. AI Generate (fills empty fields + creates new content)
-- Same as AI Fill, plus awareness of the new sections when generating additional content
-- Will no longer suggest creating "Background", "Personality", "Tone", "Fears", or "Desires" as custom sections since they are now hardcoded
+**Fix**: When a section like Tone has _extras where BOTH label and value are empty, include the section in the prompt and instruct the AI to generate both label and value for those rows. Update the application logic to write back both label and value.
 
-### 3. AI Update / Deep Scan (extracts changes from dialogue)
-- Will send Background, Tone, Key Life Events, Relationships, Secrets, and Fears data to the extraction edge function so the AI can see and update them
-- The edge function's trackable fields list will include the new field paths
-- The CharacterEditModal's merge logic will handle updates to `background.*`, `tone._extras`, `keyLifeEvents._extras`, `relationships._extras`, `secrets._extras`, `fears._extras`
+### 3. World context is nearly empty (uses deprecated fields)
+The `worldContext` variable references `settingOverview` (deprecated/removed from the UI) and only `scenarioName`. It misses all the rich scenario data: `storyPremise`, `briefDescription`, `toneThemes`, `dialogFormatting`, `historyTimeline`, `factions`, and `plotHooks`.
+
+**Fix**: Replace the world context builder in both `aiFillCharacter` and `aiGenerateCharacter` to include `briefDescription`, `storyPremise`, `toneThemes`, `historyTimeline`, `factions`, `plotHooks`, and `dialogFormatting`. This also addresses the user's request to pull Scenario Builder data into the AI context.
 
 ## Technical Details
 
-### File 1: `src/services/character-ai.ts`
+### File: `src/services/character-ai.ts`
 
-**CHARACTER_FIELD_PROMPTS** (line 11-38): Add entries for the 6 Background fields:
-- `jobOccupation`, `educationLevel`, `residence`, `hobbies`, `financialStatus`, `motivation`
+**getEmptyHardcodedFields (lines 226-254)** -- Enhance personality and _extras detection:
+- For personality traits: store label alongside ID, e.g. `outward.id:Nurturing` instead of just `outward.id`
+- For _extras: store label alongside ID, e.g. `_extras.id:Sarcastic` instead of just `_extras.id`
+- For _extras with BOTH label and value empty: include as `_extras.id:__empty__` so the prompt can instruct the AI to generate both
 
-**getEmptyHardcodedFields** (line 157-203): Add new categories to the returned object:
-- `background` - check all 6 fields + any `_extras` with empty values
-- `personality` - check trait values in both outward and inward arrays
-- `tone` - check `_extras` for empty values
-- `keyLifeEvents` - check `_extras` for empty values  
-- `relationships` - check `_extras` for empty values
-- `secrets` - check `_extras` for empty values
-- `fears` - check `_extras` for empty values
+**buildAiFillPrompt (lines 305-322)** -- Parse the enriched field descriptors to display human-readable labels in the prompt:
+- Instead of `Personality Traits: outward.abc123`, show `Personality Traits: "Nurturing" (outward.abc123), "Caring" (outward.def456)`
+- For `__empty__` entries, instruct: "Generate both a label and value for empty Tone/Relationships/etc rows"
 
-**buildAiFillPrompt** (line 226-294): 
-- Add the new categories to `fieldsToFill` list
-- Add the new fields to the JSON example format
-- Update the `totalEmpty` count in `aiFillCharacter`
+**aiFillCharacter worldContext (lines 568-571)** -- Replace deprecated field references:
+```
+Setting: ${appData.world.core.briefDescription || 'Not specified'}
+Scenario: ${appData.world.core.storyPremise || 'Not specified'}
+Tone & Themes: ${appData.world.core.toneThemes || 'Not specified'}
+Factions: ${appData.world.core.factions || 'Not specified'}
+History: ${appData.world.core.historyTimeline || 'Not specified'}
+Plot Hooks: ${appData.world.core.plotHooks || 'Not specified'}
+```
 
-**aiFillCharacter result application** (line 488-543):
-- Apply `background` fields from result
-- Apply `personality` trait values from result
-- Apply `_extras` values for tone/keyLifeEvents/relationships/secrets/fears
+**aiGenerateCharacter worldContext (lines 726-730)** -- Same replacement as above.
 
-**buildAiGeneratePrompt** (line 297-435):
-- Remove "Background", "Personality", "Tone", "Fears", "Desires" from the `standardSections` list since they are now hardcoded
-- Add the new empty field categories to `emptyFieldsList`
+**Result application (lines 650-690 for fill, 810-847 for generate)** -- Handle the new `__empty__` extras:
+- When the AI returns an _extras entry with both label and value, write both back to the character
+- Currently only writes value when label already exists; needs to also support writing label for blank-label rows
 
-**aiGenerateCharacter result application** (line 594-698):
-- Same new field application logic as aiFillCharacter
+**buildAiGeneratePrompt (lines 494-501)** -- Same enriched field descriptors as fill prompt.
 
-### File 2: `supabase/functions/extract-character-updates/index.ts`
-
-**CharacterData interface** (line 33-44): Add optional fields:
-- `background?: Record<string, string>`
-- `tone?: { _extras?: Array<{label: string; value: string}> }`
-- `keyLifeEvents?: { _extras?: Array<{label: string; value: string}> }`
-- `relationships?: { _extras?: Array<{label: string; value: string}> }`
-- `secrets?: { _extras?: Array<{label: string; value: string}> }`
-- `fears?: { _extras?: Array<{label: string; value: string}> }`
-- `personality?: { traits?: Array<{label: string; value: string}>; outwardTraits?: ...; inwardTraits?: ... }`
-
-**buildCharacterStateBlock** (line 56-128): Add new sections to the character state output:
-- Background fields under `[STABLE]`
-- Personality traits under `[STABLE]`
-- Tone, Key Life Events, Relationships, Secrets, Fears extras under `[STABLE]`
-
-**TRACKABLE FIELDS section** (line 210-222): Add:
-- `background.jobOccupation`, `background.educationLevel`, `background.residence`, `background.hobbies`, `background.financialStatus`, `background.motivation`, `background._extras`
-- `tone._extras`, `keyLifeEvents._extras`, `relationships._extras`, `secrets._extras`, `fears._extras`
-- `personality.outwardTraits`, `personality.inwardTraits`
-
-### File 3: `src/components/chronicle/CharacterEditModal.tsx`
-
-**buildCharData** (line 464-488): Add the new sections to the data sent to the edge function:
-- `background`, `tone`, `keyLifeEvents`, `relationships`, `secrets`, `fears`, `personality`
-
-**Nested field handling** (line 702-710): Add cases for:
-- `background.*` fields
-- `tone._extras`, `keyLifeEvents._extras`, `relationships._extras`, `secrets._extras`, `fears._extras` array appends
-- `personality.*` updates
-
-### File 4: `src/components/chronicle/ChatInterfaceTab.tsx`
-
-The inline extraction call (around line 1240) also builds character data -- this needs the same `buildCharData` update to include the new sections.
-
-## Summary of Changes
-- 4 files modified (character-ai.ts, extract-character-updates edge function, CharacterEditModal.tsx, ChatInterfaceTab.tsx)
-- 1 edge function redeployed
+### Summary
+- 1 file modified: `src/services/character-ai.ts`
+- No edge function changes needed
 - No database changes needed
-- Backward compatible -- existing characters without these fields will simply have empty arrays/objects
-
+- Core fix: give the AI the actual labels/context it needs to generate meaningful content for personality traits and _extras sections, plus feed it the full scenario context
