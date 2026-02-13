@@ -134,7 +134,7 @@ const HardcodedRow: React.FC<{
       className="flex-1 px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
     />
     <div className="w-7 flex-shrink-0 flex items-center justify-center">
-      <Lock className="w-3.5 h-3.5 text-zinc-600" />
+      <Lock className="w-3.5 h-3.5 text-zinc-400" />
     </div>
   </div>
 );
