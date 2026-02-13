@@ -41,6 +41,14 @@ interface CharacterData {
   currentMood?: string;
   goals?: CharacterGoalData[];
   customSections?: Array<{ title: string; items: Array<{ label: string; value: string }> }>;
+  // New sections
+  background?: Record<string, string>;
+  personality?: { splitMode?: boolean; traits?: Array<{ label: string; value: string }>; outwardTraits?: Array<{ label: string; value: string }>; inwardTraits?: Array<{ label: string; value: string }> };
+  tone?: { _extras?: Array<{ label: string; value: string }> };
+  keyLifeEvents?: { _extras?: Array<{ label: string; value: string }> };
+  relationships?: { _extras?: Array<{ label: string; value: string }> };
+  secrets?: { _extras?: Array<{ label: string; value: string }> };
+  fears?: { _extras?: Array<{ label: string; value: string }> };
 }
 
 interface ExtractedUpdate {
@@ -96,7 +104,49 @@ function buildCharacterStateBlock(c: CharacterData): string {
     if (preferred) lines.push(`    Preferred Clothing: ${preferred}`);
   }
   
-  // --- GOALS (with full detail including steps) ---
+  // --- BACKGROUND (update only when explicitly stated) ---
+  if (c.background) {
+    const bgEntries = Object.entries(c.background)
+      .filter(([k, v]) => k !== '_extras' && v)
+      .map(([k, v]) => `${k}: ${v}`)
+      .join(', ');
+    if (bgEntries) lines.push(`    Background: ${bgEntries}`);
+    // Background extras
+    const bgExtras = (c.background as any)._extras;
+    if (bgExtras?.length) {
+      const extraStr = bgExtras.filter((e: any) => e.value).map((e: any) => `${e.label}: ${e.value}`).join(', ');
+      if (extraStr) lines.push(`    Background (extras): ${extraStr}`);
+    }
+  }
+  
+  // --- PERSONALITY ---
+  if (c.personality) {
+    if (c.personality.splitMode) {
+      const outward = (c.personality.outwardTraits || []).filter(t => t.value).map(t => `${t.label}: ${t.value}`).join(', ');
+      const inward = (c.personality.inwardTraits || []).filter(t => t.value).map(t => `${t.label}: ${t.value}`).join(', ');
+      if (outward) lines.push(`    Personality (outward): ${outward}`);
+      if (inward) lines.push(`    Personality (inward): ${inward}`);
+    } else {
+      const traits = (c.personality.traits || []).filter(t => t.value).map(t => `${t.label}: ${t.value}`).join(', ');
+      if (traits) lines.push(`    Personality: ${traits}`);
+    }
+  }
+  
+  // --- EXTRAS-ONLY SECTIONS (Tone, Key Life Events, Relationships, Secrets, Fears) ---
+  const extrasOnlySections: Array<{ key: keyof CharacterData; title: string }> = [
+    { key: 'tone', title: 'Tone' },
+    { key: 'keyLifeEvents', title: 'Key Life Events' },
+    { key: 'relationships', title: 'Relationships' },
+    { key: 'secrets', title: 'Secrets' },
+    { key: 'fears', title: 'Fears' },
+  ];
+  for (const { key, title } of extrasOnlySections) {
+    const section = c[key] as { _extras?: Array<{ label: string; value: string }> } | undefined;
+    if (section?._extras?.length) {
+      const extrasStr = section._extras.filter(e => e.value).map(e => `${e.label}: ${e.value}`).join(', ');
+      if (extrasStr) lines.push(`    ${title}: ${extrasStr}`);
+    }
+  }
   if (c.goals?.length) {
     lines.push(`  [GOALS - REVIEW EACH ONE AGAINST DIALOGUE]`);
     for (const g of c.goals) {
@@ -216,6 +266,14 @@ HARDCODED FIELDS:
 - currentlyWearing._extras (array of {id, label, value} for user-added clothing rows)
 - preferredClothing.casual, preferredClothing.work, preferredClothing.sleep, preferredClothing.underwear, preferredClothing.miscellaneous
 - preferredClothing._extras (array of {id, label, value} for user-added clothing preference rows)
+- background.jobOccupation, background.educationLevel, background.residence, background.hobbies, background.financialStatus, background.motivation
+- background._extras (array of {id, label, value} for user-added background rows)
+- personality.outwardTraits, personality.inwardTraits (update trait values by referencing them as personality.outwardTraits or personality.inwardTraits)
+- tone._extras (array of {id, label, value} for tone/speaking style entries)
+- keyLifeEvents._extras (array of {id, label, value} for key life event entries)
+- relationships._extras (array of {id, label, value} for relationship entries)
+- secrets._extras (array of {id, label, value} for secret entries)
+- fears._extras (array of {id, label, value} for fear entries)
 - location (current location/place)
 - currentMood (emotional state)
 - location (current location/place)
