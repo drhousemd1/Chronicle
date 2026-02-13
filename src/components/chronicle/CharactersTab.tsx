@@ -9,7 +9,7 @@ import { uploadAvatar, dataUrlToBlob } from '@/services/supabase-data';
 import { toast } from 'sonner';
 import { AvatarGenerationModal } from './AvatarGenerationModal';
 import { AvatarActionButtons } from './AvatarActionButtons';
-import { Sparkles, ChevronDown, ChevronUp, Trash2, Plus, X } from 'lucide-react';
+import { Sparkles, ChevronDown, ChevronUp, Trash2, Plus, X, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { aiEnhanceCharacterField } from '@/services/character-ai';
 import { CharacterGoalsSection } from './CharacterGoalsSection';
@@ -127,8 +127,9 @@ const HardcodedRow: React.FC<{
       placeholder={placeholder}
       className="flex-1 px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
     />
-    {/* Invisible spacer matching ExtraRow's delete button width */}
-    <div className="w-7 flex-shrink-0" />
+    <div className="w-7 flex-shrink-0 flex items-center justify-center">
+      <Lock className="w-3.5 h-3.5 text-zinc-600" />
+    </div>
   </div>
 );
 
