@@ -175,12 +175,22 @@ function getSystemInstruction(
     const moodInfo = c.currentMood ? `\nMOOD: ${c.currentMood}` : '';
     const goalsInfo = characterGoalsContext(c);
     const personalityInfo = personalityContext(c);
+    // Build extras context for hardcoded sections
+    const extrasContext = (section: any, sectionName: string) => {
+      const extras = section?._extras?.filter((e: any) => e.label && e.value);
+      if (!extras?.length) return '';
+      return extras.map((e: any) => `${e.label}=${e.value}`).join(', ');
+    };
+    const paExtras = extrasContext(c.physicalAppearance, 'Physical Appearance');
+    const cwExtras = extrasContext(c.currentlyWearing, 'Currently Wearing');
+    const pcExtras = extrasContext(c.preferredClothing, 'Preferred Clothing');
+    const extrasInfo = [paExtras, cwExtras, pcExtras].filter(Boolean).join('\n');
     return `CHARACTER: ${c.name} (${c.sexType})${nicknameInfo}
 ROLE: ${c.characterRole}
 CONTROL: ${c.controlledBy}${locationInfo}${moodInfo}${personalityInfo}${goalsInfo}
 TAGS: ${c.tags}
 TRAITS:
-${traits}`;
+${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
   }).join('\n\n');
 
   const codexContext = appData.world.entries.map(e => `CODEX [${e.title}]: ${e.body}`).join('\n');

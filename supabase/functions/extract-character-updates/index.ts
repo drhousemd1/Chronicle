@@ -211,8 +211,13 @@ TRACKABLE FIELDS
 HARDCODED FIELDS:
 - nicknames (comma-separated alternative names, aliases, pet names)
 - physicalAppearance.hairColor, physicalAppearance.eyeColor, physicalAppearance.build, physicalAppearance.height, physicalAppearance.skinTone, physicalAppearance.bodyHair, physicalAppearance.breastSize, physicalAppearance.genitalia, physicalAppearance.makeup, physicalAppearance.bodyMarkings, physicalAppearance.temporaryConditions
+- physicalAppearance._extras (array of {id, label, value} for user-added appearance rows - append new entries here instead of creating custom sections for appearance-related traits)
 - currentlyWearing.top, currentlyWearing.bottom, currentlyWearing.undergarments, currentlyWearing.miscellaneous
+- currentlyWearing._extras (array of {id, label, value} for user-added clothing rows)
 - preferredClothing.casual, preferredClothing.work, preferredClothing.sleep, preferredClothing.underwear, preferredClothing.miscellaneous
+- preferredClothing._extras (array of {id, label, value} for user-added clothing preference rows)
+- location (current location/place)
+- currentMood (emotional state)
 - location (current location/place)
 - currentMood (emotional state)
 
