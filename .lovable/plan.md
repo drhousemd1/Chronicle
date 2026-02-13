@@ -1,52 +1,104 @@
 
 
-# Fix Custom Section Title: Navy Banner Instead of Left Border
+# Phase 3: Row Layout for Hard-Coded Character Containers
 
-## Problem
-The custom world content sections currently use a thin left-border accent (`border-l-2 border-blue-500/30 pl-5`) which is not what was requested. The mockup shows:
-- The section title should sit inside a full-width navy blue banner bar (dark navy background, rounded, same width as the location input rows)
-- The content rows below should align at the same width/indentation as Primary Locations rows
-- The delete button sits to the right of the banner, outside it
+## What This Changes
 
-## Changes (single file: `src/components/chronicle/WorldTab.tsx`)
+The three hard-coded character sections -- **Physical Appearance**, **Currently Wearing**, and **Preferred Clothing** -- currently display each field as a label stacked above an input (the `HardcodedInput` component). This phase converts them to a **horizontal row layout** matching the custom category style, and adds an **"+ Add Row"** button at the bottom of each section so users can add their own custom fields.
 
-### Lines 587-610: Replace the custom section wrapper and title area
+## Current Layout (label above input)
+```text
+Hair Color
+[_________________________]
 
-**Current:**
-- Outer div: `border-l-2 border-blue-500/30 pl-5 space-y-4`
-- Title: bare `AutoResizeTextarea` with transparent background and tiny uppercase text
-- Delete button: inline next to title
-
-**New:**
-- Outer div: remove the left border and left padding entirely (`space-y-4` only)
-- Title row: wrap in a `flex items-center gap-3` container matching the location row pattern
-  - The title input sits inside a navy background bar: `flex-1 bg-[#1e293b] rounded-xl border border-white/5 px-4 py-3` — this creates the banner effect
-  - The `AutoResizeTextarea` inside uses uppercase tracking styling (`text-[10px] font-black text-zinc-400 uppercase tracking-widest`) on a transparent background within the navy bar
-  - Delete button sits outside the bar to the right (same position as location trash icons)
-- Content rows below remain unchanged in structure — they already use the same `flex items-start gap-3` pattern with `w-2/5` and `flex-1` widths
-
-### Technical Details
-
-The key visual change is replacing:
-```
-<div className="border-l-2 border-blue-500/30 pl-5 space-y-4">
-  <div className="flex items-center justify-between">
-    <AutoResizeTextarea ... className="bg-transparent ..." />
-    <button>delete</button>
-  </div>
+Eye Color
+[_________________________]
 ```
 
-With:
-```
-<div className="space-y-4">
-  <div className="flex items-center gap-3">
-    <div className="flex-1 bg-[#1e293b] rounded-xl border border-white/5 px-4 py-3">
-      <AutoResizeTextarea ... className="bg-transparent ..." />
-    </div>
-    <button>delete</button>
-  </div>
+## New Layout (label beside value, matching custom categories)
+```text
+[Hair Color     ] [sparkle] [value field                    ]
+[Eye Color      ] [sparkle] [value field                    ]
+[Build          ] [sparkle] [value field                    ]
+... (system rows - labels are read-only styled boxes)
+[user label     ]           [user value                     ] [X]
+[+ Add Row]
 ```
 
-This matches the mockup: a navy bar spanning the full row width (minus the delete button column), with the title text rendered inside as an editable field. The rows below stay at the same indentation as location rows since the left border padding is removed.
+---
 
-No other files are affected. This is a purely visual/layout fix within WorldTab.tsx.
+## Technical Plan
+
+### 1. Add `CharacterExtraRow` type and `_extras` to types (`src/types.ts`)
+
+Add a new type:
+```typescript
+export type CharacterExtraRow = {
+  id: string;
+  label: string;
+  value: string;
+};
+```
+
+Add `_extras?: CharacterExtraRow[]` as an optional field to `PhysicalAppearance`, `CurrentlyWearing`, and `PreferredClothing` types. Since it's optional, existing saved data loads without errors.
+
+### 2. Replace `HardcodedInput` with a new `HardcodedRow` component (`src/components/chronicle/CharactersTab.tsx`)
+
+Create a new `HardcodedRow` component that renders a single horizontal row:
+- Left side: read-only label displayed in a styled box (same width ratio as custom categories: `w-2/5`)
+- Middle: sparkle (AI enhance) button
+- Right side: editable `AutoResizeTextarea` value field (`flex-1`)
+- No delete button on system rows (they are permanent)
+
+### 3. Create an `ExtraRow` component for user-added rows
+
+Same horizontal layout as `HardcodedRow` but:
+- Label field is editable (both label and value are `AutoResizeTextarea`)
+- Has a red X delete button on the right
+- No sparkle button (user-created extras don't have AI enhance)
+
+### 4. Add "+ Add Row" button at the bottom of each section
+
+A dashed-border button matching the existing custom category "Add Row" style:
+- `border-dashed border-blue-500/30 hover:border-blue-400`
+- Text: `+ Add Row`
+- On click: appends a new `{ id, label: '', value: '' }` entry to the section's `_extras` array
+
+### 5. Wire up extras state management in `CharactersTab.tsx`
+
+Add handler functions:
+- `handleAddExtra(section, field)` -- adds a blank row to `_extras`
+- `handleUpdateExtra(section, id, patch)` -- updates label or value of an extra
+- `handleDeleteExtra(section, id)` -- removes an extra row
+
+These update the character via `onUpdate()` just like existing field handlers.
+
+### 6. Update collapsed views to include extras
+
+The `CollapsedPhysicalAppearance`, `CollapsedCurrentlyWearing`, and `CollapsedPreferredClothing` components will also render any filled `_extras` rows in their condensed summary view.
+
+### 7. Update `CharacterEditModal.tsx` with same row layout
+
+The chat modal's character edit view uses the same `HardcodedInput` pattern. It will be updated to use the same row layout and extras support for consistency.
+
+### 8. Update `llm.ts` to include extras in prompt
+
+When building the character context, extras from `_extras` will be appended after the system fields for each section, so the AI is aware of user-defined attributes.
+
+### 9. Update `extract-character-updates` edge function
+
+Add `_extras` to the TRACKABLE FIELDS documentation so the AI extraction service knows it can write new rows into these containers rather than creating separate custom sections.
+
+---
+
+## Files Affected
+
+| File | Changes |
+|------|---------|
+| `src/types.ts` | Add `CharacterExtraRow` type; add `_extras?` to `PhysicalAppearance`, `CurrentlyWearing`, `PreferredClothing` |
+| `src/components/chronicle/CharactersTab.tsx` | Replace `HardcodedInput` with `HardcodedRow`; add `ExtraRow` component; add "+ Add Row" buttons; add extras handlers; update collapsed views |
+| `src/components/chronicle/CharacterEditModal.tsx` | Same row layout changes for the chat modal view |
+| `src/services/llm.ts` | Include `_extras` when building character appearance/clothing context |
+| `supabase/functions/extract-character-updates/index.ts` | Add `_extras` to TRACKABLE FIELDS for appearance and clothing sections |
+| `src/services/supabase-data.ts` | Ensure `_extras` is preserved during save/load |
+
