@@ -1,34 +1,38 @@
 
 
-# Content Themes UI Enhancement
+# Content Themes Container Polish
 
 ## Changes
 
-### 1. Add dark background containers behind tag groups
+### 1. Add subtle gradient to all tag containers
 
-Wrap the tag badges (and the "+ Add custom" button) in each `CategorySelector` and `StoryTypeSelector` with a darker recessed container using the same styling as the HintBox: `bg-zinc-900 rounded-xl p-4 border border-white/5`.
+Replace the flat `bg-zinc-900` on every tag container with `bg-gradient-to-br from-zinc-800 to-zinc-900` -- the same gradient used on the cover image placeholder. This adds a faint top-left-to-bottom-right light-to-dark sweep that gives depth without being distracting.
 
-Currently, the tags sit directly on the `#2a2a2f` background. Adding this container creates visual separation and makes the tag badges pop.
+Affected containers (all in `src/components/chronicle/ContentThemesSection.tsx`):
+- CategorySelector (line 78) -- used by Character Types, Genre, Origin, Trigger Warnings
+- StoryTypeSelector (line 171)
+- CustomTagsSection (line 232)
 
-### 2. Unify Custom Tags section with other sections
+### 2. Shrink the Story Type container to fit its content
 
-Replace the current Custom Tags UI (text input + "Add" button) with the same pattern used by all other sections: a dark `bg-zinc-900` container showing existing tags (with X remove buttons) and a `+ Add custom` dashed button that reveals an inline input on click. This makes all six subsections visually identical.
+Change the Story Type container from full-width to inline/shrink-to-fit by adding `w-fit` so it hugs the SFW/NSFW buttons instead of stretching across the entire row.
 
 ## Technical Details
 
 ### File: `src/components/chronicle/ContentThemesSection.tsx`
 
-**CategorySelector component (lines 72-155)**:
-- Wrap the `flex flex-wrap gap-2` div (line 78) containing tags and the Add custom button inside a new `bg-zinc-900 rounded-xl p-4 border border-white/5` container
+**All three container divs** -- replace:
+```
+bg-zinc-900 rounded-xl p-4 border border-white/5
+```
+with:
+```
+bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-xl p-4 border border-white/5
+```
 
-**StoryTypeSelector component (lines 158-192)**:
-- Wrap the `flex gap-2` div (line 169) containing SFW/NSFW buttons inside the same `bg-zinc-900 rounded-xl p-4 border border-white/5` container
+**StoryTypeSelector container (line 171)** -- additionally add `w-fit`:
+```
+bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-xl p-4 border border-white/5 w-fit
+```
 
-**CustomTagsSection component (lines 196-262)**:
-- Remove the text input + "Add" button layout entirely
-- Replace with a `bg-zinc-900 rounded-xl p-4 border border-white/5` container that shows:
-  - Existing custom tags as removable badges (same as current)
-  - A `+ Add custom` dashed button (matching the other sections) that toggles an inline text input on click
-
-This is a single-file change with no logic changes -- purely wrapping elements in background containers and restyling the Custom Tags input to match the other sections.
-
+Single-file change, no logic changes.
