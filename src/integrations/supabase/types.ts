@@ -43,6 +43,7 @@ export type Database = {
           age: string | null
           avatar_position: Json | null
           avatar_url: string | null
+          background: Json | null
           character_id: string
           character_role: string | null
           controlled_by: string | null
@@ -51,16 +52,22 @@ export type Database = {
           current_mood: string | null
           currently_wearing: Json | null
           custom_sections: Json | null
+          fears: Json | null
           goals: Json | null
           id: string
+          key_life_events: Json | null
           location: string | null
           name: string | null
           nicknames: string | null
+          personality: Json | null
           physical_appearance: Json | null
           preferred_clothing: Json | null
           previous_names: string[] | null
+          relationships: Json | null
           role_description: string | null
+          secrets: Json | null
           sex_type: string | null
+          tone: Json | null
           updated_at: string | null
           user_id: string
         }
@@ -68,6 +75,7 @@ export type Database = {
           age?: string | null
           avatar_position?: Json | null
           avatar_url?: string | null
+          background?: Json | null
           character_id: string
           character_role?: string | null
           controlled_by?: string | null
@@ -76,16 +84,22 @@ export type Database = {
           current_mood?: string | null
           currently_wearing?: Json | null
           custom_sections?: Json | null
+          fears?: Json | null
           goals?: Json | null
           id?: string
+          key_life_events?: Json | null
           location?: string | null
           name?: string | null
           nicknames?: string | null
+          personality?: Json | null
           physical_appearance?: Json | null
           preferred_clothing?: Json | null
           previous_names?: string[] | null
+          relationships?: Json | null
           role_description?: string | null
+          secrets?: Json | null
           sex_type?: string | null
+          tone?: Json | null
           updated_at?: string | null
           user_id: string
         }
@@ -93,6 +107,7 @@ export type Database = {
           age?: string | null
           avatar_position?: Json | null
           avatar_url?: string | null
+          background?: Json | null
           character_id?: string
           character_role?: string | null
           controlled_by?: string | null
@@ -101,16 +116,22 @@ export type Database = {
           current_mood?: string | null
           currently_wearing?: Json | null
           custom_sections?: Json | null
+          fears?: Json | null
           goals?: Json | null
           id?: string
+          key_life_events?: Json | null
           location?: string | null
           name?: string | null
           nicknames?: string | null
+          personality?: Json | null
           physical_appearance?: Json | null
           preferred_clothing?: Json | null
           previous_names?: string[] | null
+          relationships?: Json | null
           role_description?: string | null
+          secrets?: Json | null
           sex_type?: string | null
+          tone?: Json | null
           updated_at?: string | null
           user_id?: string
         }
@@ -136,24 +157,31 @@ export type Database = {
           age: string | null
           avatar_position: Json | null
           avatar_url: string | null
+          background: Json | null
           character_role: string | null
           controlled_by: string | null
           created_at: string | null
           current_mood: string | null
           currently_wearing: Json | null
+          fears: Json | null
           goals: Json | null
           id: string
           is_library: boolean | null
+          key_life_events: Json | null
           location: string | null
           name: string
           nicknames: string | null
+          personality: Json | null
           physical_appearance: Json | null
           preferred_clothing: Json | null
+          relationships: Json | null
           role_description: string | null
           scenario_id: string | null
+          secrets: Json | null
           sections: Json | null
           sex_type: string | null
           tags: string | null
+          tone: Json | null
           updated_at: string | null
           user_id: string
         }
@@ -161,24 +189,31 @@ export type Database = {
           age?: string | null
           avatar_position?: Json | null
           avatar_url?: string | null
+          background?: Json | null
           character_role?: string | null
           controlled_by?: string | null
           created_at?: string | null
           current_mood?: string | null
           currently_wearing?: Json | null
+          fears?: Json | null
           goals?: Json | null
           id?: string
           is_library?: boolean | null
+          key_life_events?: Json | null
           location?: string | null
           name?: string
           nicknames?: string | null
+          personality?: Json | null
           physical_appearance?: Json | null
           preferred_clothing?: Json | null
+          relationships?: Json | null
           role_description?: string | null
           scenario_id?: string | null
+          secrets?: Json | null
           sections?: Json | null
           sex_type?: string | null
           tags?: string | null
+          tone?: Json | null
           updated_at?: string | null
           user_id: string
         }
@@ -186,24 +221,31 @@ export type Database = {
           age?: string | null
           avatar_position?: Json | null
           avatar_url?: string | null
+          background?: Json | null
           character_role?: string | null
           controlled_by?: string | null
           created_at?: string | null
           current_mood?: string | null
           currently_wearing?: Json | null
+          fears?: Json | null
           goals?: Json | null
           id?: string
           is_library?: boolean | null
+          key_life_events?: Json | null
           location?: string | null
           name?: string
           nicknames?: string | null
+          personality?: Json | null
           physical_appearance?: Json | null
           preferred_clothing?: Json | null
+          relationships?: Json | null
           role_description?: string | null
           scenario_id?: string | null
+          secrets?: Json | null
           sections?: Json | null
           sex_type?: string | null
           tags?: string | null
+          tone?: Json | null
           updated_at?: string | null
           user_id?: string
         }

@@ -185,9 +185,37 @@ function getSystemInstruction(
     const cwExtras = extrasContext(c.currentlyWearing, 'Currently Wearing');
     const pcExtras = extrasContext(c.preferredClothing, 'Preferred Clothing');
     const extrasInfo = [paExtras, cwExtras, pcExtras].filter(Boolean).join('\n');
+    
+    // New sections context
+    const bgFields = c.background ? [
+      c.background.jobOccupation && `Job: ${c.background.jobOccupation}`,
+      c.background.educationLevel && `Education: ${c.background.educationLevel}`,
+      c.background.residence && `Residence: ${c.background.residence}`,
+      c.background.hobbies && `Hobbies: ${c.background.hobbies}`,
+      c.background.financialStatus && `Financial: ${c.background.financialStatus}`,
+      c.background.motivation && `Motivation: ${c.background.motivation}`,
+    ].filter(Boolean).join(', ') : '';
+    const bgExtras = extrasContext(c.background, 'Background');
+    const backgroundInfo = (bgFields || bgExtras) ? `\nBACKGROUND: ${[bgFields, bgExtras].filter(Boolean).join(', ')}` : '';
+    
+    const toneExtras = extrasContext(c.tone, 'Tone');
+    const toneInfo = toneExtras ? `\nTONE: ${toneExtras}` : '';
+    
+    const kleExtras = extrasContext(c.keyLifeEvents, 'Key Life Events');
+    const kleInfo = kleExtras ? `\nKEY LIFE EVENTS: ${kleExtras}` : '';
+    
+    const relExtras = extrasContext(c.relationships, 'Relationships');
+    const relInfo = relExtras ? `\nRELATIONSHIPS: ${relExtras}` : '';
+    
+    const secretsExtras = extrasContext(c.secrets, 'Secrets');
+    const secretsInfo = secretsExtras ? `\nSECRETS: ${secretsExtras}` : '';
+    
+    const fearsExtras = extrasContext(c.fears, 'Fears');
+    const fearsInfo = fearsExtras ? `\nFEARS: ${fearsExtras}` : '';
+    
     return `CHARACTER: ${c.name} (${c.sexType})${nicknameInfo}
 ROLE: ${c.characterRole}
-CONTROL: ${c.controlledBy}${locationInfo}${moodInfo}${personalityInfo}${goalsInfo}
+CONTROL: ${c.controlledBy}${locationInfo}${moodInfo}${personalityInfo}${toneInfo}${backgroundInfo}${kleInfo}${relInfo}${secretsInfo}${fearsInfo}${goalsInfo}
 TAGS: ${c.tags}
 TRAITS:
 ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;

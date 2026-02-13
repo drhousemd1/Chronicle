@@ -2,7 +2,7 @@
 // Session-scoped: edits persist only within the active playthrough
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Character, SideCharacter, PhysicalAppearance, CurrentlyWearing, PreferredClothing, CharacterTraitSection, CharacterGoal, CharacterPersonality, WorldCore, LocationEntry, WorldCustomSection, WorldCustomItem, StoryGoal, CharacterExtraRow } from '@/types';
+import { Character, SideCharacter, PhysicalAppearance, CurrentlyWearing, PreferredClothing, CharacterTraitSection, CharacterGoal, CharacterPersonality, WorldCore, LocationEntry, WorldCustomSection, WorldCustomItem, StoryGoal, CharacterExtraRow, CharacterBackground, CharacterTone, CharacterKeyLifeEvents, CharacterRelationships, CharacterSecrets, CharacterFears, defaultCharacterBackground } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -53,6 +53,13 @@ export interface CharacterEditDraft {
   goals?: CharacterGoal[];
   // Personality (main characters)
   mainPersonality?: CharacterPersonality;
+  // New hardcoded sections (main characters)
+  mainBackground?: CharacterBackground;
+  tone?: CharacterTone;
+  keyLifeEvents?: CharacterKeyLifeEvents;
+  relationships?: CharacterRelationships;
+  secrets?: CharacterSecrets;
+  fears?: CharacterFears;
   // Avatar fields for session-scoped updates
   avatarDataUrl?: string;
   avatarPosition?: { x: number; y: number };
@@ -329,7 +336,12 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
     goals: true,
     background: true,
     personality: true,
-    customCategories: true
+    customCategories: true,
+    tone: true,
+    keyLifeEvents: true,
+    relationships: true,
+    secrets: true,
+    fears: true
   });
 
   const toggleSection = (key: string) => {
@@ -346,8 +358,8 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
     }));
   };
 
-  // Determine if this is a side character (has background property)
-  const isSideCharacter = character && 'background' in character;
+  // Determine if this is a side character (has SideCharacterBackground-style background)
+  const isSideCharacter = character && 'background' in character && 'firstMentionedIn' in character;
 
   // Initialize draft from character when modal opens
   useEffect(() => {
@@ -383,6 +395,14 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
         baseDraft.sections = character.sections?.map(s => ({ ...s, items: [...s.items] })) || [];
         baseDraft.controlledBy = (character as Character).controlledBy;
         baseDraft.characterRole = (character as Character).characterRole;
+        // New hardcoded sections for main characters
+        const mainChar = character as Character;
+        baseDraft.mainBackground = mainChar.background ? { ...mainChar.background } : undefined;
+        baseDraft.tone = mainChar.tone ? { ...mainChar.tone } : undefined;
+        baseDraft.keyLifeEvents = mainChar.keyLifeEvents ? { ...mainChar.keyLifeEvents } : undefined;
+        baseDraft.relationships = mainChar.relationships ? { ...mainChar.relationships } : undefined;
+        baseDraft.secrets = mainChar.secrets ? { ...mainChar.secrets } : undefined;
+        baseDraft.fears = mainChar.fears ? { ...mainChar.fears } : undefined;
       }
 
       // Add SideCharacter-specific fields
@@ -843,29 +863,55 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
     }));
   };
 
-  // Extras handlers for hardcoded sections in modal
-  const addModalExtra = (section: 'physicalAppearance' | 'currentlyWearing' | 'preferredClothing') => {
+  // Extras handlers for hardcoded sections in modal (extended for new sections)
+  type ModalExtrasSection = 'physicalAppearance' | 'currentlyWearing' | 'preferredClothing' | 'tone' | 'keyLifeEvents' | 'relationships' | 'secrets' | 'fears';
+
+  const addModalExtra = (section: ModalExtrasSection | 'background') => {
     setDraft(prev => {
+      // For background, use the nested structure
+      if (section === 'background') {
+        const current = (prev as any).mainBackground || {};
+        const extras = [...(current._extras || []), { id: `extra-${Date.now()}`, label: '', value: '' }];
+        return { ...prev, mainBackground: { ...current, _extras: extras } };
+      }
       const current = (prev[section] || {}) as any;
       const extras = [...(current._extras || []), { id: `extra-${Date.now()}`, label: '', value: '' }];
       return { ...prev, [section]: { ...current, _extras: extras } };
     });
   };
 
-  const updateModalExtra = (section: 'physicalAppearance' | 'currentlyWearing' | 'preferredClothing', extraId: string, patch: Partial<CharacterExtraRow>) => {
+  const updateModalExtra = (section: ModalExtrasSection | 'background', extraId: string, patch: Partial<CharacterExtraRow>) => {
     setDraft(prev => {
+      if (section === 'background') {
+        const current = (prev as any).mainBackground || {};
+        const extras = (current._extras || []).map((e: CharacterExtraRow) => e.id === extraId ? { ...e, ...patch } : e);
+        return { ...prev, mainBackground: { ...current, _extras: extras } };
+      }
       const current = (prev[section] || {}) as any;
       const extras = (current._extras || []).map((e: CharacterExtraRow) => e.id === extraId ? { ...e, ...patch } : e);
       return { ...prev, [section]: { ...current, _extras: extras } };
     });
   };
 
-  const deleteModalExtra = (section: 'physicalAppearance' | 'currentlyWearing' | 'preferredClothing', extraId: string) => {
+  const deleteModalExtra = (section: ModalExtrasSection | 'background', extraId: string) => {
     setDraft(prev => {
+      if (section === 'background') {
+        const current = (prev as any).mainBackground || {};
+        const extras = (current._extras || []).filter((e: CharacterExtraRow) => e.id !== extraId);
+        return { ...prev, mainBackground: { ...current, _extras: extras } };
+      }
       const current = (prev[section] || {}) as any;
       const extras = (current._extras || []).filter((e: CharacterExtraRow) => e.id !== extraId);
       return { ...prev, [section]: { ...current, _extras: extras } };
     });
+  };
+
+  // Handlers for main character background hardcoded fields
+  const updateMainBackground = (field: string, value: string) => {
+    setDraft(prev => ({
+      ...prev,
+      mainBackground: { ...(prev as any).mainBackground, [field]: value }
+    }));
   };
 
   const updateBackground = (field: string, value: string) => {
@@ -1435,6 +1481,118 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     isExpanded={expandedSections.personality}
                     onToggle={() => toggleSection('personality')}
                   />
+                )}
+
+                {/* Tone (Main characters only) */}
+                {!isSideCharacter && (
+                  <CollapsibleSection
+                    title="Tone"
+                    isExpanded={expandedSections.tone}
+                    onToggle={() => toggleSection('tone')}
+                  >
+                    {((draft.tone as any)?._extras || []).map((extra: CharacterExtraRow) => (
+                      <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('tone', extra.id, patch)} onDelete={() => deleteModalExtra('tone', extra.id)} />
+                    ))}
+                    <Button variant="ghost" size="sm" onClick={() => addModalExtra('tone')} className="text-blue-400 hover:text-blue-300 w-full border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5">
+                      <Plus className="w-4 h-4 mr-1" /> Add Row
+                    </Button>
+                  </CollapsibleSection>
+                )}
+
+                {/* Background (Main characters only) */}
+                {!isSideCharacter && (
+                  <CollapsibleSection
+                    title="Background"
+                    isExpanded={expandedSections.background}
+                    onToggle={() => toggleSection('background')}
+                    collapsedContent={
+                      <CollapsedFieldSummary fields={[
+                        { label: 'Job / Occupation', value: (draft as any).mainBackground?.jobOccupation },
+                        { label: 'Education Level', value: (draft as any).mainBackground?.educationLevel },
+                        { label: 'Residence', value: (draft as any).mainBackground?.residence },
+                        { label: 'Hobbies', value: (draft as any).mainBackground?.hobbies },
+                        { label: 'Financial Status', value: (draft as any).mainBackground?.financialStatus },
+                        { label: 'Motivation', value: (draft as any).mainBackground?.motivation },
+                      ]} />
+                    }
+                  >
+                    <HardcodedRow label="Job / Occupation" value={(draft as any).mainBackground?.jobOccupation || ''} onChange={(v) => updateMainBackground('jobOccupation', v)} placeholder="e.g., Software Engineer" />
+                    <HardcodedRow label="Education Level" value={(draft as any).mainBackground?.educationLevel || ''} onChange={(v) => updateMainBackground('educationLevel', v)} placeholder="e.g., Bachelor's" />
+                    <HardcodedRow label="Residence" value={(draft as any).mainBackground?.residence || ''} onChange={(v) => updateMainBackground('residence', v)} placeholder="e.g., Downtown apartment" />
+                    <HardcodedRow label="Hobbies" value={(draft as any).mainBackground?.hobbies || ''} onChange={(v) => updateMainBackground('hobbies', v)} placeholder="e.g., Reading, Hiking" />
+                    <HardcodedRow label="Financial Status" value={(draft as any).mainBackground?.financialStatus || ''} onChange={(v) => updateMainBackground('financialStatus', v)} placeholder="e.g., Middle class" />
+                    <HardcodedRow label="Motivation" value={(draft as any).mainBackground?.motivation || ''} onChange={(v) => updateMainBackground('motivation', v)} placeholder="What drives this character" />
+                    {(((draft as any).mainBackground as any)?._extras || []).map((extra: CharacterExtraRow) => (
+                      <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('background', extra.id, patch)} onDelete={() => deleteModalExtra('background', extra.id)} />
+                    ))}
+                    <Button variant="ghost" size="sm" onClick={() => addModalExtra('background')} className="text-blue-400 hover:text-blue-300 w-full border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5">
+                      <Plus className="w-4 h-4 mr-1" /> Add Row
+                    </Button>
+                  </CollapsibleSection>
+                )}
+
+                {/* Key Life Events (Main characters only) */}
+                {!isSideCharacter && (
+                  <CollapsibleSection
+                    title="Key Life Events"
+                    isExpanded={expandedSections.keyLifeEvents}
+                    onToggle={() => toggleSection('keyLifeEvents')}
+                  >
+                    {((draft.keyLifeEvents as any)?._extras || []).map((extra: CharacterExtraRow) => (
+                      <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('keyLifeEvents', extra.id, patch)} onDelete={() => deleteModalExtra('keyLifeEvents', extra.id)} />
+                    ))}
+                    <Button variant="ghost" size="sm" onClick={() => addModalExtra('keyLifeEvents')} className="text-blue-400 hover:text-blue-300 w-full border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5">
+                      <Plus className="w-4 h-4 mr-1" /> Add Row
+                    </Button>
+                  </CollapsibleSection>
+                )}
+
+                {/* Relationships (Main characters only) */}
+                {!isSideCharacter && (
+                  <CollapsibleSection
+                    title="Relationships"
+                    isExpanded={expandedSections.relationships}
+                    onToggle={() => toggleSection('relationships')}
+                  >
+                    {((draft.relationships as any)?._extras || []).map((extra: CharacterExtraRow) => (
+                      <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('relationships', extra.id, patch)} onDelete={() => deleteModalExtra('relationships', extra.id)} />
+                    ))}
+                    <Button variant="ghost" size="sm" onClick={() => addModalExtra('relationships')} className="text-blue-400 hover:text-blue-300 w-full border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5">
+                      <Plus className="w-4 h-4 mr-1" /> Add Row
+                    </Button>
+                  </CollapsibleSection>
+                )}
+
+                {/* Secrets (Main characters only) */}
+                {!isSideCharacter && (
+                  <CollapsibleSection
+                    title="Secrets"
+                    isExpanded={expandedSections.secrets}
+                    onToggle={() => toggleSection('secrets')}
+                  >
+                    {((draft.secrets as any)?._extras || []).map((extra: CharacterExtraRow) => (
+                      <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('secrets', extra.id, patch)} onDelete={() => deleteModalExtra('secrets', extra.id)} />
+                    ))}
+                    <Button variant="ghost" size="sm" onClick={() => addModalExtra('secrets')} className="text-blue-400 hover:text-blue-300 w-full border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5">
+                      <Plus className="w-4 h-4 mr-1" /> Add Row
+                    </Button>
+                  </CollapsibleSection>
+                )}
+
+                {/* Fears (Main characters only) */}
+                {!isSideCharacter && (
+                  <CollapsibleSection
+                    title="Fears"
+                    isExpanded={expandedSections.fears}
+                    onToggle={() => toggleSection('fears')}
+                  >
+                    {((draft.fears as any)?._extras || []).map((extra: CharacterExtraRow) => (
+                      <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('fears', extra.id, patch)} onDelete={() => deleteModalExtra('fears', extra.id)} />
+                    ))}
+                    <Button variant="ghost" size="sm" onClick={() => addModalExtra('fears')} className="text-blue-400 hover:text-blue-300 w-full border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5">
+                      <Plus className="w-4 h-4 mr-1" /> Add Row
+                    </Button>
+                  </CollapsibleSection>
                 )}
 
                 {/* Character Goals Section (Main characters only) */}
