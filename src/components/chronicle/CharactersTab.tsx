@@ -1,6 +1,6 @@
 
 import React, { useRef, useState, useCallback } from 'react';
-import { Character, CharacterTraitSection, ScenarioData, PhysicalAppearance, CurrentlyWearing, PreferredClothing, CharacterGoal, CharacterExtraRow } from '@/types';
+import { Character, CharacterTraitSection, ScenarioData, PhysicalAppearance, CurrentlyWearing, PreferredClothing, CharacterGoal, CharacterExtraRow, CharacterBackground, CharacterTone, CharacterKeyLifeEvents, CharacterRelationships, CharacterSecrets, CharacterFears, defaultCharacterBackground } from '@/types';
 import { Button, TextArea, Card } from './UI';
 import { Icons } from '@/constants';
 import { uid, now, clamp, resizeImage } from '@/utils';
@@ -184,6 +184,12 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
     currentlyWearing: true,
     preferredClothing: true,
     personality: true,
+    tone: true,
+    background: true,
+    keyLifeEvents: true,
+    relationships: true,
+    secrets: true,
+    fears: true,
     characterGoals: true
   });
   const [expandedCustomSections, setExpandedCustomSections] = useState<Record<string, boolean>>({});
@@ -338,26 +344,39 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
     });
   };
 
-  // Extras handlers for hardcoded sections
-  const handleAddExtra = (section: 'physicalAppearance' | 'currentlyWearing' | 'preferredClothing') => {
+  // Extras handlers for hardcoded sections (extended for new sections)
+  type ExtrasSection = 'physicalAppearance' | 'currentlyWearing' | 'preferredClothing' | 'background' | 'tone' | 'keyLifeEvents' | 'relationships' | 'secrets' | 'fears';
+
+  const handleAddExtra = (section: ExtrasSection) => {
     if (!selected) return;
-    const current = selected[section] as any || {};
+    const current = (selected as any)[section] as any || {};
     const extras = [...(current._extras || []), { id: uid('extra'), label: '', value: '' }];
     onUpdate(selected.id, { [section]: { ...current, _extras: extras } } as any);
   };
 
-  const handleUpdateExtra = (section: 'physicalAppearance' | 'currentlyWearing' | 'preferredClothing', extraId: string, patch: Partial<CharacterExtraRow>) => {
+  const handleUpdateExtra = (section: ExtrasSection, extraId: string, patch: Partial<CharacterExtraRow>) => {
     if (!selected) return;
-    const current = selected[section] as any || {};
+    const current = (selected as any)[section] as any || {};
     const extras = (current._extras || []).map((e: CharacterExtraRow) => e.id === extraId ? { ...e, ...patch } : e);
     onUpdate(selected.id, { [section]: { ...current, _extras: extras } } as any);
   };
 
-  const handleDeleteExtra = (section: 'physicalAppearance' | 'currentlyWearing' | 'preferredClothing', extraId: string) => {
+  const handleDeleteExtra = (section: ExtrasSection, extraId: string) => {
     if (!selected) return;
-    const current = selected[section] as any || {};
+    const current = (selected as any)[section] as any || {};
     const extras = (current._extras || []).filter((e: CharacterExtraRow) => e.id !== extraId);
     onUpdate(selected.id, { [section]: { ...current, _extras: extras } } as any);
+  };
+
+  // Handler for Background hardcoded fields
+  const handleBackgroundChange = (field: keyof CharacterBackground, value: string) => {
+    if (!selected) return;
+    onUpdate(selected.id, {
+      background: {
+        ...(selected.background || defaultCharacterBackground),
+        [field]: value
+      }
+    });
   };
 
   // Condensed view helpers for collapsed sections
@@ -840,7 +859,171 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
             onToggle={() => toggleSection('personality')}
           />
 
-          {/* HARDCODED SECTION 5: Character Goals */}
+          {/* HARDCODED SECTION 5: Tone */}
+          <HardcodedSection 
+            title="Tone"
+            isExpanded={expandedSections.tone}
+            onToggle={() => toggleSection('tone')}
+            collapsedContent={
+              (() => {
+                const extras = selected.tone?._extras?.filter(e => e.label || e.value) || [];
+                if (extras.length === 0) return <p className="text-zinc-500 text-sm italic">No tone details</p>;
+                return (
+                  <div className="space-y-4">
+                    {extras.map(e => <CollapsedFieldRow key={e.id} label={e.label || 'Untitled'} value={e.value} />)}
+                  </div>
+                );
+              })()
+            }
+          >
+            {(selected.tone?._extras || []).map(extra => (
+              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('tone', extra.id, patch)} onDelete={() => handleDeleteExtra('tone', extra.id)} />
+            ))}
+            <button type="button" onClick={() => handleAddExtra('tone')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all">
+              <Plus className="w-4 h-4 inline mr-1" /> Add Row
+            </button>
+          </HardcodedSection>
+
+          {/* HARDCODED SECTION 6: Background */}
+          <HardcodedSection 
+            title="Background"
+            isExpanded={expandedSections.background}
+            onToggle={() => toggleSection('background')}
+            collapsedContent={
+              (() => {
+                const bg = selected.background;
+                const extras = bg?._extras?.filter(e => e.label || e.value) || [];
+                const hasAnyValue = bg && (Object.entries(bg).some(([k, v]) => k !== '_extras' && v) || extras.length > 0);
+                if (!hasAnyValue) return <p className="text-zinc-500 text-sm italic">No background details</p>;
+                return (
+                  <div className="space-y-4">
+                    <CollapsedFieldRow label="Job / Occupation" value={bg?.jobOccupation || ''} />
+                    <CollapsedFieldRow label="Education Level" value={bg?.educationLevel || ''} />
+                    <CollapsedFieldRow label="Residence" value={bg?.residence || ''} />
+                    <CollapsedFieldRow label="Hobbies" value={bg?.hobbies || ''} />
+                    <CollapsedFieldRow label="Financial Status" value={bg?.financialStatus || ''} />
+                    <CollapsedFieldRow label="Motivation" value={bg?.motivation || ''} />
+                    {extras.map(e => <CollapsedFieldRow key={e.id} label={e.label || 'Untitled'} value={e.value} />)}
+                  </div>
+                );
+              })()
+            }
+          >
+            <HardcodedRow label="Job / Occupation" value={selected.background?.jobOccupation || ''} onChange={(v) => handleBackgroundChange('jobOccupation', v)} placeholder="e.g., Software Engineer, Teacher" onEnhance={() => handleEnhanceField('bg_jobOccupation', 'custom', () => selected.background?.jobOccupation || '', (v) => handleBackgroundChange('jobOccupation', v), 'Job / Occupation')} isEnhancing={enhancingField === 'bg_jobOccupation'} />
+            <HardcodedRow label="Education Level" value={selected.background?.educationLevel || ''} onChange={(v) => handleBackgroundChange('educationLevel', v)} placeholder="e.g., Bachelor's, High School" onEnhance={() => handleEnhanceField('bg_educationLevel', 'custom', () => selected.background?.educationLevel || '', (v) => handleBackgroundChange('educationLevel', v), 'Education Level')} isEnhancing={enhancingField === 'bg_educationLevel'} />
+            <HardcodedRow label="Residence" value={selected.background?.residence || ''} onChange={(v) => handleBackgroundChange('residence', v)} placeholder="e.g., Downtown apartment, Suburban house" onEnhance={() => handleEnhanceField('bg_residence', 'custom', () => selected.background?.residence || '', (v) => handleBackgroundChange('residence', v), 'Residence')} isEnhancing={enhancingField === 'bg_residence'} />
+            <HardcodedRow label="Hobbies" value={selected.background?.hobbies || ''} onChange={(v) => handleBackgroundChange('hobbies', v)} placeholder="e.g., Reading, Hiking, Gaming" onEnhance={() => handleEnhanceField('bg_hobbies', 'custom', () => selected.background?.hobbies || '', (v) => handleBackgroundChange('hobbies', v), 'Hobbies')} isEnhancing={enhancingField === 'bg_hobbies'} />
+            <HardcodedRow label="Financial Status" value={selected.background?.financialStatus || ''} onChange={(v) => handleBackgroundChange('financialStatus', v)} placeholder="e.g., Middle class, Wealthy" onEnhance={() => handleEnhanceField('bg_financialStatus', 'custom', () => selected.background?.financialStatus || '', (v) => handleBackgroundChange('financialStatus', v), 'Financial Status')} isEnhancing={enhancingField === 'bg_financialStatus'} />
+            <HardcodedRow label="Motivation" value={selected.background?.motivation || ''} onChange={(v) => handleBackgroundChange('motivation', v)} placeholder="What drives this character" onEnhance={() => handleEnhanceField('bg_motivation', 'custom', () => selected.background?.motivation || '', (v) => handleBackgroundChange('motivation', v), 'Motivation')} isEnhancing={enhancingField === 'bg_motivation'} />
+            {(selected.background?._extras || []).map(extra => (
+              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('background', extra.id, patch)} onDelete={() => handleDeleteExtra('background', extra.id)} />
+            ))}
+            <button type="button" onClick={() => handleAddExtra('background')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all">
+              <Plus className="w-4 h-4 inline mr-1" /> Add Row
+            </button>
+          </HardcodedSection>
+
+          {/* HARDCODED SECTION 7: Key Life Events */}
+          <HardcodedSection 
+            title="Key Life Events"
+            isExpanded={expandedSections.keyLifeEvents}
+            onToggle={() => toggleSection('keyLifeEvents')}
+            collapsedContent={
+              (() => {
+                const extras = selected.keyLifeEvents?._extras?.filter(e => e.label || e.value) || [];
+                if (extras.length === 0) return <p className="text-zinc-500 text-sm italic">No events recorded</p>;
+                return (
+                  <div className="space-y-4">
+                    {extras.map(e => <CollapsedFieldRow key={e.id} label={e.label || 'Untitled'} value={e.value} />)}
+                  </div>
+                );
+              })()
+            }
+          >
+            {(selected.keyLifeEvents?._extras || []).map(extra => (
+              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('keyLifeEvents', extra.id, patch)} onDelete={() => handleDeleteExtra('keyLifeEvents', extra.id)} />
+            ))}
+            <button type="button" onClick={() => handleAddExtra('keyLifeEvents')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all">
+              <Plus className="w-4 h-4 inline mr-1" /> Add Row
+            </button>
+          </HardcodedSection>
+
+          {/* HARDCODED SECTION 8: Relationships */}
+          <HardcodedSection 
+            title="Relationships"
+            isExpanded={expandedSections.relationships}
+            onToggle={() => toggleSection('relationships')}
+            collapsedContent={
+              (() => {
+                const extras = selected.relationships?._extras?.filter(e => e.label || e.value) || [];
+                if (extras.length === 0) return <p className="text-zinc-500 text-sm italic">No relationships defined</p>;
+                return (
+                  <div className="space-y-4">
+                    {extras.map(e => <CollapsedFieldRow key={e.id} label={e.label || 'Untitled'} value={e.value} />)}
+                  </div>
+                );
+              })()
+            }
+          >
+            {(selected.relationships?._extras || []).map(extra => (
+              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('relationships', extra.id, patch)} onDelete={() => handleDeleteExtra('relationships', extra.id)} />
+            ))}
+            <button type="button" onClick={() => handleAddExtra('relationships')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all">
+              <Plus className="w-4 h-4 inline mr-1" /> Add Row
+            </button>
+          </HardcodedSection>
+
+          {/* HARDCODED SECTION 9: Secrets */}
+          <HardcodedSection 
+            title="Secrets"
+            isExpanded={expandedSections.secrets}
+            onToggle={() => toggleSection('secrets')}
+            collapsedContent={
+              (() => {
+                const extras = selected.secrets?._extras?.filter(e => e.label || e.value) || [];
+                if (extras.length === 0) return <p className="text-zinc-500 text-sm italic">No secrets defined</p>;
+                return (
+                  <div className="space-y-4">
+                    {extras.map(e => <CollapsedFieldRow key={e.id} label={e.label || 'Untitled'} value={e.value} />)}
+                  </div>
+                );
+              })()
+            }
+          >
+            {(selected.secrets?._extras || []).map(extra => (
+              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('secrets', extra.id, patch)} onDelete={() => handleDeleteExtra('secrets', extra.id)} />
+            ))}
+            <button type="button" onClick={() => handleAddExtra('secrets')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all">
+              <Plus className="w-4 h-4 inline mr-1" /> Add Row
+            </button>
+          </HardcodedSection>
+
+          {/* HARDCODED SECTION 10: Fears */}
+          <HardcodedSection 
+            title="Fears"
+            isExpanded={expandedSections.fears}
+            onToggle={() => toggleSection('fears')}
+            collapsedContent={
+              (() => {
+                const extras = selected.fears?._extras?.filter(e => e.label || e.value) || [];
+                if (extras.length === 0) return <p className="text-zinc-500 text-sm italic">No fears defined</p>;
+                return (
+                  <div className="space-y-4">
+                    {extras.map(e => <CollapsedFieldRow key={e.id} label={e.label || 'Untitled'} value={e.value} />)}
+                  </div>
+                );
+              })()
+            }
+          >
+            {(selected.fears?._extras || []).map(extra => (
+              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('fears', extra.id, patch)} onDelete={() => handleDeleteExtra('fears', extra.id)} />
+            ))}
+            <button type="button" onClick={() => handleAddExtra('fears')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all">
+              <Plus className="w-4 h-4 inline mr-1" /> Add Row
+            </button>
+          </HardcodedSection>
+
+          {/* HARDCODED SECTION 11: Character Goals */}
           <CharacterGoalsSection
             goals={selected.goals || []}
             onChange={(goals) => onUpdate(selected.id, { goals })}

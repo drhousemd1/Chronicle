@@ -21,7 +21,13 @@ import type {
   Memory,
   MemorySource,
   TimeOfDay,
-  ContentThemes
+  ContentThemes,
+  CharacterBackground,
+  CharacterTone,
+  CharacterKeyLifeEvents,
+  CharacterRelationships,
+  CharacterSecrets,
+  CharacterFears
 } from '@/types';
 import { 
   defaultPhysicalAppearance, 
@@ -29,7 +35,8 @@ import {
   defaultPreferredClothing,
   defaultSideCharacterBackground,
   defaultSideCharacterPersonality,
-  defaultContentThemes
+  defaultContentThemes,
+  defaultCharacterBackground
 } from '@/types';
 import { LLM_MODELS } from '@/constants';
 
@@ -131,6 +138,14 @@ function dbToCharacter(row: any): Character {
     physicalAppearance: dbPhysicalAppearanceToApp(row.physical_appearance),
     currentlyWearing: dbCurrentlyWearingToApp(row.currently_wearing),
     preferredClothing: dbPreferredClothingToApp(row.preferred_clothing),
+    personality: row.personality || undefined,
+    goals: row.goals || undefined,
+    background: row.background || undefined,
+    tone: row.tone || undefined,
+    keyLifeEvents: row.key_life_events || undefined,
+    relationships: row.relationships || undefined,
+    secrets: row.secrets || undefined,
+    fears: row.fears || undefined,
     sections: row.sections || [],
     createdAt: new Date(row.created_at).getTime(),
     updatedAt: new Date(row.updated_at).getTime()
@@ -157,6 +172,14 @@ function characterToDb(char: Character, userId: string, scenarioId?: string, isL
     physical_appearance: appPhysicalAppearanceToDb(char.physicalAppearance || defaultPhysicalAppearance),
     currently_wearing: appCurrentlyWearingToDb(char.currentlyWearing || defaultCurrentlyWearing),
     preferred_clothing: appPreferredClothingToDb(char.preferredClothing || defaultPreferredClothing),
+    personality: char.personality || null,
+    goals: char.goals || [],
+    background: char.background || {},
+    tone: char.tone || {},
+    key_life_events: char.keyLifeEvents || {},
+    relationships: char.relationships || {},
+    secrets: char.secrets || {},
+    fears: char.fears || {},
     sections: char.sections,
     is_library: isLibrary
   };

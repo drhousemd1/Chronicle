@@ -237,6 +237,14 @@ export type Character = {
   // Character goals tracking
   goals?: CharacterGoal[];
   
+  // New hardcoded sections
+  background?: CharacterBackground;
+  tone?: CharacterTone;
+  keyLifeEvents?: CharacterKeyLifeEvents;
+  relationships?: CharacterRelationships;
+  secrets?: CharacterSecrets;
+  fears?: CharacterFears;
+  
   // User-created custom sections
   sections: CharacterTraitSection[];
   createdAt: number;
@@ -266,6 +274,13 @@ export type CharacterSessionState = {
   customSections?: CharacterTraitSection[];
   // Personality overrides (session-scoped)
   personality?: CharacterPersonality;
+  // New section overrides (session-scoped)
+  background?: CharacterBackground;
+  tone?: CharacterTone;
+  keyLifeEvents?: CharacterKeyLifeEvents;
+  relationships?: CharacterRelationships;
+  secrets?: CharacterSecrets;
+  fears?: CharacterFears;
   // Goals overrides (session-scoped)
   goals?: CharacterGoal[];
   // Avatar overrides (session-scoped)
@@ -436,6 +451,55 @@ export type Memory = {
   createdAt: number;
   updatedAt: number;
 };
+
+// =============================================
+// NEW CHARACTER SECTIONS
+// =============================================
+
+export type CharacterBackground = {
+  jobOccupation: string;
+  educationLevel: string;
+  residence: string;
+  hobbies: string;
+  financialStatus: string;
+  motivation: string;
+  _extras?: CharacterExtraRow[];
+};
+
+export type CharacterTone = {
+  _extras?: CharacterExtraRow[];
+};
+
+export type CharacterKeyLifeEvents = {
+  _extras?: CharacterExtraRow[];
+};
+
+export type CharacterRelationships = {
+  _extras?: CharacterExtraRow[];
+};
+
+export type CharacterSecrets = {
+  _extras?: CharacterExtraRow[];
+};
+
+export type CharacterFears = {
+  _extras?: CharacterExtraRow[];
+};
+
+export const defaultCharacterBackground: CharacterBackground = {
+  jobOccupation: '',
+  educationLevel: '',
+  residence: '',
+  hobbies: '',
+  financialStatus: '',
+  motivation: ''
+};
+
+export const defaultCharacterTone: CharacterTone = {};
+export const defaultCharacterKeyLifeEvents: CharacterKeyLifeEvents = {};
+export const defaultCharacterRelationships: CharacterRelationships = {};
+export const defaultCharacterSecrets: CharacterSecrets = {};
+export const defaultCharacterFears: CharacterFears = {};
 
 // Default empty hardcoded attributes
 export const defaultPhysicalAppearance: PhysicalAppearance = {
