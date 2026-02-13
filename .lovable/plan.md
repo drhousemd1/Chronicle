@@ -1,57 +1,133 @@
 
+# Add New Hardcoded Character Sections
 
-# Unify "Add" Button Styling Across All Sections
+## Overview
+Add six new hardcoded character sections to the character builder, reordering all trait sections to the specified order. These sections will appear in the Scenario Builder (CharactersTab), the Chat Edit Modal (CharacterEditModal), and the system prompt context sent to the AI.
 
-## Summary
+## New Sections
 
-Two groups of buttons need to meet in the middle:
+### Background (hardcoded rows with Lock icons + Add Row)
+- Job / Occupation
+- Education Level
+- Residence
+- Hobbies
+- Financial Status
+- Motivation
 
-- **Physical Appearance, Currently Wearing, Preferred Clothing, Personality** -- their `+ Add Row` / `+ Add Trait` buttons currently use a thin, faint dashed border (`border border-blue-500/30`). These will be updated to use the heavier, more visible dashed outline from the Goals section (`border-2 border-dashed border-zinc-500`).
+### Tone (empty, just "+ Add Row" button)
+### Key Life Events (empty, just "+ Add Row" button)
+### Relationships (empty, just "+ Add Row" button)
+### Secrets (empty, just "+ Add Row" button)
+### Fears (empty, just "+ Add Row" button)
 
-- **Goals and Desires (Character + Story)** -- their `+ Add New Goal` / `+ Add Story Goal` buttons currently use larger text and icons. These will be updated to use the smaller `text-sm` size and `w-4 h-4` icons matching the other sections.
+## Section Order (top to bottom)
+1. Physical Appearance
+2. Currently Wearing
+3. Preferred Clothing
+4. Personality
+5. Tone
+6. Background
+7. Key Life Events
+8. Relationships
+9. Secrets
+10. Fears
+11. Goals and Desires
 
-## What the unified button will look like
+## Technical Details
 
-All "add" buttons will share this style:
+### 1. Type System (`src/types.ts`)
+
+Add a new `CharacterBackground` type with the six hardcoded fields plus `_extras` for user-added rows:
+
+```typescript
+export type CharacterBackground = {
+  jobOccupation: string;
+  educationLevel: string;
+  residence: string;
+  hobbies: string;
+  financialStatus: string;
+  motivation: string;
+  _extras?: CharacterExtraRow[];
+};
 ```
-border-2 border-dashed border-zinc-500 text-blue-400 hover:border-blue-400
-text-sm font-medium py-2.5 rounded-xl
+
+Add five new "extras-only" types for the empty sections (Tone, Key Life Events, Relationships, Secrets, Fears). These only hold user-added rows:
+
+```typescript
+export type CharacterTone = {
+  _extras?: CharacterExtraRow[];
+};
+export type CharacterKeyLifeEvents = {
+  _extras?: CharacterExtraRow[];
+};
+export type CharacterRelationships = {
+  _extras?: CharacterExtraRow[];
+};
+export type CharacterSecrets = {
+  _extras?: CharacterExtraRow[];
+};
+export type CharacterFears = {
+  _extras?: CharacterExtraRow[];
+};
 ```
 
-## Changes
+Add corresponding defaults and update the `Character` type to include these new fields:
 
-### 1. `src/components/chronicle/CharactersTab.tsx`
+```typescript
+export type Character = {
+  // ... existing fields ...
+  background?: CharacterBackground;
+  tone?: CharacterTone;
+  keyLifeEvents?: CharacterKeyLifeEvents;
+  relationships?: CharacterRelationships;
+  secrets?: CharacterSecrets;
+  fears?: CharacterFears;
+  // ... rest ...
+};
+```
 
-Update the four `+ Add Row` buttons (Physical Appearance, Currently Wearing, Preferred Clothing, Custom Categories) from:
-- `border border-dashed border-blue-500/30`
+All new fields are optional (`?`) for backward compatibility with existing saved characters.
 
-To:
-- `border-2 border-dashed border-zinc-500`
+Also update `CharacterSessionState` to include optional overrides for each new section.
 
-### 2. `src/components/chronicle/PersonalitySection.tsx`
+### 2. Scenario Builder (`src/components/chronicle/CharactersTab.tsx`)
 
-Update the `+ Add Trait` button from:
-- `border border-dashed border-blue-500/30`
+- Add new state keys to `expandedSections` for: `tone`, `background`, `keyLifeEvents`, `relationships`, `secrets`, `fears`
+- Add change handlers for `CharacterBackground` fields (like `handlePhysicalAppearanceChange`)
+- Add extras handlers for all six new sections (reuse existing `handleAddExtra`/`handleUpdateExtra`/`handleDeleteExtra` pattern, extended to support the new section keys)
+- Add collapsed view components for each section
+- Render sections in specified order: Physical Appearance, Currently Wearing, Preferred Clothing, Personality, Tone, Background, Key Life Events, Relationships, Secrets, Fears, Goals and Desires
+- Background section uses `HardcodedRow` for its 6 fields + `ExtraRow` for user-added rows
+- Tone/Key Life Events/Relationships/Secrets/Fears sections use `HardcodedSection` with only `ExtraRow` items and the `+ Add Row` button
 
-To:
-- `border-2 border-dashed border-zinc-500`
+### 3. Chat Edit Modal (`src/components/chronicle/CharacterEditModal.tsx`)
 
-### 3. `src/components/chronicle/CharacterGoalsSection.tsx`
+- Add corresponding `CollapsibleSection` entries for all six new sections in the right column
+- Add draft fields and update handlers
+- Same rendering order as CharactersTab
+- Background uses `HardcodedRow` for hardcoded fields + `ModalExtraRow` for extras
+- Other four sections use only `ModalExtraRow` + `+ Add Row`
+- Update `CharacterEditDraft` to include the new section types
 
-Update the `+ Add New Goal` button:
-- Reduce text from default size to `text-sm`
-- Reduce icon from `h-5 w-5` to `w-4 h-4`
-- Change padding from `py-3` to `py-2.5`
-- Keep the existing `border-2 border-dashed border-zinc-500` (already correct)
+### 4. Data Layer (`src/services/supabase-data.ts`)
 
-### 4. `src/components/chronicle/StoryGoalsSection.tsx`
+- Update `dbToCharacter` and `characterToDb` mapping functions to handle the new fields
+- Map to/from the database JSON columns (the existing `characters` table stores these as JSONB, so no schema migration needed -- the new fields can be stored within the existing character JSON structure or as new columns)
+- If new DB columns are needed, create a migration adding nullable JSONB columns for `background`, `tone`, `key_life_events`, `relationships`, `secrets`, `fears`
 
-Same changes as CharacterGoalsSection -- reduce text to `text-sm`, icon to `w-4 h-4`, padding to `py-2.5`.
+### 5. System Prompt / AI Context (`src/services/llm.ts` or chat edge function)
 
-### 5. `src/components/chronicle/CharacterEditModal.tsx`
+- Include the new section data in the character context block sent to the AI so it can reference and update these fields during conversation
+- Update the extract-character-updates edge function to recognize the new field paths (e.g., `background.jobOccupation`, `tone._extras`, etc.)
 
-Update the four `+ Add Row` buttons in the modal to match the heavier border (`border-2 border-dashed border-zinc-500`), keeping them consistent with the main tab.
+### 6. Character Edit Form (`src/components/chronicle/CharacterEditForm.tsx`)
 
----
+- Update the `CharacterEditDraft` interface to include the new fields
+- Add corresponding form sections
 
-No structural or logic changes -- purely class name updates on existing buttons.
+## Design Notes
+
+- **Tone as its own section**: Agreed with your reasoning. A character's tone varies by situation ("With strangers: formal and guarded", "With family: warm and playful"), so an expandable row-based section is more appropriate than a single field buried in the avatar container.
+- **Styling**: All new sections will use the existing `HardcodedSection` component with the same slate-blue header, and the unified `+ Add Row` button style (`border-2 border-dashed border-zinc-500`, `text-sm`, `py-2.5`, `rounded-xl`).
+- **Lock icons**: Background's six hardcoded rows will show the Lock icon matching Physical Appearance / Currently Wearing / Preferred Clothing.
+- **Backward compatibility**: All new fields are optional, so existing characters will render without errors (empty sections show "No data" in collapsed view).
