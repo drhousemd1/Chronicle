@@ -66,8 +66,9 @@ interface ChatInterfaceTabProps {
   hasMoreMessages?: boolean;
 }
 
-function parseMessageTokens(text: string): { type: string; content: string }[] {
-  const cleanRaw = text.replace(/\[SCENE:\s*.*?\]/g, '').trim();
+function parseMessageTokens(text: string, preserveWhitespace = false): { type: string; content: string }[] {
+  let cleanRaw = text.replace(/\[SCENE:\s*.*?\]/g, '');
+  if (!preserveWhitespace) cleanRaw = cleanRaw.trim();
   const regex = /(\*.*?\*)|(".*?")|(\(.*?\))/g;
 
   const parts: { type: string; content: string }[] = [];
@@ -2978,7 +2979,7 @@ const updatedChar: SideCharacter = {
                                 const el = e.currentTarget as HTMLDivElement;
                                 const rawText = el.innerText.replace(/\u00a0/g, ' ');
                                 const caretPos = getCaretCharOffset(el);
-                                el.innerHTML = tokensToStyledHtml(parseMessageTokens(rawText), dynamicText);
+                                el.innerHTML = tokensToStyledHtml(parseMessageTokens(rawText, true), dynamicText);
                                 setCaretCharOffset(el, caretPos);
                                 setInlineEditText(rawText);
                               }}
