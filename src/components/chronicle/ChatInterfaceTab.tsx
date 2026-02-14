@@ -135,8 +135,10 @@ function getCaretCharOffset(el: HTMLElement): number {
 function setCaretCharOffset(el: HTMLElement, offset: number) {
   const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
   let charCount = 0;
+  let lastNode: Text | null = null;
   while (walker.nextNode()) {
     const node = walker.currentNode as Text;
+    lastNode = node;
     if (charCount + node.length >= offset) {
       const range = document.createRange();
       range.setStart(node, offset - charCount);
@@ -147,6 +149,15 @@ function setCaretCharOffset(el: HTMLElement, offset: number) {
       return;
     }
     charCount += node.length;
+  }
+  // Fallback: offset exceeded total text -- place cursor at end
+  if (lastNode) {
+    const range = document.createRange();
+    range.setStart(lastNode, lastNode.length);
+    range.collapse(true);
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(range);
   }
 }
 
@@ -2949,7 +2960,7 @@ const updatedChar: SideCharacter = {
                             <div
                               contentEditable
                               suppressContentEditableWarning
-                              className="text-[15px] leading-relaxed font-normal whitespace-pre-wrap outline-none focus:ring-1 focus:ring-blue-500/30 rounded-md -mx-1 px-1"
+                              className="text-[15px] leading-relaxed font-normal whitespace-pre-wrap outline-none rounded-md -mx-1 px-1"
                               ref={(el) => {
                                 if (el && !el.dataset.initialized) {
                                   el.innerHTML = tokensToStyledHtml(parseMessageTokens(inlineEditText), dynamicText);
