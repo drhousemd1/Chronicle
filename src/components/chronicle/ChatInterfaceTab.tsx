@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { uid, now, uuid } from '../../services/storage';
 import { generateRoleplayResponseStream } from '../../services/llm';
-import { RefreshCw, MoreVertical, Copy, Pencil, Trash2, ChevronUp, ChevronDown, Sunrise, Sun, Sunset, Moon, Loader2, StepForward, Settings, Image as ImageIcon, Brain } from 'lucide-react';
+import { RefreshCw, MoreVertical, Copy, Pencil, Trash2, ChevronUp, ChevronDown, Sunrise, Sun, Sunset, Moon, Loader2, StepForward, Settings, Image as ImageIcon, Brain, Check, X } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -245,6 +245,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const [activeSceneId, setActiveSceneId] = useState<string | null>(null);
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [editText, setEditText] = useState('');
+  const [inlineEditingId, setInlineEditingId] = useState<string | null>(null);
+  const [inlineEditText, setInlineEditText] = useState('');
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [regeneratingMessageId, setRegeneratingMessageId] = useState<string | null>(null);
   const [currentDay, setCurrentDay] = useState(1);
@@ -1766,6 +1768,30 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     setEditText('');
   };
 
+  const handleInlineEditSave = () => {
+    if (!inlineEditingId || !inlineEditText.trim()) return;
+    const updatedConvs = appData.conversations.map(c =>
+      c.id === conversationId
+        ? {
+            ...c,
+            messages: c.messages.map(m =>
+              m.id === inlineEditingId ? { ...m, text: inlineEditText } : m
+            ),
+            updatedAt: now()
+          }
+        : c
+    );
+    onUpdate(updatedConvs);
+    onSaveScenario(updatedConvs);
+    setInlineEditingId(null);
+    setInlineEditText('');
+  };
+
+  const handleInlineEditCancel = () => {
+    setInlineEditingId(null);
+    setInlineEditText('');
+  };
+
   const handleRegenerateMessage = async (messageId: string) => {
     const msgIndex = conversation?.messages.findIndex(m => m.id === messageId);
     if (msgIndex === undefined || msgIndex < 1) return;
@@ -2692,56 +2718,82 @@ const updatedChar: SideCharacter = {
                 } ${!isAi ? 'border-2 border-blue-400' : 'border border-white/5 hover:border-white/20'}`}>
                   
                   {/* Action buttons - top right corner */}
-                  <div className="absolute top-4 right-4 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {/* Continue button - show on the LAST message in the conversation (user or AI) */}
-                      {msg.id === conversation?.messages.slice(-1)[0]?.id && (
+                  <div className={`absolute top-4 right-4 flex items-center gap-1 transition-opacity ${
+                    inlineEditingId === msg.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                  }`}>
+                    {inlineEditingId === msg.id ? (
+                      <>
+                        {/* Save (checkmark) */}
                         <button
-                          onClick={handleContinueConversation}
-                          disabled={isStreaming || isRegenerating}
-                          className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors disabled:opacity-30"
-                          title="Continue"
+                          onClick={handleInlineEditSave}
+                          className="p-2 rounded-lg hover:bg-white/10 text-green-400 hover:text-green-300 transition-colors"
+                          title="Save changes"
                         >
-                          <StepForward className="w-4 h-4" />
+                          <Check className="w-4 h-4" />
                         </button>
-                      )}
-                    
-                    {/* Regenerate button - AI messages only */}
-                    {isAi && (
-                      <button
-                        onClick={() => handleRegenerateMessage(msg.id)}
-                        disabled={isStreaming || isRegenerating}
-                        className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors disabled:opacity-30"
-                        title="Regenerate response"
-                      >
-                        <RefreshCw className={`w-4 h-4 ${regeneratingMessageId === msg.id ? 'animate-spin' : ''}`} />
-                      </button>
+                        {/* Cancel (X) */}
+                        <button
+                          onClick={handleInlineEditCancel}
+                          className="p-2 rounded-lg hover:bg-white/10 text-red-400 hover:text-red-300 transition-colors"
+                          title="Cancel editing"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        {/* Continue button - show on the LAST message in the conversation (user or AI) */}
+                        {msg.id === conversation?.messages.slice(-1)[0]?.id && (
+                          <button
+                            onClick={handleContinueConversation}
+                            disabled={isStreaming || isRegenerating}
+                            className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors disabled:opacity-30"
+                            title="Continue"
+                          >
+                            <StepForward className="w-4 h-4" />
+                          </button>
+                        )}
+                      
+                        {/* Regenerate button - AI messages only */}
+                        {isAi && (
+                          <button
+                            onClick={() => handleRegenerateMessage(msg.id)}
+                            disabled={isStreaming || isRegenerating}
+                            className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors disabled:opacity-30"
+                            title="Regenerate response"
+                          >
+                            <RefreshCw className={`w-4 h-4 ${regeneratingMessageId === msg.id ? 'animate-spin' : ''}`} />
+                          </button>
+                        )}
+                      
+                        {/* Three-dot menu - all messages */}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+                              <MoreVertical className="w-4 h-4" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-40">
+                            <DropdownMenuItem onClick={() => handleCopyMessage(msg.text)}>
+                              <Copy className="w-4 h-4 mr-2" />
+                              Copy
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => { setInlineEditingId(msg.id); setInlineEditText(msg.text); }}>
+                              <Pencil className="w-4 h-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleDeleteMessage(msg.id)}
+                              className="text-red-500 focus:text-red-500"
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </>
                     )}
-                    
-                    {/* Three-dot menu - all messages */}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
-                          <MoreVertical className="w-4 h-4" />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-40">
-                        <DropdownMenuItem onClick={() => handleCopyMessage(msg.text)}>
-                          <Copy className="w-4 h-4 mr-2" />
-                          Copy
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => { setEditingMessage(msg); setEditText(msg.text); }}>
-                          <Pencil className="w-4 h-4 mr-2" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => handleDeleteMessage(msg.id)}
-                          className="text-red-500 focus:text-red-500"
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                  </div>
                   </div>
                   
                   {/* Render image if this is an image message */}
@@ -2845,7 +2897,28 @@ const updatedChar: SideCharacter = {
                           </div>
                         )}
                         <div className={showAvatar ? "pt-1 antialiased" : "antialiased"}>
-                          <FormattedMessage text={segment.content} dynamicText={dynamicText} />
+                          {inlineEditingId === msg.id ? (
+                            <textarea
+                              value={inlineEditText}
+                              onChange={(e) => setInlineEditText(e.target.value)}
+                              className="w-full bg-white/5 border border-white/20 rounded-lg p-3 text-white text-[15px] leading-relaxed font-normal resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/50 min-h-[100px]"
+                              style={{ height: 'auto', minHeight: '100px' }}
+                              ref={(el) => {
+                                if (el) {
+                                  el.style.height = 'auto';
+                                  el.style.height = el.scrollHeight + 'px';
+                                }
+                              }}
+                              onInput={(e) => {
+                                const target = e.target as HTMLTextAreaElement;
+                                target.style.height = 'auto';
+                                target.style.height = target.scrollHeight + 'px';
+                              }}
+                              autoFocus
+                            />
+                          ) : (
+                            <FormattedMessage text={segment.content} dynamicText={dynamicText} />
+                          )}
                         </div>
                         {showAvatar && <div className="clear-both" />}
                       </div>
@@ -3033,30 +3106,6 @@ const updatedChar: SideCharacter = {
           </div>
         </div>
       </main>
-
-      {/* Edit Message Dialog */}
-      <Dialog open={!!editingMessage} onOpenChange={(open) => !open && setEditingMessage(null)}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Edit Message</DialogTitle>
-          </DialogHeader>
-          <TextArea
-            value={editText}
-            onChange={setEditText}
-            rows={6}
-            className="w-full"
-            placeholder="Edit your message..."
-          />
-          <DialogFooter>
-            <Button variant="secondary" onClick={() => setEditingMessage(null)}>
-              Cancel
-            </Button>
-            <Button onClick={handleEditMessage}>
-              Save Changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Character Edit Modal */}
 <CharacterEditModal
