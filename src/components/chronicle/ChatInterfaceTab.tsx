@@ -2794,7 +2794,6 @@ const updatedChar: SideCharacter = {
                       </>
                     )}
                   </div>
-                  </div>
                   
                   {/* Render image if this is an image message */}
                   {msg.imageUrl && (
@@ -2897,7 +2896,7 @@ const updatedChar: SideCharacter = {
                           </div>
                         )}
                         <div className={showAvatar ? "pt-1 antialiased" : "antialiased"}>
-                          {inlineEditingId === msg.id ? (
+                          {inlineEditingId === msg.id && segIndex === 0 ? (
                             <textarea
                               value={inlineEditText}
                               onChange={(e) => setInlineEditText(e.target.value)}
@@ -2910,13 +2909,13 @@ const updatedChar: SideCharacter = {
                                 }
                               }}
                               onInput={(e) => {
-                                const target = e.target as HTMLTextAreaElement;
+                                const target = e.currentTarget;
                                 target.style.height = 'auto';
                                 target.style.height = target.scrollHeight + 'px';
                               }}
                               autoFocus
                             />
-                          ) : (
+                          ) : inlineEditingId === msg.id ? null : (
                             <FormattedMessage text={segment.content} dynamicText={dynamicText} />
                           )}
                         </div>
