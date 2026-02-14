@@ -140,7 +140,7 @@ const FormattedMessage: React.FC<{ text: string; dynamicText?: boolean }> = ({ t
           return (
             <span 
               key={i} 
-              className="text-indigo-200/90 text-sm italic font-light tracking-tight animate-in fade-in zoom-in-95 duration-500"
+              className="text-indigo-200/90 italic tracking-tight animate-in fade-in zoom-in-95 duration-500"
               style={{
                 textShadow: '0 0 8px rgba(129, 140, 248, 0.6), 0 0 16px rgba(129, 140, 248, 0.4), 0 0 24px rgba(129, 140, 248, 0.2)'
               }}
