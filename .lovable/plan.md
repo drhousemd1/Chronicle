@@ -1,28 +1,24 @@
 
-
-# Fix: Restore Text Wrapping Under Avatar
+# Fix: Remove `overflow-hidden` From Edit Mode
 
 ## Problem
 
-The `overflow-hidden` class added to the text container div (line 2947) in the last fix creates a new block formatting context. While this fixed the editor focus ring overlapping the avatar, it also prevents text from naturally wrapping underneath the floated avatar in **all** states (not just edit mode). Text now stays rigidly to the right of the avatar.
+The `overflow-hidden` class on the `contentEditable` div creates a new block formatting context, which prevents text from flowing underneath the floated avatar. This causes all text to shift right and stay in a column beside the avatar instead of wrapping naturally under it.
 
 ## Solution
 
-Remove `overflow-hidden` from the outer text container div (restoring the original wrapping behavior). Instead, apply `overflow-hidden` only to the `contentEditable` div itself when in edit mode, so the editor box stays beside the avatar without affecting normal message display.
+Simply remove `overflow-hidden` from the `contentEditable` div's className. The edit mode should use exactly the same layout as the normal view -- no extra formatting rules, no layout shifts. The text container stays as-is and becomes editable in place.
 
-**File: `src/components/chronicle/ChatInterfaceTab.tsx`**
+**File: `src/components/chronicle/ChatInterfaceTab.tsx`, line 2952**
 
-**Change 1 -- Line 2947: Remove `overflow-hidden` from the wrapper div:**
+Remove `overflow-hidden` from the className:
+
 ```
-// Revert to:
-<div className={showAvatar ? "pt-1 antialiased" : "antialiased"}>
+// Before:
+className="text-[15px] leading-relaxed font-normal whitespace-pre-wrap outline-none focus:ring-1 focus:ring-blue-500/30 rounded-md -mx-1 px-1 overflow-hidden"
+
+// After:
+className="text-[15px] leading-relaxed font-normal whitespace-pre-wrap outline-none focus:ring-1 focus:ring-blue-500/30 rounded-md -mx-1 px-1"
 ```
 
-**Change 2 -- The contentEditable div (around line 2949): Add `overflow-hidden` to its own className:**
-Add `overflow-hidden` to the contentEditable div's className so only the edit box itself creates a block formatting context and avoids overlapping the avatar. Normal (non-editing) text continues to wrap freely under the avatar.
-
-## Summary
-- 1 file modified: `ChatInterfaceTab.tsx`
-- 2 small className changes
-- Normal messages wrap under the avatar as before
-- Edit mode editor box stays contained beside the avatar
+One line, one class removed. Text will wrap under the avatar in edit mode just like it does in normal view.
