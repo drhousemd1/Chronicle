@@ -1,61 +1,56 @@
 
 
-# Fix: Cursor Jump on Empty Text + Remove Focus Ring
+# Fix: Space Bar Not Working After Clearing Text
 
-Two changes in one file: `src/components/chronicle/ChatInterfaceTab.tsx`.
+## Root Cause
 
-## Change 1 -- Remove Focus Ring (line 2952)
-
-Remove `focus:ring-1 focus:ring-blue-500/30` from the `contentEditable` div's className. The checkmark/X buttons already indicate edit mode, so the ring is redundant and visually overlaps the avatar.
-
-```
-// Before:
-className="text-[15px] leading-relaxed font-normal whitespace-pre-wrap outline-none focus:ring-1 focus:ring-blue-500/30 rounded-md -mx-1 px-1"
-
-// After:
-className="text-[15px] leading-relaxed font-normal whitespace-pre-wrap outline-none rounded-md -mx-1 px-1"
-```
-
-## Change 2 -- Fix Cursor Jumping (lines 135-151)
-
-When you delete all the text and start retyping, the `setCaretCharOffset` function walks through text nodes to restore the cursor position. If the saved offset exceeds the total character count in the new HTML (which happens after clearing and retyping short text), the function exits without placing the cursor, and the browser defaults to position 0 -- the beginning.
-
-Fix: add a fallback at the end of `setCaretCharOffset` that places the cursor at the end of the last text node when the offset can't be reached.
+In `parseMessageTokens` (line 70), the very first thing the function does is `.trim()` the input text:
 
 ```typescript
-function setCaretCharOffset(el: HTMLElement, offset: number) {
-  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-  let charCount = 0;
-  let lastNode: Text | null = null;
-  while (walker.nextNode()) {
-    const node = walker.currentNode as Text;
-    lastNode = node;
-    if (charCount + node.length >= offset) {
-      const range = document.createRange();
-      range.setStart(node, offset - charCount);
-      range.collapse(true);
-      const sel = window.getSelection();
-      sel?.removeAllRanges();
-      sel?.addRange(range);
-      return;
-    }
-    charCount += node.length;
-  }
-  // Fallback: offset exceeded total text -- place cursor at end
-  if (lastNode) {
-    const range = document.createRange();
-    range.setStart(lastNode, lastNode.length);
-    range.collapse(true);
-    const sel = window.getSelection();
-    sel?.removeAllRanges();
-    sel?.addRange(range);
-  }
-}
+const cleanRaw = text.replace(/\[SCENE:\s*.*?\]/g, '').trim();
+```
+
+During editing, every keystroke triggers `onInput`, which:
+1. Reads `innerText` ("Ashley: " with trailing space)
+2. Saves cursor position (8)
+3. Runs `parseMessageTokens` which **trims the trailing space** -> "Ashley:" (7 chars)
+4. Rebuilds HTML from trimmed text (no space)
+5. Restores cursor to end of 7-char text
+
+The space you typed is stripped on every keystroke, so it appears the spacebar does nothing.
+
+## Fix
+
+Add an optional `preserveWhitespace` parameter to `parseMessageTokens`. When called from the `onInput` handler during editing, pass `true` to skip the `.trim()`. Normal message display continues to trim as before.
+
+**File: `src/components/chronicle/ChatInterfaceTab.tsx`**
+
+### Change 1 -- Update `parseMessageTokens` signature (line 69)
+
+```typescript
+// Before:
+function parseMessageTokens(text: string): { type: string; content: string }[] {
+  const cleanRaw = text.replace(/\[SCENE:\s*.*?\]/g, '').trim();
+
+// After:
+function parseMessageTokens(text: string, preserveWhitespace = false): { type: string; content: string }[] {
+  let cleanRaw = text.replace(/\[SCENE:\s*.*?\]/g, '');
+  if (!preserveWhitespace) cleanRaw = cleanRaw.trim();
+```
+
+### Change 2 -- Pass `true` from the `onInput` handler (line 2981)
+
+```typescript
+// Before:
+el.innerHTML = tokensToStyledHtml(parseMessageTokens(rawText), dynamicText);
+
+// After:
+el.innerHTML = tokensToStyledHtml(parseMessageTokens(rawText, true), dynamicText);
 ```
 
 ## Summary
 
-- 1 file modified, 2 changes
-- Focus ring removed -- cleaner look, no overlap with avatar
-- Cursor no longer jumps to start when clearing text and retyping
+- 1 file, 2 small edits
+- Trailing spaces are preserved during editing so the spacebar works
+- Normal message display still trims whitespace as before
 
