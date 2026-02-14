@@ -2949,7 +2949,7 @@ const updatedChar: SideCharacter = {
                             <div
                               contentEditable
                               suppressContentEditableWarning
-                              className="text-[15px] leading-relaxed font-normal whitespace-pre-wrap outline-none focus:ring-1 focus:ring-blue-500/30 rounded-md -mx-1 px-1 overflow-hidden"
+                              className="text-[15px] leading-relaxed font-normal whitespace-pre-wrap outline-none focus:ring-1 focus:ring-blue-500/30 rounded-md -mx-1 px-1"
                               ref={(el) => {
                                 if (el && !el.dataset.initialized) {
                                   el.innerHTML = tokensToStyledHtml(parseMessageTokens(inlineEditText), dynamicText);
