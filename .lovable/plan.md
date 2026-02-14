@@ -1,56 +1,142 @@
 
-# Fix AI Fill/Generate for New Character Sections
 
-## Problems Found
+# Fix: AI Behavior Issues, Inline Edit UI, and Streaming Truncation
 
-### 1. Personality traits and _extras are listed as opaque IDs without labels
-When the prompt tells the AI what to fill, it says things like `Personality Traits: outward.abc123, inward.def456`. The AI has no idea what "abc123" refers to -- it doesn't know the trait is called "Nurturing" or "Caring". Same for Tone/Relationships/etc _extras: it just sees `_extras.xyz789` with no context. The AI either skips these or generates nonsense.
+## Issues Addressed
 
-**Fix**: Include the human-readable label alongside each ID in the fields-to-fill list, e.g. `outward.abc123 (Nurturing), inward.def456 (Horny)`.
+### 1. Object Permanence -- AI seeing hidden items via character card knowledge
+The system prompt already has LINE OF SIGHT rules (llm.ts lines 337-356), but the AI is using character card Secrets data (e.g., "secretly wears her thongs") to infer details that are physically hidden. The prompt needs a new rule distinguishing between "character sheet knowledge" and "perceptual observation."
 
-### 2. Tone _extras with empty labels are silently skipped
-The detection check requires `extra.label && !extra.value` -- if the user added a Tone row but left the label blank (just the placeholder), it's invisible to the AI. This is actually correct behavior for truly empty rows (how can the AI know what to fill?), but the sections themselves should still be mentioned in the prompt as empty sections the AI could populate with both label AND value.
+### 2. AI generating dialogue for User-controlled characters
+The CONTROL rules exist (llm.ts lines 527-529) but are being violated, especially in longer responses. The enforcement needs to be stronger and repeated in the regeneration directive.
 
-**Fix**: When a section like Tone has _extras where BOTH label and value are empty, include the section in the prompt and instruct the AI to generate both label and value for those rows. Update the application logic to write back both label and value.
+### 3. Inline Edit UI (replacing the modal)
+Replace the popup Dialog for editing messages with in-place contentEditable editing inside the chat bubble itself. When the user clicks Edit, the bubble becomes editable. The hover action buttons transform: Continue becomes a Checkmark (save), Refresh becomes an X (cancel), and the three-dot menu hides. Exiting edit mode restores original buttons.
 
-### 3. World context is nearly empty (uses deprecated fields)
-The `worldContext` variable references `settingOverview` (deprecated/removed from the UI) and only `scenarioName`. It misses all the rich scenario data: `storyPremise`, `briefDescription`, `toneThemes`, `dialogFormatting`, `historyTimeline`, `factions`, and `plotHooks`.
+### 4. AI responding to internal thoughts too specifically
+The INTERNAL THOUGHT BOUNDARY rules exist (llm.ts lines 284-293) but the AI is echoing exact words from parenthetical thoughts (e.g., user thinks "freak" and AI says "you aren't a freak"). Need to add a rule forbidding echo/mirror of specific words from thoughts.
 
-**Fix**: Replace the world context builder in both `aiFillCharacter` and `aiGenerateCharacter` to include `briefDescription`, `storyPremise`, `toneThemes`, `historyTimeline`, `factions`, `plotHooks`, and `dialogFormatting`. This also addresses the user's request to pull Scenario Builder data into the AI context.
+### 5. Refresh button generating truncated responses
+The streaming parser in llm.ts has a bug: when an incomplete JSON chunk arrives, it puts the raw line (including the "data: " prefix) back into the buffer (line 717), then on the next iteration it tries to parse it again but the buffer now has the "data: " prefix duplicated or the line gets stuck. Also, the edge function doesn't set `max_tokens`, so regenerations may hit a lower default.
+
+---
 
 ## Technical Details
 
-### File: `src/services/character-ai.ts`
+### File 1: `src/services/llm.ts`
 
-**getEmptyHardcodedFields (lines 226-254)** -- Enhance personality and _extras detection:
-- For personality traits: store label alongside ID, e.g. `outward.id:Nurturing` instead of just `outward.id`
-- For _extras: store label alongside ID, e.g. `_extras.id:Sarcastic` instead of just `_extras.id`
-- For _extras with BOTH label and value empty: include as `_extras.id:__empty__` so the prompt can instruct the AI to generate both
-
-**buildAiFillPrompt (lines 305-322)** -- Parse the enriched field descriptors to display human-readable labels in the prompt:
-- Instead of `Personality Traits: outward.abc123`, show `Personality Traits: "Nurturing" (outward.abc123), "Caring" (outward.def456)`
-- For `__empty__` entries, instruct: "Generate both a label and value for empty Tone/Relationships/etc rows"
-
-**aiFillCharacter worldContext (lines 568-571)** -- Replace deprecated field references:
+**Strengthen object permanence rules (line 337-356):**
+Add a new subsection to the LINE OF SIGHT block:
 ```
-Setting: ${appData.world.core.briefDescription || 'Not specified'}
-Scenario: ${appData.world.core.storyPremise || 'Not specified'}
-Tone & Themes: ${appData.world.core.toneThemes || 'Not specified'}
-Factions: ${appData.world.core.factions || 'Not specified'}
-History: ${appData.world.core.historyTimeline || 'Not specified'}
-Plot Hooks: ${appData.world.core.plotHooks || 'Not specified'}
+* CHARACTER SHEET vs PERCEPTION: Information from the character's profile (e.g., Secrets, Kinks)
+  represents what the character KNOWS or SUSPECTS over time -- NOT what they can see right now.
+  - If the character KNOWS the user wears thongs, they may WONDER or HOPE, but cannot SEE specifics
+    (color, style) that are covered by clothing.
+  - WRONG: "She noticed the purple lace beneath his shorts" (covered = invisible)
+  - WRONG: "She couldn't see it, but she knew the purple lace was there" (naming hidden specifics)
+  - RIGHT: "She wondered if he was wearing one of hers underneath" (knowledge without visual detail)
+  - RIGHT: "The thought of what might be under those shorts made her pulse quicken" (desire without certainty)
+  - KEY RULE: If the user explicitly describes hiding/concealing something, the AI character
+    MUST NOT name the hidden item's specific attributes (color, material, style) in their response.
 ```
 
-**aiGenerateCharacter worldContext (lines 726-730)** -- Same replacement as above.
+**Strengthen internal thought boundary (line 284-293):**
+Add an anti-echo rule:
+```
+* ANTI-ECHO RULE: Do NOT repeat, quote, or mirror the exact distinctive words from the user's
+  internal thoughts. If the user thinks (She's going to call me a freak), the AI character
+  MUST NOT use the word "freak" in their next response. Instead, infer the emotional state
+  and respond to that: "He looks terrified" or "She can see the fear in his eyes."
+  The AI should react to the EMOTION behind the thought, not the specific vocabulary.
+```
 
-**Result application (lines 650-690 for fill, 810-847 for generate)** -- Handle the new `__empty__` extras:
-- When the AI returns an _extras entry with both label and value, write both back to the character
-- Currently only writes value when label already exists; needs to also support writing label for blank-label rows
+**Strengthen control enforcement (line 527-529):**
+Add a post-instruction reinforcement and add it to the regeneration directive:
+```
+* VIOLATION CHECK: Before finalizing your response, re-read it and DELETE any paragraphs
+  where a User-controlled character speaks (quotes), acts (asterisks), or thinks (parentheses).
+  Only narration about them is allowed (e.g., "He sat there quietly.").
+```
 
-**buildAiGeneratePrompt (lines 494-501)** -- Same enriched field descriptors as fill prompt.
+**Fix streaming parser bug (lines 714-719):**
+The current code puts incomplete JSON back into the buffer with `textBuffer = line + "\n" + textBuffer` but this causes the "data: " prefix to be re-parsed. Fix: only put back the jsonStr portion, not the full line.
 
-### Summary
-- 1 file modified: `src/services/character-ai.ts`
-- No edge function changes needed
-- No database changes needed
-- Core fix: give the AI the actual labels/context it needs to generate meaningful content for personality traits and _extras sections, plus feed it the full scenario context
+```typescript
+// Current (buggy):
+} catch {
+  textBuffer = line + "\n" + textBuffer;
+  break;
+}
+
+// Fixed:
+} catch {
+  // Don't put back - the JSON was truly malformed or incomplete.
+  // Skip it and continue processing remaining lines.
+  continue;
+}
+```
+
+**Add max_tokens to prevent truncation:** In `generateRoleplayResponseStream`, add `max_tokens: 4096` to the request body sent to the edge function. This prevents the API from using a lower default that truncates long responses.
+
+### File 2: `supabase/functions/chat/index.ts`
+
+Add `max_tokens` passthrough from the request body:
+- Accept optional `max_tokens` in the ChatRequest type
+- Pass it through to both `callLovableAI` and `callXAI` (default to 4096 if not provided)
+
+### File 3: `src/components/chronicle/ChatInterfaceTab.tsx`
+
+**Replace edit modal with inline editing:**
+
+1. Add new state:
+   - `inlineEditingId: string | null` -- which message is being edited inline
+   - `inlineEditText: string` -- the current edit text
+
+2. Modify message bubble rendering (around line 2688):
+   - When `inlineEditingId === msg.id`, replace the `FormattedMessage` component with a `<textarea>` styled to match the bubble's text appearance (same padding, font, colors)
+   - The textarea should auto-resize to fit content
+
+3. Modify action buttons (around line 2695):
+   - When `inlineEditingId === msg.id`, force buttons to stay visible (`opacity-100` instead of `opacity-0 group-hover:opacity-100`)
+   - Replace Continue button with a Check icon (save) that calls `handleInlineEditSave`
+   - Replace Refresh button with an X icon (cancel) that calls `handleInlineEditCancel`
+   - Hide the three-dot menu while editing
+
+4. When NOT editing, keep existing hover behavior with Continue, Refresh, and three-dot menu
+
+5. Update the "Edit" menu item (line 2732) to set `inlineEditingId` and `inlineEditText` instead of opening the dialog
+
+6. Remove the Edit Message Dialog block (lines 3037-3059)
+
+7. Add handlers:
+   ```typescript
+   const handleInlineEditSave = () => {
+     if (!inlineEditingId || !inlineEditText.trim()) return;
+     // Same logic as handleEditMessage but using inlineEditingId/inlineEditText
+     const updatedConvs = appData.conversations.map(c =>
+       c.id === conversationId
+         ? { ...c, messages: c.messages.map(m => m.id === inlineEditingId ? { ...m, text: inlineEditText } : m), updatedAt: now() }
+         : c
+     );
+     onUpdate(updatedConvs);
+     onSaveScenario(updatedConvs);
+     setInlineEditingId(null);
+     setInlineEditText('');
+   };
+
+   const handleInlineEditCancel = () => {
+     setInlineEditingId(null);
+     setInlineEditText('');
+   };
+   ```
+
+---
+
+## Summary
+- 3 files modified: `llm.ts`, `chat/index.ts` (edge function), `ChatInterfaceTab.tsx`
+- 1 edge function redeployed
+- No database changes
+- Prompt improvements for object permanence, thought boundary, and control enforcement
+- Streaming fix to prevent truncated responses
+- Inline edit UX replaces the modal
+
