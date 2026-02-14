@@ -66,54 +66,104 @@ interface ChatInterfaceTabProps {
   hasMoreMessages?: boolean;
 }
 
+function parseMessageTokens(text: string): { type: string; content: string }[] {
+  const cleanRaw = text.replace(/\[SCENE:\s*.*?\]/g, '').trim();
+  const regex = /(\*.*?\*)|(".*?")|(\(.*?\))/g;
+
+  const parts: { type: string; content: string }[] = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = regex.exec(cleanRaw)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push({ type: 'plain', content: cleanRaw.slice(lastIndex, match.index) });
+    }
+
+    const found = match[0];
+    if (found.startsWith('*')) {
+      parts.push({ type: 'action', content: found.slice(1, -1) });
+    } else if (found.startsWith('"')) {
+      parts.push({ type: 'speech', content: found.slice(1, -1) });
+    } else if (found.startsWith('(')) {
+      parts.push({ type: 'thought', content: found.slice(1, -1) });
+    }
+
+    lastIndex = regex.lastIndex;
+  }
+
+  if (lastIndex < cleanRaw.length) {
+    parts.push({ type: 'plain', content: cleanRaw.slice(lastIndex) });
+  }
+
+  return parts;
+}
+
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function tokensToStyledHtml(tokens: { type: string; content: string }[], dynamicText: boolean): string {
+  return tokens.map(token => {
+    if (!dynamicText) {
+      if (token.type === 'speech') {
+        return `<span style="color:white;font-weight:500">\u201C${escapeHtml(token.content)}\u201D</span>`;
+      }
+      return `<span style="color:white;font-weight:500">${escapeHtml(token.content)}</span>`;
+    }
+    if (token.type === 'speech') {
+      return `<span style="color:white;font-weight:500">\u201C${escapeHtml(token.content)}\u201D</span>`;
+    }
+    if (token.type === 'action') {
+      return `<span style="color:rgb(148,163,184);font-style:italic">*${escapeHtml(token.content)}*</span>`;
+    }
+    if (token.type === 'thought') {
+      return `<span style="color:rgba(199,210,254,0.9);font-style:italic;letter-spacing:-0.025em;text-shadow:0 0 8px rgba(129,140,248,0.6),0 0 16px rgba(129,140,248,0.4),0 0 24px rgba(129,140,248,0.2)">(${escapeHtml(token.content)})</span>`;
+    }
+    return `<span style="color:rgb(203,213,225)">${escapeHtml(token.content)}</span>`;
+  }).join('');
+}
+
+function getCaretCharOffset(el: HTMLElement): number {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return 0;
+  const range = sel.getRangeAt(0).cloneRange();
+  range.selectNodeContents(el);
+  range.setEnd(sel.getRangeAt(0).endContainer, sel.getRangeAt(0).endOffset);
+  return range.toString().length;
+}
+
+function setCaretCharOffset(el: HTMLElement, offset: number) {
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  let charCount = 0;
+  while (walker.nextNode()) {
+    const node = walker.currentNode as Text;
+    if (charCount + node.length >= offset) {
+      const range = document.createRange();
+      range.setStart(node, offset - charCount);
+      range.collapse(true);
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+      return;
+    }
+    charCount += node.length;
+  }
+}
+
 const FormattedMessage: React.FC<{ text: string; dynamicText?: boolean }> = ({ text, dynamicText = true }) => {
-  const tokens = useMemo(() => {
-    const cleanRaw = text.replace(/\[SCENE:\s*.*?\]/g, '').trim();
-    const regex = /(\*.*?\*)|(".*?")|(\(.*?\))/g;
-
-    const parts: { type: string; content: string }[] = [];
-    let lastIndex = 0;
-    let match;
-
-    while ((match = regex.exec(cleanRaw)) !== null) {
-      if (match.index > lastIndex) {
-        parts.push({ type: 'plain', content: cleanRaw.slice(lastIndex, match.index) });
-      }
-
-      const found = match[0];
-      if (found.startsWith('*')) {
-        parts.push({ type: 'action', content: found.slice(1, -1) });
-      } else if (found.startsWith('"')) {
-        parts.push({ type: 'speech', content: found.slice(1, -1) });
-      } else if (found.startsWith('(')) {
-        parts.push({ type: 'thought', content: found.slice(1, -1) });
-      }
-
-      lastIndex = regex.lastIndex;
-    }
-
-    if (lastIndex < cleanRaw.length) {
-      parts.push({ type: 'plain', content: cleanRaw.slice(lastIndex) });
-    }
-
-    return parts;
-  }, [text]);
+  const tokens = useMemo(() => parseMessageTokens(text), [text]);
 
   return (
-    // whitespace-pre-wrap preserves newlines and paragraph spacing
     <div className="whitespace-pre-wrap">
       {tokens.map((token, i) => {
-        // Book-style: all white, consistent font
         if (!dynamicText) {
-          // For speech, add quotes back (standard in books)
           if (token.type === 'speech') {
             return (
               <span key={i} className="text-white font-medium">
-                "{token.content}"
+                &ldquo;{token.content}&rdquo;
               </span>
             );
           }
-          // For actions and thoughts, no symbols (not standard in books)
           return (
             <span key={i} className="text-white font-medium">
               {token.content}
@@ -121,11 +171,10 @@ const FormattedMessage: React.FC<{ text: string; dynamicText?: boolean }> = ({ t
           );
         }
         
-        // Dynamic text styling (default)
         if (token.type === 'speech') {
           return (
             <span key={i} className="text-white font-medium">
-              "{token.content}"
+              &ldquo;{token.content}&rdquo;
             </span>
           );
         }
@@ -2900,10 +2949,10 @@ const updatedChar: SideCharacter = {
                             <div
                               contentEditable
                               suppressContentEditableWarning
-                              className="text-slate-300 text-[15px] leading-relaxed font-normal whitespace-pre-wrap outline-none focus:ring-1 focus:ring-blue-500/30 rounded-md -mx-1 px-1"
+                              className="text-[15px] leading-relaxed font-normal whitespace-pre-wrap outline-none focus:ring-1 focus:ring-blue-500/30 rounded-md -mx-1 px-1"
                               ref={(el) => {
                                 if (el && !el.dataset.initialized) {
-                                  el.innerText = inlineEditText;
+                                  el.innerHTML = tokensToStyledHtml(parseMessageTokens(inlineEditText), dynamicText);
                                   el.dataset.initialized = 'true';
                                   const range = document.createRange();
                                   range.selectNodeContents(el);
@@ -2914,7 +2963,14 @@ const updatedChar: SideCharacter = {
                                 }
                               }}
                               onBlur={(e) => setInlineEditText(e.currentTarget.innerText)}
-                              onInput={(e) => setInlineEditText((e.currentTarget as HTMLDivElement).innerText)}
+                              onInput={(e) => {
+                                const el = e.currentTarget as HTMLDivElement;
+                                const rawText = el.innerText;
+                                const caretPos = getCaretCharOffset(el);
+                                el.innerHTML = tokensToStyledHtml(parseMessageTokens(rawText), dynamicText);
+                                setCaretCharOffset(el, caretPos);
+                                setInlineEditText(rawText);
+                              }}
                             />
                           ) : inlineEditingId === msg.id ? null : (
                             <FormattedMessage text={segment.content} dynamicText={dynamicText} />
