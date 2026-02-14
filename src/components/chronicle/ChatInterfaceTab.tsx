@@ -2944,12 +2944,12 @@ const updatedChar: SideCharacter = {
                             </span>
                           </div>
                         )}
-                        <div className={showAvatar ? "pt-1 antialiased overflow-hidden" : "antialiased"}>
+                        <div className={showAvatar ? "pt-1 antialiased" : "antialiased"}>
                           {inlineEditingId === msg.id && segIndex === 0 ? (
                             <div
                               contentEditable
                               suppressContentEditableWarning
-                              className="text-[15px] leading-relaxed font-normal whitespace-pre-wrap outline-none focus:ring-1 focus:ring-blue-500/30 rounded-md -mx-1 px-1"
+                              className="text-[15px] leading-relaxed font-normal whitespace-pre-wrap outline-none focus:ring-1 focus:ring-blue-500/30 rounded-md -mx-1 px-1 overflow-hidden"
                               ref={(el) => {
                                 if (el && !el.dataset.initialized) {
                                   el.innerHTML = tokensToStyledHtml(parseMessageTokens(inlineEditText), dynamicText);
