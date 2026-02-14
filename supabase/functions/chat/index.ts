@@ -14,6 +14,7 @@ type ChatRequest = {
   messages: Message[];
   modelId: string;
   stream?: boolean;
+  max_tokens?: number;
 };
 
 function normalizeModelId(modelId: string): string {
@@ -34,7 +35,7 @@ function getGateway(modelId: string): 'lovable' | 'xai' {
   return 'lovable';
 }
 
-async function callLovableAI(messages: Message[], modelId: string, stream: boolean): Promise<Response> {
+async function callLovableAI(messages: Message[], modelId: string, stream: boolean, maxTokens: number = 4096): Promise<Response> {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   if (!LOVABLE_API_KEY) {
     throw new Error("LOVABLE_API_KEY is not configured");
@@ -55,6 +56,7 @@ async function callLovableAI(messages: Message[], modelId: string, stream: boole
       messages,
       stream,
       temperature: 0.9,
+      max_tokens: maxTokens,
     }),
   });
 
@@ -67,7 +69,7 @@ async function callLovableAI(messages: Message[], modelId: string, stream: boole
   return response;
 }
 
-async function callXAI(messages: Message[], modelId: string, stream: boolean): Promise<Response> {
+async function callXAI(messages: Message[], modelId: string, stream: boolean, maxTokens: number = 4096): Promise<Response> {
   const XAI_API_KEY = Deno.env.get("XAI_API_KEY");
   if (!XAI_API_KEY) {
     throw new Error("XAI_API_KEY is not configured. Please add your Grok API key in settings.");
@@ -87,6 +89,7 @@ async function callXAI(messages: Message[], modelId: string, stream: boolean): P
       messages,
       stream,
       temperature: 0.9,
+      max_tokens: maxTokens,
     }),
   });
 
@@ -106,7 +109,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, modelId, stream = true }: ChatRequest = await req.json();
+    const { messages, modelId, stream = true, max_tokens: maxTokens = 4096 }: ChatRequest = await req.json();
 
     if (!messages || !modelId) {
       return new Response(
@@ -121,9 +124,9 @@ serve(async (req) => {
     let response: Response;
 
     if (gateway === 'xai') {
-      response = await callXAI(messages, modelId, stream);
+      response = await callXAI(messages, modelId, stream, maxTokens);
     } else {
-      response = await callLovableAI(messages, modelId, stream);
+      response = await callLovableAI(messages, modelId, stream, maxTokens);
     }
 
     // Pass through the response (streaming or not)

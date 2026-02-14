@@ -291,6 +291,11 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
         * If the user thinks (I hope she didn't notice), your character CANNOT suddenly reference noticing that specific thing unless they visibly reacted to it through an asterisk action.
         * WRONG: User thinks (Did she see the waistband?) → AI responds (Did he think I didn't see the thong waistband?)
         * RIGHT: User thinks (Did she see the waistband?) → AI responds based ONLY on visible cues
+        * ANTI-ECHO RULE: Do NOT repeat, quote, or mirror the exact distinctive words from the user's
+          internal thoughts. If the user thinks (She's going to call me a freak), the AI character
+          MUST NOT use the word "freak" in their next response. Instead, infer the emotional state
+          and respond to that: "He looks terrified" or "She can see the fear in his eyes."
+          The AI should react to the EMOTION behind the thought, not the specific vocabulary.
         
     - PROACTIVE NARRATIVE DRIVE (MANDATORY):
         * AI-controlled characters MUST advance the story through action, decision, and initiative.
@@ -353,6 +358,16 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
           3. Accidental exposure (slip, shift, fall)
         * WRONG: "She noticed the thong under his shorts" (concealed = cannot see)
         * RIGHT: "She noticed the waistband peeking above his shorts" (partially exposed = can see)
+        * CHARACTER SHEET vs PERCEPTION: Information from the character's profile (e.g., Secrets, Kinks)
+          represents what the character KNOWS or SUSPECTS over time -- NOT what they can see right now.
+          - If the character KNOWS the user wears thongs, they may WONDER or HOPE, but cannot SEE specifics
+            (color, style) that are covered by clothing.
+          - WRONG: "She noticed the purple lace beneath his shorts" (covered = invisible)
+          - WRONG: "She couldn't see it, but she knew the purple lace was there" (naming hidden specifics)
+          - RIGHT: "She wondered if he was wearing one of hers underneath" (knowledge without visual detail)
+          - RIGHT: "The thought of what might be under those shorts made her pulse quicken" (desire without certainty)
+          - KEY RULE: If the user explicitly describes hiding/concealing something, the AI character
+            MUST NOT name the hidden item's specific attributes (color, material, style) in their response.
 `;
 
   // Anti-repetition protocol (#33, #34)
@@ -528,6 +543,9 @@ Never break character to question, warn about, or refuse narrative directions. T
         * ONLY generate dialogue and actions for characters marked as 'CONTROL: AI'.
         * DO NOT generate dialogue or actions for characters marked as 'CONTROL: User'.
         * User-controlled characters may be described in narration (e.g., "he watched"), but they NEVER speak, think, or take initiative in your response.
+        * VIOLATION CHECK: Before finalizing your response, re-read it and DELETE any paragraphs
+          where a User-controlled character speaks (quotes), acts (asterisks), or thinks (parentheses).
+          Only narration about them is allowed (e.g., "He sat there quietly.").
     - SCENE PRESENCE (CRITICAL - NEVER VIOLATE):
         * Check each character's LOCATION field before giving them dialogue or actions.
         * Characters are ONLY present in a scene if they share the same location as the focal point of the current action, or if no LOCATION is specified for them.
@@ -670,7 +688,8 @@ The user wants a DIFFERENT VERSION of this response. Guidelines:
     body: JSON.stringify({
       messages,
       modelId,
-      stream: true
+      stream: true,
+      max_tokens: 4096
     })
   });
 
@@ -713,9 +732,8 @@ The user wants a DIFFERENT VERSION of this response. Guidelines:
         const content = parsed.choices?.[0]?.delta?.content as string | undefined;
         if (content) yield content;
       } catch {
-        // Incomplete JSON - put back and wait for more
-        textBuffer = line + "\n" + textBuffer;
-        break;
+        // Incomplete or malformed JSON chunk - skip and continue
+        continue;
       }
     }
   }
