@@ -106,12 +106,12 @@ function tokensToStyledHtml(tokens: { type: string; content: string }[], dynamic
   return tokens.map(token => {
     if (!dynamicText) {
       if (token.type === 'speech') {
-        return `<span style="color:white;font-weight:500">\u201C${escapeHtml(token.content)}\u201D</span>`;
+        return `<span style="color:white;font-weight:500">"${escapeHtml(token.content)}"</span>`;
       }
       return `<span style="color:white;font-weight:500">${escapeHtml(token.content)}</span>`;
     }
     if (token.type === 'speech') {
-      return `<span style="color:white;font-weight:500">\u201C${escapeHtml(token.content)}\u201D</span>`;
+      return `<span style="color:white;font-weight:500">"${escapeHtml(token.content)}"</span>`;
     }
     if (token.type === 'action') {
       return `<span style="color:rgb(148,163,184);font-style:italic">*${escapeHtml(token.content)}*</span>`;
