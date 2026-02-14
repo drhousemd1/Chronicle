@@ -2944,7 +2944,7 @@ const updatedChar: SideCharacter = {
                             </span>
                           </div>
                         )}
-                        <div className={showAvatar ? "pt-1 antialiased" : "antialiased"}>
+                        <div className={showAvatar ? "pt-1 antialiased overflow-hidden" : "antialiased"}>
                           {inlineEditingId === msg.id && segIndex === 0 ? (
                             <div
                               contentEditable
@@ -2965,7 +2965,7 @@ const updatedChar: SideCharacter = {
                               onBlur={(e) => setInlineEditText(e.currentTarget.innerText)}
                               onInput={(e) => {
                                 const el = e.currentTarget as HTMLDivElement;
-                                const rawText = el.innerText;
+                                const rawText = el.innerText.replace(/\u00a0/g, ' ');
                                 const caretPos = getCaretCharOffset(el);
                                 el.innerHTML = tokensToStyledHtml(parseMessageTokens(rawText), dynamicText);
                                 setCaretCharOffset(el, caretPos);
