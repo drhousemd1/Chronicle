@@ -1,41 +1,28 @@
 
 
-# Fix Inline Edit: Layout Overlap and Cursor Jumping
+# Fix: Restore Text Wrapping Under Avatar
 
-## Bug 1: Text Box Extends Over Avatar
+## Problem
 
-The contentEditable div is a block element sitting alongside a `float-left` avatar. Without a new block formatting context, the div's box (and its focus ring) extends under/over the floated avatar.
+The `overflow-hidden` class added to the text container div (line 2947) in the last fix creates a new block formatting context. While this fixed the editor focus ring overlapping the avatar, it also prevents text from naturally wrapping underneath the floated avatar in **all** states (not just edit mode). Text now stays rigidly to the right of the avatar.
 
-**Fix**: Add `overflow-hidden` to the text container div (line 2947). This creates a new block formatting context that automatically stays beside the float rather than extending behind it.
+## Solution
 
+Remove `overflow-hidden` from the outer text container div (restoring the original wrapping behavior). Instead, apply `overflow-hidden` only to the `contentEditable` div itself when in edit mode, so the editor box stays beside the avatar without affecting normal message display.
+
+**File: `src/components/chronicle/ChatInterfaceTab.tsx`**
+
+**Change 1 -- Line 2947: Remove `overflow-hidden` from the wrapper div:**
 ```
-// Line 2947: change
+// Revert to:
 <div className={showAvatar ? "pt-1 antialiased" : "antialiased"}>
-// to
-<div className={showAvatar ? "pt-1 antialiased overflow-hidden" : "antialiased"}>
 ```
 
-## Bug 2: Cursor Jumps to Start on Space Bar
-
-When pressing space in a contentEditable element, browsers insert `\u00a0` (non-breaking space) instead of a regular space. The `onInput` handler reads `innerText`, which preserves `\u00a0`, but `tokensToStyledHtml` outputs regular spaces. This character mismatch causes `setCaretCharOffset` to miscalculate the position, jumping the cursor to position 0.
-
-**Fix**: In the `onInput` handler, normalize all `\u00a0` characters to regular spaces before processing:
-
-```typescript
-onInput={(e) => {
-  const el = e.currentTarget as HTMLDivElement;
-  const rawText = el.innerText.replace(/\u00a0/g, ' ');
-  const caretPos = getCaretCharOffset(el);
-  el.innerHTML = tokensToStyledHtml(parseMessageTokens(rawText), dynamicText);
-  setCaretCharOffset(el, caretPos);
-  setInlineEditText(rawText);
-}}
-```
+**Change 2 -- The contentEditable div (around line 2949): Add `overflow-hidden` to its own className:**
+Add `overflow-hidden` to the contentEditable div's className so only the edit box itself creates a block formatting context and avoids overlapping the avatar. Normal (non-editing) text continues to wrap freely under the avatar.
 
 ## Summary
-
-- **File**: `src/components/chronicle/ChatInterfaceTab.tsx`
-- **Change 1** (line 2947): Add `overflow-hidden` to the text wrapper div
-- **Change 2** (line 2968): Normalize `\u00a0` to regular space in `onInput`
-- Two small edits, no new files or dependencies
-
+- 1 file modified: `ChatInterfaceTab.tsx`
+- 2 small className changes
+- Normal messages wrap under the avatar as before
+- Edit mode editor box stays contained beside the avatar
