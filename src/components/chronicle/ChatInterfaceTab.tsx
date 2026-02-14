@@ -2897,23 +2897,24 @@ const updatedChar: SideCharacter = {
                         )}
                         <div className={showAvatar ? "pt-1 antialiased" : "antialiased"}>
                           {inlineEditingId === msg.id && segIndex === 0 ? (
-                            <textarea
-                              value={inlineEditText}
-                              onChange={(e) => setInlineEditText(e.target.value)}
-                              className="w-full bg-white/5 border border-white/20 rounded-lg p-3 text-white text-[15px] leading-relaxed font-normal resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/50 min-h-[100px]"
-                              style={{ height: 'auto', minHeight: '100px' }}
+                            <div
+                              contentEditable
+                              suppressContentEditableWarning
+                              className="text-slate-300 text-[15px] leading-relaxed font-normal whitespace-pre-wrap outline-none focus:ring-1 focus:ring-blue-500/30 rounded-md -mx-1 px-1"
                               ref={(el) => {
-                                if (el) {
-                                  el.style.height = 'auto';
-                                  el.style.height = el.scrollHeight + 'px';
+                                if (el && !el.dataset.initialized) {
+                                  el.innerText = inlineEditText;
+                                  el.dataset.initialized = 'true';
+                                  const range = document.createRange();
+                                  range.selectNodeContents(el);
+                                  range.collapse(false);
+                                  const sel = window.getSelection();
+                                  sel?.removeAllRanges();
+                                  sel?.addRange(range);
                                 }
                               }}
-                              onInput={(e) => {
-                                const target = e.currentTarget;
-                                target.style.height = 'auto';
-                                target.style.height = target.scrollHeight + 'px';
-                              }}
-                              autoFocus
+                              onBlur={(e) => setInlineEditText(e.currentTarget.innerText)}
+                              onInput={(e) => setInlineEditText((e.currentTarget as HTMLDivElement).innerText)}
                             />
                           ) : inlineEditingId === msg.id ? null : (
                             <FormattedMessage text={segment.content} dynamicText={dynamicText} />
