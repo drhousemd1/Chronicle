@@ -2710,7 +2710,7 @@ const updatedChar: SideCharacter = {
 
           {/* Side Characters - Scrollable section */}
           <section className="flex flex-col min-h-0 flex-1">
-            <h3 className="flex-shrink-0 text-[11px] font-bold text-slate-500 bg-slate-100 px-4 py-1.5 rounded-lg mb-3 tracking-tight uppercase">Side Characters</h3>
+            <h3 className="flex-shrink-0 text-[11px] font-bold text-white bg-[#4a5f7f] px-4 py-1.5 rounded-lg mb-3 tracking-tight uppercase">Side Characters</h3>
             <ScrollableSection maxHeight="calc(50vh - 120px)" className="pr-1">
               <div className="space-y-2 pb-2">
                 {sideCharactersForDisplay.map(char => 
@@ -2725,9 +2725,6 @@ const updatedChar: SideCharacter = {
                         isUpdating={updatingCharacterIds.has(char.id)}
                       />
                     )
-                )}
-                {sideCharactersForDisplay.length === 0 && (
-                  <p className="text-[10px] text-slate-400 text-center italic py-4">No side characters yet.</p>
                 )}
               </div>
             </ScrollableSection>
