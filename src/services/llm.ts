@@ -370,6 +370,15 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
           reader couldn't get from dialogue alone.
         * Keep thoughts concise but substantive: 1-3 sentences that carry 
           real narrative weight.
+        * VIOLATION CHECK: Before finalizing your response, re-read every 
+          internal thought (parenthetical). For each one, ask: "Does this 
+          reveal a specific plan, desire, assessment, or foreshadow something 
+          concrete?" If the answer is no -- if the thought is a vague 
+          dead-end statement like "He has no idea" or "Perfect" with no 
+          follow-through -- REWRITE it with specific, actionable content 
+          that reveals what the character is actually planning, wanting, 
+          or anticipating. Do NOT leave vague thoughts in place. Do NOT 
+          simply delete them. Replace them with substance.
 ` : '';
 
   // Line of sight and layering awareness (#17)
