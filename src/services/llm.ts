@@ -803,12 +803,21 @@ The user wants a DIFFERENT VERSION of this response. Guidelines:
 
   console.log(`[llm.ts] Calling chat edge function with model: ${modelId}`);
 
+  // Get the real session token for authentication
+  const { data: { session } } = await supabase.auth.getSession();
+  const accessToken = session?.access_token;
+  if (!accessToken) {
+    yield "⚠️ Session expired. Please sign in again.";
+    return;
+  }
+
   // Call the chat edge function
   const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      'Authorization': `Bearer ${accessToken}`,
+      'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
     },
     body: JSON.stringify({
       messages,
