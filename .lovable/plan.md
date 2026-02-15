@@ -1,17 +1,17 @@
 
-# Character Library Tile Border Color Update
+# Your Stories Tile Border Update
 
 ## What's changing
 
-Swap the character tile card border on the Character Library page from the current silver/white (`border-slate-200`) to the slate blue brand color (`border-[#4a5f7f]`), matching what we just applied to the Image Library.
+Add the slate blue border (`border-[#4a5f7f]`) to story tile cards on the Your Stories page, replacing the current subtle ring (`ring-1 ring-slate-900/5`).
 
 ## Technical Details
 
-**File:** `src/components/chronicle/CharactersTab.tsx`, line 476
+**File:** `src/components/chronicle/ScenarioHub.tsx`, line 35
 
 **Current:**
 ```
-border border-slate-200
+ring-1 ring-slate-900/5
 ```
 
 **New:**
@@ -19,4 +19,4 @@ border border-slate-200
 border border-[#4a5f7f]
 ```
 
-Single class swap on one line. No other pages or components are touched.
+Single class swap on one line. No other pages touched.
