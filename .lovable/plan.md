@@ -1,24 +1,35 @@
 
-# Match Your Stories Filter Bar to Community Gallery
 
-## What's changing
+# Make Your Stories Filter Bar Visually Identical to Community Gallery
 
-The filter bar on the Your Stories page will be updated to use the **exact same classes** as the Community Gallery's sort filter toggle. Only two class values on the outer `div` need to change -- the button classes already match.
+## Problem
+The Gallery toggle uses transparent colors (`bg-white/10`, `border-white/10`) that only look correct on its dark `#121214` background. On the Your Stories page, the header is white (`bg-white`), so these same transparent classes render almost invisibly.
+
+## Solution
+Replace the transparent classes on the Your Stories toggle with the **solid hex equivalents** -- the actual colors you'd see if you used a color picker on the Gallery. No other UI changes (no header color changes, no title changes).
 
 ## Technical Details
 
-**File:** `src/pages/Index.tsx`, line 1427
+**File:** `src/pages/Index.tsx`, line 1427 only (the toggle container and its buttons)
 
-**Outer container class change:**
-- Current: `bg-slate-800 rounded-full p-1 gap-0.5` (no border)
-- Gallery's exact classes: `bg-white/10 rounded-full p-1 gap-0.5 border border-white/10`
+**Resolved colors from Gallery (transparent on #121214):**
 
-**Active button class change (lines 1433, 1444, 1455, 1466):**
-- Current: `bg-slate-600 text-white shadow-sm`
-- Gallery's exact: `bg-[#4a5f7f] text-white shadow-sm`
+| Element | Gallery class (transparent) | Resolved solid hex |
+|---|---|---|
+| Track background | `bg-white/10` | `#2b2b2e` |
+| Track border | `border-white/10` | `#2b2b2e` |
+| Active pill | `bg-[#4a5f7f]` | `#4a5f7f` (no change) |
+| Active text | `text-white` | `#FFFFFF` (no change) |
+| Inactive text | `text-zinc-400` | `#a1a1aa` |
+| Inactive hover | `hover:text-zinc-200` | `#e4e4e7` |
 
-**Inactive button class change (lines 1434, 1445, 1456, 1467):**
-- Current: `text-slate-400 hover:text-slate-300`
-- Gallery's exact: `text-zinc-400 hover:text-zinc-200`
+**Changes (line 1427 outer div only):**
+- `bg-white/10` becomes `bg-[#2b2b2e]`
+- `border border-white/10` becomes `border border-[#2b2b2e]`
 
-The button structure (`px-4 py-1.5 rounded-full text-xs font-bold transition-all`) is already identical -- no changes needed there.
+**Button active state (lines 1433, 1444, 1455, 1466) -- no change needed**, already `bg-[#4a5f7f] text-white shadow-sm`.
+
+**Button inactive state (lines 1434, 1445, 1456, 1467):**
+- `text-zinc-400 hover:text-zinc-200` becomes `text-[#a1a1aa] hover:text-[#e4e4e7]`
+
+This is the minimal set of class swaps -- nothing else on the page changes.
