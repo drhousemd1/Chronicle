@@ -2768,7 +2768,7 @@ const updatedChar: SideCharacter = {
             </div>
           )}
           
-          <div ref={scrollRef} onScroll={handleScroll} className="relative z-10 h-full overflow-y-auto px-4 md:px-8 lg:px-12 py-8 space-y-6 custom-scrollbar scrollbar-thin">
+          <div ref={scrollRef} onScroll={handleScroll} className="relative z-10 h-full overflow-y-auto px-6 md:px-14 lg:px-20 py-8 space-y-10 custom-scrollbar scrollbar-thin">
           {conversation?.messages.length === 0 && !streamingContent && (
              <div className="h-full flex flex-col items-center justify-center text-slate-500 space-y-6">
                <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center text-4xl shadow-sm border border-white/10">✨</div>
@@ -2793,8 +2793,8 @@ const updatedChar: SideCharacter = {
             return (
               <div key={msg.id} className={`w-full animate-in fade-in slide-in-from-bottom-4 duration-500 group ${
                 offsetBubbles 
-                  ? `max-w-4xl ${isAi ? 'mr-auto' : 'ml-auto'}` 
-                  : 'max-w-7xl mx-auto'
+                  ? `max-w-3xl ${isAi ? 'mr-auto' : 'ml-auto'}` 
+                  : 'max-w-4xl mx-auto'
               }`}>
                 <div className={`p-8 pt-14 pb-12 rounded-[2rem] shadow-2xl flex flex-col gap-4 transition-all relative ${
                   bubblesTransparent
@@ -3046,7 +3046,7 @@ const updatedChar: SideCharacter = {
             const segments = mergeByRenderedSpeaker(rawSegments, true, appData, userChar);
             
             return (
-              <div className={`w-full ${offsetBubbles ? 'max-w-4xl mr-auto' : 'max-w-7xl mx-auto'}`}>
+              <div className={`w-full ${offsetBubbles ? 'max-w-3xl mr-auto' : 'max-w-4xl mx-auto'}`}>
                 <div className={`p-8 pt-14 pb-12 rounded-[2rem] border shadow-2xl flex flex-col gap-4 ${
                     bubblesTransparent
                       ? 'bg-black/50 border-white/5'
