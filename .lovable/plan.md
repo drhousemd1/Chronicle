@@ -1,14 +1,13 @@
 
-
-# Image Library Folder Card Border Color Test
+# Character Library Tile Border Color Update
 
 ## What's changing
 
-On the Image Library page only, change the folder tile card border from its current silver/white (`border-slate-200`) to the slate blue color (`#4a5f7f`) used as the brand accent throughout the app (e.g., the active filter pill, the "brand" button variant).
+Swap the character tile card border on the Character Library page from the current silver/white (`border-slate-200`) to the slate blue brand color (`border-[#4a5f7f]`), matching what we just applied to the Image Library.
 
 ## Technical Details
 
-**File:** `src/components/chronicle/ImageLibraryTab.tsx`, line 423
+**File:** `src/components/chronicle/CharactersTab.tsx`, line 476
 
 **Current:**
 ```
@@ -20,5 +19,4 @@ border border-slate-200
 border border-[#4a5f7f]
 ```
 
-This is a single class swap on one line. No other pages or components are touched -- this is an isolated test so we can evaluate the color on the black background before rolling it out elsewhere.
-
+Single class swap on one line. No other pages or components are touched.
