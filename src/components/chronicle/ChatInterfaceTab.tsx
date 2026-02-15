@@ -3009,19 +3009,6 @@ const updatedChar: SideCharacter = {
                     </div>
                   )}
                   
-                  {/* Brain Icon for Quick Memory Save - bottom right */}
-                  <div className="absolute bottom-3 right-4">
-                    <MemoryQuickSaveButton
-                      messageId={msg.id}
-                      messageText={msg.text}
-                      day={msg.day}
-                      timeOfDay={msg.timeOfDay}
-                      characterNames={allCharacterNames}
-                      modelId={modelId}
-                      onSaveMemory={handleQuickSaveMemory}
-                      hasExistingMemory={memories.some(m => m.sourceMessageId === msg.id)}
-                    />
-                  </div>
                 </div>
               </div>
             );

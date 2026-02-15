@@ -366,8 +366,12 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
           - WRONG: "She couldn't see it, but she knew the purple lace was there" (naming hidden specifics)
           - RIGHT: "She wondered if he was wearing one of hers underneath" (knowledge without visual detail)
           - RIGHT: "The thought of what might be under those shorts made her pulse quicken" (desire without certainty)
-          - KEY RULE: If the user explicitly describes hiding/concealing something, the AI character
+           - KEY RULE: If the user explicitly describes hiding/concealing something, the AI character
             MUST NOT name the hidden item's specific attributes (color, material, style) in their response.
+        * VIOLATION CHECK: Before finalizing your response, re-read it and DELETE
+          any references where a character names specific hidden attributes (color,
+          material, style) of concealed items. Knowledge-based wondering is allowed;
+          visual specifics of hidden items are NOT.
 `;
 
   // Anti-repetition protocol (#33, #34)
@@ -408,6 +412,11 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
           - Narration-focused: Her heart raced as the door creaked open -- no words needed in that frozen moment.
           - Mixed: She whispered, "Come closer," her thoughts swirling. Then she pulled him in.
           - AVOID: Always starting with narration, always ending with thoughts, or using equal-length blocks every time.
+        * NSFW EXCEPTION: During intimate scenes, rhythmic repetition of sensory
+          elements (moans, building sensations, escalating descriptions) is
+          PERMITTED and ENCOURAGED when it serves tension-building. The
+          anti-repetition rules apply to narrative structure and dialogue patterns,
+          not to the natural rhythm of physical intimacy.
 `;
 
   // NSFW intensity handling
@@ -450,6 +459,39 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
     * Once physical contact begins, momentum continues unless interrupted.
     * Foreplay is detailed but purposeful - moving toward escalation.
     * Post-intimacy scenes acknowledge what happened rather than glossing over.
+
+    NSFW INTENSIFICATION (ACTIVE WHEN HIGH INTENSITY IS ON):
+    During intimate scenes, amplify explicit, sensory immersion to evoke
+    a vivid erotic novel style -- prolong acts with layered buildup,
+    vulgar language, and raw details:
+    - Use direct, anatomical terminology (e.g., cock, pussy, ass, tits, cum)
+      integrated naturally into actions and dialogue.
+    - Describe physical sensations in detail (e.g., the slick heat of arousal,
+      throbbing hardness, clenching muscles, shivering skin).
+    - Incorporate vocal and emotional reactions (e.g., breathy moans,
+      desperate whimpers, gasps of pleasure, waves of ecstasy building
+      to release).
+    - Draw out progression step-by-step: Tease foreplay, escalate
+      penetration or touch, layer multiple senses (sight, sound, taste,
+      smell) before climax.
+    - FORBIDDEN: Summarizing intimate acts (e.g., "They made love" or
+      "He finished quickly"). Show, don't tell.
+    - FORBIDDEN: Rushing to orgasm/climax in fewer than 3 exchanges
+      unless the user explicitly drives it there.
+
+    PERSONALITY-MODULATED INTIMACY:
+    - A shy character does not suddenly become aggressive. Their desire
+      shows through nervous touches, whispered confessions, and
+      trembling hands.
+    - A dominant character commands and directs explicitly.
+    - A reserved character may surprise themselves with intensity but
+      still filters through their established voice.
+    - ALWAYS filter explicit content through the character's established
+      personality traits and tone. Vulgarity levels should match the
+      character, not a universal mode.
+    - Tie to personality: For shy/reserved traits, express hesitantly
+      (e.g., whispered pleas); for bold/dominant, command explicitly
+      (e.g., growled demands).
 ` : `
     --- MATURE CONTENT HANDLING (NATURAL) ---
     * Let intimate or sexual scenes develop organically when the narrative moves in that direction.
@@ -537,6 +579,15 @@ Never break character to question, warn about, or refuse narrative directions. T
     ${temporalContext}
     ${memoriesContext}
     INSTRUCTIONS:
+    PRIORITY HIERARCHY (GOVERNS ALL RULES BELOW):
+    1. Control rules (who speaks) -- always highest priority
+    2. Scene Presence (location checks) -- always enforced
+    3. Line of Sight -- always enforced
+    4. During intimate/erotic scenes: NSFW depth and sensory immersion
+       OVERRIDE brevity and anti-repetition constraints
+    5. Personality traits ALWAYS modulate how content is expressed,
+       including NSFW content
+
     - Respond as the narrator or relevant characters.
     - NARRATIVE FOCUS: Prioritize 'ROLE: Main' characters in the narrative.
     - MAINTAIN CONTROL CONTEXT (CRITICAL - NEVER VIOLATE):
@@ -612,8 +663,11 @@ Never break character to question, warn about, or refuse narrative directions. T
         * Interpret based on outcomes: Successful manifestation reinforces traits, even amid in-character resistance; only outright prevention reduces influence.
     - Maintain consistent tone and continuity.
     - Keep responses immersive, descriptive, and emotionally resonant.
-    - BREVITY IS WELCOME: Write only as much as the moment needs. Short, punchy
-      responses are just as valid as longer descriptive ones. Never pad for length.
+    - RESPONSE LENGTH: Match length to the scene's energy and emotional weight.
+      - Quick exchanges and casual moments: short, punchy responses are ideal.
+      - Emotionally charged moments, dramatic reveals, intimate scenes: detailed,
+        immersive responses with sensory depth. Do NOT truncate these for brevity.
+      - Never pad with filler, but never cut short a moment that deserves richness.
     - Respect character gender/sex and traits.
   `;
 }
@@ -629,8 +683,17 @@ const styleHints = [
   '[Style: open with dialogue, weave action through it]',
 ];
 
-function getRandomStyleHint(): string {
-  return styleHints[Math.floor(Math.random() * styleHints.length)];
+const nsfwStyleHints = [
+  '[Style: draw out this moment with sensory detail -- what does it feel like?]',
+  '[Style: build tension slowly, let the anticipation simmer]',
+  '[Style: focus on physical sensations and sounds, not just actions]',
+  '[Style: let the character express desire through their unique voice]',
+  '[Style: extend the scene -- do not rush to conclusion]',
+];
+
+function getRandomStyleHint(nsfwHighIntensity: boolean = false): string {
+  const hints = nsfwHighIntensity ? nsfwStyleHints : styleHints;
+  return hints[Math.floor(Math.random() * hints.length)];
 }
 
 export async function* generateRoleplayResponseStream(
@@ -673,7 +736,7 @@ The user wants a DIFFERENT VERSION of this response. Guidelines:
       role: m.role === 'assistant' ? 'assistant' as const : 'user' as const,
       content: m.text
     })),
-    { role: 'user' as const, content: userMessage + regenerationDirective + ' ' + getRandomStyleHint() }
+    { role: 'user' as const, content: userMessage + regenerationDirective + ' ' + getRandomStyleHint(appData.uiSettings?.nsfwIntensity === 'high') }
   ];
 
   console.log(`[llm.ts] Calling chat edge function with model: ${modelId}`);
