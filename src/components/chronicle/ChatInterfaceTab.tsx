@@ -351,6 +351,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   // Session-scoped world core overrides (global across all characters)
   const [worldCoreSessionOverrides, setWorldCoreSessionOverrides] = useState<Partial<WorldCore> | null>(null);
   
+  // Collapsible character sections
+  const [mainCharsCollapsed, setMainCharsCollapsed] = useState(false);
+  const [sideCharsCollapsed, setSideCharsCollapsed] = useState(false);
+
   // Build effective world core by merging base with session overrides
   const effectiveWorldCore = useMemo((): WorldCore => {
     if (!worldCoreSessionOverrides) return appData.world.core;
@@ -2685,7 +2689,14 @@ const updatedChar: SideCharacter = {
 
           {/* Main Characters - Scrollable section */}
           <section className="flex flex-col min-h-0 flex-shrink-0">
-            <h3 className="flex-shrink-0 text-[11px] font-bold text-white bg-[#4a5f7f] px-4 py-1.5 rounded-lg mb-3 tracking-tight uppercase">Main Characters</h3>
+            <h3
+              className="flex-shrink-0 text-[11px] font-bold text-white bg-[#4a5f7f] px-4 py-1.5 rounded-lg mb-3 tracking-tight uppercase flex items-center justify-between cursor-pointer select-none"
+              onClick={() => setMainCharsCollapsed(prev => !prev)}
+            >
+              Main Characters
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${mainCharsCollapsed ? 'rotate-180' : ''}`} />
+            </h3>
+            <div className={`transition-all duration-300 ease-in-out overflow-hidden ${mainCharsCollapsed ? 'max-h-0 opacity-0' : 'max-h-[2000px] opacity-100'}`}>
               <ScrollableSection maxHeight="400px" className="pr-1">
                 <div className="space-y-2 pb-2">
                 {mainCharactersForDisplay.map(char => 
@@ -2706,11 +2717,19 @@ const updatedChar: SideCharacter = {
                 )}
               </div>
             </ScrollableSection>
+            </div>
           </section>
 
           {/* Side Characters - Scrollable section */}
           <section className="flex flex-col min-h-0 flex-1">
-            <h3 className="flex-shrink-0 text-[11px] font-bold text-white bg-[#4a5f7f] px-4 py-1.5 rounded-lg mb-3 tracking-tight uppercase">Side Characters</h3>
+            <h3
+              className="flex-shrink-0 text-[11px] font-bold text-white bg-[#4a5f7f] px-4 py-1.5 rounded-lg mb-3 tracking-tight uppercase flex items-center justify-between cursor-pointer select-none"
+              onClick={() => setSideCharsCollapsed(prev => !prev)}
+            >
+              Side Characters
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${sideCharsCollapsed ? 'rotate-180' : ''}`} />
+            </h3>
+            <div className={`transition-all duration-300 ease-in-out overflow-hidden ${sideCharsCollapsed ? 'max-h-0 opacity-0' : 'max-h-[2000px] opacity-100'}`}>
             <ScrollableSection maxHeight="calc(50vh - 120px)" className="pr-1">
               <div className="space-y-2 pb-2">
                 {sideCharactersForDisplay.map(char => 
@@ -2728,6 +2747,7 @@ const updatedChar: SideCharacter = {
                 )}
               </div>
             </ScrollableSection>
+            </div>
           </section>
         </div>
         </div>
