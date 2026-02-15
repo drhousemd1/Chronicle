@@ -1,24 +1,24 @@
 
-# Update Your Stories Filter Toggle Styling
+# Match Your Stories Filter Bar to Community Gallery
 
-## Change
+## What's changing
 
-Update the segmented filter bar ("My Stories", "Saved Stories", "Published", "All") on the Your Stories page so the active toggle pill is slate blue instead of white, and the active text is white instead of black. Inactive text will also be adjusted for better contrast against the black background.
+The filter bar on the Your Stories page will be updated to use the **exact same classes** as the Community Gallery's sort filter toggle. Only two class values on the outer `div` need to change -- the button classes already match.
 
 ## Technical Details
 
-**File:** `src/pages/Index.tsx`, lines 1427-1469
+**File:** `src/pages/Index.tsx`, line 1427
 
-**Active state** (applied to whichever filter is selected):
-- Change from: `bg-white text-slate-900 shadow-sm`
-- Change to: `bg-slate-600 text-white shadow-sm`
+**Outer container class change:**
+- Current: `bg-slate-800 rounded-full p-1 gap-0.5` (no border)
+- Gallery's exact classes: `bg-white/10 rounded-full p-1 gap-0.5 border border-white/10`
 
-**Inactive state** (non-selected filters):
-- Change from: `text-slate-500 hover:text-slate-700`
-- Change to: `text-slate-400 hover:text-slate-300`
+**Active button class change (lines 1433, 1444, 1455, 1466):**
+- Current: `bg-slate-600 text-white shadow-sm`
+- Gallery's exact: `bg-[#4a5f7f] text-white shadow-sm`
 
-**Track background** (the outer pill container):
-- Change from: `bg-slate-200`
-- Change to: `bg-slate-800` (to match the black page background better)
+**Inactive button class change (lines 1434, 1445, 1456, 1467):**
+- Current: `text-slate-400 hover:text-slate-300`
+- Gallery's exact: `text-zinc-400 hover:text-zinc-200`
 
-This applies to all four filter buttons (My Stories, Saved Stories, Published, All) at lines 1428-1469.
+The button structure (`px-4 py-1.5 rounded-full text-xs font-bold transition-all`) is already identical -- no changes needed there.
