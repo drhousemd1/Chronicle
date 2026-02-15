@@ -1,35 +1,51 @@
 
 
-# Make Your Stories Filter Bar Visually Identical to Community Gallery
+# Restyle "New Story" Card to Match Scenario Builder Cover Placeholder
 
-## Problem
-The Gallery toggle uses transparent colors (`bg-white/10`, `border-white/10`) that only look correct on its dark `#121214` background. On the Your Stories page, the header is white (`bg-white`), so these same transparent classes render almost invisibly.
+## What's changing
 
-## Solution
-Replace the transparent classes on the Your Stories toggle with the **solid hex equivalents** -- the actual colors you'd see if you used a color picker on the Gallery. No other UI changes (no header color changes, no title changes).
+The "New Story" button card in `ScenarioHub.tsx` (lines 226-235) will be restyled to match the dark gradient placeholder used for the cover image in the Scenario Builder (`WorldTab.tsx` line 447).
+
+## Visual Target
+
+- Dark gradient background (`from-zinc-800 to-zinc-900`) instead of the current light gray (`bg-slate-50/50`)
+- Dashed border in `border-zinc-600` instead of `border-slate-200`
+- A "+" icon (using the existing Plus icon from lucide or an SVG) styled in `text-zinc-500`
+- "New Story" text in `text-zinc-500` with `font-black uppercase tracking-widest`
+- Hover state: `border-blue-400` with subtle background shift
 
 ## Technical Details
 
-**File:** `src/pages/Index.tsx`, line 1427 only (the toggle container and its buttons)
+**File:** `src/components/chronicle/ScenarioHub.tsx`, lines 226-235
 
-**Resolved colors from Gallery (transparent on #121214):**
+**Current:**
+```
+className="aspect-[2/3] w-full rounded-[2rem] border-2 border-dashed border-slate-200 bg-slate-50/50 flex flex-col items-center justify-center gap-4 group hover:border-blue-400 hover:bg-blue-50 transition-all duration-300"
+```
 
-| Element | Gallery class (transparent) | Resolved solid hex |
-|---|---|---|
-| Track background | `bg-white/10` | `#2b2b2e` |
-| Track border | `border-white/10` | `#2b2b2e` |
-| Active pill | `bg-[#4a5f7f]` | `#4a5f7f` (no change) |
-| Active text | `text-white` | `#FFFFFF` (no change) |
-| Inactive text | `text-zinc-400` | `#a1a1aa` |
-| Inactive hover | `hover:text-zinc-200` | `#e4e4e7` |
+**New outer button:**
+```
+className="aspect-[2/3] w-full rounded-[2rem] border-2 border-dashed border-zinc-600 bg-gradient-to-br from-zinc-800 to-zinc-900 flex flex-col items-center justify-center gap-4 group hover:border-blue-400 transition-all duration-300"
+```
 
-**Changes (line 1427 outer div only):**
-- `bg-white/10` becomes `bg-[#2b2b2e]`
-- `border border-white/10` becomes `border border-[#2b2b2e]`
+**Current "+" circle (line 231):**
+```
+className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-3xl text-slate-400 ..."
+```
 
-**Button active state (lines 1433, 1444, 1455, 1466) -- no change needed**, already `bg-[#4a5f7f] text-white shadow-sm`.
+**New "+" circle:**
+```
+className="w-16 h-16 rounded-full bg-zinc-700/50 flex items-center justify-center text-3xl text-zinc-500 group-hover:bg-blue-900/30 group-hover:text-blue-400 transition-colors"
+```
 
-**Button inactive state (lines 1434, 1445, 1456, 1467):**
-- `text-zinc-400 hover:text-zinc-200` becomes `text-[#a1a1aa] hover:text-[#e4e4e7]`
+**Current "New Story" label (line 234):**
+```
+className="text-sm font-black uppercase tracking-widest text-black group-hover:text-blue-600"
+```
 
-This is the minimal set of class swaps -- nothing else on the page changes.
+**New label:**
+```
+className="text-sm font-black uppercase tracking-widest text-zinc-500 group-hover:text-blue-400"
+```
+
+No other files or elements are changed.
