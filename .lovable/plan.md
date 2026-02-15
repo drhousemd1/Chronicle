@@ -1,21 +1,19 @@
 
 
-# Change Default Chat Background from White to Black
+# Send Button: Use Slate Blue When Active
 
 ## Change
 
-**File:** `src/components/chronicle/ChatInterfaceTab.tsx`, line 2589
+**File:** `src/components/chronicle/ChatInterfaceTab.tsx`, line 3132
 
-Change the non-dark-mode background from `bg-white` to `bg-black` (or potentially `bg-slate-900`/`bg-[#1e1e1e]` for a softer black). Since the screenshot shows a dark charcoal look that the user liked, I'll use pure `bg-black` as requested.
-
-The text in the chat bubbles already uses white/light colors (as seen in the screenshot), so readability should be preserved. The empty-state elements (the sparkle icon, "The stage is set" text) may need color adjustments since they currently use light-gray tones meant for a white background.
+Currently the send button uses the same dark surface color (`--ui-surface-2`) whether enabled or disabled, and just fades opacity when disabled. The user wants the enabled state to use the slate blue brand color (`#4a5f7f`) used across the app (section headers, search button, sort pills, etc.), while keeping the current muted look for the disabled state.
 
 ## Technical Details
 
-1. **Line 2589** -- Change `bg-white` to `bg-black` in the ternary:
-   ```
-   ${darkMode ? 'bg-slate-900' : 'bg-black'}
-   ```
+Replace the static className on line 3132 with a conditional that switches styles based on whether input is present:
 
-2. **Line 2756-2761** -- Update the empty-state placeholder styling so the sparkle icon and text remain visible on a black background (change `bg-white` icon background, `text-slate-600`/`text-slate-400` text colors to lighter variants).
+- **Disabled (no text):** Keep current look -- `bg-[hsl(var(--ui-surface-2))]`, muted text, reduced opacity
+- **Enabled (has text):** `bg-[#4a5f7f] text-white border-[#4a5f7f] hover:bg-[#5a6f8f]` -- the same slate blue used in section headers and the Gallery search button
+
+This avoids the harsh bright white and instead uses the consistent brand accent.
 
