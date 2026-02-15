@@ -1424,14 +1424,14 @@ const IndexContent = () => {
                   <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
                     Your Stories
                   </h1>
-                  <div className="flex items-center bg-slate-800 rounded-full p-1 gap-0.5">
+                  <div className="flex items-center bg-white/10 rounded-full p-1 gap-0.5 border border-white/10">
                     <button
                       onClick={() => setHubFilter("my")}
                       className={cn(
                         "px-4 py-1.5 rounded-full text-xs font-bold transition-all",
                         hubFilter === "my" 
-                          ? "bg-slate-600 text-white shadow-sm" 
-                          : "text-slate-400 hover:text-slate-300"
+                          ? "bg-[#4a5f7f] text-white shadow-sm" 
+                          : "text-zinc-400 hover:text-zinc-200"
                       )}
                     >
                       My Stories
@@ -1441,8 +1441,8 @@ const IndexContent = () => {
                       className={cn(
                         "px-4 py-1.5 rounded-full text-xs font-bold transition-all",
                         hubFilter === "bookmarked" 
-                          ? "bg-slate-600 text-white shadow-sm" 
-                          : "text-slate-400 hover:text-slate-300"
+                          ? "bg-[#4a5f7f] text-white shadow-sm" 
+                          : "text-zinc-400 hover:text-zinc-200"
                       )}
                     >
                       Saved Stories
@@ -1452,8 +1452,8 @@ const IndexContent = () => {
                       className={cn(
                         "px-4 py-1.5 rounded-full text-xs font-bold transition-all",
                         hubFilter === "published" 
-                          ? "bg-slate-600 text-white shadow-sm" 
-                          : "text-slate-400 hover:text-slate-300"
+                          ? "bg-[#4a5f7f] text-white shadow-sm" 
+                          : "text-zinc-400 hover:text-zinc-200"
                       )}
                     >
                       Published
@@ -1463,8 +1463,8 @@ const IndexContent = () => {
                       className={cn(
                         "px-4 py-1.5 rounded-full text-xs font-bold transition-all",
                         hubFilter === "all" 
-                          ? "bg-slate-600 text-white shadow-sm" 
-                          : "text-slate-400 hover:text-slate-300"
+                          ? "bg-[#4a5f7f] text-white shadow-sm" 
+                          : "text-zinc-400 hover:text-zinc-200"
                       )}
                     >
                       All
