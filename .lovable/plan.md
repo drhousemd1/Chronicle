@@ -1,32 +1,35 @@
 
 
-# Fix: Text Input Area Styling
+# Fix: Chat Input Area Layout
 
-## Problem
+## Changes (all in `src/components/chronicle/ChatInterfaceTab.tsx`)
 
-The text input area currently shows two nested dark shapes with uneven padding — wider on the sides than top/bottom. This happens because the `TextArea` component from `UI.tsx` wraps the `<textarea>` in a `<div>`, and the current styling applies padding directly to the inner textarea (`!py-4 !px-6`) rather than creating a uniform border padding on the outer wrapper.
+### 1. Fix bottom padding being wider than top/left/right
 
-## Solution
+The outer wrapper uses `p-2` which should be uniform, but `pb-8` on the parent container (line 3098) adds extra visual space at the bottom. The real issue is the `items-end` on the flex container (line 3133) plus the Send button sitting beside the textarea pushes the layout. Removing the Send button from beside the textarea (see below) will fix this. The `p-2` on the textarea wrapper is already uniform.
 
-Restructure the input area so the layout is:
+### 2. Move Send button to top-right, resize to match other buttons
 
-1. **Outer wrapper** -- `bg-[hsl(var(--ui-surface-2))]` (same color as the buttons), uniform thin padding (e.g., `p-2`), `rounded-2xl`, with the `ui-border` border. This acts as the visible "frame" around the text area.
-2. **Inner textarea** -- `bg-[#1e2028]` (hint box color), `rounded-xl`, white text, no extra border. This is the actual typing surface.
+Currently the Send button sits to the right of the textarea at the bottom (lines 3146-3156). Move it up to the Quick Actions Bar (line 3101) and restyle it to match the Chat Settings / Generate Image buttons exactly:
+- Same `text-[10px] font-bold uppercase tracking-widest` sizing
+- Same `px-4 py-2 rounded-xl` dimensions
+- Same shadow/border/color scheme
+- Position it at the far right using `ml-auto`
 
-This creates a clear delineation: the lighter button-colored frame surrounds the darker input field, with uniform spacing on all sides.
+### 3. Extend chat input container full width
+
+Remove the `flex gap-3 items-end` wrapper (line 3133) since the Send button no longer sits beside the textarea. The textarea wrapper becomes a direct child of the layout, spanning the full width of the container.
 
 ## Technical Details
 
-- **File**: `src/components/chronicle/ChatInterfaceTab.tsx`
-- **Change**: Replace the current `<TextArea>` usage (lines 3134-3144) with a wrapping div that provides the uniform padding/border, and move the textarea styling so the inner element has only the dark background and text color. Since the `TextArea` component from `UI.tsx` applies `className` to both the wrapper div and the inner element (per the existing architecture note), we will bypass the wrapper by using a raw `<textarea>` element directly, giving us full control over the two-layer styling without the "bubble-in-bubble" issue.
+**Lines 3101-3130 (Quick Actions Bar):** Add the Send button after the Generate Image button, with `ml-auto` to push it to the far right. Use the same class string as the other buttons, with disabled state styling.
 
-**Structure:**
-```text
-[Outer div: bg-[hsl(var(--ui-surface-2))], border-[hsl(var(--ui-border))], p-2, rounded-2xl]
-  [textarea: bg-[#1e2028], rounded-xl, text-white, w-full, no border]
+**Lines 3132-3157 (Input Area):** Remove the `flex gap-3 items-end` wrapper div and the Send button. The textarea wrapper div becomes:
+```html
+<div class="bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] rounded-2xl p-2">
+  <textarea ... />
+</div>
 ```
 
-- Padding will be uniform (`p-2`) on all four sides
-- The outer container color matches the Chat Settings / Generate Image / Send buttons
-- The inner textarea uses the dark hint-box color for clear contrast
+No other files affected.
 
