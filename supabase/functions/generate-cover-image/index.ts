@@ -1,5 +1,7 @@
-// Edge function to generate cover images for scenarios
-// Supports BYOK routing: uses Grok for grok models, Lovable Gateway for others
+// ============================================================================
+// GROK ONLY -- Cover image generation uses xAI Grok exclusively.
+// Image model: grok-2-image-1212. No Gemini. No OpenAI. No Lovable gateway.
+// ============================================================================
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -8,13 +10,6 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-function getGateway(modelId: string): 'lovable' | 'xai' {
-  if (modelId.startsWith('grok')) {
-    return 'xai';
-  }
-  return 'lovable';
-}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -33,7 +28,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Invalid token' }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { prompt, stylePrompt, negativePrompt, scenarioTitle, modelId } = await req.json();
+    const { prompt, stylePrompt, negativePrompt, scenarioTitle } = await req.json();
     
     if (!prompt) {
       return new Response(JSON.stringify({ error: "prompt is required" }), {
@@ -42,7 +37,7 @@ serve(async (req) => {
       });
     }
 
-    // Build the full prompt with style and aspect ratio guidance
+    // Build the full prompt
     let fullPrompt = `Portrait composition (2:3 aspect ratio), vertical orientation. ${prompt.trim()}`;
     
     if (stylePrompt) {
@@ -55,64 +50,37 @@ serve(async (req) => {
 
     console.log(`[generate-cover-image] Generating cover for "${scenarioTitle || 'scenario'}" with prompt (${fullPrompt.length} chars)`);
 
-    // BYOK routing: determine gateway based on modelId
-    const effectiveModelId = modelId || 'google/gemini-2.5-flash-image';
-    const gateway = getGateway(effectiveModelId);
-
-    let apiKey: string | undefined;
-    let apiUrl: string;
-    let requestBody: Record<string, any>;
-
-    if (gateway === 'xai') {
-      // Use xAI/Grok for image generation
-      apiKey = Deno.env.get("XAI_API_KEY");
-      if (!apiKey) {
-        return new Response(JSON.stringify({ 
-          error: "XAI_API_KEY not configured. Please add your Grok API key in settings." 
-        }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      apiUrl = "https://api.x.ai/v1/images/generations";
-      
-      // Compress prompt for xAI's 1024 byte limit
-      const encoder = new TextEncoder();
-      let compressedPrompt = fullPrompt;
-      if (encoder.encode(compressedPrompt).length > 900) {
-        compressedPrompt = compressedPrompt.substring(0, 700);
-      }
-      
-      requestBody = {
-        model: "grok-2-image-1212",
-        prompt: compressedPrompt,
-        n: 1,
-      };
-      
-      console.log(`[generate-cover-image] Using xAI gateway with model: grok-2-image-1212`);
-    } else {
-      // Use Lovable Gateway
-      apiKey = Deno.env.get("LOVABLE_API_KEY");
-      if (!apiKey) {
-        throw new Error("LOVABLE_API_KEY not configured");
-      }
-      apiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
-      requestBody = {
-        model: "google/gemini-2.5-flash-image",
-        messages: [{ role: "user", content: fullPrompt }],
-        modalities: ["image", "text"]
-      };
-      
-      console.log(`[generate-cover-image] Using Lovable gateway with model: google/gemini-2.5-flash-image`);
+    // GROK ONLY -- use xAI API
+    const XAI_API_KEY = Deno.env.get("XAI_API_KEY");
+    if (!XAI_API_KEY) {
+      return new Response(JSON.stringify({ 
+        error: "XAI_API_KEY not configured. Please add your Grok API key in settings." 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    const response = await fetch(apiUrl, {
+    // Compress prompt for xAI's 1024 byte limit
+    const encoder = new TextEncoder();
+    let compressedPrompt = fullPrompt;
+    if (encoder.encode(compressedPrompt).length > 900) {
+      compressedPrompt = compressedPrompt.substring(0, 700);
+    }
+
+    console.log(`[generate-cover-image] Using xAI with model: grok-2-image-1212`);
+
+    const response = await fetch("https://api.x.ai/v1/images/generations", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${XAI_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(requestBody),
+      body: JSON.stringify({
+        model: "grok-2-image-1212", // GROK ONLY
+        prompt: compressedPrompt,
+        n: 1,
+      }),
     });
 
     if (!response.ok) {
@@ -126,42 +94,12 @@ serve(async (req) => {
 
     const data = await response.json();
     
-    // Extract image URL from response - handle both gateway formats
     let imageUrl = null;
     
-    // xAI format: data.data[0].url
     if (data.data?.[0]?.url) {
       imageUrl = data.data[0].url;
     } else if (data.data?.[0]?.b64_json) {
       imageUrl = `data:image/png;base64,${data.data[0].b64_json}`;
-    }
-    
-    // Lovable/Gemini format
-    if (!imageUrl) {
-      const message = data.choices?.[0]?.message;
-      if (message?.content) {
-        if (typeof message.content === 'string' && message.content.startsWith('data:image')) {
-          imageUrl = message.content;
-        }
-      }
-      
-      if (!imageUrl && message?.images?.[0]) {
-        const img = message.images[0];
-        if (img.image_url?.url) {
-          imageUrl = img.image_url.url;
-        } else if (img.url) {
-          imageUrl = img.url;
-        } else if (typeof img === 'string') {
-          imageUrl = img;
-        }
-      }
-      
-      if (!imageUrl && message?.attachments?.[0]) {
-        const att = message.attachments[0];
-        if (att.url) {
-          imageUrl = att.url;
-        }
-      }
     }
 
     if (!imageUrl) {

@@ -250,7 +250,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
         currentValue,
         selected,
         appData,
-        appData.selectedModel || 'google/gemini-3-flash-preview',
+        appData.selectedModel || 'grok-3', // GROK ONLY
         customLabel
       );
       
@@ -1248,7 +1248,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
           sexType: selected?.sexType,
           age: selected?.age
         }}
-        modelId={appData.selectedModel || "google/gemini-3-flash-preview"}
+        modelId={appData.selectedModel || "grok-3"} /* GROK ONLY */
       />
     </div>
   );

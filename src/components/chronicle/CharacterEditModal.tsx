@@ -514,7 +514,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
           userMessage: concatenatedUser,
           aiResponse: concatenatedAi,
           characters: charactersData,
-          modelId: modelId || 'gemini-2.5-flash'
+          modelId: modelId || 'grok-3-mini' // GROK ONLY
         }
       });
       
@@ -845,7 +845,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
         body: {
           avatarPrompt,
           characterName: draft.name || character.name,
-          modelId: modelId || 'gemini-3-flash-preview'
+          modelId: modelId || 'grok-3' // GROK ONLY
         }
       });
       

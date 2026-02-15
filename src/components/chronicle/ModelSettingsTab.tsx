@@ -1,8 +1,13 @@
 
+// ============================================================================
+// GROK ONLY -- This app exclusively uses xAI Grok models.
+// Do NOT add Google Gemini, OpenAI, or any other provider.
+// ============================================================================
+
 import React, { useState, useEffect } from "react";
 import { Card, SectionTitle, Button, Label } from "./UI";
 import { LLM_MODELS, LLMModel } from "@/constants";
-import { Key, Zap, Shield, Share2 } from "lucide-react";
+import { Zap, Share2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/use-auth";
 import { 
@@ -12,15 +17,6 @@ import {
   SharedKeyStatus 
 } from "@/services/app-settings";
 
-// Group models by provider
-function groupModelsByProvider(models: LLMModel[]): Record<string, LLMModel[]> {
-  return models.reduce((acc, model) => {
-    if (!acc[model.provider]) acc[model.provider] = [];
-    acc[model.provider].push(model);
-    return acc;
-  }, {} as Record<string, LLMModel[]>);
-}
-
 interface ModelSettingsTabProps {
   selectedModelId: string;
   onSelectModel: (id: string) => void;
@@ -29,7 +25,7 @@ interface ModelSettingsTabProps {
 export function ModelSettingsTab({ selectedModelId, onSelectModel }: ModelSettingsTabProps) {
   const { user } = useAuth();
   const selectedModel = LLM_MODELS.find(m => m.id === selectedModelId);
-  const description = selectedModel?.description || 'Integrating external models for diverse narrative experiences.';
+  const description = selectedModel?.description || 'xAI Grok powers all AI interactions.';
 
   const [connectionStatus, setConnectionStatus] = useState<'idle' | 'checking' | 'connected' | 'error'>('connected');
   const [sharedKeyStatus, setSharedKeyStatus] = useState<SharedKeyStatus>({ 
@@ -39,7 +35,6 @@ export function ModelSettingsTab({ selectedModelId, onSelectModel }: ModelSettin
   const [isUpdatingShare, setIsUpdatingShare] = useState(false);
   const isAdmin = isAdminUser(user?.id);
 
-  // Fetch shared key status on mount
   useEffect(() => {
     checkSharedKeyStatus().then(setSharedKeyStatus);
   }, []);
@@ -60,66 +55,11 @@ export function ModelSettingsTab({ selectedModelId, onSelectModel }: ModelSettin
     setIsUpdatingShare(false);
   };
 
-  const groupedModels = groupModelsByProvider(LLM_MODELS);
-
-  const getProviderIcon = (provider: string) => {
-    switch (provider) {
-      case 'xAI':
-        return <Key className="w-3 h-3" />;
-      default:
-        return <Zap className="w-3 h-3" />;
-    }
-  };
-
-  const getProviderBadge = (provider: string) => {
-    switch (provider) {
-      case 'xAI':
-        if (sharedKeyStatus.xaiShared) {
-          return (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700 border border-emerald-200">
-              <Share2 className="w-2.5 h-2.5" />
-              Shared
-            </span>
-          );
-        }
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-orange-100 text-orange-700 border border-orange-200">
-            <Key className="w-2.5 h-2.5" />
-            BYOK
-          </span>
-        );
-      default:
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700 border border-emerald-200">
-            <Zap className="w-2.5 h-2.5" />
-            Ready
-          </span>
-        );
-    }
-  };
-
-  const getModelIconBadge = (model: LLMModel) => {
-    if (model.provider === 'xAI' && sharedKeyStatus.xaiShared) {
-      return <Share2 className={`w-4 h-4 ${selectedModelId === model.id ? 'text-emerald-400' : 'text-emerald-500'}`} />;
-    }
-    if (model.requiresKey) {
-      return <Key className={`w-4 h-4 ${selectedModelId === model.id ? 'text-orange-400' : 'text-orange-500'}`} />;
-    }
-    return <Zap className={`w-4 h-4 ${selectedModelId === model.id ? 'text-emerald-400' : 'text-emerald-500'}`} />;
-  };
-
-  const getModelIconBgClass = (model: LLMModel) => {
-    if (selectedModelId === model.id) return 'bg-white/10';
-    if (model.provider === 'xAI' && sharedKeyStatus.xaiShared) return 'bg-emerald-50';
-    if (model.requiresKey) return 'bg-orange-50';
-    return 'bg-emerald-50';
-  };
-
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <SectionTitle 
         title="Model Settings" 
-        subtitle="Configure your AI Narrative Engine. Choose from built-in models or bring your own API key." 
+        subtitle="All AI is powered by xAI Grok. Choose your preferred Grok model." 
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -127,59 +67,43 @@ export function ModelSettingsTab({ selectedModelId, onSelectModel }: ModelSettin
           
           <Card className="p-8">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-slate-900">Select Active Model</h3>
-              <div className="flex items-center gap-4 text-xs">
-                <span className="inline-flex items-center gap-1.5 text-emerald-600">
-                  <Zap className="w-3 h-3" /> Built-in
-                </span>
-                <span className="inline-flex items-center gap-1.5 text-orange-600">
-                  <Key className="w-3 h-3" /> Requires API Key
-                </span>
-              </div>
+              <h3 className="text-xl font-bold text-slate-900">Select Grok Model</h3>
+              <span className="inline-flex items-center gap-1.5 text-emerald-600 text-xs">
+                <Zap className="w-3 h-3" /> Powered by xAI
+              </span>
             </div>
             
-            <div className="space-y-6">
-              {Object.entries(groupedModels).map(([provider, models]) => (
-                <div key={provider} className="space-y-2">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-sm font-bold text-slate-600 uppercase tracking-wider">{provider}</span>
-                    {getProviderBadge(provider)}
+            <div className="space-y-2">
+              {LLM_MODELS.map((model) => (
+                <button
+                  key={model.id}
+                  disabled={model.disabled}
+                  onClick={() => onSelectModel(model.id)}
+                  className={`w-full text-left p-4 rounded-xl border transition-all duration-200 flex items-center justify-between group cursor-pointer ${
+                    selectedModelId === model.id 
+                      ? 'bg-slate-900 border-slate-900 shadow-xl scale-[1.02]' 
+                      : model.disabled 
+                        ? 'bg-slate-50 border-slate-100 opacity-50 cursor-not-allowed'
+                        : 'bg-white border-slate-200 hover:border-blue-400 hover:shadow-lg hover:scale-[1.01]'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${selectedModelId === model.id ? 'bg-white/10' : 'bg-emerald-50'}`}>
+                      <Zap className={`w-4 h-4 ${selectedModelId === model.id ? 'text-emerald-400' : 'text-emerald-500'}`} />
+                    </div>
+                    <div>
+                      <div className={`font-bold ${selectedModelId === model.id ? 'text-white' : 'text-slate-900'}`}>
+                        {model.name}
+                      </div>
+                      <div className={`text-xs mt-0.5 ${selectedModelId === model.id ? 'text-slate-400' : 'text-slate-500'}`}>
+                        {model.description.slice(0, 60)}...
+                      </div>
+                    </div>
                   </div>
-                  
-                  <div className="space-y-2">
-                    {models.map((model) => (
-                      <button
-                        key={model.id}
-                        disabled={model.disabled}
-                        onClick={() => onSelectModel(model.id)}
-                        className={`w-full text-left p-4 rounded-xl border transition-all duration-200 flex items-center justify-between group cursor-pointer ${
-                          selectedModelId === model.id 
-                            ? 'bg-slate-900 border-slate-900 shadow-xl scale-[1.02]' 
-                            : model.disabled 
-                              ? 'bg-slate-50 border-slate-100 opacity-50 cursor-not-allowed'
-                              : 'bg-white border-slate-200 hover:border-blue-400 hover:shadow-lg hover:scale-[1.01]'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className={`p-2 rounded-lg ${getModelIconBgClass(model)}`}>
-                            {getModelIconBadge(model)}
-                          </div>
-                          <div>
-                            <div className={`font-bold ${selectedModelId === model.id ? 'text-white' : 'text-slate-900'}`}>
-                              {model.name}
-                            </div>
-                            <div className={`text-xs mt-0.5 ${selectedModelId === model.id ? 'text-slate-400' : 'text-slate-500'}`}>
-                              {model.description.slice(0, 60)}...
-                            </div>
-                          </div>
-                        </div>
-                        {selectedModelId === model.id && (
-                          <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                  {selectedModelId === model.id && (
+                    <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                  )}
+                </button>
               ))}
             </div>
           </Card>
@@ -190,13 +114,7 @@ export function ModelSettingsTab({ selectedModelId, onSelectModel }: ModelSettin
                 <Label>Current Configuration</Label>
                 <h3 className="text-2xl font-black text-slate-900 tracking-tight">{selectedModel?.name}</h3>
                 <p className="text-blue-600 font-bold text-xs uppercase tracking-widest mt-1">
-                  Provider: {selectedModel?.provider}
-                  {selectedModel?.requiresKey && !sharedKeyStatus.xaiShared && (
-                    <span className="ml-2 text-orange-500">• BYOK</span>
-                  )}
-                  {selectedModel?.requiresKey && sharedKeyStatus.xaiShared && (
-                    <span className="ml-2 text-emerald-500">• Shared</span>
-                  )}
+                  Provider: xAI
                 </p>
               </div>
               <div className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${
@@ -222,75 +140,63 @@ export function ModelSettingsTab({ selectedModelId, onSelectModel }: ModelSettin
             <div className="pt-6 border-t border-slate-100">
               <h4 className="font-bold text-slate-900 mb-4">Connection Setup</h4>
               <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200">
-                {selectedModel?.requiresKey ? (
-                  <div className="space-y-4">
-                    {/* Admin-only toggle */}
-                    {isAdmin && (
-                      <div className="flex items-center justify-between p-4 bg-purple-50 rounded-xl border border-purple-200 mb-4">
-                        <div className="flex items-center gap-3">
-                          <Share2 className="w-5 h-5 text-purple-600" />
-                          <div>
-                            <p className="text-sm text-slate-700 font-medium">
-                              Share XAI key with all users
-                            </p>
-                            <p className="text-xs text-slate-500">
-                              When enabled, all users can use Grok models
-                            </p>
-                          </div>
+                <div className="space-y-4">
+                  {/* Admin-only toggle */}
+                  {isAdmin && (
+                    <div className="flex items-center justify-between p-4 bg-purple-50 rounded-xl border border-purple-200 mb-4">
+                      <div className="flex items-center gap-3">
+                        <Share2 className="w-5 h-5 text-purple-600" />
+                        <div>
+                          <p className="text-sm text-slate-700 font-medium">
+                            Share API key with all users
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            When enabled, all users can use Grok models
+                          </p>
                         </div>
-                        <Switch 
-                          checked={sharedKeyStatus.xaiShared}
-                          onCheckedChange={handleToggleShare}
-                          disabled={isUpdatingShare || !sharedKeyStatus.xaiConfigured}
-                        />
                       </div>
-                    )}
-                    
-                    {/* Status message for all users */}
-                    <div className="flex items-start gap-3">
-                      {sharedKeyStatus.xaiShared ? (
-                        <>
-                          <Share2 className="w-5 h-5 text-emerald-500 mt-0.5" />
-                          <div>
-                            <p className="text-sm text-slate-700 font-medium">
-                              A shared API key is available for all users.
-                            </p>
-                            <p className="text-xs text-slate-500 mt-1">
-                              You can use Grok models without providing your own key.
-                            </p>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <Shield className="w-5 h-5 text-orange-500 mt-0.5" />
-                          <div>
-                            <p className="text-sm text-slate-700 font-medium">
-                              This model requires an API key from {selectedModel.provider}.
-                            </p>
-                            <p className="text-xs text-slate-500 mt-1">
-                              {isAdmin 
-                                ? "Enable sharing above to let all users access Grok."
-                                : "Contact the app administrator for access."
-                              }
-                            </p>
-                          </div>
-                        </>
-                      )}
+                      <Switch 
+                        checked={sharedKeyStatus.xaiShared}
+                        onCheckedChange={handleToggleShare}
+                        disabled={isUpdatingShare || !sharedKeyStatus.xaiConfigured}
+                      />
                     </div>
-                    <Button variant="secondary" onClick={handleRefreshConnection} disabled={connectionStatus === 'checking'}>
-                      {sharedKeyStatus.xaiShared ? 'Verify Connection' : 'Check Key Status'}
-                    </Button>
+                  )}
+                  
+                  <div className="flex items-start gap-3">
+                    {sharedKeyStatus.xaiShared ? (
+                      <>
+                        <Share2 className="w-5 h-5 text-emerald-500 mt-0.5" />
+                        <div>
+                          <p className="text-sm text-slate-700 font-medium">
+                            Grok API key is active and shared with all users.
+                          </p>
+                          <p className="text-xs text-slate-500 mt-1">
+                            All Grok models are available.
+                          </p>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="w-5 h-5 text-amber-500 mt-0.5" />
+                        <div>
+                          <p className="text-sm text-slate-700 font-medium">
+                            Grok API key not yet shared.
+                          </p>
+                          <p className="text-xs text-slate-500 mt-1">
+                            {isAdmin 
+                              ? "Enable sharing above to let all users access Grok."
+                              : "Contact the app administrator for access."
+                            }
+                          </p>
+                        </div>
+                      </>
+                    )}
                   </div>
-                ) : (
-                  <>
-                    <p className="text-sm text-slate-700 font-medium mb-4">
-                      This model is provided by Lovable AI and works out of the box. No API key required.
-                    </p>
-                    <Button variant="secondary" onClick={handleRefreshConnection} disabled={connectionStatus === 'checking'}>
-                      Refresh Connection
-                    </Button>
-                  </>
-                )}
+                  <Button variant="secondary" onClick={handleRefreshConnection} disabled={connectionStatus === 'checking'}>
+                    Verify Connection
+                  </Button>
+                </div>
               </div>
             </div>
           </Card>
@@ -300,12 +206,12 @@ export function ModelSettingsTab({ selectedModelId, onSelectModel }: ModelSettin
           <Card className="p-6 bg-slate-900 text-white overflow-hidden relative">
             <div className="relative z-10">
               <h4 className="font-black text-lg tracking-tight mb-2">Narrative Core</h4>
-              <p className="text-xs text-white/60 mb-6">Optimized for descriptive text generation.</p>
+              <p className="text-xs text-white/60 mb-6">Powered by xAI Grok — unrestricted creative AI.</p>
               
               <ul className="space-y-3">
                 <li className="flex items-center gap-3 text-xs font-bold">
                   <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
-                  Context: 1M+ Tokens
+                  Context: 128K Tokens
                 </li>
                 <li className="flex items-center gap-3 text-xs font-bold">
                   <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
@@ -313,43 +219,25 @@ export function ModelSettingsTab({ selectedModelId, onSelectModel }: ModelSettin
                 </li>
                 <li className="flex items-center gap-3 text-xs font-bold">
                   <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
-                  Creative Logic: Enabled
+                  Content Restrictions: Minimal
                 </li>
               </ul>
             </div>
             <div className="absolute -right-4 -bottom-4 text-[120px] font-black text-white/5 italic select-none">AI</div>
           </Card>
 
-          <Card className="p-6 bg-gradient-to-br from-orange-50 to-amber-50 border-orange-200 border-2">
-            <div className="flex items-center gap-2 mb-3">
-              <Key className="w-5 h-5 text-orange-600" />
-              <h4 className="font-bold text-slate-900">xAI / Grok</h4>
-            </div>
-            <p className="text-sm text-slate-600 leading-relaxed mb-4">
+          <Card className="p-8 bg-white border-blue-100 border-2">
+            <h4 className="font-bold text-slate-900 mb-2">About Grok</h4>
+            <p className="text-sm text-slate-500 leading-relaxed mb-4">
               Grok models have fewer content restrictions, making them ideal for mature roleplay scenarios and creative freedom.
             </p>
             <a 
               href="https://console.x.ai/" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="text-orange-600 font-bold text-xs uppercase tracking-widest hover:underline"
-            >
-              Get API Key →
-            </a>
-          </Card>
-
-          <Card className="p-8 bg-white border-blue-100 border-2">
-            <h4 className="font-bold text-slate-900 mb-2">Usage & Billing</h4>
-            <p className="text-sm text-slate-500 leading-relaxed mb-4">
-              Built-in models are included with Lovable. BYOK models use your personal API quota.
-            </p>
-            <a 
-              href="https://docs.lovable.dev/features/ai" 
-              target="_blank" 
-              rel="noopener noreferrer"
               className="text-blue-600 font-bold text-xs uppercase tracking-widest hover:underline"
             >
-              View Docs →
+              Learn More →
             </a>
           </Card>
         </div>

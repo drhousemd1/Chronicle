@@ -1,5 +1,7 @@
-// Edge function to generate detailed side character profile
-// Uses the user's selected model for text generation
+// ============================================================================
+// GROK ONLY -- Side character generation uses xAI Grok exclusively.
+// Do NOT add Gemini or OpenAI. All text generation goes through xAI API.
+// ============================================================================
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -8,24 +10,6 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-function getGateway(modelId: string): 'lovable' | 'xai' {
-  if (modelId.startsWith('grok')) {
-    return 'xai';
-  }
-  return 'lovable';
-}
-
-function normalizeModelId(modelId: string): string {
-  // Handle legacy model IDs that don't have provider prefix
-  if (modelId.startsWith('gemini-')) {
-    return `google/${modelId}`;
-  }
-  if (modelId.startsWith('gpt-')) {
-    return `openai/${modelId}`;
-  }
-  return modelId;
-}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -46,31 +30,14 @@ serve(async (req) => {
 
     const { name, dialogContext, extractedTraits, worldContext, modelId } = await req.json();
     
-    // Use provided modelId or fall back to default
-    const effectiveModelId = modelId || 'google/gemini-3-flash-preview';
-    const gateway = getGateway(effectiveModelId);
+    // GROK ONLY -- always use xAI
+    const effectiveModelId = modelId || 'grok-3';
     
-    console.log(`[generate-side-character] Using model: ${effectiveModelId}, gateway: ${gateway}`);
+    console.log(`[generate-side-character] Using model: ${effectiveModelId} (xAI)`);
 
-    // Get the appropriate API key and URL based on gateway
-    let apiKey: string | undefined;
-    let apiUrl: string;
-    let modelForRequest: string;
-
-    if (gateway === 'xai') {
-      apiKey = Deno.env.get("XAI_API_KEY");
-      if (!apiKey) {
-        throw new Error("XAI_API_KEY not configured. Please add your Grok API key in settings.");
-      }
-      apiUrl = "https://api.x.ai/v1/chat/completions";
-      modelForRequest = effectiveModelId;
-    } else {
-      apiKey = Deno.env.get("LOVABLE_API_KEY");
-      if (!apiKey) {
-        throw new Error("LOVABLE_API_KEY not configured");
-      }
-      apiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
-      modelForRequest = normalizeModelId(effectiveModelId);
+    const XAI_API_KEY = Deno.env.get("XAI_API_KEY");
+    if (!XAI_API_KEY) {
+      throw new Error("XAI_API_KEY not configured. Please add your Grok API key in settings.");
     }
 
     const prompt = `Based on this character's first appearance in a roleplay scenario, generate a detailed profile.
@@ -117,14 +84,14 @@ Generate a JSON object with these fields (be creative but consistent with the di
 
 Return ONLY valid JSON, no markdown formatting.`;
 
-    const response = await fetch(apiUrl, {
+    const response = await fetch("https://api.x.ai/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${XAI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: modelForRequest,
+        model: effectiveModelId,
         messages: [
           { 
             role: "system", 
@@ -138,7 +105,7 @@ Return ONLY valid JSON, no markdown formatting.`;
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
+      console.error("xAI error:", response.status, errorText);
       return new Response(JSON.stringify({ error: "AI generation failed", details: errorText }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -148,7 +115,6 @@ Return ONLY valid JSON, no markdown formatting.`;
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || "{}";
     
-    // Clean up the response - remove markdown code blocks if present
     let cleanContent = content.trim();
     if (cleanContent.startsWith("```json")) {
       cleanContent = cleanContent.slice(7);
