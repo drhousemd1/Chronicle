@@ -25,6 +25,8 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 interface GalleryHubProps {
   onPlay: (scenarioId: string, publishedScenarioId: string) => void;
   onSaveChange?: () => void;
+  sortBy: SortOption;
+  onSortChange: (sort: SortOption) => void;
 }
 
 const defaultFilters: CategoryFilters = {
@@ -35,13 +37,12 @@ const defaultFilters: CategoryFilters = {
   customTags: [],
 };
 
-export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange }) => {
+export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, sortBy, onSortChange }) => {
   const { user } = useAuth();
   const [scenarios, setScenarios] = useState<PublishedScenario[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchTags, setSearchTags] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState<SortOption>('all');
   const [likes, setLikes] = useState<Set<string>>(new Set());
   const [saves, setSaves] = useState<Set<string>>(new Set());
   
@@ -242,7 +243,6 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange }) 
         style={{
           backgroundColor: 'rgba(18, 18, 20, 0.8)',
           backdropFilter: 'blur(12px)',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
         }}
       >
         {/* Search input */}
@@ -253,7 +253,7 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange }) 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type here to Search for Characters"
+            placeholder=""
             className="w-full pl-12 pr-24 py-3 bg-[#3a3a3f]/50 border border-white/10 rounded-xl text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#4a5f7f] focus:border-transparent"
           />
           <button
@@ -265,7 +265,7 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange }) 
         </div>
         
         {/* Browse Categories button */}
-        <button
+         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
           className={cn(
             "flex items-center gap-2 px-4 py-3 rounded-lg font-semibold text-sm transition-colors flex-shrink-0",
@@ -284,6 +284,14 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange }) 
         </button>
       </header>
 
+      {/* Sticky blue gradient divider */}
+      <div 
+        className="sticky top-[60px] z-40 h-px opacity-50"
+        style={{
+          backgroundImage: 'linear-gradient(90deg, transparent 0%, rgb(59, 130, 246) 50%, transparent 100%)',
+        }}
+      />
+
       {/* Main content with sidebar */}
       <div className="flex-1 flex overflow-hidden">
         {/* Category Sidebar */}
@@ -296,7 +304,7 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange }) 
         
         {/* Main content area */}
         <main className="flex-1 overflow-y-auto">
-          {/* Sort Filter Tabs + Active Filters */}
+          {/* Active Filters */}
           <div className="px-8 pt-6 pb-4">
             {/* Active filters display */}
             {(searchTags.length > 0 || activeFilterCount > 0) && (
@@ -361,39 +369,6 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange }) 
               </div>
             )}
 
-            {/* Sort Filter Toggle */}
-            <div className="flex justify-center">
-              <div className="flex items-center bg-white/10 rounded-full p-1 gap-0.5 border border-white/10">
-                {[
-                  { key: 'all' as SortOption, label: 'All Stories' },
-                  { key: 'recent' as SortOption, label: 'Recent' },
-                  { key: 'liked' as SortOption, label: 'Liked' },
-                  { key: 'saved' as SortOption, label: 'Saved' },
-                  { key: 'played' as SortOption, label: 'Played' },
-                ].map((option) => (
-                  <button
-                    key={option.key}
-                    onClick={() => setSortBy(option.key)}
-                    className={cn(
-                      "px-4 py-1.5 rounded-full text-xs font-bold transition-all",
-                      sortBy === option.key 
-                        ? "bg-[#4a5f7f] text-white shadow-sm" 
-                        : "text-zinc-400 hover:text-zinc-200"
-                    )}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            
-            {/* Blue gradient divider */}
-            <div 
-              className="mt-6 h-px opacity-50"
-              style={{
-                backgroundImage: 'linear-gradient(90deg, transparent 0%, rgb(59, 130, 246) 50%, transparent 100%)',
-              }}
-            />
           </div>
 
           {/* Gallery Grid */}

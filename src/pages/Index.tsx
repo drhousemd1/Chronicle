@@ -148,6 +148,10 @@ const IndexContent = () => {
   // Hub filter state for "Your Stories" tab
   type HubFilter = "my" | "bookmarked" | "published" | "all";
   const [hubFilter, setHubFilter] = useState<HubFilter>("all");
+
+  // Gallery sort state (lifted from GalleryHub)
+  type GallerySortOption = 'all' | 'recent' | 'liked' | 'saved' | 'played';
+  const [gallerySortBy, setGallerySortBy] = useState<GallerySortOption>('all');
   const [savedScenarios, setSavedScenarios] = useState<SavedScenario[]>([]);
   const [publishedScenariosData, setPublishedScenariosData] = useState<Map<string, PublishedScenario>>(new Map());
   const [contentThemesMap, setContentThemesMap] = useState<Map<string, ContentThemes>>(new Map());
@@ -1478,9 +1482,33 @@ const IndexContent = () => {
                 </h1>
               )}
               {tab === "gallery" && (
-                <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
-                  Community Gallery
-                </h1>
+                <div className="flex items-center gap-6">
+                  <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
+                    Community Gallery
+                  </h1>
+                  <div className="flex items-center bg-[#2b2b2e] rounded-full p-1 gap-0.5 border border-[#2b2b2e]">
+                    {[
+                      { key: 'all' as GallerySortOption, label: 'All Stories' },
+                      { key: 'recent' as GallerySortOption, label: 'Recent' },
+                      { key: 'liked' as GallerySortOption, label: 'Liked' },
+                      { key: 'saved' as GallerySortOption, label: 'Saved' },
+                      { key: 'played' as GallerySortOption, label: 'Played' },
+                    ].map((option) => (
+                      <button
+                        key={option.key}
+                        onClick={() => setGallerySortBy(option.key)}
+                        className={cn(
+                          "px-4 py-1.5 rounded-full text-xs font-bold transition-all",
+                          gallerySortBy === option.key 
+                            ? "bg-[#4a5f7f] text-white shadow-sm" 
+                            : "text-[#a1a1aa] hover:text-[#e4e4e7]"
+                        )}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
             <div className="flex items-center gap-3">
@@ -1706,7 +1734,7 @@ const IndexContent = () => {
           )}
 
           {tab === "gallery" && (
-            <GalleryHub onPlay={handleGalleryPlay} onSaveChange={handleGallerySaveChange} />
+            <GalleryHub onPlay={handleGalleryPlay} onSaveChange={handleGallerySaveChange} sortBy={gallerySortBy} onSortChange={setGallerySortBy} />
           )}
 
           {tab === "image_library" && (
