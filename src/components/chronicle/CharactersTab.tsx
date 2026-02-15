@@ -231,12 +231,6 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
 
   const selected = characters.find(c => c.id === selectedId);
 
-  // Build world context for AI enhancement
-  const buildWorldContext = () => {
-    return `Setting: ${appData.world.core.settingOverview || 'Not specified'}
-Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
-  };
-
   // Handler for per-field AI enhancement
   const handleEnhanceField = async (
     fieldKey: string,
@@ -250,13 +244,12 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
     setEnhancingField(fieldKey);
     try {
       const currentValue = getCurrentValue();
-      const worldContext = buildWorldContext();
       
       const enhanced = await aiEnhanceCharacterField(
         fieldKey,
         currentValue,
         selected,
-        worldContext,
+        appData,
         appData.selectedModel || 'google/gemini-3-flash-preview',
         customLabel
       );

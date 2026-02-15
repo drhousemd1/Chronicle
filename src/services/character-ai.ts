@@ -1,7 +1,197 @@
 
-import { ScenarioData, Character, CharacterTraitSection, PhysicalAppearance, CurrentlyWearing, PreferredClothing, WorldCore } from "@/types";
+import { ScenarioData, Character, CharacterTraitSection, PhysicalAppearance, CurrentlyWearing, PreferredClothing, WorldCore, CharacterExtraRow } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { uid, now } from "@/utils";
+
+// ============================================================
+// Shared Context Builders
+// ============================================================
+
+/**
+ * Build comprehensive world + other-characters context from the full scenario data.
+ * Used by BOTH per-row sparkle and AI Fill/Generate.
+ */
+function buildFullContext(appData: ScenarioData, targetCharacterId: string): string {
+  const parts: string[] = [];
+  const core = appData.world.core;
+
+  // World info
+  if (core.scenarioName) parts.push(`Scenario: ${core.scenarioName}`);
+  if (core.briefDescription) parts.push(`Description: ${core.briefDescription}`);
+  if (core.storyPremise) parts.push(`Premise: ${core.storyPremise}`);
+
+  // Locations — structured first, fallback to legacy
+  if (core.structuredLocations?.length) {
+    const locs = core.structuredLocations.map(l => `  - ${l.label}: ${l.description}`).join('\n');
+    parts.push(`Locations:\n${locs}`);
+  } else if (core.locations) {
+    parts.push(`Locations: ${core.locations}`);
+  }
+
+  if (core.factions) parts.push(`Factions: ${core.factions}`);
+  if (core.toneThemes) parts.push(`Tone & Themes: ${core.toneThemes}`);
+  if (core.plotHooks) parts.push(`Plot Hooks: ${core.plotHooks}`);
+  if (core.historyTimeline) parts.push(`History: ${core.historyTimeline}`);
+  if (core.dialogFormatting) parts.push(`Dialog Style: ${core.dialogFormatting}`);
+
+  // Content themes
+  const ct = appData.contentThemes;
+  if (ct) {
+    const themeParts: string[] = [];
+    if (ct.storyType) themeParts.push(`Story Type: ${ct.storyType}`);
+    if (ct.genres?.length) themeParts.push(`Genres: ${ct.genres.join(', ')}`);
+    if (ct.characterTypes?.length) themeParts.push(`Character Types: ${ct.characterTypes.join(', ')}`);
+    if (ct.origin?.length) themeParts.push(`Origin: ${ct.origin.join(', ')}`);
+    if (themeParts.length) parts.push(themeParts.join('; '));
+  }
+
+  // Custom world sections
+  if (core.customWorldSections?.length) {
+    for (const sec of core.customWorldSections) {
+      const filled = sec.items.filter(i => i.label && i.value);
+      if (filled.length) {
+        parts.push(`${sec.title}:\n${filled.map(i => `  - ${i.label}: ${i.value}`).join('\n')}`);
+      }
+    }
+  }
+
+  // Story goals
+  if (core.storyGoals?.length) {
+    const goalLines = core.storyGoals.map(g => `  - ${g.title}${g.desiredOutcome ? `: ${g.desiredOutcome}` : ''}`).join('\n');
+    parts.push(`Story Goals:\n${goalLines}`);
+  }
+
+  // Other characters (comprehensive summaries)
+  const otherChars = appData.characters.filter(c => c.id !== targetCharacterId);
+  if (otherChars.length > 0) {
+    const charSummaries = otherChars.map(c => {
+      const bits: string[] = [];
+      bits.push(c.name || 'Unnamed');
+      if (c.roleDescription) bits.push(`role: ${c.roleDescription}`);
+      if (c.age) bits.push(`age ${c.age}`);
+      if (c.sexType) bits.push(c.sexType);
+      if (c.tags) bits.push(`tags: ${c.tags}`);
+      if (c.location) bits.push(`at: ${c.location}`);
+      // Key personality summary
+      const pers = c.personality;
+      if (pers) {
+        const traits = (pers.splitMode
+          ? [...(pers.outwardTraits || []), ...(pers.inwardTraits || [])]
+          : (pers.traits || [])
+        ).filter(t => t.value).map(t => t.value).slice(0, 3);
+        if (traits.length) bits.push(`personality: ${traits.join(', ')}`);
+      }
+      // Relationship extras
+      const rels = c.relationships?._extras?.filter(e => e.label && e.value);
+      if (rels?.length) bits.push(`relationships: ${rels.map(r => `${r.label}: ${r.value}`).join('; ')}`);
+      return `  - ${bits.join(', ')}`;
+    }).join('\n');
+    parts.push(`\nOTHER CHARACTERS IN SCENARIO:\n${charSummaries}`);
+  }
+
+  return parts.join('\n') || 'No world context available';
+}
+
+/**
+ * Build comprehensive self-context from everything already filled on a character.
+ * Ensures new fields stay consistent with existing data.
+ */
+function buildCharacterSelfContext(character: Character): string {
+  const parts: string[] = [];
+
+  // Basic info
+  if (character.name && character.name !== "New Character") parts.push(`Name: ${character.name}`);
+  if (character.age) parts.push(`Age: ${character.age}`);
+  if (character.sexType) parts.push(`Sex/Identity: ${character.sexType}`);
+  if (character.roleDescription) parts.push(`Role: ${character.roleDescription}`);
+  if (character.tags) parts.push(`Tags: ${character.tags}`);
+  if (character.location) parts.push(`Location: ${character.location}`);
+  if (character.currentMood) parts.push(`Current Mood: ${character.currentMood}`);
+  if (character.nicknames) parts.push(`Nicknames: ${character.nicknames}`);
+
+  // Physical appearance (filled fields only)
+  const pa = character.physicalAppearance;
+  if (pa) {
+    const paItems = Object.entries(pa)
+      .filter(([k, v]) => k !== '_extras' && v)
+      .map(([k, v]) => `${k}: ${v}`);
+    const paExtras = (pa._extras || []).filter(e => e.label && e.value).map(e => `${e.label}: ${e.value}`);
+    const allPa = [...paItems, ...paExtras];
+    if (allPa.length) parts.push(`Physical Appearance: ${allPa.join(', ')}`);
+  }
+
+  // Currently wearing
+  const cw = character.currentlyWearing;
+  if (cw) {
+    const cwItems = Object.entries(cw).filter(([k, v]) => k !== '_extras' && v).map(([k, v]) => `${k}: ${v}`);
+    const cwExtras = (cw._extras || []).filter(e => e.label && e.value).map(e => `${e.label}: ${e.value}`);
+    const allCw = [...cwItems, ...cwExtras];
+    if (allCw.length) parts.push(`Currently Wearing: ${allCw.join(', ')}`);
+  }
+
+  // Preferred clothing
+  const pc = character.preferredClothing;
+  if (pc) {
+    const pcItems = Object.entries(pc).filter(([k, v]) => k !== '_extras' && v).map(([k, v]) => `${k}: ${v}`);
+    const pcExtras = (pc._extras || []).filter(e => e.label && e.value).map(e => `${e.label}: ${e.value}`);
+    const allPc = [...pcItems, ...pcExtras];
+    if (allPc.length) parts.push(`Preferred Clothing: ${allPc.join(', ')}`);
+  }
+
+  // Background
+  const bg = character.background;
+  if (bg) {
+    const bgItems = Object.entries(bg).filter(([k, v]) => k !== '_extras' && v).map(([k, v]) => `${k}: ${v}`);
+    const bgExtras = (bg._extras || []).filter(e => e.label && e.value).map(e => `${e.label}: ${e.value}`);
+    const allBg = [...bgItems, ...bgExtras];
+    if (allBg.length) parts.push(`Background: ${allBg.join(', ')}`);
+  }
+
+  // Personality
+  const pers = character.personality;
+  if (pers) {
+    const traits = (pers.splitMode
+      ? [
+          ...(pers.outwardTraits || []).filter(t => t.value).map(t => `(outward) ${t.label}: ${t.value}`),
+          ...(pers.inwardTraits || []).filter(t => t.value).map(t => `(inward) ${t.label}: ${t.value}`)
+        ]
+      : (pers.traits || []).filter(t => t.value).map(t => `${t.label}: ${t.value}`)
+    );
+    if (traits.length) parts.push(`Personality: ${traits.join('; ')}`);
+  }
+
+  // Extras-only sections
+  const extrasSections = [
+    { key: 'tone', label: 'Tone' },
+    { key: 'keyLifeEvents', label: 'Key Life Events' },
+    { key: 'relationships', label: 'Relationships' },
+    { key: 'secrets', label: 'Secrets' },
+    { key: 'fears', label: 'Fears' },
+  ] as const;
+  for (const { key, label } of extrasSections) {
+    const sec = character[key];
+    const filled = sec?._extras?.filter(e => e.label && e.value);
+    if (filled?.length) {
+      parts.push(`${label}: ${filled.map(e => `${e.label}: ${e.value}`).join('; ')}`);
+    }
+  }
+
+  // Goals
+  if (character.goals?.length) {
+    const goalLines = character.goals.map(g => `${g.title}${g.desiredOutcome ? ` → ${g.desiredOutcome}` : ''}`);
+    parts.push(`Goals: ${goalLines.join('; ')}`);
+  }
+
+  // Custom sections
+  for (const sec of character.sections) {
+    const filled = sec.items.filter(i => i.label && i.value);
+    if (filled.length) {
+      parts.push(`${sec.title}: ${filled.map(i => `${i.label}: ${i.value}`).join('; ')}`);
+    }
+  }
+
+  return parts.join('\n');
+}
 
 // ============================================================
 // Per-Field AI Enhancement (Structured Expansion)
@@ -51,34 +241,12 @@ const CHARACTER_FIELD_PROMPTS: Record<string, { label: string; instruction: stri
 function buildCharacterFieldPrompt(
   fieldName: string,
   currentValue: string,
-  characterContext: Partial<Character>,
-  worldContext: string,
+  fullContext: string,
+  selfContext: string,
   customLabel?: string
 ): string {
   const fieldConfig = CHARACTER_FIELD_PROMPTS[fieldName] || CHARACTER_FIELD_PROMPTS.custom;
   const label = customLabel || fieldConfig.label;
-  
-  // Build context from character data
-  const contextParts: string[] = [];
-  if (characterContext.name && characterContext.name !== "New Character") {
-    contextParts.push(`- Name: ${characterContext.name}`);
-  }
-  if (characterContext.age) {
-    contextParts.push(`- Age: ${characterContext.age}`);
-  }
-  if (characterContext.sexType) {
-    contextParts.push(`- Sex/Identity: ${characterContext.sexType}`);
-  }
-  if (characterContext.roleDescription) {
-    contextParts.push(`- Role: ${characterContext.roleDescription}`);
-  }
-  if (characterContext.tags) {
-    contextParts.push(`- Tags: ${characterContext.tags}`);
-  }
-
-  const characterSection = contextParts.length > 0 
-    ? `CHARACTER CONTEXT:\n${contextParts.join('\n')}\n\n` 
-    : '';
 
   const currentValueSection = currentValue.trim()
     ? `CURRENT VALUE (enhance while preserving intent):\n${currentValue}\n\n`
@@ -92,11 +260,15 @@ RULES:
 3. NO purple prose or flowery language
 4. Format: State the fact, then its implication if relevant
 5. ${currentValue.trim() ? 'Preserve the existing content\'s intent while enhancing it' : 'Generate appropriate content from available context'}
+6. Stay consistent with all existing character data and world context below
 
-WORLD CONTEXT:
-${worldContext}
+WORLD & SCENARIO CONTEXT:
+${fullContext}
 
-${characterSection}${currentValueSection}FIELD: ${label}
+THIS CHARACTER'S EXISTING DATA:
+${selfContext || 'No data filled yet.'}
+
+${currentValueSection}FIELD: ${label}
 INSTRUCTION: ${fieldConfig.instruction}
 
 Return ONLY the enhanced text. No explanations, no prefixes, no markdown formatting.`;
@@ -108,12 +280,14 @@ Return ONLY the enhanced text. No explanations, no prefixes, no markdown formatt
 export async function aiEnhanceCharacterField(
   fieldName: string,
   currentValue: string,
-  characterContext: Partial<Character>,
-  worldContext: string,
+  character: Character,
+  appData: ScenarioData,
   modelId: string,
   customLabel?: string
 ): Promise<string> {
-  const prompt = buildCharacterFieldPrompt(fieldName, currentValue, characterContext, worldContext, customLabel);
+  const fullContext = buildFullContext(appData, character.id);
+  const selfContext = buildCharacterSelfContext(character);
+  const prompt = buildCharacterFieldPrompt(fieldName, currentValue, fullContext, selfContext, customLabel);
 
   console.log(`[character-ai] Enhancing field: ${fieldName} with model: ${modelId}`);
 
@@ -349,17 +523,15 @@ function buildAiFillPrompt(
     ? 'EXISTING CHARACTER INFO (maintain strong consistency with these details):'
     : 'EXISTING CHARACTER INFO (use as light reference, prioritize user guidance):';
 
+  const selfContext = buildCharacterSelfContext(character);
+
   return `You are filling in empty character fields for "${character.name || 'a character'}".
 ${userPromptSection}
-WORLD CONTEXT:
+WORLD & SCENARIO CONTEXT:
 ${worldContext}
 
 ${contextEmphasis}
-- Name: ${character.name || 'Not set'}
-- Age: ${character.age || 'Not set'}
-- Sex/Identity: ${character.sexType || 'Not set'}
-- Role: ${character.roleDescription || 'Not set'}
-- Tags: ${character.tags || 'None'}
+${selfContext || 'No details filled yet.'}
 
 FIELDS THAT NEED TO BE FILLED:
 ${fieldsToFill.join("\n")}
@@ -493,9 +665,11 @@ function buildAiGeneratePrompt(
     emptyFieldsList.push(`Custom Fields: ${customLabels}`);
   }
 
+  const selfContext = buildCharacterSelfContext(character);
+
   return `You are creating a complete, well-rounded character profile for "${character.name || 'a character'}".
 ${userPromptSection}
-WORLD CONTEXT:
+WORLD & SCENARIO CONTEXT:
 ${worldContext}
 
 STORY THEMES DETECTED:
@@ -508,11 +682,7 @@ ${storyContext.isSciFi ? "- Sci-Fi/Futuristic setting" : ""}
 ${storyContext.isAction ? "- Action/Combat focus" : ""}
 
 ${contextEmphasis}
-- Name: ${character.name || 'Not set'}
-- Age: ${character.age || 'Not set'}
-- Sex/Identity: ${character.sexType || 'Not set'}
-- Role: ${character.roleDescription || 'Not set'}
-- Tags: ${character.tags || 'None'}
+${selfContext || 'No details filled yet.'}
 
 EMPTY FIELDS TO FILL:
 ${emptyFieldsList.length > 0 ? emptyFieldsList.join("\n") : "None"}
@@ -637,16 +807,8 @@ export async function aiFillCharacter(
     return {}; // Nothing to fill
   }
 
-  const worldContext = [
-    appData.world.core.scenarioName ? `Scenario: ${appData.world.core.scenarioName}` : null,
-    appData.world.core.briefDescription ? `Setting: ${appData.world.core.briefDescription}` : null,
-    appData.world.core.storyPremise ? `Premise: ${appData.world.core.storyPremise}` : null,
-    appData.world.core.toneThemes ? `Tone & Themes: ${appData.world.core.toneThemes}` : null,
-    appData.world.core.factions ? `Factions: ${appData.world.core.factions}` : null,
-    appData.world.core.historyTimeline ? `History: ${appData.world.core.historyTimeline}` : null,
-    appData.world.core.plotHooks ? `Plot Hooks: ${appData.world.core.plotHooks}` : null,
-    appData.world.core.dialogFormatting ? `Dialog Formatting: ${appData.world.core.dialogFormatting}` : null,
-  ].filter(Boolean).join('\n') || 'Not specified';
+  const worldContext = buildFullContext(appData, character.id);
+  const selfContext = buildCharacterSelfContext(character);
 
   const prompt = buildAiFillPrompt(character, emptyFields, emptyCustomItems, worldContext, userPrompt, useExistingDetails);
 
@@ -818,16 +980,7 @@ export async function aiGenerateCharacter(
   const existingSectionTitles = character.sections.map(s => s.title);
   const storyContext = analyzeStoryType(appData.world.core);
 
-  const worldContext = [
-    appData.world.core.scenarioName ? `Scenario: ${appData.world.core.scenarioName}` : null,
-    appData.world.core.briefDescription ? `Setting: ${appData.world.core.briefDescription}` : null,
-    appData.world.core.storyPremise ? `Premise: ${appData.world.core.storyPremise}` : null,
-    appData.world.core.toneThemes ? `Tone & Themes: ${appData.world.core.toneThemes}` : null,
-    appData.world.core.factions ? `Factions: ${appData.world.core.factions}` : null,
-    appData.world.core.historyTimeline ? `History: ${appData.world.core.historyTimeline}` : null,
-    appData.world.core.plotHooks ? `Plot Hooks: ${appData.world.core.plotHooks}` : null,
-    appData.world.core.dialogFormatting ? `Dialog Formatting: ${appData.world.core.dialogFormatting}` : null,
-  ].filter(Boolean).join('\n') || 'Not specified';
+  const worldContext = buildFullContext(appData, character.id);
 
   const prompt = buildAiGeneratePrompt(character, emptyFields, emptyCustomItems, existingSectionTitles, storyContext, worldContext, userPrompt, useExistingDetails);
 
