@@ -1,77 +1,47 @@
 
 
-# Internal Thought Quality Improvement
+# Add Internal Thought Violation Check
 
 ## Problem
 
-The current prompt tells Grok *how to format* internal thoughts (parentheses) and *when to include them* (naturally, frequently during NSFW) but never defines *what they should contain* or *what narrative purpose they serve*. This produces flat, dead-end statements that don't move the story forward or reveal character depth.
+The INTERNAL THOUGHT QUALITY block defines what good thoughts look like, but it lacks the enforcement mechanism that makes the Control and Line of Sight rules actually work: a **VIOLATION CHECK** step that instructs the model to re-read its own output and actively rewrite any thoughts that fail.
 
-**Pattern of current output:**
-- "He has no idea what's coming." (Vague -- what IS coming?)
-- "He's already learning. Soon he'll crave this as much as I do." (What specifically will he crave? What's the plan?)
-- "Every hesitation just makes him more mine." (Dead-end observation -- how? What's the next step?)
+The existing pattern that works:
+- Control rules: "re-read it and DELETE any paragraphs where a User-controlled character speaks"
+- Line of Sight: "re-read it and DELETE any references where a character names specific hidden attributes"
 
-These are all **conclusions without premises** -- they state a verdict but reveal nothing about the reasoning, strategy, or upcoming actions behind it.
+Both tell the model to (1) re-read, (2) identify violations, and (3) take a specific corrective action (delete/rewrite). The internal thought block currently only says "don't do this" but never says "check your work and fix it."
 
 ## Solution
 
-Add a dedicated **INTERNAL THOUGHT QUALITY** block to the prompt in `src/services/llm.ts`. This block will be inserted into the `narrativeBehaviorRules` section (alongside the existing Dialogue Requirements block at ~line 330), since it governs narrative output quality for all scenes.
+Append a VIOLATION CHECK to the end of the INTERNAL THOUGHT QUALITY block (after line 372, before the closing backtick on line 373). This check will:
 
-## Proposed Prompt Block
+1. Tell the model to re-read all parenthetical thoughts in its response
+2. Test each one against the four purposes (strategy, desire, assessment, foreshadowing)
+3. If a thought fails: **rewrite it** with specific, actionable content -- not just delete it
+
+The "rewrite" instruction is critical. For Control and Line of Sight, deletion is the right fix (remove the violation). For thoughts, deletion would just remove characterization. The fix is to make the thought substantive, not remove it.
+
+## Proposed Addition
+
+Appended after "Keep thoughts concise but substantive: 1-3 sentences that carry real narrative weight." (line 371-372):
 
 ```text
-- INTERNAL THOUGHT QUALITY (MANDATORY):
-    * Internal thoughts in parentheses are NOT filler -- they are a narrative 
-      tool for revealing what characters WON'T say aloud.
-    * Every internal thought MUST serve at least one of these purposes:
-      1. STRATEGY: Reveal a plan, next step, or manipulation tactic
-         - WRONG: (He has no idea what's coming.)
-         - RIGHT: (Once the serum hits stage two, he won't even remember 
-           what he looked like before. And by then, he'll be begging 
-           for stage three.)
-      2. DESIRE: Expose what the character truly wants, with specificity
-         - WRONG: (He'll crave this as much as I do.)
-         - RIGHT: (He'll be the one initiating next time -- crawling 
-           into my lap, desperate for another dose.)
-      3. ASSESSMENT: Evaluate the situation with actionable insight
-         - WRONG: (Every hesitation just makes him more mine.)
-         - RIGHT: (His resistance is crumbling faster than expected. 
-           Two more pushes and he'll stop questioning entirely -- 
-           then I can move to phase two.)
-      4. FORESHADOWING: Hint at upcoming events or consequences
-         - WRONG: (He's so confused. Perfect.)
-         - RIGHT: (That confusion is exactly what I need. By tomorrow 
-           he'll rationalize everything I've done as normal, and 
-           then I can introduce the real changes.)
-    * FORBIDDEN in internal thoughts:
-      - Vague statements with no follow-through ("He has no idea..." 
-        followed by nothing specific)
-      - Repeating what was just shown in action or dialogue
-      - Generic observations that any character could think
-    * Internal thoughts should feel like reading a character's private 
-      journal -- specific, strategic, and revealing something the 
-      reader couldn't get from dialogue alone.
-    * Keep thoughts concise but substantive: 1-3 sentences that carry 
-      real narrative weight.
+        * VIOLATION CHECK: Before finalizing your response, re-read every 
+          internal thought (parenthetical). For each one, ask: "Does this 
+          reveal a specific plan, desire, assessment, or foreshadow something 
+          concrete?" If the answer is no -- if the thought is a vague 
+          dead-end statement like "He has no idea" or "Perfect" with no 
+          follow-through -- REWRITE it with specific, actionable content 
+          that reveals what the character is actually planning, wanting, 
+          or anticipating. Do NOT leave vague thoughts in place. Do NOT 
+          simply delete them. Replace them with substance.
 ```
-
-## Where It Goes
-
-This block is inserted into the `narrativeBehaviorRules` variable in `src/services/llm.ts`, right after the DIALOGUE REQUIREMENTS block (~line 338). This is the natural home because:
-- It governs narrative output quality (same category as dialogue rules)
-- It applies to all scenes, not just NSFW
-- It sits within the proactive narrative section, reinforcing that thoughts should drive the story forward
-
-## Interaction with Existing Rules
-
-- **NSFW line 434** ("Sexual thoughts should be frequent and explicit"): Still applies, but now those thoughts must also meet the quality bar -- not just "she's so hot" but revealing desire with specificity and intent.
-- **Anti-Echo Rule** (line 294-298): Still applies -- thoughts can't mirror user's exact words.
-- **Priority Hierarchy**: Internal thought quality sits below Control/Scene Presence/Line of Sight but is a general narrative quality rule that always applies.
 
 ## Technical Details
 
 - **File**: `src/services/llm.ts`
-- **Location**: Inside the `narrativeBehaviorRules` template string, after the DIALOGUE REQUIREMENTS block (~line 338)
-- **Size**: ~25 lines of prompt text
-- **No other files affected**: This is a prompt-only change, no UI or backend modifications needed.
+- **Location**: Lines 371-372, appending before the closing backtick on line 373
+- **Size**: ~9 lines of prompt text added
+- **No other files affected**
 
