@@ -1,35 +1,30 @@
 
 
-# Fix: Chat Input Area Layout
+# Fix: Bottom Padding on Text Input Area
 
-## Changes (all in `src/components/chronicle/ChatInterfaceTab.tsx`)
+## Problem
 
-### 1. Fix bottom padding being wider than top/left/right
+The textarea has `min-h-[96px]` which forces it taller than its actual content needs. Since the text content sits at the top of the textarea, the unused vertical space pools at the bottom, making it look like the outer wrapper has thicker bottom padding than top/left/right. The outer `p-2` is actually uniform -- the illusion comes from inside the textarea itself.
 
-The outer wrapper uses `p-2` which should be uniform, but `pb-8` on the parent container (line 3098) adds extra visual space at the bottom. The real issue is the `items-end` on the flex container (line 3133) plus the Send button sitting beside the textarea pushes the layout. Removing the Send button from beside the textarea (see below) will fix this. The `p-2` on the textarea wrapper is already uniform.
+## Solution
 
-### 2. Move Send button to top-right, resize to match other buttons
-
-Currently the Send button sits to the right of the textarea at the bottom (lines 3146-3156). Move it up to the Quick Actions Bar (line 3101) and restyle it to match the Chat Settings / Generate Image buttons exactly:
-- Same `text-[10px] font-bold uppercase tracking-widest` sizing
-- Same `px-4 py-2 rounded-xl` dimensions
-- Same shadow/border/color scheme
-- Position it at the far right using `ml-auto`
-
-### 3. Extend chat input container full width
-
-Remove the `flex gap-3 items-end` wrapper (line 3133) since the Send button no longer sits beside the textarea. The textarea wrapper becomes a direct child of the layout, spanning the full width of the container.
+Remove the `min-h-[96px]` constraint from the textarea. Instead, rely on `rows={3}` to set the default height. The auto-resize ref will expand it when the user types more. This way the textarea fits its content snugly and the `p-2` wrapper padding looks truly uniform on all sides.
 
 ## Technical Details
 
-**Lines 3101-3130 (Quick Actions Bar):** Add the Send button after the Generate Image button, with `ml-auto` to push it to the far right. Use the same class string as the other buttons, with disabled state styling.
+**File:** `src/components/chronicle/ChatInterfaceTab.tsx`, line 3147
 
-**Lines 3132-3157 (Input Area):** Remove the `flex gap-3 items-end` wrapper div and the Send button. The textarea wrapper div becomes:
-```html
-<div class="bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] rounded-2xl p-2">
-  <textarea ... />
-</div>
+**Change:** Remove `min-h-[96px]` from the textarea's className string.
+
+Before:
+```
+className="w-full bg-[#1e2028] text-white ... resize-none overflow-hidden min-h-[96px] focus:ring-1 ..."
 ```
 
-No other files affected.
+After:
+```
+className="w-full bg-[#1e2028] text-white ... resize-none overflow-hidden focus:ring-1 ..."
+```
+
+The `rows={3}` attribute on line 3144 will still provide a reasonable default height without forcing extra empty space at the bottom.
 
