@@ -2586,7 +2586,7 @@ const updatedChar: SideCharacter = {
   }
 
   return (
-    <div className={`flex flex-1 h-full w-full overflow-hidden relative ${darkMode ? 'bg-slate-900' : 'bg-white'}`}>
+    <div className={`flex flex-1 h-full w-full overflow-hidden relative ${darkMode ? 'bg-slate-900' : 'bg-black'}`}>
 
       <aside className={`w-[300px] flex-shrink-0 border-r border-slate-200 flex flex-col h-full shadow-[inset_-4px_0_12px_rgba(0,0,0,0.02)] z-10 transition-colors relative overflow-hidden ${showBackground ? 'bg-white/90 backdrop-blur-md' : 'bg-white'}`}>
         {/* Sidebar background image layer */}
@@ -2753,11 +2753,11 @@ const updatedChar: SideCharacter = {
           
           <div ref={scrollRef} onScroll={handleScroll} className="relative z-10 h-full overflow-y-auto px-4 md:px-8 lg:px-12 py-8 space-y-6 custom-scrollbar scrollbar-thin">
           {conversation?.messages.length === 0 && !streamingContent && (
-             <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-6">
-               <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center text-4xl shadow-sm border border-slate-100">✨</div>
+             <div className="h-full flex flex-col items-center justify-center text-slate-500 space-y-6">
+               <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center text-4xl shadow-sm border border-white/10">✨</div>
                <div className="text-center max-w-sm">
-                 <p className="font-black uppercase tracking-[0.2em] text-sm text-slate-600">The stage is set</p>
-                 <p className="text-xs mt-2 italic text-slate-400">Waiting for your first act. You can start by typing a prompt or action below.</p>
+                 <p className="font-black uppercase tracking-[0.2em] text-sm text-slate-300">The stage is set</p>
+                 <p className="text-xs mt-2 italic text-slate-500">Waiting for your first act. You can start by typing a prompt or action below.</p>
                </div>
              </div>
           )}
