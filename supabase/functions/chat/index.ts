@@ -73,7 +73,16 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Invalid token' }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { messages, modelId, stream = true, max_tokens: maxTokens = 4096 }: ChatRequest = await req.json();
+    const body: ChatRequest = await req.json();
+    const { messages, stream = true, max_tokens: maxTokens = 4096 } = body;
+    
+    // GROK ONLY -- Force any non-Grok model to grok-3-mini
+    const VALID_GROK_MODELS = ['grok-3', 'grok-3-mini', 'grok-2'];
+    const modelId = VALID_GROK_MODELS.includes(body.modelId) ? body.modelId : 'grok-3-mini';
+    
+    if (body.modelId !== modelId) {
+      console.warn(`[chat] Rejected non-Grok model "${body.modelId}", using "${modelId}" instead`);
+    }
 
     if (!messages || !modelId) {
       return new Response(
