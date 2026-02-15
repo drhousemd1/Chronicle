@@ -1485,16 +1485,20 @@ const IndexContent = () => {
             </div>
             <div className="flex items-center gap-3">
               {tab === "conversations" && conversationRegistry.length > 0 && (
-                <Button variant="primary" onClick={handleDeleteAllConversations}>
+                <button
+                  type="button"
+                  onClick={handleDeleteAllConversations}
+                  className="inline-flex items-center justify-center rounded-xl px-4 py-2 border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-white/10 transition-all active:scale-95 text-sm font-bold"
+                >
                   Delete All
-                </Button>
+                </button>
               )}
               {tab === "hub" && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
                       type="button"
-                      className="inline-flex items-center justify-center rounded-xl px-3 py-2 bg-slate-900 text-white border border-slate-900 hover:bg-slate-800 shadow-md hover:shadow-lg transition-all active:scale-95"
+                      className="inline-flex items-center justify-center rounded-xl px-3 py-2 border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-white/10 transition-all active:scale-95"
                     >
                       <Settings className="w-5 h-5" />
                     </button>
@@ -1512,7 +1516,7 @@ const IndexContent = () => {
                   <DropdownMenuTrigger asChild>
                     <button
                       type="button"
-                      className="inline-flex items-center justify-center rounded-xl px-3 py-2 bg-slate-900 text-white border border-slate-900 hover:bg-slate-800 shadow-md hover:shadow-lg transition-all active:scale-95"
+                      className="inline-flex items-center justify-center rounded-xl px-3 py-2 border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-white/10 transition-all active:scale-95"
                     >
                       <Settings className="w-5 h-5" />
                     </button>
@@ -1665,7 +1669,7 @@ const IndexContent = () => {
                   {!selectedCharacterId && (
                     <>
                       {tab === "characters" && <Button variant="secondary" onClick={() => setIsCharacterPickerOpen(true)}>Import from Library</Button>}
-                      <Button variant="primary" onClick={handleCreateCharacter}>+ New Character</Button>
+                      {tab === "characters" && <Button variant="primary" onClick={handleCreateCharacter}>+ New Character</Button>}
                     </>
                   )}
                 </>
@@ -1707,7 +1711,7 @@ const IndexContent = () => {
 
           {tab === "image_library" && (
             <div 
-              className="relative w-full h-full"
+              className="relative w-full h-full bg-black"
               style={selectedImageLibraryBackgroundUrl ? {
                 backgroundImage: `url(${selectedImageLibraryBackgroundUrl})`,
                 backgroundSize: 'cover',
@@ -1722,7 +1726,7 @@ const IndexContent = () => {
           )}
 
           {tab === "library" && (
-            <div className="p-10 overflow-y-auto h-full">
+            <div className="p-10 overflow-y-auto h-full bg-black">
               <CharactersTab
                 appData={{ ...createDefaultScenarioData(), characters: library }}
                 selectedId={selectedCharacterId}
@@ -1730,6 +1734,7 @@ const IndexContent = () => {
                 onUpdate={handleUpdateCharacter}
                 onDelete={handleDeleteCharacterFromList}
                 onAddSection={handleAddSection}
+                onAddNew={handleCreateCharacter}
               />
             </div>
           )}
@@ -1781,7 +1786,7 @@ const IndexContent = () => {
           )}
 
           {tab === "conversations" && (
-            <div className="p-10 overflow-y-auto h-full">
+            <div className="p-10 overflow-y-auto h-full bg-black">
               <ConversationsTab
                 globalRegistry={conversationRegistry}
                 onResume={handleResumeFromHistory}
