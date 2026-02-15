@@ -557,6 +557,53 @@ Example format:
 Make all content cohesive, detailed, and appropriate for the detected story themes.
 Return valid JSON only.`;
 }
+// ── Robust JSON extraction ──────────────────────────────────────────
+function extractJsonFromResponse(raw: string): any | null {
+  if (!raw || !raw.trim()) {
+    console.warn('[ai-fill] Empty response from LLM');
+    return null;
+  }
+
+  // 1. Strip markdown code fences
+  let cleaned = raw.replace(/```(?:json)?\s*/gi, '').replace(/```\s*/g, '');
+
+  // 2. Try direct parse
+  try { return JSON.parse(cleaned); } catch (_) { /* continue */ }
+
+  // 3. Regex extract + cleanup
+  const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    let candidate = jsonMatch[0]
+      .replace(/,\s*([}\]])/g, '$1')           // trailing commas
+      .replace(/[\x00-\x1F\x7F]/g, ' ');       // control chars
+    try { return JSON.parse(candidate); } catch (_) { /* continue */ }
+  }
+
+  // 4. Manual balanced-brace extraction
+  const start = raw.indexOf('{');
+  if (start !== -1) {
+    let depth = 0;
+    let end = -1;
+    for (let i = start; i < raw.length; i++) {
+      if (raw[i] === '{') depth++;
+      else if (raw[i] === '}') { depth--; if (depth === 0) { end = i; break; } }
+    }
+    if (end !== -1) {
+      let slice = raw.substring(start, end + 1)
+        .replace(/,\s*([}\]])/g, '$1')
+        .replace(/[\x00-\x1F\x7F]/g, ' ');
+      try { return JSON.parse(slice); } catch (_) { /* continue */ }
+    }
+  }
+
+  console.error('[ai-fill] All JSON extraction strategies failed. Raw response (first 500 chars):', raw.substring(0, 500));
+  return null;
+}
+
+/** Check a value is a usable non-empty string */
+function isNonEmpty(v: unknown): v is string {
+  return typeof v === 'string' && v.trim().length > 0;
+}
 
 // AI Fill: Fill only empty existing fields
 export async function aiFillCharacter(
@@ -584,6 +631,8 @@ export async function aiFillCharacter(
     (emptyFields.fears?.length || 0) +
     emptyCustomItems.length;
   
+  console.log(`[ai-fill] ${totalEmpty} empty fields detected across all sections`);
+
   if (totalEmpty === 0) {
     return {}; // Nothing to fill
   }
@@ -614,33 +663,39 @@ export async function aiFillCharacter(
     });
 
     if (error) {
-      console.error("AI Fill error:", error);
+      console.error("[ai-fill] Supabase invoke error:", error);
       return {};
     }
 
     const content = data?.choices?.[0]?.message?.content || '';
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) return {};
+    console.log(`[ai-fill] LLM response length: ${content.length}, first 200 chars:`, content.substring(0, 200));
 
-    const result = JSON.parse(jsonMatch[0]);
+    const result = extractJsonFromResponse(content);
+    if (!result) {
+      console.error('[ai-fill] Could not extract JSON from LLM response');
+      return {};
+    }
+
     const patch: Partial<Character> = {};
+    let fieldsApplied = 0;
 
     // Apply basics
     if (result.basics) {
-      if (result.basics.name && emptyFields.basics.includes("name")) patch.name = result.basics.name;
-      if (result.basics.age && emptyFields.basics.includes("age")) patch.age = result.basics.age;
-      if (result.basics.sexType && emptyFields.basics.includes("sexType")) patch.sexType = result.basics.sexType;
-      if (result.basics.roleDescription && emptyFields.basics.includes("roleDescription")) patch.roleDescription = result.basics.roleDescription;
-      if (result.basics.location && emptyFields.basics.includes("location")) patch.location = result.basics.location;
-      if (result.basics.currentMood && emptyFields.basics.includes("currentMood")) patch.currentMood = result.basics.currentMood;
+      if (isNonEmpty(result.basics.name) && emptyFields.basics.includes("name")) { patch.name = result.basics.name; fieldsApplied++; }
+      if (isNonEmpty(result.basics.age) && emptyFields.basics.includes("age")) { patch.age = result.basics.age; fieldsApplied++; }
+      if (isNonEmpty(result.basics.sexType) && emptyFields.basics.includes("sexType")) { patch.sexType = result.basics.sexType; fieldsApplied++; }
+      if (isNonEmpty(result.basics.roleDescription) && emptyFields.basics.includes("roleDescription")) { patch.roleDescription = result.basics.roleDescription; fieldsApplied++; }
+      if (isNonEmpty(result.basics.location) && emptyFields.basics.includes("location")) { patch.location = result.basics.location; fieldsApplied++; }
+      if (isNonEmpty(result.basics.currentMood) && emptyFields.basics.includes("currentMood")) { patch.currentMood = result.basics.currentMood; fieldsApplied++; }
     }
 
     // Apply physical appearance (only empty fields)
     if (result.physicalAppearance) {
       patch.physicalAppearance = { ...character.physicalAppearance };
       for (const [key, value] of Object.entries(result.physicalAppearance)) {
-        if (emptyFields.physicalAppearance.includes(key) && value) {
+        if (emptyFields.physicalAppearance.includes(key) && isNonEmpty(value)) {
           (patch.physicalAppearance as any)[key] = value;
+          fieldsApplied++;
         }
       }
     }
@@ -649,8 +704,9 @@ export async function aiFillCharacter(
     if (result.currentlyWearing) {
       patch.currentlyWearing = { ...character.currentlyWearing };
       for (const [key, value] of Object.entries(result.currentlyWearing)) {
-        if (emptyFields.currentlyWearing.includes(key) && value) {
+        if (emptyFields.currentlyWearing.includes(key) && isNonEmpty(value)) {
           (patch.currentlyWearing as any)[key] = value;
+          fieldsApplied++;
         }
       }
     }
@@ -659,8 +715,9 @@ export async function aiFillCharacter(
     if (result.preferredClothing) {
       patch.preferredClothing = { ...character.preferredClothing };
       for (const [key, value] of Object.entries(result.preferredClothing)) {
-        if (emptyFields.preferredClothing.includes(key) && value) {
+        if (emptyFields.preferredClothing.includes(key) && isNonEmpty(value)) {
           (patch.preferredClothing as any)[key] = value;
+          fieldsApplied++;
         }
       }
     }
@@ -669,9 +726,10 @@ export async function aiFillCharacter(
     if (result.background && emptyFields.background?.length) {
       patch.background = { ...(character.background || { jobOccupation: '', educationLevel: '', residence: '', hobbies: '', financialStatus: '', motivation: '' }) };
       for (const [key, value] of Object.entries(result.background)) {
-        if (key === '_extras') continue; // handled separately
-        if (emptyFields.background.includes(key) && value) {
+        if (key === '_extras') continue;
+        if (emptyFields.background.includes(key) && isNonEmpty(value)) {
           (patch.background as any)[key] = value;
+          fieldsApplied++;
         }
       }
     }
@@ -684,10 +742,11 @@ export async function aiFillCharacter(
         const applyTraitValues = (traits: any[], resultTraits: any[]) => {
           if (!resultTraits?.length) return;
           for (const rt of resultTraits) {
-            if (!rt.id || !rt.value) continue;
+            if (!rt.id || !isNonEmpty(rt.value)) continue;
             const trait = traits.find((t: any) => t.id === rt.id);
             if (trait && !trait.value) {
               trait.value = rt.value;
+              fieldsApplied++;
             }
           }
         };
@@ -708,15 +767,15 @@ export async function aiFillCharacter(
         const section = character[key] || {};
         const existingExtras = [...(section._extras || [])];
         for (const re of result[key]._extras) {
-          if (!re.id || !re.value) continue;
+          if (!re.id || !isNonEmpty(re.value)) continue;
           const idx = existingExtras.findIndex((e: any) => e.id === re.id);
           if (idx !== -1) {
-            // Write value, and also write label if it was an __empty__ entry
             const update: any = { ...existingExtras[idx], value: re.value };
-            if (!existingExtras[idx].label && re.label) {
+            if (!existingExtras[idx].label && isNonEmpty(re.label)) {
               update.label = re.label;
             }
             existingExtras[idx] = update;
+            fieldsApplied++;
           }
         }
         (patch as any)[key] = { ...section, _extras: existingExtras };
@@ -728,7 +787,8 @@ export async function aiFillCharacter(
       patch.sections = character.sections.map(section => {
         const updatedItems = section.items.map(item => {
           const emptyItem = emptyCustomItems.find(ei => ei.itemId === item.id);
-          if (emptyItem && result.customFields[item.label]) {
+          if (emptyItem && isNonEmpty(result.customFields[item.label])) {
+            fieldsApplied++;
             return { ...item, value: result.customFields[item.label], updatedAt: now() };
           }
           return item;
@@ -737,9 +797,10 @@ export async function aiFillCharacter(
       });
     }
 
+    console.log(`[ai-fill] Done. ${fieldsApplied} fields applied out of ${totalEmpty} empty.`);
     return patch;
   } catch (e) {
-    console.error("AI Fill parsing failed:", e);
+    console.error("[ai-fill] AI Fill failed:", e);
     return {};
   }
 }
