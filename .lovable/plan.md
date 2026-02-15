@@ -1,184 +1,77 @@
 
 
-# Master Plan: Prompt Architecture Improvements and Memory Consolidation
+# Internal Thought Quality Improvement
 
-This document captures all agreed-upon changes, corrected per your feedback, and incorporates the Grok analysis for the NSFW prompt restructuring.
+## Problem
 
----
+The current prompt tells Grok *how to format* internal thoughts (parentheses) and *when to include them* (naturally, frequently during NSFW) but never defines *what they should contain* or *what narrative purpose they serve*. This produces flat, dead-end statements that don't move the story forward or reveal character depth.
 
-## Agreed Decisions (Corrections Applied)
+**Pattern of current output:**
+- "He has no idea what's coming." (Vague -- what IS coming?)
+- "He's already learning. Soon he'll crave this as much as I do." (What specifically will he crave? What's the plan?)
+- "Every hesitation just makes him more mine." (Dead-end observation -- how? What's the next step?)
 
-### 1. Day-Based Memory Consolidation -- 5-10 bullet points per day summary
-When the `currentDay` counter advances, all events from the completed day are consolidated into a **5-10 bullet point summary** (not 3-5). Each bullet point can contain multiple related facts to avoid ejecting important events. This keeps things bounded without losing critical narrative beats.
+These are all **conclusions without premises** -- they state a verdict but reveal nothing about the reasoning, strategy, or upcoming actions behind it.
 
-### 2. Conversation History Windowing
-Send only the last ~40 messages to the generation API. Rely on the memories/day-summary system for older continuity.
+## Solution
 
-### 3. Staleness Tracking for Extraction
-Add a `field_update_log` to character session states. If high-volatility fields (mood, location, clothing) remain unchanged for 8+ turns while the character was active, inject a STALENESS ALERT into the extraction prompt.
+Add a dedicated **INTERNAL THOUGHT QUALITY** block to the prompt in `src/services/llm.ts`. This block will be inserted into the `narrativeBehaviorRules` section (alongside the existing Dialogue Requirements block at ~line 330), since it governs narrative output quality for all scenes.
 
-### 4. Brain Icon -- REMOVE from UI, keep memories hidden in backend
-The brain icon and the MemoriesModal are removed from the user-facing UI entirely. The memories infrastructure continues to exist in the background as a backend-only system (used for day summaries and event tracking injected into the prompt). The user never interacts with it directly. This avoids confusion from having data in multiple places.
-
-### 5. Dual-Model SFW/NSFW Routing -- REMOVED FROM PLAN
-Not being pursued. Removed entirely.
-
----
-
-## Prompt Architecture Changes (all in `src/services/llm.ts`)
-
-### Change 1: Add Priority Hierarchy
-
-Insert a new block at the start of the INSTRUCTIONS section (before the existing control/scene presence rules at ~line 539) that establishes explicit rule precedence:
+## Proposed Prompt Block
 
 ```text
-PRIORITY HIERARCHY (GOVERNS ALL RULES BELOW):
-1. Control rules (who speaks) -- always highest priority
-2. Scene Presence (location checks) -- always enforced
-3. Line of Sight -- always enforced
-4. During intimate/erotic scenes: NSFW depth and sensory immersion 
-   OVERRIDE brevity and anti-repetition constraints
-5. Personality traits ALWAYS modulate how content is expressed, 
-   including NSFW content
+- INTERNAL THOUGHT QUALITY (MANDATORY):
+    * Internal thoughts in parentheses are NOT filler -- they are a narrative 
+      tool for revealing what characters WON'T say aloud.
+    * Every internal thought MUST serve at least one of these purposes:
+      1. STRATEGY: Reveal a plan, next step, or manipulation tactic
+         - WRONG: (He has no idea what's coming.)
+         - RIGHT: (Once the serum hits stage two, he won't even remember 
+           what he looked like before. And by then, he'll be begging 
+           for stage three.)
+      2. DESIRE: Expose what the character truly wants, with specificity
+         - WRONG: (He'll crave this as much as I do.)
+         - RIGHT: (He'll be the one initiating next time -- crawling 
+           into my lap, desperate for another dose.)
+      3. ASSESSMENT: Evaluate the situation with actionable insight
+         - WRONG: (Every hesitation just makes him more mine.)
+         - RIGHT: (His resistance is crumbling faster than expected. 
+           Two more pushes and he'll stop questioning entirely -- 
+           then I can move to phase two.)
+      4. FORESHADOWING: Hint at upcoming events or consequences
+         - WRONG: (He's so confused. Perfect.)
+         - RIGHT: (That confusion is exactly what I need. By tomorrow 
+           he'll rationalize everything I've done as normal, and 
+           then I can introduce the real changes.)
+    * FORBIDDEN in internal thoughts:
+      - Vague statements with no follow-through ("He has no idea..." 
+        followed by nothing specific)
+      - Repeating what was just shown in action or dialogue
+      - Generic observations that any character could think
+    * Internal thoughts should feel like reading a character's private 
+      journal -- specific, strategic, and revealing something the 
+      reader couldn't get from dialogue alone.
+    * Keep thoughts concise but substantive: 1-3 sentences that carry 
+      real narrative weight.
 ```
 
-**Why:** Grok follows explicit hierarchies. This resolves ambiguity that currently causes it to default to short, conservative responses during intimate scenes.
+## Where It Goes
 
-### Change 2: Replace Brevity Rule
+This block is inserted into the `narrativeBehaviorRules` variable in `src/services/llm.ts`, right after the DIALOGUE REQUIREMENTS block (~line 338). This is the natural home because:
+- It governs narrative output quality (same category as dialogue rules)
+- It applies to all scenes, not just NSFW
+- It sits within the proactive narrative section, reinforcing that thoughts should drive the story forward
 
-Replace lines 615-616:
-```text
-BREVITY IS WELCOME: Write only as much as the moment needs. Short, punchy
-responses are just as valid as longer descriptive ones. Never pad for length.
-```
+## Interaction with Existing Rules
 
-With:
-```text
-RESPONSE LENGTH: Match length to the scene's energy and emotional weight.
-- Quick exchanges and casual moments: short, punchy responses are ideal.
-- Emotionally charged moments, dramatic reveals, intimate scenes: detailed, 
-  immersive responses with sensory depth. Do NOT truncate these for brevity.
-- Never pad with filler, but never cut short a moment that deserves richness.
-```
+- **NSFW line 434** ("Sexual thoughts should be frequent and explicit"): Still applies, but now those thoughts must also meet the quality bar -- not just "she's so hot" but revealing desire with specificity and intent.
+- **Anti-Echo Rule** (line 294-298): Still applies -- thoughts can't mirror user's exact words.
+- **Priority Hierarchy**: Internal thought quality sits below Control/Scene Presence/Line of Sight but is a general narrative quality rule that always applies.
 
-**Why:** The old wording actively suppressed descriptive output in all contexts. The replacement preserves the anti-padding intent while exempting scenes that deserve depth. This also addresses your general complaint about responses being too short and nondescriptive -- "brevity is welcome" was a major contributor to that.
+## Technical Details
 
-### Change 3: Add NSFW Intensification Block
-
-Add a new sub-block inside the High Intensity NSFW section (after the existing PACING block, ~line 452). This is based on Grok's recommendations with modifications:
-
-```text
-NSFW INTENSIFICATION (ACTIVE WHEN HIGH INTENSITY IS ON):
-During intimate scenes, amplify explicit, sensory immersion to evoke 
-a vivid erotic novel style -- prolong acts with layered buildup, 
-vulgar language, and raw details:
-- Use direct, anatomical terminology (e.g., cock, pussy, ass, tits, cum) 
-  integrated naturally into actions and dialogue.
-- Describe physical sensations in detail (e.g., the slick heat of arousal, 
-  throbbing hardness, clenching muscles, shivering skin).
-- Incorporate vocal and emotional reactions (e.g., breathy moans, 
-  desperate whimpers, gasps of pleasure, waves of ecstasy building 
-  to release).
-- Draw out progression step-by-step: Tease foreplay, escalate 
-  penetration or touch, layer multiple senses (sight, sound, taste, 
-  smell) before climax.
-- FORBIDDEN: Summarizing intimate acts (e.g., "They made love" or 
-  "He finished quickly"). Show, don't tell.
-- FORBIDDEN: Rushing to orgasm/climax in fewer than 3 exchanges 
-  unless the user explicitly drives it there.
-```
-
-### Change 4: Add Personality-Modulated Intimacy Block
-
-Add immediately after the NSFW Intensification block:
-
-```text
-PERSONALITY-MODULATED INTIMACY:
-- A shy character does not suddenly become aggressive. Their desire 
-  shows through nervous touches, whispered confessions, and 
-  trembling hands.
-- A dominant character commands and directs explicitly.
-- A reserved character may surprise themselves with intensity but 
-  still filters through their established voice.
-- ALWAYS filter explicit content through the character's established 
-  personality traits and tone. Vulgarity levels should match the 
-  character, not a universal mode.
-- Tie to personality: For shy/reserved traits, express hesitantly 
-  (e.g., whispered pleas); for bold/dominant, command explicitly 
-  (e.g., growled demands).
-```
-
-**Why:** This prevents the "180-degree shift" problem seen in GPT Girlfriend Online where all characters become identically aggressive in NSFW mode regardless of their defined personality.
-
-### Change 5: Add NSFW Exception to Anti-Repetition Block
-
-Append to the end of the anti-repetition rules (after line 410):
-
-```text
-* NSFW EXCEPTION: During intimate scenes, rhythmic repetition of 
-  sensory elements (moans, building sensations, escalating 
-  descriptions) is PERMITTED and ENCOURAGED when it serves 
-  tension-building. The anti-repetition rules apply to narrative 
-  structure and dialogue patterns, not to the natural rhythm of 
-  physical intimacy.
-```
-
-**Why:** The strict anti-repetition rules currently suppress the natural rhythm of intimate scenes. A targeted carve-out is safer than relaxing the overall rules (which were built to fix real text-recycling problems).
-
-### Change 6: Add Violation Check to Line of Sight
-
-Append to the end of the Line of Sight block (after line 370):
-
-```text
-* VIOLATION CHECK: Before finalizing your response, re-read it and 
-  DELETE any references where a character names specific hidden 
-  attributes (color, material, style) of concealed items. 
-  Knowledge-based wondering is allowed; visual specifics of hidden 
-  items are NOT.
-```
-
-**Why:** Mirrors the existing violation check pattern at lines 546-548 that already works for control enforcement.
-
-### Change 7: Add NSFW-Aware Style Hints
-
-Add a second style hints array and conditional selection logic (code change, ~15 lines):
-
-```typescript
-const nsfwStyleHints = [
-  '[Style: draw out this moment with sensory detail -- what does it feel like?]',
-  '[Style: build tension slowly, let the anticipation simmer]',
-  '[Style: focus on physical sensations and sounds, not just actions]',
-  '[Style: let the character express desire through their unique voice]',
-  '[Style: extend the scene -- do not rush to conclusion]',
-];
-```
-
-The `getRandomStyleHint()` function will check whether NSFW High Intensity is active. If so, it uses the `nsfwStyleHints` array instead of the general one. The general style hints ("try a shorter response", "lean into dialogue, keep narration minimal") actively work against NSFW quality when randomly selected during intimate scenes.
-
----
-
-## UI Change
-
-### Remove Brain Icon from Chat Bubbles
-
-- Remove the `MemoryQuickSaveButton` component rendering from `ChatInterfaceTab.tsx` (around line 3012-3017)
-- The `MemoryQuickSaveButton` component file itself can remain for now (dead code cleanup later) or be removed
-- The memories infrastructure (`Memory` type, the edge function, the database table) stays intact for backend use in the day-summary system
-
----
-
-## Summary of All Changes
-
-| Change | File | Type | Lines |
-|--------|------|------|-------|
-| Priority Hierarchy | `llm.ts` | New prompt block | ~8 lines |
-| Replace Brevity Rule | `llm.ts` | Rewrite existing | ~5 lines |
-| NSFW Intensification | `llm.ts` | New prompt block | ~15 lines |
-| Personality-Modulated Intimacy | `llm.ts` | New prompt block | ~12 lines |
-| NSFW Anti-Repetition Exception | `llm.ts` | Append to existing | ~5 lines |
-| Line of Sight Violation Check | `llm.ts` | Append to existing | ~4 lines |
-| NSFW-Aware Style Hints | `llm.ts` | New code + array | ~15 lines |
-| Remove Brain Icon | `ChatInterfaceTab.tsx` | Remove JSX | ~5 lines removed |
-
-Total: ~65 new lines of prompt text, ~15 lines of code logic, ~5 lines removed from UI. No database migrations, no new edge functions, no architectural changes.
+- **File**: `src/services/llm.ts`
+- **Location**: Inside the `narrativeBehaviorRules` template string, after the DIALOGUE REQUIREMENTS block (~line 338)
+- **Size**: ~25 lines of prompt text
+- **No other files affected**: This is a prompt-only change, no UI or backend modifications needed.
 
