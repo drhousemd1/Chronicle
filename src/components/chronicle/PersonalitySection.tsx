@@ -1,6 +1,6 @@
 import React from 'react';
 import { CharacterPersonality, PersonalityTrait, PersonalityTraitFlexibility } from '@/types';
-import { Plus, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, X, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { uid } from '@/utils';
 import { cn } from '@/lib/utils';
@@ -11,6 +11,8 @@ interface PersonalitySectionProps {
   isExpanded?: boolean;
   onToggle?: () => void;
   readOnly?: boolean;
+  onEnhanceField?: (fieldKey: string, getCurrentValue: () => string, setValue: (value: string) => void, customLabel?: string) => void;
+  enhancingField?: string | null;
 }
 
 const FLEX_OPTIONS: { value: PersonalityTraitFlexibility; label: string }[] = [
@@ -71,7 +73,9 @@ const TraitRow: React.FC<{
   onUpdate: (patch: Partial<PersonalityTrait>) => void;
   onDelete: () => void;
   readOnly?: boolean;
-}> = ({ trait, onUpdate, onDelete, readOnly }) => {
+  onEnhance?: () => void;
+  isEnhancing?: boolean;
+}> = ({ trait, onUpdate, onDelete, readOnly, onEnhance, isEnhancing }) => {
   if (readOnly) {
     return (
       <div className="space-y-1">
@@ -87,12 +91,30 @@ const TraitRow: React.FC<{
   return (
     <div className="flex items-start gap-2">
       <div className="flex-1 flex gap-2 min-w-0">
-        <AutoResizeTextarea
-          value={trait.label}
-          onChange={(v) => onUpdate({ label: v })}
-          placeholder="Trait name"
-          className="w-1/3 px-3 py-2 text-xs font-bold bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
-        />
+        <div className="w-1/3 flex items-center gap-1.5 min-w-0">
+          <AutoResizeTextarea
+            value={trait.label}
+            onChange={(v) => onUpdate({ label: v })}
+            placeholder="Trait name"
+            className="flex-1 px-3 py-2 text-xs font-bold bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
+          />
+          {onEnhance && trait.label && (
+            <button
+              type="button"
+              onClick={onEnhance}
+              disabled={isEnhancing}
+              title="Enhance with AI"
+              className={cn(
+                "p-1.5 rounded-md transition-all flex-shrink-0",
+                isEnhancing
+                  ? "text-blue-500 animate-pulse cursor-wait"
+                  : "text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10"
+              )}
+            >
+              <Sparkles size={14} />
+            </button>
+          )}
+        </div>
         <AutoResizeTextarea
           value={trait.value}
           onChange={(v) => onUpdate({ value: v })}
@@ -128,7 +150,9 @@ const TraitList: React.FC<{
   onDeleteTrait: (id: string) => void;
   onAddTrait: () => void;
   readOnly?: boolean;
-}> = ({ heading, traits, onUpdateTrait, onDeleteTrait, onAddTrait, readOnly }) => (
+  onEnhanceTrait?: (trait: PersonalityTrait) => void;
+  enhancingField?: string | null;
+}> = ({ heading, traits, onUpdateTrait, onDeleteTrait, onAddTrait, readOnly, onEnhanceTrait, enhancingField }) => (
   <div className="space-y-3">
     {heading && (
       <h4 className="text-[10px] font-bold text-zinc-300 uppercase tracking-[0.15em] border-b border-white/5 pb-2">{heading}</h4>
@@ -142,6 +166,8 @@ const TraitList: React.FC<{
             onUpdate={(patch) => onUpdateTrait(trait.id, patch)}
             onDelete={() => onDeleteTrait(trait.id)}
             readOnly={readOnly}
+            onEnhance={onEnhanceTrait ? () => onEnhanceTrait(trait) : undefined}
+            isEnhancing={enhancingField === `personality_${trait.id}`}
           />
         ))}
       </div>
@@ -166,6 +192,8 @@ export const PersonalitySection: React.FC<PersonalitySectionProps> = ({
   isExpanded = true,
   onToggle,
   readOnly = false,
+  onEnhanceField,
+  enhancingField,
 }) => {
   const updateTraits = (key: 'traits' | 'outwardTraits' | 'inwardTraits', id: string, patch: Partial<PersonalityTrait>) => {
     onChange({
@@ -186,6 +214,16 @@ export const PersonalitySection: React.FC<PersonalitySectionProps> = ({
       ...personality,
       [key]: [...personality[key], defaultTrait()],
     });
+  };
+
+  const handleEnhanceTrait = (key: 'traits' | 'outwardTraits' | 'inwardTraits', trait: PersonalityTrait) => {
+    if (!onEnhanceField || !trait.label) return;
+    onEnhanceField(
+      `personality_${trait.id}`,
+      () => trait.value,
+      (v) => updateTraits(key, trait.id, { value: v }),
+      `Personality trait: ${trait.label}`
+    );
   };
 
   const CollapsedView = () => {
@@ -241,6 +279,8 @@ export const PersonalitySection: React.FC<PersonalitySectionProps> = ({
                     onDeleteTrait={(id) => deleteTrait('outwardTraits', id)}
                     onAddTrait={() => addTrait('outwardTraits')}
                     readOnly={readOnly}
+                    onEnhanceTrait={onEnhanceField ? (trait) => handleEnhanceTrait('outwardTraits', trait) : undefined}
+                    enhancingField={enhancingField}
                   />
                   <TraitList
                     heading="Inward Personality"
@@ -249,6 +289,8 @@ export const PersonalitySection: React.FC<PersonalitySectionProps> = ({
                     onDeleteTrait={(id) => deleteTrait('inwardTraits', id)}
                     onAddTrait={() => addTrait('inwardTraits')}
                     readOnly={readOnly}
+                    onEnhanceTrait={onEnhanceField ? (trait) => handleEnhanceTrait('inwardTraits', trait) : undefined}
+                    enhancingField={enhancingField}
                   />
                 </div>
               ) : (
@@ -258,6 +300,8 @@ export const PersonalitySection: React.FC<PersonalitySectionProps> = ({
                   onDeleteTrait={(id) => deleteTrait('traits', id)}
                   onAddTrait={() => addTrait('traits')}
                   readOnly={readOnly}
+                  onEnhanceTrait={onEnhanceField ? (trait) => handleEnhanceTrait('traits', trait) : undefined}
+                  enhancingField={enhancingField}
                 />
               )}
             </div>

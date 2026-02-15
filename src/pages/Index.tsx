@@ -16,7 +16,7 @@ import { ImageLibraryTab } from "@/components/chronicle/ImageLibraryTab";
 import { GalleryHub } from "@/components/chronicle/GalleryHub";
 import { Button } from "@/components/chronicle/UI";
 import { aiFillCharacter, aiGenerateCharacter } from "@/services/character-ai";
-import { CharacterPicker } from "@/components/chronicle/CharacterPicker";
+import { CharacterPicker, CharacterPickerWithRefresh } from "@/components/chronicle/CharacterPicker";
 import { BackgroundPickerModal } from "@/components/chronicle/BackgroundPickerModal";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
@@ -1512,6 +1512,26 @@ const IndexContent = () => {
               )}
             </div>
             <div className="flex items-center gap-3">
+              {(tab === "world" || (tab === "characters" && !selectedCharacterId)) && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => handleSave(true)}
+                    disabled={isSaving}
+                    className="inline-flex items-center justify-center rounded-xl px-4 py-2 border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-white/10 transition-all active:scale-95 text-sm font-bold disabled:opacity-50"
+                  >
+                    {isSaving ? 'Saving...' : 'Save and Close'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSave(false)}
+                    disabled={isSaving}
+                    className="inline-flex items-center justify-center rounded-xl px-4 py-2 border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-white/10 transition-all active:scale-95 text-sm font-bold disabled:opacity-50"
+                  >
+                    {isSaving ? 'Saving...' : 'Save'}
+                  </button>
+                </>
+              )}
               {tab === "conversations" && conversationRegistry.length > 0 && (
                 <button
                   type="button"
@@ -1611,49 +1631,21 @@ const IndexContent = () => {
                         <TooltipContent>Have AI generate text for empty fields</TooltipContent>
                       </Tooltip>
 
-                      {/* AI Generate Button with tooltip - Premium iridescent style */}
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            type="button"
-                            onClick={() => setAiPromptModal({ mode: 'generate' })}
-                            disabled={isAiGenerating}
-                            className="group relative flex h-10 px-4 rounded-xl overflow-hidden
-                              text-white text-[10px] font-bold leading-none uppercase tracking-wider
-                              shadow-[0_12px_40px_rgba(0,0,0,0.45)]
-                              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/45
-                              disabled:opacity-50"
-                          >
-                            {/* Layer 1: Iridescent outer border ring */}
-                            <span
-                              aria-hidden
-                              className="absolute inset-0 rounded-xl"
-                              style={{
-                                background:
-                                  "linear-gradient(90deg, rgba(255,255,255,0.34) 0%, rgba(34,184,200,0.62) 18%, rgba(255,255,255,0.22) 44%, rgba(109,94,247,0.64) 78%, rgba(255,255,255,0.28) 100%)",
-                                filter:
-                                  "drop-shadow(0 0 10px rgba(255,255,255,0.10)) drop-shadow(0 0 18px rgba(109,94,247,0.10)) drop-shadow(0 0 18px rgba(34,184,200,0.10))",
-                              }}
-                            />
-                            {/* Layer 2-8: Same layers as AI Fill */}
-                            <span aria-hidden className="absolute inset-[2px] rounded-[10px]" style={{ background: "#2B2D33" }} />
-                            <span aria-hidden className="absolute inset-[2px] rounded-[10px]" style={{ background: "linear-gradient(90deg, rgba(34,184,200,0.22), rgba(109,94,247,0.22)), #2B2D33" }} />
-                            <span aria-hidden className="absolute inset-[2px] rounded-[10px]" style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.11), rgba(255,255,255,0.00) 46%, rgba(0,0,0,0.16))" }} />
-                            <span aria-hidden className="absolute inset-0 rounded-xl pointer-events-none" style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.26), inset 0 -1px 0 rgba(0,0,0,0.22)", background: "linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.00) 55%)", mixBlendMode: "screen" }} />
-                            <span aria-hidden className="absolute -left-8 -top-8 h-32 w-32 rounded-full blur-2xl pointer-events-none" style={{ background: "radial-gradient(circle, rgba(34,184,200,0.28), transparent 62%)" }} />
-                            <span aria-hidden className="absolute -right-10 -bottom-10 h-40 w-40 rounded-full blur-3xl pointer-events-none" style={{ background: "radial-gradient(circle, rgba(109,94,247,0.26), transparent 65%)" }} />
-                            <span aria-hidden className="absolute inset-0 rounded-xl pointer-events-none" style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -1px 0 rgba(0,0,0,0.26), 0 0 0 1px rgba(255,255,255,0.06)" }} />
-                            {/* Content layer */}
-                            <span className="relative z-10 flex items-center justify-center gap-2">
-                              <Sparkles className="w-3.5 h-3.5 shrink-0 text-cyan-200" style={{ filter: "drop-shadow(0 0 10px rgba(34,184,200,0.35))" }} />
-                              <span className="min-w-0 truncate drop-shadow-[0_1px_0_rgba(0,0,0,0.35)]">
-                                {isAiGenerating ? "Generating..." : "AI Generate"}
-                              </span>
-                            </span>
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent>Have AI add new categories and fill all empty text fields</TooltipContent>
-                      </Tooltip>
+                      {/* Save (Quick Save) Button */}
+                      <button
+                        type="button"
+                        onClick={() => handleSave(false)}
+                        disabled={isSaving}
+                        className="flex h-10 px-6 items-center justify-center gap-2
+                          rounded-xl border border-[hsl(var(--ui-border))] 
+                          bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
+                          text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider
+                          hover:bg-white/5 active:bg-white/10 disabled:opacity-50
+                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20
+                          transition-colors"
+                      >
+                        {isSaving ? 'Saving...' : 'Save'}
+                      </button>
 
                       {/* Cancel Button - Dark surface style */}
                       <button
@@ -1696,8 +1688,24 @@ const IndexContent = () => {
                   )}
                   {!selectedCharacterId && (
                     <>
-                      {tab === "characters" && <Button variant="secondary" onClick={() => setIsCharacterPickerOpen(true)}>Import from Library</Button>}
-                      {tab === "characters" && <Button variant="primary" onClick={handleCreateCharacter}>+ New Character</Button>}
+                      {tab === "characters" && (
+                        <button
+                          type="button"
+                          onClick={() => setIsCharacterPickerOpen(true)}
+                          className="inline-flex items-center justify-center rounded-xl px-4 py-2 border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-white/10 transition-all active:scale-95 text-sm font-bold"
+                        >
+                          Import from Library
+                        </button>
+                      )}
+                      {tab === "characters" && (
+                        <button
+                          type="button"
+                          onClick={handleCreateCharacter}
+                          className="inline-flex items-center justify-center rounded-xl px-4 py-2 border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-white/10 transition-all active:scale-95 text-sm font-bold"
+                        >
+                          + New Character
+                        </button>
+                      )}
                     </>
                   )}
                 </>
@@ -1908,8 +1916,13 @@ const IndexContent = () => {
       </main>
 
       {isCharacterPickerOpen && (
-        <CharacterPicker
+        <CharacterPickerWithRefresh
           library={library}
+          refreshLibrary={async () => {
+            const updated = await supabaseData.fetchCharacterLibrary();
+            setLibrary(updated);
+            return updated;
+          }}
           onSelect={handleImportCharacter}
           onClose={() => setIsCharacterPickerOpen(false)}
         />

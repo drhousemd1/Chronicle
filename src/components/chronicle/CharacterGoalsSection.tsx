@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { CharacterGoal, GoalStep, GoalFlexibility, TimeOfDay } from '@/types';
-import { Trash2, Plus, X, ChevronDown, ChevronUp, CheckSquare } from 'lucide-react';
+import { Trash2, Plus, X, ChevronDown, ChevronUp, CheckSquare, Sparkles } from 'lucide-react';
 import { GuidanceStrengthSlider } from './GuidanceStrengthSlider';
 import { CircularProgress } from './CircularProgress';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -43,6 +43,8 @@ interface CharacterGoalsSectionProps {
   onToggle?: () => void;
   currentDay?: number;
   currentTimeOfDay?: TimeOfDay;
+  onEnhanceField?: (fieldKey: string, getCurrentValue: () => string, setValue: (value: string) => void, customLabel?: string) => void;
+  enhancingField?: string | null;
 }
 
 const calculateProgress = (goal: CharacterGoal): number => {
@@ -59,7 +61,9 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
   isExpanded = true,
   onToggle,
   currentDay = 1,
-  currentTimeOfDay = 'day'
+  currentTimeOfDay = 'day',
+  onEnhanceField,
+  enhancingField,
 }) => {
   const displayGoals = goals.length === 0 ? [{
     id: uid('goal'),
@@ -178,6 +182,26 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
     );
   };
 
+  const SparkleButton: React.FC<{ fieldKey: string; onClick: () => void }> = ({ fieldKey, onClick }) => {
+    if (!onEnhanceField) return null;
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={enhancingField !== null}
+        title="Enhance with AI"
+        className={cn(
+          "p-1 rounded-md transition-all",
+          enhancingField === fieldKey
+            ? "text-blue-500 animate-pulse cursor-wait"
+            : "text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10"
+        )}
+      >
+        <Sparkles size={14} />
+      </button>
+    );
+  };
+
   return (
     <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
       {/* Section Header */}
@@ -226,7 +250,20 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
 
                     {/* Desired Outcome */}
                     <div>
-                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Desired Outcome</label>
+                      <div className="flex items-center gap-2">
+                        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Desired Outcome</label>
+                        {isEditMode && (
+                          <SparkleButton
+                            fieldKey={`goal_outcome_${goal.id}`}
+                            onClick={() => onEnhanceField?.(
+                              `goal_outcome_${goal.id}`,
+                              () => goal.desiredOutcome,
+                              (v) => updateGoal(goal.id, { desiredOutcome: v }),
+                              `Desired Outcome for goal: ${goal.title || 'Untitled'}`
+                            )}
+                          />
+                        )}
+                      </div>
                       {isEditMode ? (
                         <AutoResizeTextarea value={goal.desiredOutcome} onChange={(v) => updateGoal(goal.id, { desiredOutcome: v })} placeholder="What success looks like..." className="mt-1 px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20" rows={2} />
                       ) : (
@@ -260,12 +297,23 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
                                 className="mt-2.5 border-zinc-600 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
                               />
                               {isEditMode ? (
-                                <AutoResizeTextarea
-                                  value={step.description}
-                                  onChange={(v) => updateStep(goal.id, step.id, { description: v })}
-                                  placeholder={`Step ${stepIdx + 1}: Describe this step...`}
-                                  className={cn("flex-1 px-3 py-2 bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20", step.completed && "line-through text-zinc-500")}
-                                />
+                                <>
+                                  <AutoResizeTextarea
+                                    value={step.description}
+                                    onChange={(v) => updateStep(goal.id, step.id, { description: v })}
+                                    placeholder={`Step ${stepIdx + 1}: Describe this step...`}
+                                    className={cn("flex-1 px-3 py-2 bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20", step.completed && "line-through text-zinc-500")}
+                                  />
+                                  <SparkleButton
+                                    fieldKey={`goal_step_${step.id}`}
+                                    onClick={() => onEnhanceField?.(
+                                      `goal_step_${step.id}`,
+                                      () => step.description,
+                                      (v) => updateStep(goal.id, step.id, { description: v }),
+                                      `Step for goal "${goal.title || 'Untitled'}"`
+                                    )}
+                                  />
+                                </>
                               ) : (
                                 <span className={cn("text-sm text-zinc-200 pt-2", step.completed && "line-through text-zinc-500")}>
                                   {step.description || 'No description'}

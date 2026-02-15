@@ -134,19 +134,39 @@ const HardcodedRow: React.FC<{
   </div>
 );
 
-// User-added extra row: [Editable Label] [Editable Value] [Delete]
+// User-added extra row: [Editable Label] [Sparkle] [Editable Value] [Delete]
 const ExtraRow: React.FC<{
   extra: CharacterExtraRow;
   onUpdate: (patch: Partial<CharacterExtraRow>) => void;
   onDelete: () => void;
-}> = ({ extra, onUpdate, onDelete }) => (
+  onEnhance?: () => void;
+  isEnhancing?: boolean;
+}> = ({ extra, onUpdate, onDelete, onEnhance, isEnhancing }) => (
   <div className="flex items-start gap-2">
-    <AutoResizeTextarea
-      value={extra.label}
-      onChange={(v) => onUpdate({ label: v })}
-      placeholder="Label"
-      className="w-2/5 px-3 py-2 text-xs font-bold bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
-    />
+    <div className="w-2/5 flex items-center gap-1.5 min-w-0">
+      <AutoResizeTextarea
+        value={extra.label}
+        onChange={(v) => onUpdate({ label: v })}
+        placeholder="Label"
+        className="flex-1 px-3 py-2 text-xs font-bold bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
+      />
+      {onEnhance && extra.label && (
+        <button
+          type="button"
+          onClick={onEnhance}
+          disabled={isEnhancing}
+          title="Enhance with AI"
+          className={cn(
+            "p-1.5 rounded-md transition-all flex-shrink-0",
+            isEnhancing
+              ? "text-blue-500 animate-pulse cursor-wait"
+              : "text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10"
+          )}
+        >
+          <Sparkles size={14} />
+        </button>
+      )}
+    </div>
     <AutoResizeTextarea
       value={extra.value}
       onChange={(v) => onUpdate({ value: v })}
@@ -751,7 +771,29 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
                       </div>
 
                       <div>
-                        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Role Description</label>
+                        <div className="flex items-center gap-2 mb-1">
+                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Role Description</label>
+                          <button
+                            type="button"
+                            onClick={() => handleEnhanceField(
+                              'roleDescription',
+                              'custom',
+                              () => selected.roleDescription || '',
+                              (v) => onUpdate(selected.id, { roleDescription: v }),
+                              'Role Description'
+                            )}
+                            disabled={enhancingField !== null}
+                            title="Enhance with AI"
+                            className={cn(
+                              "p-1 rounded-md transition-all",
+                              enhancingField === 'roleDescription'
+                                ? "text-blue-500 animate-pulse cursor-wait"
+                                : "text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10"
+                            )}
+                          >
+                            <Sparkles size={14} />
+                          </button>
+                        </div>
                         <AutoResizeTextarea value={selected.roleDescription || ''} onChange={(v) => onUpdate(selected.id, { roleDescription: v })} placeholder="Brief description of the character's role" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                       </div>
                     </div>
@@ -819,7 +861,7 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
             <HardcodedRow label="Temporary Conditions" value={selected.physicalAppearance?.temporaryConditions || ''} onChange={(v) => handlePhysicalAppearanceChange('temporaryConditions', v)} placeholder="Injuries, illness, etc." onEnhance={() => handleEnhanceField('temporaryConditions', 'physicalAppearance', () => selected.physicalAppearance?.temporaryConditions || '', (v) => handlePhysicalAppearanceChange('temporaryConditions', v))} isEnhancing={enhancingField === 'temporaryConditions'} />
             {/* User-added extras */}
             {(selected.physicalAppearance?._extras || []).map(extra => (
-              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('physicalAppearance', extra.id, patch)} onDelete={() => handleDeleteExtra('physicalAppearance', extra.id)} />
+              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('physicalAppearance', extra.id, patch)} onDelete={() => handleDeleteExtra('physicalAppearance', extra.id)} onEnhance={() => handleEnhanceField(`extra_pa_${extra.id}`, 'custom', () => extra.value, (v) => handleUpdateExtra('physicalAppearance', extra.id, { value: v }), extra.label || 'Physical Appearance detail')} isEnhancing={enhancingField === `extra_pa_${extra.id}`} />
             ))}
             <button type="button" onClick={() => handleAddExtra('physicalAppearance')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
@@ -839,7 +881,7 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
             <HardcodedRow label="Miscellaneous" value={selected.currentlyWearing?.miscellaneous || ''} onChange={(v) => handleCurrentlyWearingChange('miscellaneous', v)} placeholder="Outerwear, footwear, accessories" onEnhance={() => handleEnhanceField('cw_miscellaneous', 'currentlyWearing', () => selected.currentlyWearing?.miscellaneous || '', (v) => handleCurrentlyWearingChange('miscellaneous', v))} isEnhancing={enhancingField === 'cw_miscellaneous'} />
             {/* User-added extras */}
             {(selected.currentlyWearing?._extras || []).map(extra => (
-              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('currentlyWearing', extra.id, patch)} onDelete={() => handleDeleteExtra('currentlyWearing', extra.id)} />
+              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('currentlyWearing', extra.id, patch)} onDelete={() => handleDeleteExtra('currentlyWearing', extra.id)} onEnhance={() => handleEnhanceField(`extra_cw_${extra.id}`, 'custom', () => extra.value, (v) => handleUpdateExtra('currentlyWearing', extra.id, { value: v }), extra.label || 'Currently Wearing detail')} isEnhancing={enhancingField === `extra_cw_${extra.id}`} />
             ))}
             <button type="button" onClick={() => handleAddExtra('currentlyWearing')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
@@ -860,7 +902,7 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
             <HardcodedRow label="Miscellaneous" value={selected.preferredClothing?.miscellaneous || ''} onChange={(v) => handlePreferredClothingChange('miscellaneous', v)} placeholder="Formal, athletic, swimwear, etc." onEnhance={() => handleEnhanceField('pc_miscellaneous', 'preferredClothing', () => selected.preferredClothing?.miscellaneous || '', (v) => handlePreferredClothingChange('miscellaneous', v))} isEnhancing={enhancingField === 'pc_miscellaneous'} />
             {/* User-added extras */}
             {(selected.preferredClothing?._extras || []).map(extra => (
-              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('preferredClothing', extra.id, patch)} onDelete={() => handleDeleteExtra('preferredClothing', extra.id)} />
+              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('preferredClothing', extra.id, patch)} onDelete={() => handleDeleteExtra('preferredClothing', extra.id)} onEnhance={() => handleEnhanceField(`extra_pc_${extra.id}`, 'custom', () => extra.value, (v) => handleUpdateExtra('preferredClothing', extra.id, { value: v }), extra.label || 'Preferred Clothing detail')} isEnhancing={enhancingField === `extra_pc_${extra.id}`} />
             ))}
             <button type="button" onClick={() => handleAddExtra('preferredClothing')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
@@ -873,6 +915,8 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
             onChange={(personality) => onUpdate(selected.id, { personality })}
             isExpanded={expandedSections.personality}
             onToggle={() => toggleSection('personality')}
+            onEnhanceField={(fieldKey, getCurrentValue, setValue, customLabel) => handleEnhanceField(fieldKey, 'custom', getCurrentValue, setValue, customLabel)}
+            enhancingField={enhancingField}
           />
 
           {/* HARDCODED SECTION 5: Tone */}
@@ -893,7 +937,7 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
             }
           >
             {(selected.tone?._extras || []).map(extra => (
-              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('tone', extra.id, patch)} onDelete={() => handleDeleteExtra('tone', extra.id)} />
+              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('tone', extra.id, patch)} onDelete={() => handleDeleteExtra('tone', extra.id)} onEnhance={() => handleEnhanceField(`extra_tone_${extra.id}`, 'custom', () => extra.value, (v) => handleUpdateExtra('tone', extra.id, { value: v }), extra.label || 'Tone detail')} isEnhancing={enhancingField === `extra_tone_${extra.id}`} />
             ))}
             <button type="button" onClick={() => handleAddExtra('tone')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
@@ -932,7 +976,7 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
             <HardcodedRow label="Financial Status" value={selected.background?.financialStatus || ''} onChange={(v) => handleBackgroundChange('financialStatus', v)} placeholder="e.g., Middle class, Wealthy" onEnhance={() => handleEnhanceField('bg_financialStatus', 'custom', () => selected.background?.financialStatus || '', (v) => handleBackgroundChange('financialStatus', v), 'Financial Status')} isEnhancing={enhancingField === 'bg_financialStatus'} />
             <HardcodedRow label="Motivation" value={selected.background?.motivation || ''} onChange={(v) => handleBackgroundChange('motivation', v)} placeholder="What drives this character" onEnhance={() => handleEnhanceField('bg_motivation', 'custom', () => selected.background?.motivation || '', (v) => handleBackgroundChange('motivation', v), 'Motivation')} isEnhancing={enhancingField === 'bg_motivation'} />
             {(selected.background?._extras || []).map(extra => (
-              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('background', extra.id, patch)} onDelete={() => handleDeleteExtra('background', extra.id)} />
+              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('background', extra.id, patch)} onDelete={() => handleDeleteExtra('background', extra.id)} onEnhance={() => handleEnhanceField(`extra_bg_${extra.id}`, 'custom', () => extra.value, (v) => handleUpdateExtra('background', extra.id, { value: v }), extra.label || 'Background detail')} isEnhancing={enhancingField === `extra_bg_${extra.id}`} />
             ))}
             <button type="button" onClick={() => handleAddExtra('background')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
@@ -957,7 +1001,7 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
             }
           >
             {(selected.keyLifeEvents?._extras || []).map(extra => (
-              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('keyLifeEvents', extra.id, patch)} onDelete={() => handleDeleteExtra('keyLifeEvents', extra.id)} />
+              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('keyLifeEvents', extra.id, patch)} onDelete={() => handleDeleteExtra('keyLifeEvents', extra.id)} onEnhance={() => handleEnhanceField(`extra_kle_${extra.id}`, 'custom', () => extra.value, (v) => handleUpdateExtra('keyLifeEvents', extra.id, { value: v }), extra.label || 'Key Life Event')} isEnhancing={enhancingField === `extra_kle_${extra.id}`} />
             ))}
             <button type="button" onClick={() => handleAddExtra('keyLifeEvents')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
@@ -982,7 +1026,7 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
             }
           >
             {(selected.relationships?._extras || []).map(extra => (
-              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('relationships', extra.id, patch)} onDelete={() => handleDeleteExtra('relationships', extra.id)} />
+              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('relationships', extra.id, patch)} onDelete={() => handleDeleteExtra('relationships', extra.id)} onEnhance={() => handleEnhanceField(`extra_rel_${extra.id}`, 'custom', () => extra.value, (v) => handleUpdateExtra('relationships', extra.id, { value: v }), extra.label || 'Relationship')} isEnhancing={enhancingField === `extra_rel_${extra.id}`} />
             ))}
             <button type="button" onClick={() => handleAddExtra('relationships')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
@@ -1007,7 +1051,7 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
             }
           >
             {(selected.secrets?._extras || []).map(extra => (
-              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('secrets', extra.id, patch)} onDelete={() => handleDeleteExtra('secrets', extra.id)} />
+              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('secrets', extra.id, patch)} onDelete={() => handleDeleteExtra('secrets', extra.id)} onEnhance={() => handleEnhanceField(`extra_sec_${extra.id}`, 'custom', () => extra.value, (v) => handleUpdateExtra('secrets', extra.id, { value: v }), extra.label || 'Secret')} isEnhancing={enhancingField === `extra_sec_${extra.id}`} />
             ))}
             <button type="button" onClick={() => handleAddExtra('secrets')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
@@ -1032,7 +1076,7 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
             }
           >
             {(selected.fears?._extras || []).map(extra => (
-              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('fears', extra.id, patch)} onDelete={() => handleDeleteExtra('fears', extra.id)} />
+              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('fears', extra.id, patch)} onDelete={() => handleDeleteExtra('fears', extra.id)} onEnhance={() => handleEnhanceField(`extra_fear_${extra.id}`, 'custom', () => extra.value, (v) => handleUpdateExtra('fears', extra.id, { value: v }), extra.label || 'Fear')} isEnhancing={enhancingField === `extra_fear_${extra.id}`} />
             ))}
             <button type="button" onClick={() => handleAddExtra('fears')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
@@ -1045,6 +1089,8 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
             onChange={(goals) => onUpdate(selected.id, { goals })}
             isExpanded={expandedSections.characterGoals}
             onToggle={() => toggleSection('characterGoals')}
+            onEnhanceField={(fieldKey, getCurrentValue, setValue, customLabel) => handleEnhanceField(fieldKey, 'custom', getCurrentValue, setValue, customLabel)}
+            enhancingField={enhancingField}
           />
 
           {/* USER-CREATED CUSTOM SECTIONS */}

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Character } from '@/types';
 import { Button, Input } from './UI';
 
@@ -73,4 +73,36 @@ export function CharacterPicker({ library, onSelect, onClose }: CharacterPickerP
       </div>
     </div>
   );
+}
+
+// Wrapper that refreshes library on mount
+interface CharacterPickerWithRefreshProps {
+  library: Character[];
+  refreshLibrary: () => Promise<Character[]>;
+  onSelect: (character: Character) => void;
+  onClose: () => void;
+}
+
+export function CharacterPickerWithRefresh({ library: initialLibrary, refreshLibrary, onSelect, onClose }: CharacterPickerWithRefreshProps) {
+  const [lib, setLib] = useState(initialLibrary);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    refreshLibrary().then(updated => {
+      setLib(updated);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, []);
+
+  if (loading && lib.length === 0) {
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-6">
+        <div className="bg-white rounded-3xl shadow-2xl p-12 text-center">
+          <p className="text-slate-500">Loading library...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return <CharacterPicker library={lib} onSelect={onSelect} onClose={onClose} />;
 }
