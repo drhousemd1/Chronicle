@@ -473,7 +473,7 @@ Scenario: ${appData.world.core.scenarioName || 'Not specified'}`.trim();
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {characters.map(c => (
             <div key={c.id} className="group relative cursor-pointer" onClick={() => onSelect(c.id)}>
-              <div className="aspect-[2/3] w-full overflow-hidden rounded-[2rem] bg-slate-200 !shadow-[0_12px_24px_-8px_rgba(0,0,0,0.15)] transition-all duration-300 group-hover:-translate-y-3 group-hover:shadow-2xl border border-slate-200 relative">
+              <div className="aspect-[2/3] w-full overflow-hidden rounded-[2rem] bg-slate-200 !shadow-[0_12px_24px_-8px_rgba(0,0,0,0.15)] transition-all duration-300 group-hover:-translate-y-3 group-hover:shadow-2xl border border-[#4a5f7f] relative">
                 
                 {c.avatarDataUrl ? (
                   <img
