@@ -1677,7 +1677,7 @@ const IndexContent = () => {
         <div className="flex-1 overflow-hidden">
           {tab === "hub" && (
             <div 
-              className="relative w-full h-full"
+              className="relative w-full h-full bg-black"
               style={selectedBackgroundUrl ? {
                 backgroundImage: `url(${selectedBackgroundUrl})`,
                 backgroundSize: 'cover',
