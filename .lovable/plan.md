@@ -1,80 +1,77 @@
 
-# Fix: Remove Rogue Library Saves, Auto-Save on Navigation, and Stuck "Saving" State
+# Fix: Separate Save and Save-and-Close Button States
 
-## Problems Identified
+## Problem
 
-1. **Characters auto-added to library on every scenario save** (lines 716-735 in `handleSaveWithData`): Every time "Save" is clicked, ALL scenario characters are copied into the character library. This is the primary source of junk library entries.
+Both "Save" and "Save and Close" buttons share the single `isSaving` state. When either is clicked, `setIsSaving(true)` fires and BOTH buttons simultaneously show "Saving..." text and get the disabled styling, making it look like both are pressed.
 
-2. **Auto-save on navigation creates junk "Your Stories" cards** (lines 762-785 `handleNavigateAway`): Clicking any sidebar item (Hub, Gallery, Library) triggers a full save of whatever draft is open, creating empty/junk scenario cards.
+## Solution
 
-3. **"+ Character Library" button shows "Saving..."** when the unrelated Save button is clicked (line 1680): Both share the same `isSaving` state, so clicking Save makes the library button text change to "Saving..." too.
-
-4. **Sidebar save button also triggers library sync** (lines 1318-1349): The sidebar's "Save Scenario" button calls `handleSave(true)` which goes through `handleSaveWithData`, which includes the library sync loop.
-
-## Changes
+Introduce a second state variable `isSavingAndClosing` so each button tracks its own saving state independently.
 
 ### File: `src/pages/Index.tsx`
 
-**A. Remove character-to-library sync from `handleSaveWithData` (lines 716-736)**
-
-Delete the entire block that loops through characters and calls `saveCharacterToLibrary`. The ONLY path to add characters to the library should be the explicit "Add to Character Library" / "Update Character" button (`handleSaveToLibrary`).
-
-```text
-// DELETE this entire block (lines 716-736):
-// Sync characters to library...
-if (dataToSave.characters.length > 0) {
-  for (const char of dataToSave.characters) { ... }
-  const updatedLibrary = await supabaseData.fetchCharacterLibrary();
-  setLibrary(updatedLibrary);
-}
+**A. Add new state variable** (near existing `isSaving` declaration):
+```typescript
+const [isSavingAndClosing, setIsSavingAndClosing] = useState(false);
 ```
 
-**B. Remove auto-save from `handleNavigateAway` (lines 762-785)**
-
-Replace the auto-save logic with simple navigation. Instead of saving to the database, optionally stash the draft in localStorage so it's not lost if the user accidentally clicks away.
+**B. Update the "Save and Close" button** (line 1486-1493):
+- Instead of calling `handleSave(true)`, give it its own inline handler that uses `isSavingAndClosing`
+- `disabled={isSavingAndClosing}` instead of `disabled={isSaving}`
+- Text: `isSavingAndClosing ? 'Saving...' : 'Save and Close'`
 
 ```typescript
-const handleNavigateAway = useCallback(async (targetTab: TabKey | "library") => {
-  // Stash draft to localStorage as a safety net (no DB save)
-  if (activeId && activeData) {
+<button
+  type="button"
+  onClick={async () => {
+    setIsSavingAndClosing(true);
     try {
-      localStorage.setItem(`draft_${activeId}`, JSON.stringify(activeData));
-    } catch (e) {
-      console.warn("Could not stash draft to localStorage:", e);
+      await handleSaveWithData(null, true);
+    } finally {
+      setIsSavingAndClosing(false);
     }
-  }
-
-  // Navigate without saving
-  setActiveId(null);
-  setActiveData(null);
-  setSelectedCharacterId(null);
-  setPlayingConversationId(null);
-  setTab(targetTab);
-}, [activeId, activeData]);
+  }}
+  disabled={isSavingAndClosing || isSaving}
+  ...
+>
+  {isSavingAndClosing ? 'Saving...' : 'Save and Close'}
+</button>
 ```
 
-**C. Separate `isSaving` for library button (line 1680)**
+**C. Update the "Save" button** (line 1494-1501):
+- Keep using `isSaving` as before
+- Disable if either save is in progress: `disabled={isSaving || isSavingAndClosing}`
+- Text stays: `isSaving ? 'Saving...' : 'Save'`
 
-Add a new state `isSavingToLibrary` and use it exclusively in `handleSaveToLibrary` instead of sharing `isSaving`. This prevents the library button from showing "Saving..." when the scenario Save button is clicked.
+**D. Remove `setIsSaving` from `handleSaveWithData` when called with `navigateToHub=true`**:
+- Actually, the cleaner approach: keep `isSaving` only for the "Save" (no-close) path. The "Save and Close" button will bypass `isSaving` entirely by wrapping the call with its own `isSavingAndClosing` state.
+- To avoid double-state changes, modify the "Save" button's onClick to set `isSaving` around the call, and remove `setIsSaving` from inside `handleSaveWithData` itself. Instead, each caller manages its own loading state.
 
-- Add state: `const [isSavingToLibrary, setIsSavingToLibrary] = useState(false);`
-- In `handleSaveToLibrary`: replace `setIsSaving(true/false)` with `setIsSavingToLibrary(true/false)`
-- In the library button (line 1671): change `disabled={isSaving}` to `disabled={isSavingToLibrary}`
-- In the library button text (line 1680): change `isSaving` to `isSavingToLibrary`
+### Refined approach (cleanest):
 
-**D. Also remove the library sync from `handleSaveCharacter` (lines 787-808)**
+**Move `setIsSaving` out of `handleSaveWithData`** (remove lines 690 and 734). Let callers control their own state:
 
-The `handleSaveCharacter` function at line 802 calls `handleSave()` which previously triggered the library sync. Since we removed the sync from `handleSaveWithData`, this path is already fixed. But verify `handleSaveCharacter` in the library tab path (line 794) only saves when explicitly on the library tab -- this is correct existing behavior.
+- "Save" button onClick:
+  ```typescript
+  onClick={async () => {
+    setIsSaving(true);
+    try { await handleSave(false); } finally { setIsSaving(false); }
+  }}
+  ```
 
-## Summary of What Changes
+- "Save and Close" button onClick:
+  ```typescript
+  onClick={async () => {
+    setIsSavingAndClosing(true);
+    try { await handleSave(true); } finally { setIsSavingAndClosing(false); }
+  }}
+  ```
 
-| Before | After |
-|--------|-------|
-| Every Save syncs all characters to library | Only "Add to Character Library" button adds to library |
-| Navigating away auto-saves to DB, creating junk cards | Navigation just stashes to localStorage, no DB write |
-| Library button shows "Saving..." when Save is clicked | Library button has its own independent saving state |
-| Multiple code paths add characters to library | Single code path: `handleSaveToLibrary` |
+- Sidebar save button also wraps its call with `setIsSaving`.
+
+Each button only shows "Saving..." and disabled state when IT is the one saving.
 
 ## Files Modified
 
-1. **`src/pages/Index.tsx`** -- All changes are in this single file
+1. **`src/pages/Index.tsx`** -- Add `isSavingAndClosing` state, remove `setIsSaving` from `handleSaveWithData`, wrap each save button with its own state management
