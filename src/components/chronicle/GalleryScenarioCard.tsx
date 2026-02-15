@@ -62,7 +62,7 @@ export const GalleryScenarioCard: React.FC<GalleryScenarioCardProps> = ({
       className="group relative cursor-pointer"
       onClick={onViewDetails}
     >
-      <div className="aspect-[2/3] w-full overflow-hidden rounded-[2rem] bg-slate-200 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)] transition-all duration-300 group-hover:-translate-y-3 group-hover:shadow-2xl ring-1 ring-slate-900/5 relative">
+      <div className="aspect-[2/3] w-full overflow-hidden rounded-[2rem] bg-slate-200 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)] transition-all duration-300 group-hover:-translate-y-3 group-hover:shadow-2xl border border-[#4a5f7f] relative">
         
         {/* Cover Image */}
         {scenario?.cover_image_url ? (
