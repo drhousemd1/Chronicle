@@ -274,6 +274,46 @@ INSTRUCTION: ${fieldConfig.instruction}
 Return ONLY the enhanced text. No explanations, no prefixes, no markdown formatting.`;
 }
 
+// ============================================================
+// Shared AI call with content-filter fallback
+// ============================================================
+
+const FALLBACK_MODELS = ['openai/gpt-5-mini', 'openai/gpt-5-nano'];
+
+async function callAIWithFallback(
+  messages: { role: string; content: string }[],
+  modelId: string,
+  stream: boolean = false
+): Promise<string> {
+  const modelsToTry = [modelId, ...FALLBACK_MODELS.filter(m => m !== modelId)];
+
+  for (const model of modelsToTry) {
+    const { data, error } = await supabase.functions.invoke('chat', {
+      body: { messages, modelId: model, stream }
+    });
+
+    if (error) {
+      console.error(`[character-ai] Error with model ${model}:`, error);
+      continue;
+    }
+
+    const finishReason = data?.choices?.[0]?.finish_reason;
+    const content = data?.choices?.[0]?.message?.content;
+
+    if (finishReason === 'content_filter' || !content) {
+      console.warn(`[character-ai] Model ${model} blocked (${finishReason || 'empty content'}), trying fallback...`);
+      continue;
+    }
+
+    if (model !== modelId) {
+      console.log(`[character-ai] Fallback to ${model} succeeded`);
+    }
+    return content.trim().replace(/^["']|["']$/g, '');
+  }
+
+  throw new Error('Content was blocked by all available models. Try rephrasing the content or using a different model.');
+}
+
 /**
  * Enhance a single character field using AI
  */
@@ -291,29 +331,13 @@ export async function aiEnhanceCharacterField(
 
   console.log(`[character-ai] Enhancing field: ${fieldName} with model: ${modelId}`);
 
-  const { data, error } = await supabase.functions.invoke('chat', {
-    body: {
-      messages: [
-        { role: 'system', content: 'You are a concise character creation assistant. Return only the requested content, no explanations.' },
-        { role: 'user', content: prompt }
-      ],
-      modelId,
-      stream: false
-    }
-  });
-
-  if (error) {
-    console.error('[character-ai] Enhancement error:', error);
-    throw new Error(error.message || 'Failed to enhance field');
-  }
-
-  const content = data?.choices?.[0]?.message?.content;
-  if (!content) {
-    throw new Error('No content returned from AI');
-  }
-
-  // Clean up response - remove any accidental markdown or quotes
-  return content.trim().replace(/^["']|["']$/g, '');
+  return callAIWithFallback(
+    [
+      { role: 'system', content: 'You are a concise character creation assistant. Return only the requested content, no explanations.' },
+      { role: 'user', content: prompt }
+    ],
+    modelId
+  );
 }
 
 // ============================================================
@@ -813,23 +837,13 @@ export async function aiFillCharacter(
   const prompt = buildAiFillPrompt(character, emptyFields, emptyCustomItems, worldContext, userPrompt, useExistingDetails);
 
   try {
-    const { data, error } = await supabase.functions.invoke('chat', {
-      body: {
-        messages: [
-          { role: 'system', content: 'You are a character creation assistant. Return only valid JSON.' },
-          { role: 'user', content: prompt }
-        ],
-        modelId,
-        stream: false
-      }
-    });
-
-    if (error) {
-      console.error("[ai-fill] Supabase invoke error:", error);
-      return {};
-    }
-
-    const content = data?.choices?.[0]?.message?.content || '';
+    const content = await callAIWithFallback(
+      [
+        { role: 'system', content: 'You are a character creation assistant. Return only valid JSON.' },
+        { role: 'user', content: prompt }
+      ],
+      modelId
+    );
     console.log(`[ai-fill] LLM response length: ${content.length}, first 200 chars:`, content.substring(0, 200));
 
     const result = extractJsonFromResponse(content);
@@ -985,23 +999,13 @@ export async function aiGenerateCharacter(
   const prompt = buildAiGeneratePrompt(character, emptyFields, emptyCustomItems, existingSectionTitles, storyContext, worldContext, userPrompt, useExistingDetails);
 
   try {
-    const { data, error } = await supabase.functions.invoke('chat', {
-      body: {
-        messages: [
-          { role: 'system', content: 'You are a creative character design assistant. Return only valid JSON.' },
-          { role: 'user', content: prompt }
-        ],
-        modelId,
-        stream: false
-      }
-    });
-
-    if (error) {
-      console.error("AI Generate error:", error);
-      return {};
-    }
-
-    const content = data?.choices?.[0]?.message?.content || '';
+    const content = await callAIWithFallback(
+      [
+        { role: 'system', content: 'You are a creative character design assistant. Return only valid JSON.' },
+        { role: 'user', content: prompt }
+      ],
+      modelId
+    );
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return {};
 
