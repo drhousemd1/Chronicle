@@ -1,41 +1,47 @@
 
-# Fix: Remove Dead LOVABLE_API_KEY Check and Add Model Validation
 
-## Root Causes
+# Fix: Chat Streaming Uses Wrong Auth Token
 
-1. **`extract-character-updates` edge function** still has a `LOVABLE_API_KEY` check at lines 193-196. This key is no longer used (everything goes through `XAI_API_KEY`), but the function throws an error if it's missing -- which it is, since it was never needed for xAI.
+## Root Cause
 
-2. **Stale model IDs in database**: Users who previously selected a Gemini model still have `google/gemini-3-flash-preview` stored in the `selected_model` column. When loaded, `appData.selectedModel` passes this stale ID through to edge functions. The `chat` function catches and corrects it, but `extract-character-updates` does not validate the incoming model and sends the invalid ID directly to xAI, which returns a 400 error.
+The `generateRoleplayResponseStream` function in `src/services/llm.ts` (line 811) sends the **anon/publishable key** as the Authorization bearer token instead of the user's actual session JWT:
 
-3. **`supabase-data.ts` doesn't sanitize stored models**: When loading from the database, it passes `scenario.selected_model` through without checking if it's a valid Grok model.
+```typescript
+'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+```
 
-## Changes
+The anon key is not a user token, so when the edge function calls `supabase.auth.getUser()`, it correctly rejects it as "Invalid token."
 
-### File 1: `supabase/functions/extract-character-updates/index.ts`
+Other edge function calls (character updates, memory extraction, etc.) work fine because they use `supabase.functions.invoke()`, which automatically attaches the real user session token. But this chat streaming call uses raw `fetch()` and hardcodes the wrong credential.
 
-- **Remove the dead `LOVABLE_API_KEY` check** (lines 193-196) -- this code throws before the xAI code is reached
-- **Add Grok model validation** (same pattern as `chat/index.ts`): validate incoming `modelId` against `['grok-3', 'grok-3-mini', 'grok-2']` and force fallback to `grok-3-mini` if invalid
+## Fix
 
-### File 2: `src/services/supabase-data.ts`
+In `src/services/llm.ts`, replace the hardcoded anon key with the user's actual session token retrieved from the Supabase client:
 
-- **Sanitize `selectedModel` on load**: When reading `scenario.selected_model`, validate it against the current `LLM_MODELS` list. If the stored value doesn't match any current model ID, fall back to `LLM_MODELS[0].id` (`grok-3`).
-- Change lines 353 and 430 from:
-  ```
-  selectedModel: scenario.selected_model || LLM_MODELS[0].id,
-  ```
-  to:
-  ```
-  selectedModel: (scenario.selected_model && LLM_MODELS.some(m => m.id === scenario.selected_model)) 
-    ? scenario.selected_model 
-    : LLM_MODELS[0].id,
-  ```
+```typescript
+// Before the fetch call, get the real session token
+const { data: { session } } = await supabase.auth.getSession();
+const accessToken = session?.access_token;
+if (!accessToken) {
+  yield "Session expired. Please sign in again.";
+  return;
+}
 
-### File 3: `src/utils.ts`
+// Use the real token
+const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${accessToken}`,
+    'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+  },
+  // ...
+});
+```
 
-- Same validation in `normStr(raw?.selectedModel)` path (line 388): validate against `LLM_MODELS` before accepting the stored value.
+The `apikey` header is also added since Supabase edge functions expect it alongside the Authorization header for proper routing.
 
 ## Files Modified
 
-1. `supabase/functions/extract-character-updates/index.ts` -- Remove dead LOVABLE_API_KEY check, add model validation
-2. `src/services/supabase-data.ts` -- Sanitize stale model IDs on database load
-3. `src/utils.ts` -- Sanitize stale model IDs on import/local load
+1. `src/services/llm.ts` -- Replace anon key with real session token in the streaming fetch call (around lines 807-812)
+
