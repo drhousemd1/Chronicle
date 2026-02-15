@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { StoryGoal, GoalStep, GoalFlexibility } from '@/types';
-import { Trash2, Plus, X, ChevronDown, ChevronUp, Target, CheckSquare } from 'lucide-react';
+import { Trash2, Plus, X, ChevronDown, ChevronUp, Target, CheckSquare, Sparkles } from 'lucide-react';
 import { CircularProgress } from './CircularProgress';
 import { GuidanceStrengthSlider } from './GuidanceStrengthSlider';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -38,16 +38,16 @@ const AutoResizeTextarea: React.FC<{
 interface StoryGoalsSectionProps {
   goals: StoryGoal[];
   onChange: (goals: StoryGoal[]) => void;
+  onEnhanceField?: (fieldKey: string, getCurrentValue: () => string, setValue: (value: string) => void, customLabel?: string) => void;
+  enhancingField?: string | null;
 }
-
-// FLEXIBILITY_OPTIONS kept for reference but slider replaces the button UI
 
 const calculateProgress = (steps: GoalStep[]): number => {
   if (steps.length === 0) return 0;
   return Math.round((steps.filter(s => s.completed).length / steps.length) * 100);
 };
 
-export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onChange }) => {
+export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onChange, onEnhanceField, enhancingField }) => {
   const addGoal = () => {
     const newGoal: StoryGoal = {
       id: uid('sgoal'),
@@ -101,12 +101,32 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
     });
   };
 
+  const SparkleButton: React.FC<{ fieldKey: string; onClick: () => void }> = ({ fieldKey, onClick }) => {
+    if (!onEnhanceField) return null;
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={enhancingField !== null}
+        title="Enhance with AI"
+        className={cn(
+          "p-1 rounded-md transition-all",
+          enhancingField === fieldKey
+            ? "text-blue-500 animate-pulse cursor-wait"
+            : "text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10"
+        )}
+      >
+        <Sparkles size={14} />
+      </button>
+    );
+  };
+
   return (
     <section>
       <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
         <div className="bg-[#4a5f7f] border-b border-white/20 px-6 py-4 flex items-center gap-3 shadow-lg">
           <Target className="w-[18px] h-[18px] text-white" />
-          <h2 className="text-white text-xl font-bold tracking-tight">Story Goals and Desires</h2>
+          <h2 className="text-white text-xl font-bold tracking-tight">Story Goals</h2>
         </div>
         <div className="p-6 space-y-4">
           {goals.map((goal) => {
@@ -128,7 +148,18 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
 
                     {/* Desired Outcome */}
                     <div>
-                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Desired Outcome</label>
+                      <div className="flex items-center gap-2">
+                        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Desired Outcome</label>
+                        <SparkleButton
+                          fieldKey={`story_outcome_${goal.id}`}
+                          onClick={() => onEnhanceField?.(
+                            `story_outcome_${goal.id}`,
+                            () => goal.desiredOutcome,
+                            (v) => updateGoal(goal.id, { desiredOutcome: v }),
+                            `Desired Outcome for story goal: ${goal.title || 'Untitled'}`
+                          )}
+                        />
+                      </div>
                       <AutoResizeTextarea value={goal.desiredOutcome} onChange={(v) => updateGoal(goal.id, { desiredOutcome: v })} placeholder="What success looks like..." className="mt-1 px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20" rows={2} />
                     </div>
 
@@ -160,6 +191,15 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                                 className={cn(
                                   "flex-1 px-3 py-2 bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20",
                                   step.completed && "line-through text-zinc-500"
+                                )}
+                              />
+                              <SparkleButton
+                                fieldKey={`story_step_${step.id}`}
+                                onClick={() => onEnhanceField?.(
+                                  `story_step_${step.id}`,
+                                  () => step.description,
+                                  (v) => updateStep(goal.id, step.id, { description: v }),
+                                  `Step for story goal "${goal.title || 'Untitled'}"`
                                 )}
                               />
                               <button onClick={() => deleteStep(goal.id, step.id)} className="mt-2 text-zinc-500 hover:text-rose-400 transition-colors p-1">

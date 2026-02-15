@@ -612,18 +612,58 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                         </div>
                         {section.items.map((item, iIdx) => (
                           <div key={item.id} className="flex items-start gap-3">
-                            <AutoResizeTextarea
-                              value={item.label}
-                              onChange={(v) => {
-                                const sections = [...(world.core.customWorldSections || [])];
-                                const items = [...sections[sIdx].items];
-                                items[iIdx] = { ...items[iIdx], label: v };
-                                sections[sIdx] = { ...sections[sIdx], items };
-                                updateCore({ customWorldSections: sections });
-                              }}
-                              placeholder="Label..."
-                              className="w-2/5 px-3 py-2 text-xs font-bold bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                            />
+                            <div className="w-2/5 flex items-center gap-1.5 min-w-0">
+                              <AutoResizeTextarea
+                                value={item.label}
+                                onChange={(v) => {
+                                  const sections = [...(world.core.customWorldSections || [])];
+                                  const items = [...sections[sIdx].items];
+                                  items[iIdx] = { ...items[iIdx], label: v };
+                                  sections[sIdx] = { ...sections[sIdx], items };
+                                  updateCore({ customWorldSections: sections });
+                                }}
+                                placeholder="Label..."
+                                className="flex-1 px-3 py-2 text-xs font-bold bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                              />
+                              {item.label && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const fieldKey = `world_custom_${item.id}`;
+                                    if (enhancingField) return;
+                                    setEnhancingField(fieldKey as any);
+                                    aiEnhanceWorldField(
+                                      'briefDescription' as any,
+                                      item.value,
+                                      { ...world.core, briefDescription: `Context for "${section.title}" section, field "${item.label}": ${world.core.briefDescription || ''}` },
+                                      modelId
+                                    ).then(enhanced => {
+                                      const sections = [...(world.core.customWorldSections || [])];
+                                      const items = [...sections[sIdx].items];
+                                      items[iIdx] = { ...items[iIdx], value: enhanced };
+                                      sections[sIdx] = { ...sections[sIdx], items };
+                                      updateCore({ customWorldSections: sections });
+                                      toast.success('Field enhanced');
+                                    }).catch(err => {
+                                      console.error('Enhancement failed:', err);
+                                      toast.error('Enhancement failed');
+                                    }).finally(() => {
+                                      setEnhancingField(null);
+                                    });
+                                  }}
+                                  disabled={enhancingField !== null}
+                                  title="Enhance with AI"
+                                  className={cn(
+                                    "p-1.5 rounded-md transition-all flex-shrink-0",
+                                    enhancingField === `world_custom_${item.id}`
+                                      ? "text-blue-500 animate-pulse cursor-wait"
+                                      : "text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10"
+                                  )}
+                                >
+                                  <Sparkles size={14} />
+                                </button>
+                              )}
+                            </div>
                             <AutoResizeTextarea
                               value={item.value}
                               onChange={(v) => {
@@ -692,6 +732,25 @@ export const WorldTab: React.FC<WorldTabProps> = ({
           <StoryGoalsSection
             goals={world.core.storyGoals || []}
             onChange={(goals) => updateCore({ storyGoals: goals })}
+            onEnhanceField={(fieldKey, getCurrentValue, setValue, customLabel) => {
+              if (enhancingField) return;
+              setEnhancingField(fieldKey as any);
+              aiEnhanceWorldField(
+                'briefDescription' as any,
+                getCurrentValue(),
+                { ...world.core, briefDescription: `Context for "${customLabel}": ${world.core.briefDescription || ''}` },
+                modelId
+              ).then(enhanced => {
+                setValue(enhanced);
+                toast.success('Field enhanced');
+              }).catch(err => {
+                console.error('Enhancement failed:', err);
+                toast.error('Enhancement failed');
+              }).finally(() => {
+                setEnhancingField(null);
+              });
+            }}
+            enhancingField={enhancingField as string | null}
           />
 
           {/* Opening Dialog Section - Dark Theme */}
