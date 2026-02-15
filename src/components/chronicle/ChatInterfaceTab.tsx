@@ -3129,7 +3129,7 @@ const updatedChar: SideCharacter = {
               <button
                 onClick={handleSend}
                 disabled={!input.trim() || isStreaming}
-                className="ml-auto inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest border transition-all active:scale-95 cursor-pointer bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:border-[hsl(var(--ui-border-hover))] disabled:opacity-50 disabled:pointer-events-none"
+                className={`ml-auto inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest border transition-all active:scale-95 cursor-pointer shadow-[0_10px_30px_rgba(0,0,0,0.35)] disabled:pointer-events-none ${input.trim() ? 'bg-[#4a5f7f] text-white border-[#4a5f7f] hover:bg-[#5a6f8f]' : 'bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text-muted))] opacity-50'}`}
               >
                 {isStreaming ? '...' : 'Send'}
               </button>
