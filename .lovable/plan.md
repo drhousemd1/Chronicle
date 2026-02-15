@@ -1,77 +1,100 @@
 
-# Fix: Separate Save and Save-and-Close Button States
+
+# Fix: Complete Context Overhaul for AI Fill and Per-Row Sparkle Enhancement
 
 ## Problem
 
-Both "Save" and "Save and Close" buttons share the single `isSaving` state. When either is clicked, `setIsSaving(true)` fires and BOTH buttons simultaneously show "Saving..." text and get the disabled styling, making it look like both are pressed.
+Both AI features are generating random, disconnected content because they lack context:
+
+- **Per-row Sparkle**: Only passes scenario name and a deprecated empty field. No world data, no other characters, no self-context.
+- **AI Fill**: Passes some world fields but zero info about other characters and only 5 basic fields (name/age/sex/role/tags) of the target character -- ignoring all already-filled traits, background, personality, etc.
 
 ## Solution
 
-Introduce a second state variable `isSavingAndClosing` so each button tracks its own saving state independently.
+### File 1: `src/services/character-ai.ts`
 
-### File: `src/pages/Index.tsx`
+**A. Add `buildFullContext()` utility** (new function)
 
-**A. Add new state variable** (near existing `isSaving` declaration):
-```typescript
-const [isSavingAndClosing, setIsSavingAndClosing] = useState(false);
+Compiles a comprehensive context string from the entire scenario:
+
+```text
+WORLD:
+- Scenario name, description, premise
+- Locations (including structured locations)
+- Factions, tone/themes, plot hooks, history
+- Content themes (genres, story type)
+
+OTHER CHARACTERS:
+- For each non-target character: name, role, age, sex, key personality traits, relationship info
 ```
 
-**B. Update the "Save and Close" button** (line 1486-1493):
-- Instead of calling `handleSave(true)`, give it its own inline handler that uses `isSavingAndClosing`
-- `disabled={isSavingAndClosing}` instead of `disabled={isSaving}`
-- Text: `isSavingAndClosing ? 'Saving...' : 'Save and Close'`
+**B. Add `buildCharacterSelfContext()` utility** (new function)
 
-```typescript
-<button
-  type="button"
-  onClick={async () => {
-    setIsSavingAndClosing(true);
-    try {
-      await handleSaveWithData(null, true);
-    } finally {
-      setIsSavingAndClosing(false);
-    }
-  }}
-  disabled={isSavingAndClosing || isSaving}
-  ...
->
-  {isSavingAndClosing ? 'Saving...' : 'Save and Close'}
-</button>
+Extracts everything already filled on the target character so new fields stay consistent:
+
+```text
+- Basic info (name, age, sex, role, tags, location, mood)
+- Filled physical appearance fields
+- Filled clothing fields
+- Filled background fields
+- Personality traits (outward/inward if split mode)
+- Tone, relationships, secrets, fears, key life events (extras)
+- Goals (titles and outcomes)
 ```
 
-**C. Update the "Save" button** (line 1494-1501):
-- Keep using `isSaving` as before
-- Disable if either save is in progress: `disabled={isSaving || isSavingAndClosing}`
-- Text stays: `isSaving ? 'Saving...' : 'Save'`
+**C. Update `buildCharacterFieldPrompt()` (per-row sparkle prompt)**
 
-**D. Remove `setIsSaving` from `handleSaveWithData` when called with `navigateToHub=true`**:
-- Actually, the cleaner approach: keep `isSaving` only for the "Save" (no-close) path. The "Save and Close" button will bypass `isSaving` entirely by wrapping the call with its own `isSavingAndClosing` state.
-- To avoid double-state changes, modify the "Save" button's onClick to set `isSaving` around the call, and remove `setIsSaving` from inside `handleSaveWithData` itself. Instead, each caller manages its own loading state.
+- Change parameter from `worldContext: string` to accept the full context string (which now includes world + other characters + self-context)
+- The prompt will now include all scenario and character data
 
-### Refined approach (cleanest):
+**D. Update `aiEnhanceCharacterField()` signature**
 
-**Move `setIsSaving` out of `handleSaveWithData`** (remove lines 690 and 734). Let callers control their own state:
+- Change from `(fieldName, currentValue, characterContext, worldContext, modelId, customLabel)` to `(fieldName, currentValue, character, appData, modelId, customLabel)`
+- Internally call `buildFullContext()` and `buildCharacterSelfContext()` to build the complete context
 
-- "Save" button onClick:
-  ```typescript
-  onClick={async () => {
-    setIsSaving(true);
-    try { await handleSave(false); } finally { setIsSaving(false); }
-  }}
-  ```
+**E. Update `aiFillCharacter()` and `buildAiFillPrompt()`**
 
-- "Save and Close" button onClick:
-  ```typescript
-  onClick={async () => {
-    setIsSavingAndClosing(true);
-    try { await handleSave(true); } finally { setIsSavingAndClosing(false); }
-  }}
-  ```
+- Replace the minimal 5-line character context block with `buildCharacterSelfContext()` output
+- Replace the world context builder with `buildFullContext()`
+- Same for `buildAiGeneratePrompt()`
 
-- Sidebar save button also wraps its call with `setIsSaving`.
+### File 2: `src/components/chronicle/CharactersTab.tsx`
 
-Each button only shows "Saving..." and disabled state when IT is the one saving.
+**F. Remove broken `buildWorldContext()` function** (lines 235-238)
+
+Delete entirely -- it's the 2-line function using a deprecated field.
+
+**G. Update `handleEnhanceField()`** (lines 241-272)
+
+- Remove the `buildWorldContext()` call
+- Pass `selected` (full character) and `appData` directly to the updated `aiEnhanceCharacterField()`
+
+```typescript
+// Before:
+const worldContext = buildWorldContext();
+const enhanced = await aiEnhanceCharacterField(
+  fieldKey, currentValue, selected, worldContext, modelId, customLabel
+);
+
+// After:
+const enhanced = await aiEnhanceCharacterField(
+  fieldKey, currentValue, selected, appData, modelId, customLabel
+);
+```
+
+## What This Fixes
+
+| Feature | Before | After |
+|---------|--------|-------|
+| Per-row sparkle world context | Scenario name + empty deprecated field | Full premise, locations, factions, themes, plot hooks |
+| Per-row sparkle character context | Name, age, sex, role, tags only | All filled fields (appearance, personality, background, etc.) |
+| Per-row sparkle other characters | None | Summaries of all other characters in scenario |
+| AI Fill world context | 7 world fields | Same 7 fields + structured locations + content themes |
+| AI Fill character self-context | Name, age, sex, role, tags | All filled fields across all sections |
+| AI Fill other characters | None | Summaries of all other characters in scenario |
 
 ## Files Modified
 
-1. **`src/pages/Index.tsx`** -- Add `isSavingAndClosing` state, remove `setIsSaving` from `handleSaveWithData`, wrap each save button with its own state management
+1. `src/services/character-ai.ts` -- Add context builders, update signatures and prompts
+2. `src/components/chronicle/CharactersTab.tsx` -- Remove broken context builder, pass full data to updated API
+
