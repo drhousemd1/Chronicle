@@ -150,7 +150,7 @@ const ExtraRow: React.FC<{
         placeholder="Label"
         className="flex-1 px-3 py-2 text-xs font-bold bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
       />
-      {onEnhance && extra.label && (
+      {onEnhance && (
         <button
           type="button"
           onClick={onEnhance}

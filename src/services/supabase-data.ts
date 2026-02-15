@@ -691,6 +691,42 @@ export async function fetchCharacterLibrary(): Promise<Character[]> {
   return (data || []).map(dbToCharacter);
 }
 
+export type CharacterSummary = {
+  id: string;
+  name: string;
+  tags: string;
+  avatarUrl: string;
+  avatarPosition: { x: number; y: number };
+};
+
+export async function fetchCharacterLibrarySummaries(): Promise<CharacterSummary[]> {
+  const { data, error } = await supabase
+    .from('characters')
+    .select('id, name, tags, avatar_url, avatar_position')
+    .eq('is_library', true)
+    .order('updated_at', { ascending: false });
+
+  if (error) throw error;
+  return (data || []).map(d => ({
+    id: d.id,
+    name: d.name || '',
+    tags: d.tags || '',
+    avatarUrl: d.avatar_url || '',
+    avatarPosition: (d.avatar_position as any) || { x: 50, y: 50 },
+  }));
+}
+
+export async function fetchCharacterById(id: string): Promise<Character | null> {
+  const { data, error } = await supabase
+    .from('characters')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ? dbToCharacter(data) : null;
+}
+
 export async function saveCharacterToLibrary(char: Character, userId: string): Promise<void> {
   const { error } = await supabase
     .from('characters')
