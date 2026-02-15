@@ -3095,7 +3095,7 @@ const updatedChar: SideCharacter = {
           </div>
         </div>
 
-        <div className={`pt-3 pb-8 px-8 border-t border-[hsl(var(--ui-border))] shadow-[0_-4px_12px_rgba(0,0,0,0.15)] transition-colors relative z-20 bg-[hsl(var(--ui-surface))]`}>
+        <div className={`pt-3 pb-3 px-8 border-t border-[hsl(var(--ui-border))] shadow-[0_-4px_12px_rgba(0,0,0,0.15)] transition-colors relative z-20 bg-[hsl(var(--ui-surface))]`}>
           <div className="w-full max-w-7xl mx-auto space-y-3">
             {/* Quick Actions Bar - Above Input */}
             <div className="flex items-center gap-2 relative">
@@ -3126,34 +3126,27 @@ const updatedChar: SideCharacter = {
                 )}
               </button>
               
-              
-            </div>
-            
-            {/* Input Area */}
-            <div className="flex gap-3 items-end">
-              <div className="flex-1 bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] rounded-2xl p-2">
-                <textarea
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder="Describe your action or dialogue..."
-                  rows={3}
-                  spellCheck={true}
-                  onKeyDown={(e: any) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }}}
-                  className="w-full bg-[#1e2028] text-white placeholder-[hsl(var(--ui-text-muted))] rounded-xl px-4 py-3 text-sm outline-none border-0 resize-none overflow-hidden min-h-[96px] focus:ring-1 focus:ring-[hsl(var(--accent-teal))]/30 transition-all"
-                  ref={(el) => { if (el) { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; }}}
-                />
-              </div>
               <button
                 onClick={handleSend}
                 disabled={!input.trim() || isStreaming}
-                className={`self-end inline-flex items-center justify-center px-10 py-4 rounded-xl font-bold uppercase tracking-widest text-sm border transition-all active:scale-95 shadow-[0_10px_30px_rgba(0,0,0,0.35)] ${
-                  !input.trim() || isStreaming
-                    ? 'bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text-muted))] opacity-70 cursor-not-allowed'
-                    : 'bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] hover:border-[hsl(var(--ui-border-hover))] cursor-pointer'
-                }`}
+                className="ml-auto inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest border transition-all active:scale-95 cursor-pointer bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:border-[hsl(var(--ui-border-hover))] disabled:opacity-50 disabled:pointer-events-none"
               >
                 {isStreaming ? '...' : 'Send'}
               </button>
+            </div>
+            
+            {/* Input Area */}
+            <div className="bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] rounded-2xl p-2">
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Describe your action or dialogue..."
+                rows={3}
+                spellCheck={true}
+                onKeyDown={(e: any) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }}}
+                className="w-full bg-[#1e2028] text-white placeholder-[hsl(var(--ui-text-muted))] rounded-xl px-4 py-3 text-sm outline-none border-0 resize-none overflow-hidden min-h-[96px] focus:ring-1 focus:ring-[hsl(var(--accent-teal))]/30 transition-all"
+                ref={(el) => { if (el) { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; }}}
+              />
             </div>
           </div>
         </div>
