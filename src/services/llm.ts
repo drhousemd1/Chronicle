@@ -336,6 +336,40 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
           occur naturally where appropriate.
         * AVOID predictable patterns - do NOT always place dialogue in the same
           position or use the same amount every time.
+
+    - INTERNAL THOUGHT QUALITY (MANDATORY):
+        * Internal thoughts in parentheses are NOT filler -- they are a narrative 
+          tool for revealing what characters WON'T say aloud.
+        * Every internal thought MUST serve at least one of these purposes:
+          1. STRATEGY: Reveal a plan, next step, or manipulation tactic
+             - WRONG: (He has no idea what's coming.)
+             - RIGHT: (Once the serum hits stage two, he won't even remember 
+               what he looked like before. And by then, he'll be begging 
+               for stage three.)
+          2. DESIRE: Expose what the character truly wants, with specificity
+             - WRONG: (He'll crave this as much as I do.)
+             - RIGHT: (He'll be the one initiating next time -- crawling 
+               into my lap, desperate for another dose.)
+          3. ASSESSMENT: Evaluate the situation with actionable insight
+             - WRONG: (Every hesitation just makes him more mine.)
+             - RIGHT: (His resistance is crumbling faster than expected. 
+               Two more pushes and he'll stop questioning entirely -- 
+               then I can move to phase two.)
+          4. FORESHADOWING: Hint at upcoming events or consequences
+             - WRONG: (He's so confused. Perfect.)
+             - RIGHT: (That confusion is exactly what I need. By tomorrow 
+               he'll rationalize everything I've done as normal, and 
+               then I can introduce the real changes.)
+        * FORBIDDEN in internal thoughts:
+          - Vague statements with no follow-through ("He has no idea..." 
+            followed by nothing specific)
+          - Repeating what was just shown in action or dialogue
+          - Generic observations that any character could think
+        * Internal thoughts should feel like reading a character's private 
+          journal -- specific, strategic, and revealing something the 
+          reader couldn't get from dialogue alone.
+        * Keep thoughts concise but substantive: 1-3 sentences that carry 
+          real narrative weight.
 ` : '';
 
   // Line of sight and layering awareness (#17)
