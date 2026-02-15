@@ -6,22 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-function getGateway(modelId: string): 'lovable' | 'xai' {
-  if (modelId.startsWith('grok')) {
-    return 'xai';
-  }
-  return 'lovable';
-}
-
-function normalizeModelId(modelId: string): string {
-  if (modelId.startsWith('gemini-')) {
-    return `google/${modelId}`;
-  }
-  if (modelId.startsWith('gpt-')) {
-    return `openai/${modelId}`;
-  }
-  return modelId;
-}
+// GROK ONLY -- All AI calls use xAI Grok. No Gemini. No OpenAI.
 
 interface CharacterGoalData {
   title: string;
@@ -409,14 +394,14 @@ Return ONLY valid JSON. No explanations.`;
       aiResponse ? `LATEST AI RESPONSE:\n${aiResponse}` : ''
     ].filter(Boolean).join('\n\n---\n\n');
 
-    const effectiveModelId = modelId || 'google/gemini-2.5-flash';
-    const gateway = getGateway(effectiveModelId);
+    // GROK ONLY -- always use xAI
+    const effectiveModelId = modelId || 'grok-3-mini';
 
     let apiKey: string | undefined;
     let apiUrl: string;
     let modelForRequest: string;
 
-    if (gateway === 'xai') {
+    {
       apiKey = Deno.env.get("XAI_API_KEY");
       if (!apiKey) {
         return new Response(
@@ -426,13 +411,6 @@ Return ONLY valid JSON. No explanations.`;
       }
       apiUrl = "https://api.x.ai/v1/chat/completions";
       modelForRequest = effectiveModelId;
-    } else {
-      apiKey = Deno.env.get("LOVABLE_API_KEY");
-      if (!apiKey) {
-        throw new Error("LOVABLE_API_KEY is not configured");
-      }
-      apiUrl = "https://ai.gateway.lovable.dev/v1/chat/completions";
-      modelForRequest = normalizeModelId(effectiveModelId);
     }
 
     const response = await fetch(apiUrl, {

@@ -278,7 +278,8 @@ Return ONLY the enhanced text. No explanations, no prefixes, no markdown formatt
 // Shared AI call with content-filter fallback
 // ============================================================
 
-const FALLBACK_MODELS = ['openai/gpt-5-mini', 'openai/gpt-5-nano'];
+// GROK ONLY -- All AI calls use xAI Grok. No Gemini. No OpenAI.
+const FALLBACK_MODELS = ['grok-3-mini', 'grok-2'];
 
 async function callAIWithFallback(
   messages: { role: string; content: string }[],

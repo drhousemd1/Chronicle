@@ -1,3 +1,8 @@
+// ============================================================================
+// GROK ONLY -- All chat calls go to xAI. No Gemini. No OpenAI.
+// This edge function exclusively uses the xAI API for all chat completions.
+// ============================================================================
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -18,67 +23,15 @@ type ChatRequest = {
   max_tokens?: number;
 };
 
-function normalizeModelId(modelId: string): string {
-  // Handle legacy model IDs that don't have provider prefix
-  if (modelId.startsWith('gemini-')) {
-    return `google/${modelId}`;
-  }
-  if (modelId.startsWith('gpt-')) {
-    return `openai/${modelId}`;
-  }
-  return modelId;
-}
-
-function getGateway(modelId: string): 'lovable' | 'xai' {
-  if (modelId.startsWith('grok')) {
-    return 'xai';
-  }
-  return 'lovable';
-}
-
-async function callLovableAI(messages: Message[], modelId: string, stream: boolean, maxTokens: number = 4096): Promise<Response> {
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  if (!LOVABLE_API_KEY) {
-    throw new Error("LOVABLE_API_KEY is not configured");
-  }
-
-  // Normalize model ID to ensure proper format
-  const normalizedModelId = normalizeModelId(modelId);
-  console.log(`[chat] Calling Lovable AI with model: ${normalizedModelId}, stream: ${stream}`);
-
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${LOVABLE_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: normalizedModelId,
-      messages,
-      stream,
-      temperature: 0.9,
-      max_tokens: maxTokens,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`[chat] Lovable AI error: ${response.status} - ${errorText}`);
-    throw new Error(`Lovable AI error: ${response.status}`);
-  }
-
-  return response;
-}
-
+// GROK ONLY -- All models route to xAI
 async function callXAI(messages: Message[], modelId: string, stream: boolean, maxTokens: number = 4096): Promise<Response> {
   const XAI_API_KEY = Deno.env.get("XAI_API_KEY");
   if (!XAI_API_KEY) {
     throw new Error("XAI_API_KEY is not configured. Please add your Grok API key in settings.");
   }
 
-  console.log(`[chat] Calling X/Grok with model: ${modelId}, stream: ${stream}`);
+  console.log(`[chat] Calling xAI/Grok with model: ${modelId}, stream: ${stream}`);
 
-  // X/Grok uses OpenAI-compatible API
   const response = await fetch("https://api.x.ai/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -96,15 +49,14 @@ async function callXAI(messages: Message[], modelId: string, stream: boolean, ma
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error(`[chat] X/Grok error: ${response.status} - ${errorText}`);
-    throw new Error(`X/Grok error: ${response.status}`);
+    console.error(`[chat] xAI/Grok error: ${response.status} - ${errorText}`);
+    throw new Error(`xAI/Grok error: ${response.status}`);
   }
 
   return response;
 }
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -132,16 +84,9 @@ serve(async (req) => {
 
     console.log(`[chat] Request received for model: ${modelId}, messages: ${messages.length}`);
 
-    const gateway = getGateway(modelId);
-    let response: Response;
+    // GROK ONLY -- all requests go to xAI
+    const response = await callXAI(messages, modelId, stream, maxTokens);
 
-    if (gateway === 'xai') {
-      response = await callXAI(messages, modelId, stream, maxTokens);
-    } else {
-      response = await callLovableAI(messages, modelId, stream, maxTokens);
-    }
-
-    // Pass through the response (streaming or not)
     if (stream) {
       return new Response(response.body, {
         headers: {

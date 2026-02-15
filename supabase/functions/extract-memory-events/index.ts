@@ -1,3 +1,7 @@
+// ============================================================================
+// GROK ONLY -- All memory extraction uses xAI Grok. No Gemini. No OpenAI.
+// ============================================================================
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -7,7 +11,6 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -33,12 +36,12 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    // GROK ONLY -- use xAI API key
+    const XAI_API_KEY = Deno.env.get("XAI_API_KEY");
+    if (!XAI_API_KEY) {
+      throw new Error("XAI_API_KEY is not configured");
     }
 
-    // Build system prompt for memory extraction
     const systemPrompt = `You are a story memory curator for an adult roleplay. Your job is to identify ONLY events that will affect future scenes and that the AI must remember for narrative consistency.
 
 CHARACTERS: ${characterNames?.join(', ') || 'Unknown'}
@@ -100,19 +103,21 @@ EXAMPLES OF GOOD EXTRACTIONS:
 Return ONLY a JSON array. Example: ["James confessed his love", "Ashley revealed her secret identity"]
 Empty array is acceptable: []`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    // GROK ONLY -- call xAI API directly
+    const effectiveModel = modelId || "grok-3-mini";
+    const response = await fetch("https://api.x.ai/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${XAI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: modelId || "google/gemini-3-flash-preview",
+        model: effectiveModel,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: `Extract key story events from this message:\n\n${messageText}` }
         ],
-        temperature: 0.3, // Low temperature for more focused extraction
+        temperature: 0.3,
       }),
     });
 
@@ -123,24 +128,16 @@ Empty array is acceptable: []`;
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Payment required. Please add credits to continue." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
       const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
+      console.error("xAI error:", response.status, errorText);
       throw new Error("Failed to extract memory events");
     }
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || '[]';
     
-    // Parse the JSON response
     let extractedEvents: string[] = [];
     try {
-      // Try to find JSON array in the response
       const jsonMatch = content.match(/\[[\s\S]*?\]/);
       if (jsonMatch) {
         extractedEvents = JSON.parse(jsonMatch[0]);
@@ -150,7 +147,6 @@ Empty array is acceptable: []`;
       extractedEvents = [];
     }
 
-    // Ensure we only have strings and limit to 3
     extractedEvents = extractedEvents
       .filter((e: any) => typeof e === 'string' && e.trim().length > 0)
       .slice(0, 3);
