@@ -1512,13 +1512,13 @@ const IndexContent = () => {
               )}
             </div>
             <div className="flex items-center gap-3">
-              {(tab === "world" || (tab === "characters" && !selectedCharacterId)) && (
+              {tab === "world" && (
                 <>
                   <button
                     type="button"
                     onClick={() => handleSave(true)}
                     disabled={isSaving}
-                    className="inline-flex items-center justify-center rounded-xl px-4 py-2 border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-white/10 transition-all active:scale-95 text-sm font-bold disabled:opacity-50"
+                    className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-white/10 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider disabled:opacity-50"
                   >
                     {isSaving ? 'Saving...' : 'Save and Close'}
                   </button>
@@ -1526,7 +1526,7 @@ const IndexContent = () => {
                     type="button"
                     onClick={() => handleSave(false)}
                     disabled={isSaving}
-                    className="inline-flex items-center justify-center rounded-xl px-4 py-2 border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-white/10 transition-all active:scale-95 text-sm font-bold disabled:opacity-50"
+                    className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-white/10 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider disabled:opacity-50"
                   >
                     {isSaving ? 'Saving...' : 'Save'}
                   </button>
@@ -1686,26 +1686,29 @@ const IndexContent = () => {
                       </Tooltip>
                     </>
                   )}
-                  {!selectedCharacterId && (
+                  {!selectedCharacterId && tab === "characters" && (
                     <>
-                      {tab === "characters" && (
-                        <button
-                          type="button"
-                          onClick={() => setIsCharacterPickerOpen(true)}
-                          className="inline-flex items-center justify-center rounded-xl px-4 py-2 border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-white/10 transition-all active:scale-95 text-sm font-bold"
-                        >
-                          Import from Library
-                        </button>
-                      )}
-                      {tab === "characters" && (
-                        <button
-                          type="button"
-                          onClick={handleCreateCharacter}
-                          className="inline-flex items-center justify-center rounded-xl px-4 py-2 border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-white/10 transition-all active:scale-95 text-sm font-bold"
-                        >
-                          + New Character
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => setTab("world")}
+                        className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-white/10 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsCharacterPickerOpen(true)}
+                        className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-white/10 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
+                      >
+                        Import from Library
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCreateCharacter}
+                        className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-white/10 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
+                      >
+                        + New Character
+                      </button>
                     </>
                   )}
                 </>
