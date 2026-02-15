@@ -385,7 +385,7 @@ export function normalizeScenarioData(raw: any): ScenarioData {
 
   return {
     version: APP_VERSION,
-    selectedModel: normStr(raw?.selectedModel) || LLM_MODELS[0].id,
+    selectedModel: (raw?.selectedModel && LLM_MODELS.some(m => m.id === raw.selectedModel)) ? raw.selectedModel : LLM_MODELS[0].id,
     characters,
     sideCharacters: Array.isArray(raw?.sideCharacters) ? raw.sideCharacters : [],
     world,
