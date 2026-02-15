@@ -3141,10 +3141,10 @@ const updatedChar: SideCharacter = {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Describe your action or dialogue..."
-                rows={3}
+                rows={1}
                 spellCheck={true}
                 onKeyDown={(e: any) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }}}
-                className="w-full bg-[#1e2028] text-white placeholder-[hsl(var(--ui-text-muted))] rounded-xl px-4 py-3 text-sm outline-none border-0 resize-none overflow-hidden focus:ring-1 focus:ring-[hsl(var(--accent-teal))]/30 transition-all"
+                className="w-full bg-[#1e2028] text-white placeholder-[hsl(var(--ui-text-muted))] rounded-xl px-4 py-3 text-sm outline-none border-0 resize-none overflow-hidden min-h-[2.5rem] focus:ring-1 focus:ring-[hsl(var(--accent-teal))]/30 transition-all"
                 ref={(el) => { if (el) { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; }}}
               />
             </div>
