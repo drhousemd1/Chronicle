@@ -1,100 +1,115 @@
 
+# Grok-Only: Purge All Non-Grok Models and Hardcode Grok as the Sole AI Provider
 
-# Fix: Complete Context Overhaul for AI Fill and Per-Row Sparkle Enhancement
+## Overview
 
-## Problem
+Remove ALL Google Gemini and OpenAI model options. The app uses Grok exclusively via the xAI API. Every fallback, default, model list, and edge function will be locked to Grok models only.
 
-Both AI features are generating random, disconnected content because they lack context:
+---
 
-- **Per-row Sparkle**: Only passes scenario name and a deprecated empty field. No world data, no other characters, no self-context.
-- **AI Fill**: Passes some world fields but zero info about other characters and only 5 basic fields (name/age/sex/role/tags) of the target character -- ignoring all already-filled traits, background, personality, etc.
+## Changes
 
-## Solution
+### 1. `src/constants.tsx` -- Strip model list to Grok only
 
-### File 1: `src/services/character-ai.ts`
+- Remove all 6 Google/OpenAI entries from `LLM_MODELS`
+- Keep only the 3 Grok models, with `grok-3` first (default)
+- Remove `requiresKey: true` since Grok is now the only option (the key is managed by the admin)
+- Change `gateway` type to just `'xai'` everywhere
+- Simplify `IMAGE_MODEL_MAP` to only Grok entries
+- Change `getImageModelForTextModel` default fallback from `google/gemini-2.5-flash-image` to `grok-2-image-1212`
+- Simplify `getGatewayForModel` to always return `'xai'`
+- Add prominent comment: `// GROK ONLY -- This app exclusively uses xAI Grok models. Do NOT add Gemini/OpenAI.`
 
-**A. Add `buildFullContext()` utility** (new function)
+### 2. `src/services/character-ai.ts` -- Fix fallback models
 
-Compiles a comprehensive context string from the entire scenario:
+- Change `FALLBACK_MODELS` from `['openai/gpt-5-mini', 'openai/gpt-5-nano']` to `['grok-3-mini', 'grok-2']`
+- Add comment: `// GROK ONLY -- All AI calls use xAI Grok. No Gemini. No OpenAI.`
 
-```text
-WORLD:
-- Scenario name, description, premise
-- Locations (including structured locations)
-- Factions, tone/themes, plot hooks, history
-- Content themes (genres, story type)
+### 3. `src/components/chronicle/CharactersTab.tsx` -- Fix 2 hardcoded fallbacks
 
-OTHER CHARACTERS:
-- For each non-target character: name, role, age, sex, key personality traits, relationship info
-```
+- Line 253: `'google/gemini-3-flash-preview'` to `'grok-3'`
+- Line 1251: `"google/gemini-3-flash-preview"` to `"grok-3"`
 
-**B. Add `buildCharacterSelfContext()` utility** (new function)
+### 4. `src/components/chronicle/CharacterEditModal.tsx` -- Fix 2 hardcoded fallbacks
 
-Extracts everything already filled on the target character so new fields stay consistent:
+- Line 517: `'gemini-2.5-flash'` to `'grok-3-mini'`
+- Line 848: `'gemini-3-flash-preview'` to `'grok-3'`
 
-```text
-- Basic info (name, age, sex, role, tags, location, mood)
-- Filled physical appearance fields
-- Filled clothing fields
-- Filled background fields
-- Personality traits (outward/inward if split mode)
-- Tone, relationships, secrets, fears, key life events (extras)
-- Goals (titles and outcomes)
-```
+### 5. `src/components/chronicle/ModelSettingsTab.tsx` -- Simplify UI
 
-**C. Update `buildCharacterFieldPrompt()` (per-row sparkle prompt)**
+- Remove the "Built-in" vs "Requires API Key" legend since everything is Grok now
+- Remove provider grouping complexity (only one provider: xAI)
+- Remove BYOK badge logic (the key is admin-managed, shared)
+- Simplify the subtitle and connection panel text
 
-- Change parameter from `worldContext: string` to accept the full context string (which now includes world + other characters + self-context)
-- The prompt will now include all scenario and character data
+### 6. `src/contexts/ModelSettingsContext.tsx` -- Already uses `LLM_MODELS[0].id`, will auto-resolve to `grok-3`
 
-**D. Update `aiEnhanceCharacterField()` signature**
+No code change needed, just inherits from the constants fix.
 
-- Change from `(fieldName, currentValue, characterContext, worldContext, modelId, customLabel)` to `(fieldName, currentValue, character, appData, modelId, customLabel)`
-- Internally call `buildFullContext()` and `buildCharacterSelfContext()` to build the complete context
+### 7. `src/utils.ts` -- Already uses `LLM_MODELS[0].id`, same as above
 
-**E. Update `aiFillCharacter()` and `buildAiFillPrompt()`**
+No code change needed.
 
-- Replace the minimal 5-line character context block with `buildCharacterSelfContext()` output
-- Replace the world context builder with `buildFullContext()`
-- Same for `buildAiGeneratePrompt()`
+### 8. `src/services/supabase-data.ts` -- Already uses `LLM_MODELS[0].id`
 
-### File 2: `src/components/chronicle/CharactersTab.tsx`
+No code change needed.
 
-**F. Remove broken `buildWorldContext()` function** (lines 235-238)
+### 9. Edge Functions -- Replace all Gemini/OpenAI defaults with Grok
 
-Delete entirely -- it's the 2-line function using a deprecated field.
+**`supabase/functions/chat/index.ts`**
+- Remove `normalizeModelId` function (no more legacy Gemini/OpenAI IDs)
+- Remove `callLovableAI` function entirely
+- Simplify `getGateway` to always return `'xai'`
+- Add comment: `// GROK ONLY -- All chat calls go to xAI. No Gemini. No OpenAI.`
 
-**G. Update `handleEnhanceField()`** (lines 241-272)
+**`supabase/functions/extract-character-updates/index.ts`**
+- Line 412: `'google/gemini-2.5-flash'` to `'grok-3-mini'`
+- Remove `normalizeModelId` function
+- Add Grok-only comment
 
-- Remove the `buildWorldContext()` call
-- Pass `selected` (full character) and `appData` directly to the updated `aiEnhanceCharacterField()`
+**`supabase/functions/extract-memory-events/index.ts`**
+- Line 110: `"google/gemini-3-flash-preview"` to `"grok-3-mini"`
+- Switch from Lovable gateway to xAI API endpoint
+- Add Grok-only comment
 
-```typescript
-// Before:
-const worldContext = buildWorldContext();
-const enhanced = await aiEnhanceCharacterField(
-  fieldKey, currentValue, selected, worldContext, modelId, customLabel
-);
+**`supabase/functions/generate-side-character/index.ts`**
+- Line 50: `'google/gemini-3-flash-preview'` to `'grok-3'`
+- Remove `normalizeModelId`
+- Add Grok-only comment
 
-// After:
-const enhanced = await aiEnhanceCharacterField(
-  fieldKey, currentValue, selected, appData, modelId, customLabel
-);
-```
+**`supabase/functions/generate-side-character-avatar/index.ts`**
+- Remove all Google/OpenAI entries from `IMAGE_MODEL_MAP` and `TEXT_MODEL_MAP`
+- Line 36 fallback: `'google/gemini-2.5-flash-image'` to `'grok-2-image-1212'`
+- Line 46: `'google/gemini-2.5-flash'` to `'grok-3-mini'`
+- Line 167: `'google/gemini-3-flash-preview'` to `'grok-3'`
+- Add Grok-only comment
 
-## What This Fixes
+**`supabase/functions/generate-scene-image/index.ts`**
+- Remove all Google/OpenAI entries from `IMAGE_MODEL_MAP`
+- Line 83 fallback: `'google/gemini-2.5-flash-image'` to `'grok-2-image-1212'`
+- Line 271: `"google/gemini-3-flash-preview"` to `"grok-3-mini"`
+- Line 450: `'google/gemini-3-flash-preview'` to `'grok-3'`
+- Add Grok-only comment
 
-| Feature | Before | After |
-|---------|--------|-------|
-| Per-row sparkle world context | Scenario name + empty deprecated field | Full premise, locations, factions, themes, plot hooks |
-| Per-row sparkle character context | Name, age, sex, role, tags only | All filled fields (appearance, personality, background, etc.) |
-| Per-row sparkle other characters | None | Summaries of all other characters in scenario |
-| AI Fill world context | 7 world fields | Same 7 fields + structured locations + content themes |
-| AI Fill character self-context | Name, age, sex, role, tags | All filled fields across all sections |
-| AI Fill other characters | None | Summaries of all other characters in scenario |
+**`supabase/functions/generate-cover-image/index.ts`**
+- Line 59: `'google/gemini-2.5-flash-image'` to `'grok-2-image-1212'`
+- Remove the entire Lovable gateway code path (lines 93-106)
+- Always use xAI endpoint
+- Add Grok-only comment
+
+---
 
 ## Files Modified
 
-1. `src/services/character-ai.ts` -- Add context builders, update signatures and prompts
-2. `src/components/chronicle/CharactersTab.tsx` -- Remove broken context builder, pass full data to updated API
-
+1. `src/constants.tsx`
+2. `src/services/character-ai.ts`
+3. `src/components/chronicle/CharactersTab.tsx`
+4. `src/components/chronicle/CharacterEditModal.tsx`
+5. `src/components/chronicle/ModelSettingsTab.tsx`
+6. `supabase/functions/chat/index.ts`
+7. `supabase/functions/extract-character-updates/index.ts`
+8. `supabase/functions/extract-memory-events/index.ts`
+9. `supabase/functions/generate-side-character/index.ts`
+10. `supabase/functions/generate-side-character-avatar/index.ts`
+11. `supabase/functions/generate-scene-image/index.ts`
+12. `supabase/functions/generate-cover-image/index.ts`
