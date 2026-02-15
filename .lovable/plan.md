@@ -1,42 +1,22 @@
 
-# Add Collapsible Chevron to Character Section Headers
+# Update Cogwheel Button to Match Themed Button Style
 
-## What Changes
+## Change
 
-Add a small chevron arrow (V) to the right side of both the "Main Characters" and "Side Characters" headers. Clicking it toggles visibility of the character cards below.
-
-- **Default state:** Chevron points down, cards visible
-- **Collapsed state:** Chevron points up, cards hidden with a smooth slide-up animation
-- **Headers stay fixed in place** -- only the card content collapses
+Update the settings cogwheel button in the character column panel (line 2626) to use the same themed styling as the "Chat Settings" and "Generate Image" buttons, without adding any text.
 
 ## Technical Details
 
-**File:** `src/components/chronicle/ChatInterfaceTab.tsx`
+**File:** `src/components/chronicle/ChatInterfaceTab.tsx`, line 2626
 
-1. **Add two state variables** near the top of the component:
-   ```tsx
-   const [mainCharsCollapsed, setMainCharsCollapsed] = useState(false);
-   const [sideCharsCollapsed, setSideCharsCollapsed] = useState(false);
-   ```
+Current styling:
+```
+bg-slate-900 text-white border border-slate-900 hover:bg-slate-800 shadow-md hover:shadow-lg
+```
 
-2. **Update both `<h3>` headers** (lines 2688 and 2713) to be clickable with a ChevronDown icon on the right that rotates 180deg when collapsed:
-   ```tsx
-   <h3
-     className="flex-shrink-0 text-[11px] font-bold text-white bg-[#4a5f7f] px-4 py-1.5 rounded-lg mb-3 tracking-tight uppercase flex items-center justify-between cursor-pointer select-none"
-     onClick={() => setMainCharsCollapsed(prev => !prev)}
-   >
-     Main Characters
-     <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${mainCharsCollapsed ? 'rotate-180' : ''}`} />
-   </h3>
-   ```
+New styling (matching the Chat Settings button pattern):
+```
+bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:border-[hsl(var(--ui-border-hover))]
+```
 
-3. **Wrap each ScrollableSection** in a collapsible container with a CSS transition for a smooth collapse effect:
-   ```tsx
-   <div className={`transition-all duration-300 ease-in-out overflow-hidden ${mainCharsCollapsed ? 'max-h-0 opacity-0' : 'max-h-[2000px] opacity-100'}`}>
-     <ScrollableSection ...>
-       ...
-     </ScrollableSection>
-   </div>
-   ```
-
-This gives a nice slide-up/fade effect when collapsing without touching any of the existing card layout, stacking, or display logic. The `ChevronDown` icon from lucide-react (already imported in the file) handles the visual indicator.
+The button keeps the same size (`px-3 py-2`), icon-only layout, and `rounded-xl` shape -- only the color/shadow classes change.
