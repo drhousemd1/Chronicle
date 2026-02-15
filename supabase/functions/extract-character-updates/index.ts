@@ -190,11 +190,6 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
-
     // Build character state blocks
     const characterContext = (characters || []).map((c: CharacterData) => buildCharacterStateBlock(c)).join('\n\n');
 
@@ -394,8 +389,12 @@ Return ONLY valid JSON. No explanations.`;
       aiResponse ? `LATEST AI RESPONSE:\n${aiResponse}` : ''
     ].filter(Boolean).join('\n\n---\n\n');
 
-    // GROK ONLY -- always use xAI
-    const effectiveModelId = modelId || 'grok-3-mini';
+    // GROK ONLY -- validate model ID, reject stale Gemini/OpenAI IDs
+    const VALID_GROK_MODELS = ['grok-3', 'grok-3-mini', 'grok-2'];
+    const effectiveModelId = (modelId && VALID_GROK_MODELS.includes(modelId)) ? modelId : 'grok-3-mini';
+    if (modelId && modelId !== effectiveModelId) {
+      console.warn(`[extract-character-updates] Rejected non-Grok model "${modelId}", using "${effectiveModelId}"`);
+    }
 
     let apiKey: string | undefined;
     let apiUrl: string;

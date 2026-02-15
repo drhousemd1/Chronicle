@@ -350,7 +350,7 @@ export async function fetchScenarioById(id: string): Promise<{
       scenes: (scenesResult.data || []).map(dbToScene),
       uiSettings,
       conversations: conversationsWithMessages,
-      selectedModel: scenario.selected_model || LLM_MODELS[0].id,
+      selectedModel: (scenario.selected_model && LLM_MODELS.some(m => m.id === scenario.selected_model)) ? scenario.selected_model : LLM_MODELS[0].id,
       selectedArtStyle: scenario.selected_art_style || 'cinematic-2-5d'
     },
     coverImage: scenario.cover_image_url || '',
@@ -427,7 +427,7 @@ export async function fetchScenarioForPlay(id: string): Promise<{
       scenes: (scenesResult.data || []).map(dbToScene),
       uiSettings,
       conversations: [],  // Empty - we'll add the new conversation
-      selectedModel: scenario.selected_model || LLM_MODELS[0].id,
+      selectedModel: (scenario.selected_model && LLM_MODELS.some(m => m.id === scenario.selected_model)) ? scenario.selected_model : LLM_MODELS[0].id,
       selectedArtStyle: scenario.selected_art_style || 'cinematic-2-5d'
     },
     coverImage: scenario.cover_image_url || '',
