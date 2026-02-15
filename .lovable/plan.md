@@ -1,41 +1,40 @@
 
 
-# Shrink Chat Bubbles and Add More Spacing
+# Fix Chat Session Loading (For Real This Time)
 
-## What's changing
+## The Root Problems
 
-Two adjustments to make the background images more visible behind chat messages:
+There are three distinct issues that have persisted across previous "fixes":
 
-1. **Narrower bubbles** -- Reduce the maximum width of chat bubbles so they don't span the entire chat area, leaving more background visible on the left and right.
-2. **More vertical spacing** -- Increase the gap between messages so the background peeks through between them.
+1. **No loading indicator** -- The `isResuming` state flag is toggled but nothing in the UI reacts to it. You click a tile and nothing visibly happens.
+2. **All messages fetched** -- The resume function calls `fetchConversationThread` which loads every message. A fast alternative (`fetchConversationThreadRecent`) already exists in the codebase but was never wired into this code path.
+3. **Sequential database calls** -- Four separate requests run one after another instead of in parallel.
+
+## What will change
+
+### Fix 1: Loading overlay on the Conversations tab
+
+When `isResuming` is true, render a full-screen overlay on top of the conversations list showing a spinner and "Loading session..." text. This way you know immediately that your click registered.
+
+### Fix 2: Use the existing fast-load function
+
+Replace `fetchConversationThread(conversationId)` with `fetchConversationThreadRecent(conversationId, 30)`. This loads only the last 30 messages. The scroll-up lazy loading that already exists in ChatInterfaceTab handles fetching older messages if you scroll back. The `hasMore` flag from the response gets stored in `hasMoreMessagesMap` so the lazy loader knows there are older messages available.
+
+### Fix 3: Parallel database calls
+
+Wrap the three independent fetches (scenario, recent thread, side characters) in a single `Promise.all` so they run simultaneously. Content themes stays as a non-blocking follow-up since it already has its own try/catch.
 
 ## Technical Details
 
-**File:** `src/components/chronicle/ChatInterfaceTab.tsx`
+**File: `src/pages/Index.tsx`**
 
-### Change 1: Increase horizontal padding on the scroll container (line 2771)
+**Change A -- `handleResumeFromHistory` function (lines 943-996):**
+- Replace the 3 sequential `await` calls with `Promise.all([fetchScenarioForPlay, fetchConversationThreadRecent, fetchSideCharacters])`
+- Use `fetchConversationThreadRecent(conversationId, 30)` instead of `fetchConversationThread(conversationId)`
+- Store the `hasMore` flag in `hasMoreMessagesMap` so the existing lazy-load scroll handler in ChatInterfaceTab kicks in when the user scrolls up
 
-Current: `px-4 md:px-8 lg:px-12`
-New: `px-6 md:px-14 lg:px-20`
-
-This adds more breathing room on the left and right edges.
-
-### Change 2: Increase vertical spacing between messages (line 2771)
-
-Current: `space-y-6`
-New: `space-y-10`
-
-More gap between each message bubble so the background shows through.
-
-### Change 3: Reduce max-width of message bubbles (lines 2794-2797)
-
-Current:
-- Non-offset mode: `max-w-7xl` (80rem / 1280px)
-- Offset mode: `max-w-4xl` (56rem / 896px)
-
-New:
-- Non-offset mode: `max-w-4xl` (56rem / 896px)
-- Offset mode: `max-w-3xl` (48rem / 768px)
-
-This pulls the bubbles in from both sides, letting the background image show through.
+**Change B -- Conversations tab JSX (around lines 1816-1835):**
+- Wrap the existing `ConversationsTab` rendering in a relative container
+- When `isResuming` is true, overlay a centered spinner with "Loading session..." text
+- Uses a semi-transparent dark background so you can still see the list underneath
 
