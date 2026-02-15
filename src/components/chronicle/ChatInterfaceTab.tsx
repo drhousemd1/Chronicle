@@ -3131,15 +3131,16 @@ const updatedChar: SideCharacter = {
             
             {/* Input Area */}
             <div className="flex gap-3 items-end">
-              <div className="flex-1">
-                <TextArea
+              <div className="flex-1 bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] rounded-2xl p-2">
+                <textarea
                   value={input}
-                  onChange={setInput}
+                  onChange={(e) => setInput(e.target.value)}
                   placeholder="Describe your action or dialogue..."
                   rows={3}
-                  autoResize={true}
-                  className="!py-4 !px-6 !bg-[#1e2028] !border-[hsl(var(--ui-border))] !text-white !placeholder-[hsl(var(--ui-text-muted))] focus:!ring-[hsl(var(--accent-teal))]/10 focus:!border-[hsl(var(--accent-teal))]/40 transition-all min-h-[112px] !rounded-2xl"
+                  spellCheck={true}
                   onKeyDown={(e: any) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }}}
+                  className="w-full bg-[#1e2028] text-white placeholder-[hsl(var(--ui-text-muted))] rounded-xl px-4 py-3 text-sm outline-none border-0 resize-none overflow-hidden min-h-[96px] focus:ring-1 focus:ring-[hsl(var(--accent-teal))]/30 transition-all"
+                  ref={(el) => { if (el) { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; }}}
                 />
               </div>
               <button
