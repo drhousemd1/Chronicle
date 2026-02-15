@@ -1857,8 +1857,15 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     const msgIndex = conversation?.messages.findIndex(m => m.id === messageId);
     if (msgIndex === undefined || msgIndex < 1) return;
     
-    const userMessage = conversation?.messages[msgIndex - 1];
-    if (!userMessage || userMessage.role !== 'user') return;
+    // Search backward from msgIndex for the nearest user message
+    let userMessage: typeof conversation.messages[0] | undefined;
+    for (let i = msgIndex - 1; i >= 0; i--) {
+      if (conversation?.messages[i]?.role === 'user') {
+        userMessage = conversation.messages[i];
+        break;
+      }
+    }
+    if (!userMessage) return;
     
     // Track which specific message is being regenerated (for in-place streaming)
     setRegeneratingMessageId(messageId);
@@ -3088,25 +3095,23 @@ const updatedChar: SideCharacter = {
           </div>
         </div>
 
-        <div className={`pt-3 pb-8 px-8 border-t border-slate-700 shadow-[0_-4px_12px_rgba(0,0,0,0.15)] transition-colors relative z-20 bg-[#1a1a1a]`}>
+        <div className={`pt-3 pb-8 px-8 border-t border-[hsl(var(--ui-border))] shadow-[0_-4px_12px_rgba(0,0,0,0.15)] transition-colors relative z-20 bg-[hsl(var(--ui-surface))]`}>
           <div className="w-full max-w-7xl mx-auto space-y-3">
             {/* Quick Actions Bar - Above Input */}
             <div className="flex items-center gap-2 relative">
-              <Button
+              <button
                 onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-                variant="secondary"
-                className="!border-slate-900 flex items-center gap-2"
+                className="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest border transition-all active:scale-95 cursor-pointer bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:border-[hsl(var(--ui-border-hover))]"
               >
                 <Settings className="w-4 h-4" />
                 Chat Settings
-              </Button>
+              </button>
               
               {/* Generate Image Button */}
-              <Button
+              <button
                 onClick={handleGenerateSceneImage}
-                disabled={isStreaming || isGeneratingImage || !conversation?.messages?.length}
-                variant="secondary"
-                className="!border-slate-900 flex items-center gap-2"
+                disabled={isGeneratingImage || !conversation?.messages?.length}
+                className="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest border transition-all active:scale-95 cursor-pointer bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:border-[hsl(var(--ui-border-hover))] disabled:opacity-50 disabled:pointer-events-none"
               >
                 {isGeneratingImage ? (
                   <>
@@ -3119,22 +3124,13 @@ const updatedChar: SideCharacter = {
                     Generate Image
                   </>
                 )}
-              </Button>
+              </button>
               
-              {/* Memories Button */}
-              <Button
-                onClick={() => setIsMemoriesModalOpen(true)}
-                variant="secondary"
-                className="!border-slate-900 flex items-center gap-2"
-              >
-                <Brain className="w-4 h-4" />
-                Memories {memories.length > 0 && `(${memories.length})`}
-              </Button>
               
             </div>
             
             {/* Input Area */}
-            <div className="flex gap-4 items-end">
+            <div className="flex gap-3 items-end">
               <div className="flex-1">
                 <TextArea
                   value={input}
@@ -3142,21 +3138,21 @@ const updatedChar: SideCharacter = {
                   placeholder="Describe your action or dialogue..."
                   rows={3}
                   autoResize={true}
-                  className="!py-4 !px-6 !bg-slate-50 !border-slate-200 !text-slate-900 !placeholder-slate-400 focus:!ring-blue-500/10 focus:!border-blue-400 transition-all min-h-[112px] !rounded-2xl shadow-inner"
+                  className="!py-4 !px-6 !bg-[#1e2028] !border-[hsl(var(--ui-border))] !text-white !placeholder-[hsl(var(--ui-text-muted))] focus:!ring-[hsl(var(--accent-teal))]/10 focus:!border-[hsl(var(--accent-teal))]/40 transition-all min-h-[112px] !rounded-2xl"
                   onKeyDown={(e: any) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }}}
                 />
               </div>
-              <Button
+              <button
                 onClick={handleSend}
                 disabled={!input.trim() || isStreaming}
-                className={`self-end px-10 py-4 text-white shadow-lg font-black uppercase tracking-widest rounded-2xl border-none transition-all active:scale-95 ${
+                className={`self-end inline-flex items-center justify-center px-10 py-4 rounded-xl font-bold uppercase tracking-widest text-sm border transition-all active:scale-95 shadow-[0_10px_30px_rgba(0,0,0,0.35)] ${
                   !input.trim() || isStreaming
-                    ? '!bg-slate-500 opacity-70 cursor-not-allowed'
-                    : '!bg-blue-600 hover:!bg-blue-500'
+                    ? 'bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text-muted))] opacity-70 cursor-not-allowed'
+                    : 'bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] hover:border-[hsl(var(--ui-border-hover))] cursor-pointer'
                 }`}
               >
                 {isStreaming ? '...' : 'Send'}
-              </Button>
+              </button>
             </div>
           </div>
         </div>
