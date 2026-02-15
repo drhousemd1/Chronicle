@@ -2685,7 +2685,7 @@ const updatedChar: SideCharacter = {
 
           {/* Main Characters - Scrollable section */}
           <section className="flex flex-col min-h-0 flex-shrink-0">
-            <h3 className="flex-shrink-0 text-[11px] font-bold text-slate-500 bg-slate-100 px-4 py-1.5 rounded-lg mb-3 tracking-tight uppercase">Main Characters</h3>
+            <h3 className="flex-shrink-0 text-[11px] font-bold text-white bg-[#4a5f7f] px-4 py-1.5 rounded-lg mb-3 tracking-tight uppercase">Main Characters</h3>
               <ScrollableSection maxHeight="400px" className="pr-1">
                 <div className="space-y-2 pb-2">
                 {mainCharactersForDisplay.map(char => 
