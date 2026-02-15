@@ -941,42 +941,42 @@ const IndexContent = () => {
   }
   
   async function handleResumeFromHistory(scenarioId: string, conversationId: string) {
-    // SIMPLE SEQUENTIAL: Fetch ALL data first, then navigate.
-    // No Promise.all, no "navigate first" pattern, no lazy loading complexity.
     setIsResuming(true);
     
     try {
-      // 1. Fetch scenario data (no messages)
-      const scenarioResult = await supabaseData.fetchScenarioForPlay(scenarioId);
+      // Parallel fetch: scenario, recent messages (30), and side characters
+      const [scenarioResult, threadResult, sideCharacters] = await Promise.all([
+        supabaseData.fetchScenarioForPlay(scenarioId),
+        supabaseData.fetchConversationThreadRecent(conversationId, 30),
+        supabaseData.fetchSideCharacters(conversationId),
+      ]);
+
       if (!scenarioResult) {
         toast({ title: "Scenario not found", variant: "destructive" });
         setIsResuming(false);
         return;
       }
-
-      // 2. Fetch the specific conversation thread (ALL messages)
-      const thread = await supabaseData.fetchConversationThread(conversationId);
-      if (!thread) {
+      if (!threadResult) {
         toast({ title: "Conversation not found", variant: "destructive" });
         setIsResuming(false);
         return;
       }
 
-      // 3. Fetch side characters
-      const sideCharacters = await supabaseData.fetchSideCharacters(conversationId);
-
-      // 4. Assemble data and navigate (instant -- data is ready)
       const { data, coverImage, coverImagePosition } = scenarioResult;
+      const { conversation: thread, hasMore } = threadResult;
+
       data.conversations = [thread];
       data.sideCharacters = sideCharacters;
 
-      // Load content themes for LLM injection
-      try {
-        const themes = await supabaseData.fetchContentThemes(scenarioId);
+      // Store hasMore so the lazy-load scroll handler knows there's older history
+      setHasMoreMessagesMap(prev => ({ ...prev, [conversationId]: hasMore }));
+
+      // Non-blocking: load content themes
+      supabaseData.fetchContentThemes(scenarioId).then(themes => {
         data.contentThemes = themes;
-      } catch (e) {
+      }).catch(e => {
         console.warn('[handleResumeFromHistory] Failed to load content themes:', e);
-      }
+      });
 
       setActiveId(scenarioId);
       setActiveCoverImage(coverImage);
@@ -986,7 +986,7 @@ const IndexContent = () => {
       setSelectedCharacterId(null);
       setTab("chat_interface");
       
-      console.log('[handleResumeFromHistory] Loaded', thread.messages.length, 'messages');
+      console.log('[handleResumeFromHistory] Loaded', thread.messages.length, 'messages (hasMore:', hasMore, ')');
     } catch (e: any) {
       console.error('[handleResumeFromHistory] Error:', e);
       toast({ title: "Failed to load", description: e.message, variant: "destructive" });
@@ -1814,7 +1814,13 @@ const IndexContent = () => {
           )}
 
           {tab === "conversations" && (
-            <div className="p-10 overflow-y-auto h-full bg-black">
+            <div className="relative p-10 overflow-y-auto h-full bg-black">
+              {isResuming && (
+                <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/70 backdrop-blur-sm">
+                  <div className="w-10 h-10 border-4 border-white/20 border-t-white rounded-full animate-spin mb-4" />
+                  <p className="text-white font-medium text-lg">Loading session...</p>
+                </div>
+              )}
               <ConversationsTab
                 globalRegistry={conversationRegistry}
                 onResume={handleResumeFromHistory}
