@@ -494,12 +494,12 @@ export const ImageLibraryTab: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleCreateFolder}
-                  className="group aspect-[2/3] w-full overflow-hidden rounded-[2rem] bg-slate-50/50 border-2 border-dashed border-slate-200 transition-all duration-300 hover:border-blue-400 hover:bg-blue-50 flex flex-col items-center justify-center gap-4 cursor-pointer"
+                  className="group aspect-[2/3] w-full overflow-hidden rounded-[2rem] border-2 border-dashed border-zinc-600 bg-gradient-to-br from-zinc-800 to-zinc-900 transition-all duration-300 hover:border-blue-400 flex flex-col items-center justify-center gap-4 cursor-pointer"
                 >
-                  <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-blue-100 transition-colors">
-                    <Plus className="w-8 h-8 text-slate-400 group-hover:text-blue-500" />
+                  <div className="w-16 h-16 rounded-full bg-zinc-700/50 flex items-center justify-center group-hover:bg-blue-900/30 transition-colors">
+                    <Plus className="w-8 h-8 text-zinc-500 group-hover:text-blue-400" />
                   </div>
-                  <span className="text-sm font-black text-black group-hover:text-blue-600 uppercase tracking-widest">
+                  <span className="text-sm font-black text-zinc-500 group-hover:text-blue-400 uppercase tracking-widest">
                     New Folder
                   </span>
                 </button>

@@ -100,16 +100,16 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDel
         </div>
         
         {/* Bottom Info - Positioned at top of lower third */}
-        <div className="absolute inset-x-0 bottom-0 h-1/3 p-6 pointer-events-none flex flex-col justify-start">
+        <div className="absolute inset-x-0 bottom-0 h-2/5 p-6 pointer-events-none flex flex-col overflow-hidden">
           <h3 className="text-xl font-black text-white leading-tight tracking-tight group-hover:text-blue-300 transition-colors truncate flex-shrink-0">
             {scen.title || "Unnamed Story"}
           </h3>
-          <p className="text-xs text-white/70 line-clamp-3 leading-relaxed italic mt-1 overflow-hidden">
+          <p className="text-xs text-white/70 line-clamp-3 leading-relaxed italic mt-1 flex-shrink min-h-0 overflow-hidden">
             {scen.description || "No summary provided."}
           </p>
           
           {/* Publisher & Stats */}
-          <div className="flex items-center justify-between mt-auto">
+          <div className="flex items-center justify-between mt-auto flex-shrink-0 pt-1">
             <span className="text-xs text-white/60 font-medium">
               by {ownerUsername || 'Anonymous'}
             </span>
