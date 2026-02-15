@@ -1424,14 +1424,14 @@ const IndexContent = () => {
                   <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
                     Your Stories
                   </h1>
-                  <div className="flex items-center bg-white/10 rounded-full p-1 gap-0.5 border border-white/10">
+                  <div className="flex items-center bg-[#2b2b2e] rounded-full p-1 gap-0.5 border border-[#2b2b2e]">
                     <button
                       onClick={() => setHubFilter("my")}
                       className={cn(
                         "px-4 py-1.5 rounded-full text-xs font-bold transition-all",
                         hubFilter === "my" 
                           ? "bg-[#4a5f7f] text-white shadow-sm" 
-                          : "text-zinc-400 hover:text-zinc-200"
+                          : "text-[#a1a1aa] hover:text-[#e4e4e7]"
                       )}
                     >
                       My Stories
@@ -1442,7 +1442,7 @@ const IndexContent = () => {
                         "px-4 py-1.5 rounded-full text-xs font-bold transition-all",
                         hubFilter === "bookmarked" 
                           ? "bg-[#4a5f7f] text-white shadow-sm" 
-                          : "text-zinc-400 hover:text-zinc-200"
+                          : "text-[#a1a1aa] hover:text-[#e4e4e7]"
                       )}
                     >
                       Saved Stories
@@ -1453,7 +1453,7 @@ const IndexContent = () => {
                         "px-4 py-1.5 rounded-full text-xs font-bold transition-all",
                         hubFilter === "published" 
                           ? "bg-[#4a5f7f] text-white shadow-sm" 
-                          : "text-zinc-400 hover:text-zinc-200"
+                          : "text-[#a1a1aa] hover:text-[#e4e4e7]"
                       )}
                     >
                       Published
@@ -1464,7 +1464,7 @@ const IndexContent = () => {
                         "px-4 py-1.5 rounded-full text-xs font-bold transition-all",
                         hubFilter === "all" 
                           ? "bg-[#4a5f7f] text-white shadow-sm" 
-                          : "text-zinc-400 hover:text-zinc-200"
+                          : "text-[#a1a1aa] hover:text-[#e4e4e7]"
                       )}
                     >
                       All
