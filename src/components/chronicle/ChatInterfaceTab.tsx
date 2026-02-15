@@ -2623,7 +2623,7 @@ const updatedChar: SideCharacter = {
             {/* Settings cog button */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="inline-flex items-center justify-center rounded-xl px-3 py-2 bg-slate-900 text-white border border-slate-900 hover:bg-slate-800 shadow-md hover:shadow-lg transition-all active:scale-95">
+                <button className="inline-flex items-center justify-center rounded-xl px-3 py-2 bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:border-[hsl(var(--ui-border-hover))] transition-all active:scale-95">
                   <Settings className="w-4 h-4" />
                 </button>
               </DropdownMenuTrigger>
