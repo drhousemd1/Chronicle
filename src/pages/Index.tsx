@@ -125,6 +125,7 @@ const IndexContent = () => {
   // Removed: selectedConversationEntry state - sessions now open directly
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingToLibrary, setIsSavingToLibrary] = useState(false);
   const [isResuming, setIsResuming] = useState(false);
   // Track which conversations have more older messages to load
   const [hasMoreMessagesMap, setHasMoreMessagesMap] = useState<Record<string, boolean>>({});
@@ -712,28 +713,8 @@ const IndexContent = () => {
       
       // Removed: selectedConversationEntry sync - no longer needed
       
-      // Sync characters to library (create copies with new IDs to avoid overwriting scenario-linked characters)
-      if (dataToSave.characters.length > 0) {
-        for (const char of dataToSave.characters) {
-          // Check if this character already exists in the library (by name)
-          const existingLibraryChar = library.find(
-            lc => lc.name === char.name && lc.id !== char.id
-          );
-          
-          if (!existingLibraryChar) {
-            // Create a library copy with a new ID
-            const libraryChar: Character = {
-              ...char,
-              id: uuid(), // New ID for the library copy
-              createdAt: now(),
-              updatedAt: now()
-            };
-            await supabaseData.saveCharacterToLibrary(libraryChar, user.id);
-          }
-        }
-        const updatedLibrary = await supabaseData.fetchCharacterLibrary();
-        setLibrary(updatedLibrary);
-      }
+      // Character library sync removed — characters are only added to library
+      // via the explicit "Add to Character Library" button (handleSaveToLibrary)
 
       
 
@@ -759,30 +740,22 @@ const IndexContent = () => {
     return handleSaveWithData(null, navigateToHub);
   }, [handleSaveWithData]);
 
-  // Auto-save navigation handler - saves draft before navigating away from scenario builder
+  // Navigation handler - stashes draft to localStorage as safety net, no DB save
   const handleNavigateAway = useCallback(async (targetTab: TabKey | "library") => {
-    // If we're in the scenario builder with data, auto-save first
-    if (activeId && activeData && (tab === "world" || tab === "characters")) {
+    if (activeId && activeData) {
       try {
-        await handleSaveWithData(activeData, false);
-        toast({ title: "Draft saved", description: "Your changes have been saved." });
+        localStorage.setItem(`draft_${activeId}`, JSON.stringify(activeData));
       } catch (e) {
-        console.error("Auto-save failed:", e);
-        toast({ 
-          title: "Auto-save failed", 
-          description: "Your draft may not have been saved.", 
-          variant: "destructive" 
-        });
+        console.warn("Could not stash draft to localStorage:", e);
       }
     }
-    
-    // Perform the navigation
+
     setActiveId(null);
     setActiveData(null);
     setSelectedCharacterId(null);
     setPlayingConversationId(null);
     setTab(targetTab);
-  }, [activeId, activeData, tab, handleSaveWithData, toast]);
+  }, [activeId, activeData]);
 
   async function handleSaveCharacter() {
     if (!user) return;
@@ -1201,18 +1174,14 @@ const IndexContent = () => {
     const selected = sourceList?.find(c => c.id === selectedCharacterId);
     if (!selected || !user) return;
     
-    setIsSaving(true);
+    setIsSavingToLibrary(true);
     try {
-      // Check if character is already in library (by tracking state or if tab is library)
       const isInLib = characterInLibrary[selected.id] || tab === "library";
       
-      // Save or update character in library
       await supabaseData.saveCharacterToLibrary(selected, user.id);
       
       if (!isInLib) {
-        // Only add to local library list if this is a new save
         setLibrary(prev => {
-          // Don't duplicate if already in the list
           const exists = prev.some(c => c.id === selected.id);
           if (exists) return prev;
           return [selected, ...prev];
@@ -1226,7 +1195,7 @@ const IndexContent = () => {
       console.error(e);
       toast({ title: "Save failed", description: e.message, variant: "destructive" });
     } finally {
-      setIsSaving(false);
+      setIsSavingToLibrary(false);
     }
   }
 
@@ -1668,7 +1637,7 @@ const IndexContent = () => {
                           <button
                             type="button"
                             onClick={handleSaveToLibrary}
-                            disabled={isSaving}
+                            disabled={isSavingToLibrary}
                             className="flex h-10 px-6 items-center justify-center gap-2
                               rounded-xl border border-[hsl(var(--ui-border))] 
                               bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
@@ -1677,7 +1646,7 @@ const IndexContent = () => {
                               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20
                               transition-colors"
                           >
-                            {isSaving ? 'Saving...' : selectedCharacterIsInLibrary ? 'Update Character' : '+ Character Library'}
+                            {isSavingToLibrary ? 'Saving...' : selectedCharacterIsInLibrary ? 'Update Character' : '+ Character Library'}
                           </button>
                         </TooltipTrigger>
                         <TooltipContent>
