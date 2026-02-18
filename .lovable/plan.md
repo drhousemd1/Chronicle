@@ -1,48 +1,31 @@
 
 
-# Fix: Remove White Overlay States From Save Buttons
+# Fix: Character Library Button White on iPad
 
 ## Problem
 
-On iPad, the CSS `:active` pseudo-class persists after a tap. The previous fix only addressed the disabled state (`disabled:active:bg-transparent`), but once the save completes and the button is re-enabled, `active:bg-white/10` kicks back in -- making the button appear white with white text.
+The "Save to Character Library" button still uses `hover:bg-white/5 active:bg-white/10`, the same classes that caused the white-on-white issue on the other save buttons. It also lacks `disabled:pointer-events-none`.
 
 ## The Fix
 
-Remove `hover:bg-white/5` and `active:bg-white/10` from all three save buttons entirely. Replace with surface-color-based hover/active states that maintain readability on all devices.
+Apply the identical fix already applied to the other three save buttons.
 
 ## Technical Details
 
-### File: `src/pages/Index.tsx`
+### File: `src/pages/Index.tsx` (line 1661)
 
-**All three save buttons** -- replace the white overlay classes:
-
-Remove:
-- `hover:bg-white/5`
-- `active:bg-white/10`
-- `disabled:active:bg-transparent` (no longer needed)
-
-Replace with:
-- `hover:brightness-125`
-- `active:brightness-150`
-
-This uses CSS `brightness` filter instead of white overlays. The button lightens slightly on hover/active but never turns white. Works identically on desktop and touch devices, and the `:active` state getting stuck on iPad is harmless since it just makes the button slightly brighter rather than turning it white.
-
-**Buttons affected:**
-1. Scenario Builder "Save and Close" (line ~1494)
-2. Scenario Builder "Save" (line ~1508)
-3. Character Builder "Save" (line ~1628)
-
-The className changes from:
+Change:
 ```
-...hover:bg-white/5 active:bg-white/10 ...disabled:active:bg-transparent
+hover:bg-white/5 active:bg-white/10 disabled:opacity-50
 ```
-to:
+
+To:
 ```
-...hover:brightness-125 active:brightness-150
+hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-events-none
 ```
 
 ## Files Modified
 | File | Change |
 |---|---|
-| `src/pages/Index.tsx` | Replace `hover:bg-white/5 active:bg-white/10` with `hover:brightness-125 active:brightness-150` on all 3 save buttons |
+| `src/pages/Index.tsx` | Replace white overlay classes with brightness filters on the Character Library button (line 1661) |
 
