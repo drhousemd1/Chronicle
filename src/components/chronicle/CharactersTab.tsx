@@ -328,6 +328,37 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
     setDragStart(null);
   };
 
+  // Touch event handlers for iPad/touch device repositioning
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!isRepositioning || !selected) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    setDragStart({
+      x: touch.clientX,
+      y: touch.clientY,
+      pos: selected.avatarPosition || { x: 50, y: 50 }
+    });
+  };
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!dragStart || !selected || !avatarContainerRef.current) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    const rect = avatarContainerRef.current.getBoundingClientRect();
+    const deltaX = ((touch.clientX - dragStart.x) / rect.width) * 100;
+    const deltaY = ((touch.clientY - dragStart.y) / rect.height) * 100;
+    onUpdate(selected.id, {
+      avatarPosition: {
+        x: clamp(dragStart.pos.x - deltaX, 0, 100),
+        y: clamp(dragStart.pos.y - deltaY, 0, 100)
+      }
+    });
+  }, [dragStart, selected, onUpdate]);
+
+  const handleTouchEnd = () => {
+    setDragStart(null);
+  };
+
   // Handlers for updating hardcoded sections
   const handlePhysicalAppearanceChange = (field: keyof PhysicalAppearance, value: string) => {
     if (!selected) return;
@@ -593,6 +624,10 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                         onMouseMove={handleMouseMove}
                         onMouseUp={handleMouseUp}
                         onMouseLeave={handleMouseUp}
+                        onTouchStart={handleTouchStart}
+                        onTouchMove={handleTouchMove}
+                        onTouchEnd={handleTouchEnd}
+                        style={isRepositioning ? { touchAction: 'none' } : undefined}
                       >
                         {selected.avatarDataUrl ? (
                           <img 

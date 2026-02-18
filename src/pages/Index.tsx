@@ -1485,7 +1485,10 @@ const IndexContent = () => {
                     type="button"
                     onClick={async () => {
                       setIsSavingAndClosing(true);
-                      try { await handleSave(true); } finally { setIsSavingAndClosing(false); }
+                      try {
+                        const success = await handleSave(true);
+                        if (success) toast({ title: "Saved!" });
+                      } finally { setIsSavingAndClosing(false); }
                     }}
                     disabled={isSavingAndClosing || isSaving}
                     className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-white/10 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider disabled:opacity-50"
@@ -1496,7 +1499,10 @@ const IndexContent = () => {
                     type="button"
                     onClick={async () => {
                       setIsSaving(true);
-                      try { await handleSave(false); } finally { setIsSaving(false); }
+                      try {
+                        const success = await handleSave(false);
+                        if (success) toast({ title: "Saved!" });
+                      } finally { setIsSaving(false); }
                     }}
                     disabled={isSaving || isSavingAndClosing}
                     className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-white/10 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider disabled:opacity-50"
@@ -1607,8 +1613,14 @@ const IndexContent = () => {
                       {/* Save (Quick Save) Button */}
                       <button
                         type="button"
-                        onClick={() => handleSave(false)}
-                        disabled={isSaving}
+                        onClick={async () => {
+                          setIsSaving(true);
+                          try {
+                            const success = await handleSave(false);
+                            if (success) toast({ title: "Saved!" });
+                          } finally { setIsSaving(false); }
+                        }}
+                        disabled={isSaving || isSavingAndClosing}
                         className="flex h-10 px-6 items-center justify-center gap-2
                           rounded-xl border border-[hsl(var(--ui-border))] 
                           bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
