@@ -31,6 +31,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import * as supabaseData from "@/services/supabase-data";
+import { DeleteConfirmDialog } from "@/components/chronicle/DeleteConfirmDialog";
 
 const IconsList = {
   Gallery: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>,
@@ -136,6 +137,7 @@ const IndexContent = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     return localStorage.getItem('chronicle_sidebar_collapsed') === 'true';
   });
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Hub background state
   const [hubBackgrounds, setHubBackgrounds] = useState<UserBackground[]>([]);
@@ -1088,9 +1090,12 @@ const IndexContent = () => {
     }
   }
 
-  async function handleDeleteCharacterFromList(id: string) {
+  function handleDeleteCharacterFromList(id: string) {
+    setDeleteConfirmId(id);
+  }
+
+  async function executeDeleteCharacter(id: string) {
     if (tab === "library") {
-      if (!confirm("Delete permanently from Global Library?")) return;
       try {
         await supabaseData.deleteCharacterFromLibrary(id);
         const nextLib = library.filter(c => c.id !== id);
@@ -1101,7 +1106,6 @@ const IndexContent = () => {
         toast({ title: "Failed to delete character", description: e.message, variant: "destructive" });
       }
     } else if (activeData) {
-      if (!confirm("Remove from this scenario?")) return;
       const nextChars = activeData.characters.filter((c) => c.id !== id);
       handleUpdateActive({ characters: nextChars });
       if (selectedCharacterId === id) setSelectedCharacterId(null);
@@ -1927,6 +1931,17 @@ const IndexContent = () => {
         onUpload={handleUploadBackground}
         onDelete={handleDeleteBackground}
         isUploading={isUploadingBackground}
+      />
+
+      {/* Delete Character Confirmation Dialog */}
+      <DeleteConfirmDialog
+        open={deleteConfirmId !== null}
+        onOpenChange={(open) => { if (!open) setDeleteConfirmId(null); }}
+        onConfirm={() => {
+          if (deleteConfirmId) executeDeleteCharacter(deleteConfirmId);
+          setDeleteConfirmId(null);
+        }}
+        message={tab === "library" ? "This will permanently delete the character from your Global Library." : "This will remove the character from this scenario."}
       />
 
       {/* AI Prompt Modal */}
