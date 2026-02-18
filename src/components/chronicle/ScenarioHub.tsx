@@ -107,26 +107,24 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDel
           <p className="text-xs text-white/60 line-clamp-2 leading-relaxed italic min-h-[2.5rem]">
             {scen.description || "No summary provided."}
           </p>
-          {publishedData && (
-            <div className="flex items-center gap-3 text-[10px] text-white/50 mt-1">
-              <span className="flex items-center gap-1">
-                <Eye className="w-3 h-3" />
-                {publishedData.view_count}
-              </span>
-              <span className="flex items-center gap-1">
-                <Heart className="w-3 h-3" />
-                {publishedData.like_count}
-              </span>
-              <span className="flex items-center gap-1">
-                <Bookmark className="w-3 h-3" />
-                {publishedData.save_count}
-              </span>
-              <span className="flex items-center gap-1">
-                <Play className="w-3 h-3" />
-                {publishedData.play_count}
-              </span>
-            </div>
-          )}
+          <div className="flex items-center gap-3 text-[10px] text-white/50 mt-1">
+            <span className="flex items-center gap-1">
+              <Eye className="w-3 h-3" />
+              {publishedData?.view_count ?? 0}
+            </span>
+            <span className="flex items-center gap-1">
+              <Heart className="w-3 h-3" />
+              {publishedData?.like_count ?? 0}
+            </span>
+            <span className="flex items-center gap-1">
+              <Bookmark className="w-3 h-3" />
+              {publishedData?.save_count ?? 0}
+            </span>
+            <span className="flex items-center gap-1">
+              <Play className="w-3 h-3" />
+              {publishedData?.play_count ?? 0}
+            </span>
+          </div>
           <span className="text-[11px] text-white/50 font-medium mt-1">
             Written by: {ownerUsername || 'Anonymous'}
           </span>
