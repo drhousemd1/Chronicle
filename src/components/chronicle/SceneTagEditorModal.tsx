@@ -110,7 +110,7 @@ export const SceneTagEditorModal: React.FC<SceneTagEditorModalProps> = ({
                   value={newTag}
                   onChange={(e) => setNewTag(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Enter keyword (e.g., home, forest)..."
+                  placeholder="Enter keyword..."
                   className="flex-1"
                 />
                 <Button 

@@ -1311,19 +1311,19 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                       label="Nicknames"
                       value={draft.nicknames || ''}
                       onChange={(v) => updateField('nicknames', v)}
-                      placeholder="e.g., Mom, Mother (comma-separated)"
+                      placeholder="Nicknames"
                     />
                     <FieldInput
                       label="Age"
                       value={draft.age || ''}
                       onChange={(v) => updateField('age', v)}
-                      placeholder="e.g., 25"
+                      placeholder="25"
                     />
                     <FieldInput
                       label="Sex / Identity"
                       value={draft.sexType || ''}
                       onChange={(v) => updateField('sexType', v)}
-                      placeholder="e.g., Female"
+                      placeholder="Female"
                     />
                     <FieldInput
                       label="Location"
@@ -1335,7 +1335,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                       label="Current Mood"
                       value={draft.currentMood || ''}
                       onChange={(v) => updateField('currentMood', v)}
-                      placeholder="e.g., Happy"
+                      placeholder="Happy"
                     />
                     <FieldTextarea
                       label="Role Description"
@@ -1429,15 +1429,15 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     ]} />
                   }
                 >
-                  <HardcodedRow label="Hair Color" value={draft.physicalAppearance?.hairColor || ''} onChange={(v) => updatePhysicalAppearance('hairColor', v)} placeholder="e.g., Brown" />
-                  <HardcodedRow label="Eye Color" value={draft.physicalAppearance?.eyeColor || ''} onChange={(v) => updatePhysicalAppearance('eyeColor', v)} placeholder="e.g., Blue" />
-                  <HardcodedRow label="Build" value={draft.physicalAppearance?.build || ''} onChange={(v) => updatePhysicalAppearance('build', v)} placeholder="e.g., Athletic" />
-                  <HardcodedRow label="Body Hair" value={draft.physicalAppearance?.bodyHair || ''} onChange={(v) => updatePhysicalAppearance('bodyHair', v)} placeholder="e.g., Light" />
-                  <HardcodedRow label="Height" value={draft.physicalAppearance?.height || ''} onChange={(v) => updatePhysicalAppearance('height', v)} placeholder="e.g., 5ft 8in" />
-                  <HardcodedRow label="Breast Size" value={draft.physicalAppearance?.breastSize || ''} onChange={(v) => updatePhysicalAppearance('breastSize', v)} placeholder="e.g., Medium" />
+                  <HardcodedRow label="Hair Color" value={draft.physicalAppearance?.hairColor || ''} onChange={(v) => updatePhysicalAppearance('hairColor', v)} placeholder="Brown" />
+                  <HardcodedRow label="Eye Color" value={draft.physicalAppearance?.eyeColor || ''} onChange={(v) => updatePhysicalAppearance('eyeColor', v)} placeholder="Blue" />
+                  <HardcodedRow label="Build" value={draft.physicalAppearance?.build || ''} onChange={(v) => updatePhysicalAppearance('build', v)} placeholder="Athletic" />
+                  <HardcodedRow label="Body Hair" value={draft.physicalAppearance?.bodyHair || ''} onChange={(v) => updatePhysicalAppearance('bodyHair', v)} placeholder="Light" />
+                  <HardcodedRow label="Height" value={draft.physicalAppearance?.height || ''} onChange={(v) => updatePhysicalAppearance('height', v)} placeholder="5ft 8in" />
+                  <HardcodedRow label="Breast Size" value={draft.physicalAppearance?.breastSize || ''} onChange={(v) => updatePhysicalAppearance('breastSize', v)} placeholder="Medium" />
                   <HardcodedRow label="Genitalia" value={draft.physicalAppearance?.genitalia || ''} onChange={(v) => updatePhysicalAppearance('genitalia', v)} placeholder="Description" />
-                  <HardcodedRow label="Skin Tone" value={draft.physicalAppearance?.skinTone || ''} onChange={(v) => updatePhysicalAppearance('skinTone', v)} placeholder="e.g., Fair" />
-                  <HardcodedRow label="Makeup" value={draft.physicalAppearance?.makeup || ''} onChange={(v) => updatePhysicalAppearance('makeup', v)} placeholder="e.g., Natural" />
+                  <HardcodedRow label="Skin Tone" value={draft.physicalAppearance?.skinTone || ''} onChange={(v) => updatePhysicalAppearance('skinTone', v)} placeholder="Fair" />
+                  <HardcodedRow label="Makeup" value={draft.physicalAppearance?.makeup || ''} onChange={(v) => updatePhysicalAppearance('makeup', v)} placeholder="Natural" />
                   <HardcodedRow label="Body Markings" value={draft.physicalAppearance?.bodyMarkings || ''} onChange={(v) => updatePhysicalAppearance('bodyMarkings', v)} placeholder="Tattoos, scars..." />
                   <HardcodedRow label="Temporary Conditions" value={draft.physicalAppearance?.temporaryConditions || ''} onChange={(v) => updatePhysicalAppearance('temporaryConditions', v)} placeholder="Injuries, etc." />
                   {((draft.physicalAppearance as any)?._extras || []).map((extra: CharacterExtraRow) => (
@@ -1462,8 +1462,8 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     ]} />
                   }
                 >
-                  <HardcodedRow label="Shirt / Top" value={draft.currentlyWearing?.top || ''} onChange={(v) => updateCurrentlyWearing('top', v)} placeholder="e.g., White blouse" />
-                  <HardcodedRow label="Pants / Bottoms" value={draft.currentlyWearing?.bottom || ''} onChange={(v) => updateCurrentlyWearing('bottom', v)} placeholder="e.g., Blue jeans" />
+                  <HardcodedRow label="Shirt / Top" value={draft.currentlyWearing?.top || ''} onChange={(v) => updateCurrentlyWearing('top', v)} placeholder="White blouse" />
+                  <HardcodedRow label="Pants / Bottoms" value={draft.currentlyWearing?.bottom || ''} onChange={(v) => updateCurrentlyWearing('bottom', v)} placeholder="Blue jeans" />
                   <HardcodedRow label="Undergarments" value={draft.currentlyWearing?.undergarments || ''} onChange={(v) => updateCurrentlyWearing('undergarments', v)} placeholder="Description" />
                   <HardcodedRow label="Miscellaneous" value={draft.currentlyWearing?.miscellaneous || ''} onChange={(v) => updateCurrentlyWearing('miscellaneous', v)} placeholder="Accessories, etc." />
                   {((draft.currentlyWearing as any)?._extras || []).map((extra: CharacterExtraRow) => (
@@ -1545,11 +1545,11 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                       ]} />
                     }
                   >
-                    <HardcodedRow label="Job / Occupation" value={(draft as any).mainBackground?.jobOccupation || ''} onChange={(v) => updateMainBackground('jobOccupation', v)} placeholder="e.g., Software Engineer" />
-                    <HardcodedRow label="Education Level" value={(draft as any).mainBackground?.educationLevel || ''} onChange={(v) => updateMainBackground('educationLevel', v)} placeholder="e.g., Bachelor's" />
-                    <HardcodedRow label="Residence" value={(draft as any).mainBackground?.residence || ''} onChange={(v) => updateMainBackground('residence', v)} placeholder="e.g., Downtown apartment" />
-                    <HardcodedRow label="Hobbies" value={(draft as any).mainBackground?.hobbies || ''} onChange={(v) => updateMainBackground('hobbies', v)} placeholder="e.g., Reading, Hiking" />
-                    <HardcodedRow label="Financial Status" value={(draft as any).mainBackground?.financialStatus || ''} onChange={(v) => updateMainBackground('financialStatus', v)} placeholder="e.g., Middle class" />
+                    <HardcodedRow label="Job / Occupation" value={(draft as any).mainBackground?.jobOccupation || ''} onChange={(v) => updateMainBackground('jobOccupation', v)} placeholder="Software Engineer" />
+                    <HardcodedRow label="Education Level" value={(draft as any).mainBackground?.educationLevel || ''} onChange={(v) => updateMainBackground('educationLevel', v)} placeholder="Bachelor's" />
+                    <HardcodedRow label="Residence" value={(draft as any).mainBackground?.residence || ''} onChange={(v) => updateMainBackground('residence', v)} placeholder="Downtown apartment" />
+                    <HardcodedRow label="Hobbies" value={(draft as any).mainBackground?.hobbies || ''} onChange={(v) => updateMainBackground('hobbies', v)} placeholder="Reading, Hiking" />
+                    <HardcodedRow label="Financial Status" value={(draft as any).mainBackground?.financialStatus || ''} onChange={(v) => updateMainBackground('financialStatus', v)} placeholder="Middle class" />
                     <HardcodedRow label="Motivation" value={(draft as any).mainBackground?.motivation || ''} onChange={(v) => updateMainBackground('motivation', v)} placeholder="What drives this character" />
                     {(((draft as any).mainBackground as any)?._extras || []).map((extra: CharacterExtraRow) => (
                       <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('background', extra.id, patch)} onDelete={() => deleteModalExtra('background', extra.id)} />
@@ -1652,7 +1652,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                       label="Relationship Status"
                       value={draft.background?.relationshipStatus || ''}
                       onChange={(v) => updateBackground('relationshipStatus', v)}
-                      placeholder="e.g., Single"
+                      placeholder="Single"
                     />
                     <FieldInput
                       label="Residence"
@@ -1664,7 +1664,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                       label="Education Level"
                       value={draft.background?.educationLevel || ''}
                       onChange={(v) => updateBackground('educationLevel', v)}
-                      placeholder="e.g., College"
+                      placeholder="College"
                     />
                   </CollapsibleSection>
                 )}
@@ -1689,7 +1689,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                       label="Traits"
                       value={draft.personality?.traits?.join(', ') || ''}
                       onChange={(v) => updatePersonality('traits', v.split(',').map(t => t.trim()).filter(Boolean))}
-                      placeholder="e.g., Friendly, Curious, Brave"
+                      placeholder="Friendly, Curious, Brave"
                     />
                     <FieldInput
                       label="Desires"
