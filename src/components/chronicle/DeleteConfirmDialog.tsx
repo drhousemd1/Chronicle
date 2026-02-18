@@ -15,6 +15,7 @@ interface DeleteConfirmDialogProps {
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
   message?: string;
+  title?: string;
 }
 
 export const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
@@ -22,13 +23,14 @@ export const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
   onOpenChange,
   onConfirm,
   message,
+  title,
 }) => {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent className="rounded-xl bg-[hsl(var(--ui-surface))] border border-[hsl(var(--ui-border))] shadow-[0_10px_30px_rgba(0,0,0,0.5)] max-w-sm">
         <AlertDialogHeader>
           <AlertDialogTitle className="text-[hsl(var(--ui-text))] text-base font-bold">
-            Are you sure you want to <span className="text-red-400">Delete</span> this character?
+            {title || <>Are you sure you want to <span className="text-red-400">Delete</span> this?</>}
           </AlertDialogTitle>
           <AlertDialogDescription className="text-[hsl(var(--ui-text-muted))] text-sm">
             {message || 'This cannot be undone.'}
