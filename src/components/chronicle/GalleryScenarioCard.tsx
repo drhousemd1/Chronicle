@@ -139,14 +139,14 @@ export const GalleryScenarioCard: React.FC<GalleryScenarioCardProps> = ({
         </div>
 
         {/* Bottom Info */}
-        <div className="absolute inset-x-0 bottom-0 p-4 pb-5 pointer-events-none flex flex-col gap-1.5">
+        <div className="absolute inset-x-0 bottom-0 p-4 pb-5 pointer-events-none flex flex-col">
           <h3 className="text-lg font-black text-white leading-tight tracking-tight group-hover:text-blue-300 transition-colors truncate">
             {scenario?.title || "Untitled Story"}
           </h3>
-          <p className="text-xs text-white/60 line-clamp-2 leading-relaxed italic">
+          <p className="text-xs text-white/60 line-clamp-2 leading-relaxed italic min-h-[2.5rem]">
             {scenario?.description || "No description provided."}
           </p>
-          <div className="flex items-center gap-3 text-[10px] text-white/50">
+          <div className="flex items-center gap-3 text-[10px] text-white/50 mt-1">
             <span className="flex items-center gap-1">
               <Eye className="w-3 h-3" />
               {published.view_count}
@@ -164,7 +164,7 @@ export const GalleryScenarioCard: React.FC<GalleryScenarioCardProps> = ({
               {published.play_count}
             </span>
           </div>
-          <span className="text-[11px] text-white/50 font-medium">
+          <span className="text-[11px] text-white/50 font-medium mt-1">
             Written by: {publisher?.username || 'Anonymous'}
           </span>
         </div>
