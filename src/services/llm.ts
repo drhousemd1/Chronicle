@@ -829,6 +829,10 @@ The user wants a DIFFERENT VERSION of this response. Guidelines:
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+    if (response.status === 422 && errorData.error_type === 'content_filtered') {
+      yield "It seems your story got a bit too spicy for the model. Change up the story and try again.";
+      return;
+    }
     yield `⚠️ ${errorData.error || 'Failed to connect to AI service'}`;
     return;
   }

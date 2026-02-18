@@ -23,8 +23,16 @@ type ChatRequest = {
   max_tokens?: number;
 };
 
+type XAIResult = { ok: true; response: Response } | { ok: false; status: number; errorText: string };
+
+const CONTENT_REDIRECT_DIRECTIVE = `[CONTENT REDIRECT] The previous user message touched on content the model cannot engage with directly. Continue the roleplay naturally by:
+1. Having the character(s) gracefully deflect, redirect, or change the subject
+2. Maintain the current scene's tone and momentum
+3. Do NOT reference the filter or moderation -- stay fully in-character
+4. Move the story forward in a way that feels organic`;
+
 // GROK ONLY -- All models route to xAI
-async function callXAI(messages: Message[], modelId: string, stream: boolean, maxTokens: number = 4096): Promise<Response> {
+async function callXAI(messages: Message[], modelId: string, stream: boolean, maxTokens: number = 4096): Promise<XAIResult> {
   const XAI_API_KEY = Deno.env.get("XAI_API_KEY");
   if (!XAI_API_KEY) {
     throw new Error("XAI_API_KEY is not configured. Please add your Grok API key in settings.");
@@ -50,10 +58,10 @@ async function callXAI(messages: Message[], modelId: string, stream: boolean, ma
   if (!response.ok) {
     const errorText = await response.text();
     console.error(`[chat] xAI/Grok error: ${response.status} - ${errorText}`);
-    throw new Error(`xAI/Grok error: ${response.status}`);
+    return { ok: false, status: response.status, errorText };
   }
 
-  return response;
+  return { ok: true, response };
 }
 
 serve(async (req) => {
@@ -94,23 +102,68 @@ serve(async (req) => {
     console.log(`[chat] Request received for model: ${modelId}, messages: ${messages.length}`);
 
     // GROK ONLY -- all requests go to xAI
-    const response = await callXAI(messages, modelId, stream, maxTokens);
+    const result = await callXAI(messages, modelId, stream, maxTokens);
 
-    if (stream) {
-      return new Response(response.body, {
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "text/event-stream",
-          "Cache-Control": "no-cache",
-          "Connection": "keep-alive",
-        },
-      });
-    } else {
-      const data = await response.json();
-      return new Response(JSON.stringify(data), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (result.ok) {
+      if (stream) {
+        return new Response(result.response.body, {
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+          },
+        });
+      } else {
+        const data = await result.response.json();
+        return new Response(JSON.stringify(data), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
+
+    // If 403 (content safety), retry with redirect directive
+    if (result.status === 403) {
+      console.log(`[chat] Got 403 content safety rejection, retrying with redirect directive...`);
+
+      // Inject redirect directive as a system message before the last user message
+      const redirectMessages: Message[] = [
+        ...messages.slice(0, -1),
+        { role: 'system' as const, content: CONTENT_REDIRECT_DIRECTIVE },
+        messages[messages.length - 1],
+      ];
+
+      const retryResult = await callXAI(redirectMessages, modelId, stream, maxTokens);
+
+      if (retryResult.ok) {
+        console.log(`[chat] Redirect retry succeeded`);
+        if (stream) {
+          return new Response(retryResult.response.body, {
+            headers: {
+              ...corsHeaders,
+              "Content-Type": "text/event-stream",
+              "Cache-Control": "no-cache",
+              "Connection": "keep-alive",
+            },
+          });
+        } else {
+          const data = await retryResult.response.json();
+          return new Response(JSON.stringify(data), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
+
+      // Both attempts failed -- return content_filtered
+      console.log(`[chat] Redirect retry also failed (${retryResult.status}), returning content_filtered`);
+      return new Response(
+        JSON.stringify({ error: "Content filtered by safety system", error_type: "content_filtered" }),
+        { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Non-403 error -- throw to be caught below
+    throw new Error(`xAI/Grok error: ${result.status}`);
 
   } catch (error) {
     console.error("[chat] Error:", error);
