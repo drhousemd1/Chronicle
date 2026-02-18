@@ -272,6 +272,7 @@ export function createSideCharacter(
     nicknames: '',
     age: '',
     sexType: '',
+    sexualOrientation: '',
     location: '',
     currentMood: '',
     controlledBy: 'AI',

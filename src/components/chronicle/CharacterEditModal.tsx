@@ -41,6 +41,7 @@ export interface CharacterEditDraft {
   previousNames?: string[];  // Hidden field - stores old names for lookup, never shown in UI
   age?: string;
   sexType?: string;
+  sexualOrientation?: string;
   roleDescription?: string;
   location?: string;
   currentMood?: string;
@@ -369,6 +370,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
         nicknames: character.nicknames || '',
         age: character.age || '',
         sexType: character.sexType || '',
+        sexualOrientation: (character as any).sexualOrientation || '',
         roleDescription: character.roleDescription || '',
         location: character.location || '',
         currentMood: character.currentMood || '',
@@ -1224,6 +1226,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                       { label: 'Nicknames', value: draft.nicknames },
                       { label: 'Age', value: draft.age },
                       { label: 'Sex / Identity', value: draft.sexType },
+                      { label: 'Sexual Orientation', value: (draft as any).sexualOrientation },
                       { label: 'Location', value: draft.location },
                       { label: 'Current Mood', value: draft.currentMood },
                       { label: 'Role Description', value: draft.roleDescription },
@@ -1324,6 +1327,12 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                       value={draft.sexType || ''}
                       onChange={(v) => updateField('sexType', v)}
                       placeholder="Female"
+                    />
+                    <FieldInput
+                      label="Sexual Orientation"
+                      value={(draft as any).sexualOrientation || ''}
+                      onChange={(v) => setDraft(prev => ({ ...prev, sexualOrientation: v }))}
+                      placeholder="Heterosexual, Bisexual, etc."
                     />
                     <FieldInput
                       label="Location"

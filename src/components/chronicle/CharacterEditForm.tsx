@@ -15,6 +15,7 @@ export interface CharacterEditDraft {
   nicknames?: string;
   age?: string;
   sexType?: string;
+  sexualOrientation?: string;
   roleDescription?: string;
   location?: string;
   currentMood?: string;
@@ -46,6 +47,7 @@ export const CharacterEditForm: React.FC<CharacterEditFormProps> = ({
       nicknames: character.nicknames || '',
       age: character.age,
       sexType: character.sexType,
+      sexualOrientation: (character as any).sexualOrientation || '',
       roleDescription: character.roleDescription,
       location: character.location,
       currentMood: character.currentMood,
@@ -119,15 +121,24 @@ export const CharacterEditForm: React.FC<CharacterEditFormProps> = ({
                 placeholder="Age"
               />
             </div>
-            <div>
-              <Label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Sex</Label>
-              <Input
-                value={draft.sexType || ''}
-                onChange={(e) => updateField('sexType', e.target.value)}
-                className="h-8 text-xs"
-                placeholder="Sex/Gender"
-              />
-            </div>
+          </div>
+          <div>
+            <Label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Sex / Identity</Label>
+            <Input
+              value={draft.sexType || ''}
+              onChange={(e) => updateField('sexType', e.target.value)}
+              className="h-8 text-xs"
+              placeholder="Sex/Gender"
+            />
+          </div>
+          <div>
+            <Label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Sexual Orientation</Label>
+            <Input
+              value={draft.sexualOrientation || ''}
+              onChange={(e) => updateField('sexualOrientation', e.target.value)}
+              className="h-8 text-xs"
+              placeholder="Heterosexual, Bisexual, etc."
+            />
           </div>
 
           <div>

@@ -51,6 +51,7 @@ Generate a JSON object with these fields (be creative but consistent with the di
 - nicknames: comma-separated string of alternative names, pet names, or aliases this character might be called (can be empty if none)
 - age: estimated age as string (e.g., "25", "mid-30s")
 - sexType: sex/gender identity (e.g., "Female", "Male", "Non-binary")
+- sexualOrientation: sexual orientation (e.g., "Heterosexual", "Bisexual", "Homosexual", "Pansexual")
 - roleDescription: their role in the story - what they do or their relationship to other characters (1 sentence)
 - physicalAppearance: object with these fields (fill in what can be inferred, leave empty string if unknown):
   - hairColor: string

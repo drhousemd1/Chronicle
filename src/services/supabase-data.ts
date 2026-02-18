@@ -127,6 +127,7 @@ function dbToCharacter(row: any): Character {
     nicknames: row.nicknames || '',
     age: row.age || '',
     sexType: row.sex_type || '',
+    sexualOrientation: row.sexual_orientation || '',
     location: row.location || '',
     currentMood: row.current_mood || '',
     controlledBy: row.controlled_by || 'AI',
@@ -161,6 +162,7 @@ function characterToDb(char: Character, userId: string, scenarioId?: string, isL
     nicknames: char.nicknames || '',
     age: char.age || '',
     sex_type: char.sexType,
+    sexual_orientation: char.sexualOrientation || '',
     location: char.location || '',
     current_mood: char.currentMood || '',
     controlled_by: char.controlledBy,
@@ -1098,6 +1100,7 @@ export async function fetchSessionStates(conversationId: string): Promise<Charac
     previousNames: row.previous_names || [],  // Hidden field for name history
     age: row.age || undefined,
     sexType: row.sex_type || undefined,
+    sexualOrientation: row.sexual_orientation || undefined,
     roleDescription: row.role_description || undefined,
     location: row.location || '',
     currentMood: row.current_mood || '',
@@ -1163,6 +1166,7 @@ export async function updateSessionState(
     previousNames: string[];  // Hidden field for name history
     age: string;
     sexType: string;
+    sexualOrientation: string;
     roleDescription: string;
     location: string;
     currentMood: string;
@@ -1185,6 +1189,7 @@ export async function updateSessionState(
   if (patch.previousNames !== undefined) updateData.previous_names = patch.previousNames;
   if (patch.age !== undefined) updateData.age = patch.age;
   if (patch.sexType !== undefined) updateData.sex_type = patch.sexType;
+  if (patch.sexualOrientation !== undefined) updateData.sexual_orientation = patch.sexualOrientation;
   if (patch.roleDescription !== undefined) updateData.role_description = patch.roleDescription;
   if (patch.location !== undefined) updateData.location = patch.location;
   if (patch.currentMood !== undefined) updateData.current_mood = patch.currentMood;
@@ -1485,6 +1490,7 @@ function dbToSideCharacter(row: any): SideCharacter {
     nicknames: row.nicknames || '',
     age: row.age || '',
     sexType: row.sex_type || '',
+    sexualOrientation: row.sexual_orientation || '',
     location: row.location || '',
     currentMood: row.current_mood || '',
     controlledBy: row.controlled_by || 'AI',
@@ -1530,6 +1536,7 @@ export async function saveSideCharacter(
       nicknames: sideChar.nicknames || '',
       age: sideChar.age,
       sex_type: sideChar.sexType,
+      sexual_orientation: sideChar.sexualOrientation || '',
       location: sideChar.location,
       current_mood: sideChar.currentMood,
       role_description: sideChar.roleDescription,
@@ -1556,6 +1563,7 @@ export async function updateSideCharacter(
   if (patch.nicknames !== undefined) updateData.nicknames = patch.nicknames;
   if (patch.age !== undefined) updateData.age = patch.age;
   if (patch.sexType !== undefined) updateData.sex_type = patch.sexType;
+  if (patch.sexualOrientation !== undefined) updateData.sexual_orientation = patch.sexualOrientation;
   if (patch.location !== undefined) updateData.location = patch.location;
   if (patch.currentMood !== undefined) updateData.current_mood = patch.currentMood;
   if (patch.roleDescription !== undefined) updateData.role_description = patch.roleDescription;

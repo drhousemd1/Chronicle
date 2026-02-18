@@ -587,6 +587,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       previousNames: sessionState.previousNames || [],  // Hidden field for name history
       age: sessionState.age || baseChar.age,
       sexType: sessionState.sexType || baseChar.sexType,
+      sexualOrientation: sessionState.sexualOrientation || baseChar.sexualOrientation,
       roleDescription: sessionState.roleDescription || baseChar.roleDescription,
       location: sessionState.location || baseChar.location,
       currentMood: sessionState.currentMood || baseChar.currentMood,

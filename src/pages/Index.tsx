@@ -823,6 +823,7 @@ const IndexContent = () => {
       nicknames: "",
       age: "",
       sexType: "",
+      sexualOrientation: "",
       location: "",
       currentMood: "",
       controlledBy: "AI",
