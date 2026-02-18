@@ -1300,40 +1300,6 @@ const IndexContent = () => {
             </div>
           </nav>
           
-          {activeId && (tab === "world" || tab === "characters") && (
-            <div className={`p-4 border-t border-white/10 space-y-2 ${sidebarCollapsed ? 'px-2' : ''}`}>
-              {sidebarCollapsed ? (
-                <>
-                  <Tooltip delayDuration={0}>
-                    <TooltipTrigger asChild>
-                      <Button variant="brand" onClick={() => handleSave(true)} className="w-full px-0" disabled={isSaving}>
-                        💾
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">Save Scenario</TooltipContent>
-                  </Tooltip>
-                  <Tooltip delayDuration={0}>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" onClick={() => { setActiveId(null); setActiveData(null); setTab("hub"); }} className="w-full px-0 !text-slate-500">
-                        ←
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">Back to Stories</TooltipContent>
-                  </Tooltip>
-                </>
-              ) : (
-                <>
-                  <Button variant="brand" onClick={async () => { setIsSaving(true); try { await handleSave(true); } finally { setIsSaving(false); } }} className="w-full" disabled={isSaving}>
-                    {isSaving ? "Saving..." : "💾 Save Scenario"}
-                  </Button>
-                  <Button variant="ghost" onClick={() => { setActiveId(null); setActiveData(null); setTab("hub"); }} className="w-full !text-slate-500">
-                    ← Back to Stories
-                  </Button>
-                </>
-              )}
-            </div>
-          )}
-
           <div className={`p-4 border-t border-white/10 ${sidebarCollapsed ? 'px-2' : ''}`}>
             {!sidebarCollapsed && (
               <div className="text-xs text-slate-500 mb-2 truncate">{user?.email}</div>
@@ -1383,21 +1349,21 @@ const IndexContent = () => {
               )}
               {(tab === "world" || tab === "characters") && (
                 <div className="flex items-center gap-3">
-                  {tab === "characters" && (
-                    <button 
-                      onClick={() => {
-                        if (selectedCharacterId) {
-                          setSelectedCharacterId(null);
-                          setTab("world");
-                        } else {
-                          setTab("world");
-                        }
-                      }} 
-                      className="p-2 hover:bg-slate-100 rounded-full transition-colors"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-                    </button>
-                  )}
+                  <button 
+                    onClick={() => {
+                      if (tab === "characters") {
+                        setSelectedCharacterId(null);
+                        setTab("world");
+                      } else {
+                        setActiveId(null);
+                        setActiveData(null);
+                        setTab("hub");
+                      }
+                    }} 
+                    className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                  </button>
                   <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
                     Scenario Builder
                   </h1>
