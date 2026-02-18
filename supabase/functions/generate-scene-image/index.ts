@@ -316,7 +316,7 @@ serve(async (req) => {
         .map(([k, v]) => `${k}: ${v}`)
         .join(', ');
       
-      return `${c.name || 'Unknown'}: sex=${c.sexType || 'unknown'}, age=${c.age || 'adult'}, appearance=[${appearanceDetails}], wearing=[${wearingDetails}], mood=${c.currentMood || 'neutral'}`;
+      return `${c.name || 'Unknown'}: sex=${c.sexType || 'unknown'}, orientation=${c.sexualOrientation || 'unspecified'}, age=${c.age || 'adult'}, appearance=[${appearanceDetails}], wearing=[${wearingDetails}], mood=${c.currentMood || 'neutral'}`;
     }).join('\n');
 
     // Build dialogue context from recent messages

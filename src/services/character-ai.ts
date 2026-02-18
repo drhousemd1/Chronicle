@@ -103,6 +103,7 @@ function buildCharacterSelfContext(character: Character): string {
   if (character.name && character.name !== "New Character") parts.push(`Name: ${character.name}`);
   if (character.age) parts.push(`Age: ${character.age}`);
   if (character.sexType) parts.push(`Sex/Identity: ${character.sexType}`);
+  if (character.sexualOrientation) parts.push(`Sexual Orientation: ${character.sexualOrientation}`);
   if (character.roleDescription) parts.push(`Role: ${character.roleDescription}`);
   if (character.tags) parts.push(`Tags: ${character.tags}`);
   if (character.location) parts.push(`Location: ${character.location}`);
@@ -373,6 +374,7 @@ function getEmptyHardcodedFields(character: Character) {
   if (!character.name || character.name === "New Character") emptyFields.basics.push("name");
   if (!character.age) emptyFields.basics.push("age");
   if (!character.sexType) emptyFields.basics.push("sexType");
+  if (!character.sexualOrientation) emptyFields.basics.push("sexualOrientation");
   if (!character.roleDescription) emptyFields.basics.push("roleDescription");
   if (!character.location) emptyFields.basics.push("location");
   if (!character.currentMood) emptyFields.basics.push("currentMood");

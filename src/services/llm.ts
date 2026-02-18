@@ -213,7 +213,8 @@ function getSystemInstruction(
     const fearsExtras = extrasContext(c.fears, 'Fears');
     const fearsInfo = fearsExtras ? `\nFEARS: ${fearsExtras}` : '';
     
-    return `CHARACTER: ${c.name} (${c.sexType})${nicknameInfo}
+    const orientationInfo = (c as any).sexualOrientation ? `\nSEXUAL ORIENTATION: ${(c as any).sexualOrientation}` : '';
+    return `CHARACTER: ${c.name} (${c.sexType})${nicknameInfo}${orientationInfo}
 ROLE: ${c.characterRole}
 CONTROL: ${c.controlledBy}${locationInfo}${moodInfo}${personalityInfo}${toneInfo}${backgroundInfo}${kleInfo}${relInfo}${secretsInfo}${fearsInfo}${goalsInfo}
 TAGS: ${c.tags}

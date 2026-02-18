@@ -217,6 +217,7 @@ export type Character = {
   nicknames: string;  // Comma-separated aliases (e.g., "Mom, Mother, Ma")
   age: string;
   sexType: string;
+  sexualOrientation: string;
   location: string;
   currentMood: string;
   controlledBy: CharacterControl;
@@ -264,6 +265,7 @@ export type CharacterSessionState = {
   previousNames?: string[];  // Hidden field - stores old names for lookup, never shown in UI
   age?: string;
   sexType?: string;
+  sexualOrientation?: string;
   roleDescription?: string;
   location: string;
   currentMood: string;
@@ -321,6 +323,7 @@ export type SideCharacter = {
   nicknames: string;  // Comma-separated aliases (e.g., "Mor" for Morrigan)
   age: string;
   sexType: string;
+  sexualOrientation: string;
   location: string;
   currentMood: string;
   controlledBy: CharacterControl;   // Can be changed by user during session

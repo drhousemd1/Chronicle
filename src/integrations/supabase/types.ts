@@ -67,6 +67,7 @@ export type Database = {
           role_description: string | null
           secrets: Json | null
           sex_type: string | null
+          sexual_orientation: string | null
           tone: Json | null
           updated_at: string | null
           user_id: string
@@ -99,6 +100,7 @@ export type Database = {
           role_description?: string | null
           secrets?: Json | null
           sex_type?: string | null
+          sexual_orientation?: string | null
           tone?: Json | null
           updated_at?: string | null
           user_id: string
@@ -131,6 +133,7 @@ export type Database = {
           role_description?: string | null
           secrets?: Json | null
           sex_type?: string | null
+          sexual_orientation?: string | null
           tone?: Json | null
           updated_at?: string | null
           user_id?: string
@@ -180,6 +183,7 @@ export type Database = {
           secrets: Json | null
           sections: Json | null
           sex_type: string | null
+          sexual_orientation: string | null
           tags: string | null
           tone: Json | null
           updated_at: string | null
@@ -212,6 +216,7 @@ export type Database = {
           secrets?: Json | null
           sections?: Json | null
           sex_type?: string | null
+          sexual_orientation?: string | null
           tags?: string | null
           tone?: Json | null
           updated_at?: string | null
@@ -244,6 +249,7 @@ export type Database = {
           secrets?: Json | null
           sections?: Json | null
           sex_type?: string | null
+          sexual_orientation?: string | null
           tags?: string | null
           tone?: Json | null
           updated_at?: string | null
@@ -833,6 +839,7 @@ export type Database = {
           preferred_clothing: Json | null
           role_description: string | null
           sex_type: string | null
+          sexual_orientation: string | null
           updated_at: string | null
           user_id: string
         }
@@ -858,6 +865,7 @@ export type Database = {
           preferred_clothing?: Json | null
           role_description?: string | null
           sex_type?: string | null
+          sexual_orientation?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -883,6 +891,7 @@ export type Database = {
           preferred_clothing?: Json | null
           role_description?: string | null
           sex_type?: string | null
+          sexual_orientation?: string | null
           updated_at?: string | null
           user_id?: string
         }
