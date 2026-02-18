@@ -1251,12 +1251,12 @@ const IndexContent = () => {
       <div className="h-screen flex bg-white overflow-hidden relative">
         {/* Session resume now navigates immediately to chat with loading skeleton - no overlay needed */}
         <aside className={`flex-shrink-0 bg-[#1a1a1a] flex flex-col border-r border-black shadow-2xl z-50 transition-all duration-300 ${sidebarCollapsed ? 'w-[72px]' : 'w-[280px]'}`}>
-          <div className={`${sidebarCollapsed ? 'p-4' : 'p-8'}`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-[#4a5f7f] flex items-center justify-center text-white font-black text-2xl italic shadow-xl shadow-[#4a5f7f]/30">C</div>
+          <div className={`py-8 ${sidebarCollapsed ? 'px-4' : 'px-8'} transition-all duration-300`}>
+            <div className={`flex ${sidebarCollapsed ? 'flex-col items-center gap-3' : 'items-center justify-between'}`}>
+              <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'gap-4'}`}>
+                <div className="w-10 h-10 rounded-xl bg-[#4a5f7f] flex items-center justify-center text-white font-black text-2xl italic shadow-xl shadow-[#4a5f7f]/30 flex-shrink-0">C</div>
                 {!sidebarCollapsed && (
-                  <div className="font-black uppercase tracking-tighter text-2xl leading-none text-white">Chronicle</div>
+                  <div className="font-black uppercase tracking-tighter text-2xl leading-none text-white whitespace-nowrap overflow-hidden">Chronicle</div>
                 )}
               </div>
               <Tooltip delayDuration={0}>
