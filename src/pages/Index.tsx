@@ -719,11 +719,15 @@ const IndexContent = () => {
       await supabaseData.saveScenario(scenarioIdToSave, dataToSave, metadata, user.id);
       
       // Refresh registry
-      const updatedRegistry = await supabaseData.fetchMyScenarios(user.id);
+      const updatedRegistry = await withTimeout(
+        supabaseData.fetchMyScenarios(user.id), 10000, registry, 'fetchMyScenarios'
+      );
       setRegistry(updatedRegistry);
       
       // Update conversation registry
-      const updatedConvRegistry = await supabaseData.fetchConversationRegistry();
+      const updatedConvRegistry = await withTimeout(
+        supabaseData.fetchConversationRegistry(), 10000, conversationRegistry, 'fetchConversationRegistry'
+      );
       setConversationRegistry(updatedConvRegistry);
       
       // Removed: selectedConversationEntry sync - no longer needed
@@ -1486,8 +1490,7 @@ const IndexContent = () => {
                     onClick={async () => {
                       setIsSavingAndClosing(true);
                       try {
-                        const success = await handleSave(true);
-                        if (success) toast({ title: "Saved!" });
+                        await handleSave(true);
                       } finally { setIsSavingAndClosing(false); }
                     }}
                     disabled={isSavingAndClosing || isSaving}
@@ -1500,8 +1503,7 @@ const IndexContent = () => {
                     onClick={async () => {
                       setIsSaving(true);
                       try {
-                        const success = await handleSave(false);
-                        if (success) toast({ title: "Saved!" });
+                        await handleSave(false);
                       } finally { setIsSaving(false); }
                     }}
                     disabled={isSaving || isSavingAndClosing}
@@ -1616,8 +1618,7 @@ const IndexContent = () => {
                         onClick={async () => {
                           setIsSaving(true);
                           try {
-                            const success = await handleSave(false);
-                            if (success) toast({ title: "Saved!" });
+                            await handleSave(false);
                           } finally { setIsSaving(false); }
                         }}
                         disabled={isSaving || isSavingAndClosing}

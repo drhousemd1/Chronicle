@@ -235,6 +235,34 @@ export const WorldTab: React.FC<WorldTabProps> = ({
     setCoverDragStart(null);
   };
 
+  const handleCoverTouchStart = (e: React.TouchEvent) => {
+    if (!isRepositioningCover) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    setCoverDragStart({
+      x: touch.clientX,
+      y: touch.clientY,
+      pos: coverImagePosition || { x: 50, y: 50 }
+    });
+  };
+
+  const handleCoverTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!coverDragStart || !coverContainerRef.current) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    const rect = coverContainerRef.current.getBoundingClientRect();
+    const deltaX = ((touch.clientX - coverDragStart.x) / rect.width) * 100;
+    const deltaY = ((touch.clientY - coverDragStart.y) / rect.height) * 100;
+    onUpdateCoverPosition({
+      x: clamp(coverDragStart.pos.x - deltaX, 0, 100),
+      y: clamp(coverDragStart.pos.y - deltaY, 0, 100)
+    });
+  }, [coverDragStart, onUpdateCoverPosition]);
+
+  const handleCoverTouchEnd = () => {
+    setCoverDragStart(null);
+  };
+
   const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
@@ -418,6 +446,10 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                       onMouseMove={handleCoverMouseMove}
                       onMouseUp={handleCoverMouseUp}
                       onMouseLeave={handleCoverMouseUp}
+                      onTouchStart={handleCoverTouchStart}
+                      onTouchMove={handleCoverTouchMove}
+                      onTouchEnd={handleCoverTouchEnd}
+                      style={isRepositioningCover ? { touchAction: 'none' } : undefined}
                       className={`relative w-full md:w-48 aspect-[2/3] rounded-2xl overflow-hidden transition-all duration-200 ${
                         isRepositioningCover 
                           ? 'ring-4 ring-blue-500 cursor-move shadow-xl shadow-blue-500/20' 
