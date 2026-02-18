@@ -561,12 +561,6 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button
-              onClick={exitFolder}
-              className="p-2 hover:bg-white/10 rounded-full transition-colors text-white"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
             <div>
               <h1 className="text-2xl font-black text-white">{selectedFolder.name}</h1>
               {selectedFolder.description && (
