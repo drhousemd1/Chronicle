@@ -392,9 +392,9 @@ export const WorldTab: React.FC<WorldTabProps> = ({
       </aside>
 
       <div className="flex-1 overflow-y-auto scrollbar-thin bg-slate-50/30">
-        <div className="p-10 max-w-4xl mx-auto space-y-12 pb-20">
+        <div className="p-4 lg:p-10 max-w-4xl mx-auto space-y-12 pb-20">
           <div className="mb-2">
-            <h1 className="text-4xl font-black text-slate-900 tracking-tight">Scenario Setup</h1>
+            <h1 className="text-2xl lg:text-4xl font-black text-slate-900 tracking-tight">Scenario Setup</h1>
             <p className="text-sm font-medium text-slate-500 mt-1">Configure the foundation of your interactive narrative.</p>
           </div>
 
