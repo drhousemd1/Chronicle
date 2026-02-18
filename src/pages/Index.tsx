@@ -172,6 +172,17 @@ const IndexContent = () => {
     localStorage.setItem('chronicle_sidebar_collapsed', String(sidebarCollapsed));
   }, [sidebarCollapsed]);
 
+  // Auto-collapse sidebar on tablet-sized viewports
+  useEffect(() => {
+    const mql = window.matchMedia('(max-width: 1024px)');
+    const onChange = (e: MediaQueryListEvent | MediaQueryList) => {
+      if (e.matches) setSidebarCollapsed(true);
+    };
+    onChange(mql);
+    mql.addEventListener('change', onChange as (e: MediaQueryListEvent) => void);
+    return () => mql.removeEventListener('change', onChange as (e: MediaQueryListEvent) => void);
+  }, []);
+
   // Redirect to auth if not authenticated
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -1353,7 +1364,7 @@ const IndexContent = () => {
 
       <main className="flex-1 flex flex-col overflow-hidden bg-slate-50/50">
         {(tab === "characters" || tab === "world" || tab === "library" || tab === "conversations" || tab === "hub" || tab === "image_library" || tab === "gallery") && (
-          <header className="flex-shrink-0 h-16 border-b border-slate-200 bg-white flex items-center justify-between px-8 shadow-sm">
+          <header className="flex-shrink-0 h-16 border-b border-slate-200 bg-white flex items-center justify-between px-4 lg:px-8 shadow-sm">
             <div className="flex items-center gap-4">
               {tab === "library" && (
                 <div className="flex items-center gap-3">
@@ -1402,51 +1413,53 @@ const IndexContent = () => {
                   <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
                     Your Stories
                   </h1>
-                  <div className="flex items-center bg-[#2b2b2e] rounded-full p-1 gap-0.5 border border-[#2b2b2e]">
-                    <button
-                      onClick={() => setHubFilter("my")}
-                      className={cn(
-                        "px-4 py-1.5 rounded-full text-xs font-bold transition-all",
-                        hubFilter === "my" 
-                          ? "bg-[#4a5f7f] text-white shadow-sm" 
-                          : "text-[#a1a1aa] hover:text-[#e4e4e7]"
-                      )}
-                    >
-                      My Stories
-                    </button>
-                    <button
-                      onClick={() => setHubFilter("bookmarked")}
-                      className={cn(
-                        "px-4 py-1.5 rounded-full text-xs font-bold transition-all",
-                        hubFilter === "bookmarked" 
-                          ? "bg-[#4a5f7f] text-white shadow-sm" 
-                          : "text-[#a1a1aa] hover:text-[#e4e4e7]"
-                      )}
-                    >
-                      Saved Stories
-                    </button>
-                    <button
-                      onClick={() => setHubFilter("published")}
-                      className={cn(
-                        "px-4 py-1.5 rounded-full text-xs font-bold transition-all",
-                        hubFilter === "published" 
-                          ? "bg-[#4a5f7f] text-white shadow-sm" 
-                          : "text-[#a1a1aa] hover:text-[#e4e4e7]"
-                      )}
-                    >
-                      Published
-                    </button>
-                    <button
-                      onClick={() => setHubFilter("all")}
-                      className={cn(
-                        "px-4 py-1.5 rounded-full text-xs font-bold transition-all",
-                        hubFilter === "all" 
-                          ? "bg-[#4a5f7f] text-white shadow-sm" 
-                          : "text-[#a1a1aa] hover:text-[#e4e4e7]"
-                      )}
-                    >
-                      All
-                    </button>
+                  <div className="overflow-x-auto scrollbar-none flex-shrink-0">
+                    <div className="flex items-center bg-[#2b2b2e] rounded-full p-1 gap-0.5 border border-[#2b2b2e]">
+                      <button
+                        onClick={() => setHubFilter("my")}
+                        className={cn(
+                          "px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap",
+                          hubFilter === "my" 
+                            ? "bg-[#4a5f7f] text-white shadow-sm" 
+                            : "text-[#a1a1aa] hover:text-[#e4e4e7]"
+                        )}
+                      >
+                        My Stories
+                      </button>
+                      <button
+                        onClick={() => setHubFilter("bookmarked")}
+                        className={cn(
+                          "px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap",
+                          hubFilter === "bookmarked" 
+                            ? "bg-[#4a5f7f] text-white shadow-sm" 
+                            : "text-[#a1a1aa] hover:text-[#e4e4e7]"
+                        )}
+                      >
+                        Saved Stories
+                      </button>
+                      <button
+                        onClick={() => setHubFilter("published")}
+                        className={cn(
+                          "px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap",
+                          hubFilter === "published" 
+                            ? "bg-[#4a5f7f] text-white shadow-sm" 
+                            : "text-[#a1a1aa] hover:text-[#e4e4e7]"
+                        )}
+                      >
+                        Published
+                      </button>
+                      <button
+                        onClick={() => setHubFilter("all")}
+                        className={cn(
+                          "px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap",
+                          hubFilter === "all" 
+                            ? "bg-[#4a5f7f] text-white shadow-sm" 
+                            : "text-[#a1a1aa] hover:text-[#e4e4e7]"
+                        )}
+                      >
+                        All
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1471,27 +1484,29 @@ const IndexContent = () => {
                   <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
                     Community Gallery
                   </h1>
-                  <div className="flex items-center bg-[#2b2b2e] rounded-full p-1 gap-0.5 border border-[#2b2b2e]">
-                    {[
-                      { key: 'all' as GallerySortOption, label: 'All Stories' },
-                      { key: 'recent' as GallerySortOption, label: 'Recent' },
-                      { key: 'liked' as GallerySortOption, label: 'Liked' },
-                      { key: 'saved' as GallerySortOption, label: 'Saved' },
-                      { key: 'played' as GallerySortOption, label: 'Played' },
-                    ].map((option) => (
-                      <button
-                        key={option.key}
-                        onClick={() => setGallerySortBy(option.key)}
-                        className={cn(
-                          "px-4 py-1.5 rounded-full text-xs font-bold transition-all",
-                          gallerySortBy === option.key 
-                            ? "bg-[#4a5f7f] text-white shadow-sm" 
-                            : "text-[#a1a1aa] hover:text-[#e4e4e7]"
-                        )}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
+                  <div className="overflow-x-auto scrollbar-none flex-shrink-0">
+                    <div className="flex items-center bg-[#2b2b2e] rounded-full p-1 gap-0.5 border border-[#2b2b2e]">
+                      {[
+                        { key: 'all' as GallerySortOption, label: 'All Stories' },
+                        { key: 'recent' as GallerySortOption, label: 'Recent' },
+                        { key: 'liked' as GallerySortOption, label: 'Liked' },
+                        { key: 'saved' as GallerySortOption, label: 'Saved' },
+                        { key: 'played' as GallerySortOption, label: 'Played' },
+                      ].map((option) => (
+                        <button
+                          key={option.key}
+                          onClick={() => setGallerySortBy(option.key)}
+                          className={cn(
+                            "px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap",
+                            gallerySortBy === option.key 
+                              ? "bg-[#4a5f7f] text-white shadow-sm" 
+                              : "text-[#a1a1aa] hover:text-[#e4e4e7]"
+                          )}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}

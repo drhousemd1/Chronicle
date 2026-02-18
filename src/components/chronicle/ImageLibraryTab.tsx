@@ -429,7 +429,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
   // Folder Grid View
   if (!selectedFolder) {
     return (
-      <div className="w-full h-full p-10 flex flex-col overflow-y-auto">
+      <div className="w-full h-full p-4 lg:p-10 flex flex-col overflow-y-auto">
         <div className="w-full">
           {isLoading ? (
             <div className="flex items-center justify-center py-20">
@@ -437,7 +437,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 lg:gap-8">
                 {folders.map((folder) => (
                   <div
                     key={folder.id}
@@ -556,7 +556,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
 
   // Folder Detail View
   return (
-    <div className="h-full overflow-y-auto p-10">
+    <div className="h-full overflow-y-auto p-4 lg:p-10">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">

@@ -207,8 +207,8 @@ export function ScenarioHub({
   };
 
   return (
-    <div className="w-full h-full p-10 flex flex-col overflow-y-auto">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-8 w-full">
+    <div className="w-full h-full p-4 lg:p-10 flex flex-col overflow-y-auto">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 lg:gap-8 w-full">
         {registry.map((scen) => (
           <ScenarioCard 
             key={scen.id} 
