@@ -1,96 +1,95 @@
 
 
-# Additional Fixes: Clean Up Placeholder Text Across the App
+# Add Sexual Orientation Field + Reorder Avatar Fields + Placeholder Cleanup
 
-These two small fixes will be bundled into the sexual orientation plan implementation.
+## What's Changing
 
-## 1. Change Nicknames placeholder to "Nicknames"
+Three things that were previously approved but not yet implemented:
 
-Currently says `"e.g., Mom, Mother (comma-separated)"` in three files. Change to just `"Nicknames"`.
+1. **Reorder fields in the avatar panel**: Move "Sex / Identity" below "Age" as a full-width row (instead of side-by-side with Age)
+2. **Add "Sexual Orientation" field**: New single-row input after Sex / Identity, before Location
+3. **Remove remaining "e.g.," from placeholders**: The GuidanceStrengthSlider has some in AI-facing text (left alone), but the previous cleanup was already applied to UI components
 
-## 2. Remove "e.g.," from ALL placeholder text in UI components
+## New Field Order (Avatar Panel)
 
-Strip the `"e.g., "` prefix from every placeholder, keeping just the example values. This applies across 6 files with UI-facing placeholders (edge function prompts are left unchanged since those are AI instructions, not user-facing ghost text).
+```text
+Name
+Nicknames
+Age          (half-width, right side empty)
+Sex / Identity        (full-width)
+Sexual Orientation    (full-width, NEW)
+Location              (full-width)
+Current Mood          (full-width)
+Role Description      (full-width)
+```
 
-### Placeholder changes by file
+## Technical Details
 
-**CharactersTab.tsx** (Scenario Builder character card):
-| Field | Before | After |
-|---|---|---|
-| Nicknames | `e.g., Mom, Mother (comma-separated)` | `Nicknames` |
-| Age | `e.g., 25` | `25` |
-| Sex / Identity | `e.g., Female, Male, Non-binary` | `Female, Male, Non-binary` |
-| Current Mood | `e.g., Happy, Tired` | `Happy, Tired` |
-| Hair Color | `e.g., Brunette, Blonde, Black` | `Brunette, Blonde, Black` |
-| Eye Color | `e.g., Blue, Brown, Green` | `Blue, Brown, Green` |
-| Build | `e.g., Athletic, Slim, Curvy` | `Athletic, Slim, Curvy` |
-| Body Hair | `e.g., Smooth, Light, Natural` | `Smooth, Light, Natural` |
-| Height | `e.g., 5 foot 8` | `5 foot 8` |
-| Breast Size | `e.g., C-cup / N/A` | `C-cup / N/A` |
-| Genitalia | `e.g., Male, Female / N/A` | `Male, Female / N/A` |
-| Skin Tone | `e.g., Fair, Olive, Dark` | `Fair, Olive, Dark` |
-| Makeup | `e.g., Light, Heavy, None` | `Light, Heavy, None` |
-| Shirt/Top | `e.g., White blouse, T-shirt` | `White blouse, T-shirt` |
-| Pants/Bottoms | `e.g., Jeans, Skirt, Shorts` | `Jeans, Skirt, Shorts` |
-| Casual | `e.g., Jeans and t-shirts` | `Jeans and t-shirts` |
-| Work | `e.g., Business casual, Uniform` | `Business casual, Uniform` |
-| Sleep | `e.g., Pajamas, Nightgown` | `Pajamas, Nightgown` |
-| Undergarments (pref) | `e.g., Cotton basics, Lace` | `Cotton basics, Lace` |
-| Job / Occupation | `e.g., Software Engineer, Teacher` | `Software Engineer, Teacher` |
-| Education Level | `e.g., Bachelor's, High School` | `Bachelor's, High School` |
-| Residence | `e.g., Downtown apartment, Suburban house` | `Downtown apartment, Suburban house` |
-| Hobbies | `e.g., Reading, Hiking, Gaming` | `Reading, Hiking, Gaming` |
-| Financial Status | `e.g., Middle class, Wealthy` | `Middle class, Wealthy` |
+### Database Migration
+Add `sexual_orientation` text column to three tables:
+- `characters` (default `''`)
+- `character_session_states` (nullable)
+- `side_characters` (default `''`)
 
-**CharacterEditModal.tsx** (full edit modal):
-| Field | Before | After |
-|---|---|---|
-| Nicknames | `e.g., Mom, Mother (comma-separated)` | `Nicknames` |
-| Age | `e.g., 25` | `25` |
-| Sex / Identity | `e.g., Female` | `Female` |
-| Current Mood | `e.g., Happy` | `Happy` |
-| Hair Color | `e.g., Brown` | `Brown` |
-| Eye Color | `e.g., Blue` | `Blue` |
-| Build | `e.g., Athletic` | `Athletic` |
-| Body Hair | `e.g., Light` | `Light` |
-| Height | `e.g., 5ft 8in` | `5ft 8in` |
-| Breast Size | `e.g., Medium` | `Medium` |
-| Skin Tone | `e.g., Fair` | `Fair` |
-| Makeup | `e.g., Natural` | `Natural` |
-| Shirt / Top | `e.g., White blouse` | `White blouse` |
-| Pants / Bottoms | `e.g., Blue jeans` | `Blue jeans` |
-| Job / Occupation | `e.g., Software Engineer` | `Software Engineer` |
-| Education Level | `e.g., Bachelor's` | `Bachelor's` |
-| Residence | `e.g., Downtown apartment` | `Downtown apartment` |
-| Hobbies | `e.g., Reading, Hiking` | `Reading, Hiking` |
-| Financial Status | `e.g., Middle class` | `Middle class` |
+### Type System (`src/types.ts`)
+- Add `sexualOrientation: string` to `Character` type (after `sexType`)
+- Add `sexualOrientation?: string` to `CharacterSessionState` type (after `sexType`)
+- Add `sexualOrientation: string` to `SideCharacter` type (after `sexType`)
 
-**CharacterEditForm.tsx** (inline session edit form):
-| Field | Before | After |
-|---|---|---|
-| Nicknames | `e.g., Mom, Mother (comma-separated)` | `Nicknames` |
+### Data Layer (`src/services/supabase-data.ts`)
+- Character read: `sexualOrientation: row.sexual_orientation || ''`
+- Character write: `sexual_orientation: char.sexualOrientation`
+- Session state read/write/patch: same pattern
+- Side character read/write/patch: same pattern
 
-**CoverImageGenerationModal.tsx**:
-| Before | After |
-|---|---|
-| `Describe your cover image... (e.g., A mystical forest at twilight with ancient ruins)` | `Describe your cover image...` |
+### Scenario Builder Card (`src/components/chronicle/CharactersTab.tsx`)
+Lines 710-718: Break the `grid-cols-2` containing Age + Sex/Identity. Age stays half-width, Sex/Identity becomes full-width row, add Sexual Orientation full-width row after it, before Location.
 
-**SceneImageGenerationModal.tsx**:
-| Before | After |
-|---|---|
-| `e.g., A cozy medieval tavern with warm candlelight...` | `A cozy medieval tavern with warm candlelight...` |
+### Character Edit Modal (`src/components/chronicle/CharacterEditModal.tsx`)
+- Add `sexualOrientation` to draft state and collapsed summary
+- Add new FieldInput for "Sexual Orientation" after Sex / Identity, before Location (lines 1316-1333)
 
-**SceneTagEditorModal.tsx**:
-| Before | After |
-|---|---|
-| `Enter keyword (e.g., home, forest)...` | `Enter keyword...` |
+### Chat Session Edit Form (`src/components/chronicle/CharacterEditForm.tsx`)
+- Add `sexualOrientation` to `CharacterEditDraft` interface
+- Break the Age/Sex grid-cols-2 into separate rows
+- Add Sexual Orientation field after Sex, before Role Description
+
+### AI Integration (`src/services/character-ai.ts`)
+- Include `sexualOrientation` in character summary strings
+- Add to empty field detection for auto-fill
+- Add to AI fill JSON schema
+
+### LLM Prompt (`src/services/llm.ts`)
+- Include sexual orientation in character prompt block
+
+### Chat Session State (`src/components/chronicle/ChatInterfaceTab.tsx`)
+- Map `sexualOrientation` when merging session + base character
+- Include in session state patches
+
+### Default Character (`src/pages/Index.tsx`)
+- Add `sexualOrientation: ''` to default character object
+
+### Side Character Generator (`src/services/side-character-generator.ts`)
+- Add `sexualOrientation: ''` to default
+
+### Edge Functions
+- `generate-side-character/index.ts`: Add `sexualOrientation` to generation prompt schema
+- `generate-scene-image/index.ts`: Include in character description
 
 ## Files Modified
 | File | Change |
 |---|---|
-| `src/components/chronicle/CharactersTab.tsx` | Remove `e.g.,` from ~23 placeholders, change Nicknames placeholder |
-| `src/components/chronicle/CharacterEditModal.tsx` | Remove `e.g.,` from ~19 placeholders, change Nicknames placeholder |
-| `src/components/chronicle/CharacterEditForm.tsx` | Change Nicknames placeholder |
-| `src/components/chronicle/CoverImageGenerationModal.tsx` | Clean placeholder |
-| `src/components/chronicle/SceneImageGenerationModal.tsx` | Clean placeholder |
-| `src/components/chronicle/SceneTagEditorModal.tsx` | Clean placeholder |
+| Database migration | Add `sexual_orientation` column to 3 tables |
+| `src/types.ts` | Add `sexualOrientation` to Character, CharacterSessionState, SideCharacter |
+| `src/services/supabase-data.ts` | Read/write/patch mappings for all 3 types |
+| `src/components/chronicle/CharactersTab.tsx` | Reorder fields, add Sexual Orientation |
+| `src/components/chronicle/CharacterEditModal.tsx` | Add field + collapsed summary |
+| `src/components/chronicle/CharacterEditForm.tsx` | Add field, reorder layout |
+| `src/services/character-ai.ts` | AI prompt and auto-fill support |
+| `src/services/llm.ts` | Character prompt block |
+| `src/components/chronicle/ChatInterfaceTab.tsx` | Session state mapping |
+| `src/pages/Index.tsx` | Default character value |
+| `src/services/side-character-generator.ts` | Default value |
+| `supabase/functions/generate-side-character/index.ts` | Generation prompt |
+| `supabase/functions/generate-scene-image/index.ts` | Character description |
+
