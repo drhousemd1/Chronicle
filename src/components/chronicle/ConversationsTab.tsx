@@ -19,7 +19,6 @@ export function ConversationsTab({
   onRename: (scenarioId: string, conversationId: string) => void;
   onDelete: (scenarioId: string, conversationId: string) => void;
 }) {
-  // Sort by recency (already sorted server-side, but ensure consistency)
   const sortedRegistry = [...globalRegistry].sort((a, b) => b.updatedAt - a.updatedAt);
 
   return (
@@ -28,12 +27,12 @@ export function ConversationsTab({
       {sortedRegistry.length === 0 ? (
         <div className="py-20 text-center opacity-50">
           <div className="text-6xl mb-4">💬</div>
-          <p className="font-bold text-slate-600">No saved sessions found.</p>
-          <p className="text-sm text-slate-500 mt-1">Start playing a scenario to create your first save.</p>
+          <p className="font-bold text-zinc-500">No saved sessions found.</p>
+          <p className="text-sm text-zinc-600 mt-1">Start playing a scenario to create your first save.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)] ring-1 ring-slate-900/5">
-          <div className="divide-y divide-slate-100">
+        <div className="rounded-2xl overflow-hidden">
+          <div className="divide-y divide-white/10">
             {sortedRegistry.map((entry) => {
               const dateStr = new Date(entry.updatedAt).toLocaleDateString([], { 
                 month: 'short', 
@@ -44,12 +43,12 @@ export function ConversationsTab({
               return (
                 <div
                   key={entry.conversationId}
-                  className="flex items-center gap-4 p-4 hover:bg-slate-50 transition-all group"
+                  className="flex items-center gap-4 p-4 hover:bg-white/5 transition-all group"
                 >
                   {/* Scenario thumbnail - clickable */}
                   <button
                     onClick={() => onResume(entry.scenarioId, entry.conversationId)}
-                    className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-slate-200 border border-slate-200 hover:ring-2 hover:ring-blue-500 transition-all"
+                    className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-zinc-800 border border-[#4a5f7f] hover:ring-2 hover:ring-[#4a5f7f] transition-all"
                   >
                     {entry.scenarioImageUrl ? (
                       <img 
@@ -58,7 +57,7 @@ export function ConversationsTab({
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-slate-400 text-xl">
+                      <div className="w-full h-full flex items-center justify-center text-zinc-500 text-xl">
                         📖
                       </div>
                     )}
@@ -69,18 +68,17 @@ export function ConversationsTab({
                     onClick={() => onResume(entry.scenarioId, entry.conversationId)}
                     className="flex-1 min-w-0 text-left"
                   >
-                    {/* Title row with message count and date */}
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-bold text-slate-900 truncate">
+                      <h3 className="font-bold text-white truncate">
                         {entry.scenarioTitle}
                       </h3>
-                      <span className="flex items-center gap-1 text-sm text-slate-400">
+                      <span className="flex items-center gap-1 text-sm text-zinc-500">
                         💬 {entry.messageCount}
                       </span>
-                      <span className="text-sm text-slate-400">•</span>
-                      <span className="text-sm text-slate-400">{dateStr}</span>
+                      <span className="text-sm text-zinc-500">•</span>
+                      <span className="text-sm text-zinc-500">{dateStr}</span>
                     </div>
-                    <p className="text-sm text-slate-500 truncate leading-relaxed">
+                    <p className="text-sm text-zinc-400 truncate leading-relaxed">
                       {entry.lastMessage || "No messages yet"}
                     </p>
                   </button>
@@ -94,7 +92,7 @@ export function ConversationsTab({
                             e.stopPropagation();
                             onRename(entry.scenarioId, entry.conversationId);
                           }}
-                          className="p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                          className="p-2 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-white/10 transition-colors"
                         >
                           <Pencil className="w-4 h-4" />
                         </button>
@@ -109,7 +107,7 @@ export function ConversationsTab({
                             e.stopPropagation();
                             onDelete(entry.scenarioId, entry.conversationId);
                           }}
-                          className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          className="p-2 rounded-lg text-zinc-500 hover:text-red-500 hover:bg-red-500/10 transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
