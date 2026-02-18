@@ -465,61 +465,65 @@ export async function saveScenario(
 
   if (scenarioError) throw scenarioError;
 
-  // Get current character IDs for this scenario
+  // Run character, codex, and scene syncs IN PARALLEL (they're independent)
+  await Promise.all([
+    syncCharacters(id, data, userId),
+    syncCodexEntries(id, data),
+    syncScenes(id, data),
+  ]);
+
+  // NOTE: Conversations are saved individually via saveConversation() 
+  // when they are modified (e.g., in ChatInterfaceTab). We do NOT bulk-save 
+  // all conversations here because it updates their timestamps simultaneously,
+  // which breaks the Chat History chronological sorting.
+}
+
+async function syncCharacters(scenarioId: string, data: ScenarioData, userId: string): Promise<void> {
   const { data: existingChars } = await supabase
     .from('characters')
     .select('id')
-    .eq('scenario_id', id);
+    .eq('scenario_id', scenarioId);
 
   const existingCharIds = new Set((existingChars || []).map(c => c.id));
   const currentCharIds = new Set(data.characters.map(c => c.id));
 
-  // Delete characters that were removed from the scenario
   const charsToDelete = [...existingCharIds].filter(cid => !currentCharIds.has(cid));
   if (charsToDelete.length > 0) {
-    await supabase
-      .from('characters')
-      .delete()
-      .in('id', charsToDelete);
+    await supabase.from('characters').delete().in('id', charsToDelete);
   }
 
-  // Upsert all current characters (handles both new and existing)
   if (data.characters.length > 0) {
     const { error: charError } = await supabase
       .from('characters')
       .upsert(
-        data.characters.map(c => characterToDb(c, userId, id, false)),
+        data.characters.map(c => characterToDb(c, userId, scenarioId, false)),
         { onConflict: 'id' }
       );
     if (charError) throw charError;
   }
+}
 
-  // Get current codex entry IDs for this scenario
+async function syncCodexEntries(scenarioId: string, data: ScenarioData): Promise<void> {
   const { data: existingCodex } = await supabase
     .from('codex_entries')
     .select('id')
-    .eq('scenario_id', id);
+    .eq('scenario_id', scenarioId);
 
   const existingCodexIds = new Set((existingCodex || []).map(e => e.id));
   const currentCodexIds = new Set(data.world.entries.map(e => e.id));
 
-  // Delete codex entries that were removed
   const codexToDelete = [...existingCodexIds].filter(eid => !currentCodexIds.has(eid));
   if (codexToDelete.length > 0) {
-    await supabase
-      .from('codex_entries')
-      .delete()
-      .in('id', codexToDelete);
+    await supabase.from('codex_entries').delete().in('id', codexToDelete);
   }
 
-  // Upsert all current codex entries
   if (data.world.entries.length > 0) {
     const { error: codexError } = await supabase
       .from('codex_entries')
       .upsert(
         data.world.entries.map(e => ({
           id: e.id,
-          scenario_id: id,
+          scenario_id: scenarioId,
           title: e.title,
           body: e.body
         })),
@@ -527,33 +531,29 @@ export async function saveScenario(
       );
     if (codexError) throw codexError;
   }
+}
 
-  // Get current scene IDs for this scenario
+async function syncScenes(scenarioId: string, data: ScenarioData): Promise<void> {
   const { data: existingScenes } = await supabase
     .from('scenes')
     .select('id')
-    .eq('scenario_id', id);
+    .eq('scenario_id', scenarioId);
 
   const existingSceneIds = new Set((existingScenes || []).map(s => s.id));
   const currentSceneIds = new Set(data.scenes.map(s => s.id));
 
-  // Delete scenes that were removed
   const scenesToDelete = [...existingSceneIds].filter(sid => !currentSceneIds.has(sid));
   if (scenesToDelete.length > 0) {
-    await supabase
-      .from('scenes')
-      .delete()
-      .in('id', scenesToDelete);
+    await supabase.from('scenes').delete().in('id', scenesToDelete);
   }
 
-  // Upsert all current scenes
   if (data.scenes.length > 0) {
     const { error: scenesError } = await supabase
       .from('scenes')
       .upsert(
         data.scenes.map(s => ({
           id: s.id,
-          scenario_id: id,
+          scenario_id: scenarioId,
           image_url: s.url,
           tags: s.tags ?? [],
           is_starting_scene: s.isStartingScene || false
@@ -562,11 +562,6 @@ export async function saveScenario(
       );
     if (scenesError) throw scenesError;
   }
-
-  // NOTE: Conversations are saved individually via saveConversation() 
-  // when they are modified (e.g., in ChatInterfaceTab). We do NOT bulk-save 
-  // all conversations here because it updates their timestamps simultaneously,
-  // which breaks the Chat History chronological sorting.
 }
 
 export async function deleteScenario(id: string): Promise<void> {
