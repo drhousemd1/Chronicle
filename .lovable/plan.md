@@ -1,47 +1,65 @@
 
 
-# Fix: Chat Streaming Uses Wrong Auth Token
+# Auto-Retry with Content Redirection on xAI Safety Rejections
 
-## Root Cause
+## Approach
 
-The `generateRoleplayResponseStream` function in `src/services/llm.ts` (line 811) sends the **anon/publishable key** as the Authorization bearer token instead of the user's actual session JWT:
+When xAI returns a 403 (content safety rejection), the edge function will automatically retry once with a modified system prompt that instructs Grok to sidestep the flagged content naturally -- keeping the roleplay going without directly addressing what was said. If the retry also fails, the friendly fallback message appears in chat.
 
-```typescript
-'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+## Changes
+
+### File 1: `supabase/functions/chat/index.ts`
+
+Update `callXAI` to detect 403 errors and return a structured result instead of throwing. Add retry logic in the main handler:
+
+- When xAI returns 403, extract the last few messages and prepend a "content redirection" system message like:
+
+```
+[CONTENT REDIRECT] The previous user message touched on content the model
+cannot engage with directly. Continue the roleplay naturally by:
+1. Having the character(s) gracefully deflect, redirect, or change the subject
+2. Maintain the current scene's tone and momentum
+3. Do NOT reference the filter or moderation -- stay fully in-character
+4. Move the story forward in a way that feels organic
 ```
 
-The anon key is not a user token, so when the edge function calls `supabase.auth.getUser()`, it correctly rejects it as "Invalid token."
+- Retry the xAI call once with this injected directive
+- If the retry also 403s, return a new HTTP status `422` with a specific error type `"content_filtered"`
 
-Other edge function calls (character updates, memory extraction, etc.) work fine because they use `supabase.functions.invoke()`, which automatically attaches the real user session token. But this chat streaming call uses raw `fetch()` and hardcodes the wrong credential.
+### File 2: `src/services/llm.ts` (around line 830)
 
-## Fix
+Update the error handling block to check for the `content_filtered` error type and yield the friendly in-character message:
 
-In `src/services/llm.ts`, replace the hardcoded anon key with the user's actual session token retrieved from the Supabase client:
-
-```typescript
-// Before the fetch call, get the real session token
-const { data: { session } } = await supabase.auth.getSession();
-const accessToken = session?.access_token;
-if (!accessToken) {
-  yield "Session expired. Please sign in again.";
-  return;
-}
-
-// Use the real token
-const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${accessToken}`,
-    'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-  },
-  // ...
-});
+```
+"It seems your story got a bit too spicy for the model. Change up the story and try again."
 ```
 
-The `apikey` header is also added since Supabase edge functions expect it alongside the Authorization header for proper routing.
+This message appears as a normal assistant message in the chat, not as a toast or popup.
+
+## Technical Details
+
+```text
+User sends message
+       |
+       v
+  Edge function -> xAI API
+       |
+    200 OK? -----> Stream response normally
+       |
+    403? --------> Inject redirect directive
+       |              |
+       v              v
+  Retry xAI API   
+       |
+    200 OK? -----> Stream redirected response (story continues naturally)
+       |
+    403 again? --> Return 422 { error_type: "content_filtered" }
+       |
+       v
+  Frontend yields friendly message in chat
+```
 
 ## Files Modified
 
-1. `src/services/llm.ts` -- Replace anon key with real session token in the streaming fetch call (around lines 807-812)
-
+1. `supabase/functions/chat/index.ts` -- Add 403 detection, retry with redirect directive, fallback to 422
+2. `src/services/llm.ts` -- Handle 422/content_filtered with friendly in-chat message
