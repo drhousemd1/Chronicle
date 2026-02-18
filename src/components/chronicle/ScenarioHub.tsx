@@ -75,7 +75,7 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDel
           </div>
         )}
         
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/20 to-transparent opacity-90 group-hover:opacity-95 transition-opacity" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/60 to-transparent opacity-90 group-hover:opacity-95 transition-opacity" />
         
         {/* Hover Actions - Edit, Delete, Play */}
         <div className="absolute inset-0 flex items-center justify-center gap-2 px-4 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 scale-90 group-hover:scale-100 flex-wrap">
@@ -99,41 +99,37 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDel
           </button>
         </div>
         
-        {/* Bottom Info - Positioned at top of lower third */}
-        <div className="absolute inset-x-0 bottom-0 h-2/5 p-6 pointer-events-none flex flex-col overflow-hidden">
-          <h3 className="text-xl font-black text-white leading-tight tracking-tight group-hover:text-blue-300 transition-colors truncate flex-shrink-0">
+        {/* Bottom Info */}
+        <div className="absolute inset-x-0 bottom-0 p-4 pb-5 pointer-events-none flex flex-col gap-1.5">
+          <h3 className="text-lg font-black text-white leading-tight tracking-tight group-hover:text-blue-300 transition-colors truncate">
             {scen.title || "Unnamed Story"}
           </h3>
-          <p className="text-xs text-white/70 line-clamp-3 leading-relaxed italic mt-1 flex-shrink min-h-0 overflow-hidden">
+          <p className="text-xs text-white/60 line-clamp-2 leading-relaxed italic">
             {scen.description || "No summary provided."}
           </p>
-          
-          {/* Publisher & Stats */}
-          <div className="flex items-center justify-between mt-auto flex-shrink-0 pt-1">
-            <span className="text-xs text-white/60 font-medium">
-              by {ownerUsername || 'Anonymous'}
-            </span>
-            {publishedData && (
-              <div className="flex items-center gap-3 text-[10px] text-white/50">
-                <span className="flex items-center gap-1">
-                  <Eye className="w-3 h-3" />
-                  {publishedData.view_count}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Heart className="w-3 h-3" />
-                  {publishedData.like_count}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Bookmark className="w-3 h-3" />
-                  {publishedData.save_count}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Play className="w-3 h-3" />
-                  {publishedData.play_count}
-                </span>
-              </div>
-            )}
-          </div>
+          {publishedData && (
+            <div className="flex items-center gap-3 text-[10px] text-white/50">
+              <span className="flex items-center gap-1">
+                <Eye className="w-3 h-3" />
+                {publishedData.view_count}
+              </span>
+              <span className="flex items-center gap-1">
+                <Heart className="w-3 h-3" />
+                {publishedData.like_count}
+              </span>
+              <span className="flex items-center gap-1">
+                <Bookmark className="w-3 h-3" />
+                {publishedData.save_count}
+              </span>
+              <span className="flex items-center gap-1">
+                <Play className="w-3 h-3" />
+                {publishedData.play_count}
+              </span>
+            </div>
+          )}
+          <span className="text-[11px] text-white/50 font-medium">
+            Written by: {ownerUsername || 'Anonymous'}
+          </span>
         </div>
       </div>
     </div>

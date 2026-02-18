@@ -81,7 +81,7 @@ export const GalleryScenarioCard: React.FC<GalleryScenarioCardProps> = ({
         )}
         
         {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent opacity-90 group-hover:opacity-95 transition-opacity" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/60 to-transparent opacity-90 group-hover:opacity-95 transition-opacity" />
 
         {/* SFW/NSFW Badge */}
         {published.contentThemes?.storyType && (
@@ -139,38 +139,34 @@ export const GalleryScenarioCard: React.FC<GalleryScenarioCardProps> = ({
         </div>
 
         {/* Bottom Info */}
-        <div className="absolute inset-x-0 bottom-0 h-1/3 p-6 pointer-events-none flex flex-col justify-start">
-          <h3 className="text-xl font-black text-white leading-tight tracking-tight group-hover:text-blue-300 transition-colors truncate flex-shrink-0">
+        <div className="absolute inset-x-0 bottom-0 p-4 pb-5 pointer-events-none flex flex-col gap-1.5">
+          <h3 className="text-lg font-black text-white leading-tight tracking-tight group-hover:text-blue-300 transition-colors truncate">
             {scenario?.title || "Untitled Story"}
           </h3>
-          <p className="text-xs text-white/70 line-clamp-3 leading-relaxed italic mt-1 overflow-hidden">
+          <p className="text-xs text-white/60 line-clamp-2 leading-relaxed italic">
             {scenario?.description || "No description provided."}
           </p>
-          
-          {/* Publisher & Stats */}
-          <div className="flex items-center justify-between mt-auto">
-            <span className="text-xs text-white/60 font-medium">
-              by {publisher?.username || 'Anonymous'}
+          <div className="flex items-center gap-3 text-[10px] text-white/50">
+            <span className="flex items-center gap-1">
+              <Eye className="w-3 h-3" />
+              {published.view_count}
             </span>
-            <div className="flex items-center gap-3 text-[10px] text-white/50">
-              <span className="flex items-center gap-1">
-                <Eye className="w-3 h-3" />
-                {published.view_count}
-              </span>
-              <span className="flex items-center gap-1">
-                <Heart className={cn("w-3 h-3", isLiked && "fill-rose-400 text-rose-400")} />
-                {published.like_count}
-              </span>
-              <span className="flex items-center gap-1">
-                <Bookmark className={cn("w-3 h-3", isSaved && "fill-amber-400 text-amber-400")} />
-                {published.save_count}
-              </span>
-              <span className="flex items-center gap-1">
-                <Play className="w-3 h-3" />
-                {published.play_count}
-              </span>
-            </div>
+            <span className="flex items-center gap-1">
+              <Heart className={cn("w-3 h-3", isLiked && "fill-rose-400 text-rose-400")} />
+              {published.like_count}
+            </span>
+            <span className="flex items-center gap-1">
+              <Bookmark className={cn("w-3 h-3", isSaved && "fill-amber-400 text-amber-400")} />
+              {published.save_count}
+            </span>
+            <span className="flex items-center gap-1">
+              <Play className="w-3 h-3" />
+              {published.play_count}
+            </span>
           </div>
+          <span className="text-[11px] text-white/50 font-medium">
+            Written by: {publisher?.username || 'Anonymous'}
+          </span>
         </div>
       </div>
     </div>
