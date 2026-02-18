@@ -22,7 +22,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { PanelLeftClose, PanelLeft, Settings, Image as ImageIcon, Sparkles } from "lucide-react";
+import { PanelLeftClose, PanelLeft, Settings, Image as ImageIcon, Sparkles, ArrowLeft } from "lucide-react";
 import { AIPromptModal } from "@/components/chronicle/AIPromptModal";
 import {
   DropdownMenu,
@@ -138,6 +138,8 @@ const IndexContent = () => {
     return localStorage.getItem('chronicle_sidebar_collapsed') === 'true';
   });
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [isInImageFolder, setIsInImageFolder] = useState(false);
+  const imageLibraryExitFolderRef = React.useRef<(() => void) | null>(null);
 
   // Hub background state
   const [hubBackgrounds, setHubBackgrounds] = useState<UserBackground[]>([]);
@@ -1449,9 +1451,20 @@ const IndexContent = () => {
                 </div>
               )}
               {tab === "image_library" && (
-                <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
-                  Image Library
-                </h1>
+                <div className="flex items-center gap-2">
+                  {isInImageFolder && (
+                    <button
+                      type="button"
+                      onClick={() => imageLibraryExitFolderRef.current?.()}
+                      className="p-1.5 hover:bg-white/10 rounded-full transition-colors text-[hsl(var(--ui-text))]"
+                    >
+                      <ArrowLeft className="w-5 h-5" />
+                    </button>
+                  )}
+                  <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
+                    Image Library
+                  </h1>
+                </div>
               )}
               {tab === "gallery" && (
                 <div className="flex items-center gap-6">
@@ -1738,7 +1751,12 @@ const IndexContent = () => {
               {selectedImageLibraryBackgroundUrl && (
                 <div className="absolute inset-0 bg-black/10 pointer-events-none" />
               )}
-              <ImageLibraryTab />
+              <ImageLibraryTab 
+                onFolderChange={(inFolder, exitFn) => {
+                  setIsInImageFolder(inFolder);
+                  imageLibraryExitFolderRef.current = exitFn || null;
+                }}
+              />
             </div>
           )}
 

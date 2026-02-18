@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Button, Card } from './UI';
 import { Icons } from '@/constants';
 import { Star, ArrowLeft, Trash2, Pencil, FolderOpen, Plus, Image as ImageIcon, Loader2, X } from 'lucide-react';
 import { FolderEditModal } from './FolderEditModal';
+import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 import { useAuth } from '@/hooks/use-auth';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -31,7 +31,11 @@ export type LibraryImage = {
   createdAt: number;
 };
 
-export const ImageLibraryTab: React.FC = () => {
+interface ImageLibraryTabProps {
+  onFolderChange?: (inFolder: boolean, exitFn?: () => void) => void;
+}
+
+export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange }) => {
   const { user } = useAuth();
   const [folders, setFolders] = useState<ImageFolder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -41,6 +45,7 @@ export const ImageLibraryTab: React.FC = () => {
   const [editingFolder, setEditingFolder] = useState<ImageFolder | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<LibraryImage | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ type: 'folder' | 'image'; id: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch folders on mount
@@ -211,8 +216,10 @@ export const ImageLibraryTab: React.FC = () => {
   };
 
   const handleDeleteFolder = async (id: string) => {
-    if (!confirm('Delete this folder and all its images?')) return;
-    
+    setDeleteTarget({ type: 'folder', id });
+  };
+
+  const executeDeleteFolder = async (id: string) => {
     try {
       // First delete all images in the folder from storage
       const { data: images } = await supabase
@@ -250,9 +257,22 @@ export const ImageLibraryTab: React.FC = () => {
     }
   };
 
+  const exitFolder = () => {
+    setSelectedFolder(null);
+    setFolderImages([]);
+    loadFolders();
+    onFolderChange?.(false);
+  };
+
   const handleOpenFolder = (folder: ImageFolder) => {
     setSelectedFolder(folder);
     loadFolderImages(folder.id);
+    onFolderChange?.(true, () => {
+      setSelectedFolder(null);
+      setFolderImages([]);
+      loadFolders();
+      onFolderChange?.(false);
+    });
   };
 
   const handleUploadImages = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -339,7 +359,10 @@ export const ImageLibraryTab: React.FC = () => {
   };
 
   const handleDeleteImage = async (image: LibraryImage) => {
-    if (!confirm('Delete this image?')) return;
+    setDeleteTarget({ type: 'image', id: image.id });
+  };
+
+  const executeDeleteImage = async (image: LibraryImage) => {
 
     try {
       // Delete from storage
@@ -539,37 +562,35 @@ export const ImageLibraryTab: React.FC = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => {
-                setSelectedFolder(null);
-                setFolderImages([]);
-                loadFolders(); // Refresh folder thumbnails
-              }}
-              className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+              onClick={exitFolder}
+              className="p-2 hover:bg-white/10 rounded-full transition-colors text-white"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div>
-              <h1 className="text-2xl font-black text-slate-900">{selectedFolder.name}</h1>
+              <h1 className="text-2xl font-black text-white">{selectedFolder.name}</h1>
               {selectedFolder.description && (
-                <p className="text-sm text-slate-500">{selectedFolder.description}</p>
+                <p className="text-sm text-white/60">{selectedFolder.description}</p>
               )}
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button
-              variant="secondary"
+            <button
+              type="button"
               onClick={() => setEditingFolder(selectedFolder)}
+              className="rounded-xl bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] h-10 px-6 text-[10px] font-bold uppercase tracking-wider inline-flex items-center gap-2 hover:opacity-90 transition-opacity"
             >
-              <Pencil className="w-4 h-4 mr-2" />
+              <Pencil className="w-4 h-4" />
               Edit Folder
-            </Button>
-            <Button
-              variant="primary"
+            </button>
+            <button
+              type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading}
+              className="rounded-xl bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] h-10 px-6 text-[10px] font-bold uppercase tracking-wider inline-flex items-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50 disabled:pointer-events-none"
             >
               {isUploading ? 'Uploading...' : '+ Upload Images'}
-            </Button>
+            </button>
             <input
               type="file"
               ref={fileInputRef}
@@ -690,6 +711,25 @@ export const ImageLibraryTab: React.FC = () => {
           }
           setEditingFolder(null);
         }}
+      />
+
+      <DeleteConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        onConfirm={() => {
+          if (deleteTarget?.type === 'folder') {
+            executeDeleteFolder(deleteTarget.id);
+          } else if (deleteTarget?.type === 'image') {
+            const img = folderImages.find((i) => i.id === deleteTarget.id);
+            if (img) executeDeleteImage(img);
+          }
+          setDeleteTarget(null);
+        }}
+        message={
+          deleteTarget?.type === 'folder'
+            ? 'This will permanently delete this folder and all its images.'
+            : 'This will permanently delete this image.'
+        }
       />
     </div>
   );
