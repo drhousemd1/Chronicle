@@ -1491,7 +1491,7 @@ const IndexContent = () => {
                       } finally { clearTimeout(safety); setIsSavingAndClosing(false); }
                     }}
                     disabled={isSavingAndClosing || isSaving}
-                    className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-white/10 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider disabled:opacity-50 disabled:pointer-events-none disabled:active:bg-transparent"
+                    className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider disabled:opacity-50 disabled:pointer-events-none"
                   >
                     {isSavingAndClosing ? 'Saving...' : 'Save and Close'}
                   </button>
@@ -1505,7 +1505,7 @@ const IndexContent = () => {
                       } finally { clearTimeout(safety); setIsSaving(false); }
                     }}
                     disabled={isSaving || isSavingAndClosing}
-                    className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-white/10 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider disabled:opacity-50 disabled:pointer-events-none disabled:active:bg-transparent"
+                    className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider disabled:opacity-50 disabled:pointer-events-none"
                   >
                     {isSaving ? 'Saving...' : 'Save'}
                   </button>
@@ -1625,7 +1625,7 @@ const IndexContent = () => {
                           rounded-xl border border-[hsl(var(--ui-border))] 
                           bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
                           text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider
-hover:bg-white/5 active:bg-white/10 disabled:opacity-50 disabled:pointer-events-none disabled:active:bg-transparent
+hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-events-none
                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20
                           transition-colors"
                       >
