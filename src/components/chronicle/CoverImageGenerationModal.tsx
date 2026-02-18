@@ -111,7 +111,7 @@ export const CoverImageGenerationModal: React.FC<CoverImageGenerationModalProps>
             <Textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Describe your cover image... (e.g., A mystical forest at twilight with ancient ruins)"
+              placeholder="Describe your cover image..."
               className="min-h-[100px] resize-none bg-slate-50 border-slate-200 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 focus-visible:ring-0 focus-visible:ring-offset-0"
             />
             <p className="text-xs text-muted-foreground">

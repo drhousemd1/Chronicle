@@ -66,7 +66,7 @@ export const SceneImageGenerationModal: React.FC<SceneImageGenerationModalProps>
             <Textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder="e.g., A cozy medieval tavern with warm candlelight, wooden beams, and patrons gathered around tables..."
+              placeholder="A cozy medieval tavern with warm candlelight, wooden beams, and patrons gathered around tables..."
               className="min-h-[100px] resize-none bg-slate-50 border-slate-200 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 focus-visible:ring-0 focus-visible:ring-offset-0"
               disabled={isGenerating}
             />

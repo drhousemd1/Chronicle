@@ -105,7 +105,7 @@ export const CharacterEditForm: React.FC<CharacterEditFormProps> = ({
               value={draft.nicknames || ''}
               onChange={(e) => updateField('nicknames', e.target.value)}
               className="h-8 text-xs"
-              placeholder="e.g., Mom, Mother (comma-separated)"
+              placeholder="Nicknames"
             />
           </div>
           
