@@ -1,40 +1,59 @@
 
+# Remove Sidebar Save/Back Buttons and Add Back Arrow to Scenario Builder Heading
 
-# Always Show Stats Row on All Story Cards
+## Changes
 
-## Problem
-Cards without published data skip the stats row entirely, causing "Written by:" to shift up and create inconsistent vertical alignment across cards. The screenshot shows cards like "test2", "James's Story", and "Blackwood Institute" missing their counter rows.
+### 1. Remove sidebar "Save Scenario" and "Back to Stories" buttons
+Delete the entire conditional block (lines 1303-1335) that renders the save and back buttons at the bottom of the sidebar when in the scenario builder. The "Save and Close" and "Save" buttons in the top-right header already handle this.
 
-## Solution
-Always render the stats row on every card -- when there is no `publishedData`, show all counters as 0. This keeps every card's layout identical: Title, Description (fixed height), Stats, Written by.
+### 2. Add back arrow to "Scenario Builder" heading
+Currently the back arrow only appears when `tab === "characters"` (to go back to the world tab). Change this so:
+- A back arrow **always** shows next to "Scenario Builder" when on the `world` or `characters` tab
+- When on `world` tab: clicking the arrow navigates back to Your Stories (`setActiveId(null); setActiveData(null); setTab("hub")`)
+- When on `characters` tab: clicking the arrow goes back to `world` tab (existing behavior, deselects character)
+
+This matches the back-arrow pattern already used on the Character Library and Image Library pages.
 
 ## Technical Details
 
-### File: `src/components/chronicle/ScenarioHub.tsx` (lines 110-128)
+### File: `src/pages/Index.tsx`
 
-Remove the `{publishedData && (` conditional wrapper so the stats row always renders. Use optional chaining with fallback to 0 for the counts:
-
+**Remove lines 1303-1335** -- the sidebar save/back button block:
 ```tsx
-// Before
-{publishedData && (
-  <div className="flex items-center gap-3 text-[10px] text-white/50 mt-1">
-    ...{publishedData.view_count}...
+{activeId && (tab === "world" || tab === "characters") && (
+  <div className={`p-4 border-t border-white/10 space-y-2 ...`}>
+    ...Save Scenario / Back to Stories buttons...
   </div>
 )}
-
-// After
-<div className="flex items-center gap-3 text-[10px] text-white/50 mt-1">
-  <span>Eye {publishedData?.view_count ?? 0}</span>
-  <span>Heart {publishedData?.like_count ?? 0}</span>
-  <span>Bookmark {publishedData?.save_count ?? 0}</span>
-  <span>Play {publishedData?.play_count ?? 0}</span>
-</div>
 ```
 
-This ensures all cards -- published, unpublished, and saved/bookmarked -- have the same 4-row layout and consistent vertical alignment.
+**Update lines 1384-1404** -- always show the back arrow in the heading:
+```tsx
+{(tab === "world" || tab === "characters") && (
+  <div className="flex items-center gap-3">
+    <button 
+      onClick={() => {
+        if (tab === "characters") {
+          setSelectedCharacterId(null);
+          setTab("world");
+        } else {
+          setActiveId(null);
+          setActiveData(null);
+          setTab("hub");
+        }
+      }} 
+      className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+    >
+      <svg ...chevron icon... />
+    </button>
+    <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
+      Scenario Builder
+    </h1>
+  </div>
+)}
+```
 
 ## Files Modified
 | File | Change |
 |---|---|
-| `src/components/chronicle/ScenarioHub.tsx` | Remove conditional on stats row, default counts to 0 |
-
+| `src/pages/Index.tsx` | Remove sidebar save/back buttons (lines 1303-1335), update heading back arrow to always show (lines 1384-1404) |
