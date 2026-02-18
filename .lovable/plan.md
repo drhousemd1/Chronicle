@@ -1,122 +1,80 @@
 
-# Restyle Chat History List to Match Dark Theme
+
+# Fix Card Bottom Info: Dedicated Rows with No Clipping
 
 ## Problem
-The chat history list is a bright white block (`bg-white`) sitting on a solid black background, creating an uncomfortably harsh contrast that doesn't match the rest of the app's dark aesthetic.
+The bottom info section on story cards clips content because it uses fractional height constraints (`h-1/3`, `h-2/5`) and tries to fit variable-length text into a fixed area. The description, stats, and author overlap or get cut off.
 
-## Proposed Design
-Replace the white container with a dark, borderless design that uses individual row separators -- consistent with the app's existing dark UI tokens and the slate blue (#4a5f7f) brand color used elsewhere.
+## Solution
+Restructure the bottom info into four clearly separated rows, each on its own line. Remove the fractional height constraint and use tighter padding with a stronger gradient to keep everything readable.
 
-### Color Scheme
-- **Container**: Remove the white background and outer border/shadow entirely. Let the rows sit directly on the black background with only a subtle divider between them.
-- **Row background**: Transparent by default, with a subtle hover of `bg-white/5` (very faint white overlay)
-- **Row dividers**: `divide-y divide-white/10` (thin, low-contrast separators)
-- **Title text**: `text-white` (currently `text-slate-900`)
-- **Meta text** (message count, date, preview): `text-zinc-400` (currently `text-slate-400/500` which reads as near-invisible on dark)
-- **Thumbnail border**: `border-[#4a5f7f]` (brand slate blue, matching card borders elsewhere)
-- **Thumbnail fallback bg**: `bg-zinc-800` (dark placeholder instead of `bg-slate-200`)
-- **Action button icons**: `text-zinc-500` default, `text-zinc-300` on hover (instead of `text-slate-400` / `text-slate-700`)
-- **Delete hover**: Keep `hover:text-red-500` but change bg to `hover:bg-red-500/10` (subtle dark red)
-- **Empty state text**: `text-zinc-500` / `text-zinc-600`
+### New layout (4 dedicated lines):
+1. **Title** -- single line, truncated
+2. **Description** -- 2-line clamp, italic
+3. **Stats icons** -- views, likes, saves, plays in a row
+4. **"Written by: Name"**
 
-### Visual Result
-Individual conversation rows float on the black background with minimal separation -- clean, modern, and consistent with the Stories hub, Character Library, and Gallery pages which all use black backgrounds with dark-themed content.
+### Changes
 
-## Technical Details
+#### 1. GalleryScenarioCard.tsx (lines 141-174)
 
-### File: `src/components/chronicle/ConversationsTab.tsx`
+Remove `h-1/3` and `justify-start`. Replace with a `gap-1.5` vertical stack using `p-4 pb-5`. Each element is its own block -- no `mt-auto` or `justify-between`.
 
-**Line 35** -- Remove the white container wrapper:
-```tsx
-// Before
-<div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)] ring-1 ring-slate-900/5">
+- Title: `text-lg` (down from `text-xl`), truncated
+- Description: `line-clamp-2` (down from 3)
+- Stats: own row, left-aligned
+- Author: own row, "Written by:" prefix
 
-// After
-<div className="rounded-2xl overflow-hidden">
+Also strengthen gradient overlay from `via-slate-900/40` to `via-slate-900/60` so text is always readable.
+
+#### 2. ScenarioHub.tsx (lines 102-137)
+
+Same restructure:
+- Remove `h-2/5` and `overflow-hidden` from container
+- Same 4-row layout with `gap-1.5`
+- Stats only render when `publishedData` exists (unchanged logic)
+- Author uses "Written by:" prefix
+- Strengthen gradient from `via-slate-900/20` to `via-slate-900/60`
+
+### Technical Detail
+
+**New bottom info block (both files):**
+
+```text
++---------------------------+
+| Title (truncated)         |
+| Description (2 lines max) |
+| Eye 12  Heart 5  Save 3  |
+| Written by: AuthorName    |
++---------------------------+
 ```
 
-**Line 36** -- Update dividers:
 ```tsx
-// Before
-<div className="divide-y divide-slate-100">
-
-// After
-<div className="divide-y divide-white/10">
+{/* Bottom Info */}
+<div className="absolute inset-x-0 bottom-0 p-4 pb-5 pointer-events-none flex flex-col gap-1.5">
+  <h3 className="text-lg font-black text-white leading-tight tracking-tight 
+    group-hover:text-blue-300 transition-colors truncate">
+    {title}
+  </h3>
+  <p className="text-xs text-white/60 line-clamp-2 leading-relaxed italic">
+    {description}
+  </p>
+  <div className="flex items-center gap-3 text-[10px] text-white/50">
+    {/* Eye, Heart, Bookmark, Play icons with counts */}
+  </div>
+  <span className="text-[11px] text-white/50 font-medium">
+    Written by: {username}
+  </span>
+</div>
 ```
 
-**Line 47** -- Row hover:
-```tsx
-// Before
-className="flex items-center gap-4 p-4 hover:bg-slate-50 ..."
-
-// After
-className="flex items-center gap-4 p-4 hover:bg-white/5 ..."
-```
-
-**Line 52** -- Thumbnail:
-```tsx
-// Before
-className="... bg-slate-200 border border-slate-200 hover:ring-2 hover:ring-blue-500 ..."
-
-// After
-className="... bg-zinc-800 border border-[#4a5f7f] hover:ring-2 hover:ring-[#4a5f7f] ..."
-```
-
-**Line 61** -- Fallback icon bg:
-```tsx
-// Before
-className="... text-slate-400 ..."
-
-// After
-className="... text-zinc-500 ..."
-```
-
-**Line 74** -- Title text:
-```tsx
-// Before
-className="font-bold text-slate-900 truncate"
-
-// After
-className="font-bold text-white truncate"
-```
-
-**Lines 77, 80, 81** -- Meta text:
-```tsx
-// All instances of text-slate-400 become text-zinc-500
-```
-
-**Line 83** -- Preview text:
-```tsx
-// Before
-className="text-sm text-slate-500 truncate ..."
-
-// After
-className="text-sm text-zinc-400 truncate ..."
-```
-
-**Line 97** -- Edit button:
-```tsx
-// Before
-className="... text-slate-400 hover:text-slate-700 hover:bg-slate-100 ..."
-
-// After
-className="... text-zinc-500 hover:text-zinc-300 hover:bg-white/10 ..."
-```
-
-**Line 112** -- Delete button:
-```tsx
-// Before
-className="... text-slate-400 hover:text-red-600 hover:bg-red-50 ..."
-
-// After
-className="... text-zinc-500 hover:text-red-500 hover:bg-red-500/10 ..."
-```
-
-**Lines 30-32** -- Empty state:
-```tsx
-// text-slate-600 -> text-zinc-500
-// text-slate-500 -> text-zinc-600
-```
+The gradient overlay line changes from:
+- GalleryScenarioCard: `via-slate-900/40` to `via-slate-900/60`
+- ScenarioHub: `via-slate-900/20` to `via-slate-900/60`
 
 ## Files Modified
-1. `src/components/chronicle/ConversationsTab.tsx` -- full dark theme restyle
+| File | Change |
+|---|---|
+| `src/components/chronicle/GalleryScenarioCard.tsx` | Bottom info restructure (lines 141-174), gradient strengthen (line 84) |
+| `src/components/chronicle/ScenarioHub.tsx` | Bottom info restructure (lines 102-137), gradient strengthen (line 87) |
+
