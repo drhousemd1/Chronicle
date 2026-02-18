@@ -718,17 +718,13 @@ const IndexContent = () => {
 
       await supabaseData.saveScenario(scenarioIdToSave, dataToSave, metadata, user.id);
       
-      // Refresh registry
-      const updatedRegistry = await withTimeout(
-        supabaseData.fetchMyScenarios(user.id), 10000, registry, 'fetchMyScenarios'
-      );
-      setRegistry(updatedRegistry);
-      
-      // Update conversation registry
-      const updatedConvRegistry = await withTimeout(
-        supabaseData.fetchConversationRegistry(), 10000, conversationRegistry, 'fetchConversationRegistry'
-      );
-      setConversationRegistry(updatedConvRegistry);
+      // Fire-and-forget registry refreshes — save already succeeded, no need to block UI
+      supabaseData.fetchMyScenarios(user.id)
+        .then(r => setRegistry(r))
+        .catch(e => console.warn('Registry refresh failed:', e));
+      supabaseData.fetchConversationRegistry()
+        .then(r => setConversationRegistry(r))
+        .catch(e => console.warn('Conversation registry refresh failed:', e));
       
       // Removed: selectedConversationEntry sync - no longer needed
       
