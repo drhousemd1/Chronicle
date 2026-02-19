@@ -1,21 +1,72 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sparkles } from 'lucide-react';
 import { ImageGenerationTool } from '@/components/admin/ImageGenerationTool';
+import { AdminToolEditModal, type ToolMeta } from '@/components/admin/AdminToolEditModal';
+import { supabase } from '@/integrations/supabase/client';
 
 type AdminTool = 'hub' | 'image_generation';
 
-const TOOLS = [
+const DEFAULT_TOOLS: ToolMeta[] = [
   {
-    id: 'image_generation' as AdminTool,
+    id: 'image_generation',
     title: 'Image Generation',
     description: 'Edit art style names, thumbnails, and injection prompts',
-    icon: Sparkles,
     thumbnailUrl: '/images/styles/cinematic-2-5d.png',
   },
 ];
 
 export const AdminPage: React.FC = () => {
   const [activeTool, setActiveTool] = useState<AdminTool>('hub');
+  const [tools, setTools] = useState<ToolMeta[]>(DEFAULT_TOOLS);
+  const [editingTool, setEditingTool] = useState<ToolMeta | null>(null);
+
+  // Load custom metadata from app_settings on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('app_settings')
+          .select('setting_value')
+          .eq('setting_key', 'admin_tool_meta')
+          .maybeSingle();
+        if (data?.setting_value && typeof data.setting_value === 'object') {
+          const overrides = data.setting_value as Record<string, Partial<ToolMeta>>;
+          setTools(DEFAULT_TOOLS.map((t) => ({ ...t, ...overrides[t.id] })));
+        }
+      } catch {
+        // keep defaults
+      }
+    })();
+  }, []);
+
+  const handleSaveTool = async (toolId: string, patch: Partial<ToolMeta>) => {
+    // Update local state
+    setTools((prev) => prev.map((t) => (t.id === toolId ? { ...t, ...patch } : t)));
+
+    // Persist to app_settings
+    try {
+      // Build full overrides map
+      const overrides: Record<string, Partial<ToolMeta>> = {};
+      tools.forEach((t) => {
+        const merged = t.id === toolId ? { ...t, ...patch } : t;
+        overrides[t.id] = { title: merged.title, description: merged.description, thumbnailUrl: merged.thumbnailUrl };
+      });
+
+      // Upsert: try update first, then insert if needed
+      const { error: updateError } = await supabase
+        .from('app_settings')
+        .update({ setting_value: overrides as any, updated_at: new Date().toISOString() })
+        .eq('setting_key', 'admin_tool_meta');
+
+      if (updateError) {
+        await supabase
+          .from('app_settings')
+          .insert({ setting_key: 'admin_tool_meta', setting_value: overrides as any });
+      }
+    } catch (e) {
+      console.error('Failed to persist tool meta:', e);
+    }
+  };
 
   if (activeTool === 'image_generation') {
     return <ImageGenerationTool onBack={() => setActiveTool('hub')} />;
@@ -24,11 +75,11 @@ export const AdminPage: React.FC = () => {
   return (
     <div className="w-full h-full p-4 lg:p-10 flex flex-col overflow-y-auto bg-black">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 lg:gap-8">
-        {TOOLS.map((tool) => (
+        {tools.map((tool) => (
           <div
             key={tool.id}
             className="group relative cursor-pointer"
-            onClick={() => setActiveTool(tool.id)}
+            onClick={() => setActiveTool(tool.id as AdminTool)}
           >
             <div className="aspect-[2/3] w-full overflow-hidden rounded-[2rem] bg-slate-200 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)] transition-all duration-300 group-hover:-translate-y-3 group-hover:shadow-2xl border border-[#4a5f7f] relative">
               {/* Thumbnail image */}
@@ -40,7 +91,7 @@ export const AdminPage: React.FC = () => {
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-zinc-900">
-                  <tool.icon className="w-12 h-12 text-zinc-600" />
+                  <Sparkles className="w-12 h-12 text-zinc-600" />
                 </div>
               )}
 
@@ -55,11 +106,19 @@ export const AdminPage: React.FC = () => {
                 </p>
               </div>
 
-              {/* Hover action overlay */}
-              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+              {/* Hover action overlay — Edit + Open */}
+              <div className="absolute inset-0 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-all bg-black/30">
                 <button
                   type="button"
-                  className="px-6 py-2.5 rounded-xl bg-white/20 text-white font-semibold text-sm hover:brightness-125 active:brightness-150 transition-all backdrop-blur-sm border border-white/20"
+                  onClick={(e) => { e.stopPropagation(); setEditingTool(tool); }}
+                  className="px-4 py-2 bg-white text-slate-900 font-bold text-xs uppercase tracking-wider rounded-xl shadow-xl hover:bg-slate-100 transition-colors"
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setActiveTool(tool.id as AdminTool); }}
+                  className="px-4 py-2 bg-blue-600 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-xl hover:bg-blue-700 transition-colors"
                 >
                   Open
                 </button>
@@ -68,6 +127,13 @@ export const AdminPage: React.FC = () => {
           </div>
         ))}
       </div>
+
+      <AdminToolEditModal
+        isOpen={!!editingTool}
+        onClose={() => setEditingTool(null)}
+        tool={editingTool}
+        onSave={handleSaveTool}
+      />
     </div>
   );
 };
