@@ -1,12 +1,8 @@
 import React, { useState } from 'react';
-import { Sparkles, ArrowLeft } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { ImageGenerationTool } from '@/components/admin/ImageGenerationTool';
 
 type AdminTool = 'hub' | 'image_generation';
-
-interface AdminPageProps {
-  onBack?: () => void;
-}
 
 const TOOLS = [
   {
@@ -18,7 +14,7 @@ const TOOLS = [
   },
 ];
 
-export const AdminPage: React.FC<AdminPageProps> = ({ onBack }) => {
+export const AdminPage: React.FC = () => {
   const [activeTool, setActiveTool] = useState<AdminTool>('hub');
 
   if (activeTool === 'image_generation') {
@@ -26,59 +22,51 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onBack }) => {
   }
 
   return (
-    <div className="h-full bg-black text-white overflow-y-auto">
-      <div className="p-8 max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
-          {onBack && (
-            <button
-              onClick={onBack}
-              className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-          )}
-          <div>
-            <h1 className="text-2xl font-bold">Admin Panel</h1>
-            <p className="text-sm text-slate-400 mt-1">
-              Application management tools
-            </p>
-          </div>
-        </div>
+    <div className="w-full h-full p-4 lg:p-10 flex flex-col overflow-y-auto bg-black">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 lg:gap-8">
+        {TOOLS.map((tool) => (
+          <div
+            key={tool.id}
+            className="group relative cursor-pointer"
+            onClick={() => setActiveTool(tool.id)}
+          >
+            <div className="aspect-[2/3] w-full overflow-hidden rounded-[2rem] bg-slate-200 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)] transition-all duration-300 group-hover:-translate-y-3 group-hover:shadow-2xl border border-[#4a5f7f] relative">
+              {/* Thumbnail image */}
+              {tool.thumbnailUrl ? (
+                <img
+                  src={tool.thumbnailUrl}
+                  alt={tool.title}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-zinc-900">
+                  <tool.icon className="w-12 h-12 text-zinc-600" />
+                </div>
+              )}
 
-        {/* Tool Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
-          {TOOLS.map((tool) => (
-            <button
-              key={tool.id}
-              type="button"
-              onClick={() => setActiveTool(tool.id)}
-              className="group rounded-2xl border border-white/10 bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] overflow-hidden transition-all hover:brightness-125 active:brightness-150 text-left cursor-pointer"
-            >
-              <div className="aspect-square bg-zinc-900 relative overflow-hidden">
-                {tool.thumbnailUrl ? (
-                  <img
-                    src={tool.thumbnailUrl}
-                    alt={tool.title}
-                    className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <tool.icon className="w-12 h-12 text-zinc-600" />
-                  </div>
-                )}
-                {/* Gradient overlay */}
-                <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/80 to-transparent" />
-              </div>
-              <div className="p-4">
-                <h3 className="font-bold text-sm text-white truncate">{tool.title}</h3>
-                <p className="text-xs text-slate-400 mt-1 line-clamp-2">
+              {/* Gradient overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/60 to-transparent pointer-events-none" />
+
+              {/* Bottom text overlay */}
+              <div className="absolute inset-x-0 bottom-0 p-5">
+                <h3 className="text-white font-bold text-base truncate">{tool.title}</h3>
+                <p className="text-slate-300 text-xs mt-1 italic line-clamp-2">
                   {tool.description}
                 </p>
               </div>
-            </button>
-          ))}
-        </div>
+
+              {/* Hover action overlay */}
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                <button
+                  type="button"
+                  className="px-6 py-2.5 rounded-xl bg-white/20 text-white font-semibold text-sm hover:brightness-125 active:brightness-150 transition-all backdrop-blur-sm border border-white/20"
+                >
+                  Open
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

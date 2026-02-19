@@ -1338,7 +1338,7 @@ const IndexContent = () => {
         </aside>
 
       <main className="flex-1 flex flex-col overflow-hidden bg-slate-50/50">
-        {(tab === "characters" || tab === "world" || tab === "library" || tab === "conversations" || tab === "hub" || tab === "image_library" || tab === "gallery") && (
+        {(tab === "characters" || tab === "world" || tab === "library" || tab === "conversations" || tab === "hub" || tab === "image_library" || tab === "gallery" || tab === "admin") && (
           <header className="flex-shrink-0 h-16 border-b border-slate-200 bg-white flex items-center justify-between px-4 lg:px-8 shadow-sm">
             <div className="flex items-center gap-4">
               {tab === "library" && (
@@ -1453,6 +1453,11 @@ const IndexContent = () => {
                     Image Library
                   </h1>
                 </div>
+              )}
+              {tab === "admin" && (
+                <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
+                  Admin Panel
+                </h1>
               )}
               {tab === "gallery" && (
                 <div className="flex items-center gap-6">
