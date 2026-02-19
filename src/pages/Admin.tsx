@@ -4,8 +4,6 @@ import { ImageGenerationTool } from '@/components/admin/ImageGenerationTool';
 import { AdminToolEditModal, type ToolMeta } from '@/components/admin/AdminToolEditModal';
 import { supabase } from '@/integrations/supabase/client';
 
-type AdminTool = 'hub' | 'image_generation';
-
 const DEFAULT_TOOLS: ToolMeta[] = [
   {
     id: 'image_generation',
@@ -15,8 +13,12 @@ const DEFAULT_TOOLS: ToolMeta[] = [
   },
 ];
 
-export const AdminPage: React.FC = () => {
-  const [activeTool, setActiveTool] = useState<AdminTool>('hub');
+interface AdminPageProps {
+  activeTool: string;
+  onSetActiveTool: (tool: string) => void;
+}
+
+export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveTool }) => {
   const [tools, setTools] = useState<ToolMeta[]>(DEFAULT_TOOLS);
   const [editingTool, setEditingTool] = useState<ToolMeta | null>(null);
 
@@ -40,19 +42,15 @@ export const AdminPage: React.FC = () => {
   }, []);
 
   const handleSaveTool = async (toolId: string, patch: Partial<ToolMeta>) => {
-    // Update local state
     setTools((prev) => prev.map((t) => (t.id === toolId ? { ...t, ...patch } : t)));
 
-    // Persist to app_settings
     try {
-      // Build full overrides map
       const overrides: Record<string, Partial<ToolMeta>> = {};
       tools.forEach((t) => {
         const merged = t.id === toolId ? { ...t, ...patch } : t;
         overrides[t.id] = { title: merged.title, description: merged.description, thumbnailUrl: merged.thumbnailUrl };
       });
 
-      // Upsert: try update first, then insert if needed
       const { error: updateError } = await supabase
         .from('app_settings')
         .update({ setting_value: overrides as any, updated_at: new Date().toISOString() })
@@ -69,7 +67,7 @@ export const AdminPage: React.FC = () => {
   };
 
   if (activeTool === 'image_generation') {
-    return <ImageGenerationTool onBack={() => setActiveTool('hub')} />;
+    return <ImageGenerationTool />;
   }
 
   return (
@@ -79,10 +77,9 @@ export const AdminPage: React.FC = () => {
           <div
             key={tool.id}
             className="group relative cursor-pointer"
-            onClick={() => setActiveTool(tool.id as AdminTool)}
+            onClick={() => onSetActiveTool(tool.id)}
           >
             <div className="aspect-[2/3] w-full overflow-hidden rounded-[2rem] bg-slate-200 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)] transition-all duration-300 group-hover:-translate-y-3 group-hover:shadow-2xl border border-[#4a5f7f] relative">
-              {/* Thumbnail image */}
               {tool.thumbnailUrl ? (
                 <img
                   src={tool.thumbnailUrl}
@@ -95,10 +92,8 @@ export const AdminPage: React.FC = () => {
                 </div>
               )}
 
-              {/* Gradient overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/60 to-transparent pointer-events-none" />
 
-              {/* Bottom text overlay */}
               <div className="absolute inset-x-0 bottom-0 p-5">
                 <h3 className="text-white font-bold text-base truncate">{tool.title}</h3>
                 <p className="text-slate-300 text-xs mt-1 italic line-clamp-2">
@@ -106,7 +101,6 @@ export const AdminPage: React.FC = () => {
                 </p>
               </div>
 
-              {/* Hover action overlay — Edit + Open */}
               <div className="absolute inset-0 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-all bg-black/30">
                 <button
                   type="button"
@@ -117,7 +111,7 @@ export const AdminPage: React.FC = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={(e) => { e.stopPropagation(); setActiveTool(tool.id as AdminTool); }}
+                  onClick={(e) => { e.stopPropagation(); onSetActiveTool(tool.id); }}
                   className="px-4 py-2 bg-blue-600 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-xl hover:bg-blue-700 transition-colors"
                 >
                   Open
