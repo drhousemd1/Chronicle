@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, Upload, Trash2, Save, ArrowLeft } from 'lucide-react';
+import { ChevronDown, Upload, Trash2, Save } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface StyleDraft {
@@ -19,11 +19,7 @@ interface StyleDraft {
   isSaving: boolean;
 }
 
-interface ImageGenerationToolProps {
-  onBack: () => void;
-}
-
-export const ImageGenerationTool: React.FC<ImageGenerationToolProps> = ({ onBack }) => {
+export const ImageGenerationTool: React.FC = () => {
   const { styles, refreshStyles } = useArtStyles();
   const [drafts, setDrafts] = useState<StyleDraft[]>([]);
 
@@ -119,25 +115,6 @@ export const ImageGenerationTool: React.FC<ImageGenerationToolProps> = ({ onBack
 
   return (
     <div className="h-full flex flex-col bg-black text-white">
-      {/* Header */}
-      <div className="flex-shrink-0 p-6 border-b border-white/10">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={onBack}
-            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <h1 className="text-xl font-bold">Image Generation Styles</h1>
-            <p className="text-sm text-slate-400 mt-1">
-              Edit art style names, thumbnails, and injection prompts
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Scrollable columns */}
       <div className="flex-1 overflow-x-auto overflow-y-auto p-6">
         <div className="flex gap-5 min-w-max">
           {drafts.map((draft) => (

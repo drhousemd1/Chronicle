@@ -142,6 +142,7 @@ const IndexContent = () => {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [isInImageFolder, setIsInImageFolder] = useState(false);
   const imageLibraryExitFolderRef = React.useRef<(() => void) | null>(null);
+  const [adminActiveTool, setAdminActiveTool] = useState<string>('hub');
 
   // Hub background state
   const [hubBackgrounds, setHubBackgrounds] = useState<UserBackground[]>([]);
@@ -1300,7 +1301,7 @@ const IndexContent = () => {
 
             {isAdminUser(user?.id) && (
               <div className="pt-4 mt-4 border-t border-white/10">
-                <SidebarItem active={tab === "admin"} label="Admin" icon={<Settings className="w-5 h-5" />} onClick={() => setTab("admin")} collapsed={sidebarCollapsed} />
+                <SidebarItem active={tab === "admin"} label="Admin" icon={<Settings className="w-5 h-5" />} onClick={() => { setAdminActiveTool('hub'); setTab("admin"); }} collapsed={sidebarCollapsed} />
               </div>
             )}
 
@@ -1455,9 +1456,20 @@ const IndexContent = () => {
                 </div>
               )}
               {tab === "admin" && (
-                <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
-                  Admin Panel
-                </h1>
+                <div className="flex items-center gap-2">
+                  {adminActiveTool !== 'hub' && (
+                    <button
+                      type="button"
+                      onClick={() => setAdminActiveTool('hub')}
+                      className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                    </button>
+                  )}
+                  <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
+                    Admin Panel
+                  </h1>
+                </div>
               )}
               {tab === "gallery" && (
                 <div className="flex items-center gap-6">
@@ -1920,7 +1932,7 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
           )}
 
           {tab === "admin" && (
-            <AdminPage />
+            <AdminPage activeTool={adminActiveTool} onSetActiveTool={setAdminActiveTool} />
           )}
         </div>
       </main>
