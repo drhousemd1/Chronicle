@@ -48,7 +48,7 @@ import { SidebarThemeModal } from './SidebarThemeModal';
 import { MemoriesModal } from './MemoriesModal';
 import { MemoryQuickSaveButton } from './MemoryQuickSaveButton';
 import { UserBackground } from '@/types';
-import { getStyleById, DEFAULT_STYLE_ID } from '@/constants/avatar-styles';
+import { useArtStyles } from '@/contexts/ArtStylesContext';
 import { LabeledToggle } from '@/components/ui/labeled-toggle';
 
 interface ChatInterfaceTabProps {
@@ -296,6 +296,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   onLoadOlderMessages,
   hasMoreMessages = false
 }) => {
+  const { defaultStyleId: DEFAULT_STYLE_ID, getStyleById } = useArtStyles();
   const [input, setInput] = useState('');
   const [expandedCharId, setExpandedCharId] = useState<string | null>(null);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});

@@ -34,24 +34,10 @@ interface StructuredPromptData {
   cameraAngle: string;
 }
 
-// ============================================================================
-// STYLE BLOCKS - Revision 17 variants
-// ============================================================================
-
-const STYLE_BLOCKS = {
-  'cinematic-2-5d': {
-    feminine: "Polished 2.5-D semi-realistic digital illustration, clean digital paintover, smooth airbrushed skin textures, airbrushed gradients and seamless clean transitions, simplified textures with no photographic microtexture, illustrative highlight shapes on metal and skin, refined feminine features with realistic facial proportions and natural eye size, consistent warm skin tone, no lineart, no cel shading, clean high-detail finish, soft background blur, warm rim light glow, high contrast soft pastel palette.",
-    masculine: "Polished 2.5-D semi-realistic digital illustration, clean digital paintover, smooth airbrushed skin textures, airbrushed gradients and seamless clean transitions, simplified textures with no photographic microtexture, illustrative highlight shapes on metal and skin, refined masculine features with realistic facial proportions and defined jawline, consistent skin tone, no lineart, no cel shading, clean high-detail finish, soft background blur, warm rim light glow, high contrast palette.",
-    androgynous: "Polished 2.5-D semi-realistic digital illustration, clean digital paintover, smooth airbrushed skin textures, airbrushed gradients and seamless clean transitions, simplified textures with no photographic microtexture, illustrative highlight shapes on metal and skin, refined features with realistic facial proportions and natural eye size, consistent skin tone, no lineart, no cel shading, clean high-detail finish, soft background blur, warm rim light glow, high contrast soft palette."
-  }
-} as const;
-
+// Style block is now passed dynamically from the frontend via artStylePrompt
 function getStyleBlock(styleId: string, gender: GenderPresentation, fallbackPrompt?: string): string {
-  const styleBlock = STYLE_BLOCKS[styleId as keyof typeof STYLE_BLOCKS];
-  if (styleBlock) {
-    return styleBlock[gender] || styleBlock.feminine;
-  }
-  return fallbackPrompt || STYLE_BLOCKS['cinematic-2-5d'].feminine;
+  // The frontend now sends the full style prompt, so fallbackPrompt is the primary source
+  return fallbackPrompt || "Polished 2.5-D semi-realistic digital illustration, clean digital paintover, smooth airbrushed skin textures, airbrushed gradients and seamless clean transitions, simplified textures with no photographic microtexture, illustrative highlight shapes on metal and skin, refined feminine features with realistic facial proportions and natural eye size, consistent warm skin tone, no lineart, no cel shading, clean high-detail finish, soft background blur, warm rim light glow, high contrast soft pastel palette.";
 }
 
 // ============================================================================

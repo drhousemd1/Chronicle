@@ -17,7 +17,7 @@ import {
 import { ChevronDown, Sparkles, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
-import { AVATAR_STYLES, DEFAULT_STYLE_ID, getStyleById } from "@/constants/avatar-styles";
+import { useArtStyles } from "@/contexts/ArtStylesContext";
 import type { PhysicalAppearance, CurrentlyWearing } from "@/types";
 
 interface AvatarGenerationModalProps {
@@ -42,9 +42,10 @@ export const AvatarGenerationModal: React.FC<AvatarGenerationModalProps> = ({
   characterData,
   modelId,
 }) => {
+  const { styles: AVATAR_STYLES, defaultStyleId, getStyleById } = useArtStyles();
   const [prompt, setPrompt] = useState("");
   const [negativePrompt, setNegativePrompt] = useState("");
-  const [selectedStyleId, setSelectedStyleId] = useState(DEFAULT_STYLE_ID);
+  const [selectedStyleId, setSelectedStyleId] = useState(defaultStyleId);
   const [showNegativePrompt, setShowNegativePrompt] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -131,7 +132,7 @@ export const AvatarGenerationModal: React.FC<AvatarGenerationModalProps> = ({
         // Reset state on success
         setPrompt("");
         setNegativePrompt("");
-        setSelectedStyleId(DEFAULT_STYLE_ID);
+        setSelectedStyleId(defaultStyleId);
       } else {
         throw new Error("No image was generated");
       }

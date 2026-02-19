@@ -11,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Sunrise, Sun, Sunset, Moon, ChevronUp, ChevronDown, Pencil, Sparkles, Share2, Trash2, Plus, X } from 'lucide-react';
 import { StoryGoalsSection } from './StoryGoalsSection';
-import { AVATAR_STYLES, DEFAULT_STYLE_ID } from '@/constants/avatar-styles';
+import { useArtStyles } from '@/contexts/ArtStylesContext';
 import { cn } from '@/lib/utils';
 import { SceneTagEditorModal } from './SceneTagEditorModal';
 import { CoverImageGenerationModal } from './CoverImageGenerationModal';
@@ -127,6 +127,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
 }) => {
   const { user } = useAuth();
   const { modelId } = useModelSettings();
+  const { styles: AVATAR_STYLES, getStyleById } = useArtStyles();
   const [isUploading, setIsUploading] = useState(false);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [isRepositioningCover, setIsRepositioningCover] = useState(false);
@@ -1202,7 +1203,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
           
           setIsGeneratingScene(true);
           try {
-            const style = AVATAR_STYLES.find(s => s.id === styleId);
+            const style = getStyleById(styleId);
             const artStylePrompt = style?.backendPrompt || '';
             
             const { data, error } = await supabase.functions.invoke('generate-cover-image', {
