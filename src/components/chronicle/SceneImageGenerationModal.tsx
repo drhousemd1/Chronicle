@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Wand2 } from 'lucide-react';
-import { AVATAR_STYLES, DEFAULT_STYLE_ID } from '@/constants/avatar-styles';
+import { useArtStyles } from '@/contexts/ArtStylesContext';
 import { cn } from '@/lib/utils';
 
 interface SceneImageGenerationModalProps {
@@ -31,8 +31,9 @@ export const SceneImageGenerationModal: React.FC<SceneImageGenerationModalProps>
   isGenerating,
   selectedArtStyle
 }) => {
+  const { styles: AVATAR_STYLES, defaultStyleId } = useArtStyles();
   const [prompt, setPrompt] = useState('');
-  const [selectedStyle, setSelectedStyle] = useState(selectedArtStyle || DEFAULT_STYLE_ID);
+  const [selectedStyle, setSelectedStyle] = useState(selectedArtStyle || defaultStyleId);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return;

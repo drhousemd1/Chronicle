@@ -8,6 +8,8 @@ import { CharactersTab } from "@/components/chronicle/CharactersTab";
 import { WorldTab } from "@/components/chronicle/WorldTab";
 import { ConversationsTab } from "@/components/chronicle/ConversationsTab";
 import { useModelSettings, ModelSettingsProvider } from "@/contexts/ModelSettingsContext";
+import { isAdminUser } from "@/services/app-settings";
+import { AdminPage } from "@/pages/Admin";
 
 import { ScenarioHub } from "@/components/chronicle/ScenarioHub";
 import { ModelSettingsTab } from "@/components/chronicle/ModelSettingsTab";
@@ -1296,6 +1298,12 @@ const IndexContent = () => {
               collapsed={sidebarCollapsed}
             />
 
+            {isAdminUser(user?.id) && (
+              <div className="pt-4 mt-4 border-t border-white/10">
+                <SidebarItem active={tab === "admin"} label="Admin" icon={<Settings className="w-5 h-5" />} onClick={() => setTab("admin")} collapsed={sidebarCollapsed} />
+              </div>
+            )}
+
             <div className="pt-4 mt-4 border-t border-white/10">
               <SidebarItem active={tab === "model_settings"} label="Model Settings" icon={<IconsList.Model />} onClick={() => setTab("model_settings")} collapsed={sidebarCollapsed} />
             </div>
@@ -1904,6 +1912,10 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
                 onSelectModel={setGlobalModelId}
               />
             </div>
+          )}
+
+          {tab === "admin" && (
+            <AdminPage />
           )}
         </div>
       </main>

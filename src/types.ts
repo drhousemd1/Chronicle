@@ -413,7 +413,7 @@ export type UserBackground = {
   createdAt: number;
 };
 
-export type TabKey = "hub" | "characters" | "world" | "conversations" | "model_settings" | "builder" | "chat_interface" | "image_library" | "gallery";
+export type TabKey = "hub" | "characters" | "world" | "conversations" | "model_settings" | "builder" | "chat_interface" | "image_library" | "gallery" | "admin";
 
 // =============================================
 // CONTENT THEMES (Scenario categorization)
