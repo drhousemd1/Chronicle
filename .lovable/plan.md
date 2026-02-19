@@ -1,130 +1,95 @@
 
 
-# Admin Panel with Image Generation Style Manager
+# Fix Admin Panel: Add White Header and Match Tile Styling to Image Library
 
-## Overview
+## Problem
 
-Build an admin-only navigation hub accessible from the left sidebar, visible only to the admin user (ID: `98d690d7-ac5a-4b04-b15e-78b462f5eec6`). The first tool on this hub is an "Image Generation" style manager that lets you edit art style names, thumbnails, and injection prompts in real-time -- no more code changes needed to tweak image generation.
+Two issues with the current Admin Panel page:
 
-## Architecture
+1. **Missing white header bar** -- The admin tab is excluded from the header rendering condition on line 1341 of `Index.tsx`, so it shows no header unlike every other page.
+2. **Tile styling mismatch** -- The current admin tool tiles use a square aspect ratio with a separate text section below the image. The Image Library uses 2:3 portrait tiles with a slate blue border (`#4a5f7f`), gradient overlay, title/description overlaid at the bottom, and hover-to-reveal action buttons (Edit/Open).
 
-The art styles are currently hardcoded in `src/constants/avatar-styles.ts`. To make them editable at runtime, we need to move them into the database and have the app load styles from there instead.
+## Changes
 
-### Database
+### File: `src/pages/Index.tsx`
 
-Create an `art_styles` table that mirrors the current `AvatarStyle` interface:
+**1. Add "admin" to the header condition (line 1341)**
 
-| Column | Type | Description |
-|---|---|---|
-| id | text (PK) | Style slug, e.g. "cinematic-2-5d" |
-| display_name | text | Human-readable name |
-| thumbnail_url | text | Path to thumbnail image |
-| backend_prompt | text | Default/feminine prompt |
-| backend_prompt_masculine | text (nullable) | Masculine variant |
-| backend_prompt_androgynous | text (nullable) | Androgynous variant |
-| sort_order | integer | Display ordering |
-| updated_at | timestamptz | Last modified |
+Add `"admin"` to the list of tabs that show the white header bar, so it renders the same `bg-white border-b border-slate-200` header as all other pages.
 
-RLS: Public read (all users need styles for generation), admin-only write.
+**2. Add header title for admin tab**
 
-Seed the table with the 5 existing styles from `avatar-styles.ts`.
+Add a `{tab === "admin" && ...}` block inside the header's left section (alongside the existing library, hub, image_library blocks) that renders:
+```
+ADMIN PANEL
+```
+Using the same `text-lg font-black text-slate-900 uppercase tracking-tight` styling as the other headers.
 
-### Data Flow Change
+**3. Remove the back arrow and internal header from AdminPage**
 
-Currently, `AVATAR_STYLES` is a hardcoded array imported everywhere. The change:
+Since the header is now provided by `Index.tsx`, the `AdminPage` component no longer needs its own header with back arrow, title, and subtitle.
 
-1. Create a React context (`ArtStylesContext`) that fetches styles from the database on app load and caches them
-2. Replace all direct imports of `AVATAR_STYLES` / `getStyleById` / `getStylePromptForGender` with context access
-3. When the admin saves changes in the style manager, the context re-fetches and the entire app updates instantly
+### File: `src/pages/Admin.tsx`
 
-**Files that import from `avatar-styles.ts` (all need updating):**
-- `src/components/chronicle/AvatarGenerationModal.tsx`
-- `src/components/chronicle/CoverImageGenerationModal.tsx`
-- `src/components/chronicle/SceneImageGenerationModal.tsx`
-- `src/components/chronicle/ChatInterfaceTab.tsx`
-- `src/components/chronicle/WorldTab.tsx`
+**Restyle the tool tiles to match Image Library folder cards:**
 
-**Edge functions with duplicated style blocks (these receive the prompt from the frontend, so they already work dynamically):**
-- `supabase/functions/generate-cover-image/index.ts` -- receives `stylePrompt` from frontend, no change needed
-- `supabase/functions/generate-side-character-avatar/index.ts` -- receives `stylePrompt` from frontend, no change needed
-- `supabase/functions/generate-scene-image/index.ts` -- has hardcoded `STYLE_BLOCKS` for scene generation; needs to receive style prompts from the frontend instead
+- Use 2:3 portrait aspect ratio (`aspect-[2/3]`)
+- Slate blue border (`border border-[#4a5f7f]`)
+- Rounded corners (`rounded-[2rem]`)
+- Gradient overlay from bottom (`bg-gradient-to-t from-slate-950 via-slate-900/20 to-transparent`)
+- Title and description overlaid at the bottom of the card (white text, same font styling as Image Library folders)
+- Hover-to-reveal action button overlay with an "Open" button (no Edit needed since admin tools don't need renaming)
+- Hover lift effect (`group-hover:-translate-y-3 group-hover:shadow-2xl`)
+- Remove the separate header section (title/subtitle/back arrow) since `Index.tsx` now provides the white header
+- Use the same responsive grid as Image Library: `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5`
+- No skeleton/new folder cards (tools are predefined)
+- Black background with padding matching the Image Library page
 
-## New Files
-
-### 1. `src/contexts/ArtStylesContext.tsx`
-- Fetches `art_styles` from database, provides them via React context
-- Exposes `styles`, `getStyleById()`, `getStylePromptForGender()`, `refreshStyles()`
-- Falls back to hardcoded defaults if DB fetch fails (safety net)
-
-### 2. `src/pages/Admin.tsx`
-- Admin navigation hub page (route: `/admin`)
-- Grid of tool tiles matching app aesthetic (dark background, slate blue cards)
-- First tile: "Image Generation" -- clicking navigates to the style manager
-
-### 3. `src/components/admin/ImageGenerationTool.tsx`
-- 5-column layout (scrollable on smaller screens) showing all art styles side-by-side
-- Each column contains:
-  - **Editable title** (input field)
-  - **Thumbnail preview** with Upload / Reposition / Delete buttons
-  - **Editable prompt textarea** (the main backend prompt)
-  - **Gender variant prompts** (masculine, androgynous) in collapsible sections
-  - **Save button** per style (with the brightness-based hover fix already applied)
-- Save writes to the `art_styles` table and triggers a context refresh
-- Thumbnail uploads go to the existing `avatars` storage bucket (or a new `admin-assets` bucket)
-
-## Modified Files
-
-### `src/types.ts`
-- Add `"admin"` to the `TabKey` union type
+## Technical Details
 
 ### `src/pages/Index.tsx`
-- Add "Admin" sidebar item (only visible when `isAdminUser(user?.id)`)
-- Add `tab === "admin"` rendering that shows the Admin page content
-- Import `isAdminUser` from `app-settings.ts`
 
-### `src/constants/avatar-styles.ts`
-- Keep as fallback defaults, but exports become secondary to the context
-- Add a `DEFAULT_STYLES` export for seeding
+Line 1341 changes from:
+```
+(tab === "characters" || tab === "world" || tab === "library" || tab === "conversations" || tab === "hub" || tab === "image_library" || tab === "gallery")
+```
+to include `|| tab === "admin"`.
 
-### `src/components/chronicle/AvatarGenerationModal.tsx`
-- Replace `import { AVATAR_STYLES }` with `useArtStyles()` context hook
+A new header title block is added after the existing gallery header block:
+```tsx
+{tab === "admin" && (
+  <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
+    Admin Panel
+  </h1>
+)}
+```
 
-### `src/components/chronicle/CoverImageGenerationModal.tsx`
-- Same context hook replacement
+### `src/pages/Admin.tsx`
 
-### `src/components/chronicle/SceneImageGenerationModal.tsx`
-- Same context hook replacement
+The entire page layout is restructured. Remove the internal header (back arrow, title, subtitle). The hub view becomes a full-height scrollable grid matching the Image Library pattern:
 
-### `src/components/chronicle/ChatInterfaceTab.tsx`
-- Replace `getStyleById` / `DEFAULT_STYLE_ID` imports with context
+```tsx
+<div className="w-full h-full p-4 lg:p-10 flex flex-col overflow-y-auto">
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 lg:gap-8">
+    {TOOLS.map((tool) => (
+      <div key={tool.id} className="group relative cursor-pointer" onClick={() => setActiveTool(tool.id)}>
+        <div className="aspect-[2/3] w-full overflow-hidden rounded-[2rem] bg-slate-200 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)] transition-all duration-300 group-hover:-translate-y-3 group-hover:shadow-2xl border border-[#4a5f7f] relative">
+          {/* Thumbnail image */}
+          {/* Gradient overlay */}
+          {/* Bottom text overlay with title + description */}
+          {/* Hover action overlay with "Open" button */}
+        </div>
+      </div>
+    ))}
+  </div>
+</div>
+```
 
-### `src/components/chronicle/WorldTab.tsx`
-- Replace `AVATAR_STYLES` / `DEFAULT_STYLE_ID` imports with context
+The `onBack` prop is removed from `AdminPage` since navigation is handled by the sidebar. The back button inside the `ImageGenerationTool` sub-view returns to the hub view internally.
 
-### `src/App.tsx`
-- Wrap with `ArtStylesProvider` context
-- Add `/admin` route
+## Files Modified
 
-### `supabase/functions/generate-scene-image/index.ts`
-- Remove hardcoded `STYLE_BLOCKS` object
-- Accept full style prompt from the frontend (like the other edge functions already do)
-
-## UI Details
-
-The admin hub and style manager will use the existing app aesthetic:
-- Black background with the standard card styling (`bg-[hsl(var(--ui-surface-2))]`, `border-[hsl(var(--ui-border))]`, `shadow-[0_10px_30px_rgba(0,0,0,0.35)]`)
-- Tool tiles on the hub use the same card pattern as Image Library folders
-- Save buttons use `hover:brightness-125 active:brightness-150 disabled:pointer-events-none` (the iPad-safe pattern)
-- Text inputs and textareas styled consistently with the rest of the app
-
-## Implementation Order
-
-1. Create `art_styles` database table with seed data and RLS policies
-2. Create `ArtStylesContext` provider
-3. Update `App.tsx` with provider and `/admin` route
-4. Update `TabKey` type
-5. Build Admin hub page and Image Generation tool component
-6. Add Admin sidebar item in `Index.tsx`
-7. Update all 5 components to use context instead of hardcoded imports
-8. Update `generate-scene-image` edge function to accept dynamic style prompts
-
+| File | Change |
+|---|---|
+| `src/pages/Index.tsx` | Add `"admin"` to header condition, add admin header title block |
+| `src/pages/Admin.tsx` | Restyle tiles to match Image Library folders, remove internal header |
