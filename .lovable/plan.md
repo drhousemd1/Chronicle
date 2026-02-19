@@ -1,94 +1,112 @@
 
 
-# Add Edit Button and Customization to Admin Tool Tiles
+# Fix Admin Panel Navigation: Move Back Arrow to White Header
 
 ## Problem
 
-The admin panel tool tiles are missing the "Edit" hover button that the Image Library folders have. Currently, hovering only shows an "Open" button. The user wants to be able to edit the tool's title, description, and thumbnail image -- matching the Image Library's dual-button hover pattern (Edit + Open).
+The Image Generation tool inside the Admin panel has its own internal back-arrow header rendered inside the black content area. Every other page in the app (Scenario Builder, Image Library folders, Character Library) uses the standard chevron-left arrow in the white header bar next to the page title. This is inconsistent.
+
+**Current (wrong):** White header says "ADMIN PANEL" with no arrow. Below it, a separate dark header bar has a left-arrow + "Image Generation Styles" title.
+
+**Correct pattern (used everywhere else):** The chevron-left arrow appears in the white header bar, to the left of the page title. Clicking it navigates back. No secondary header inside the content area.
 
 ## Changes
 
-### File: `src/pages/Admin.tsx`
+### 1. `src/pages/Admin.tsx` -- Expose active tool state
 
-**1. Add Edit + Open dual-button hover overlay (matching Image Library exactly)**
+Add a callback prop so `Index.tsx` can know whether the admin is viewing the hub or a tool, and can trigger "go back to hub":
 
-Replace the current single "Open" button hover overlay with the exact same pattern from `ImageLibraryTab.tsx` lines 478-498:
-- Two side-by-side buttons: "Edit" (white bg) and "Open" (blue bg)
-- Same classes: `bg-white text-slate-900` for Edit, `bg-blue-600 text-white` for Open
-- `e.stopPropagation()` on Edit to prevent opening the tool
-- `bg-black/30` overlay background (not `bg-black/50`)
+- Export the current `activeTool` state and a `setActiveTool` setter via a ref or callback pattern
+- Simplest approach: lift the active tool state into `Index.tsx` (add `adminActiveTool` state there) and pass it down as props to `AdminPage`
 
-**2. Add editable tool state**
+### 2. `src/pages/Index.tsx` -- Add chevron back arrow for admin tool views
 
-- Convert the hardcoded `TOOLS` array into default values
-- Store tool customizations (title, description, thumbnailUrl) in the `app_settings` table under a `"admin_tool_meta"` key
-- Load on mount, merge with defaults, and allow editing
+In the admin header block (lines 1457-1461), add the same pattern used by Image Library (lines 1441-1456):
 
-**3. Add an AdminToolEditModal component**
+- When inside a tool (e.g. `adminActiveTool !== 'hub'`), show the chevron-left arrow button that resets `adminActiveTool` to `'hub'`
+- The title stays "ADMIN PANEL" (matching how "IMAGE LIBRARY" stays the same when inside a folder)
 
-Create a modal matching `FolderEditModal` styling with:
-- Title input field
-- Description textarea
-- Thumbnail section with Upload / Remove buttons (uploads to `avatars` storage bucket under `admin/tools/`)
-- Save and Cancel buttons
+```
+Before:  ADMIN PANEL
+After:   < ADMIN PANEL    (chevron only appears when inside a tool)
+```
 
-**4. Wire up the Edit button to open the modal**
+Uses the exact same SVG chevron and `p-2 hover:bg-slate-100 rounded-full transition-colors` classes as every other page.
 
-- Track `editingTool` state (similar to `editingFolder` in ImageLibraryTab)
-- On save, persist to `app_settings` and update local state
+### 3. `src/components/admin/ImageGenerationTool.tsx` -- Remove internal header
 
-### File: `src/components/admin/AdminToolEditModal.tsx` (new)
-
-A modal component following the exact same pattern as `FolderEditModal`:
-- Dialog with title "Edit Tool"
-- Fields: Tool Name (Input), Description (Textarea), Thumbnail (image preview + Upload/Remove buttons)
-- Save writes to `app_settings` table
-- Same button styling as FolderEditModal
+Remove the entire internal header section (lines 121-138):
+- Remove the `flex-shrink-0 p-6 border-b border-white/10` header div
+- Remove the `ArrowLeft` back button and the "Image Generation Styles" title/subtitle
+- Remove the `onBack` prop entirely since navigation is now handled by the white header
+- The component becomes just the scrollable content columns
 
 ## Technical Details
 
-### Hover overlay change in `Admin.tsx`
+### State lifting in `Index.tsx`
 
-From:
+Add state:
 ```tsx
-<div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 ...">
-  <button>Open</button>
-</div>
+const [adminActiveTool, setAdminActiveTool] = useState<string>('hub');
 ```
 
-To:
+Reset to `'hub'` whenever switching away from the admin tab (in `handleNavigateAway` or the sidebar click).
+
+Pass to AdminPage:
 ```tsx
-<div className="absolute inset-0 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-all bg-black/30">
-  <button onClick={(e) => { e.stopPropagation(); setEditingTool(tool); }}
-    className="px-4 py-2 bg-white text-slate-900 font-bold text-xs uppercase tracking-wider rounded-xl shadow-xl hover:bg-slate-100 transition-colors">
-    Edit
-  </button>
-  <button onClick={(e) => { e.stopPropagation(); setActiveTool(tool.id); }}
-    className="px-4 py-2 bg-blue-600 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-xl hover:bg-blue-700 transition-colors">
-    Open
-  </button>
-</div>
+<AdminPage activeTool={adminActiveTool} onSetActiveTool={setAdminActiveTool} />
 ```
 
-### State persistence
+### Header change in `Index.tsx`
 
-Tool metadata is stored in the `app_settings` table (already exists with admin-only write RLS) under the key `"admin_tool_meta"`, with a JSON value like:
-```json
-{
-  "image_generation": {
-    "title": "Image Generation",
-    "description": "Edit art style names...",
-    "thumbnailUrl": "/images/styles/cinematic-2-5d.png"
-  }
+Replace:
+```tsx
+{tab === "admin" && (
+  <h1 className="...">Admin Panel</h1>
+)}
+```
+
+With:
+```tsx
+{tab === "admin" && (
+  <div className="flex items-center gap-2">
+    {adminActiveTool !== 'hub' && (
+      <button
+        type="button"
+        onClick={() => setAdminActiveTool('hub')}
+        className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+    )}
+    <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
+      Admin Panel
+    </h1>
+  </div>
+)}
+```
+
+### AdminPage prop changes
+
+```tsx
+interface AdminPageProps {
+  activeTool: string;
+  onSetActiveTool: (tool: string) => void;
 }
 ```
 
-On mount, fetch from `app_settings` and merge with hardcoded defaults so new tools always appear even before customization.
+Remove the internal `activeTool` state, use props instead.
+
+### ImageGenerationTool cleanup
+
+- Remove `onBack` prop from the interface
+- Remove the entire header div (lines 121-138)
+- The component starts directly with the scrollable columns content
 
 ## Files Modified
 
 | File | Change |
 |---|---|
-| `src/pages/Admin.tsx` | Add Edit+Open dual hover buttons, editable tool state with app_settings persistence, edit modal integration |
-| `src/components/admin/AdminToolEditModal.tsx` | New modal for editing tool title, description, and thumbnail |
-
+| `src/pages/Index.tsx` | Add `adminActiveTool` state, chevron back arrow in admin header, pass props to AdminPage, reset on tab change |
+| `src/pages/Admin.tsx` | Accept `activeTool`/`onSetActiveTool` props instead of internal state |
+| `src/components/admin/ImageGenerationTool.tsx` | Remove internal header and `onBack` prop |
