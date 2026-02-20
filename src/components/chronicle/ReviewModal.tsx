@@ -9,7 +9,7 @@ import { SpiceRating } from './SpiceRating';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 import { REVIEW_CATEGORIES, computeOverallRating, CreatorReviewRatings } from '@/services/review-ratings';
 import { submitReview, deleteReview, type ScenarioReview } from '@/services/gallery-data';
-import { toast } from 'sonner';
+
 
 interface ReviewModalProps {
   open: boolean;
@@ -62,12 +62,12 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
     setIsSubmitting(true);
     try {
       await submitReview(publishedScenarioId, userId, ratings as any, spiceLevel, comment, overallScore!.raw);
-      toast.success(existingReview ? 'Review updated!' : 'Review submitted!');
+      
       onReviewSubmitted();
       onOpenChange(false);
     } catch (err) {
       console.error('Failed to submit review:', err);
-      toast.error('Failed to submit review');
+      console.error('Failed to submit review:', err);
     } finally {
       setIsSubmitting(false);
     }
@@ -77,12 +77,12 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
     setIsDeleting(true);
     try {
       await deleteReview(publishedScenarioId, userId);
-      toast.success('Review deleted');
+      
       onReviewSubmitted();
       onOpenChange(false);
     } catch (err) {
       console.error('Failed to delete review:', err);
-      toast.error('Failed to delete review');
+      console.error('Failed to delete review:', err);
     } finally {
       setIsDeleting(false);
       setShowDeleteConfirm(false);
