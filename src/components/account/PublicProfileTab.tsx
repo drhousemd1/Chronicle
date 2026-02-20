@@ -206,12 +206,9 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
     if (!user) return;
     setIsUploadingAvatar(true);
     try {
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-      const filename = `${user.id}/avatar-${Date.now()}.jpg`;
-      const { error: uploadError } = await supabase.storage.from('avatars').upload(filename, blob, { upsert: true, contentType: 'image/jpeg' });
-      if (uploadError) throw uploadError;
-      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filename);
+      // Compress and upload via utility
+      const { compressAndUpload } = await import('@/utils');
+      const publicUrl = await compressAndUpload(imageUrl, 'avatars', user.id, 512, 512, 0.85);
       const { error: updateError } = await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id);
       if (updateError) throw updateError;
       setProfile(prev => ({ ...prev, avatar_url: publicUrl, avatar_position: { x: 50, y: 50 } }));

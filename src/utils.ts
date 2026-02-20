@@ -88,6 +88,65 @@ export async function resizeImage(dataUrl: string, maxWidth = 512, maxHeight = 5
   });
 }
 
+/**
+ * Fetch an image URL, compress it via canvas, upload to storage, and return the public URL.
+ * Used silently after AI image generation to keep stored images small.
+ */
+export async function compressAndUpload(
+  imageUrl: string,
+  bucket: string,
+  userId: string,
+  maxWidth = 1024,
+  maxHeight = 1024,
+  quality = 0.85
+): Promise<string> {
+  const { supabase } = await import('@/integrations/supabase/client');
+
+  // Fetch image
+  const response = await fetch(imageUrl);
+  const blob = await response.blob();
+  const bitmapUrl = URL.createObjectURL(blob);
+
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = async () => {
+      try {
+        let width = img.width;
+        let height = img.height;
+
+        // Scale down preserving aspect ratio
+        if (width > maxWidth || height > maxHeight) {
+          const ratio = Math.min(maxWidth / width, maxHeight / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { reject('Canvas context failed'); return; }
+        ctx.drawImage(img, 0, 0, width, height);
+        URL.revokeObjectURL(bitmapUrl);
+
+        canvas.toBlob(async (compressed) => {
+          if (!compressed) { reject('Compression failed'); return; }
+          const filename = `${userId}/${bucket}-${Date.now()}.jpg`;
+          const { error: uploadError } = await supabase.storage
+            .from(bucket)
+            .upload(filename, compressed, { upsert: true, contentType: 'image/jpeg' });
+          if (uploadError) { reject(uploadError); return; }
+          const { data } = supabase.storage.from(bucket).getPublicUrl(filename);
+          resolve(data.publicUrl);
+        }, 'image/jpeg', quality);
+      } catch (e) { reject(e); }
+    };
+    img.onerror = () => { URL.revokeObjectURL(bitmapUrl); reject('Image load failed'); };
+    img.src = bitmapUrl;
+  });
+}
+
 function mkTestTrait(id: string, label: string, value: string): CharacterTraitItem {
   return { id, label, value, createdAt: now(), updatedAt: now() };
 }
