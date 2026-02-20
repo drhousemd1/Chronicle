@@ -1,33 +1,31 @@
 
-# Replace Account Button in Sidebar with Simple Icon
+# Move Model Settings from Sidebar into Admin Panel
 
-## Problem
+## What's Changing
 
-The current `AccountButton` in the sidebar bottom shows the user's initials in a circle plus their username text, which overflows the collapsed sidebar and looks inconsistent with the other sidebar items (which are all icon-only when collapsed, icon+label when expanded).
-
-## Solution
-
-Replace the `AccountButton` component in the sidebar bottom with a standard `SidebarItem` that uses a `User` (or `UserCircle`) icon from lucide-react -- matching every other sidebar item's styling. Clicking it navigates to the account tab. The sign-out and profile dropdown functionality moves into the account page itself (it already has those options there).
+Model Settings will be removed from the left sidebar (where end users see it) and moved into the Admin panel as a new tile -- only accessible to the admin. End users won't see model selection since the app uses a single shared Grok key.
 
 ## Changes
 
+### File: `src/pages/Admin.tsx`
+
+1. Add a new tile to `DEFAULT_TOOLS` for Model Settings:
+   - `id: 'model_settings'`
+   - `title: 'Model Settings'`
+   - `description: 'Select Grok model and manage API key sharing'`
+   - No thumbnail (will show the default Sparkles icon placeholder)
+
+2. Add a rendering branch: when `activeTool === 'model_settings'`, render the existing `ModelSettingsTab` component (imported from `@/components/chronicle/ModelSettingsTab`)
+
+3. Pass through the `selectedModelId` and `onSelectModel` props -- these need to be added to `AdminPageProps` and threaded from `Index.tsx`
+
 ### File: `src/pages/Index.tsx`
 
-1. **Remove** the `<div className="p-4 border-t ..."><AccountButton ... /></div>` block at lines 1318-1327
-2. **Add** a new `SidebarItem` at the end of the nav section (after Model Settings, inside the existing nav), styled like the other items:
+1. **Remove** the Model Settings `SidebarItem` from the sidebar (line 1314)
+2. **Remove** the standalone `model_settings` tab rendering block (lines 1919-1926) since it now lives inside the Admin page
+3. **Pass** `selectedModelId={globalModelId}` and `onSelectModel={setGlobalModelId}` as new props to `AdminPage`
+4. Keep the `model_settings` value in the `TabKey` type if needed, or just remove it -- the admin tool routing handles it internally now
 
-```
-<div className="pt-4 mt-4 border-t border-white/10">
-  <SidebarItem
-    active={tab === "account"}
-    label="Account"
-    icon={<UserCircle className="w-5 h-5" />}
-    onClick={() => setTab("account")}
-    collapsed={sidebarCollapsed}
-  />
-</div>
-```
-
-3. **Remove** the `AccountButton` import (line 5) since it will no longer be used anywhere
-
-This gives the account entry the exact same rounded-xl button with icon styling as every other sidebar item -- icon-only when collapsed, icon + "Account" label when expanded.
+### No other files need changes
+- `ModelSettingsTab` component stays exactly as-is
+- `ModelSettingsContext` continues to work since `Index.tsx` still manages `globalModelId`
