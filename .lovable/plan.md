@@ -1,71 +1,69 @@
 
-# Fix Text Sizing and Creator Rating Alignment
+# Fix Creator Rating Position, Review Card Layout, and Modal Text Sizes
 
-## Problem
-Text throughout the review system is too small to read comfortably. Multiple elements use `text-[10px]` which requires squinting. The creator rating stars are also misaligned -- they sit below the avatar instead of inline with the "by CreatorName" text.
+## Issue 1: Creator Rating Alignment
 
-## Changes
+**Problem**: The star rating and "5.0 (1 review)" text appears centered under the avatar circle. It should be left-aligned with the "by Dr. House" text line -- positioned as a second line within the text column, not under the avatar.
 
-### 1. ReviewModal.tsx -- Increase text sizes
+**Current structure** (lines 414-424 of ScenarioDetailModal.tsx):
+The creator rating `<div>` is inside the correct parent `<div>` (the text column next to the avatar), but the parent button uses `items-center` which centers everything vertically. The rating needs to stay in the text column and align left with the "by" text.
 
-- Category descriptions: `text-[10px]` to `text-xs` (lines 94, 110)
-- Spice Level description: same change
-- Overall score label and value: `text-xs` to `text-sm`, star size from 14 to 16 (lines 125-127)
-- Star icons in rating rows: size from 18 to 22 for better tap targets
-- Spice icons: size from 18 to 22
+**Fix**: The button wrapping the avatar+text currently has `items-center`. The rating div is already inside the text column div. The real issue is that the outer container may be centering things. Change the button's alignment from `items-center` to `items-start` so the text column aligns to the top-left of the avatar, and the rating naturally falls below the "by" line, left-aligned with it.
 
-### 2. ScenarioDetailModal.tsx -- Review cards text sizes
+**File**: `src/components/chronicle/ScenarioDetailModal.tsx`, line ~399
+- Change `items-center` to `items-start` on the publisher button element
 
-- Reviewer avatar fallback text: `text-[10px]` to `text-xs` (line 580)
-- Reviewer name: `text-xs` to `text-sm` (line 585)
-- Timestamp: `text-[10px]` to `text-xs` (line 586)
-- "Story" and "Spice" labels: `text-[10px]` to `text-sm` (lines 590, 594)
-- Star/chili icons in review cards: size from 12 to 16 (lines 591, 595)
-- Comment text: `text-xs` to `text-sm` (line 599)
+---
 
-### 3. ScenarioDetailModal.tsx -- Creator rating alignment
+## Issue 2: Review Card -- Move Story/Spice Ratings to Top-Right
 
-Move the creator rating out of the nested `<div>` under the avatar and inline it with the "by CreatorName" line. The stars and "5.0 (1 review)" text should appear on the same line as "by Dr. House", or directly below it but aligned with the text (not the avatar).
+**Problem**: The "Story [stars] Spice [peppers]" row currently sits below the reviewer name and timestamp, taking up a full row. User wants it positioned in the top-right corner of the review card, on the same row as the reviewer name/timestamp.
 
-Current structure (lines 414-424):
-```text
-<div>
-  <p>by <span>Dr. House</span></p>
-  <div>  // creator rating -- sits under avatar
-    <StarRating size={12} />
-    <span text-[10px]>5.0 (1 review)</span>
-  </div>
+**Current structure** (lines 574-601):
+```
+<div card>
+  <div row> avatar | name | timestamp </div>
+  <div row> Story [stars] | Spice [peppers] </div>
+  <p> comment </p>
 </div>
 ```
 
-New structure:
-```text
-<div>
-  <p>by <span>Dr. House</span></p>
-  <div className="flex items-center gap-1.5 mt-0.5">
-    <StarRating size={16} />
-    <span className="text-sm text-white/50">5.0 (1 review)</span>
+**New structure**:
+```
+<div card>
+  <div row justify-between>
+    <div> avatar | name | timestamp </div>
+    <div> Story [stars] | Spice [peppers] </div>   <!-- moved to right -->
   </div>
+  <p> comment </p>
 </div>
 ```
 
-Key changes:
-- Star size: 12 to 16
-- Rating text: `text-[10px] text-white/40` to `text-sm text-white/50`
-- The `<div>` containing the rating stays inside the text column (right of avatar), so it aligns with the "by" line, not under the avatar image
+**File**: `src/components/chronicle/ScenarioDetailModal.tsx`, lines 574-601
+- Wrap the reviewer info and ratings in a single flex row with `justify-between`
+- Move the Story/Spice ratings div into the same row, right-aligned
+- Remove the `mb-2` from the reviewer info since the ratings row is now merged
+- Remove the `mb-1` from the ratings div since it's now inline
 
-### Summary of size changes
+---
 
-| Element | Before | After |
-|---------|--------|-------|
-| Review modal descriptions | text-[10px] | text-xs |
-| Review modal star/chili size | 18px | 22px |
-| Overall score stars | 14px | 16px |
-| Overall score text | text-xs | text-sm |
-| Review card reviewer name | text-xs | text-sm |
-| Review card timestamp | text-[10px] | text-xs |
-| Review card labels (Story/Spice) | text-[10px] | text-sm |
-| Review card star/chili size | 12px | 16px |
-| Review card comment | text-xs | text-sm |
-| Creator rating stars | 12px | 16px |
-| Creator rating text | text-[10px] | text-sm |
+## Issue 3: ReviewModal Description Text Still Too Small
+
+**Problem**: The category descriptions (e.g., "Is the scenario idea compelling, specific, and interesting?") are `text-xs` (12px). Compared to the rest of the app's body text at `text-sm` (14px), they look noticeably smaller and require squinting.
+
+**Fix**: Increase ALL description text in the ReviewModal from `text-xs` to `text-sm`:
+
+**File**: `src/components/chronicle/ReviewModal.tsx`
+- Line 94: Category descriptions -- `text-xs text-white/40` to `text-sm text-white/40`
+- Line 110: Spice Level description -- `text-xs text-white/40` to `text-sm text-white/40`
+
+---
+
+## Summary of Changes
+
+| File | Line(s) | Change |
+|------|---------|--------|
+| ScenarioDetailModal.tsx | ~399 | Publisher button: `items-center` to `items-start` |
+| ScenarioDetailModal.tsx | 574-601 | Restructure review card: merge reviewer info and Story/Spice into one `justify-between` row |
+| ReviewModal.tsx | 94 | Category description: `text-xs` to `text-sm` |
+| ReviewModal.tsx | 110 | Spice description: `text-xs` to `text-sm` |
