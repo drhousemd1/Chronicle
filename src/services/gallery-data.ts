@@ -38,6 +38,7 @@ export interface PublishedScenario {
   publisher?: {
     username: string | null;
     avatar_url: string | null;
+    display_name: string | null;
   };
   // Content themes
   contentThemes?: PublishedScenarioContentThemes;
@@ -137,7 +138,7 @@ export async function fetchPublishedScenarios(
   const scenarioIds = data.map((item: any) => item.scenario_id);
   
   const [profilesResult, themesResult] = await Promise.all([
-    supabase.from('profiles').select('id, username, avatar_url').in('id', publisherIds),
+    supabase.from('profiles').select('id, username, avatar_url, display_name').in('id', publisherIds),
     supabase.from('content_themes').select('*').in('scenario_id', scenarioIds)
   ]);
   
@@ -420,7 +421,7 @@ export async function fetchSavedScenarios(userId: string): Promise<SavedScenario
   
   const { data: profiles } = await supabase
     .from('profiles')
-    .select('id, username, avatar_url')
+    .select('id, username, avatar_url, display_name')
     .in('id', publisherIds);
   
   const profileMap = new Map((profiles || []).map(p => [p.id, p]));
