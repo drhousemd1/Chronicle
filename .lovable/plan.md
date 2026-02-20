@@ -1,86 +1,22 @@
 
 
-# Fix Profile Avatar Buttons, Reposition, and Layout Spacing
+# Fix Avatar Button Text Truncation
 
-## Problems
+## Problem
 
-1. **No Reposition button** -- The `profiles` table lacks an `avatar_position` column, and the component has no repositioning logic. The character builder shows a "Reposition" button below the action buttons when an avatar exists; the profile page needs the same.
+The avatar column is `w-64` (256px). The two side-by-side buttons ("Upload Image" and "AI Generate") each get ~120px after accounting for gaps and padding, which truncates "Upload Image" to "Upload Ima...".
 
-2. **"Upload Im..." text truncation** -- The two buttons share 192px and with the elaborate AI Generate button styling, "Upload Image" gets truncated. The avatar column needs to be wider (w-56 / 224px) so both buttons have enough room.
+## Fix
 
-3. **Labels too far from inputs** -- The "Display Name", "About Me", and "Preferred Genres" labels use `w-32` (128px) with `gap-4`, pushing inputs far to the right. Reducing label width to `w-28` and gap to `gap-2` will tighten the layout.
+Increase the avatar column and avatar container from `w-64` to `w-72` (288px). This gives each button ~136px -- enough room for both labels to display fully.
 
-## Changes
+## Technical Changes
 
-### 1. Database Migration -- Add `avatar_position` to `profiles`
+### `src/components/account/PublicProfileTab.tsx`
 
-```sql
-ALTER TABLE public.profiles ADD COLUMN avatar_position jsonb DEFAULT '{"x": 50, "y": 50}';
-```
+Three changes (all on existing lines):
 
-This stores the user's avatar crop position, matching the pattern used by `characters.avatar_position`.
+1. **Line 298** -- Avatar column wrapper: `w-64` to `w-72`
+2. **Line 302** -- Avatar container: `w-64 h-64` to `w-72 h-72`
 
-### 2. `src/components/account/PublicProfileTab.tsx` -- Full updates
-
-**a) Fetch and store `avatar_position`**
-
-- Add `avatar_position` to the `ProfileData` interface as `{ x: number; y: number }`.
-- Include it in the profiles select query.
-- Initialize it from the DB response (defaulting to `{ x: 50, y: 50 }`).
-- Save it in `handleSave`.
-
-**b) Add repositioning state and drag handlers**
-
-Port the repositioning logic from `CharactersTab.tsx`:
-- `isRepositioning` state (boolean)
-- `dragStart` state for tracking mouse/touch drag origin
-- `avatarContainerRef` (already exists as concept, add ref)
-- `handleMouseDown`, `handleMouseMove`, `handleMouseUp` handlers
-- `handleTouchStart`, `handleTouchMove`, `handleTouchEnd` handlers for iPad support
-- Clamp position values between 0-100
-
-**c) Update avatar container**
-
-- Add conditional styling: `ring-4 ring-blue-500 cursor-move` when repositioning, `border-2 border-white/10` otherwise
-- Attach mouse and touch event handlers
-- Apply `objectPosition` using the avatar position values
-- Show crosshair overlay with "Drag to Refocus" label when repositioning
-- Set `touch-action: none` when repositioning
-
-**d) Add Reposition button below action buttons**
-
-After `AvatarActionButtons`, conditionally render a "Reposition" / "Save Position" button when `profile.avatar_url` exists -- matching CharactersTab lines 678-686 exactly:
-```tsx
-{profile.avatar_url && (
-  <Button
-    variant={isRepositioning ? 'primary' : 'secondary'}
-    onClick={() => setIsRepositioning(!isRepositioning)}
-    className={`w-full text-[10px] font-bold leading-none ${isRepositioning ? 'bg-blue-600 text-white' : ''}`}
-  >
-    {isRepositioning ? "Save Position" : "Reposition"}
-  </Button>
-)}
-```
-
-**e) Widen avatar column**
-
-- Change avatar square from `w-48 h-48` to `w-56 h-56` (224px)
-- This gives each side-by-side button ~108px, enough for "Upload Image" and "AI Generate" text
-
-**f) Tighten label-to-input spacing**
-
-- Change label width from `w-32` to `w-28` on all three field rows (Display Name, About Me, Preferred Genres)
-- Change `gap-4` to `gap-2` on all three field rows
-- This pulls inputs closer to their labels
-
-**g) Import the `Button` component**
-
-Add `import { Button } from '@/components/chronicle/UI';` for the Reposition button.
-
-## What stays the same
-
-- `AvatarActionButtons` component is not modified (shared with character builder)
-- No toasts added anywhere
-- Published Works card rendering stays as-is
-- The overall section structure and save button remain unchanged
-
+That's it -- two class changes, no logic changes.
