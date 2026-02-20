@@ -583,6 +583,19 @@ export async function submitReview(
       raw_weighted_score: rawWeightedScore,
     } as any, { onConflict: 'published_scenario_id,user_id' });
 
+if (error) throw error;
+}
+
+// Delete a review
+export async function deleteReview(
+  publishedScenarioId: string,
+  userId: string
+): Promise<void> {
+  const { error } = await supabase
+    .from('scenario_reviews')
+    .delete()
+    .eq('published_scenario_id', publishedScenarioId)
+    .eq('user_id', userId);
   if (error) throw error;
 }
 
