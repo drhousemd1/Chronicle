@@ -1,23 +1,44 @@
 
 
-# Fix Scenario Detail Modal: Avatar Size and Button Placement
+# Redesign Creator Profile to Match Public Profile Tab Layout
 
-## Changes in `src/components/chronicle/ScenarioDetailModal.tsx`
+## Problem
 
-### 1. Enlarge publisher avatar to match character avatars
+The Creator Profile page (`/creator/:userId`) currently uses a compact horizontal layout with a small circular avatar next to the name. It should mirror the Public Profile tab's layout structure but as a read-only view -- same positioning, same visual hierarchy, just without edit controls.
 
-The publisher avatar next to "by Dr. House" is currently `w-5 h-5` (20px). The character circles below are `w-14 h-14` (56px). Increase the publisher avatar to `w-10 h-10` (40px) -- large enough to actually see the image, while still fitting naturally next to the "by" text line. The inner fallback text size will scale up accordingly.
+## Changes
 
-### 2. Reposition "Remove from Gallery" button
+### `src/pages/CreatorProfile.tsx` -- Full layout overhaul
 
-Currently the button floats awkwardly with `justify-end mt-6`. Per Image 4, it should be pinned to the absolute bottom-right of the right column, visually aligned with the action buttons on the left. 
+**Profile Info Section** -- Replace the current compact header with a card matching the Public Profile tab:
 
-Move the "Remove from Gallery" button out of the scrollable content flow and into a sticky/fixed footer area at the bottom of the right column. Use `mt-auto` on a wrapper that pushes it to the bottom, and keep `justify-end` for right-alignment. Remove the `border-t` from the Characters section so it doesn't create a visual break before the button.
+- Wrap in a `bg-[#1e1e22] rounded-2xl border border-white/10 p-6` card (same as PublicProfileTab line 295)
+- Left column: Square `w-72 h-72 rounded-2xl` avatar container with `object-cover` and `objectPosition` from `avatar_position` -- no upload/reposition buttons
+- Right column: Read-only fields styled identically to PublicProfileTab but without inputs:
+  - **Creator** label (replacing "Display Name") with the display name as plain text
+  - **About Me** label with the bio as plain text
+  - **Preferred Genres** label with genre pills (read-only, no "x" remove buttons, no add input)
+  - Follow/Unfollow button positioned after the creator name
 
-### Technical details
+**Data changes:**
+- Add `avatar_position` to the profiles select query
+- Parse and use `avatar_position` for `objectPosition` on the avatar image
 
-**File:** `src/components/chronicle/ScenarioDetailModal.tsx`
+**Stats and Published Works** -- Keep as-is (already match the desired layout).
 
-- **Lines ~230-243** (publisher avatar): Change `w-5 h-5` to `w-10 h-10`, increase fallback text from `text-[10px]` to `text-sm`
-- **Lines ~322-336** (Remove from Gallery button): Move the `canShowUnpublish` block so it sits inside a bottom-pinned footer row that aligns with the left column's action buttons. The right column content div already uses `flex flex-col min-h-full` with `mt-auto` on the characters section -- reposition the unpublish button into a new bottom bar after the characters section, using `mt-auto pt-6 flex justify-end`.
+### Specific layout details
 
+```
++--Card (bg-[#1e1e22] rounded-2xl)------------------+
+|  +--w-72 h-72--+   CREATOR: Dr. House [Follow]    |
+|  |             |   ABOUT ME: Bio text here...       |
+|  |   avatar    |   PREFERRED GENRES: [Fantasy] [RPG]|
+|  |             |                                    |
+|  +-------------+                                    |
++----------------------------------------------------+
+```
+
+- Labels use `text-xs font-bold text-white/40 uppercase tracking-wider w-28 shrink-0`
+- Values use `text-white text-sm`
+- Rows use `flex items-center gap-2` (same as PublicProfileTab)
+- Avatar fallback: solid `bg-zinc-800` with large initials (no dashed border since there's no upload action)
