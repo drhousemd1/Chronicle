@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Sparkles } from 'lucide-react';
 import { ImageGenerationTool } from '@/components/admin/ImageGenerationTool';
 import { AdminToolEditModal, type ToolMeta } from '@/components/admin/AdminToolEditModal';
+import { ModelSettingsTab } from '@/components/chronicle/ModelSettingsTab';
 import { supabase } from '@/integrations/supabase/client';
 
 const DEFAULT_TOOLS: ToolMeta[] = [
@@ -11,14 +12,21 @@ const DEFAULT_TOOLS: ToolMeta[] = [
     description: 'Edit art style names, thumbnails, and injection prompts',
     thumbnailUrl: '/images/styles/cinematic-2-5d.png',
   },
+  {
+    id: 'model_settings',
+    title: 'Model Settings',
+    description: 'Select Grok model and manage API key sharing',
+  },
 ];
 
 interface AdminPageProps {
   activeTool: string;
   onSetActiveTool: (tool: string) => void;
+  selectedModelId: string;
+  onSelectModel: (id: string) => void;
 }
 
-export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveTool }) => {
+export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveTool, selectedModelId, onSelectModel }) => {
   const [tools, setTools] = useState<ToolMeta[]>(DEFAULT_TOOLS);
   const [editingTool, setEditingTool] = useState<ToolMeta | null>(null);
 
@@ -68,6 +76,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
 
   if (activeTool === 'image_generation') {
     return <ImageGenerationTool />;
+  }
+
+  if (activeTool === 'model_settings') {
+    return (
+      <div className="p-10 overflow-y-auto h-full">
+        <ModelSettingsTab selectedModelId={selectedModelId} onSelectModel={onSelectModel} />
+      </div>
+    );
   }
 
   return (

@@ -17,7 +17,7 @@ export interface ToolMeta {
   id: string;
   title: string;
   description: string;
-  thumbnailUrl: string;
+  thumbnailUrl?: string;
 }
 
 interface AdminToolEditModalProps {
