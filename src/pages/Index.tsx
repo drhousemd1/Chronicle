@@ -169,7 +169,7 @@ const IndexContent = () => {
   const [savedScenarios, setSavedScenarios] = useState<SavedScenario[]>([]);
   const [publishedScenariosData, setPublishedScenariosData] = useState<Map<string, PublishedScenario>>(new Map());
   const [contentThemesMap, setContentThemesMap] = useState<Map<string, ContentThemes>>(new Map());
-  const [userProfile, setUserProfile] = useState<{ username: string | null } | null>(null);
+  const [userProfile, setUserProfile] = useState<{ username: string | null; display_name: string | null } | null>(null);
 
   // Derive publishedScenarioIds from publishedScenariosData
   const publishedScenarioIds = useMemo(() => {
@@ -1742,7 +1742,7 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
                 publishedScenarioIds={publishedScenarioIds}
                 contentThemesMap={contentThemesMap}
                 publishedScenariosData={publishedScenariosData}
-                ownerUsername={userProfile?.username || undefined}
+                ownerUsername={userProfile?.display_name || userProfile?.username || undefined}
               />
             </div>
           )}

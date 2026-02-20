@@ -79,140 +79,143 @@ export async function fetchPublishedScenarios(
   offset = 0,
   contentThemeFilters?: ContentThemeFilters
 ): Promise<PublishedScenario[]> {
-  let query = supabase
-    .from('published_scenarios')
-    .select(`
-      id,
-      scenario_id,
-      publisher_id,
-      allow_remix,
-      tags,
-      like_count,
-      save_count,
-      play_count,
-      view_count,
-      is_published,
-      created_at,
-      updated_at,
-      scenarios!inner (
+  try {
+    let query = supabase
+      .from('published_scenarios')
+      .select(`
         id,
-        title,
-        description,
-        cover_image_url,
-        cover_image_position
-      )
-    `)
-    .eq('is_published', true);
+        scenario_id,
+        publisher_id,
+        allow_remix,
+        tags,
+        like_count,
+        save_count,
+        play_count,
+        view_count,
+        is_published,
+        created_at,
+        updated_at,
+        scenarios!inner (
+          id,
+          title,
+          description,
+          cover_image_url,
+          cover_image_position
+        )
+      `)
+      .eq('is_published', true);
 
-  // Apply sorting based on sortBy parameter
-  switch (sortBy) {
-    case 'liked':
-      query = query.order('like_count', { ascending: false });
-      break;
-    case 'saved':
-      query = query.order('save_count', { ascending: false });
-      break;
-    case 'played':
-      query = query.order('play_count', { ascending: false });
-      break;
-    case 'recent':
-    case 'all':
-    default:
-      query = query.order('created_at', { ascending: false });
-      break;
-  }
+    // Apply sorting based on sortBy parameter
+    switch (sortBy) {
+      case 'liked':
+        query = query.order('like_count', { ascending: false });
+        break;
+      case 'saved':
+        query = query.order('save_count', { ascending: false });
+        break;
+      case 'played':
+        query = query.order('play_count', { ascending: false });
+        break;
+      case 'recent':
+      case 'all':
+      default:
+        query = query.order('created_at', { ascending: false });
+        break;
+    }
 
-  query = query.range(offset, offset + limit - 1);
+    query = query.range(offset, offset + limit - 1);
 
-  if (searchTags?.length) {
-    query = query.overlaps('tags', searchTags);
-  }
+    if (searchTags?.length) {
+      query = query.overlaps('tags', searchTags);
+    }
 
-  const { data, error } = await query;
-  if (error) throw error;
-  
-  if (!data || data.length === 0) return [];
-  
-  // Fetch publisher profiles and content themes separately
-  const publisherIds = [...new Set(data.map((item: any) => item.publisher_id))];
-  const scenarioIds = data.map((item: any) => item.scenario_id);
-  
-  const [profilesResult, themesResult] = await Promise.all([
-    supabase.from('profiles').select('id, username, avatar_url, display_name').in('id', publisherIds),
-    supabase.from('content_themes').select('*').in('scenario_id', scenarioIds)
-  ]);
-  
-  const profileMap = new Map((profilesResult.data || []).map(p => [p.id, p]));
-  const themesMap = new Map((themesResult.data || []).map(t => [t.scenario_id, {
-    characterTypes: t.character_types || [],
-    storyType: t.story_type as 'SFW' | 'NSFW' | null,
-    genres: t.genres || [],
-    origin: t.origin || [],
-    triggerWarnings: t.trigger_warnings || [],
-    customTags: t.custom_tags || []
-  }]));
-  
-  // Transform the data to match our interface
-  let results = data.map((item: any) => ({
-    id: item.id,
-    scenario_id: item.scenario_id,
-    publisher_id: item.publisher_id,
-    allow_remix: item.allow_remix,
-    tags: item.tags,
-    like_count: item.like_count,
-    save_count: item.save_count,
-    play_count: item.play_count,
-    view_count: item.view_count,
-    is_published: item.is_published,
-    created_at: item.created_at,
-    updated_at: item.updated_at,
-    scenario: item.scenarios,
-    publisher: profileMap.get(item.publisher_id) || null,
-    contentThemes: themesMap.get(item.scenario_id) || null
-  }));
+    const { data, error } = await query;
+    if (error) {
+      console.error('Failed to fetch published scenarios:', error);
+      return [];
+    }
+    
+    if (!data || data.length === 0) return [];
+    
+    // Fetch publisher profiles and content themes separately
+    const publisherIds = [...new Set(data.map((item: any) => item.publisher_id))];
+    const scenarioIds = data.map((item: any) => item.scenario_id);
+    
+    const [profilesResult, themesResult] = await Promise.all([
+      supabase.from('profiles').select('id, username, avatar_url, display_name').in('id', publisherIds),
+      supabase.from('content_themes').select('*').in('scenario_id', scenarioIds)
+    ]);
+    
+    const profileMap = new Map((profilesResult.data || []).map(p => [p.id, p]));
+    const themesMap = new Map((themesResult.data || []).map(t => [t.scenario_id, {
+      characterTypes: t.character_types || [],
+      storyType: t.story_type as 'SFW' | 'NSFW' | null,
+      genres: t.genres || [],
+      origin: t.origin || [],
+      triggerWarnings: t.trigger_warnings || [],
+      customTags: t.custom_tags || []
+    }]));
+    
+    // Transform the data to match our interface
+    let results = data.map((item: any) => ({
+      id: item.id,
+      scenario_id: item.scenario_id,
+      publisher_id: item.publisher_id,
+      allow_remix: item.allow_remix,
+      tags: item.tags,
+      like_count: item.like_count,
+      save_count: item.save_count,
+      play_count: item.play_count,
+      view_count: item.view_count,
+      is_published: item.is_published,
+      created_at: item.created_at,
+      updated_at: item.updated_at,
+      scenario: item.scenarios,
+      publisher: profileMap.get(item.publisher_id) || null,
+      contentThemes: themesMap.get(item.scenario_id) || null
+    }));
 
-  // Apply content theme filters if provided
-  if (contentThemeFilters) {
-    results = results.filter(scenario => {
-      const themes = scenario.contentThemes;
-      if (!themes) return false;
+    // Apply content theme filters if provided
+    if (contentThemeFilters) {
+      results = results.filter(scenario => {
+        const themes = scenario.contentThemes;
+        if (!themes) return false;
 
-      // Filter by story type
-      if (contentThemeFilters.storyTypes?.length) {
-        if (!themes.storyType || !contentThemeFilters.storyTypes.includes(themes.storyType)) {
-          return false;
+        if (contentThemeFilters.storyTypes?.length) {
+          if (!themes.storyType || !contentThemeFilters.storyTypes.includes(themes.storyType)) {
+            return false;
+          }
         }
-      }
 
-      // Filter by genres (any match)
-      if (contentThemeFilters.genres?.length) {
-        const hasMatchingGenre = themes.genres?.some(g => contentThemeFilters.genres!.includes(g));
-        if (!hasMatchingGenre) return false;
-      }
+        if (contentThemeFilters.genres?.length) {
+          const hasMatchingGenre = themes.genres?.some(g => contentThemeFilters.genres!.includes(g));
+          if (!hasMatchingGenre) return false;
+        }
 
-      // Filter by origins (any match)
-      if (contentThemeFilters.origins?.length) {
-        const hasMatchingOrigin = themes.origin?.some(o => contentThemeFilters.origins!.includes(o));
-        if (!hasMatchingOrigin) return false;
-      }
+        if (contentThemeFilters.origins?.length) {
+          const hasMatchingOrigin = themes.origin?.some(o => contentThemeFilters.origins!.includes(o));
+          if (!hasMatchingOrigin) return false;
+        }
 
-      // Filter by trigger warnings (any match)
-      if (contentThemeFilters.triggerWarnings?.length) {
-        const hasMatchingWarning = themes.triggerWarnings?.some(w => contentThemeFilters.triggerWarnings!.includes(w));
-        if (!hasMatchingWarning) return false;
-      }
+        if (contentThemeFilters.triggerWarnings?.length) {
+          const hasMatchingWarning = themes.triggerWarnings?.some(w => contentThemeFilters.triggerWarnings!.includes(w));
+          if (!hasMatchingWarning) return false;
+        }
 
-      // Filter by custom tags (any match)
-      if (contentThemeFilters.customTags?.length) {
-        const hasMatchingTag = themes.customTags?.some(t => contentThemeFilters.customTags!.includes(t));
-        if (!hasMatchingTag) return false;
-      }
+        if (contentThemeFilters.customTags?.length) {
+          const hasMatchingTag = themes.customTags?.some(t => contentThemeFilters.customTags!.includes(t));
+          if (!hasMatchingTag) return false;
+        }
 
-      return true;
-    });
+        return true;
+      });
+    }
+
+    return results;
+  } catch (err) {
+    console.error('Error fetching published scenarios:', err);
+    return [];
   }
-
-  return results;
 }
 
 // Check if current user has published a scenario

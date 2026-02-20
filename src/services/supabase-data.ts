@@ -1749,10 +1749,10 @@ export async function saveContentThemes(scenarioId: string, themes: ContentTheme
 }
 
 // Fetch user profile
-export async function fetchUserProfile(userId: string): Promise<{ username: string | null } | null> {
+export async function fetchUserProfile(userId: string): Promise<{ username: string | null; display_name: string | null } | null> {
   const { data, error } = await supabase
     .from('profiles')
-    .select('username')
+    .select('username, display_name')
     .eq('id', userId)
     .maybeSingle();
     
