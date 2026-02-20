@@ -587,12 +587,17 @@ export async function submitReview(
 }
 
 // Fetch reviews for a scenario
-export async function fetchScenarioReviews(publishedScenarioId: string): Promise<ScenarioReview[]> {
+export async function fetchScenarioReviews(
+  publishedScenarioId: string,
+  limit: number = 5,
+  offset: number = 0
+): Promise<ScenarioReview[]> {
   const { data, error } = await supabase
     .from('scenario_reviews')
     .select('*')
     .eq('published_scenario_id', publishedScenarioId)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1);
 
   if (error) throw error;
   if (!data || data.length === 0) return [];

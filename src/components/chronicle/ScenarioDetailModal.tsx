@@ -120,8 +120,12 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
   const [userReview, setUserReview] = useState<ScenarioReview | null>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [creatorRating, setCreatorRating] = useState<{ rating: number; totalReviews: number } | null>(null);
+  const [hasMoreReviews, setHasMoreReviews] = useState(false);
+  const [loadingMoreReviews, setLoadingMoreReviews] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  const REVIEWS_PAGE_SIZE = 5;
 
   // Fetch characters when modal opens
   useEffect(() => {
@@ -137,9 +141,26 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
   // Fetch reviews when modal opens
   const loadReviews = () => {
     if (!publishedScenarioId) return;
-    fetchScenarioReviews(publishedScenarioId).then(setReviews).catch(console.error);
+    fetchScenarioReviews(publishedScenarioId, REVIEWS_PAGE_SIZE, 0).then(batch => {
+      setReviews(batch);
+      setHasMoreReviews(batch.length === REVIEWS_PAGE_SIZE);
+    }).catch(console.error);
     if (user?.id) {
       fetchUserReview(publishedScenarioId, user.id).then(setUserReview).catch(console.error);
+    }
+  };
+
+  const loadMoreReviews = async () => {
+    if (!publishedScenarioId || loadingMoreReviews) return;
+    setLoadingMoreReviews(true);
+    try {
+      const batch = await fetchScenarioReviews(publishedScenarioId, REVIEWS_PAGE_SIZE, reviews.length);
+      setReviews(prev => [...prev, ...batch]);
+      setHasMoreReviews(batch.length === REVIEWS_PAGE_SIZE);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingMoreReviews(false);
     }
   };
 
@@ -570,7 +591,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                     <div className="h-px bg-gradient-to-r from-transparent via-[#4a5f7f] to-transparent mb-6" />
 
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-xs font-bold text-white/40 uppercase tracking-widest">Reviews</h3>
+                      <h3 className="text-xs font-bold text-white/40 uppercase tracking-widest">Reviews ({reviewCount})</h3>
                       {user && (
                         <button
                           onClick={() => setIsReviewModalOpen(true)}
@@ -617,6 +638,22 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                             )}
                           </div>
                         ))}
+                      </div>
+                    )}
+
+                    {hasMoreReviews && (
+                      <div className="flex justify-center mt-4">
+                        <button
+                          onClick={loadMoreReviews}
+                          disabled={loadingMoreReviews}
+                          className="px-4 py-2 text-xs font-medium text-white/50 hover:text-white/80 transition-colors disabled:opacity-50"
+                        >
+                          {loadingMoreReviews ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            'See more reviews'
+                          )}
+                        </button>
                       </div>
                     )}
                   </div>
