@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Search, Loader2, Globe, LayoutGrid, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { GalleryScenarioCard } from './GalleryScenarioCard';
@@ -77,6 +78,35 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
   const loadScenarios = useCallback(async () => {
     setIsLoading(true);
     try {
+      // Handle "following" tab separately
+      if (sortBy === 'following') {
+        if (!user) {
+          setScenarios([]);
+          setIsLoading(false);
+          return;
+        }
+        // Get followed creator IDs
+        const { data: follows } = await supabase.from('creator_follows').select('creator_id').eq('follower_id', user.id);
+        const creatorIds = (follows || []).map(f => f.creator_id);
+        if (creatorIds.length === 0) {
+          setScenarios([]);
+          setIsLoading(false);
+          return;
+        }
+        // Fetch published scenarios from followed creators
+        const data = await fetchPublishedScenarios(undefined, 'all', 50, 0);
+        const filtered = data.filter(s => creatorIds.includes(s.publisher_id));
+        setScenarios(filtered);
+        if (filtered.length > 0) {
+          const ids = filtered.map(s => s.id);
+          const interactions = await getUserInteractions(ids, user.id);
+          setLikes(interactions.likes);
+          setSaves(interactions.saves);
+        }
+        setIsLoading(false);
+        return;
+      }
+
       const contentFilters = getContentThemeFilters();
       const data = await fetchPublishedScenarios(
         searchTags.length > 0 ? searchTags : undefined,
@@ -382,9 +412,13 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
                 <div className="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center mb-4">
                   <Globe className="w-10 h-10 text-white/30" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">No stories found</h3>
+                <h3 className="text-xl font-bold text-white mb-2">
+                  {sortBy === 'following' ? 'No stories from followed creators' : 'No stories found'}
+                </h3>
                 <p className="text-white/60 max-w-md">
-                  {searchTags.length > 0 || activeFilterCount > 0
+                  {sortBy === 'following'
+                    ? "Follow creators to see their stories here."
+                    : searchTags.length > 0 || activeFilterCount > 0
                     ? "Try different filters or clear your search to see all stories."
                     : "Be the first to publish a story to the gallery!"}
                 </p>
@@ -430,6 +464,7 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
               playCount={liveData.play_count}
               viewCount={liveData.view_count}
               publisher={liveData.publisher}
+              publisherId={liveData.publisher_id}
               publishedAt={liveData.created_at}
               isLiked={likes.has(liveData.id)}
               isSaved={saves.has(liveData.id)}

@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { Heart, Bookmark, Play, Pencil, Edit, Loader2, Eye, X, Globe } from 'lucide-react';
+import { Heart, Bookmark, Play, Pencil, Edit, Loader2, Eye, X, Globe, UserPlus, UserMinus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogOverlay, DialogPortal } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -39,7 +40,9 @@ export interface ScenarioDetailModalProps {
   publisher?: {
     username: string | null;
     avatar_url: string | null;
+    display_name?: string | null;
   };
+  publisherId?: string;
   publishedAt?: string;
   
   // Interaction state
@@ -83,6 +86,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
   playCount = 0,
   viewCount = 0,
   publisher,
+  publisherId,
   publishedAt,
   isLiked = false,
   isSaved = false,
@@ -101,6 +105,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
   const [isLiking, setIsLiking] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUnpublishing, setIsUnpublishing] = useState(false);
+  const navigate = useNavigate();
 
   // Fetch characters when modal opens
   useEffect(() => {
@@ -334,22 +339,32 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                     {/* Publisher "by" line */}
                     {publisher && !isOwned && (
                       <div className="flex items-center gap-2 mt-1">
-                        <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 overflow-hidden flex-shrink-0">
-                          {publisher.avatar_url ? (
-                            <img 
-                              src={publisher.avatar_url} 
-                              alt={publisher.username || 'Creator'} 
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-white/80 text-[10px] font-bold">
-                              {publisher.username?.charAt(0)?.toUpperCase() || '?'}
-                            </div>
-                          )}
-                        </div>
-                        <p className="text-sm text-[#94a3b8]">
-                          by <span className="text-white font-medium">{publisher.username || 'Anonymous'}</span>
-                        </p>
+                        <button
+                          onClick={() => {
+                            if (publisherId) {
+                              onOpenChange(false);
+                              navigate(`/creator/${publisherId}`);
+                            }
+                          }}
+                          className="flex items-center gap-2 group"
+                        >
+                          <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 overflow-hidden flex-shrink-0 group-hover:ring-2 group-hover:ring-[#4a5f7f] transition-all">
+                            {publisher.avatar_url ? (
+                              <img 
+                                src={publisher.avatar_url} 
+                                alt={publisher.display_name || publisher.username || 'Creator'} 
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-white/80 text-[10px] font-bold">
+                                {(publisher.display_name || publisher.username)?.charAt(0)?.toUpperCase() || '?'}
+                              </div>
+                            )}
+                          </div>
+                          <p className="text-sm text-[#94a3b8] group-hover:text-white transition-colors">
+                            by <span className="text-white font-medium">{publisher.display_name || publisher.username || 'Anonymous'}</span>
+                          </p>
+                        </button>
                       </div>
                     )}
 

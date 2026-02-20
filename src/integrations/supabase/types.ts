@@ -421,6 +421,27 @@ export type Database = {
           },
         ]
       }
+      creator_follows: {
+        Row: {
+          created_at: string | null
+          creator_id: string
+          follower_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          creator_id: string
+          follower_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string | null
+          creator_id?: string
+          follower_id?: string
+          id?: string
+        }
+        Relationships: []
+      }
       image_folders: {
         Row: {
           created_at: string | null
@@ -576,23 +597,38 @@ export type Database = {
       }
       profiles: {
         Row: {
+          about_me: string | null
           avatar_url: string | null
           created_at: string | null
+          display_name: string | null
+          hide_profile_details: boolean | null
+          hide_published_works: boolean | null
           id: string
+          preferred_genres: string[] | null
           updated_at: string | null
           username: string | null
         }
         Insert: {
+          about_me?: string | null
           avatar_url?: string | null
           created_at?: string | null
+          display_name?: string | null
+          hide_profile_details?: boolean | null
+          hide_published_works?: boolean | null
           id: string
+          preferred_genres?: string[] | null
           updated_at?: string | null
           username?: string | null
         }
         Update: {
+          about_me?: string | null
           avatar_url?: string | null
           created_at?: string | null
+          display_name?: string | null
+          hide_profile_details?: boolean | null
+          hide_published_works?: boolean | null
           id?: string
+          preferred_genres?: string[] | null
           updated_at?: string | null
           username?: string | null
         }
@@ -1019,6 +1055,17 @@ export type Database = {
       decrement_save_count: {
         Args: { published_id: string }
         Returns: undefined
+      }
+      get_creator_stats: {
+        Args: { creator_user_id: string }
+        Returns: {
+          follower_count: number
+          published_count: number
+          total_likes: number
+          total_plays: number
+          total_saves: number
+          total_views: number
+        }[]
       }
       has_role: {
         Args: {

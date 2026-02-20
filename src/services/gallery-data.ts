@@ -69,7 +69,7 @@ export interface ContentThemeFilters {
 }
 
 // Fetch all published scenarios with optional tag filter
-export type SortOption = 'all' | 'recent' | 'liked' | 'saved' | 'played';
+export type SortOption = 'all' | 'recent' | 'liked' | 'saved' | 'played' | 'following';
 
 export async function fetchPublishedScenarios(
   searchTags?: string[],

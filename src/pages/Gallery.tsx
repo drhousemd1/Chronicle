@@ -6,7 +6,7 @@ import { GalleryHub } from '@/components/chronicle/GalleryHub';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
 
-type SortOption = 'all' | 'recent' | 'liked' | 'saved' | 'played';
+type SortOption = 'all' | 'recent' | 'liked' | 'saved' | 'played' | 'following';
 
 const Gallery: React.FC = () => {
   const { user, loading: authLoading, isAuthenticated } = useAuth();
