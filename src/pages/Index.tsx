@@ -1311,7 +1311,6 @@ const IndexContent = () => {
             )}
 
             <div className="pt-4 mt-4 border-t border-white/10">
-              <SidebarItem active={tab === "model_settings"} label="Model Settings" icon={<IconsList.Model />} onClick={() => setTab("model_settings")} collapsed={sidebarCollapsed} />
               <SidebarItem active={tab === "account"} label="Account" icon={<UserCircle className="w-5 h-5" />} onClick={() => setTab("account")} collapsed={sidebarCollapsed} />
             </div>
           </nav>
@@ -1916,17 +1915,8 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
           )}
 
 
-          {tab === "model_settings" && (
-            <div className="p-10 overflow-y-auto h-full">
-              <ModelSettingsTab
-                selectedModelId={globalModelId}
-                onSelectModel={setGlobalModelId}
-              />
-            </div>
-          )}
-
           {tab === "admin" && (
-            <AdminPage activeTool={adminActiveTool} onSetActiveTool={setAdminActiveTool} />
+            <AdminPage activeTool={adminActiveTool} onSetActiveTool={setAdminActiveTool} selectedModelId={globalModelId} onSelectModel={setGlobalModelId} />
           )}
 
           {tab === "account" && (
