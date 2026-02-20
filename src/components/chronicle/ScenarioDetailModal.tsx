@@ -417,8 +417,8 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                             </p>
                             {creatorRating && (
                               <div className="flex items-center gap-1.5 mt-0.5">
-                                <StarRating rating={creatorRating.rating} size={12} />
-                                <span className="text-[10px] text-white/40">{creatorRating.rating.toFixed(1)} ({creatorRating.totalReviews} review{creatorRating.totalReviews !== 1 ? 's' : ''})</span>
+                                <StarRating rating={creatorRating.rating} size={16} />
+                                <span className="text-sm text-white/50">{creatorRating.rating.toFixed(1)} ({creatorRating.totalReviews} review{creatorRating.totalReviews !== 1 ? 's' : ''})</span>
                               </div>
                             )}
                           </div>
@@ -577,26 +577,26 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                                 {review.reviewer?.avatar_url ? (
                                   <img src={review.reviewer.avatar_url} alt="" className="w-full h-full object-cover" />
                                 ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-white/80 text-[10px] font-bold">
+                                  <div className="w-full h-full flex items-center justify-center text-white/80 text-xs font-bold">
                                     {(review.reviewer?.display_name || review.reviewer?.username)?.charAt(0)?.toUpperCase() || '?'}
                                   </div>
                                 )}
                               </div>
-                              <span className="text-xs font-medium text-white">{review.reviewer?.display_name || review.reviewer?.username || 'Anonymous'}</span>
-                              <span className="text-[10px] text-white/30">{formatDistanceToNow(new Date(review.created_at), { addSuffix: true })}</span>
+                              <span className="text-sm font-medium text-white">{review.reviewer?.display_name || review.reviewer?.username || 'Anonymous'}</span>
+                              <span className="text-xs text-white/30">{formatDistanceToNow(new Date(review.created_at), { addSuffix: true })}</span>
                             </div>
                             <div className="flex items-center gap-4 mb-1">
                               <div className="flex items-center gap-1.5">
-                                <span className="text-[10px] text-white/40">Story</span>
-                                <StarRating rating={Math.round(review.raw_weighted_score * 2) / 2} size={12} />
+                                <span className="text-sm text-white/40">Story</span>
+                                <StarRating rating={Math.round(review.raw_weighted_score * 2) / 2} size={16} />
                               </div>
                               <div className="flex items-center gap-1.5">
-                                <span className="text-[10px] text-white/40">Spice</span>
-                                <SpiceRating rating={review.spice_level} size={12} />
+                                <span className="text-sm text-white/40">Spice</span>
+                                <SpiceRating rating={review.spice_level} size={16} />
                               </div>
                             </div>
                             {review.comment && (
-                              <p className="text-xs text-white/70 mt-1 leading-relaxed">{review.comment}</p>
+                              <p className="text-sm text-white/70 mt-1 leading-relaxed">{review.comment}</p>
                             )}
                           </div>
                         ))}

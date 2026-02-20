@@ -91,13 +91,13 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
                   <div key={cat.key} className="flex items-center justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-white truncate">{cat.label}</p>
-                      <p className="text-[10px] text-white/40 leading-tight">{cat.description}</p>
+                      <p className="text-xs text-white/40 leading-tight">{cat.description}</p>
                     </div>
                     <StarRating
                       rating={ratings[cat.key] || 0}
                       interactive
                       onChange={(val) => setRatings(prev => ({ ...prev, [cat.key]: val }))}
-                      size={18}
+                      size={22}
                     />
                   </div>
                 ))}
@@ -107,13 +107,13 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-white">Spice Level</p>
-                      <p className="text-[10px] text-white/40">How spicy/erotic is this story?</p>
+                      <p className="text-xs text-white/40">How spicy/erotic is this story?</p>
                     </div>
                     <SpiceRating
                       rating={spiceLevel}
                       interactive
                       onChange={setSpiceLevel}
-                      size={18}
+                      size={22}
                     />
                   </div>
                 </div>
@@ -122,9 +122,9 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
                 {overallScore && (
                   <div className="pt-2 border-t border-white/10">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-white/40 font-bold uppercase tracking-wider">Overall</span>
-                      <StarRating rating={overallScore.display} size={14} />
-                      <span className="text-xs text-white/60">{overallScore.display.toFixed(1)}</span>
+                      <span className="text-sm text-white/40 font-bold uppercase tracking-wider">Overall</span>
+                      <StarRating rating={overallScore.display} size={16} />
+                      <span className="text-sm text-white/60">{overallScore.display.toFixed(1)}</span>
                     </div>
                   </div>
                 )}
