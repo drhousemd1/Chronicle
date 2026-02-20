@@ -205,7 +205,7 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
   const initials = (profile.display_name || 'U').slice(0, 2).toUpperCase();
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="space-y-6">
       {/* Hidden file input for avatar upload */}
       <input
         ref={fileInputRef}
