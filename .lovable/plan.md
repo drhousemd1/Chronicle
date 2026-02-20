@@ -1,23 +1,71 @@
 
+# Add Review Count to Header and Paginate Reviews
 
-# Fix Creator Section Text Alignment
+## Overview
 
-## Problem
-The "Created by:" and "Creator rating:" lines are horizontally centered relative to each other instead of being left-aligned. They should both start at the same left edge, flush with the right side of the avatar.
+Add a review count next to the "Reviews" heading, and paginate reviews to show only 5 at a time with a "See more reviews" button. This avoids loading hundreds of reviews at once.
 
-## Fix
+## Changes
 
-**File**: `src/components/chronicle/ScenarioDetailModal.tsx`, line 429
+### 1. Update `fetchScenarioReviews` to support pagination
 
-The text column `<div>` wrapping "Created by" and "Creator rating" has no text/flex alignment, causing the two lines to center. Add `text-left` to force both lines to left-align from the same starting edge.
+**File**: `src/services/gallery-data.ts` (lines 590-612)
+
+Add `limit` and `offset` parameters:
+
+```typescript
+export async function fetchScenarioReviews(
+  publishedScenarioId: string,
+  limit: number = 5,
+  offset: number = 0
+): Promise<ScenarioReview[]> {
+```
+
+Add `.range(offset, offset + limit - 1)` to the query before the `.order()` call. This way only 5 reviews are fetched initially, and 5 more each time the user clicks "See more".
+
+### 2. Add pagination state and logic in `ScenarioDetailModal.tsx`
+
+**File**: `src/components/chronicle/ScenarioDetailModal.tsx`
+
+- Add state: `reviewsPage` (number, starts at 0), `hasMoreReviews` (boolean), `loadingMoreReviews` (boolean)
+- Update `loadReviews` to call `fetchScenarioReviews(id, 5, 0)` on initial load and append results on subsequent pages
+- Determine `hasMoreReviews` by checking if the returned batch has exactly 5 items (if fewer, no more to load)
+- Add a `loadMoreReviews` function that increments the offset and appends new reviews to existing ones
+- Reset pagination state when the modal opens or the scenario changes
+
+### 3. Update "Reviews" heading to show count
+
+**File**: `src/components/chronicle/ScenarioDetailModal.tsx` (line 573)
 
 Change:
 ```
-<div>
+Reviews
 ```
 To:
 ```
-<div className="text-left">
+Reviews ({reviewCount})
 ```
 
-This single change ensures both the "Created by:" line and the "Creator rating:" line start at the same left position, directly after the avatar image.
+Using the `reviewCount` prop already passed to the modal (from `published_scenarios.review_count`).
+
+### 4. Add "See more reviews" button
+
+**File**: `src/components/chronicle/ScenarioDetailModal.tsx` (after line 620, the reviews map)
+
+After the reviews list, conditionally render a button:
+- Only shown when `hasMoreReviews` is true (i.e., there are more than 5 total and we haven't loaded them all)
+- Shows a loading spinner while fetching
+- Styled as a subtle centered text button matching the existing UI
+
+```
+<button onClick={loadMoreReviews}>
+  See more reviews
+</button>
+```
+
+## Technical Summary
+
+| File | Change |
+|------|--------|
+| `gallery-data.ts` | Add `limit`/`offset` params to `fetchScenarioReviews` |
+| `ScenarioDetailModal.tsx` | Add pagination state, show count in heading, add "See more reviews" button |
