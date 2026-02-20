@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Heart, Bookmark, Play, Eye, FileText, Users, ArrowLeft, UserPlus, UserMinus, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface CreatorProfileData {
   display_name: string | null;
   avatar_url: string | null;
+  avatar_position: { x: number; y: number } | null;
   about_me: string | null;
   preferred_genres: string[];
   hide_published_works: boolean;
@@ -56,7 +56,7 @@ export default function CreatorProfile() {
 
     const loadData = async () => {
       const [profileRes, statsRes, worksRes] = await Promise.all([
-        supabase.from('profiles').select('display_name, avatar_url, about_me, preferred_genres, hide_published_works, hide_profile_details').eq('id', userId).maybeSingle(),
+        supabase.from('profiles').select('display_name, avatar_url, avatar_position, about_me, preferred_genres, hide_published_works, hide_profile_details').eq('id', userId).maybeSingle(),
         supabase.rpc('get_creator_stats', { creator_user_id: userId }),
         supabase.from('published_scenarios').select(`
           id, scenario_id, like_count, play_count,
@@ -65,7 +65,11 @@ export default function CreatorProfile() {
       ]);
 
       if (profileRes.data) {
-        setProfile(profileRes.data as CreatorProfileData);
+        const d = profileRes.data as any;
+        setProfile({
+          ...d,
+          avatar_position: d.avatar_position ? (typeof d.avatar_position === 'string' ? JSON.parse(d.avatar_position) : d.avatar_position) : { x: 50, y: 50 },
+        });
       }
       if (statsRes.data && Array.isArray(statsRes.data) && statsRes.data.length > 0) {
         const s = statsRes.data[0];
@@ -85,7 +89,6 @@ export default function CreatorProfile() {
         })));
       }
 
-      // Check follow status
       if (user) {
         const { data: followData } = await supabase.from('creator_follows')
           .select('id').eq('follower_id', user.id).eq('creator_id', userId).maybeSingle();
@@ -149,6 +152,7 @@ export default function CreatorProfile() {
   const displayName = profile.display_name || 'Anonymous';
   const initials = displayName.slice(0, 2).toUpperCase();
   const isOwnProfile = user?.id === userId;
+  const avatarPos = profile.avatar_position || { x: 50, y: 50 };
 
   return (
     <div className="min-h-screen bg-[#121214] text-white">
@@ -161,40 +165,69 @@ export default function CreatorProfile() {
       </header>
 
       <div className="max-w-4xl mx-auto px-6 py-10 space-y-8">
-        {/* Profile Header */}
-        <div className="flex items-start gap-6">
-          <Avatar className="h-24 w-24 ring-2 ring-white/10 flex-shrink-0">
-            {profile.avatar_url ? <AvatarImage src={profile.avatar_url} alt={displayName} /> : null}
-            <AvatarFallback className="bg-[#4a5f7f] text-white text-2xl font-bold">{initials}</AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-4 flex-wrap">
-              <h2 className="text-3xl font-black text-white">{displayName}</h2>
-              {!isOwnProfile && user && (
-                <button
-                  onClick={handleToggleFollow}
-                  disabled={isToggling}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
-                    isFollowing
-                      ? 'bg-white/10 text-white hover:bg-red-500/20 hover:text-red-400'
-                      : 'bg-[#4a5f7f] text-white hover:bg-[#5a6f8f]'
-                  }`}
-                >
-                  {isFollowing ? <UserMinus className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
-                  {isFollowing ? 'Unfollow' : 'Follow'}
-                </button>
+        {/* Profile Card */}
+        <div className="bg-[#1e1e22] rounded-2xl border border-white/10 p-6">
+          <div className="flex flex-col md:flex-row gap-8">
+            {/* Avatar */}
+            <div className="w-72 h-72 rounded-2xl overflow-hidden bg-zinc-800 shrink-0">
+              {profile.avatar_url ? (
+                <img
+                  src={profile.avatar_url}
+                  alt={displayName}
+                  className="w-full h-full object-cover"
+                  style={{ objectPosition: `${avatarPos.x}% ${avatarPos.y}%` }}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-white/40 text-5xl font-black">
+                  {initials}
+                </div>
               )}
             </div>
-            {profile.about_me && (
-              <p className="text-white/60 mt-3 max-w-xl leading-relaxed">{profile.about_me}</p>
-            )}
-            {profile.preferred_genres?.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-3">
-                {profile.preferred_genres.map(g => (
-                  <span key={g} className="px-3 py-1 bg-[#4a5f7f]/20 text-[#7ba3d4] rounded-lg text-xs font-bold">{g}</span>
-                ))}
+
+            {/* Info */}
+            <div className="flex-grow space-y-4">
+              {/* Creator name + follow */}
+              <div className="flex items-start gap-2">
+                <span className="text-xs font-bold text-white/40 uppercase tracking-wider w-28 shrink-0 pt-1">Creator</span>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className="text-white text-sm font-semibold">{displayName}</span>
+                  {!isOwnProfile && user && (
+                    <button
+                      onClick={handleToggleFollow}
+                      disabled={isToggling}
+                      className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
+                        isFollowing
+                          ? 'bg-white/10 text-white hover:bg-red-500/20 hover:text-red-400'
+                          : 'bg-[#4a5f7f] text-white hover:bg-[#5a6f8f]'
+                      }`}
+                    >
+                      {isFollowing ? <UserMinus className="w-3 h-3" /> : <UserPlus className="w-3 h-3" />}
+                      {isFollowing ? 'Unfollow' : 'Follow'}
+                    </button>
+                  )}
+                </div>
               </div>
-            )}
+
+              {/* About Me */}
+              <div className="flex items-start gap-2">
+                <span className="text-xs font-bold text-white/40 uppercase tracking-wider w-28 shrink-0 pt-1">About Me</span>
+                <p className="text-white text-sm leading-relaxed">{profile.about_me || 'No bio yet'}</p>
+              </div>
+
+              {/* Preferred Genres */}
+              <div className="flex items-start gap-2">
+                <span className="text-xs font-bold text-white/40 uppercase tracking-wider w-28 shrink-0 pt-1">Preferred Genres</span>
+                <div className="flex flex-wrap gap-2">
+                  {profile.preferred_genres?.length > 0 ? (
+                    profile.preferred_genres.map(g => (
+                      <span key={g} className="px-3 py-1 bg-[#4a5f7f]/20 text-[#7ba3d4] rounded-lg text-xs font-bold">{g}</span>
+                    ))
+                  ) : (
+                    <span className="text-white/30 text-sm italic">None set</span>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
