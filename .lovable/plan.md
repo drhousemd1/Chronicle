@@ -1,59 +1,86 @@
 
 
-# Fix Public Profile Avatar Buttons and Remove Toasts
+# Fix Profile Avatar Buttons, Reposition, and Layout Spacing
 
-## Problem 1: Toasts
+## Problems
 
-Multiple toast notifications fire on save and avatar upload. The user has asked repeatedly to not use toasts.
+1. **No Reposition button** -- The `profiles` table lacks an `avatar_position` column, and the component has no repositioning logic. The character builder shows a "Reposition" button below the action buttons when an avatar exists; the profile page needs the same.
 
-## Problem 2: Button Layout
+2. **"Upload Im..." text truncation** -- The two buttons share 192px and with the elaborate AI Generate button styling, "Upload Image" gets truncated. The avatar column needs to be wider (w-56 / 224px) so both buttons have enough room.
 
-The `[&>div]:flex-col` CSS override on the `AvatarActionButtons` wrapper is forcing the "Upload Image" and "AI Generate" buttons to stack vertically. The character builder uses them **side-by-side** (the component's default `flex gap-2` row layout), and shows a "Reposition" button below only when an avatar image exists. The profile page should match this pattern exactly.
+3. **Labels too far from inputs** -- The "Display Name", "About Me", and "Preferred Genres" labels use `w-32` (128px) with `gap-4`, pushing inputs far to the right. Reducing label width to `w-28` and gap to `gap-2` will tighten the layout.
 
 ## Changes
 
-### File: `src/components/account/PublicProfileTab.tsx`
+### 1. Database Migration -- Add `avatar_position` to `profiles`
 
-**1. Remove all toast calls**
+```sql
+ALTER TABLE public.profiles ADD COLUMN avatar_position jsonb DEFAULT '{"x": 50, "y": 50}';
+```
 
-- Line 50: Remove `const { toast } = useToast();`
-- Line 3: Remove the `useToast` import
-- Line 134: Remove `toast({ title: 'Profile saved', ... })`
-- Line 136: Remove `toast({ title: 'Save failed', ... })`
-- Line 155: Remove `toast({ title: 'Avatar updated' })`
-- Line 157: Remove `toast({ title: 'Upload failed', ... })`
-- Line 182: Remove `toast({ title: 'Avatar updated' })`
-- Line 184: Remove `toast({ title: 'Upload failed', ... })`
-- Line 191: Remove `toast({ title: 'Upload failed', ... })`
+This stores the user's avatar crop position, matching the pattern used by `characters.avatar_position`.
 
-**2. Fix button layout -- remove the `[&>div]:flex-col` override**
+### 2. `src/components/account/PublicProfileTab.tsx` -- Full updates
 
-Line 250: Change:
+**a) Fetch and store `avatar_position`**
+
+- Add `avatar_position` to the `ProfileData` interface as `{ x: number; y: number }`.
+- Include it in the profiles select query.
+- Initialize it from the DB response (defaulting to `{ x: 50, y: 50 }`).
+- Save it in `handleSave`.
+
+**b) Add repositioning state and drag handlers**
+
+Port the repositioning logic from `CharactersTab.tsx`:
+- `isRepositioning` state (boolean)
+- `dragStart` state for tracking mouse/touch drag origin
+- `avatarContainerRef` (already exists as concept, add ref)
+- `handleMouseDown`, `handleMouseMove`, `handleMouseUp` handlers
+- `handleTouchStart`, `handleTouchMove`, `handleTouchEnd` handlers for iPad support
+- Clamp position values between 0-100
+
+**c) Update avatar container**
+
+- Add conditional styling: `ring-4 ring-blue-500 cursor-move` when repositioning, `border-2 border-white/10` otherwise
+- Attach mouse and touch event handlers
+- Apply `objectPosition` using the avatar position values
+- Show crosshair overlay with "Drag to Refocus" label when repositioning
+- Set `touch-action: none` when repositioning
+
+**d) Add Reposition button below action buttons**
+
+After `AvatarActionButtons`, conditionally render a "Reposition" / "Save Position" button when `profile.avatar_url` exists -- matching CharactersTab lines 678-686 exactly:
 ```tsx
-<div className="w-48 [&>div]:flex-col">
-```
-To:
-```tsx
-<div className="flex flex-col gap-2 w-full">
-```
-
-This matches the character builder pattern (CharactersTab.tsx line 662) where the buttons sit inside `flex flex-col gap-2 w-full` -- the `AvatarActionButtons` renders its own inner `flex gap-2` row, and the outer column wrapper just stacks additional items (like Reposition) below.
-
-**3. Add a "Reposition" button below the action buttons (when avatar exists)**
-
-After the `AvatarActionButtons` component, add a Reposition button that only shows when `profile.avatar_url` exists -- matching the character builder pattern (CharactersTab.tsx lines 678-686). This requires adding `isRepositioning` state and drag-to-reposition functionality for the avatar, plus storing `avatar_position` in the profile.
-
-However, since the profile avatar doesn't currently support repositioning (no `avatar_position` field in the profiles table), we will skip the Reposition button for now and just fix the layout to be side-by-side.
-
-**4. Update the avatar column width**
-
-The `w-48` wrapper is fine for the avatar square, but the buttons wrapper should just be `w-full` within the column so buttons get the full width of the avatar column.
-
-## Summary of final layout
-
-```text
-[  Avatar Image (w-48 h-48)  ]
-[ Upload Image | AI Generate ]  <-- side by side, matching character builder
+{profile.avatar_url && (
+  <Button
+    variant={isRepositioning ? 'primary' : 'secondary'}
+    onClick={() => setIsRepositioning(!isRepositioning)}
+    className={`w-full text-[10px] font-bold leading-none ${isRepositioning ? 'bg-blue-600 text-white' : ''}`}
+  >
+    {isRepositioning ? "Save Position" : "Reposition"}
+  </Button>
+)}
 ```
 
-No stacking, no `flex-col` override, no toasts.
+**e) Widen avatar column**
+
+- Change avatar square from `w-48 h-48` to `w-56 h-56` (224px)
+- This gives each side-by-side button ~108px, enough for "Upload Image" and "AI Generate" text
+
+**f) Tighten label-to-input spacing**
+
+- Change label width from `w-32` to `w-28` on all three field rows (Display Name, About Me, Preferred Genres)
+- Change `gap-4` to `gap-2` on all three field rows
+- This pulls inputs closer to their labels
+
+**g) Import the `Button` component**
+
+Add `import { Button } from '@/components/chronicle/UI';` for the Reposition button.
+
+## What stays the same
+
+- `AvatarActionButtons` component is not modified (shared with character builder)
+- No toasts added anywhere
+- Published Works card rendering stays as-is
+- The overall section structure and save button remain unchanged
+
