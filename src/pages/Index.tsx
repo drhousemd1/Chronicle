@@ -1921,7 +1921,7 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
 
           {tab === "account" && (
             <div className="p-10 overflow-y-auto h-full bg-[#121214]">
-              <div className="max-w-4xl mx-auto">
+              <div>
                 {/* Account Tab Pills */}
                 <div className="flex items-center justify-center mb-8">
                   <div className="flex items-center bg-[#2b2b2e] rounded-full p-1 gap-0.5 border border-[#2b2b2e]">
