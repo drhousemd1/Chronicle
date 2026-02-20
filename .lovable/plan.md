@@ -1,29 +1,25 @@
 
 
-# Fix Public Profile Page Width (The Real Fix)
+# Fix Profile Avatar Buttons Layout
 
-## What Went Wrong Last Time
+## Problem
 
-The previous change edited `PublicProfileTab.tsx`, but the width constraint was never there -- it's in `src/pages/Index.tsx` at line 1924, where the entire account tab content is wrapped in `<div className="max-w-4xl mx-auto">`. That's the actual bottleneck squishing the avatar buttons and profile layout. The earlier edit did nothing because it targeted the wrong file.
+The avatar and its action buttons are locked inside a `w-36` (144px) column. Two buttons side-by-side in 144px leaves roughly 72px each, causing text to truncate to "U.." and "A.." -- completely unreadable.
 
-## The Fix
+## Changes
 
-**File: `src/pages/Index.tsx` (line 1924)**
+### File: `src/components/account/PublicProfileTab.tsx`
 
-Remove `max-w-4xl mx-auto` from the wrapper div that contains all account sub-tabs. The tab pill bar already centers itself, so removing the max-width won't break its alignment -- it will just let the content (Public Profile, Account Settings, Subscription) use the full available width.
+1. **Widen the avatar column** from `w-36` to `w-48` (192px) for both the avatar square and the button container. This gives each button ~96px minus gaps, which is enough for the text.
 
-Change:
-```
-<div className="max-w-4xl mx-auto">
-```
-To:
-```
-<div>
-```
+2. **Increase the avatar square** from `w-36 h-36` to `w-48 h-48` to match the wider column and look proportional.
 
-This is the single line that's been causing the layout to not fill the page. The Account Settings and Subscription tabs will also benefit from the extra space, and the tab pill bar will remain centered since it uses `justify-center` on its own flex container.
+3. **Stack buttons vertically** by changing the `AvatarActionButtons` wrapper or the component's internal flex direction. Since we shouldn't modify the shared component (used by character builder too), we wrap it in a container that forces vertical stacking via CSS:
+   - Add a wrapper `div` with class `[&>div]:flex-col` around `AvatarActionButtons` to override the internal `flex gap-2` row layout to a column layout.
 
-## Revert the no-op change
+This way each button gets the full 192px width instead of splitting it, and both "Upload Image" and "AI Generate" text will display fully.
 
-Also revert the unnecessary change previously made to `PublicProfileTab.tsx` -- that file never had `max-w-4xl` on it, but if the previous edit introduced any unintended changes, we will verify the file is clean. (Looking at it now, the file is fine -- the only change was removing a class that wasn't there to begin with in the current code, so no revert needed.)
+### No other files change
+
+The `AvatarActionButtons` component itself stays untouched since it's shared with the character builder where the current layout works fine.
 
