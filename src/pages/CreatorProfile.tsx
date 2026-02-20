@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
-import { Heart, Bookmark, Play, Eye, FileText, Users, ArrowLeft, UserPlus, UserMinus, Loader2 } from 'lucide-react';
+import { Heart, Bookmark, Play, Eye, FileText, Users, ArrowLeft, UserPlus, UserMinus, Loader2, Pencil } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 interface CreatorProfileData {
   display_name: string | null;
@@ -29,6 +30,10 @@ interface PublishedWork {
   scenario_id: string;
   like_count: number;
   play_count: number;
+  view_count: number;
+  save_count: number;
+  allow_remix: boolean;
+  storyType?: string | null;
   scenario: {
     title: string;
     description: string | null;
@@ -59,7 +64,7 @@ export default function CreatorProfile() {
         supabase.from('profiles').select('display_name, avatar_url, avatar_position, about_me, preferred_genres, hide_published_works, hide_profile_details').eq('id', userId).maybeSingle(),
         supabase.rpc('get_creator_stats', { creator_user_id: userId }),
         supabase.from('published_scenarios').select(`
-          id, scenario_id, like_count, play_count,
+          id, scenario_id, like_count, play_count, view_count, save_count, allow_remix,
           scenarios!inner (title, description, cover_image_url, cover_image_position)
         `).eq('publisher_id', userId).eq('is_published', true).eq('is_hidden', false).order('created_at', { ascending: false }),
       ]);
@@ -83,9 +88,16 @@ export default function CreatorProfile() {
         });
       }
       if (worksRes.data) {
+        const scenarioIds = worksRes.data.map((w: any) => w.scenario_id);
+        const { data: themesData } = await supabase
+          .from('content_themes')
+          .select('scenario_id, story_type')
+          .in('scenario_id', scenarioIds);
+        const themesMap = new Map((themesData || []).map((t: any) => [t.scenario_id, t.story_type]));
         setWorks(worksRes.data.map((w: any) => ({
           ...w,
           scenario: w.scenarios,
+          storyType: themesMap.get(w.scenario_id) || null,
         })));
       }
 
@@ -167,21 +179,23 @@ export default function CreatorProfile() {
       <div className="max-w-4xl mx-auto px-6 py-10 space-y-8">
         {/* Profile Card */}
         <div className="bg-[#1e1e22] rounded-2xl border border-white/10 p-6">
-          <div className="flex flex-col md:flex-row gap-8">
+          <div className="flex gap-6">
             {/* Avatar */}
-            <div className="w-72 h-72 rounded-2xl overflow-hidden bg-zinc-800 shrink-0">
-              {profile.avatar_url ? (
-                <img
-                  src={profile.avatar_url}
-                  alt={displayName}
-                  className="w-full h-full object-cover"
-                  style={{ objectPosition: `${avatarPos.x}% ${avatarPos.y}%` }}
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-white/40 text-5xl font-black">
-                  {initials}
-                </div>
-              )}
+            <div className="flex-shrink-0 flex flex-col items-center gap-3 w-72">
+              <div className="w-72 h-72 rounded-2xl overflow-hidden bg-zinc-800">
+                {profile.avatar_url ? (
+                  <img
+                    src={profile.avatar_url}
+                    alt={displayName}
+                    className="w-full h-full object-cover"
+                    style={{ objectPosition: `${avatarPos.x}% ${avatarPos.y}%` }}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-white/40 text-5xl font-black border-2 border-dashed border-zinc-600">
+                    {initials}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Info */}
@@ -255,39 +269,87 @@ export default function CreatorProfile() {
 
         {/* Published Works */}
         {!profile.hide_published_works && (
-          <div>
-            <h3 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-4">Published Works</h3>
+          <div className="bg-[#1e1e22] rounded-2xl border border-white/10 p-6">
+            <h3 className="text-sm font-black text-white uppercase tracking-wider mb-5">Published Works</h3>
             {works.length === 0 ? (
-              <p className="text-white/30 text-sm italic">No published works yet</p>
+              <p className="text-white/30 text-sm italic py-8 text-center">No published works yet</p>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                {works.map(work => (
-                  <div key={work.id} className="group cursor-pointer" onClick={() => navigate('/')}>
-                    <div className="aspect-[3/4] rounded-xl overflow-hidden bg-[#2a2a2f] relative">
-                      {work.scenario?.cover_image_url ? (
-                        <img
-                          src={work.scenario.cover_image_url}
-                          alt={work.scenario.title}
-                          style={{
-                            objectPosition: `${work.scenario.cover_image_position?.x || 50}% ${work.scenario.cover_image_position?.y || 50}%`,
-                          }}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-white/20 text-4xl font-black">
-                          {work.scenario?.title?.charAt(0) || '?'}
-                        </div>
-                      )}
-                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3">
-                        <p className="text-white text-sm font-bold truncate">{work.scenario?.title || 'Untitled'}</p>
-                        <div className="flex items-center gap-3 mt-1 text-white/50 text-[10px]">
-                          <span className="flex items-center gap-1"><Heart className="w-3 h-3" />{work.like_count}</span>
-                          <span className="flex items-center gap-1"><Play className="w-3 h-3" />{work.play_count}</span>
+                {works.map(work => {
+                  const coverPosition = work.scenario?.cover_image_position || { x: 50, y: 50 };
+                  return (
+                    <div key={work.id} className="group relative">
+                      <div className="aspect-[2/3] w-full overflow-hidden rounded-[2rem] bg-slate-200 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)] transition-all duration-300 group-hover:-translate-y-3 group-hover:shadow-2xl border border-[#4a5f7f] relative">
+                        {/* Cover Image */}
+                        {work.scenario?.cover_image_url ? (
+                          <img
+                            src={work.scenario.cover_image_url}
+                            alt={work.scenario.title}
+                            style={{ objectPosition: `${coverPosition.x}% ${coverPosition.y}%` }}
+                            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900 p-10 text-center">
+                            <div className="font-black text-white/10 text-6xl uppercase tracking-tighter italic break-words p-4 text-center">
+                              {work.scenario?.title?.charAt(0) || '?'}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Gradient Overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/60 to-transparent opacity-90 group-hover:opacity-95 transition-opacity" />
+
+                        {/* SFW/NSFW Badge */}
+                        {work.storyType && (
+                          <div className={cn(
+                            "absolute top-4 right-4 px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f]",
+                            work.storyType === 'NSFW' ? "text-red-400" : "text-blue-400"
+                          )}>
+                            {work.storyType}
+                          </div>
+                        )}
+
+                        {/* Remix badge */}
+                        {work.allow_remix && (
+                          <div className="absolute top-4 left-4 p-1.5 backdrop-blur-sm rounded-lg shadow-lg bg-[#2a2a2f]">
+                            <Pencil className="w-4 h-4 text-purple-400" />
+                          </div>
+                        )}
+
+                        {/* Bottom Info */}
+                        <div className="absolute inset-x-0 bottom-0 p-4 pb-5 pointer-events-none flex flex-col">
+                          <h3 className="text-lg font-black text-white leading-tight tracking-tight truncate">
+                            {work.scenario?.title || 'Untitled Story'}
+                          </h3>
+                          <p className="text-xs text-white/60 line-clamp-2 leading-relaxed italic min-h-[2.5rem]">
+                            {work.scenario?.description || 'No description provided.'}
+                          </p>
+                          <div className="flex items-center gap-3 text-[10px] text-white/50 mt-1">
+                            <span className="flex items-center gap-1">
+                              <Eye className="w-3 h-3" />
+                              {work.view_count}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Heart className="w-3 h-3" />
+                              {work.like_count}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Bookmark className="w-3 h-3" />
+                              {work.save_count}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Play className="w-3 h-3" />
+                              {work.play_count}
+                            </span>
+                          </div>
+                          <span className="text-[11px] text-white/50 font-medium mt-1">
+                            Written by: {displayName}
+                          </span>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
