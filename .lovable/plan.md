@@ -1,112 +1,65 @@
 
 
-# Fix Admin Panel Navigation: Move Back Arrow to White Header
+# Fix Public Profile Tab Layout to Match Mockup
 
 ## Problem
 
-The Image Generation tool inside the Admin panel has its own internal back-arrow header rendered inside the black content area. Every other page in the app (Scenario Builder, Image Library folders, Character Library) uses the standard chevron-left arrow in the white header bar next to the page title. This is inconsistent.
+The current Public Profile tab breaks the content into many separate stacked dark cards (avatar card, about me card, genres card, privacy card, stats card). The mockup shows a much simpler two-section layout.
 
-**Current (wrong):** White header says "ADMIN PANEL" with no arrow. Below it, a separate dark header bar has a left-arrow + "Image Generation Styles" title.
+## Target Layout (from mockup)
 
-**Correct pattern (used everywhere else):** The chevron-left arrow appears in the white header bar, to the left of the page title. Clicking it navigates back. No secondary header inside the content area.
-
-## Changes
-
-### 1. `src/pages/Admin.tsx` -- Expose active tool state
-
-Add a callback prop so `Index.tsx` can know whether the admin is viewing the hub or a tool, and can trigger "go back to hub":
-
-- Export the current `activeTool` state and a `setActiveTool` setter via a ref or callback pattern
-- Simplest approach: lift the active tool state into `Index.tsx` (add `adminActiveTool` state there) and pass it down as props to `AdminPage`
-
-### 2. `src/pages/Index.tsx` -- Add chevron back arrow for admin tool views
-
-In the admin header block (lines 1457-1461), add the same pattern used by Image Library (lines 1441-1456):
-
-- When inside a tool (e.g. `adminActiveTool !== 'hub'`), show the chevron-left arrow button that resets `adminActiveTool` to `'hub'`
-- The title stays "ADMIN PANEL" (matching how "IMAGE LIBRARY" stays the same when inside a folder)
-
-```
-Before:  ADMIN PANEL
-After:   < ADMIN PANEL    (chevron only appears when inside a tool)
+```text
++------------------------------------------------------------------+
+| [Avatar]  | Hide Profile Details (checkbox)                      |
+| (upload)  | Display Name  [________________________]             |
+|           | About Me      [________________________]             |
+|           | Preferred Genres [______________________]            |
++------------------------------------------------------------------+
+|                                                                    |
+| Published Works    Hide Published Works (checkbox)    Stats...    |
+| +--------+ +--------+ +--------+ +--------+                      |
+| |        | |        | |        | |        |                       |
+| | card   | | card   | | card   | | card   |                       |
+| |        | |        | |        | |        |                       |
+| +--------+ +--------+ +--------+ +--------+                      |
++------------------------------------------------------------------+
 ```
 
-Uses the exact same SVG chevron and `p-2 hover:bg-slate-100 rounded-full transition-colors` classes as every other page.
+## Changes to `src/components/account/PublicProfileTab.tsx`
 
-### 3. `src/components/admin/ImageGenerationTool.tsx` -- Remove internal header
+Restructure the entire component layout into two main sections:
 
-Remove the entire internal header section (lines 121-138):
-- Remove the `flex-shrink-0 p-6 border-b border-white/10` header div
-- Remove the `ArrowLeft` back button and the "Image Generation Styles" title/subtitle
-- Remove the `onBack` prop entirely since navigation is now handled by the white header
-- The component becomes just the scrollable content columns
+### Section 1: Profile Info (single card)
+- Left column: Avatar with upload overlay (same size, ~24x24/96px)
+- Right column, stacked vertically:
+  - "Hide Profile Details" checkbox at the top
+  - Display Name label + input (horizontal row)
+  - About Me label + input (horizontal row)
+  - Preferred Genres label + input (horizontal row)
+- The labels sit to the left of inputs in a form-row pattern (like the mockup shows), not above them
 
-## Technical Details
+### Section 2: Published Works (single card)
+- Header row spans full width containing:
+  - "Published Works" title (left)
+  - "Hide Published Works" checkbox (center-left)
+  - Stats counters inline (right side): Likes, Published, Saved, Views, Plays
+- Below the header: a grid of published work cards (need to fetch these -- the current component doesn't show published works at all, but the CreatorProfile page does, so we'll add the same query here)
+- Cards use the same 3:4 portrait ratio tile style
 
-### State lifting in `Index.tsx`
+### Additional changes
+- Remove the separate "Privacy Settings", "Creator Stats", and "About Me" cards
+- Combine everything into the two-section structure
+- Keep "Save Profile" button at the bottom
+- Add published works fetching (reuse the same query pattern from CreatorProfile.tsx)
 
-Add state:
-```tsx
-const [adminActiveTool, setAdminActiveTool] = useState<string>('hub');
-```
-
-Reset to `'hub'` whenever switching away from the admin tab (in `handleNavigateAway` or the sidebar click).
-
-Pass to AdminPage:
-```tsx
-<AdminPage activeTool={adminActiveTool} onSetActiveTool={setAdminActiveTool} />
-```
-
-### Header change in `Index.tsx`
-
-Replace:
-```tsx
-{tab === "admin" && (
-  <h1 className="...">Admin Panel</h1>
-)}
-```
-
-With:
-```tsx
-{tab === "admin" && (
-  <div className="flex items-center gap-2">
-    {adminActiveTool !== 'hub' && (
-      <button
-        type="button"
-        onClick={() => setAdminActiveTool('hub')}
-        className="p-2 hover:bg-slate-100 rounded-full transition-colors"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-      </button>
-    )}
-    <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
-      Admin Panel
-    </h1>
-  </div>
-)}
-```
-
-### AdminPage prop changes
-
-```tsx
-interface AdminPageProps {
-  activeTool: string;
-  onSetActiveTool: (tool: string) => void;
-}
-```
-
-Remove the internal `activeTool` state, use props instead.
-
-### ImageGenerationTool cleanup
-
-- Remove `onBack` prop from the interface
-- Remove the entire header div (lines 121-138)
-- The component starts directly with the scrollable columns content
+### Save button
+Keep the save button below both sections.
 
 ## Files Modified
 
 | File | Change |
 |---|---|
-| `src/pages/Index.tsx` | Add `adminActiveTool` state, chevron back arrow in admin header, pass props to AdminPage, reset on tab change |
-| `src/pages/Admin.tsx` | Accept `activeTool`/`onSetActiveTool` props instead of internal state |
-| `src/components/admin/ImageGenerationTool.tsx` | Remove internal header and `onBack` prop |
+| `src/components/account/PublicProfileTab.tsx` | Complete layout restructure to match the two-section mockup |
+
+No database or routing changes needed -- this is purely a layout/UI fix.
+
