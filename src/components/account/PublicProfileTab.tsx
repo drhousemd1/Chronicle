@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Camera, Eye, Heart, Bookmark, Play, FileText, Users } from 'lucide-react';
+import { Camera, Eye, Heart, Bookmark, Play, FileText } from 'lucide-react';
 import { resizeImage } from '@/utils';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface PublicProfileTabProps {
   user: { id: string; email?: string } | null;
@@ -24,7 +25,19 @@ interface CreatorStats {
   total_saves: number;
   total_views: number;
   total_plays: number;
-  follower_count: number;
+}
+
+interface PublishedWork {
+  id: string;
+  scenario_id: string;
+  like_count: number;
+  play_count: number;
+  scenario: {
+    title: string;
+    description: string | null;
+    cover_image_url: string | null;
+    cover_image_position: { x: number; y: number } | null;
+  } | null;
 }
 
 export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
@@ -43,8 +56,8 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
     total_saves: 0,
     total_views: 0,
     total_plays: 0,
-    follower_count: 0,
   });
+  const [works, setWorks] = useState<PublishedWork[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
@@ -55,7 +68,11 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
     Promise.all([
       supabase.from('profiles').select('display_name, about_me, avatar_url, preferred_genres, hide_published_works, hide_profile_details').eq('id', user.id).maybeSingle(),
       supabase.rpc('get_creator_stats', { creator_user_id: user.id }),
-    ]).then(([profileRes, statsRes]) => {
+      supabase.from('published_scenarios').select(`
+        id, scenario_id, like_count, play_count,
+        scenarios!inner (title, description, cover_image_url, cover_image_position)
+      `).eq('publisher_id', user.id).eq('is_published', true).eq('is_hidden', false).order('created_at', { ascending: false }),
+    ]).then(([profileRes, statsRes, worksRes]) => {
       if (profileRes.data) {
         setProfile({
           display_name: profileRes.data.display_name || '',
@@ -74,8 +91,13 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
           total_saves: Number(s.total_saves) || 0,
           total_views: Number(s.total_views) || 0,
           total_plays: Number(s.total_plays) || 0,
-          follower_count: Number(s.follower_count) || 0,
         });
+      }
+      if (worksRes.data) {
+        setWorks(worksRes.data.map((w: any) => ({
+          ...w,
+          scenario: w.scenarios,
+        })));
       }
       setIsLoading(false);
     });
@@ -153,12 +175,12 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
   const initials = (profile.display_name || 'U').slice(0, 2).toUpperCase();
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8">
-      {/* Avatar + Display Name */}
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* Section 1: Profile Info */}
       <div className="bg-[#1e1e22] rounded-2xl border border-white/10 p-6">
-        <div className="flex items-start gap-6">
-          {/* Avatar */}
-          <div className="relative group">
+        <div className="flex gap-6">
+          {/* Avatar column */}
+          <div className="relative group flex-shrink-0">
             <Avatar className="h-24 w-24 ring-2 ring-white/10">
               {profile.avatar_url ? (
                 <AvatarImage src={profile.avatar_url} alt={profile.display_name} />
@@ -171,109 +193,140 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
             </label>
           </div>
 
-          {/* Name */}
-          <div className="flex-1 space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-white/40 uppercase tracking-wider mb-2">Display Name</label>
+          {/* Form column */}
+          <div className="flex-1 space-y-4 min-w-0">
+            {/* Hide Profile Details */}
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Checkbox
+                checked={profile.hide_profile_details}
+                onCheckedChange={(checked) => setProfile(prev => ({ ...prev, hide_profile_details: !!checked }))}
+              />
+              <span className="text-sm text-white/70">Hide Profile Details</span>
+            </label>
+
+            {/* Display Name */}
+            <div className="flex items-center gap-4">
+              <label className="text-xs font-bold text-white/40 uppercase tracking-wider w-32 shrink-0">Display Name</label>
               <input
                 type="text"
                 value={profile.display_name}
                 onChange={(e) => setProfile(prev => ({ ...prev, display_name: e.target.value }))}
-                className="w-full bg-[#2a2a2f] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#4a5f7f]"
+                className="flex-1 bg-[#2a2a2f] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#4a5f7f]"
                 placeholder="Your display name"
                 maxLength={30}
               />
             </div>
-          </div>
-        </div>
-      </div>
 
-      {/* About Me */}
-      <div className="bg-[#1e1e22] rounded-2xl border border-white/10 p-6">
-        <label className="block text-xs font-bold text-white/40 uppercase tracking-wider mb-2">About Me</label>
-        <textarea
-          value={profile.about_me}
-          onChange={(e) => setProfile(prev => ({ ...prev, about_me: e.target.value }))}
-          className="w-full bg-[#2a2a2f] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#4a5f7f] resize-none h-32"
-          placeholder="Tell others about yourself..."
-          maxLength={500}
-        />
-      </div>
-
-      {/* Preferred Genres */}
-      <div className="bg-[#1e1e22] rounded-2xl border border-white/10 p-6">
-        <label className="block text-xs font-bold text-white/40 uppercase tracking-wider mb-3">Preferred Genres</label>
-        <div className="flex flex-wrap gap-2 mb-3">
-          {profile.preferred_genres.map(genre => (
-            <span key={genre} className="px-3 py-1.5 bg-[#4a5f7f]/20 text-[#7ba3d4] rounded-lg text-xs font-bold flex items-center gap-1.5">
-              {genre}
-              <button onClick={() => removeGenre(genre)} className="hover:text-red-400 transition-colors">×</button>
-            </span>
-          ))}
-        </div>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={genreInput}
-            onChange={(e) => setGenreInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addGenre())}
-            className="flex-1 bg-[#2a2a2f] border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#4a5f7f]"
-            placeholder="Add a genre..."
-          />
-          <button onClick={addGenre} className="px-4 py-2 bg-[#4a5f7f] hover:bg-[#5a6f8f] text-white rounded-xl text-sm font-semibold transition-colors">
-            Add
-          </button>
-        </div>
-      </div>
-
-      {/* Privacy Toggles */}
-      <div className="bg-[#1e1e22] rounded-2xl border border-white/10 p-6 space-y-4">
-        <h3 className="text-xs font-bold text-white/40 uppercase tracking-wider mb-2">Privacy Settings</h3>
-        <label className="flex items-start gap-3 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={profile.hide_published_works}
-            onChange={(e) => setProfile(prev => ({ ...prev, hide_published_works: e.target.checked }))}
-            className="mt-0.5 rounded border-white/20 bg-[#2a2a2f] text-[#4a5f7f] focus:ring-[#4a5f7f]"
-          />
-          <div>
-            <span className="text-sm text-white font-medium">Hide Published Works</span>
-            <p className="text-xs text-white/40 mt-0.5">Your published works won't be visible on your profile page</p>
-          </div>
-        </label>
-        <label className="flex items-start gap-3 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={profile.hide_profile_details}
-            onChange={(e) => setProfile(prev => ({ ...prev, hide_profile_details: e.target.checked }))}
-            className="mt-0.5 rounded border-white/20 bg-[#2a2a2f] text-[#4a5f7f] focus:ring-[#4a5f7f]"
-          />
-          <div>
-            <span className="text-sm text-white font-medium">Hide Profile Details</span>
-            <p className="text-xs text-white/40 mt-0.5">Works published while this is checked will show as anonymous and won't link to your profile</p>
-          </div>
-        </label>
-      </div>
-
-      {/* Creator Stats */}
-      <div className="bg-[#1e1e22] rounded-2xl border border-white/10 p-6">
-        <h3 className="text-xs font-bold text-white/40 uppercase tracking-wider mb-4">Creator Stats</h3>
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-4">
-          {[
-            { label: 'Published', value: stats.published_count, icon: FileText },
-            { label: 'Likes', value: stats.total_likes, icon: Heart },
-            { label: 'Saves', value: stats.total_saves, icon: Bookmark },
-            { label: 'Views', value: stats.total_views, icon: Eye },
-            { label: 'Plays', value: stats.total_plays, icon: Play },
-            { label: 'Followers', value: stats.follower_count, icon: Users },
-          ].map(({ label, value, icon: Icon }) => (
-            <div key={label} className="text-center">
-              <Icon className="w-4 h-4 text-white/30 mx-auto mb-1" />
-              <div className="text-xl font-black text-white">{value}</div>
-              <div className="text-[10px] font-bold text-white/40 uppercase">{label}</div>
+            {/* About Me */}
+            <div className="flex items-start gap-4">
+              <label className="text-xs font-bold text-white/40 uppercase tracking-wider w-32 shrink-0 pt-2.5">About Me</label>
+              <textarea
+                value={profile.about_me}
+                onChange={(e) => setProfile(prev => ({ ...prev, about_me: e.target.value }))}
+                className="flex-1 bg-[#2a2a2f] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#4a5f7f] resize-none h-20"
+                placeholder="Tell others about yourself..."
+                maxLength={500}
+              />
             </div>
-          ))}
+
+            {/* Preferred Genres */}
+            <div className="flex items-start gap-4">
+              <label className="text-xs font-bold text-white/40 uppercase tracking-wider w-32 shrink-0 pt-2.5">Preferred Genres</label>
+              <div className="flex-1 space-y-2">
+                {profile.preferred_genres.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {profile.preferred_genres.map(genre => (
+                      <span key={genre} className="px-2.5 py-1 bg-[#4a5f7f]/20 text-[#7ba3d4] rounded-lg text-xs font-bold flex items-center gap-1">
+                        {genre}
+                        <button onClick={() => removeGenre(genre)} className="hover:text-red-400 transition-colors">×</button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={genreInput}
+                    onChange={(e) => setGenreInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addGenre())}
+                    className="flex-1 bg-[#2a2a2f] border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#4a5f7f]"
+                    placeholder="Add a genre..."
+                  />
+                  <button onClick={addGenre} className="px-3 py-2 bg-[#4a5f7f] hover:bg-[#5a6f8f] text-white rounded-xl text-sm font-semibold transition-colors">
+                    Add
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
+
+      {/* Section 2: Published Works */}
+      <div className="bg-[#1e1e22] rounded-2xl border border-white/10 p-6">
+        {/* Header row */}
+        <div className="flex items-center flex-wrap gap-x-6 gap-y-2 mb-5">
+          <h3 className="text-sm font-black text-white uppercase tracking-wider">Published Works</h3>
+
+          <label className="flex items-center gap-2 cursor-pointer">
+            <Checkbox
+              checked={profile.hide_published_works}
+              onCheckedChange={(checked) => setProfile(prev => ({ ...prev, hide_published_works: !!checked }))}
+            />
+            <span className="text-xs text-white/50">Hide Published Works</span>
+          </label>
+
+          <div className="flex items-center gap-4 ml-auto text-white/40">
+            {[
+              { icon: Heart, value: stats.total_likes, label: 'Likes' },
+              { icon: FileText, value: stats.published_count, label: 'Published' },
+              { icon: Bookmark, value: stats.total_saves, label: 'Saved' },
+              { icon: Eye, value: stats.total_views, label: 'Views' },
+              { icon: Play, value: stats.total_plays, label: 'Plays' },
+            ].map(({ icon: Icon, value, label }) => (
+              <span key={label} className="flex items-center gap-1 text-xs">
+                <Icon className="w-3.5 h-3.5" />
+                <span className="font-bold text-white/60">{value}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Works grid */}
+        {works.length === 0 ? (
+          <p className="text-white/30 text-sm italic py-8 text-center">No published works yet</p>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {works.map(work => (
+              <div key={work.id} className="group cursor-pointer">
+                <div className="aspect-[3/4] rounded-xl overflow-hidden bg-[#2a2a2f] relative">
+                  {work.scenario?.cover_image_url ? (
+                    <img
+                      src={work.scenario.cover_image_url}
+                      alt={work.scenario.title}
+                      style={{
+                        objectPosition: `${work.scenario.cover_image_position?.x || 50}% ${work.scenario.cover_image_position?.y || 50}%`,
+                      }}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-white/20 text-4xl font-black">
+                      {work.scenario?.title?.charAt(0) || '?'}
+                    </div>
+                  )}
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-slate-900/60 to-transparent p-3">
+                    <p className="text-white text-sm font-bold truncate">{work.scenario?.title || 'Untitled'}</p>
+                    <p className="text-white/50 text-xs italic line-clamp-2 min-h-[2.5rem]">{work.scenario?.description || ''}</p>
+                    <div className="flex items-center gap-3 mt-1 text-white/50 text-[10px]">
+                      <span className="flex items-center gap-1"><Heart className="w-3 h-3" />{work.like_count}</span>
+                      <span className="flex items-center gap-1"><Play className="w-3 h-3" />{work.play_count}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Save Button */}
