@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 import { Eye, Heart, Bookmark, Play, FileText, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { resizeImage } from '@/utils';
@@ -47,7 +46,6 @@ interface PublishedWork {
 }
 
 export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
-  const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [profile, setProfile] = useState<ProfileData>({
     display_name: '',
@@ -131,9 +129,8 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
         hide_profile_details: profile.hide_profile_details,
       }).eq('id', user.id);
       if (error) throw error;
-      toast({ title: 'Profile saved', description: 'Your public profile has been updated.' });
     } catch (e: any) {
-      toast({ title: 'Save failed', description: e.message, variant: 'destructive' });
+      console.error('Save failed:', e.message);
     } finally {
       setIsSaving(false);
     }
@@ -152,9 +149,8 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
       const { error: updateError } = await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id);
       if (updateError) throw updateError;
       setProfile(prev => ({ ...prev, avatar_url: publicUrl }));
-      toast({ title: 'Avatar updated' });
     } catch (err: any) {
-      toast({ title: 'Upload failed', description: err.message, variant: 'destructive' });
+      console.error('Upload failed:', err.message);
     } finally {
       setIsUploadingAvatar(false);
     }
@@ -179,16 +175,15 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
           const { error: updateError } = await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id);
           if (updateError) throw updateError;
           setProfile(prev => ({ ...prev, avatar_url: publicUrl }));
-          toast({ title: 'Avatar updated' });
         } catch (err: any) {
-          toast({ title: 'Upload failed', description: err.message, variant: 'destructive' });
+          console.error('Upload failed:', err.message);
         } finally {
           setIsUploadingAvatar(false);
         }
       };
       reader.readAsDataURL(file);
     } catch (err: any) {
-      toast({ title: 'Upload failed', description: err.message, variant: 'destructive' });
+      console.error('Upload failed:', err.message);
       setIsUploadingAvatar(false);
     }
   };
@@ -247,7 +242,7 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
             </div>
 
             {/* Upload + AI Generate buttons */}
-            <div className="w-48 [&>div]:flex-col">
+            <div className="flex flex-col gap-2 w-full">
               <AvatarActionButtons
                 onUploadFromDevice={() => fileInputRef.current?.click()}
                 onSelectFromLibrary={(imageUrl) => uploadAvatarFromUrl(imageUrl)}
