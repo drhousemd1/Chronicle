@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { ScenarioData, TabKey, Character, ScenarioMetadata, Conversation, Message, ConversationMetadata, SideCharacter, UserBackground, ContentThemes, defaultContentThemes } from "@/types";
-import { AccountButton } from "@/components/chronicle/AccountButton";
+
 import { fetchSavedScenarios, SavedScenario, unsaveScenario, fetchUserPublishedScenarios, PublishedScenario } from "@/services/gallery-data";
 import { createDefaultScenarioData, now, uid, uuid, truncateLine, resizeImage } from "@/utils";
 import { CharactersTab } from "@/components/chronicle/CharactersTab";
@@ -28,7 +28,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { PanelLeftClose, PanelLeft, Settings, Image as ImageIcon, Sparkles, ArrowLeft } from "lucide-react";
+import { PanelLeftClose, PanelLeft, Settings, Image as ImageIcon, Sparkles, ArrowLeft, UserCircle } from "lucide-react";
 import { AIPromptModal } from "@/components/chronicle/AIPromptModal";
 import {
   DropdownMenu,
@@ -1312,19 +1312,9 @@ const IndexContent = () => {
 
             <div className="pt-4 mt-4 border-t border-white/10">
               <SidebarItem active={tab === "model_settings"} label="Model Settings" icon={<IconsList.Model />} onClick={() => setTab("model_settings")} collapsed={sidebarCollapsed} />
+              <SidebarItem active={tab === "account"} label="Account" icon={<UserCircle className="w-5 h-5" />} onClick={() => setTab("account")} collapsed={sidebarCollapsed} />
             </div>
           </nav>
-          
-          <div className={`p-4 border-t border-white/10 ${sidebarCollapsed ? 'px-2' : ''}`}>
-            <AccountButton
-              user={user}
-              onNavigateToAccount={(accountTab) => {
-                setAccountActiveTab(accountTab || 'settings');
-                setTab("account");
-              }}
-              onSignOut={handleSignOut}
-            />
-          </div>
         </aside>
 
       <main className="flex-1 flex flex-col overflow-hidden bg-slate-50/50">
