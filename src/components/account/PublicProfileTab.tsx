@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Camera, Eye, Heart, Bookmark, Play, FileText } from 'lucide-react';
+import { Eye, Heart, Bookmark, Play, FileText } from 'lucide-react';
 import { resizeImage } from '@/utils';
 import { Checkbox } from '@/components/ui/checkbox';
+import { AvatarActionButtons } from '@/components/chronicle/AvatarActionButtons';
+import { AvatarGenerationModal } from '@/components/chronicle/AvatarGenerationModal';
 
 interface PublicProfileTabProps {
   user: { id: string; email?: string } | null;
@@ -42,6 +43,7 @@ interface PublishedWork {
 
 export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [profile, setProfile] = useState<ProfileData>({
     display_name: '',
     about_me: '',
@@ -61,6 +63,8 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isGeneratingAvatar, setIsGeneratingAvatar] = useState(false);
+  const [showAvatarGenModal, setShowAvatarGenModal] = useState(false);
   const [genreInput, setGenreInput] = useState('');
 
   useEffect(() => {
@@ -123,6 +127,27 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
     }
   };
 
+  const uploadAvatarFromUrl = async (imageUrl: string) => {
+    if (!user) return;
+    setIsUploadingAvatar(true);
+    try {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const filename = `${user.id}/avatar-${Date.now()}.jpg`;
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(filename, blob, { upsert: true, contentType: 'image/jpeg' });
+      if (uploadError) throw uploadError;
+      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filename);
+      const { error: updateError } = await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id);
+      if (updateError) throw updateError;
+      setProfile(prev => ({ ...prev, avatar_url: publicUrl }));
+      toast({ title: 'Avatar updated' });
+    } catch (err: any) {
+      toast({ title: 'Upload failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
@@ -156,6 +181,11 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
     }
   };
 
+  const handleAvatarGenerated = async (imageUrl: string) => {
+    setShowAvatarGenModal(false);
+    await uploadAvatarFromUrl(imageUrl);
+  };
+
   const addGenre = () => {
     const trimmed = genreInput.trim();
     if (trimmed && !profile.preferred_genres.includes(trimmed)) {
@@ -176,21 +206,44 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      {/* Hidden file input for avatar upload */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleAvatarUpload}
+        disabled={isUploadingAvatar}
+      />
+
       {/* Section 1: Profile Info */}
       <div className="bg-[#1e1e22] rounded-2xl border border-white/10 p-6">
         <div className="flex gap-6">
           {/* Avatar column */}
-          <div className="relative group flex-shrink-0">
-            <Avatar className="h-24 w-24 ring-2 ring-white/10">
+          <div className="flex-shrink-0 flex flex-col items-center gap-3">
+            {/* Square avatar matching character builder style */}
+            <div className="w-36 h-36 rounded-2xl overflow-hidden shadow-lg flex items-center justify-center border-2 border-dashed border-zinc-600 bg-zinc-800">
               {profile.avatar_url ? (
-                <AvatarImage src={profile.avatar_url} alt={profile.display_name} />
-              ) : null}
-              <AvatarFallback className="bg-[#4a5f7f] text-white text-2xl font-bold">{initials}</AvatarFallback>
-            </Avatar>
-            <label className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-              <Camera className="w-6 h-6 text-white" />
-              <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={isUploadingAvatar} />
-            </label>
+                <img
+                  src={profile.avatar_url}
+                  alt={profile.display_name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-3xl font-bold text-zinc-500">{initials}</span>
+              )}
+            </div>
+
+            {/* Upload + AI Generate buttons */}
+            <div className="w-36">
+              <AvatarActionButtons
+                onUploadFromDevice={() => fileInputRef.current?.click()}
+                onSelectFromLibrary={(imageUrl) => uploadAvatarFromUrl(imageUrl)}
+                onGenerateClick={() => setShowAvatarGenModal(true)}
+                isUploading={isUploadingAvatar}
+                isGenerating={isGeneratingAvatar}
+              />
+            </div>
           </div>
 
           {/* Form column */}
@@ -339,6 +392,15 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
           {isSaving ? 'Saving...' : 'Save Profile'}
         </button>
       </div>
+
+      {/* Avatar Generation Modal */}
+      <AvatarGenerationModal
+        isOpen={showAvatarGenModal}
+        onClose={() => setShowAvatarGenModal(false)}
+        onGenerated={handleAvatarGenerated}
+        characterName={profile.display_name || 'User'}
+        modelId=""
+      />
     </div>
   );
 };

@@ -1316,9 +1316,14 @@ const IndexContent = () => {
           </nav>
           
           <div className={`p-4 border-t border-white/10 ${sidebarCollapsed ? 'px-2' : ''}`}>
-            {!sidebarCollapsed && (
-              <div className="text-xs text-slate-500 mb-2 truncate">{user?.email}</div>
-            )}
+            <AccountButton
+              user={user}
+              onNavigateToAccount={(accountTab) => {
+                setAccountActiveTab(accountTab || 'settings');
+                setTab("account");
+              }}
+              onSignOut={handleSignOut}
+            />
           </div>
         </aside>
 
@@ -1503,15 +1508,6 @@ const IndexContent = () => {
               )}
             </div>
             <div className="flex items-center gap-3">
-              {/* Account Button - always visible */}
-              <AccountButton
-                user={user}
-                onNavigateToAccount={(accountTab) => {
-                  setAccountActiveTab(accountTab || 'settings');
-                  setTab("account");
-                }}
-                onSignOut={handleSignOut}
-              />
               {tab === "world" && (
                 <>
                   <button
