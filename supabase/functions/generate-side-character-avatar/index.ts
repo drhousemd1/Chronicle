@@ -141,7 +141,6 @@ serve(async (req) => {
         model: 'grok-2-image-1212', // GROK ONLY
         prompt: optimizedPrompt,
         n: 1,
-        response_format: "url"
       }),
     });
 
@@ -155,7 +154,22 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const imageUrl = data.data?.[0]?.url;
+    let imageUrl = data.data?.[0]?.url;
+
+    // If API returned base64 instead of URL, upload to storage
+    if (!imageUrl && data.data?.[0]?.b64_json) {
+      const raw = data.data[0].b64_json;
+      const imageBytes = Uint8Array.from(atob(raw), c => c.charCodeAt(0));
+      const filename = `${user.id}/avatar-${Date.now()}.png`;
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(filename, imageBytes, { contentType: 'image/png', upsert: true });
+      if (uploadError) {
+        console.error('[generate-avatar] Storage upload failed:', uploadError);
+        throw uploadError;
+      }
+      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filename);
+      imageUrl = urlData.publicUrl;
+      console.log('[generate-avatar] Uploaded b64 to storage:', imageUrl);
+    }
 
     if (!imageUrl) {
       console.error("No image URL in xAI response:", JSON.stringify(data, null, 2));

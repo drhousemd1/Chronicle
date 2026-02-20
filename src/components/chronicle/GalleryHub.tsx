@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Search, Loader2, Globe, LayoutGrid, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -75,7 +75,11 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
     };
   }, [categoryFilters]);
 
+  const fetchInProgress = useRef(false);
+
   const loadScenarios = useCallback(async () => {
+    if (fetchInProgress.current) return;
+    fetchInProgress.current = true;
     setIsLoading(true);
     try {
       // Handle "following" tab separately
@@ -129,8 +133,9 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
       toast.error('Failed to load gallery');
     } finally {
       setIsLoading(false);
+      fetchInProgress.current = false;
     }
-  }, [user, searchTags, sortBy, getContentThemeFilters]);
+  }, [user?.id, searchTags, sortBy, getContentThemeFilters]);
 
   useEffect(() => {
     loadScenarios();

@@ -41,6 +41,44 @@ import {
 import { LLM_MODELS } from '@/constants';
 
 // =============================================
+// BASE64 → STORAGE SAFETY NET
+// =============================================
+
+/**
+ * If `url` is a base64 data URI, uploads it to the given storage bucket
+ * and returns the public URL. Otherwise returns the original string.
+ */
+export async function ensureStorageUrl(
+  url: string | undefined | null,
+  bucket: string,
+  userId: string
+): Promise<string> {
+  if (!url || !url.startsWith('data:')) return url || '';
+  // Use the existing dataUrlToBlob helper defined later in this file
+  try {
+    const arr = url.split(',');
+    const mimeMatch = arr[0].match(/:(.*?);/);
+    if (!mimeMatch) return url;
+    const mime = mimeMatch[1];
+    const bstr = atob(arr[1]);
+    const u8arr = new Uint8Array(bstr.length);
+    for (let i = 0; i < bstr.length; i++) u8arr[i] = bstr.charCodeAt(i);
+    const blob = new Blob([u8arr], { type: mime });
+    const filename = `${userId}/${bucket}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.png`;
+    const { error } = await supabase.storage.from(bucket).upload(filename, blob, { contentType: 'image/png', upsert: true });
+    if (error) {
+      console.error(`[ensureStorageUrl] Failed to upload to ${bucket}:`, error);
+      return url;
+    }
+    const { data } = supabase.storage.from(bucket).getPublicUrl(filename);
+    console.log(`[ensureStorageUrl] Uploaded base64 to ${bucket}:`, data.publicUrl);
+    return data.publicUrl;
+  } catch {
+    return url;
+  }
+}
+
+// =============================================
 // TYPE CONVERTERS
 // =============================================
 
@@ -444,6 +482,16 @@ export async function saveScenario(
   metadata: { title: string; description: string; coverImage: string; coverImagePosition?: { x: number; y: number }; tags: string[] },
   userId: string
 ): Promise<void> {
+  // Safety net: intercept base64 cover images before saving
+  const safeCoverImage = await ensureStorageUrl(metadata.coverImage, 'covers', userId);
+
+  // Safety net: intercept base64 avatar URLs in characters before saving
+  for (const char of data.characters) {
+    if (char.avatarDataUrl?.startsWith('data:')) {
+      char.avatarDataUrl = await ensureStorageUrl(char.avatarDataUrl, 'avatars', userId);
+    }
+  }
+
   // Upsert scenario
   const { error: scenarioError } = await supabase
     .from('scenarios')
@@ -452,7 +500,7 @@ export async function saveScenario(
       user_id: userId,
       title: metadata.title,
       description: metadata.description,
-      cover_image_url: metadata.coverImage,
+      cover_image_url: safeCoverImage,
       cover_image_position: metadata.coverImagePosition || { x: 50, y: 50 },
       tags: metadata.tags,
       world_core: data.world.core,
