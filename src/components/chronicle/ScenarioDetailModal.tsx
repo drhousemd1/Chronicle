@@ -348,7 +348,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                           }}
                           className="flex items-center gap-2 group"
                         >
-                          <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 overflow-hidden flex-shrink-0 group-hover:ring-2 group-hover:ring-[#4a5f7f] transition-all">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 overflow-hidden flex-shrink-0 group-hover:ring-2 group-hover:ring-[#4a5f7f] transition-all">
                             {publisher.avatar_url ? (
                               <img 
                                 src={publisher.avatar_url} 
@@ -356,7 +356,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                                 className="w-full h-full object-cover"
                               />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center text-white/80 text-[10px] font-bold">
+                              <div className="w-full h-full flex items-center justify-center text-white/80 text-sm font-bold">
                                 {(publisher.display_name || publisher.username)?.charAt(0)?.toUpperCase() || '?'}
                               </div>
                             )}
@@ -442,7 +442,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                 )}
 
                 {/* Characters Section */}
-                <div className="mt-auto pt-8 border-t border-white/5">
+                <div className="pt-8">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-xs font-bold text-white/40 uppercase tracking-widest">Characters</h3>
                     {characters.length > 4 && (
@@ -492,7 +492,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
 
                 {/* Remove from Gallery - Bottom Right */}
                 {canShowUnpublish && (
-                  <div className="flex justify-end mt-6">
+                  <div className="mt-auto pt-6 flex justify-end">
                     <button
                       onClick={handleUnpublish}
                       disabled={isUnpublishing}
