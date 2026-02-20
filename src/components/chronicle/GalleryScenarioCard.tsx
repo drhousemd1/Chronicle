@@ -165,7 +165,7 @@ export const GalleryScenarioCard: React.FC<GalleryScenarioCardProps> = ({
             </span>
           </div>
           <span className="text-[11px] text-white/50 font-medium mt-1">
-            Written by: {publisher?.username || 'Anonymous'}
+            Written by: {publisher?.display_name || publisher?.username || 'Anonymous'}
           </span>
         </div>
       </div>
