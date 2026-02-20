@@ -40,6 +40,8 @@ export interface ScenarioDetailModalProps {
   saveCount?: number;
   playCount?: number;
   viewCount?: number;
+  avgRating?: number;
+  reviewCount?: number;
   
   // Publisher info
   publisher?: {
@@ -91,6 +93,8 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
   saveCount = 0,
   playCount = 0,
   viewCount = 0,
+  avgRating = 0,
+  reviewCount = 0,
   publisher,
   publisherId,
   publishedScenarioId,
@@ -355,40 +359,51 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
             <ScrollArea className="flex-1 md:border-l border-white/5">
               <div className="p-6 md:p-8 md:pr-12 flex flex-col min-h-full">
                 {/* Header: Title + Stats */}
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex flex-col gap-1 flex-1 pr-8">
-                    {/* Title with inline stats */}
-                    <div className="flex items-center flex-wrap gap-4">
-                      <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">
-                        {title || "Untitled Story"}
-                      </h1>
-                      
-                      {/* Inline Stats - Gallery mode only */}
-                      {!isOwned && (
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center gap-1.5 text-[#94a3b8]">
-                            <Eye className="w-4 h-4" />
-                            <span className="text-xs font-bold">{formatCount(viewCount)}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-[#94a3b8]">
-                            <Heart className={cn("w-4 h-4", isLiked && "fill-rose-400 text-rose-400")} />
-                            <span className="text-xs font-bold">{formatCount(likeCount)}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-[#94a3b8]">
-                            <Bookmark className={cn("w-4 h-4", isSaved && "fill-amber-400 text-amber-400")} />
-                            <span className="text-xs font-bold">{formatCount(saveCount)}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-[#94a3b8]">
-                            <Play className="w-4 h-4" />
-                            <span className="text-xs font-bold">{formatCount(playCount)}</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                <div className="flex flex-col gap-1 pr-8">
+                    {/* Title */}
+                    <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">
+                      {title || "Untitled Story"}
+                    </h1>
 
-                    {/* Publisher "by" line */}
+                    {/* Cumulative Story + Spice ratings (only in gallery mode with reviews) */}
+                    {!isOwned && reviewCount > 0 && (
+                      <div className="flex items-center gap-4 mt-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-sm text-white/40">Story</span>
+                          <StarRating rating={Math.round(avgRating * 2) / 2} size={16} />
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-sm text-white/40">Spice</span>
+                          <SpiceRating rating={Math.round((reviews.length > 0 ? reviews.reduce((sum, r) => sum + r.spice_level, 0) / reviews.length : 0) * 2) / 2} size={16} />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Stats row - Gallery mode only */}
+                    {!isOwned && (
+                      <div className="flex items-center gap-4 mt-1">
+                        <div className="flex items-center gap-1.5 text-[#94a3b8]">
+                          <Eye className="w-4 h-4" />
+                          <span className="text-xs font-bold">{formatCount(viewCount)}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[#94a3b8]">
+                          <Heart className={cn("w-4 h-4", isLiked && "fill-rose-400 text-rose-400")} />
+                          <span className="text-xs font-bold">{formatCount(likeCount)}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[#94a3b8]">
+                          <Bookmark className={cn("w-4 h-4", isSaved && "fill-amber-400 text-amber-400")} />
+                          <span className="text-xs font-bold">{formatCount(saveCount)}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[#94a3b8]">
+                          <Play className="w-4 h-4" />
+                          <span className="text-xs font-bold">{formatCount(playCount)}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Creator section */}
                     {publisher && !isOwned && (
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="mt-4">
                         <button
                           onClick={() => {
                             if (publisherId) {
@@ -413,11 +428,12 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                           </div>
                           <div>
                             <p className="text-sm text-[#94a3b8] group-hover:text-white transition-colors">
-                              by <span className="text-[#4a5f7f] font-medium">{publisher.display_name || publisher.username || 'Anonymous'}</span>
+                              Created by: <span className="text-[#4a5f7f] font-medium">{publisher.display_name || publisher.username || 'Anonymous'}</span>
                             </p>
                             {creatorRating && (
                               <div className="flex items-center gap-1.5 mt-0.5">
-                                <StarRating rating={creatorRating.rating} size={16} />
+                                <span className="text-sm text-white/40">Creator rating:</span>
+                                <StarRating rating={creatorRating.rating} size={16} color="slate" />
                                 <span className="text-sm text-white/50">{creatorRating.rating.toFixed(1)} ({creatorRating.totalReviews} review{creatorRating.totalReviews !== 1 ? 's' : ''})</span>
                               </div>
                             )}
@@ -445,7 +461,6 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                       </div>
                     )}
                   </div>
-                </div>
 
                 {/* Synopsis Section */}
                 <div className="mt-6">
