@@ -1,79 +1,59 @@
 
 
-# Fix Published Works Cards to Match Gallery Cards
+# Fix Public Profile Avatar Buttons and Remove Toasts
 
-## Problem
+## Problem 1: Toasts
 
-The Published Works cards in the Public Profile tab are a simplified, incomplete version that's missing most of the visual elements and data that the Community Gallery cards have. Specifically:
+Multiple toast notifications fire on save and avatar upload. The user has asked repeatedly to not use toasts.
 
-- No SFW/NSFW badge
-- No remix (pencil) badge
-- Only 2 stats icons (Heart, Play) instead of all 4 (Eye, Heart, Bookmark, Play)
-- No "Written by:" author row
-- Wrong aspect ratio and border radius
-- No brand border color (#4a5f7f)
-- Weak gradient overlay causing text clipping
-- Missing shadow and hover effects
-- Data query doesn't fetch view_count, save_count, allow_remix, or content themes
+## Problem 2: Button Layout
 
-## Solution
+The `[&>div]:flex-col` CSS override on the `AvatarActionButtons` wrapper is forcing the "Upload Image" and "AI Generate" buttons to stack vertically. The character builder uses them **side-by-side** (the component's default `flex gap-2` row layout), and shows a "Reposition" button below only when an avatar image exists. The profile page should match this pattern exactly.
 
-Rewrite the Published Works card rendering to match `GalleryScenarioCard.tsx` exactly, and expand the data query to fetch the missing fields.
+## Changes
 
-## Technical Changes
+### File: `src/components/account/PublicProfileTab.tsx`
 
-### 1. `src/components/account/PublicProfileTab.tsx` -- Expand the data query
+**1. Remove all toast calls**
 
-Update the `published_scenarios` select query (line 75-78) to also fetch `view_count`, `save_count`, and `allow_remix`:
+- Line 50: Remove `const { toast } = useToast();`
+- Line 3: Remove the `useToast` import
+- Line 134: Remove `toast({ title: 'Profile saved', ... })`
+- Line 136: Remove `toast({ title: 'Save failed', ... })`
+- Line 155: Remove `toast({ title: 'Avatar updated' })`
+- Line 157: Remove `toast({ title: 'Upload failed', ... })`
+- Line 182: Remove `toast({ title: 'Avatar updated' })`
+- Line 184: Remove `toast({ title: 'Upload failed', ... })`
+- Line 191: Remove `toast({ title: 'Upload failed', ... })`
 
-```sql
-id, scenario_id, like_count, play_count, view_count, save_count, allow_remix,
-scenarios!inner (title, description, cover_image_url, cover_image_position)
+**2. Fix button layout -- remove the `[&>div]:flex-col` override**
+
+Line 250: Change:
+```tsx
+<div className="w-48 [&>div]:flex-col">
+```
+To:
+```tsx
+<div className="flex flex-col gap-2 w-full">
 ```
 
-### 2. `src/components/account/PublicProfileTab.tsx` -- Update the PublishedWork interface
+This matches the character builder pattern (CharactersTab.tsx line 662) where the buttons sit inside `flex flex-col gap-2 w-full` -- the `AvatarActionButtons` renders its own inner `flex gap-2` row, and the outer column wrapper just stacks additional items (like Reposition) below.
 
-Add the missing fields to the `PublishedWork` interface (lines 34-42):
+**3. Add a "Reposition" button below the action buttons (when avatar exists)**
 
-```ts
-interface PublishedWork {
-  id: string;
-  scenario_id: string;
-  like_count: number;
-  play_count: number;
-  view_count: number;
-  save_count: number;
-  allow_remix: boolean;
-  scenario: { ... } | null;
-}
+After the `AvatarActionButtons` component, add a Reposition button that only shows when `profile.avatar_url` exists -- matching the character builder pattern (CharactersTab.tsx lines 678-686). This requires adding `isRepositioning` state and drag-to-reposition functionality for the avatar, plus storing `avatar_position` in the profile.
+
+However, since the profile avatar doesn't currently support repositioning (no `avatar_position` field in the profiles table), we will skip the Reposition button for now and just fix the layout to be side-by-side.
+
+**4. Update the avatar column width**
+
+The `w-48` wrapper is fine for the avatar square, but the buttons wrapper should just be `w-full` within the column so buttons get the full width of the avatar column.
+
+## Summary of final layout
+
+```text
+[  Avatar Image (w-48 h-48)  ]
+[ Upload Image | AI Generate ]  <-- side by side, matching character builder
 ```
 
-### 3. `src/components/account/PublicProfileTab.tsx` -- Fetch content themes
-
-After the main query, also fetch content themes for each work's scenario_id (using the existing `content_themes` table), and attach the `storyType` to each work so the SFW/NSFW badge can render.
-
-### 4. `src/components/account/PublicProfileTab.tsx` -- Rewrite the card rendering (lines 352-380)
-
-Replace the current simplified card with the full gallery-style card structure:
-
-- **Container**: `aspect-[2/3]` with `rounded-[2rem]`, `border border-[#4a5f7f]`, heavy box shadow
-- **Gradient overlay**: `from-slate-950 via-slate-900/60 to-transparent`
-- **SFW/NSFW badge**: Top-right corner, red for NSFW, blue for SFW
-- **Pencil badge**: Top-left corner when `allow_remix` is true
-- **Bottom info section** (4-row stack):
-  1. Title -- `text-lg font-black`, single line truncate
-  2. Description -- `text-xs italic`, 2-line clamp with `min-h-[2.5rem]`
-  3. Stats row -- Eye, Heart, Bookmark, Play with counts
-  4. "Written by:" row with the user's display name
-- **Hover effects**: scale-up on image, translate-y on card
-
-### 5. Add missing imports
-
-Add `Bookmark`, `Eye`, `Pencil` to the lucide-react import (some may already be imported for the stats header).
-
-## What stays the same
-
-- The stats header row at the top of the Published Works section (already correct)
-- The grid layout (`grid-cols-2 sm:grid-cols-3 lg:grid-cols-4`)
-- No interactive Like/Save/Play buttons on these cards (this is a profile view, not the gallery)
-- The `GalleryScenarioCard` component itself is not modified
+No stacking, no `flex-col` override, no toasts.
