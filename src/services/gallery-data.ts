@@ -23,6 +23,8 @@ export interface PublishedScenario {
   save_count: number;
   play_count: number;
   view_count: number;
+  avg_rating: number;
+  review_count: number;
   is_published: boolean;
   created_at: string;
   updated_at: string;
@@ -93,6 +95,8 @@ export async function fetchPublishedScenarios(
         save_count,
         play_count,
         view_count,
+        avg_rating,
+        review_count,
         is_published,
         created_at,
         updated_at,
@@ -173,6 +177,8 @@ export async function fetchPublishedScenarios(
       save_count: item.save_count,
       play_count: item.play_count,
       view_count: item.view_count,
+      avg_rating: item.avg_rating || 0,
+      review_count: item.review_count || 0,
       is_published: item.is_published,
       created_at: item.created_at,
       updated_at: item.updated_at,

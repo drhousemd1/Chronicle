@@ -38,7 +38,7 @@ export const SpiceRating: React.FC<SpiceRatingProps> = ({
             onMouseEnter={() => interactive && setHoverRating(level)}
             onMouseLeave={() => interactive && setHoverRating(null)}
             className={cn(
-              'p-0 border-0 bg-transparent',
+              'p-0 m-0 border-0 bg-transparent',
               interactive ? 'cursor-pointer hover:scale-110 transition-transform' : 'cursor-default'
             )}
           >
