@@ -1,12 +1,17 @@
 
 import React, { useState, useEffect } from 'react';
-import { Heart, Bookmark, Play, Pencil, Edit, Loader2, Eye, X, Globe, UserPlus, UserMinus } from 'lucide-react';
+import { Heart, Bookmark, Play, Pencil, Edit, Loader2, Eye, X, Globe } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogOverlay, DialogPortal } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { fetchScenarioCharacters, ScenarioCharacter } from '@/services/gallery-data';
+import { fetchScenarioCharacters, ScenarioCharacter, fetchScenarioReviews, fetchUserReview, fetchCreatorOverallRating, type ScenarioReview } from '@/services/gallery-data';
+import { StarRating } from './StarRating';
+import { SpiceRating } from './SpiceRating';
+import { ReviewModal } from './ReviewModal';
+import { useAuth } from '@/hooks/use-auth';
+import { formatDistanceToNow } from 'date-fns';
 
 export interface ScenarioDetailModalProps {
   open: boolean;
@@ -43,6 +48,7 @@ export interface ScenarioDetailModalProps {
     display_name?: string | null;
   };
   publisherId?: string;
+  publishedScenarioId?: string;  // The published_scenarios.id (for reviews)
   publishedAt?: string;
   
   // Interaction state
@@ -87,6 +93,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
   viewCount = 0,
   publisher,
   publisherId,
+  publishedScenarioId,
   publishedAt,
   isLiked = false,
   isSaved = false,
@@ -105,7 +112,12 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
   const [isLiking, setIsLiking] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUnpublishing, setIsUnpublishing] = useState(false);
+  const [reviews, setReviews] = useState<ScenarioReview[]>([]);
+  const [userReview, setUserReview] = useState<ScenarioReview | null>(null);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [creatorRating, setCreatorRating] = useState<{ rating: number; totalReviews: number } | null>(null);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   // Fetch characters when modal opens
   useEffect(() => {
@@ -117,6 +129,28 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
         .finally(() => setIsLoadingCharacters(false));
     }
   }, [open, scenarioId]);
+
+  // Fetch reviews when modal opens
+  const loadReviews = () => {
+    if (!publishedScenarioId) return;
+    fetchScenarioReviews(publishedScenarioId).then(setReviews).catch(console.error);
+    if (user?.id) {
+      fetchUserReview(publishedScenarioId, user.id).then(setUserReview).catch(console.error);
+    }
+  };
+
+  useEffect(() => {
+    if (open && publishedScenarioId) {
+      loadReviews();
+    }
+  }, [open, publishedScenarioId, user?.id]);
+
+  // Fetch creator overall rating
+  useEffect(() => {
+    if (open && publisherId && !isOwned) {
+      fetchCreatorOverallRating(publisherId).then(setCreatorRating).catch(console.error);
+    }
+  }, [open, publisherId, isOwned]);
 
   const handleLike = async () => {
     if (!onLike || isLiking) return;
@@ -377,9 +411,17 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                               </div>
                             )}
                           </div>
-                          <p className="text-sm text-[#94a3b8] group-hover:text-white transition-colors">
-                            by <span className="text-[#4a5f7f] font-medium">{publisher.display_name || publisher.username || 'Anonymous'}</span>
-                          </p>
+                          <div>
+                            <p className="text-sm text-[#94a3b8] group-hover:text-white transition-colors">
+                              by <span className="text-[#4a5f7f] font-medium">{publisher.display_name || publisher.username || 'Anonymous'}</span>
+                            </p>
+                            {creatorRating && (
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <StarRating rating={creatorRating.rating} size={12} />
+                                <span className="text-[10px] text-white/40">{creatorRating.rating.toFixed(1)} ({creatorRating.totalReviews} review{creatorRating.totalReviews !== 1 ? 's' : ''})</span>
+                              </div>
+                            )}
+                          </div>
                         </button>
                       </div>
                     )}
@@ -506,11 +548,80 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                   )}
                 </div>
 
+                {/* Reviews Section */}
+                {!isOwned && publishedScenarioId && (
+                  <div className="pt-8">
+                    {/* Gradient divider */}
+                    <div className="h-px bg-gradient-to-r from-transparent via-[#4a5f7f] to-transparent mb-6" />
+
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-xs font-bold text-white/40 uppercase tracking-widest">Reviews</h3>
+                      {user && (
+                        <button
+                          onClick={() => setIsReviewModalOpen(true)}
+                          className="px-3 py-1.5 bg-[#4a5f7f] hover:bg-[#3d5170] text-white text-xs font-semibold rounded-full transition-colors"
+                        >
+                          {userReview ? 'Edit Review' : 'Leave a Review'}
+                        </button>
+                      )}
+                    </div>
+
+                    {reviews.length === 0 ? (
+                      <p className="text-sm text-white/40 italic">No reviews yet. Be the first!</p>
+                    ) : (
+                      <div className="space-y-4">
+                        {reviews.map((review) => (
+                          <div key={review.id} className="p-3 rounded-xl bg-white/5 border border-white/5">
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 overflow-hidden flex-shrink-0">
+                                {review.reviewer?.avatar_url ? (
+                                  <img src={review.reviewer.avatar_url} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-white/80 text-[10px] font-bold">
+                                    {(review.reviewer?.display_name || review.reviewer?.username)?.charAt(0)?.toUpperCase() || '?'}
+                                  </div>
+                                )}
+                              </div>
+                              <span className="text-xs font-medium text-white">{review.reviewer?.display_name || review.reviewer?.username || 'Anonymous'}</span>
+                              <span className="text-[10px] text-white/30">{formatDistanceToNow(new Date(review.created_at), { addSuffix: true })}</span>
+                            </div>
+                            <div className="flex items-center gap-4 mb-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[10px] text-white/40">Story</span>
+                                <StarRating rating={Math.round(review.raw_weighted_score * 2) / 2} size={12} />
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[10px] text-white/40">Spice</span>
+                                <SpiceRating rating={review.spice_level} size={12} />
+                              </div>
+                            </div>
+                            {review.comment && (
+                              <p className="text-xs text-white/70 mt-1 leading-relaxed">{review.comment}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
               </div>
             </ScrollArea>
           </div>
         </div>
       </DialogPortal>
+
+      {/* Review Modal */}
+      {publishedScenarioId && user && (
+        <ReviewModal
+          open={isReviewModalOpen}
+          onOpenChange={setIsReviewModalOpen}
+          publishedScenarioId={publishedScenarioId}
+          userId={user.id}
+          existingReview={userReview}
+          onReviewSubmitted={loadReviews}
+        />
+      )}
     </Dialog>
   );
 };
