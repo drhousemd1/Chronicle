@@ -1,51 +1,59 @@
 
 
-# Fix "Written by Anonymous" and Gallery Loading Issues
+# Match Creator Profile to Public Profile Tab -- Exact Layout Duplication
 
-## Issue 1: "Written by Anonymous" on Your Stories page
+## Problem
 
-**Root cause**: The `fetchUserProfile` function in `supabase-data.ts` only fetches `username` from the profiles table, but the user's `username` is null. Their **display name** is "Dr. House" (stored in `display_name`), which is what should be shown.
+The Creator Profile page currently uses different card styles, layouts, and data from the Public Profile tab. The Published Works cards are especially different -- wrong aspect ratio, wrong border, wrong gradient, missing description, missing stats, missing badges.
 
-**Changes:**
+## Detailed Differences Found
 
-### `src/services/supabase-data.ts` (lines 1751-1764)
-- Update `fetchUserProfile` to select `display_name` in addition to (or instead of) `username`
-- Update the return type to include `display_name`
+### Profile Info Section (minor fixes)
+- CreatorProfile uses `flex flex-col md:flex-row gap-8` -- should be `flex gap-6` (PublicProfileTab line 296)
+- Avatar column in PublicProfileTab uses `flex-shrink-0 flex flex-col items-center gap-3 w-72` wrapper -- CreatorProfile just has the bare `w-72 h-72` div
 
-### `src/pages/Index.tsx`
-- **Line 172**: Update the `userProfile` state type to include `display_name`
-- **Line 1745**: Change `ownerUsername={userProfile?.username || undefined}` to `ownerUsername={userProfile?.display_name || userProfile?.username || undefined}` so it prefers display_name
+### Published Works Section (major overhaul needed)
+Current CreatorProfile cards vs PublicProfileTab cards:
 
----
+| Property | CreatorProfile (wrong) | PublicProfileTab (correct) |
+|---|---|---|
+| Wrapper | Bare heading, no card | Wrapped in `bg-[#1e1e22] rounded-2xl border border-white/10 p-6` card |
+| Heading | `text-xs font-bold text-white/40 uppercase tracking-widest` | `text-sm font-black text-white uppercase tracking-wider` |
+| Aspect ratio | `aspect-[3/4]` | `aspect-[2/3]` |
+| Border radius | `rounded-xl` | `rounded-[2rem]` |
+| Border | none | `border border-[#4a5f7f]` |
+| Shadow | none | `shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]` |
+| Hover effect | `scale-105` on image | `-translate-y-3` on card, `scale-110` on image, `shadow-2xl` |
+| Gradient | `from-black/80 to-transparent` | `from-slate-950 via-slate-900/60 to-transparent` (full overlay div) |
+| Title | `text-sm font-bold truncate` | `text-lg font-black tracking-tight truncate` |
+| Description | missing | `text-xs italic line-clamp-2 min-h-[2.5rem]` |
+| Stats | Only Heart + Play | Eye, Heart, Bookmark, Play |
+| "Written by" | missing | `text-[11px] text-white/50` |
+| SFW/NSFW badge | missing | Top-right badge |
+| Remix badge | missing | Top-left pencil icon |
 
-## Issue 2: Community Gallery not loading (spinning forever)
+### Data Fetch Gaps
+- CreatorProfile query only fetches `like_count, play_count` -- needs `view_count, save_count, allow_remix` too
+- Missing `storyType` from `content_themes` table lookup
+- `PublishedWork` interface needs `view_count`, `save_count`, `allow_remix`, `storyType`
 
-**Root cause**: The `published_scenarios` table has no foreign key constraint pointing to `scenarios.id`. PostgREST uses foreign keys to resolve relationship joins like `scenarios!inner(...)`. Without a FK, the `scenarios!inner` join in `fetchPublishedScenarios` may fail or behave unpredictably.
+## Changes
 
-Additionally, the CreatorProfile page query (line 63) uses the same `scenarios!inner` pattern, which has the same fragility.
+### `src/pages/CreatorProfile.tsx`
 
-**Changes:**
+1. **Update `PublishedWork` interface** -- add `view_count`, `save_count`, `allow_remix`, `storyType` fields
 
-### Database migration
-- Add a foreign key from `published_scenarios.scenario_id` to `scenarios.id` to make PostgREST joins reliable:
-```sql
-ALTER TABLE public.published_scenarios
-  ADD CONSTRAINT published_scenarios_scenario_id_fkey
-  FOREIGN KEY (scenario_id) REFERENCES public.scenarios(id)
-  ON DELETE CASCADE;
-```
+2. **Update data fetch query** (line 61-64):
+   - Add `view_count, save_count, allow_remix` to the select
+   - After fetching works, query `content_themes` for `storyType` (same pattern as PublicProfileTab lines 114-123)
 
-### `src/services/gallery-data.ts`
-- Add error handling / fallback in `fetchPublishedScenarios` so it doesn't silently hang if the join fails -- wrap the query in a try/catch and return an empty array with an error toast instead of throwing
+3. **Add missing imports**: `cn` from `@/lib/utils`, `Pencil` icon
 
----
+4. **Profile info card** (line 170): Change `flex flex-col md:flex-row gap-8` to `flex gap-6` to match PublicProfileTab line 296
 
-## Summary of file changes
-
-| File | Change |
-|---|---|
-| `src/services/supabase-data.ts` | Fetch `display_name` in `fetchUserProfile` |
-| `src/pages/Index.tsx` | Update type and prefer `display_name` over `username` |
-| Database migration | Add FK from `published_scenarios.scenario_id` to `scenarios.id` |
-| `src/services/gallery-data.ts` | Improve error resilience in `fetchPublishedScenarios` |
+5. **Published Works section** (lines 256-293): Replace entirely with the exact card markup from PublicProfileTab lines 424-535, minus the edit-only elements (Hide checkbox, Save button). Specifically:
+   - Wrap in `bg-[#1e1e22] rounded-2xl border border-white/10 p-6` card
+   - Use `text-sm font-black text-white uppercase tracking-wider` heading
+   - Each card: `aspect-[2/3]`, `rounded-[2rem]`, `border border-[#4a5f7f]`, full shadow, hover lift, proper gradient overlay
+   - Include SFW/NSFW badge, remix badge, description, all 4 stat icons, "Written by" line
 
