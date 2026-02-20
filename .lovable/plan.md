@@ -1,22 +1,23 @@
 
 
-# Fix Avatar Button Text Truncation
+# Fix Scenario Detail Modal: Avatar Size and Button Placement
 
-## Problem
+## Changes in `src/components/chronicle/ScenarioDetailModal.tsx`
 
-The avatar column is `w-64` (256px). The two side-by-side buttons ("Upload Image" and "AI Generate") each get ~120px after accounting for gaps and padding, which truncates "Upload Image" to "Upload Ima...".
+### 1. Enlarge publisher avatar to match character avatars
 
-## Fix
+The publisher avatar next to "by Dr. House" is currently `w-5 h-5` (20px). The character circles below are `w-14 h-14` (56px). Increase the publisher avatar to `w-10 h-10` (40px) -- large enough to actually see the image, while still fitting naturally next to the "by" text line. The inner fallback text size will scale up accordingly.
 
-Increase the avatar column and avatar container from `w-64` to `w-72` (288px). This gives each button ~136px -- enough room for both labels to display fully.
+### 2. Reposition "Remove from Gallery" button
 
-## Technical Changes
+Currently the button floats awkwardly with `justify-end mt-6`. Per Image 4, it should be pinned to the absolute bottom-right of the right column, visually aligned with the action buttons on the left. 
 
-### `src/components/account/PublicProfileTab.tsx`
+Move the "Remove from Gallery" button out of the scrollable content flow and into a sticky/fixed footer area at the bottom of the right column. Use `mt-auto` on a wrapper that pushes it to the bottom, and keep `justify-end` for right-alignment. Remove the `border-t` from the Characters section so it doesn't create a visual break before the button.
 
-Three changes (all on existing lines):
+### Technical details
 
-1. **Line 298** -- Avatar column wrapper: `w-64` to `w-72`
-2. **Line 302** -- Avatar container: `w-64 h-64` to `w-72 h-72`
+**File:** `src/components/chronicle/ScenarioDetailModal.tsx`
 
-That's it -- two class changes, no logic changes.
+- **Lines ~230-243** (publisher avatar): Change `w-5 h-5` to `w-10 h-10`, increase fallback text from `text-[10px]` to `text-sm`
+- **Lines ~322-336** (Remove from Gallery button): Move the `canShowUnpublish` block so it sits inside a bottom-pinned footer row that aligns with the left column's action buttons. The right column content div already uses `flex flex-col min-h-full` with `mt-auto` on the characters section -- reposition the unpublish button into a new bottom bar after the characters section, using `mt-auto pt-6 flex justify-end`.
+
