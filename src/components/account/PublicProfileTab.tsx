@@ -295,11 +295,11 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
       <div className="bg-[#1e1e22] rounded-2xl border border-white/10 p-6">
         <div className="flex gap-6">
           {/* Avatar column - w-64 for enough button room */}
-          <div className="flex-shrink-0 flex flex-col items-center gap-3 w-64">
+          <div className="flex-shrink-0 flex flex-col items-center gap-3 w-72">
             {/* Square avatar matching character builder style */}
             <div
               ref={avatarContainerRef}
-              className={`relative w-64 h-64 rounded-2xl overflow-hidden shadow-lg select-none ${isRepositioning ? 'ring-4 ring-blue-500 cursor-move' : 'border-2 border-dashed border-zinc-600 bg-zinc-800'}`}
+              className={`relative w-72 h-72 rounded-2xl overflow-hidden shadow-lg select-none ${isRepositioning ? 'ring-4 ring-blue-500 cursor-move' : 'border-2 border-dashed border-zinc-600 bg-zinc-800'}`}
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
