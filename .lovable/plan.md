@@ -1,69 +1,33 @@
 
+# Replace Account Button in Sidebar with Simple Icon
 
-# Avatar Styling + AI Generate + Move Account Button to Sidebar
+## Problem
 
-## Overview
+The current `AccountButton` in the sidebar bottom shows the user's initials in a circle plus their username text, which overflows the collapsed sidebar and looks inconsistent with the other sidebar items (which are all icon-only when collapsed, icon+label when expanded).
 
-Three changes in one pass:
+## Solution
 
-1. **Replace the circular avatar** on the Public Profile tab with the square `rounded-2xl` dashed-border style used in the character builder
-2. **Add "Upload Image" and "AI Generate" buttons** below the avatar using the existing `AvatarActionButtons` and `AvatarGenerationModal` components
-3. **Move the AccountButton from the header to the bottom of the left sidebar**, removing header clutter
+Replace the `AccountButton` component in the sidebar bottom with a standard `SidebarItem` that uses a `User` (or `UserCircle`) icon from lucide-react -- matching every other sidebar item's styling. Clicking it navigates to the account tab. The sign-out and profile dropdown functionality moves into the account page itself (it already has those options there).
 
----
+## Changes
 
-## Change 1: Avatar Styling on Public Profile
+### File: `src/pages/Index.tsx`
 
-**File: `src/components/account/PublicProfileTab.tsx`**
+1. **Remove** the `<div className="p-4 border-t ..."><AccountButton ... /></div>` block at lines 1318-1327
+2. **Add** a new `SidebarItem` at the end of the nav section (after Model Settings, inside the existing nav), styled like the other items:
 
-Replace the circular `Avatar`/`AvatarFallback` (lines 184-194) with a square container:
+```
+<div className="pt-4 mt-4 border-t border-white/10">
+  <SidebarItem
+    active={tab === "account"}
+    label="Account"
+    icon={<UserCircle className="w-5 h-5" />}
+    onClick={() => setTab("account")}
+    collapsed={sidebarCollapsed}
+  />
+</div>
+```
 
-- `w-36 h-36 rounded-2xl` with `bg-zinc-800 border-2 border-dashed border-zinc-600` when empty (shows initials in muted text)
-- When avatar exists: full `object-cover` image display
-- Remove the simple hover camera overlay -- the action buttons below handle uploads instead
-- Remove the `Avatar`, `AvatarImage`, `AvatarFallback`, and `Camera` imports (no longer needed)
+3. **Remove** the `AccountButton` import (line 5) since it will no longer be used anywhere
 
-## Change 2: Add AvatarActionButtons + AvatarGenerationModal
-
-**File: `src/components/account/PublicProfileTab.tsx`**
-
-Below the avatar container, render the existing `AvatarActionButtons` component (Upload Image dropdown + AI Generate button), and the `AvatarGenerationModal`.
-
-- Import `AvatarActionButtons` and `AvatarGenerationModal`
-- Add a hidden file input ref for the "From Device" path
-- Wire `onUploadFromDevice` to trigger the hidden file input (reuses existing `handleAvatarUpload`)
-- Wire `onSelectFromLibrary` to upload the selected library image URL to the `avatars` bucket and update the profile
-- Wire `onGenerateClick` to open the `AvatarGenerationModal`
-- Wire `onGenerated` callback to upload the generated image to the `avatars` bucket and update the profile
-- Pass `characterName={profile.display_name || 'User'}` and `modelId=""` (uses default)
-- The buttons container width matches the avatar width (`w-36`)
-
-## Change 3: Move Account Button to Sidebar
-
-**File: `src/pages/Index.tsx`**
-
-### Remove from header (line ~1505-1514)
-Delete the `AccountButton` component from the header's right-side button group. This eliminates the clutter visible in the screenshot.
-
-### Add to sidebar bottom (line ~1318-1322)
-Replace the current email-only display at the sidebar bottom with a clickable account button:
-
-- **Expanded sidebar**: Shows a small avatar circle (28px) + display name, with a dropdown menu containing "Public Profile", "Account Settings", and "Sign Out"
-- **Collapsed sidebar**: Shows just the small avatar circle, same dropdown on click
-- Reuse the `AccountButton` component directly (it already renders an avatar + dropdown menu) -- just place it in the sidebar bottom section instead of the header
-- Remove the plain `user?.email` text display since AccountButton already shows the user info
-
-### Fetch profile data
-The `AccountButton` component already fetches the user's profile (display_name, avatar_url) internally, so no additional data fetching is needed in Index.tsx.
-
----
-
-## Files Modified
-
-| File | Change |
-|---|---|
-| `src/components/account/PublicProfileTab.tsx` | Replace circular avatar with square dashed-border style; add AvatarActionButtons + AvatarGenerationModal below avatar |
-| `src/pages/Index.tsx` | Remove AccountButton from header; add it to sidebar bottom section; remove email text display |
-
-No database changes needed.
-
+This gives the account entry the exact same rounded-xl button with icon styling as every other sidebar item -- icon-only when collapsed, icon + "Account" label when expanded.
