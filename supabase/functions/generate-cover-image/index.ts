@@ -99,7 +99,18 @@ serve(async (req) => {
     if (data.data?.[0]?.url) {
       imageUrl = data.data[0].url;
     } else if (data.data?.[0]?.b64_json) {
-      imageUrl = `data:image/png;base64,${data.data[0].b64_json}`;
+      // Upload to storage instead of returning base64
+      const raw = data.data[0].b64_json;
+      const imageBytes = Uint8Array.from(atob(raw), c => c.charCodeAt(0));
+      const filename = `${user.id}/cover-${Date.now()}.png`;
+      const { error: uploadError } = await supabase.storage.from('covers').upload(filename, imageBytes, { contentType: 'image/png', upsert: true });
+      if (uploadError) {
+        console.error('[generate-cover-image] Storage upload failed:', uploadError);
+        throw uploadError;
+      }
+      const { data: urlData } = supabase.storage.from('covers').getPublicUrl(filename);
+      imageUrl = urlData.publicUrl;
+      console.log('[generate-cover-image] Uploaded b64 to storage:', imageUrl);
     }
 
     if (!imageUrl) {
