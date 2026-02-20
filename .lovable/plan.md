@@ -1,69 +1,127 @@
 
-# Fix Creator Rating Position, Review Card Layout, and Modal Text Sizes
 
-## Issue 1: Creator Rating Alignment
+# Redesign Scenario Detail Modal Header Layout
 
-**Problem**: The star rating and "5.0 (1 review)" text appears centered under the avatar circle. It should be left-aligned with the "by Dr. House" text line -- positioned as a second line within the text column, not under the avatar.
+## Overview
 
-**Current structure** (lines 414-424 of ScenarioDetailModal.tsx):
-The creator rating `<div>` is inside the correct parent `<div>` (the text column next to the avatar), but the parent button uses `items-center` which centers everything vertically. The rating needs to stay in the text column and align left with the "by" text.
+Restructure the right column header of the ScenarioDetailModal to match the mockup: title on its own row, cumulative story/spice ratings below it, stat counters below that, then the creator section with slate blue stars.
 
-**Fix**: The button wrapping the avatar+text currently has `items-center`. The rating div is already inside the text column div. The real issue is that the outer container may be centering things. Change the button's alignment from `items-center` to `items-start` so the text column aligns to the top-left of the avatar, and the rating naturally falls below the "by" line, left-aligned with it.
+## Current Layout (Right Column Top)
 
-**File**: `src/components/chronicle/ScenarioDetailModal.tsx`, line ~399
-- Change `items-center` to `items-start` on the publisher button element
+```text
+[Title]  [view] [like] [save] [play]    (all on one row)
+[Avatar] by [Name]
+         [gold stars] 5.0 (1 review)     (creator rating)
+```
+
+## New Layout (Per Mockup)
+
+```text
+[Title]
+Story [gold stars]   Spice [red chilis]    (cumulative scenario ratings)
+[view] [like] [save] [play]
+
+[Avatar]  Created by: [Name]
+          Creator rating: [slate blue stars] 4.5 (3 reviews)
+```
 
 ---
 
-## Issue 2: Review Card -- Move Story/Spice Ratings to Top-Right
+## Changes Required
 
-**Problem**: The "Story [stars] Spice [peppers]" row currently sits below the reviewer name and timestamp, taking up a full row. User wants it positioned in the top-right corner of the review card, on the same row as the reviewer name/timestamp.
+### 1. Add `avg_rating` and `review_count` props to ScenarioDetailModal
 
-**Current structure** (lines 574-601):
-```
-<div card>
-  <div row> avatar | name | timestamp </div>
-  <div row> Story [stars] | Spice [peppers] </div>
-  <p> comment </p>
-</div>
+Pass these from the published scenario data so the modal can show cumulative story ratings without extra queries.
+
+**File**: `ScenarioDetailModal.tsx` -- Add two optional props:
+- `avgRating?: number`
+- `reviewCount?: number`
+
+**File**: `GalleryHub.tsx` -- Pass them:
+- `avgRating={liveData.avg_rating}`
+- `reviewCount={liveData.review_count}`
+
+Also update the gallery fetch query if `avg_rating`/`review_count` aren't already selected (they are in the DB but need to be in the select).
+
+### 2. Compute cumulative average spice from reviews
+
+In the modal, compute the average spice level from the loaded `reviews` array:
+
+```typescript
+const avgSpice = reviews.length > 0
+  ? reviews.reduce((sum, r) => sum + r.spice_level, 0) / reviews.length
+  : 0;
 ```
 
-**New structure**:
-```
-<div card>
-  <div row justify-between>
-    <div> avatar | name | timestamp </div>
-    <div> Story [stars] | Spice [peppers] </div>   <!-- moved to right -->
+This gives a simple average rounded for display.
+
+### 3. Restructure the right-column header
+
+**Title**: Stays as its own block, no longer in a flex row with stats.
+
+**Cumulative Story + Spice row** (new): Below the title, show:
+- "Story" label + gold StarRating using `avgRating` prop
+- "Spice" label + red SpiceRating using computed `avgSpice`
+- Only shown when `reviewCount > 0`
+
+**Stats row**: Move the view/like/save/play counters to their own row below the ratings (no longer inline with title).
+
+**Creator section**: Restructure to:
+- Line 1: Avatar + "Created by: [Name]" (changed from "by")
+- Line 2: "Creator rating:" text + slate blue StarRating + "4.5 (3 reviews)" text
+- Stars use a **slate blue color** (`text-[#4a5f7f] fill-[#4a5f7f]`) instead of gold to visually distinguish from story ratings
+
+### 4. Create a slate blue star variant
+
+Add a `color` prop to `StarRating` component to support custom colors (default remains amber/gold). When `color="slate"` is passed, use `text-[#4a5f7f] fill-[#4a5f7f]` instead of `text-amber-400 fill-amber-400`.
+
+### 5. Add spacing between stats row and creator section
+
+Add `mt-4` or similar spacing between the counters row and the creator avatar/name block to create visual separation.
+
+---
+
+## Technical File Changes
+
+| File | Change |
+|------|--------|
+| `src/components/chronicle/StarRating.tsx` | Add optional `color` prop (`"amber"` default, `"slate"` for blue) |
+| `src/components/chronicle/ScenarioDetailModal.tsx` | Add `avgRating`/`reviewCount` props; restructure header: title alone, cumulative ratings row, stats row, creator section with "Created by:" and "Creator rating:" labels; compute `avgSpice` from reviews |
+| `src/components/chronicle/GalleryHub.tsx` | Pass `avgRating` and `reviewCount` props to the modal |
+| `src/services/gallery-data.ts` | Ensure `avg_rating` and `review_count` are included in gallery fetch queries |
+
+---
+
+## Detailed Layout Structure (JSX Pseudocode)
+
+```text
+<div className="flex flex-col gap-1">
+  <!-- Title -->
+  <h1>Title</h1>
+
+  <!-- Cumulative Story + Spice (only if reviews exist) -->
+  <div className="flex items-center gap-4">
+    <span>Story</span> <StarRating rating={avgRating} />
+    <span>Spice</span> <SpiceRating rating={avgSpice} />
   </div>
-  <p> comment </p>
+
+  <!-- Stats row -->
+  <div className="flex items-center gap-4">
+    [Eye] 60   [Heart] 0   [Bookmark] 0   [Play] 1
+  </div>
+
+  <!-- Spacing -->
+  <div className="mt-4">
+    <!-- Creator block -->
+    <button className="flex items-start gap-2">
+      <Avatar />
+      <div>
+        <p>Created by: <span class="text-[#4a5f7f]">Dr. House</span></p>
+        <div>
+          Creator rating: <StarRating color="slate" /> 5.0 (1 review)
+        </div>
+      </div>
+    </button>
+  </div>
 </div>
 ```
-
-**File**: `src/components/chronicle/ScenarioDetailModal.tsx`, lines 574-601
-- Wrap the reviewer info and ratings in a single flex row with `justify-between`
-- Move the Story/Spice ratings div into the same row, right-aligned
-- Remove the `mb-2` from the reviewer info since the ratings row is now merged
-- Remove the `mb-1` from the ratings div since it's now inline
-
----
-
-## Issue 3: ReviewModal Description Text Still Too Small
-
-**Problem**: The category descriptions (e.g., "Is the scenario idea compelling, specific, and interesting?") are `text-xs` (12px). Compared to the rest of the app's body text at `text-sm` (14px), they look noticeably smaller and require squinting.
-
-**Fix**: Increase ALL description text in the ReviewModal from `text-xs` to `text-sm`:
-
-**File**: `src/components/chronicle/ReviewModal.tsx`
-- Line 94: Category descriptions -- `text-xs text-white/40` to `text-sm text-white/40`
-- Line 110: Spice Level description -- `text-xs text-white/40` to `text-sm text-white/40`
-
----
-
-## Summary of Changes
-
-| File | Line(s) | Change |
-|------|---------|--------|
-| ScenarioDetailModal.tsx | ~399 | Publisher button: `items-center` to `items-start` |
-| ScenarioDetailModal.tsx | 574-601 | Restructure review card: merge reviewer info and Story/Spice into one `justify-between` row |
-| ReviewModal.tsx | 94 | Category description: `text-xs` to `text-sm` |
-| ReviewModal.tsx | 110 | Spice description: `text-xs` to `text-sm` |
