@@ -396,7 +396,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                               navigate(`/creator/${publisherId}`);
                             }
                           }}
-                          className="flex items-center gap-2 group"
+                          className="flex items-start gap-2 group"
                         >
                           <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 overflow-hidden flex-shrink-0 group-hover:ring-2 group-hover:ring-[#4a5f7f] transition-all">
                             {publisher.avatar_url ? (
@@ -572,27 +572,29 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                       <div className="space-y-4">
                         {reviews.map((review) => (
                           <div key={review.id} className="p-3 rounded-xl bg-white/5 border border-white/5">
-                            <div className="flex items-center gap-2 mb-2">
-                              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 overflow-hidden flex-shrink-0">
-                                {review.reviewer?.avatar_url ? (
-                                  <img src={review.reviewer.avatar_url} alt="" className="w-full h-full object-cover" />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-white/80 text-xs font-bold">
-                                    {(review.reviewer?.display_name || review.reviewer?.username)?.charAt(0)?.toUpperCase() || '?'}
-                                  </div>
-                                )}
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 overflow-hidden flex-shrink-0">
+                                  {review.reviewer?.avatar_url ? (
+                                    <img src={review.reviewer.avatar_url} alt="" className="w-full h-full object-cover" />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-white/80 text-xs font-bold">
+                                      {(review.reviewer?.display_name || review.reviewer?.username)?.charAt(0)?.toUpperCase() || '?'}
+                                    </div>
+                                  )}
+                                </div>
+                                <span className="text-sm font-medium text-white">{review.reviewer?.display_name || review.reviewer?.username || 'Anonymous'}</span>
+                                <span className="text-xs text-white/30">{formatDistanceToNow(new Date(review.created_at), { addSuffix: true })}</span>
                               </div>
-                              <span className="text-sm font-medium text-white">{review.reviewer?.display_name || review.reviewer?.username || 'Anonymous'}</span>
-                              <span className="text-xs text-white/30">{formatDistanceToNow(new Date(review.created_at), { addSuffix: true })}</span>
-                            </div>
-                            <div className="flex items-center gap-4 mb-1">
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-sm text-white/40">Story</span>
-                                <StarRating rating={Math.round(review.raw_weighted_score * 2) / 2} size={16} />
-                              </div>
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-sm text-white/40">Spice</span>
-                                <SpiceRating rating={review.spice_level} size={16} />
+                              <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-sm text-white/40">Story</span>
+                                  <StarRating rating={Math.round(review.raw_weighted_score * 2) / 2} size={16} />
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-sm text-white/40">Spice</span>
+                                  <SpiceRating rating={review.spice_level} size={16} />
+                                </div>
                               </div>
                             </div>
                             {review.comment && (

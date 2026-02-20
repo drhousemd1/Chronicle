@@ -91,7 +91,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
                   <div key={cat.key} className="flex items-center justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-white truncate">{cat.label}</p>
-                      <p className="text-xs text-white/40 leading-tight">{cat.description}</p>
+                      <p className="text-sm text-white/40 leading-tight">{cat.description}</p>
                     </div>
                     <StarRating
                       rating={ratings[cat.key] || 0}
@@ -107,7 +107,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-white">Spice Level</p>
-                      <p className="text-xs text-white/40">How spicy/erotic is this story?</p>
+                      <p className="text-sm text-white/40">How spicy/erotic is this story?</p>
                     </div>
                     <SpiceRating
                       rating={spiceLevel}
