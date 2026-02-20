@@ -1,65 +1,69 @@
 
 
-# Fix Public Profile Tab Layout to Match Mockup
+# Avatar Styling + AI Generate + Move Account Button to Sidebar
 
-## Problem
+## Overview
 
-The current Public Profile tab breaks the content into many separate stacked dark cards (avatar card, about me card, genres card, privacy card, stats card). The mockup shows a much simpler two-section layout.
+Three changes in one pass:
 
-## Target Layout (from mockup)
+1. **Replace the circular avatar** on the Public Profile tab with the square `rounded-2xl` dashed-border style used in the character builder
+2. **Add "Upload Image" and "AI Generate" buttons** below the avatar using the existing `AvatarActionButtons` and `AvatarGenerationModal` components
+3. **Move the AccountButton from the header to the bottom of the left sidebar**, removing header clutter
 
-```text
-+------------------------------------------------------------------+
-| [Avatar]  | Hide Profile Details (checkbox)                      |
-| (upload)  | Display Name  [________________________]             |
-|           | About Me      [________________________]             |
-|           | Preferred Genres [______________________]            |
-+------------------------------------------------------------------+
-|                                                                    |
-| Published Works    Hide Published Works (checkbox)    Stats...    |
-| +--------+ +--------+ +--------+ +--------+                      |
-| |        | |        | |        | |        |                       |
-| | card   | | card   | | card   | | card   |                       |
-| |        | |        | |        | |        |                       |
-| +--------+ +--------+ +--------+ +--------+                      |
-+------------------------------------------------------------------+
-```
+---
 
-## Changes to `src/components/account/PublicProfileTab.tsx`
+## Change 1: Avatar Styling on Public Profile
 
-Restructure the entire component layout into two main sections:
+**File: `src/components/account/PublicProfileTab.tsx`**
 
-### Section 1: Profile Info (single card)
-- Left column: Avatar with upload overlay (same size, ~24x24/96px)
-- Right column, stacked vertically:
-  - "Hide Profile Details" checkbox at the top
-  - Display Name label + input (horizontal row)
-  - About Me label + input (horizontal row)
-  - Preferred Genres label + input (horizontal row)
-- The labels sit to the left of inputs in a form-row pattern (like the mockup shows), not above them
+Replace the circular `Avatar`/`AvatarFallback` (lines 184-194) with a square container:
 
-### Section 2: Published Works (single card)
-- Header row spans full width containing:
-  - "Published Works" title (left)
-  - "Hide Published Works" checkbox (center-left)
-  - Stats counters inline (right side): Likes, Published, Saved, Views, Plays
-- Below the header: a grid of published work cards (need to fetch these -- the current component doesn't show published works at all, but the CreatorProfile page does, so we'll add the same query here)
-- Cards use the same 3:4 portrait ratio tile style
+- `w-36 h-36 rounded-2xl` with `bg-zinc-800 border-2 border-dashed border-zinc-600` when empty (shows initials in muted text)
+- When avatar exists: full `object-cover` image display
+- Remove the simple hover camera overlay -- the action buttons below handle uploads instead
+- Remove the `Avatar`, `AvatarImage`, `AvatarFallback`, and `Camera` imports (no longer needed)
 
-### Additional changes
-- Remove the separate "Privacy Settings", "Creator Stats", and "About Me" cards
-- Combine everything into the two-section structure
-- Keep "Save Profile" button at the bottom
-- Add published works fetching (reuse the same query pattern from CreatorProfile.tsx)
+## Change 2: Add AvatarActionButtons + AvatarGenerationModal
 
-### Save button
-Keep the save button below both sections.
+**File: `src/components/account/PublicProfileTab.tsx`**
+
+Below the avatar container, render the existing `AvatarActionButtons` component (Upload Image dropdown + AI Generate button), and the `AvatarGenerationModal`.
+
+- Import `AvatarActionButtons` and `AvatarGenerationModal`
+- Add a hidden file input ref for the "From Device" path
+- Wire `onUploadFromDevice` to trigger the hidden file input (reuses existing `handleAvatarUpload`)
+- Wire `onSelectFromLibrary` to upload the selected library image URL to the `avatars` bucket and update the profile
+- Wire `onGenerateClick` to open the `AvatarGenerationModal`
+- Wire `onGenerated` callback to upload the generated image to the `avatars` bucket and update the profile
+- Pass `characterName={profile.display_name || 'User'}` and `modelId=""` (uses default)
+- The buttons container width matches the avatar width (`w-36`)
+
+## Change 3: Move Account Button to Sidebar
+
+**File: `src/pages/Index.tsx`**
+
+### Remove from header (line ~1505-1514)
+Delete the `AccountButton` component from the header's right-side button group. This eliminates the clutter visible in the screenshot.
+
+### Add to sidebar bottom (line ~1318-1322)
+Replace the current email-only display at the sidebar bottom with a clickable account button:
+
+- **Expanded sidebar**: Shows a small avatar circle (28px) + display name, with a dropdown menu containing "Public Profile", "Account Settings", and "Sign Out"
+- **Collapsed sidebar**: Shows just the small avatar circle, same dropdown on click
+- Reuse the `AccountButton` component directly (it already renders an avatar + dropdown menu) -- just place it in the sidebar bottom section instead of the header
+- Remove the plain `user?.email` text display since AccountButton already shows the user info
+
+### Fetch profile data
+The `AccountButton` component already fetches the user's profile (display_name, avatar_url) internally, so no additional data fetching is needed in Index.tsx.
+
+---
 
 ## Files Modified
 
 | File | Change |
 |---|---|
-| `src/components/account/PublicProfileTab.tsx` | Complete layout restructure to match the two-section mockup |
+| `src/components/account/PublicProfileTab.tsx` | Replace circular avatar with square dashed-border style; add AvatarActionButtons + AvatarGenerationModal below avatar |
+| `src/pages/Index.tsx` | Remove AccountButton from header; add it to sidebar bottom section; remove email text display |
 
-No database or routing changes needed -- this is purely a layout/UI fix.
+No database changes needed.
 
