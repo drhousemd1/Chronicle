@@ -176,7 +176,7 @@ export default function CreatorProfile() {
         <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">Creator Profile</h1>
       </header>
 
-      <div className="max-w-4xl mx-auto px-6 py-10 space-y-8">
+      <div className="px-6 py-10 space-y-6">
         {/* Profile Card — mirrors PublicProfileTab Section 1 */}
         <div className="bg-[#1e1e22] rounded-2xl border border-white/10 p-6">
           <div className="flex gap-6">
