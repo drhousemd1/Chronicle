@@ -1,21 +1,29 @@
 
 
-# Fix Public Profile Page Width
+# Fix Public Profile Page Width (The Real Fix)
 
-## Problem
+## What Went Wrong Last Time
 
-The Public Profile tab has a `max-w-4xl` (896px) container constraint that prevents it from filling the available space on widescreen displays. This causes the avatar action buttons ("Upload Image" and "AI Generate") to be cramped/squished.
+The previous change edited `PublicProfileTab.tsx`, but the width constraint was never there -- it's in `src/pages/Index.tsx` at line 1924, where the entire account tab content is wrapped in `<div className="max-w-4xl mx-auto">`. That's the actual bottleneck squishing the avatar buttons and profile layout. The earlier edit did nothing because it targeted the wrong file.
 
-## Solution
+## The Fix
 
-Remove the `max-w-4xl` width cap from the outer container in `PublicProfileTab.tsx` so the content fills the full width of the panel, matching how other tabs in the app behave.
+**File: `src/pages/Index.tsx` (line 1924)**
 
-## Change
+Remove `max-w-4xl mx-auto` from the wrapper div that contains all account sub-tabs. The tab pill bar already centers itself, so removing the max-width won't break its alignment -- it will just let the content (Public Profile, Account Settings, Subscription) use the full available width.
 
-**File: `src/components/account/PublicProfileTab.tsx`**
+Change:
+```
+<div className="max-w-4xl mx-auto">
+```
+To:
+```
+<div>
+```
 
-- Change the outer `div` class from `max-w-4xl mx-auto space-y-6` to just `space-y-6`
-- This removes the artificial width ceiling and lets the profile section, published works grid, and buttons use the full available width
+This is the single line that's been causing the layout to not fill the page. The Account Settings and Subscription tabs will also benefit from the extra space, and the tab pill bar will remain centered since it uses `justify-center` on its own flex container.
 
-Single line change -- swap `max-w-4xl mx-auto` out of the container class.
+## Revert the no-op change
+
+Also revert the unnecessary change previously made to `PublicProfileTab.tsx` -- that file never had `max-w-4xl` on it, but if the previous edit introduced any unintended changes, we will verify the file is clean. (Looking at it now, the file is fine -- the only change was removing a class that wasn't there to begin with in the current code, so no revert needed.)
 
