@@ -523,6 +523,121 @@ export async function fetchUserPublishedScenarios(
   return map;
 }
 
+// Review types
+export interface ScenarioReview {
+  id: string;
+  published_scenario_id: string;
+  user_id: string;
+  concept_strength: number;
+  initial_situation: number;
+  role_clarity: number;
+  motivation_tension: number;
+  tone_promise: number;
+  low_friction_start: number;
+  worldbuilding_vibe: number;
+  replayability: number;
+  character_details_complexity: number;
+  spice_level: number;
+  comment: string | null;
+  raw_weighted_score: number;
+  created_at: string;
+  updated_at: string;
+  reviewer?: {
+    username: string | null;
+    avatar_url: string | null;
+    display_name: string | null;
+  };
+}
+
+// Submit or update a review
+export async function submitReview(
+  publishedScenarioId: string,
+  userId: string,
+  ratings: Record<string, number>,
+  spiceLevel: number,
+  comment: string,
+  rawWeightedScore: number
+): Promise<void> {
+  const { error } = await supabase
+    .from('scenario_reviews')
+    .upsert({
+      published_scenario_id: publishedScenarioId,
+      user_id: userId,
+      concept_strength: ratings.conceptStrength,
+      initial_situation: ratings.initialSituation,
+      role_clarity: ratings.roleClarity,
+      motivation_tension: ratings.motivationTension,
+      tone_promise: ratings.tonePromise,
+      low_friction_start: ratings.lowFrictionStart,
+      worldbuilding_vibe: ratings.worldbuildingVibe,
+      replayability: ratings.replayability,
+      character_details_complexity: ratings.characterDetailsComplexity,
+      spice_level: spiceLevel,
+      comment: comment || null,
+      raw_weighted_score: rawWeightedScore,
+    } as any, { onConflict: 'published_scenario_id,user_id' });
+
+  if (error) throw error;
+}
+
+// Fetch reviews for a scenario
+export async function fetchScenarioReviews(publishedScenarioId: string): Promise<ScenarioReview[]> {
+  const { data, error } = await supabase
+    .from('scenario_reviews')
+    .select('*')
+    .eq('published_scenario_id', publishedScenarioId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  if (!data || data.length === 0) return [];
+
+  const userIds = [...new Set(data.map((r: any) => r.user_id))];
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, username, avatar_url, display_name')
+    .in('id', userIds);
+
+  const profileMap = new Map((profiles || []).map(p => [p.id, p]));
+
+  return data.map((r: any) => ({
+    ...r,
+    reviewer: profileMap.get(r.user_id) || null,
+  }));
+}
+
+// Fetch user's own review for a scenario
+export async function fetchUserReview(publishedScenarioId: string, userId: string): Promise<ScenarioReview | null> {
+  const { data, error } = await supabase
+    .from('scenario_reviews')
+    .select('*')
+    .eq('published_scenario_id', publishedScenarioId)
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data as ScenarioReview | null;
+}
+
+// Fetch creator overall rating across all their published scenarios
+export async function fetchCreatorOverallRating(publisherId: string): Promise<{ rating: number; totalReviews: number } | null> {
+  const { data, error } = await supabase
+    .from('published_scenarios')
+    .select('avg_rating, review_count')
+    .eq('publisher_id', publisherId)
+    .eq('is_published', true);
+
+  if (error) throw error;
+  if (!data || data.length === 0) return null;
+
+  const reviewed = data.filter((d: any) => d.review_count > 0);
+  if (reviewed.length === 0) return null;
+
+  const totalReviews = reviewed.reduce((sum: number, d: any) => sum + d.review_count, 0);
+  const avgRating = reviewed.reduce((sum: number, d: any) => sum + Number(d.avg_rating) * d.review_count, 0) / totalReviews;
+
+  return { rating: Math.round(avgRating * 2) / 2, totalReviews };
+}
+
 // Scenario characters type for detail modal
 export interface ScenarioCharacter {
   id: string;

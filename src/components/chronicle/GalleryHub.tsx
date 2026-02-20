@@ -473,6 +473,7 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
               viewCount={liveData.view_count}
               publisher={liveData.publisher}
               publisherId={liveData.publisher_id}
+              publishedScenarioId={liveData.id}
               publishedAt={liveData.created_at}
               isLiked={likes.has(liveData.id)}
               isSaved={saves.has(liveData.id)}

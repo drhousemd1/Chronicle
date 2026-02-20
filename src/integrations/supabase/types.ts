@@ -640,6 +640,7 @@ export type Database = {
       published_scenarios: {
         Row: {
           allow_remix: boolean
+          avg_rating: number
           created_at: string | null
           id: string
           is_hidden: boolean
@@ -648,6 +649,7 @@ export type Database = {
           play_count: number
           publisher_id: string
           reported_count: number
+          review_count: number
           save_count: number
           scenario_id: string
           tags: string[]
@@ -656,6 +658,7 @@ export type Database = {
         }
         Insert: {
           allow_remix?: boolean
+          avg_rating?: number
           created_at?: string | null
           id?: string
           is_hidden?: boolean
@@ -664,6 +667,7 @@ export type Database = {
           play_count?: number
           publisher_id: string
           reported_count?: number
+          review_count?: number
           save_count?: number
           scenario_id: string
           tags?: string[]
@@ -672,6 +676,7 @@ export type Database = {
         }
         Update: {
           allow_remix?: boolean
+          avg_rating?: number
           created_at?: string | null
           id?: string
           is_hidden?: boolean
@@ -680,6 +685,7 @@ export type Database = {
           play_count?: number
           publisher_id?: string
           reported_count?: number
+          review_count?: number
           save_count?: number
           scenario_id?: string
           tags?: string[]
@@ -789,6 +795,74 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "scenario_likes_published_scenario_id_fkey"
+            columns: ["published_scenario_id"]
+            isOneToOne: false
+            referencedRelation: "published_scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scenario_reviews: {
+        Row: {
+          character_details_complexity: number
+          comment: string | null
+          concept_strength: number
+          created_at: string | null
+          id: string
+          initial_situation: number
+          low_friction_start: number
+          motivation_tension: number
+          published_scenario_id: string
+          raw_weighted_score: number
+          replayability: number
+          role_clarity: number
+          spice_level: number
+          tone_promise: number
+          updated_at: string | null
+          user_id: string
+          worldbuilding_vibe: number
+        }
+        Insert: {
+          character_details_complexity: number
+          comment?: string | null
+          concept_strength: number
+          created_at?: string | null
+          id?: string
+          initial_situation: number
+          low_friction_start: number
+          motivation_tension: number
+          published_scenario_id: string
+          raw_weighted_score: number
+          replayability: number
+          role_clarity: number
+          spice_level: number
+          tone_promise: number
+          updated_at?: string | null
+          user_id: string
+          worldbuilding_vibe: number
+        }
+        Update: {
+          character_details_complexity?: number
+          comment?: string | null
+          concept_strength?: number
+          created_at?: string | null
+          id?: string
+          initial_situation?: number
+          low_friction_start?: number
+          motivation_tension?: number
+          published_scenario_id?: string
+          raw_weighted_score?: number
+          replayability?: number
+          role_clarity?: number
+          spice_level?: number
+          tone_promise?: number
+          updated_at?: string | null
+          user_id?: string
+          worldbuilding_vibe?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scenario_reviews_published_scenario_id_fkey"
             columns: ["published_scenario_id"]
             isOneToOne: false
             referencedRelation: "published_scenarios"
