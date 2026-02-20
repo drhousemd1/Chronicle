@@ -222,7 +222,7 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
           {/* Avatar column */}
           <div className="flex-shrink-0 flex flex-col items-center gap-3">
             {/* Square avatar matching character builder style */}
-            <div className="w-36 h-36 rounded-2xl overflow-hidden shadow-lg flex items-center justify-center border-2 border-dashed border-zinc-600 bg-zinc-800">
+            <div className="w-48 h-48 rounded-2xl overflow-hidden shadow-lg flex items-center justify-center border-2 border-dashed border-zinc-600 bg-zinc-800">
               {profile.avatar_url ? (
                 <img
                   src={profile.avatar_url}
@@ -235,7 +235,7 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
             </div>
 
             {/* Upload + AI Generate buttons */}
-            <div className="w-36">
+            <div className="w-48 [&>div]:flex-col">
               <AvatarActionButtons
                 onUploadFromDevice={() => fileInputRef.current?.click()}
                 onSelectFromLibrary={(imageUrl) => uploadAvatarFromUrl(imageUrl)}
