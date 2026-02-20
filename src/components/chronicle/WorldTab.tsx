@@ -1182,8 +1182,15 @@ export const WorldTab: React.FC<WorldTabProps> = ({
       <CoverImageGenerationModal
         isOpen={showCoverGenModal}
         onClose={() => setShowCoverGenModal(false)}
-        onGenerated={(imageUrl) => {
-          onUpdateCoverImage(imageUrl);
+        onGenerated={async (imageUrl) => {
+          try {
+            const { compressAndUpload } = await import('@/utils');
+            const compressedUrl = await compressAndUpload(imageUrl, 'covers', user?.id || 'anon', 1024, 1536, 0.85);
+            onUpdateCoverImage(compressedUrl);
+          } catch {
+            // Fallback to original URL if compression fails
+            onUpdateCoverImage(imageUrl);
+          }
           onUpdateCoverPosition({ x: 50, y: 50 });
           setShowCoverGenModal(false);
           toast.success('Cover image generated!');
@@ -1217,10 +1224,16 @@ export const WorldTab: React.FC<WorldTabProps> = ({
             if (error) throw error;
             
             if (data?.imageUrl) {
-              // Create new scene with the generated image
+              // Compress before saving
+              let finalUrl = data.imageUrl;
+              try {
+                const { compressAndUpload } = await import('@/utils');
+                finalUrl = await compressAndUpload(data.imageUrl, 'scenes', user!.id, 1024, 768, 0.85);
+              } catch { /* use original */ }
+              // Create new scene with the compressed image
               const newScene: Scene = {
                 id: uuid(),
-                url: data.imageUrl,
+                url: finalUrl,
                 tags: [],
                 createdAt: now()
               };

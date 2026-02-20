@@ -97,12 +97,15 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
           setIsLoading(false);
           return;
         }
-        // Fetch published scenarios from followed creators
-        const data = await fetchPublishedScenarios(undefined, 'all', 50, 0);
-        const filtered = data.filter(s => creatorIds.includes(s.publisher_id));
-        setScenarios(filtered);
-        if (filtered.length > 0) {
-          const ids = filtered.map(s => s.id);
+        // Fetch published scenarios from followed creators (server-side filter)
+        const contentFilters = getContentThemeFilters();
+        const data = await fetchPublishedScenarios(
+          searchTags.length > 0 ? searchTags : undefined,
+          'recent', 50, 0, contentFilters, creatorIds
+        );
+        setScenarios(data);
+        if (data.length > 0) {
+          const ids = data.map(s => s.id);
           const interactions = await getUserInteractions(ids, user.id);
           setLikes(interactions.likes);
           setSaves(interactions.saves);

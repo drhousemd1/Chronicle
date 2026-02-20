@@ -289,10 +289,15 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
     setShowAvatarModal(true);
   };
 
-  const handleAvatarGenerated = (imageUrl: string) => {
+  const handleAvatarGenerated = async (imageUrl: string) => {
     if (selected) {
+      let finalUrl = imageUrl;
+      try {
+        const { compressAndUpload } = await import('@/utils');
+        finalUrl = await compressAndUpload(imageUrl, 'avatars', user?.id || 'anon', 512, 512, 0.85);
+      } catch { /* use original */ }
       onUpdate(selected.id, {
-        avatarDataUrl: imageUrl,
+        avatarDataUrl: finalUrl,
         avatarPosition: { x: 50, y: 50 }
       });
       toast.success('Avatar generated successfully!');

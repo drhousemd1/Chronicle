@@ -77,7 +77,8 @@ export async function fetchPublishedScenarios(
   sortBy: SortOption = 'all',
   limit = 50,
   offset = 0,
-  contentThemeFilters?: ContentThemeFilters
+  contentThemeFilters?: ContentThemeFilters,
+  publisherIds?: string[]
 ): Promise<PublishedScenario[]> {
   try {
     let query = supabase
@@ -104,6 +105,11 @@ export async function fetchPublishedScenarios(
         )
       `)
       .eq('is_published', true);
+
+    // Filter by publisher IDs if provided (used by "Following" tab)
+    if (publisherIds && publisherIds.length > 0) {
+      query = query.in('publisher_id', publisherIds);
+    }
 
     // Apply sorting based on sortBy parameter
     switch (sortBy) {
@@ -138,11 +144,11 @@ export async function fetchPublishedScenarios(
     if (!data || data.length === 0) return [];
     
     // Fetch publisher profiles and content themes separately
-    const publisherIds = [...new Set(data.map((item: any) => item.publisher_id))];
+    const uniquePublisherIds = [...new Set(data.map((item: any) => item.publisher_id))];
     const scenarioIds = data.map((item: any) => item.scenario_id);
     
     const [profilesResult, themesResult] = await Promise.all([
-      supabase.from('profiles').select('id, username, avatar_url, display_name').in('id', publisherIds),
+      supabase.from('profiles').select('id, username, avatar_url, display_name').in('id', uniquePublisherIds),
       supabase.from('content_themes').select('*').in('scenario_id', scenarioIds)
     ]);
     
