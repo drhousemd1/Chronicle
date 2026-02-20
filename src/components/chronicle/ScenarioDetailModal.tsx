@@ -378,7 +378,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                             )}
                           </div>
                           <p className="text-sm text-[#94a3b8] group-hover:text-white transition-colors">
-                            by <span className="text-white font-medium">{publisher.display_name || publisher.username || 'Anonymous'}</span>
+                            by <span className="text-[#4a5f7f] font-medium">{publisher.display_name || publisher.username || 'Anonymous'}</span>
                           </p>
                         </button>
                       </div>
@@ -419,19 +419,19 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mt-8">
                       {contentThemes.genres.length > 0 && (
                         <div>
-                          <h4 className="text-[10px] font-bold text-white/40 uppercase mb-2">Genre</h4>
+                          <h4 className="text-xs font-bold text-white/40 uppercase mb-2">Genre</h4>
                           <p className="text-sm text-white">{contentThemes.genres.join(', ')}</p>
                         </div>
                       )}
                       {contentThemes.characterTypes.length > 0 && (
                         <div>
-                          <h4 className="text-[10px] font-bold text-white/40 uppercase mb-2">Character Types</h4>
+                          <h4 className="text-xs font-bold text-white/40 uppercase mb-2">Character Types</h4>
                           <p className="text-sm text-white">{contentThemes.characterTypes.join(', ')}</p>
                         </div>
                       )}
                       {contentThemes.origin.length > 0 && (
                         <div>
-                          <h4 className="text-[10px] font-bold text-white/40 uppercase mb-2">Story Origin</h4>
+                          <h4 className="text-xs font-bold text-white/40 uppercase mb-2">Story Origin</h4>
                           <p className="text-sm text-white">{contentThemes.origin.join(', ')}</p>
                         </div>
                       )}
@@ -440,7 +440,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                     {/* Trigger Warnings - Separate Row */}
                     {contentThemes.triggerWarnings.length > 0 && (
                       <div className="mt-6">
-                        <h4 className="text-[10px] font-bold text-white/40 uppercase mb-2">Trigger Warnings</h4>
+                        <h4 className="text-xs font-bold text-white/40 uppercase mb-2">Trigger Warnings</h4>
                         <p className="text-sm text-red-400 leading-relaxed font-medium">
                           {contentThemes.triggerWarnings.join(', ')}
                         </p>
@@ -450,7 +450,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                     {/* Custom Tags */}
                     {contentThemes.customTags.length > 0 && (
                       <div className="mt-6">
-                        <h4 className="text-[10px] font-bold text-white/40 uppercase mb-2">Custom Tags</h4>
+                        <h4 className="text-xs font-bold text-white/40 uppercase mb-2">Custom Tags</h4>
                         <p className="text-sm text-white">{contentThemes.customTags.join(', ')}</p>
                       </div>
                     )}
