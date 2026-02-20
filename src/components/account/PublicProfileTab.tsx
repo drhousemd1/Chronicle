@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Eye, Heart, Bookmark, Play, FileText, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -6,6 +6,7 @@ import { resizeImage } from '@/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AvatarActionButtons } from '@/components/chronicle/AvatarActionButtons';
 import { AvatarGenerationModal } from '@/components/chronicle/AvatarGenerationModal';
+import { Button } from '@/components/chronicle/UI';
 
 interface PublicProfileTabProps {
   user: { id: string; email?: string } | null;
@@ -15,6 +16,7 @@ interface ProfileData {
   display_name: string;
   about_me: string;
   avatar_url: string;
+  avatar_position: { x: number; y: number };
   preferred_genres: string[];
   hide_published_works: boolean;
   hide_profile_details: boolean;
@@ -45,12 +47,16 @@ interface PublishedWork {
   } | null;
 }
 
+const clamp = (val: number, min: number, max: number) => Math.min(max, Math.max(min, val));
+
 export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const avatarContainerRef = useRef<HTMLDivElement>(null);
   const [profile, setProfile] = useState<ProfileData>({
     display_name: '',
     about_me: '',
     avatar_url: '',
+    avatar_position: { x: 50, y: 50 },
     preferred_genres: [],
     hide_published_works: false,
     hide_profile_details: false,
@@ -69,11 +75,13 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
   const [isGeneratingAvatar, setIsGeneratingAvatar] = useState(false);
   const [showAvatarGenModal, setShowAvatarGenModal] = useState(false);
   const [genreInput, setGenreInput] = useState('');
+  const [isRepositioning, setIsRepositioning] = useState(false);
+  const [dragStart, setDragStart] = useState<{ x: number; y: number; pos: { x: number; y: number } } | null>(null);
 
   useEffect(() => {
     if (!user) return;
     Promise.all([
-      supabase.from('profiles').select('display_name, about_me, avatar_url, preferred_genres, hide_published_works, hide_profile_details').eq('id', user.id).maybeSingle(),
+      supabase.from('profiles').select('display_name, about_me, avatar_url, avatar_position, preferred_genres, hide_published_works, hide_profile_details').eq('id', user.id).maybeSingle(),
       supabase.rpc('get_creator_stats', { creator_user_id: user.id }),
       supabase.from('published_scenarios').select(`
         id, scenario_id, like_count, play_count, view_count, save_count, allow_remix,
@@ -81,10 +89,12 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
       `).eq('publisher_id', user.id).eq('is_published', true).eq('is_hidden', false).order('created_at', { ascending: false }),
     ]).then(async ([profileRes, statsRes, worksRes]) => {
       if (profileRes.data) {
+        const pos = profileRes.data.avatar_position as any;
         setProfile({
           display_name: profileRes.data.display_name || '',
           about_me: profileRes.data.about_me || '',
           avatar_url: profileRes.data.avatar_url || '',
+          avatar_position: pos && typeof pos.x === 'number' ? pos : { x: 50, y: 50 },
           preferred_genres: profileRes.data.preferred_genres || [],
           hide_published_works: profileRes.data.hide_published_works || false,
           hide_profile_details: profileRes.data.hide_profile_details || false,
@@ -124,6 +134,7 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
       const { error } = await supabase.from('profiles').update({
         display_name: profile.display_name,
         about_me: profile.about_me,
+        avatar_position: profile.avatar_position as any,
         preferred_genres: profile.preferred_genres,
         hide_published_works: profile.hide_published_works,
         hide_profile_details: profile.hide_profile_details,
@@ -134,6 +145,61 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  // --- Reposition drag handlers (ported from CharactersTab) ---
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!isRepositioning) return;
+    setDragStart({ x: e.clientX, y: e.clientY, pos: profile.avatar_position });
+  };
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!dragStart || !avatarContainerRef.current) return;
+    const rect = avatarContainerRef.current.getBoundingClientRect();
+    const deltaX = ((e.clientX - dragStart.x) / rect.width) * 100;
+    const deltaY = ((e.clientY - dragStart.y) / rect.height) * 100;
+    setProfile(prev => ({
+      ...prev,
+      avatar_position: {
+        x: clamp(dragStart.pos.x - deltaX, 0, 100),
+        y: clamp(dragStart.pos.y - deltaY, 0, 100),
+      }
+    }));
+  }, [dragStart]);
+
+  const handleMouseUp = () => setDragStart(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!isRepositioning) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    setDragStart({ x: touch.clientX, y: touch.clientY, pos: profile.avatar_position });
+  };
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!dragStart || !avatarContainerRef.current) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    const rect = avatarContainerRef.current.getBoundingClientRect();
+    const deltaX = ((touch.clientX - dragStart.x) / rect.width) * 100;
+    const deltaY = ((touch.clientY - dragStart.y) / rect.height) * 100;
+    setProfile(prev => ({
+      ...prev,
+      avatar_position: {
+        x: clamp(dragStart.pos.x - deltaX, 0, 100),
+        y: clamp(dragStart.pos.y - deltaY, 0, 100),
+      }
+    }));
+  }, [dragStart]);
+
+  const handleTouchEnd = () => setDragStart(null);
+
+  const handleRepositionToggle = async () => {
+    if (isRepositioning && user) {
+      // Save position to DB when exiting reposition mode
+      await supabase.from('profiles').update({ avatar_position: profile.avatar_position as any }).eq('id', user.id);
+    }
+    setIsRepositioning(!isRepositioning);
   };
 
   const uploadAvatarFromUrl = async (imageUrl: string) => {
@@ -148,7 +214,7 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
       const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filename);
       const { error: updateError } = await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id);
       if (updateError) throw updateError;
-      setProfile(prev => ({ ...prev, avatar_url: publicUrl }));
+      setProfile(prev => ({ ...prev, avatar_url: publicUrl, avatar_position: { x: 50, y: 50 } }));
     } catch (err: any) {
       console.error('Upload failed:', err.message);
     } finally {
@@ -174,7 +240,8 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
           const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filename);
           const { error: updateError } = await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id);
           if (updateError) throw updateError;
-          setProfile(prev => ({ ...prev, avatar_url: publicUrl }));
+          setProfile(prev => ({ ...prev, avatar_url: publicUrl, avatar_position: { x: 50, y: 50 } }));
+          setIsRepositioning(true);
         } catch (err: any) {
           console.error('Upload failed:', err.message);
         } finally {
@@ -210,6 +277,7 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
   }
 
   const initials = (profile.display_name || 'U').slice(0, 2).toUpperCase();
+  const avatarPos = profile.avatar_position;
 
   return (
     <div className="space-y-6">
@@ -226,22 +294,44 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
       {/* Section 1: Profile Info */}
       <div className="bg-[#1e1e22] rounded-2xl border border-white/10 p-6">
         <div className="flex gap-6">
-          {/* Avatar column */}
-          <div className="flex-shrink-0 flex flex-col items-center gap-3">
+          {/* Avatar column - w-64 for enough button room */}
+          <div className="flex-shrink-0 flex flex-col items-center gap-3 w-64">
             {/* Square avatar matching character builder style */}
-            <div className="w-48 h-48 rounded-2xl overflow-hidden shadow-lg flex items-center justify-center border-2 border-dashed border-zinc-600 bg-zinc-800">
+            <div
+              ref={avatarContainerRef}
+              className={`relative w-64 h-64 rounded-2xl overflow-hidden shadow-lg select-none ${isRepositioning ? 'ring-4 ring-blue-500 cursor-move' : 'border-2 border-dashed border-zinc-600 bg-zinc-800'}`}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+              style={isRepositioning ? { touchAction: 'none' } : undefined}
+            >
               {profile.avatar_url ? (
                 <img
                   src={profile.avatar_url}
                   alt={profile.display_name}
+                  style={{ objectPosition: `${avatarPos.x}% ${avatarPos.y}%`, pointerEvents: 'none' }}
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <span className="text-3xl font-bold text-zinc-500">{initials}</span>
+                <div className="w-full h-full bg-zinc-800 flex items-center justify-center border-2 border-dashed border-zinc-600">
+                  <span className="text-3xl font-bold text-zinc-500">{initials}</span>
+                </div>
+              )}
+
+              {isRepositioning && (
+                <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                  <div className="w-full h-[1px] bg-blue-500/30 absolute" />
+                  <div className="h-full w-[1px] bg-blue-500/30 absolute" />
+                  <div className="bg-blue-600 text-white text-[9px] font-black uppercase px-2 py-1 rounded absolute bottom-2 tracking-widest">Drag to Refocus</div>
+                </div>
               )}
             </div>
 
-            {/* Upload + AI Generate buttons */}
+            {/* Upload + AI Generate buttons + Reposition */}
             <div className="flex flex-col gap-2 w-full">
               <AvatarActionButtons
                 onUploadFromDevice={() => fileInputRef.current?.click()}
@@ -250,6 +340,15 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
                 isUploading={isUploadingAvatar}
                 isGenerating={isGeneratingAvatar}
               />
+              {profile.avatar_url && (
+                <Button
+                  variant={isRepositioning ? 'primary' : 'secondary'}
+                  onClick={handleRepositionToggle}
+                  className={`w-full text-[10px] font-bold leading-none ${isRepositioning ? 'bg-blue-600 text-white' : ''}`}
+                >
+                  {isRepositioning ? "Save Position" : "Reposition"}
+                </Button>
+              )}
             </div>
           </div>
 
@@ -265,8 +364,8 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
             </label>
 
             {/* Display Name */}
-            <div className="flex items-center gap-4">
-              <label className="text-xs font-bold text-white/40 uppercase tracking-wider w-32 shrink-0">Display Name</label>
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-bold text-white/40 uppercase tracking-wider w-28 shrink-0">Display Name</label>
               <input
                 type="text"
                 value={profile.display_name}
@@ -278,8 +377,8 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
             </div>
 
             {/* About Me */}
-            <div className="flex items-start gap-4">
-              <label className="text-xs font-bold text-white/40 uppercase tracking-wider w-32 shrink-0 pt-2.5">About Me</label>
+            <div className="flex items-start gap-2">
+              <label className="text-xs font-bold text-white/40 uppercase tracking-wider w-28 shrink-0 pt-2.5">About Me</label>
               <textarea
                 value={profile.about_me}
                 onChange={(e) => setProfile(prev => ({ ...prev, about_me: e.target.value }))}
@@ -290,8 +389,8 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
             </div>
 
             {/* Preferred Genres */}
-            <div className="flex items-start gap-4">
-              <label className="text-xs font-bold text-white/40 uppercase tracking-wider w-32 shrink-0 pt-2.5">Preferred Genres</label>
+            <div className="flex items-start gap-2">
+              <label className="text-xs font-bold text-white/40 uppercase tracking-wider w-28 shrink-0 pt-2.5">Preferred Genres</label>
               <div className="flex-1 space-y-2">
                 {profile.preferred_genres.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">

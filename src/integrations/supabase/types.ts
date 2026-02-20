@@ -598,6 +598,7 @@ export type Database = {
       profiles: {
         Row: {
           about_me: string | null
+          avatar_position: Json | null
           avatar_url: string | null
           created_at: string | null
           display_name: string | null
@@ -610,6 +611,7 @@ export type Database = {
         }
         Insert: {
           about_me?: string | null
+          avatar_position?: Json | null
           avatar_url?: string | null
           created_at?: string | null
           display_name?: string | null
@@ -622,6 +624,7 @@ export type Database = {
         }
         Update: {
           about_me?: string | null
+          avatar_position?: Json | null
           avatar_url?: string | null
           created_at?: string | null
           display_name?: string | null
