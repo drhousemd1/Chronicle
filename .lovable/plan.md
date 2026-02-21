@@ -1,50 +1,90 @@
 
 
-# Fix Story Arc Header, Connector Lines, and Conditional Rendering
+# Fix Story Arc Connectors, Lane Sizing, and Padding
 
-## 3 Issues to Fix
+## Problems Identified
 
-### Issue 1: Header has 2 icons and is too large
+1. **Connector lines are diagonal** -- the current SVG uses `L100,56` which draws diagonal lines. The mockup HTML uses **right-angle connectors**: vertical lines (`V`) and horizontal lines (`H`) forming an upside-down "T" shape for split, and a "T" shape for merge. No diagonals whatsoever.
 
-**Current (line 231-240)**: The header has a `Target` Lucide icon AND a `▸` triangle character in the text -- that's 2 icons. The font-size is `28px` which is too large.
+2. **Fail/Success lanes are unequal width** -- the `flex gap-4` container with `flex-1` on each lane should make them equal, but the card's `padding: 30px` on both sides plus `gap-4` (16px) eats into available space. The lanes themselves also have `padding: 10px` inside.
 
-**Fix**:
-- Remove the `▸` character from the h2 text
-- Replace the `Target` icon with a single appropriate icon -- `GitBranch` from lucide-react makes sense for "Story Arcs" (branching narrative paths)
-- Reduce font-size from `28px` to `18px`
-- Reduce `minHeight` from `80px` to `56px`
+3. **Cards are too crowded** -- the outer content area has `padding: 24px 30px` which is excessive for the available width.
 
-### Issue 2: Connector lines use curves instead of straight lines
+## Changes
 
-**Current**: `ArcConnectors.tsx` uses cubic bezier curves (`C` commands in SVG path data):
-- Split: `M200,0 L200,18 C200,36 140,48 100,56` -- curves outward
-- Merge: `M100,10 C140,18 200,30 200,48 L200,66` -- curves inward
+### 1. Rewrite `ArcConnectors.tsx` to use right-angle lines (matching the HTML mockup exactly)
 
-**Fix**: Replace with straight lines using only `M` and `L` commands:
-- Split: A vertical line down from center, then two straight diagonal lines going to left and right endpoints
-- Merge: Two straight diagonal lines from left and right converging to center, then vertical line down
+The HTML mockup builds connectors using `M`, `V`, and `H` commands only:
 
-The SVG paths become:
-- Split left: `M200,0 L200,22 L100,56`
-- Split right: `M200,0 L200,22 L300,56`
-- Merge left: `M100,10 L200,44 L200,66`
-- Merge right: `M300,10 L200,44 L200,66`
+**Split connector** (top splits to two branches):
+```
+M centerX startY    -- start at top center
+V splitY             -- vertical line down to split point  
+M leftX endY         -- move to left branch bottom
+V splitY             -- vertical line up to split height
+H rightX             -- horizontal line across to right branch
+V endY               -- vertical line down to right branch bottom
+```
 
-These are purely straight-line segments with no curves.
+This creates an inverted "T" with corner nodes -- a vertical stem from center, a horizontal bar, and two vertical drops to each lane center.
 
-### Issue 3: Merge connector shows even when there's no next phase
+**Merge connector** (two branches merge back):
+Same pattern but inverted -- vertical lines up from each branch center, horizontal bar connecting them, vertical line down from center.
 
-**Current**: In `StoryGoalsSection.tsx` line 440, `<ArcConnectors type="merge" />` always renders at the bottom of the steps section. Same in `ArcPhaseCard.tsx` line 357.
+Since we can't dynamically measure DOM positions in a static SVG, we'll use the viewBox `0 0 100 66` with percentage-based coordinates:
+- Center at x=50
+- Left lane center at x=25 (25%)
+- Right lane center at x=75 (75%)
+- Use `V` and `H` commands for all straight right-angle lines
 
-**Fix**:
-- In `StoryGoalsSection.tsx`: Only render the merge connector if `(goal.linkedPhases || []).length > 0` -- meaning there's at least one phase after the root card to connect to.
-- In `ArcPhaseCard.tsx`: Add a new prop `hasNextPhase: boolean` and only render the merge connector when `hasNextPhase` is true. Pass this prop from `StoryGoalsSection.tsx` based on the phase's index in the array.
+### 2. Reduce outer content padding in `StoryGoalsSection.tsx`
+
+Change the content area padding from `padding: '24px 30px'` to `padding: '20px 16px'`. This gives the branch lanes more horizontal room.
+
+### 3. Change branch lane container from `flex gap-4` to CSS grid
+
+Replace `<div className="flex gap-4">` with `<div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '16px' }}>`. This guarantees equal-width lanes (the HTML mockup uses `grid-template-columns: repeat(2, minmax(0, 1fr))` for this exact reason).
+
+### 4. Apply same fixes to `ArcPhaseCard.tsx`
+
+Same grid change for the branch lanes container.
 
 ## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/components/chronicle/StoryGoalsSection.tsx` | Replace `Target` import with `GitBranch`, remove `▸` from header, reduce header size. Conditionally render merge connector only when linkedPhases exist. Pass `hasNextPhase` prop to ArcPhaseCard. |
-| `src/components/chronicle/arc/ArcConnectors.tsx` | Replace curved SVG paths with straight lines (`L` commands only, no `C` curves). |
-| `src/components/chronicle/arc/ArcPhaseCard.tsx` | Add `hasNextPhase` prop. Only render merge connector when `hasNextPhase` is true. |
+| `src/components/chronicle/arc/ArcConnectors.tsx` | Rewrite SVG to use right-angle `V`/`H` path commands instead of diagonal `L` commands. Use viewBox `0 0 100 66` with x positions at 25%, 50%, 75%. |
+| `src/components/chronicle/StoryGoalsSection.tsx` | Reduce content padding from `24px 30px` to `20px 16px`. Change branch lanes from `flex gap-4` to `grid grid-cols-2 gap-4`. |
+| `src/components/chronicle/arc/ArcPhaseCard.tsx` | Same grid change for branch lanes container. |
+
+## Technical Details
+
+### ArcConnectors.tsx -- new SVG paths
+
+```tsx
+// Split: inverted T-shape
+<path d="M 50 0 V 22" ... />  // vertical stem from center
+<path d="M 25 66 V 22 H 75 V 66" ... />  // horizontal bar + vertical drops
+
+// Merge: T-shape (inverted of split)
+<path d="M 25 0 V 44 H 75 V 0" ... />  // vertical rises + horizontal bar
+<path d="M 50 44 V 66" ... />  // vertical stem down to center
+```
+
+Using `viewBox="0 0 100 66"` with `preserveAspectRatio="none"` so the SVG stretches to fill the container width, making the 25% and 75% x-coordinates align with the actual lane centers.
+
+### StoryGoalsSection.tsx padding change
+
+Line 244: `padding: '24px 30px'` becomes `padding: '20px 16px'`
+
+### Branch lanes grid (both files)
+
+Replace:
+```tsx
+<div className="flex gap-4" style={{ marginTop: '12px' }}>
+```
+With:
+```tsx
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '16px', marginTop: '12px' }}>
+```
 
