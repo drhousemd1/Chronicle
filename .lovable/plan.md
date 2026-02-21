@@ -1,91 +1,105 @@
 
 
-# Fix All Text Sizing and Styling in Story Arcs Section
+# Fix Story Arc Step Layout, Connector, and Styling Issues
 
-## The Problem
+## Changes
 
-The Story Arcs container has inline styles on every single text element -- labels, inputs, buttons, progress text -- while the reference containers (like "Goals and Desires") use consistent Tailwind classes. The sizes, colors, and input styling all mismatch.
+### 1. Remove step count text below progress ring
+Both `StoryGoalsSection.tsx` (lines 275-279) and `ArcPhaseCard.tsx` (lines 199-203) show "0/1 Steps" or "No Steps" below the progress ring. Remove this `<p>` element entirely -- just keep the ring.
 
-## Reference Pattern (from CharacterGoalsSection)
+### 2. "Add Next Phase" button -- slate blue style
+Currently `border border-blue-400/40 bg-blue-900/30`. Change to match the slate blue style from image 2: `bg-[#1e293b] border border-slate-500/40 text-white`.
 
-These are the Tailwind classes used by the matching containers:
+### 3. Restructure step card layout in ArcBranchLane.tsx
+Current layout crams everything on one header row. Change to:
 
-```text
-Labels:           text-xs font-bold text-zinc-400 uppercase tracking-widest
-Inputs (edit):    mt-1 px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20
-Steps header:     text-xs font-bold text-white uppercase tracking-[0.2em]
-Progress %:       text-lg font-bold text-slate-300
-Progress label:   text-xs font-black text-zinc-400 uppercase tracking-[0.2em]
-Add buttons:      text-sm border-2 border-dashed border-zinc-500 text-blue-400 rounded-xl
+```
+Row 1: [PROGRESSION STEP 1]          [trash icon]
+Row 2: Failed [X]  Succeeded [check]
+Row 3: [text input field]
+Row 4: (only if completed) Completed on Day X at Time Y
 ```
 
-Note: Per project accessibility rules, no text smaller than 12px (text-xs). Previous `text-[10px]` and `text-[9px]` labels will become `text-xs`.
+- Move step label and trash to their own row with `justify-between`
+- Move Failed/Succeeded buttons to a second row (no gap-1.5 cramming)
+- Completion meta (lines 180-184): only render when `step.completedAt` exists, not always. Remove the hardcoded "Completed on (Day #)" fallback.
 
-## Every Element to Fix (exhaustive list)
+### 4. Add Step button text consistency
+Currently uses `text-sm font-bold`. The reference "Add Step" in CharacterGoalsSection uses `text-sm` with no bold. Change to match: `text-sm font-medium`.
 
-### File 1: StoryGoalsSection.tsx
+### 5. Extend top connector line with fade-out
+The chain connector SVG at the top of the Steps section (`ArcConnectors.tsx` split type) has a vertical stem that starts at y=0 and stops abruptly. Extend the stem upward using a `linearGradient` that fades from transparent at the top to the line color at the bottom, making it look like it emerges smoothly. Change the split connector to start the vertical stem at y=-16 (extend the viewBox) and apply a gradient fade.
 
-| Element | Current (inline) | New (Tailwind) |
-|---------|------------------|----------------|
-| "GOAL NAME" label (line 242-250) | fontSize: '11px', letterSpacing: '0.22em', color: 'rgba(198,213,238,0.86)', fontWeight: 700 | className="text-xs font-bold text-zinc-400 uppercase tracking-widest" |
-| Goal Name textarea (line 255-264) | fontSize: '16px', height: '54px', borderRadius: '14px', background: 'rgba(24,28,37,0.92)', lineHeight: '54px' | className="mt-1 px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20" -- remove style prop |
-| Delete button (line 270-289) | inline width/height/borderRadius/etc | className="text-zinc-500 hover:text-rose-400 transition-colors" with Trash2 icon |
-| Progress % text (line 302-305) | fontSize: '20px', fontWeight: 700 | className="text-lg font-bold text-slate-300" |
-| Progress "No Steps" text (line 310-316) | fontSize: '9px' (violates 12px min) | className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em]" |
-| "DESIRED OUTCOME" label (line 328-334) | fontSize: '11px' inline | className="text-xs font-bold text-zinc-400 uppercase tracking-widest" |
-| Desired Outcome textarea (line 350-358) | fontSize: '16px', height: '84px', borderRadius: '14px' | Same Tailwind input classes as Goal Name, with rows=2 |
-| "STEPS" h4 (line 378-385) | fontSize: '11px' inline | className="text-xs font-bold text-white uppercase tracking-[0.2em]" |
-| "Add Next Phase" button (line 426-438) | fontSize: '11px', inline | className="text-sm text-blue-400 hover:text-blue-300 transition-colors" styled similarly to reference |
-| "Add New Story Arc" button (line 467-477) | fontSize: '16px', height: '64px' inline | className="w-full py-2.5 text-sm bg-transparent border-2 border-dashed border-zinc-500 text-blue-400 hover:border-blue-400 hover:bg-blue-500/5 font-medium rounded-xl transition-colors" |
+### 6. Match subheading sizes to CharacterGoalsSection
+CharacterGoalsSection uses `text-[10px]` for labels like "Goal Name", "Desired Outcome", "Steps". Story Arcs currently uses `text-xs` (12px) which looks noticeably larger. Change all label classes in Story Arcs to `text-[10px]` to match.
 
-### File 2: ArcBranchLane.tsx
+Affected labels across files:
+- **StoryGoalsSection.tsx**: "Goal Name" (line 242), "Desired Outcome" (line 286), "Steps" h4 (line 321)
+- **ArcPhaseCard.tsx**: "Goal Name" (line 183), "Desired Outcome" (line 210), "Steps" h4 (line 241), "Phase N" (line 168)
+- **ArcBranchLane.tsx**: "FAIL PATH"/"SUCCEED PATH" (line 78), trigger labels (line 85), step labels (line 112), "FAILED"/"SUCCEEDED" labels (lines 132, 153)
+- **GuidanceStrengthSlider.tsx**: "GUIDANCE STRENGTH" label, slider labels
 
-| Element | Current (inline) | New (Tailwind) |
-|---------|------------------|----------------|
-| "FAIL PATH" / "SUCCEED PATH" (line 87-94) | fontSize: '12px', letterSpacing: '0.22em' | className="text-xs font-bold text-white/70 uppercase tracking-widest" |
-| Trigger label "RESISTANCE TRIGGER" (line 100-108) | fontSize: '10px' (violates 12px min) | className="text-xs font-bold text-zinc-400 uppercase tracking-widest block mb-1.5" |
-| Trigger textarea (line 116-125) | fontSize: '15px', height: '48px' | Same Tailwind input classes as above |
-| Step label "RECOVERY STEP 1" (line 146-152) | fontSize: '11px' | className="text-xs font-bold text-zinc-400 uppercase tracking-widest" |
-| "FAILED" / "SUCCEEDED" / "COMPLETED" labels (line 183-191, 221-229) | fontSize: '10px' (violates 12px min) | className="text-xs font-bold text-zinc-300 uppercase tracking-wider" |
-| Step description textarea (line 260-271) | fontSize: '15px' | Same Tailwind input classes |
-| Completion meta text (line 275-280) | fontSize: '11px' | className="text-xs text-zinc-400" |
-| "ADD STEP" button (line 288-308) | fontSize: '12px', inline | className="text-sm font-bold text-white uppercase tracking-widest" styled with appropriate bg |
+## Files to Modify
 
-### File 3: ArcPhaseCard.tsx
+| File | Changes |
+|------|---------|
+| `StoryGoalsSection.tsx` | Remove step count text, slate blue Add Next Phase button, label sizes to `text-[10px]` |
+| `ArcPhaseCard.tsx` | Remove step count text, label sizes to `text-[10px]` |
+| `ArcBranchLane.tsx` | Restructure step card rows, completion meta conditional, Add Step button style, label sizes to `text-[10px]` |
+| `ArcConnectors.tsx` | Extend top stem with gradient fade-out |
+| `GuidanceStrengthSlider.tsx` | Label sizes to `text-[10px]` |
 
-Same fixes as StoryGoalsSection since it duplicates the same inline styles for labels, inputs, progress text, etc.
+## Technical Details
 
-| Element | Fix |
-|---------|-----|
-| "Phase N" label (line 168-174) | className="text-xs font-bold text-blue-400 uppercase tracking-widest" |
-| "GOAL NAME" label (line 200-208) | Same as StoryGoalsSection |
-| Goal Name textarea (line 213-222) | Same Tailwind input classes |
-| Progress % (line 238-242) | className="text-lg font-bold text-slate-300" |
-| Progress "No Steps" (line 246-252) | className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em]" |
-| "DESIRED OUTCOME" label (line 264-270) | Same as StoryGoalsSection |
-| Desired Outcome textarea (line 286-294) | Same Tailwind input classes |
-| "STEPS" h4 (line 314-321) | Same as StoryGoalsSection |
+### Step card restructure (ArcBranchLane.tsx)
 
-### File 4: GuidanceStrengthSlider.tsx
+```tsx
+{/* Row 1: Step label + delete */}
+<div className="flex items-center justify-between mb-1.5">
+  <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+    {stepLabel} {idx + 1}
+  </span>
+  <button onClick={() => onDeleteStep(step.id)} ...>
+    <Trash2 size={13} />
+  </button>
+</div>
 
-| Element | Current (inline) | New (Tailwind) |
-|---------|------------------|----------------|
-| "GUIDANCE STRENGTH" label (line 35-42) | fontSize: '11px' inline | className="text-xs font-bold text-zinc-400 uppercase tracking-widest" |
-| Subtitle text (line 46-50) | fontSize: '16px' inline | className="text-sm text-zinc-400" |
-| Slider labels RIGID/NORMAL/FLEXIBLE (line 104-110) | fontSize: '11px' inline | className="text-xs font-bold uppercase tracking-widest" with conditional color |
-| Description body text (line 126-131) | fontSize: '15px' inline | className="text-sm text-zinc-300 leading-relaxed" |
+{/* Row 2: Status buttons */}
+<div className="flex items-center gap-3 mb-2">
+  {/* Failed button (conditional) */}
+  {/* Succeeded button */}
+</div>
 
-### File 5: ArcModeToggle.tsx
+{/* Row 3: Description input */}
+<AutoResizeTextarea ... />
 
-| Element | Current (inline) | New (Tailwind) |
-|---------|------------------|----------------|
-| Simple/Advanced buttons (line 24-25, 42-43) | fontSize: '10px' (violates 12px min) | className="text-xs font-bold uppercase tracking-widest" |
+{/* Row 4: Completion meta - ONLY when completed */}
+{step.completedAt && (
+  <div className="flex items-center gap-1 mt-2 text-[10px] text-zinc-400">
+    <Clock size={11} />
+    <span>Completed on Day {step.completedAt}</span>
+  </div>
+)}
+```
 
-## Summary of Changes
+### Connector fade (ArcConnectors.tsx)
 
-- Convert ALL inline styles on text elements, labels, and inputs to Tailwind classes
-- Ensure no text is smaller than 12px (text-xs)
-- Match the input field styling to use `bg-zinc-900/50 border border-white/10 rounded-lg text-sm` instead of custom rgba backgrounds with large font sizes
-- Match button styling to the dashed border pattern used by CharacterGoalsSection
-- 5 files modified total
+For the split connector, extend viewBox to `0 -20 100 68` and add a gradient on the top stem:
+
+```tsx
+<defs>
+  <linearGradient id="fade-down" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stopColor="rgba(232,238,248,0)" />
+    <stop offset="100%" stopColor="rgba(232,238,248,0.82)" />
+  </linearGradient>
+</defs>
+{/* Fading stem */}
+<line x1="50" y1="-20" x2="50" y2="24" stroke="url(#fade-down)" ... />
+```
+
+### Add Next Phase button
+
+```tsx
+className="flex items-center gap-2 h-[42px] px-5 rounded-xl border border-slate-500/40 bg-[#1e293b] text-white font-bold text-[10px] uppercase tracking-wider cursor-pointer hover:bg-[#253347] transition-colors"
+```
 
