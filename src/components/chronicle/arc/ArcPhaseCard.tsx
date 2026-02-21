@@ -29,7 +29,7 @@ function computeActiveFlow(
     const target = successBranch.steps.find(s => s.statusEventOrder === 0);
     if (target) return { sourceId: latest.step.id, sourceBranch: 'fail', targetId: target.id, targetBranch: 'success' };
   }
-  if (latest.step.status === 'failed' && latest.branch === 'success') {
+  if ((latest.step.status === 'failed' || latest.step.status === 'deviated') && latest.branch === 'success') {
     const target = failBranch.steps.find(s => s.statusEventOrder === 0);
     if (target) return { sourceId: latest.step.id, sourceBranch: 'success', targetId: target.id, targetBranch: 'fail' };
   }
@@ -79,7 +79,10 @@ interface ArcPhaseCardProps {
 const calculateArcProgress = (branches?: { fail?: ArcBranch; success?: ArcBranch }): number => {
   const successSteps = branches?.success?.steps || [];
   if (successSteps.length === 0) return 0;
-  return Math.round((successSteps.filter(s => s.status === 'succeeded').length / successSteps.length) * 100);
+  const retryTargets = new Set(successSteps.filter(s => s.retryOf && s.status === 'pending').map(s => s.retryOf));
+  const countableSteps = successSteps.filter(s => !(retryTargets.has(s.id) && (s.status === 'failed' || s.status === 'deviated')));
+  if (countableSteps.length === 0) return 0;
+  return Math.round((countableSteps.filter(s => s.status === 'succeeded').length / countableSteps.length) * 100);
 };
 
 const ensureBranch = (branch: ArcBranch | undefined, type: 'fail' | 'success'): ArcBranch => {

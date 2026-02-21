@@ -89,7 +89,15 @@ export type GoalStep = {
 // STORY ARC TYPES (Branching goal system)
 // =============================================
 
-export type StepStatus = 'pending' | 'failed' | 'succeeded';
+export type StepStatus = 'pending' | 'failed' | 'succeeded' | 'deviated';
+
+export type ResistanceClassification = 'aligned' | 'soft_resistance' | 'hard_resistance';
+
+export type ResistanceEvent = {
+  day: number;
+  classification: ResistanceClassification;
+  summary: string;
+};
 
 export type ArcStep = {
   id: string;
@@ -97,6 +105,12 @@ export type ArcStep = {
   status: StepStatus;
   statusEventOrder: number;
   completedAt?: number;
+  retryOf?: string;
+  retryCount?: number;
+  failedOnDay?: number;
+  permanentlyFailed?: boolean;
+  resistanceScore?: number;
+  resistanceEvents?: ResistanceEvent[];
 };
 
 export type ArcBranch = {

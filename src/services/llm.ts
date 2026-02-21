@@ -79,15 +79,32 @@ function getSystemInstruction(
       const lines: string[] = [];
       if (branch.triggerDescription) lines.push(`        Trigger: ${branch.triggerDescription}`);
       if (branch.steps?.length) {
-        const stepLines = branch.steps.map((s: any) => {
-          const statusIcon = s.status === 'succeeded' ? '[✓]' : s.status === 'failed' ? '[✗]' : '[ ]';
+        const stepLines = branch.steps.map((s: any, idx: number) => {
+          let statusIcon = s.status === 'succeeded' ? '[✓]' : s.status === 'failed' ? '[✗]' : s.status === 'deviated' ? '[⇗ DEVIATED]' : '[ ]';
+          if (s.permanentlyFailed) statusIcon = '[⊘ PERMANENTLY FAILED]';
           const orderInfo = s.statusEventOrder > 0 ? ` (event #${s.statusEventOrder})` : '';
-          return `${statusIcon} ${s.description}${orderInfo}`;
+          const retryInfo = s.retryOf ? ` [RETRY #${s.retryCount || 1}]` : '';
+          let line = `${statusIcon}${retryInfo} ${s.description}${orderInfo}`;
+          
+          // Add directives for special states
+          if (s.permanentlyFailed) {
+            line += '\n            -> This step is no longer actively pursued. Do not push it unless the user initiates.';
+          } else if (s.status === 'deviated') {
+            line += '\n            -> ESCALATION: Step was resisted. Recovery steps define escalation tactics. After recovery, re-attempt with increased intensity.';
+          }
+          
+          // Add resistance history if present
+          if (s.resistanceEvents?.length) {
+            const historyStr = s.resistanceEvents.map((e: any) => `Day ${e.day} ${e.classification} ("${e.summary}")`).join(', ');
+            line += `\n            Resistance History: ${historyStr}`;
+          }
+          
+          return line;
         });
-        lines.push(`        Steps: ${stepLines.join('  ')}`);
+        lines.push(`        Steps:\n${stepLines.map((l: string) => `          ${l}`).join('\n')}`);
         const succeeded = branch.steps.filter((s: any) => s.status === 'succeeded').length;
-        const failed = branch.steps.filter((s: any) => s.status === 'failed').length;
-        lines.push(`        Status: ${succeeded} succeeded, ${failed} failed, ${branch.steps.length - succeeded - failed} pending`);
+        const failed = branch.steps.filter((s: any) => s.status === 'failed' || s.status === 'deviated').length;
+        lines.push(`        Status: ${succeeded} succeeded, ${failed} failed/deviated, ${branch.steps.length - succeeded - failed} pending`);
       }
       return lines.length > 0 ? `      ${label}:\n${lines.join('\n')}` : '';
     };
