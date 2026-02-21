@@ -1,7 +1,6 @@
 import React from 'react';
 import { StoryGoal, ArcBranch, ArcStep, ArcMode, ArcPhase, GoalFlexibility, GoalStep, StepStatus } from '@/types';
-import { Trash2, Plus, Sparkles, Target } from 'lucide-react';
-import { CircularProgress } from './CircularProgress';
+import { Trash2, Plus, Sparkles, Target, CheckSquare } from 'lucide-react';
 import { GuidanceStrengthSlider } from './GuidanceStrengthSlider';
 import { ArcBranchLane } from './arc/ArcBranchLane';
 import { ArcModeToggle } from './arc/ArcModeToggle';
@@ -17,7 +16,8 @@ const AutoResizeTextarea: React.FC<{
   placeholder?: string;
   className?: string;
   rows?: number;
-}> = ({ value, onChange, placeholder, className = '', rows = 1 }) => {
+  style?: React.CSSProperties;
+}> = ({ value, onChange, placeholder, className = '', rows = 1, style }) => {
   const ref = React.useRef<HTMLTextAreaElement>(null);
   React.useEffect(() => {
     if (ref.current) {
@@ -33,6 +33,7 @@ const AutoResizeTextarea: React.FC<{
       placeholder={placeholder}
       rows={rows}
       spellCheck={true}
+      style={style}
       className={cn("w-full min-w-0 resize-none overflow-hidden whitespace-pre-wrap break-words", className)}
     />
   );
@@ -52,7 +53,7 @@ const ensureBranch = (branch: ArcBranch | undefined, type: 'fail' | 'success'): 
 
 /** Runtime migration: convert legacy GoalStep[] → success branch ArcSteps */
 function migrateGoalToBranches(goal: StoryGoal): StoryGoal {
-  if (goal.branches) return goal; // already migrated
+  if (goal.branches) return goal;
   if (!goal.steps || goal.steps.length === 0) return { ...goal, mode: goal.mode || 'simple', branches: {}, statusEventCounter: goal.statusEventCounter || 0 };
   const arcSteps: ArcStep[] = goal.steps.map((s, i) => ({
     id: s.id,
@@ -80,7 +81,6 @@ const calculateArcProgress = (branches?: { fail?: ArcBranch; success?: ArcBranch
 // ── Component ──
 
 export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onChange, onEnhanceField, enhancingField }) => {
-  // Migrate all goals on first render
   const migratedGoals = React.useMemo(() => goals.map(migrateGoalToBranches), [goals]);
 
   const addGoal = () => {
@@ -108,7 +108,6 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
     onChange(migratedGoals.filter(g => g.id !== id));
   };
 
-  // Branch operations for root phase
   const updateBranch = (goalId: string, type: 'fail' | 'success', patch: Partial<ArcBranch>) => {
     const goal = migratedGoals.find(g => g.id === goalId);
     if (!goal) return;
@@ -159,7 +158,6 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
     });
   };
 
-  // Phase operations
   const addPhase = (goalId: string) => {
     const goal = migratedGoals.find(g => g.id === goalId);
     if (!goal) return;
@@ -215,12 +213,35 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
 
   return (
     <section>
-      <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
-        <div className="bg-[#4a5f7f] border-b border-white/20 px-6 py-4 flex items-center gap-3 shadow-lg">
-          <Target className="w-[18px] h-[18px] text-white" />
-          <h2 className="text-white text-xl font-bold tracking-tight">Story Arcs</h2>
+      {/* Outer shell */}
+      <div style={{
+        background: 'rgba(39,43,54,0.98)',
+        borderRadius: '38px',
+        border: '1px solid rgba(104,129,171,0.28)',
+        boxShadow: '0 28px 72px rgba(0,0,0,0.58)',
+        overflow: 'hidden',
+      }}>
+        {/* Header */}
+        <div className="flex items-center gap-3" style={{
+          background: '#4f6b95',
+          minHeight: '80px',
+          padding: '18px 30px',
+          borderBottom: '1px solid rgba(201,214,238,0.18)',
+        }}>
+          <Target className="w-5 h-5" style={{ color: '#FFFFFF' }} />
+          <h2 style={{
+            color: '#FFFFFF',
+            fontSize: '28px',
+            fontWeight: 700,
+            letterSpacing: '-0.01em',
+            margin: 0,
+          }}>
+            ▸ Story Arcs
+          </h2>
         </div>
-        <div className="p-6 space-y-4">
+
+        {/* Content */}
+        <div style={{ padding: '24px 30px' }} className="space-y-6">
           {migratedGoals.map((goal) => {
             const mode = goal.mode || 'simple';
             const branches = goal.branches || {};
@@ -231,24 +252,54 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
             return (
               <div key={goal.id} className="space-y-0">
                 {/* Root phase card */}
-                <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-blue-500/20 relative">
-                  {/* Delete Goal */}
-                  <button onClick={() => deleteGoal(goal.id)} className="absolute top-4 right-4 text-zinc-500 hover:text-rose-400 transition-colors" title="Delete arc">
-                    <Trash2 className="h-5 w-5" />
-                  </button>
-
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                    <div className="md:col-span-9 space-y-4">
-                      {/* Goal Title */}
+                <div style={{
+                  padding: '30px',
+                  borderRadius: '26px',
+                  background: 'rgba(46,49,60,0.98)',
+                  border: '1px solid rgba(80,111,157,0.5)',
+                  position: 'relative',
+                }}>
+                  <div className="grid grid-cols-1 md:grid-cols-[1fr_220px] gap-6">
+                    <div className="space-y-4">
+                      {/* Goal Name */}
                       <div>
-                        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Goal Name</label>
-                        <AutoResizeTextarea value={goal.title} onChange={(v) => updateGoal(goal.id, { title: v })} placeholder="Enter goal name..." className="mt-1 px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
+                        <label style={{
+                          fontSize: '11px',
+                          letterSpacing: '0.22em',
+                          color: 'rgba(198,213,238,0.86)',
+                          fontWeight: 700,
+                          textTransform: 'uppercase',
+                          display: 'block',
+                          marginBottom: '8px',
+                        }}>Goal Name</label>
+                        <AutoResizeTextarea
+                          value={goal.title}
+                          onChange={(v) => updateGoal(goal.id, { title: v })}
+                          placeholder="Enter goal name..."
+                          style={{
+                            borderRadius: '14px',
+                            background: 'rgba(24,28,37,0.92)',
+                            padding: '0 18px',
+                            fontSize: '16px',
+                            height: '54px',
+                            border: 'none',
+                            color: '#FFFFFF',
+                            lineHeight: '54px',
+                          }}
+                          className="focus:outline-none placeholder:text-[rgba(151,160,180,0.82)]"
+                        />
                       </div>
 
                       {/* Desired Outcome */}
                       <div>
-                        <div className="flex items-center gap-2">
-                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Desired Outcome</label>
+                        <div className="flex items-center gap-2" style={{ marginBottom: '8px' }}>
+                          <label style={{
+                            fontSize: '11px',
+                            letterSpacing: '0.22em',
+                            color: 'rgba(198,213,238,0.86)',
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                          }}>Desired Outcome</label>
                           <SparkleButton
                             fieldKey={`story_outcome_${goal.id}`}
                             onClick={() => onEnhanceField?.(
@@ -259,7 +310,22 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                             )}
                           />
                         </div>
-                        <AutoResizeTextarea value={goal.desiredOutcome} onChange={(v) => updateGoal(goal.id, { desiredOutcome: v })} placeholder="What success looks like..." className="mt-1 px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20" rows={2} />
+                        <AutoResizeTextarea
+                          value={goal.desiredOutcome}
+                          onChange={(v) => updateGoal(goal.id, { desiredOutcome: v })}
+                          placeholder="What success looks like..."
+                          rows={2}
+                          style={{
+                            borderRadius: '14px',
+                            background: 'rgba(24,28,37,0.92)',
+                            padding: '14px 18px',
+                            fontSize: '16px',
+                            height: '84px',
+                            border: 'none',
+                            color: '#FFFFFF',
+                          }}
+                          className="focus:outline-none placeholder:text-[rgba(151,160,180,0.82)]"
+                        />
                       </div>
 
                       {/* Guidance Strength Slider */}
@@ -268,16 +334,30 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                         onChange={(flexibility) => updateGoal(goal.id, { flexibility })}
                       />
 
-                      {/* Branching Steps */}
-                      <div className="mt-4 pt-4 border-t border-white/5">
-                        <div className="flex items-center justify-between mb-3">
-                          <h4 className="text-[10px] font-bold text-white uppercase tracking-[0.2em]">Steps</h4>
+                      {/* Steps Section */}
+                      <div style={{
+                        marginTop: '18px',
+                        paddingTop: '20px',
+                        borderTop: '1px solid rgba(255,255,255,0.08)',
+                      }}>
+                        <div className="flex items-center justify-between" style={{ marginBottom: '12px' }}>
+                          <div className="flex items-center gap-2">
+                            <CheckSquare size={14} style={{ color: '#67a6ff' }} />
+                            <h4 style={{
+                              fontSize: '11px',
+                              letterSpacing: '0.2em',
+                              fontWeight: 700,
+                              color: 'rgba(226,234,247,0.95)',
+                              textTransform: 'uppercase',
+                              margin: 0,
+                            }}>Steps</h4>
+                          </div>
                           <ArcModeToggle mode={mode} onChange={(m) => updateGoal(goal.id, { mode: m })} />
                         </div>
 
                         <ArcConnectors type="split" />
 
-                        <div className="flex gap-3 mt-3">
+                        <div className="flex gap-6" style={{ marginTop: '12px' }}>
                           <ArcBranchLane
                             branch={failBranch}
                             type="fail"
@@ -306,10 +386,56 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                       </div>
                     </div>
 
-                    {/* Progress Ring */}
-                    <div className="md:col-span-3 flex flex-col items-center justify-start pt-4">
-                      <CircularProgress value={progress} size={96} strokeWidth={8} variant="dark" />
-                      <p className="mt-2 text-[9px] font-black text-zinc-400 uppercase tracking-[0.2em]">
+                    {/* Progress Ring + Delete */}
+                    <div className="flex flex-col items-center justify-start" style={{ paddingTop: '4px' }}>
+                      {/* Delete button */}
+                      <div className="w-full flex justify-end" style={{ marginBottom: '12px' }}>
+                        <button
+                          onClick={() => deleteGoal(goal.id)}
+                          style={{
+                            width: '30px',
+                            height: '30px',
+                            borderRadius: '10px',
+                            border: '1px solid rgba(248,113,113,0.5)',
+                            background: 'transparent',
+                            color: '#fca5a5',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                          }}
+                          title="Delete arc"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+
+                      {/* Progress ring */}
+                      <div style={{
+                        width: '154px',
+                        height: '154px',
+                        borderRadius: '999px',
+                        border: '12px solid rgba(51,80,125,0.85)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}>
+                        <span style={{
+                          fontSize: '42px',
+                          fontWeight: 700,
+                          color: 'rgba(195,211,237,0.94)',
+                        }}>
+                          {progress}%
+                        </span>
+                      </div>
+                      <p style={{
+                        marginTop: '10px',
+                        fontSize: '9px',
+                        fontWeight: 900,
+                        color: 'rgba(198,213,238,0.6)',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.2em',
+                      }}>
                         {successBranch.steps.length > 0
                           ? `${successBranch.steps.filter(s => s.status === 'succeeded').length}/${successBranch.steps.length} Steps`
                           : 'No Steps'}
@@ -318,11 +444,24 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                   </div>
 
                   {/* Add Next Phase button */}
-                  <div className="flex justify-end mt-4">
+                  <div className="flex justify-end" style={{ marginTop: '20px' }}>
                     <button
                       type="button"
                       onClick={() => addPhase(goal.id)}
-                      className="text-[10px] font-black uppercase tracking-widest text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1.5"
+                      className="flex items-center gap-2"
+                      style={{
+                        height: '42px',
+                        padding: '0 16px',
+                        borderRadius: '12px',
+                        border: '1px solid rgba(110,161,255,0.38)',
+                        background: 'rgba(79,106,145,0.42)',
+                        color: '#FFFFFF',
+                        fontWeight: 700,
+                        fontSize: '11px',
+                        letterSpacing: '0.14em',
+                        textTransform: 'uppercase',
+                        cursor: 'pointer',
+                      }}
                     >
                       <Plus size={14} />
                       Add Next Phase
@@ -349,9 +488,20 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
           {/* Add Story Arc */}
           <button
             onClick={addGoal}
-            className="w-full py-2.5 text-sm bg-transparent border-2 border-dashed border-zinc-500 text-blue-400 hover:border-blue-400 hover:bg-blue-500/5 font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
+            className="w-full flex items-center justify-center gap-2"
+            style={{
+              height: '64px',
+              border: '2px dashed rgba(177,188,210,0.45)',
+              borderRadius: '18px',
+              background: 'transparent',
+              color: '#67a6ff',
+              fontSize: '16px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'border-color 0.15s',
+            }}
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-5 h-5" />
             Add New Story Arc
           </button>
         </div>

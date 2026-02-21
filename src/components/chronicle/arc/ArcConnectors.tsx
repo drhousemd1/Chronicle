@@ -6,20 +6,49 @@ interface ArcConnectorsProps {
 
 export const ArcConnectors: React.FC<ArcConnectorsProps> = ({ type }) => {
   return (
-    <div className="flex justify-center py-1">
-      <svg width="200" height="24" viewBox="0 0 200 24" className="text-zinc-600">
+    <div className="flex justify-center" style={{ height: '66px' }}>
+      <svg width="100%" height="66" viewBox="0 0 400 66" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <filter id={`glow-${type}`} x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="0.8" result="blur" />
+            <feFlood floodColor="#FFFFFF" floodOpacity="0.28" result="color" />
+            <feComposite in="color" in2="blur" operator="in" result="glow" />
+            <feMerge>
+              <feMergeNode in="glow" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
         {type === 'split' ? (
-          <>
-            <line x1="100" y1="0" x2="100" y2="8" stroke="currentColor" strokeWidth="1.5" />
-            <line x1="100" y1="8" x2="30" y2="20" stroke="currentColor" strokeWidth="1.5" />
-            <line x1="100" y1="8" x2="170" y2="20" stroke="currentColor" strokeWidth="1.5" />
-          </>
+          <g filter={`url(#glow-${type})`}>
+            <path
+              d="M200,0 L200,22 Q200,33 120,44 L60,56"
+              fill="none"
+              stroke="rgba(232,238,248,0.82)"
+              strokeWidth="1.8"
+            />
+            <path
+              d="M200,0 L200,22 Q200,33 280,44 L340,56"
+              fill="none"
+              stroke="rgba(232,238,248,0.82)"
+              strokeWidth="1.8"
+            />
+          </g>
         ) : (
-          <>
-            <line x1="30" y1="4" x2="100" y2="16" stroke="currentColor" strokeWidth="1.5" />
-            <line x1="170" y1="4" x2="100" y2="16" stroke="currentColor" strokeWidth="1.5" />
-            <line x1="100" y1="16" x2="100" y2="24" stroke="currentColor" strokeWidth="1.5" />
-          </>
+          <g filter={`url(#glow-${type})`}>
+            <path
+              d="M60,10 L120,22 Q200,33 200,44 L200,66"
+              fill="none"
+              stroke="rgba(232,238,248,0.82)"
+              strokeWidth="1.8"
+            />
+            <path
+              d="M340,10 L280,22 Q200,33 200,44 L200,66"
+              fill="none"
+              stroke="rgba(232,238,248,0.82)"
+              strokeWidth="1.8"
+            />
+          </g>
         )}
       </svg>
     </div>
