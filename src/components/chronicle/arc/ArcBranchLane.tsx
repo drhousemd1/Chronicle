@@ -102,16 +102,21 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
       {!isPassive && (
         <div className="space-y-2">
           {branch.steps.map((step, idx) => (
-            <div
-              key={step.id}
-              className={cn(
-                "p-2.5 pb-3 rounded-[18px] border",
-                step.status === 'failed' ? "border-red-500/50" :
-                step.status === 'succeeded' ? "border-blue-400/50" :
-                "border-white/15"
-              )}
-              style={{ background: stepCardBg }}
-            >
+            <div key={step.id} className="relative">
+              {/* Dotted connector extending toward opposite lane */}
+              <div className={cn(
+                "absolute top-1/2 border-t-2 border-dashed border-zinc-500/40 -translate-y-1/2 pointer-events-none z-10",
+                isFail ? "-right-[8px] w-[8px]" : "-left-[8px] w-[8px]"
+              )} />
+              <div
+                className={cn(
+                  "p-2.5 pb-3 rounded-[18px] border",
+                  step.status === 'failed' ? "border-red-500/50" :
+                  step.status === 'succeeded' ? "border-blue-400/50" :
+                  "border-white/15"
+                )}
+                style={{ background: stepCardBg }}
+              >
               {/* Row 1: Step label + delete */}
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
@@ -189,6 +194,7 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
                   <span>Completed on Day {step.completedAt}</span>
                 </div>
               )}
+            </div>
             </div>
           ))}
 

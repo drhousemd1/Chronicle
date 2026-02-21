@@ -10,9 +10,9 @@ export const ArcConnectors: React.FC<ArcConnectorsProps> = ({ type }) => {
       <svg
         width="100%"
         height={type === 'split' ? '88' : '48'}
-        viewBox={type === 'split' ? '0 -40 100 88' : '0 0 100 48'}
+        viewBox={type === 'split' ? '0 0 100 88' : '0 0 100 48'}
         preserveAspectRatio="none"
-        style={{ display: 'block', overflow: 'visible' }}
+        style={{ display: 'block' }}
       >
         {type === 'split' ? (
           <>
@@ -22,14 +22,14 @@ export const ArcConnectors: React.FC<ArcConnectorsProps> = ({ type }) => {
                 <stop offset="100%" stopColor="rgba(232,238,248,0.82)" />
               </linearGradient>
             </defs>
-            {/* Fading vertical stem down from above */}
-            <line x1="50" y1="-40" x2="50" y2="24" stroke="url(#fade-down)" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+            {/* Fading vertical stem from top to horizontal bar */}
+            <line x1="50" y1="0" x2="50" y2="64" stroke="url(#fade-down)" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
             {/* Horizontal bar */}
-            <line x1="25" y1="24" x2="75" y2="24" stroke="rgba(232,238,248,0.82)" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+            <line x1="25" y1="64" x2="75" y2="64" stroke="rgba(232,238,248,0.82)" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
             {/* Left drop */}
-            <line x1="25" y1="24" x2="25" y2="48" stroke="rgba(232,238,248,0.82)" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+            <line x1="25" y1="64" x2="25" y2="88" stroke="rgba(232,238,248,0.82)" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
             {/* Right drop */}
-            <line x1="75" y1="24" x2="75" y2="48" stroke="rgba(232,238,248,0.82)" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+            <line x1="75" y1="64" x2="75" y2="88" stroke="rgba(232,238,248,0.82)" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
           </>
         ) : (
           <>
