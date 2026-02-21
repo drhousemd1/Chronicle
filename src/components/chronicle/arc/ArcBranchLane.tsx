@@ -107,66 +107,66 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
               className="p-2.5 pb-3 rounded-[18px] border border-white/15"
               style={{ background: stepCardBg }}
             >
-              {/* Step header row */}
-              <div className="flex items-center justify-between mb-2">
+              {/* Row 1: Step label + delete */}
+              <div className="flex items-center justify-between mb-1.5">
                 <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
                   {stepLabel} {idx + 1}
                 </span>
-                <div className="flex items-center gap-1.5">
-                  {/* Failed button - hidden on success branch when rigid */}
-                  {!((!isFail) && isRigid) && (
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => onToggleStatus(step.id, 'failed')}
-                        title="Mark as Failed"
-                        className={cn(
-                          "w-[30px] h-[30px] rounded-[9px] flex items-center justify-center cursor-pointer transition-all",
-                          step.status === 'failed'
-                            ? "border border-red-500/60 bg-red-500/20 text-red-300"
-                            : "border border-white/20 bg-white/5 text-white/40"
-                        )}
-                      >
-                        <X size={14} />
-                      </button>
-                      <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider">
-                        FAILED
-                      </span>
-                    </div>
-                  )}
+                <button
+                  type="button"
+                  onClick={() => onDeleteStep(step.id)}
+                  className="w-[26px] h-[26px] rounded-[8px] border border-red-400/50 bg-transparent text-red-300 flex items-center justify-center cursor-pointer"
+                >
+                  <Trash2 size={13} />
+                </button>
+              </div>
 
-                  {/* Succeeded button */}
-                  <div className="flex items-center gap-1">
+              {/* Row 2: Status buttons */}
+              <div className="flex items-center gap-3 mb-2">
+                {/* Failed button - hidden on success branch when rigid */}
+                {!((!isFail) && isRigid) && (
+                  <div className="flex items-center gap-1.5">
                     <button
                       type="button"
-                      onClick={() => onToggleStatus(step.id, 'succeeded')}
-                      title={(!isFail && isRigid) ? "Mark as Completed" : "Mark as Succeeded"}
+                      onClick={() => onToggleStatus(step.id, 'failed')}
+                      title="Mark as Failed"
                       className={cn(
-                        "w-[30px] h-[30px] rounded-[9px] flex items-center justify-center cursor-pointer transition-all",
-                        step.status === 'succeeded'
-                          ? "border border-emerald-500/60 bg-emerald-500/20 text-emerald-200"
+                        "w-[26px] h-[26px] rounded-[8px] flex items-center justify-center cursor-pointer transition-all",
+                        step.status === 'failed'
+                          ? "border border-red-500/60 bg-red-500/20 text-red-300"
                           : "border border-white/20 bg-white/5 text-white/40"
                       )}
                     >
-                      <Check size={14} />
+                      <X size={13} />
                     </button>
                     <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider">
-                      {(!isFail && isRigid) ? 'COMPLETED' : 'SUCCEEDED'}
+                      FAILED
                     </span>
                   </div>
+                )}
 
-                  {/* Delete step */}
+                {/* Succeeded button */}
+                <div className="flex items-center gap-1.5">
                   <button
                     type="button"
-                    onClick={() => onDeleteStep(step.id)}
-                    className="w-[30px] h-[30px] rounded-[10px] border border-red-400/50 bg-transparent text-red-300 flex items-center justify-center cursor-pointer ml-1"
+                    onClick={() => onToggleStatus(step.id, 'succeeded')}
+                    title={(!isFail && isRigid) ? "Mark as Completed" : "Mark as Succeeded"}
+                    className={cn(
+                      "w-[26px] h-[26px] rounded-[8px] flex items-center justify-center cursor-pointer transition-all",
+                      step.status === 'succeeded'
+                        ? "border border-emerald-500/60 bg-emerald-500/20 text-emerald-200"
+                        : "border border-white/20 bg-white/5 text-white/40"
+                    )}
                   >
-                    <Trash2 size={13} />
+                    <Check size={13} />
                   </button>
+                  <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider">
+                    {(!isFail && isRigid) ? 'COMPLETED' : 'SUCCEEDED'}
+                  </span>
                 </div>
               </div>
 
-              {/* Step description input */}
+              {/* Row 3: Description input */}
               <AutoResizeTextarea
                 value={step.description}
                 onChange={(v) => onUpdateStep(step.id, { description: v })}
@@ -177,11 +177,13 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
                 )}
               />
 
-              {/* Completion meta */}
-              <div className="flex items-center gap-1 mt-2 text-xs text-zinc-400">
-                <Clock size={11} />
-                <span>{step.completedAt ? `Completed on Day ${step.completedAt}` : 'Completed on (Day #)'}</span>
-              </div>
+              {/* Row 4: Completion meta - ONLY when completed */}
+              {step.completedAt && (
+                <div className="flex items-center gap-1 mt-2 text-xs text-zinc-400">
+                  <Clock size={12} />
+                  <span>Completed on Day {step.completedAt}</span>
+                </div>
+              )}
             </div>
           ))}
 
@@ -189,7 +191,7 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
           <button
             type="button"
             onClick={onAddStep}
-            className="w-full flex items-center justify-center gap-2 h-[50px] rounded-[18px] text-sm font-bold text-white uppercase tracking-widest border border-white/15 cursor-pointer transition-opacity hover:opacity-80"
+            className="w-full flex items-center justify-center gap-2 h-[44px] rounded-[18px] text-sm font-medium text-white uppercase tracking-widest border border-white/15 cursor-pointer transition-opacity hover:opacity-80"
             style={{ background: addStepBg }}
           >
             <Plus size={14} />
