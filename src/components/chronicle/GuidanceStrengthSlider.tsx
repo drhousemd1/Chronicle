@@ -85,8 +85,8 @@ export const GuidanceStrengthSlider: React.FC<GuidanceStrengthSliderProps> = ({ 
       </div>
 
       {/* Description body */}
-      <div className="mt-3 rounded-2xl bg-[rgba(37,40,50,0.92)] border border-white/10 p-4">
-        <p className="text-sm text-zinc-300 leading-relaxed m-0">
+      <div className="mt-3 bg-zinc-900 rounded-xl p-4 border border-white/5">
+        <p className="text-sm text-zinc-400 leading-relaxed m-0">
           {DESCRIPTIONS[value]}
         </p>
       </div>

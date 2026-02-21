@@ -91,7 +91,7 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
             readOnly={isPassive}
             placeholder={isFail ? "What causes failure..." : "What triggers success..."}
             className={cn(
-              "px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20",
+              "px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-zinc-500",
               isPassive ? "text-zinc-500 italic" : "text-white"
             )}
           />
@@ -172,7 +172,7 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
                 onChange={(v) => onUpdateStep(step.id, { description: v })}
                 placeholder="Describe this step..."
                 className={cn(
-                  "px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20",
+                  "px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
                   (step.status === 'succeeded' || step.status === 'failed') && "line-through opacity-60"
                 )}
               />
@@ -187,15 +187,14 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
             </div>
           ))}
 
-          {/* Add Step button */}
+          {/* Add Step link */}
           <button
             type="button"
             onClick={onAddStep}
-            className="w-full flex items-center justify-center gap-2 h-[44px] rounded-[18px] text-sm font-medium text-white uppercase tracking-widest border border-white/15 cursor-pointer transition-opacity hover:opacity-80"
-            style={{ background: addStepBg }}
+            className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm mt-3 transition-colors"
           >
-            <Plus size={14} />
-            ADD STEP
+            <Plus className="h-4 w-4" />
+            <span>Add Step</span>
           </button>
         </div>
       )}
