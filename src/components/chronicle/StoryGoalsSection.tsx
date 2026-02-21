@@ -76,7 +76,11 @@ function migrateGoalToBranches(goal: StoryGoal): StoryGoal {
 const calculateArcProgress = (branches?: { fail?: ArcBranch; success?: ArcBranch }): number => {
   const successSteps = branches?.success?.steps || [];
   if (successSteps.length === 0) return 0;
-  return Math.round((successSteps.filter(s => s.status === 'succeeded').length / successSteps.length) * 100);
+  // Exclude failed steps that have a pending retry clone
+  const retryTargets = new Set(successSteps.filter(s => s.retryOf && s.status === 'pending').map(s => s.retryOf));
+  const countableSteps = successSteps.filter(s => !(retryTargets.has(s.id) && (s.status === 'failed' || s.status === 'deviated')));
+  if (countableSteps.length === 0) return 0;
+  return Math.round((countableSteps.filter(s => s.status === 'succeeded').length / countableSteps.length) * 100);
 };
 
 /** Compute the single active flow connector between branches */
@@ -99,7 +103,7 @@ function computeActiveFlow(
     const target = successBranch.steps.find(s => s.statusEventOrder === 0);
     if (target) return { sourceId: latest.step.id, sourceBranch: 'fail', targetId: target.id, targetBranch: 'success' };
   }
-  if (latest.step.status === 'failed' && latest.branch === 'success') {
+  if ((latest.step.status === 'failed' || latest.step.status === 'deviated') && latest.branch === 'success') {
     const target = failBranch.steps.find(s => s.statusEventOrder === 0);
     if (target) return { sourceId: latest.step.id, sourceBranch: 'success', targetId: target.id, targetBranch: 'fail' };
   }
@@ -173,7 +177,8 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
   const toggleStatus = (goalId: string, type: 'fail' | 'success', stepId: string, targetStatus: StepStatus) => {
     const goal = migratedGoals.find(g => g.id === goalId);
     if (!goal) return;
-    const branch = ensureBranch(goal.branches?.[type], type);
+    const branches = goal.branches || {};
+    const branch = ensureBranch(branches[type], type);
     const step = branch.steps.find(s => s.id === stepId);
     if (!step) return;
     const newStatus = step.status === targetStatus ? 'pending' : targetStatus;
@@ -183,10 +188,56 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
         ? { ...s, status: newStatus, statusEventOrder: newStatus !== 'pending' ? counter : 0, completedAt: newStatus === 'succeeded' ? now() : undefined }
         : s
     );
-    const branches = goal.branches || {};
+    
+    let updatedBranches = { ...branches, [type]: { ...branch, steps: updatedSteps } };
+
+    // Clone-on-recovery: when a recovery (fail branch) step succeeds, clone the failed/deviated success step
+    if (type === 'fail' && newStatus === 'succeeded') {
+      const successBranch = ensureBranch(updatedBranches.success, 'success');
+      // Find the most recently failed/deviated success step
+      const failedSuccessStep = [...successBranch.steps]
+        .filter(s => s.status === 'failed' || s.status === 'deviated')
+        .sort((a, b) => b.statusEventOrder - a.statusEventOrder)[0];
+      
+      if (failedSuccessStep && !failedSuccessStep.permanentlyFailed) {
+        const currentDay = 0; // TODO: pass from conversation context
+        const existingClone = successBranch.steps.find(s => s.retryOf === failedSuccessStep.id && s.failedOnDay === currentDay);
+        
+        if (!existingClone) {
+          const currentRetryCount = failedSuccessStep.retryCount || 0;
+          const maxRetries = goal.flexibility === 'rigid' ? Infinity : goal.flexibility === 'flexible' ? 2 : 4;
+          
+          if (currentRetryCount < maxRetries) {
+            const clonedStep: ArcStep = {
+              id: uid('astep'),
+              description: failedSuccessStep.description,
+              status: 'pending',
+              statusEventOrder: 0,
+              retryOf: failedSuccessStep.id,
+              retryCount: currentRetryCount + 1,
+              failedOnDay: currentDay,
+            };
+            const insertIdx = successBranch.steps.indexOf(failedSuccessStep) + 1;
+            const newSuccessSteps = [...successBranch.steps];
+            newSuccessSteps.splice(insertIdx, 0, clonedStep);
+            updatedBranches = { ...updatedBranches, success: { ...successBranch, steps: newSuccessSteps } };
+          } else {
+            // Max retries reached - mark as permanently failed
+            updatedBranches = {
+              ...updatedBranches,
+              success: {
+                ...successBranch,
+                steps: successBranch.steps.map(s => s.id === failedSuccessStep.id ? { ...s, permanentlyFailed: true } : s),
+              },
+            };
+          }
+        }
+      }
+    }
+
     updateGoal(goalId, {
       statusEventCounter: counter,
-      branches: { ...branches, [type]: { ...branch, steps: updatedSteps } },
+      branches: updatedBranches,
     });
   };
 

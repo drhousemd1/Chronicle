@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArcBranch, ArcStep, StepStatus, GoalFlexibility } from '@/types';
-import { Plus, X, Check, Trash2, Clock } from 'lucide-react';
+import { Plus, X, Check, Trash2, Clock, ArrowUpRight, RotateCcw, Ban } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Auto-resizing textarea
@@ -107,16 +107,31 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
                 className={cn(
                   "p-2.5 pb-3 rounded-[18px] border",
                   step.status === 'failed' ? "border-red-500/50" :
+                  step.status === 'deviated' ? "border-orange-500/50" :
                   step.status === 'succeeded' ? "border-blue-400/50" :
                   "border-white/15"
                 )}
                 style={{ background: stepCardBg }}
               >
-              {/* Row 1: Step label + delete */}
+              {/* Row 1: Step label + retry badge + delete */}
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-                  {stepLabel} {idx + 1}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                    {stepLabel} {idx + 1}
+                  </span>
+                  {step.retryOf && (
+                    <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-400/80 bg-amber-500/10 border border-amber-500/20 rounded-full px-1.5 py-0.5">
+                      <RotateCcw size={9} />
+                      Retry #{step.retryCount || 1}
+                    </span>
+                  )}
+                  {step.permanentlyFailed && (
+                    <span className="inline-flex items-center gap-1 text-[9px] font-bold text-red-400/80 bg-red-500/10 border border-red-500/20 rounded-full px-1.5 py-0.5">
+                      <Ban size={9} />
+                      Max retries
+                    </span>
+                  )}
+                </div>
                 <button
                   type="button"
                   onClick={() => onDeleteStep(step.id)}
@@ -128,8 +143,9 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
 
               {/* Row 2: Status buttons */}
               <div className="flex items-center gap-3 mb-2">
-                {/* Failed button - hidden on success branch when rigid */}
-                {!((!isFail) && isRigid) && (
+                {/* Failed/Deviated button */}
+                {!((!isFail) && isRigid) ? (
+                  /* Normal failed button for non-rigid or fail branch */
                   <div className="flex items-center gap-1.5">
                     <button
                       type="button"
@@ -146,6 +162,26 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
                     </button>
                     <span className="text-[10px] font-black text-zinc-300 uppercase tracking-wider">
                       FAILED
+                    </span>
+                  </div>
+                ) : (
+                  /* Deviated button for rigid success branch */
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => onToggleStatus(step.id, 'deviated')}
+                      title="Mark as Deviated"
+                      className={cn(
+                        "w-[26px] h-[26px] rounded-[8px] flex items-center justify-center cursor-pointer transition-all",
+                        step.status === 'deviated'
+                          ? "border border-orange-500/60 bg-orange-500/20 text-orange-300"
+                          : "border border-white/20 bg-white/5 text-white/40"
+                      )}
+                    >
+                      <ArrowUpRight size={13} />
+                    </button>
+                    <span className="text-[10px] font-black text-zinc-300 uppercase tracking-wider">
+                      DEVIATED
                     </span>
                   </div>
                 )}
@@ -178,7 +214,7 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
                 placeholder="Describe this step..."
                 className={cn(
                   "px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
-                  (step.status === 'succeeded' || step.status === 'failed') && "line-through opacity-60"
+                  (step.status === 'succeeded' || step.status === 'failed' || step.status === 'deviated') && "line-through opacity-60"
                 )}
               />
 

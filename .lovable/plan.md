@@ -1,6 +1,6 @@
 
 
-# Story Arc: Resistance Scoring, Retry Logic, and Deviated Status
+# Story Arc: Resistance Scoring, Retry Logic, and Deviated Status — IMPLEMENTED
 
 ## Scoring System -- Full Breakdown
 
