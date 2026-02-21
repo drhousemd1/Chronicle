@@ -239,7 +239,7 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                   {/* Row 1: Goal Name + Delete + Progress Ring */}
                   <div className="flex items-start gap-4">
                     <div className="flex-1">
-                      <label className="text-xs font-bold text-zinc-400 uppercase tracking-widest block mb-2">Goal Name</label>
+                      <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block mb-2">Goal Name</label>
                       <AutoResizeTextarea
                         value={goal.title}
                         onChange={(v) => updateGoal(goal.id, { title: v })}
@@ -278,7 +278,7 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                   {/* Full width: Desired Outcome */}
                   <div style={{ marginTop: '16px' }}>
                     <div className="flex items-center gap-2 mb-2">
-                      <label className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Desired Outcome</label>
+                      <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Desired Outcome</label>
                       <SparkleButton
                         fieldKey={`story_outcome_${goal.id}`}
                         onClick={() => onEnhanceField?.(
@@ -313,7 +313,7 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                     <div className="flex items-center justify-between" style={{ marginBottom: '12px' }}>
                       <div className="flex items-center gap-2">
                         <CheckSquare size={14} style={{ color: '#67a6ff' }} />
-                        <h4 className="text-xs font-bold text-white uppercase tracking-[0.2em] m-0">Steps</h4>
+                        <h4 className="text-[10px] font-black text-white uppercase tracking-[0.2em] m-0">Steps</h4>
                       </div>
                       <ArcModeToggle mode={mode} onChange={(m) => updateGoal(goal.id, { mode: m })} />
                     </div>

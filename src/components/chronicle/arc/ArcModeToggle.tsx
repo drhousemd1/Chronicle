@@ -16,7 +16,7 @@ export const ArcModeToggle: React.FC<ArcModeToggleProps> = ({ mode, onChange }) 
         type="button"
         onClick={() => onChange('simple')}
         className={cn(
-          "px-3.5 py-1.5 text-xs font-bold uppercase tracking-widest rounded-full border-none cursor-pointer transition-all",
+          "px-3.5 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-full border-none cursor-pointer transition-all",
           mode === 'simple'
             ? "bg-[rgba(99,135,194,0.58)] text-blue-50"
             : "bg-transparent text-zinc-400"
@@ -28,7 +28,7 @@ export const ArcModeToggle: React.FC<ArcModeToggleProps> = ({ mode, onChange }) 
         type="button"
         onClick={() => onChange('advanced')}
         className={cn(
-          "px-3.5 py-1.5 text-xs font-bold uppercase tracking-widest rounded-full border-none cursor-pointer transition-all",
+          "px-3.5 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-full border-none cursor-pointer transition-all",
           mode === 'advanced'
             ? "bg-[rgba(99,135,194,0.58)] text-blue-50"
             : "bg-transparent text-zinc-400"
