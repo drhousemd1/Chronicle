@@ -196,11 +196,6 @@ export const ArcPhaseCard: React.FC<ArcPhaseCardProps> = ({
                 {progress}%
               </span>
             </div>
-            <p className="mt-1.5 text-xs font-black text-zinc-400 uppercase tracking-[0.2em]">
-              {successBranch.steps.length > 0
-                ? `${successBranch.steps.filter(s => s.status === 'succeeded').length}/${successBranch.steps.length} Steps`
-                : 'No Steps'}
-            </p>
           </div>
         </div>
 

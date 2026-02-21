@@ -272,11 +272,6 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                           {progress}%
                         </span>
                       </div>
-                      <p className="mt-1.5 text-xs font-black text-zinc-400 uppercase tracking-[0.2em]">
-                        {successBranch.steps.length > 0
-                          ? `${successBranch.steps.filter(s => s.status === 'succeeded').length}/${successBranch.steps.length} Steps`
-                          : 'No Steps'}
-                      </p>
                     </div>
                   </div>
 
@@ -358,7 +353,7 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                     <button
                       type="button"
                       onClick={() => addPhase(goal.id)}
-                      className="flex items-center gap-2 h-[42px] px-4 rounded-xl border border-blue-400/40 bg-blue-900/30 text-white font-bold text-xs uppercase tracking-wider cursor-pointer hover:bg-blue-900/50 transition-colors"
+                      className="flex items-center gap-2 h-[42px] px-5 rounded-xl border border-slate-500/40 bg-[#1e293b] text-white font-bold text-xs uppercase tracking-wider cursor-pointer hover:bg-[#253347] transition-colors"
                     >
                       <Plus size={14} />
                       Add Next Phase
