@@ -111,7 +111,7 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
               {activeFlowStepId === step.id && flowDirection && (
                 <div className={cn(
                   "absolute top-1/2 border-t-2 border-dashed border-zinc-400/60 -translate-y-1/2 pointer-events-none z-10",
-                  flowDirection === 'right' ? "-right-[8px] w-[8px]" : "-left-[8px] w-[8px]"
+                  flowDirection === 'right' ? "-right-[16px] w-[16px]" : "-left-[16px] w-[16px]"
                 )} />
               )}
               <div
