@@ -214,34 +214,17 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
   return (
     <section>
       {/* Outer shell */}
-      <div style={{
-        background: 'rgba(39,43,54,0.98)',
-        borderRadius: '38px',
-        border: '1px solid rgba(104,129,171,0.28)',
-        boxShadow: '0 28px 72px rgba(0,0,0,0.58)',
-        overflow: 'hidden',
-      }}>
+      <div className="bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
         {/* Header */}
-        <div className="flex items-center gap-3" style={{
-          background: '#4f6b95',
-          minHeight: '56px',
-          padding: '18px 30px',
-          borderBottom: '1px solid rgba(201,214,238,0.18)',
-        }}>
-          <GitBranch className="w-4 h-4" style={{ color: '#FFFFFF' }} />
-          <h2 style={{
-            color: '#FFFFFF',
-            fontSize: '18px',
-            fontWeight: 700,
-            letterSpacing: '-0.01em',
-            margin: 0,
-          }}>
+        <div className="bg-[#4a5f7f] border-b border-white/20 px-5 py-3 flex items-center gap-3">
+          <GitBranch className="w-4 h-4 text-white" />
+          <h2 className="text-white text-xl font-bold tracking-tight m-0">
             Story Arcs
           </h2>
         </div>
 
         {/* Content */}
-        <div style={{ padding: '20px 16px' }} className="space-y-6">
+        <div className="p-5 space-y-6">
           {migratedGoals.map((goal) => {
             const mode = goal.mode || 'simple';
             const branches = goal.branches || {};
@@ -252,13 +235,7 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
             return (
               <div key={goal.id} className="space-y-0">
                 {/* Root phase card */}
-                <div style={{
-                  padding: '30px',
-                  borderRadius: '26px',
-                  background: 'rgba(46,49,60,0.98)',
-                  border: '1px solid rgba(80,111,157,0.5)',
-                  position: 'relative',
-                }}>
+                <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-blue-500/20 relative">
                   {/* Row 1: Goal Name + Delete + Progress Ring */}
                   <div className="flex items-start gap-4">
                     <div className="flex-1">

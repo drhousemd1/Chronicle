@@ -71,15 +71,7 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
   const addStepBg = isFail ? 'rgba(88,60,70,0.78)' : 'rgba(58,86,76,0.78)';
 
   return (
-    <div
-      className="flex-1 space-y-3"
-      style={{
-        borderRadius: '24px',
-        border: `1px dotted ${borderColor}`,
-        padding: '10px',
-        background: 'rgba(13,17,25,0.26)',
-      }}
-    >
+    <div className="space-y-3">
       {/* Header cluster */}
       <div style={{
         borderRadius: '18px',
