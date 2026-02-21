@@ -40,6 +40,8 @@ interface ArcBranchLaneProps {
   type: 'fail' | 'success';
   flexibility: GoalFlexibility;
   isSimpleMode: boolean;
+  activeFlowStepId?: string;
+  flowDirection?: 'left' | 'right';
   onUpdateTrigger: (description: string) => void;
   onAddStep: () => void;
   onUpdateStep: (stepId: string, patch: Partial<ArcStep>) => void;
@@ -52,6 +54,8 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
   type,
   flexibility,
   isSimpleMode,
+  activeFlowStepId,
+  flowDirection,
   onUpdateTrigger,
   onAddStep,
   onUpdateStep,
@@ -103,11 +107,13 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
         <div className="space-y-2">
           {branch.steps.map((step, idx) => (
             <div key={step.id} className="relative">
-              {/* Dotted connector extending toward opposite lane */}
-              <div className={cn(
-                "absolute top-1/2 border-t-2 border-dashed border-zinc-500/40 -translate-y-1/2 pointer-events-none z-10",
-                isFail ? "-right-[8px] w-[8px]" : "-left-[8px] w-[8px]"
-              )} />
+              {/* Active flow dotted connector - only on the specific active step */}
+              {activeFlowStepId === step.id && flowDirection && (
+                <div className={cn(
+                  "absolute top-1/2 border-t-2 border-dashed border-zinc-400/60 -translate-y-1/2 pointer-events-none z-10",
+                  flowDirection === 'right' ? "-right-[8px] w-[8px]" : "-left-[8px] w-[8px]"
+                )} />
+              )}
               <div
                 className={cn(
                   "p-2.5 pb-3 rounded-[18px] border",

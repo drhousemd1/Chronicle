@@ -78,6 +78,40 @@ const calculateArcProgress = (branches?: { fail?: ArcBranch; success?: ArcBranch
   return Math.round((successSteps.filter(s => s.status === 'succeeded').length / successSteps.length) * 100);
 };
 
+/** Compute the single active flow connector between branches */
+function computeActiveFlow(
+  failBranch: ArcBranch,
+  successBranch: ArcBranch
+): { failActiveId?: string; successActiveId?: string } | null {
+  const resolved: Array<{ step: ArcStep; branch: 'fail' | 'success' }> = [];
+  failBranch.steps.forEach(s => {
+    if (s.statusEventOrder > 0) resolved.push({ step: s, branch: 'fail' });
+  });
+  successBranch.steps.forEach(s => {
+    if (s.statusEventOrder > 0) resolved.push({ step: s, branch: 'success' });
+  });
+  if (resolved.length === 0) return null;
+  resolved.sort((a, b) => b.step.statusEventOrder - a.step.statusEventOrder);
+  const latest = resolved[0];
+
+  if (latest.step.status === 'failed') {
+    const opposite = latest.branch === 'fail' ? successBranch : failBranch;
+    const nextPending = opposite.steps.find(s => s.status === 'pending');
+    if (!nextPending) return null;
+    return latest.branch === 'fail'
+      ? { failActiveId: latest.step.id, successActiveId: nextPending.id }
+      : { failActiveId: nextPending.id, successActiveId: latest.step.id };
+  }
+
+  if (latest.step.status === 'succeeded' && latest.branch === 'fail') {
+    const nextPending = successBranch.steps.find(s => s.status === 'pending');
+    if (!nextPending) return null;
+    return { failActiveId: latest.step.id, successActiveId: nextPending.id };
+  }
+
+  return null;
+}
+
 // ── Component ──
 
 export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onChange, onEnhanceField, enhancingField }) => {
@@ -317,30 +351,39 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                     <ArcConnectors type="split" />
 
                     <div className="relative mt-3">
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '16px' }}>
-                        <ArcBranchLane
-                          branch={failBranch}
-                          type="fail"
-                          flexibility={goal.flexibility}
-                          isSimpleMode={mode === 'simple'}
-                          onUpdateTrigger={(d) => updateBranch(goal.id, 'fail', { triggerDescription: d })}
-                          onAddStep={() => addStep(goal.id, 'fail')}
-                          onUpdateStep={(id, patch) => updateStep(goal.id, 'fail', id, patch)}
-                          onDeleteStep={(id) => deleteStep(goal.id, 'fail', id)}
-                          onToggleStatus={(id, status) => toggleStatus(goal.id, 'fail', id, status)}
-                        />
-                        <ArcBranchLane
-                          branch={successBranch}
-                          type="success"
-                          flexibility={goal.flexibility}
-                          isSimpleMode={false}
-                          onUpdateTrigger={(d) => updateBranch(goal.id, 'success', { triggerDescription: d })}
-                          onAddStep={() => addStep(goal.id, 'success')}
-                          onUpdateStep={(id, patch) => updateStep(goal.id, 'success', id, patch)}
-                          onDeleteStep={(id) => deleteStep(goal.id, 'success', id)}
-                          onToggleStatus={(id, status) => toggleStatus(goal.id, 'success', id, status)}
-                        />
-                      </div>
+                      {(() => {
+                        const flow = computeActiveFlow(failBranch, successBranch);
+                        return (
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '16px' }}>
+                            <ArcBranchLane
+                              branch={failBranch}
+                              type="fail"
+                              flexibility={goal.flexibility}
+                              isSimpleMode={mode === 'simple'}
+                              activeFlowStepId={flow?.failActiveId}
+                              flowDirection="right"
+                              onUpdateTrigger={(d) => updateBranch(goal.id, 'fail', { triggerDescription: d })}
+                              onAddStep={() => addStep(goal.id, 'fail')}
+                              onUpdateStep={(id, patch) => updateStep(goal.id, 'fail', id, patch)}
+                              onDeleteStep={(id) => deleteStep(goal.id, 'fail', id)}
+                              onToggleStatus={(id, status) => toggleStatus(goal.id, 'fail', id, status)}
+                            />
+                            <ArcBranchLane
+                              branch={successBranch}
+                              type="success"
+                              flexibility={goal.flexibility}
+                              isSimpleMode={false}
+                              activeFlowStepId={flow?.successActiveId}
+                              flowDirection="left"
+                              onUpdateTrigger={(d) => updateBranch(goal.id, 'success', { triggerDescription: d })}
+                              onAddStep={() => addStep(goal.id, 'success')}
+                              onUpdateStep={(id, patch) => updateStep(goal.id, 'success', id, patch)}
+                              onDeleteStep={(id) => deleteStep(goal.id, 'success', id)}
+                              onToggleStatus={(id, status) => toggleStatus(goal.id, 'success', id, status)}
+                            />
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     {(goal.linkedPhases || []).length > 0 && <ArcConnectors type="merge" />}

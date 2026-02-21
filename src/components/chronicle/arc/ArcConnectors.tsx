@@ -17,7 +17,7 @@ export const ArcConnectors: React.FC<ArcConnectorsProps> = ({ type }) => {
         {type === 'split' ? (
           <>
             <defs>
-              <linearGradient id="fade-down" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id="fade-down" x1="0" y1="0" x2="0" y2="64" gradientUnits="userSpaceOnUse">
                 <stop offset="0%" stopColor="rgba(232,238,248,0)" />
                 <stop offset="100%" stopColor="rgba(232,238,248,0.82)" />
               </linearGradient>

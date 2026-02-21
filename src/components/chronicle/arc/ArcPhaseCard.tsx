@@ -8,6 +8,37 @@ import { ArcConnectors } from './ArcConnectors';
 import { uid, now } from '@/utils';
 import { cn } from '@/lib/utils';
 
+/** Compute the single active flow connector between branches */
+function computeActiveFlow(
+  failBranch: ArcBranch,
+  successBranch: ArcBranch
+): { failActiveId?: string; successActiveId?: string } | null {
+  const resolved: Array<{ step: ArcStep; branch: 'fail' | 'success' }> = [];
+  failBranch.steps.forEach(s => {
+    if (s.statusEventOrder > 0) resolved.push({ step: s, branch: 'fail' });
+  });
+  successBranch.steps.forEach(s => {
+    if (s.statusEventOrder > 0) resolved.push({ step: s, branch: 'success' });
+  });
+  if (resolved.length === 0) return null;
+  resolved.sort((a, b) => b.step.statusEventOrder - a.step.statusEventOrder);
+  const latest = resolved[0];
+  if (latest.step.status === 'failed') {
+    const opposite = latest.branch === 'fail' ? successBranch : failBranch;
+    const nextPending = opposite.steps.find(s => s.status === 'pending');
+    if (!nextPending) return null;
+    return latest.branch === 'fail'
+      ? { failActiveId: latest.step.id, successActiveId: nextPending.id }
+      : { failActiveId: nextPending.id, successActiveId: latest.step.id };
+  }
+  if (latest.step.status === 'succeeded' && latest.branch === 'fail') {
+    const nextPending = successBranch.steps.find(s => s.status === 'pending');
+    if (!nextPending) return null;
+    return { failActiveId: latest.step.id, successActiveId: nextPending.id };
+  }
+  return null;
+}
+
 // Auto-resizing textarea
 const AutoResizeTextarea: React.FC<{
   value: string;
@@ -227,30 +258,39 @@ export const ArcPhaseCard: React.FC<ArcPhaseCardProps> = ({
         <ArcConnectors type="split" />
 
         <div className="relative mt-3">
-          <div className="grid grid-cols-2 gap-4">
-            <ArcBranchLane
-              branch={failBranch}
-              type="fail"
-              flexibility={phase.flexibility}
-              isSimpleMode={mode === 'simple'}
-              onUpdateTrigger={(d) => updateBranch('fail', { triggerDescription: d })}
-              onAddStep={() => addStep('fail')}
-              onUpdateStep={(id, patch) => updateStep('fail', id, patch)}
-              onDeleteStep={(id) => deleteStep('fail', id)}
-              onToggleStatus={(id, status) => toggleStatus('fail', id, status)}
-            />
-            <ArcBranchLane
-              branch={successBranch}
-              type="success"
-              flexibility={phase.flexibility}
-              isSimpleMode={false}
-              onUpdateTrigger={(d) => updateBranch('success', { triggerDescription: d })}
-              onAddStep={() => addStep('success')}
-              onUpdateStep={(id, patch) => updateStep('success', id, patch)}
-              onDeleteStep={(id) => deleteStep('success', id)}
-              onToggleStatus={(id, status) => toggleStatus('success', id, status)}
-            />
-          </div>
+          {(() => {
+            const flow = computeActiveFlow(failBranch, successBranch);
+            return (
+              <div className="grid grid-cols-2 gap-4">
+                <ArcBranchLane
+                  branch={failBranch}
+                  type="fail"
+                  flexibility={phase.flexibility}
+                  isSimpleMode={mode === 'simple'}
+                  activeFlowStepId={flow?.failActiveId}
+                  flowDirection="right"
+                  onUpdateTrigger={(d) => updateBranch('fail', { triggerDescription: d })}
+                  onAddStep={() => addStep('fail')}
+                  onUpdateStep={(id, patch) => updateStep('fail', id, patch)}
+                  onDeleteStep={(id) => deleteStep('fail', id)}
+                  onToggleStatus={(id, status) => toggleStatus('fail', id, status)}
+                />
+                <ArcBranchLane
+                  branch={successBranch}
+                  type="success"
+                  flexibility={phase.flexibility}
+                  isSimpleMode={false}
+                  activeFlowStepId={flow?.successActiveId}
+                  flowDirection="left"
+                  onUpdateTrigger={(d) => updateBranch('success', { triggerDescription: d })}
+                  onAddStep={() => addStep('success')}
+                  onUpdateStep={(id, patch) => updateStep('success', id, patch)}
+                  onDeleteStep={(id) => deleteStep('success', id)}
+                  onToggleStatus={(id, status) => toggleStatus('success', id, status)}
+                />
+              </div>
+            );
+          })()}
         </div>
 
         {hasNextPhase && <ArcConnectors type="merge" />}
