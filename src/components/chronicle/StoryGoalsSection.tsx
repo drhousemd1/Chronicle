@@ -82,7 +82,7 @@ const calculateArcProgress = (branches?: { fail?: ArcBranch; success?: ArcBranch
 function computeActiveFlow(
   failBranch: ArcBranch,
   successBranch: ArcBranch
-): { failActiveId?: string; successActiveId?: string } | null {
+): { sourceId: string; sourceBranch: 'fail' | 'success' } | null {
   const resolved: Array<{ step: ArcStep; branch: 'fail' | 'success' }> = [];
   failBranch.steps.forEach(s => {
     if (s.statusEventOrder > 0) resolved.push({ step: s, branch: 'fail' });
@@ -94,21 +94,12 @@ function computeActiveFlow(
   resolved.sort((a, b) => b.step.statusEventOrder - a.step.statusEventOrder);
   const latest = resolved[0];
 
-  // Succeeded on fail branch -> cross to success branch
   if (latest.step.status === 'succeeded' && latest.branch === 'fail') {
-    const nextPending = successBranch.steps.find(s => s.status === 'pending');
-    if (!nextPending) return null;
-    return { failActiveId: latest.step.id, successActiveId: nextPending.id };
+    return { sourceId: latest.step.id, sourceBranch: 'fail' };
   }
-
-  // Failed on success branch -> cross to fail branch
   if (latest.step.status === 'failed' && latest.branch === 'success') {
-    const nextPending = failBranch.steps.find(s => s.status === 'pending');
-    if (!nextPending) return null;
-    return { failActiveId: nextPending.id, successActiveId: latest.step.id };
+    return { sourceId: latest.step.id, sourceBranch: 'success' };
   }
-
-  // All other cases: no cross-over
   return null;
 }
 
@@ -364,7 +355,7 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                               type="fail"
                               flexibility={goal.flexibility}
                               isSimpleMode={mode === 'simple'}
-                              activeFlowStepId={flow?.failActiveId}
+                              activeFlowStepId={flow?.sourceBranch === 'fail' ? flow.sourceId : undefined}
                               flowDirection="right"
                               onUpdateTrigger={(d) => updateBranch(goal.id, 'fail', { triggerDescription: d })}
                               onAddStep={() => addStep(goal.id, 'fail')}
@@ -377,7 +368,7 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                               type="success"
                               flexibility={goal.flexibility}
                               isSimpleMode={false}
-                              activeFlowStepId={flow?.successActiveId}
+                              activeFlowStepId={flow?.sourceBranch === 'success' ? flow.sourceId : undefined}
                               flowDirection="left"
                               onUpdateTrigger={(d) => updateBranch(goal.id, 'success', { triggerDescription: d })}
                               onAddStep={() => addStep(goal.id, 'success')}
