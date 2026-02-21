@@ -146,11 +146,16 @@ export const ArcPhaseCard: React.FC<ArcPhaseCardProps> = ({
     const step = branch.steps.find(s => s.id === stepId);
     if (!step) return;
     const newStatus = step.status === targetStatus ? 'pending' : targetStatus;
-    const eventOrder = newStatus !== 'pending' ? getNextEventOrder() : 0;
-    updateStep(type, stepId, {
-      status: newStatus,
-      statusEventOrder: eventOrder,
-      completedAt: newStatus === 'succeeded' ? now() : undefined,
+    const counter = (phase.statusEventCounter || 0) + 1;
+    const updatedSteps = branch.steps.map(s =>
+      s.id === stepId
+        ? { ...s, status: newStatus, statusEventOrder: newStatus !== 'pending' ? counter : 0, completedAt: newStatus === 'succeeded' ? now() : undefined }
+        : s
+    );
+    onUpdate({
+      statusEventCounter: counter,
+      branches: { ...branches, [type]: { ...branch, steps: updatedSteps } },
+      updatedAt: now(),
     });
   };
 

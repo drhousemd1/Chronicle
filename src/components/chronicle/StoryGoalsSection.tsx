@@ -184,11 +184,15 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
     if (!step) return;
     const newStatus = step.status === targetStatus ? 'pending' : targetStatus;
     const counter = (goal.statusEventCounter || 0) + 1;
-    updateGoal(goalId, { statusEventCounter: counter });
-    updateStep(goalId, type, stepId, {
-      status: newStatus,
-      statusEventOrder: newStatus !== 'pending' ? counter : 0,
-      completedAt: newStatus === 'succeeded' ? now() : undefined,
+    const updatedSteps = branch.steps.map(s =>
+      s.id === stepId
+        ? { ...s, status: newStatus, statusEventOrder: newStatus !== 'pending' ? counter : 0, completedAt: newStatus === 'succeeded' ? now() : undefined }
+        : s
+    );
+    const branches = goal.branches || {};
+    updateGoal(goalId, {
+      statusEventCounter: counter,
+      branches: { ...branches, [type]: { ...branch, steps: updatedSteps } },
     });
   };
 
