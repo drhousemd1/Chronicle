@@ -55,10 +55,14 @@ function buildFullContext(appData: ScenarioData, targetCharacterId: string): str
     }
   }
 
-  // Story goals
+  // Story goals/arcs
   if (core.storyGoals?.length) {
-    const goalLines = core.storyGoals.map(g => `  - ${g.title}${g.desiredOutcome ? `: ${g.desiredOutcome}` : ''}`).join('\n');
-    parts.push(`Story Goals:\n${goalLines}`);
+    const goalLines = core.storyGoals.map(g => {
+      const outcome = g.desiredOutcome ? `: ${g.desiredOutcome}` : '';
+      const mode = g.mode ? ` [${g.mode}]` : '';
+      return `  - ${g.title}${outcome}${mode}`;
+    }).join('\n');
+    parts.push(`Story Arcs:\n${goalLines}`);
   }
 
   // Other characters (comprehensive summaries)
