@@ -1,6 +1,6 @@
 import React from 'react';
 import { StoryGoal, ArcBranch, ArcStep, ArcMode, ArcPhase, GoalFlexibility, GoalStep, StepStatus } from '@/types';
-import { Trash2, Plus, Sparkles, Target, CheckSquare } from 'lucide-react';
+import { Trash2, Plus, Sparkles, GitBranch, CheckSquare } from 'lucide-react';
 import { GuidanceStrengthSlider } from './GuidanceStrengthSlider';
 import { ArcBranchLane } from './arc/ArcBranchLane';
 import { ArcModeToggle } from './arc/ArcModeToggle';
@@ -224,19 +224,19 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
         {/* Header */}
         <div className="flex items-center gap-3" style={{
           background: '#4f6b95',
-          minHeight: '80px',
+          minHeight: '56px',
           padding: '18px 30px',
           borderBottom: '1px solid rgba(201,214,238,0.18)',
         }}>
-          <Target className="w-5 h-5" style={{ color: '#FFFFFF' }} />
+          <GitBranch className="w-4 h-4" style={{ color: '#FFFFFF' }} />
           <h2 style={{
             color: '#FFFFFF',
-            fontSize: '28px',
+            fontSize: '18px',
             fontWeight: 700,
             letterSpacing: '-0.01em',
             margin: 0,
           }}>
-            ▸ Story Arcs
+            Story Arcs
           </h2>
         </div>
 
@@ -437,7 +437,7 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                       />
                     </div>
 
-                    <ArcConnectors type="merge" />
+                    {(goal.linkedPhases || []).length > 0 && <ArcConnectors type="merge" />}
                   </div>
 
                   {/* Add Next Phase button */}
@@ -476,6 +476,7 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                     onDelete={() => deletePhase(goal.id, phase.id)}
                     onEnhanceField={onEnhanceField}
                     enhancingField={enhancingField}
+                    hasNextPhase={idx < (goal.linkedPhases || []).length - 1}
                   />
                 ))}
               </div>

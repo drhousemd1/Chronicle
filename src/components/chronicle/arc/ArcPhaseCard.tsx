@@ -45,6 +45,7 @@ interface ArcPhaseCardProps {
   onDelete: () => void;
   onEnhanceField?: (fieldKey: string, getCurrentValue: () => string, setValue: (value: string) => void, customLabel?: string) => void;
   enhancingField?: string | null;
+  hasNextPhase?: boolean;
 }
 
 const calculateArcProgress = (branches?: { fail?: ArcBranch; success?: ArcBranch }): number => {
@@ -64,6 +65,7 @@ export const ArcPhaseCard: React.FC<ArcPhaseCardProps> = ({
   onDelete,
   onEnhanceField,
   enhancingField,
+  hasNextPhase = false,
 }) => {
   const mode = phase.mode || 'simple';
   const branches = phase.branches || {};
@@ -354,7 +356,7 @@ export const ArcPhaseCard: React.FC<ArcPhaseCardProps> = ({
             />
           </div>
 
-          <ArcConnectors type="merge" />
+          {hasNextPhase && <ArcConnectors type="merge" />}
         </div>
       </div>
     </div>
