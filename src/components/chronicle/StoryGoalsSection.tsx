@@ -94,21 +94,21 @@ function computeActiveFlow(
   resolved.sort((a, b) => b.step.statusEventOrder - a.step.statusEventOrder);
   const latest = resolved[0];
 
-  if (latest.step.status === 'failed') {
-    const opposite = latest.branch === 'fail' ? successBranch : failBranch;
-    const nextPending = opposite.steps.find(s => s.status === 'pending');
-    if (!nextPending) return null;
-    return latest.branch === 'fail'
-      ? { failActiveId: latest.step.id, successActiveId: nextPending.id }
-      : { failActiveId: nextPending.id, successActiveId: latest.step.id };
-  }
-
+  // Succeeded on fail branch -> cross to success branch
   if (latest.step.status === 'succeeded' && latest.branch === 'fail') {
     const nextPending = successBranch.steps.find(s => s.status === 'pending');
     if (!nextPending) return null;
     return { failActiveId: latest.step.id, successActiveId: nextPending.id };
   }
 
+  // Failed on success branch -> cross to fail branch
+  if (latest.step.status === 'failed' && latest.branch === 'success') {
+    const nextPending = failBranch.steps.find(s => s.status === 'pending');
+    if (!nextPending) return null;
+    return { failActiveId: nextPending.id, successActiveId: latest.step.id };
+  }
+
+  // All other cases: no cross-over
   return null;
 }
 
