@@ -9,17 +9,15 @@ interface ArcModeToggleProps {
 
 export const ArcModeToggle: React.FC<ArcModeToggleProps> = ({ mode, onChange }) => {
   return (
-    <div
-      className="flex items-center overflow-hidden rounded-full border border-blue-400/40 bg-[rgba(21,25,35,0.86)]"
-    >
+    <div className="flex p-1 bg-zinc-900/50 rounded-lg border border-white/10">
       <button
         type="button"
         onClick={() => onChange('simple')}
         className={cn(
-          "px-3.5 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-full border-none cursor-pointer transition-all",
+          "flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded border-none cursor-pointer transition-all",
           mode === 'simple'
-            ? "bg-[rgba(99,135,194,0.58)] text-blue-50"
-            : "bg-transparent text-zinc-400"
+            ? "bg-zinc-700 text-blue-400 shadow-sm"
+            : "bg-transparent text-zinc-500 hover:text-zinc-300"
         )}
       >
         Simple
@@ -28,10 +26,10 @@ export const ArcModeToggle: React.FC<ArcModeToggleProps> = ({ mode, onChange }) 
         type="button"
         onClick={() => onChange('advanced')}
         className={cn(
-          "px-3.5 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-full border-none cursor-pointer transition-all",
+          "flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded border-none cursor-pointer transition-all",
           mode === 'advanced'
-            ? "bg-[rgba(99,135,194,0.58)] text-blue-50"
-            : "bg-transparent text-zinc-400"
+            ? "bg-zinc-700 text-blue-400 shadow-sm"
+            : "bg-transparent text-zinc-500 hover:text-zinc-300"
         )}
       >
         Advanced
