@@ -259,118 +259,71 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                   border: '1px solid rgba(80,111,157,0.5)',
                   position: 'relative',
                 }}>
-                  <div className="grid grid-cols-1 md:grid-cols-[1fr_220px] gap-6">
-                    <div className="space-y-4">
-                      {/* Goal Name */}
-                      <div>
-                        <label style={{
-                          fontSize: '11px',
-                          letterSpacing: '0.22em',
-                          color: 'rgba(198,213,238,0.86)',
-                          fontWeight: 700,
-                          textTransform: 'uppercase',
-                          display: 'block',
-                          marginBottom: '8px',
-                        }}>Goal Name</label>
-                        <AutoResizeTextarea
-                          value={goal.title}
-                          onChange={(v) => updateGoal(goal.id, { title: v })}
-                          placeholder="Enter goal name..."
-                          style={{
-                            borderRadius: '14px',
-                            background: 'rgba(24,28,37,0.92)',
-                            padding: '0 18px',
-                            fontSize: '16px',
-                            height: '54px',
-                            border: 'none',
-                            color: '#FFFFFF',
-                            lineHeight: '54px',
-                          }}
-                          className="focus:outline-none placeholder:text-[rgba(151,160,180,0.82)]"
-                        />
-                      </div>
-
-                      {/* Desired Outcome */}
-                      <div>
-                        <div className="flex items-center gap-2" style={{ marginBottom: '8px' }}>
-                          <label style={{
-                            fontSize: '11px',
-                            letterSpacing: '0.22em',
-                            color: 'rgba(198,213,238,0.86)',
-                            fontWeight: 700,
-                            textTransform: 'uppercase',
-                          }}>Desired Outcome</label>
-                          <SparkleButton
-                            fieldKey={`story_outcome_${goal.id}`}
-                            onClick={() => onEnhanceField?.(
-                              `story_outcome_${goal.id}`,
-                              () => goal.desiredOutcome,
-                              (v) => updateGoal(goal.id, { desiredOutcome: v }),
-                              `Desired Outcome for story arc: ${goal.title || 'Untitled'}`
-                            )}
-                          />
-                        </div>
-                        <AutoResizeTextarea
-                          value={goal.desiredOutcome}
-                          onChange={(v) => updateGoal(goal.id, { desiredOutcome: v })}
-                          placeholder="What success looks like..."
-                          rows={2}
-                          style={{
-                            borderRadius: '14px',
-                            background: 'rgba(24,28,37,0.92)',
-                            padding: '14px 18px',
-                            fontSize: '16px',
-                            height: '84px',
-                            border: 'none',
-                            color: '#FFFFFF',
-                          }}
-                          className="focus:outline-none placeholder:text-[rgba(151,160,180,0.82)]"
-                        />
-                      </div>
-
-                      {/* Guidance Strength Slider */}
-                      <GuidanceStrengthSlider
-                        value={goal.flexibility}
-                        onChange={(flexibility) => updateGoal(goal.id, { flexibility })}
+                  {/* Row 1: Goal Name + Delete + Progress Ring */}
+                  <div className="flex items-start gap-4">
+                    <div className="flex-1">
+                      <label style={{
+                        fontSize: '11px',
+                        letterSpacing: '0.22em',
+                        color: 'rgba(198,213,238,0.86)',
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                        display: 'block',
+                        marginBottom: '8px',
+                      }}>Goal Name</label>
+                      <AutoResizeTextarea
+                        value={goal.title}
+                        onChange={(v) => updateGoal(goal.id, { title: v })}
+                        placeholder="Enter goal name..."
+                        style={{
+                          borderRadius: '14px',
+                          background: 'rgba(24,28,37,0.92)',
+                          padding: '0 18px',
+                          fontSize: '16px',
+                          height: '54px',
+                          border: 'none',
+                          color: '#FFFFFF',
+                          lineHeight: '54px',
+                        }}
+                        className="focus:outline-none placeholder:text-[rgba(151,160,180,0.82)]"
                       />
                     </div>
 
-                    {/* Progress Ring + Delete */}
-                    <div className="flex flex-col items-center justify-start" style={{ paddingTop: '4px' }}>
-                      {/* Delete button */}
-                      <div className="w-full flex justify-end" style={{ marginBottom: '12px' }}>
-                        <button
-                          onClick={() => deleteGoal(goal.id)}
-                          style={{
-                            width: '30px',
-                            height: '30px',
-                            borderRadius: '10px',
-                            border: '1px solid rgba(248,113,113,0.5)',
-                            background: 'transparent',
-                            color: '#fca5a5',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
-                          }}
-                          title="Delete arc"
-                        >
-                          <Trash2 size={15} />
-                        </button>
-                      </div>
+                    {/* Delete button */}
+                    <button
+                      onClick={() => deleteGoal(goal.id)}
+                      style={{
+                        width: '30px',
+                        height: '30px',
+                        borderRadius: '10px',
+                        border: '1px solid rgba(248,113,113,0.5)',
+                        background: 'transparent',
+                        color: '#fca5a5',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        marginTop: '28px',
+                        flexShrink: 0,
+                      }}
+                      title="Delete arc"
+                    >
+                      <Trash2 size={15} />
+                    </button>
 
-                      {/* Progress ring */}
+                    {/* Progress ring */}
+                    <div className="flex flex-col items-center" style={{ flexShrink: 0, marginTop: '4px' }}>
                       <div style={{
-                        width: '154px',
-                        height: '154px',
+                        width: '80px',
+                        height: '80px',
                         borderRadius: '999px',
-                        border: '12px solid rgba(51,80,125,0.85)',
+                        border: '8px solid rgba(51,80,125,0.85)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}>
                         <span style={{
-                          fontSize: '42px',
+                          fontSize: '20px',
                           fontWeight: 700,
                           color: 'rgba(195,211,237,0.94)',
                         }}>
@@ -378,7 +331,7 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                         </span>
                       </div>
                       <p style={{
-                        marginTop: '10px',
+                        marginTop: '6px',
                         fontSize: '9px',
                         fontWeight: 900,
                         color: 'rgba(198,213,238,0.6)',
@@ -391,6 +344,50 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                       </p>
                     </div>
                   </div>
+
+                  {/* Full width: Desired Outcome */}
+                  <div style={{ marginTop: '16px' }}>
+                    <div className="flex items-center gap-2" style={{ marginBottom: '8px' }}>
+                      <label style={{
+                        fontSize: '11px',
+                        letterSpacing: '0.22em',
+                        color: 'rgba(198,213,238,0.86)',
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                      }}>Desired Outcome</label>
+                      <SparkleButton
+                        fieldKey={`story_outcome_${goal.id}`}
+                        onClick={() => onEnhanceField?.(
+                          `story_outcome_${goal.id}`,
+                          () => goal.desiredOutcome,
+                          (v) => updateGoal(goal.id, { desiredOutcome: v }),
+                          `Desired Outcome for story arc: ${goal.title || 'Untitled'}`
+                        )}
+                      />
+                    </div>
+                    <AutoResizeTextarea
+                      value={goal.desiredOutcome}
+                      onChange={(v) => updateGoal(goal.id, { desiredOutcome: v })}
+                      placeholder="What success looks like..."
+                      rows={2}
+                      style={{
+                        borderRadius: '14px',
+                        background: 'rgba(24,28,37,0.92)',
+                        padding: '14px 18px',
+                        fontSize: '16px',
+                        height: '84px',
+                        border: 'none',
+                        color: '#FFFFFF',
+                      }}
+                      className="focus:outline-none placeholder:text-[rgba(151,160,180,0.82)]"
+                    />
+                  </div>
+
+                  {/* Full width: Guidance Strength */}
+                  <GuidanceStrengthSlider
+                    value={goal.flexibility}
+                    onChange={(flexibility) => updateGoal(goal.id, { flexibility })}
+                  />
 
                   {/* Steps Section - FULL WIDTH outside grid */}
                   <div style={{
@@ -415,7 +412,7 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
 
                     <ArcConnectors type="split" />
 
-                    <div className="flex gap-6" style={{ marginTop: '12px' }}>
+                    <div className="flex gap-4" style={{ marginTop: '12px' }}>
                       <ArcBranchLane
                         branch={failBranch}
                         type="fail"

@@ -76,7 +76,7 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
       style={{
         borderRadius: '24px',
         border: `1px dotted ${borderColor}`,
-        padding: '14px',
+        padding: '10px',
         background: 'rgba(13,17,25,0.26)',
       }}
     >

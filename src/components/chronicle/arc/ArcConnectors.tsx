@@ -22,13 +22,13 @@ export const ArcConnectors: React.FC<ArcConnectorsProps> = ({ type }) => {
         {type === 'split' ? (
           <g filter={`url(#glow-${type})`}>
             <path
-              d="M200,0 L200,22 Q200,33 120,44 L60,56"
+              d="M200,0 L200,18 C200,36 140,48 100,56"
               fill="none"
               stroke="rgba(232,238,248,0.82)"
               strokeWidth="1.8"
             />
             <path
-              d="M200,0 L200,22 Q200,33 280,44 L340,56"
+              d="M200,0 L200,18 C200,36 260,48 300,56"
               fill="none"
               stroke="rgba(232,238,248,0.82)"
               strokeWidth="1.8"
@@ -37,13 +37,13 @@ export const ArcConnectors: React.FC<ArcConnectorsProps> = ({ type }) => {
         ) : (
           <g filter={`url(#glow-${type})`}>
             <path
-              d="M60,10 L120,22 Q200,33 200,44 L200,66"
+              d="M100,10 C140,18 200,30 200,48 L200,66"
               fill="none"
               stroke="rgba(232,238,248,0.82)"
               strokeWidth="1.8"
             />
             <path
-              d="M340,10 L280,22 Q200,33 200,44 L200,66"
+              d="M300,10 C260,18 200,30 200,48 L200,66"
               fill="none"
               stroke="rgba(232,238,248,0.82)"
               strokeWidth="1.8"
