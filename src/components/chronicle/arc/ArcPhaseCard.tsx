@@ -162,13 +162,7 @@ export const ArcPhaseCard: React.FC<ArcPhaseCardProps> = ({
       </div>
 
       {/* Phase card */}
-      <div style={{
-        padding: '30px',
-        borderRadius: '26px',
-        background: 'rgba(46,49,60,0.98)',
-        border: '1px solid rgba(80,111,157,0.5)',
-        position: 'relative',
-      }}>
+      <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-blue-500/20 relative">
         {/* Phase label + delete */}
         <div className="flex items-center justify-between" style={{ marginBottom: '20px' }}>
           <span style={{
