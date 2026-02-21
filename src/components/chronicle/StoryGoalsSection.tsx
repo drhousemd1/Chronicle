@@ -315,50 +315,60 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                         <CheckSquare size={14} style={{ color: '#67a6ff' }} />
                         <h4 className="text-[10px] font-black text-white uppercase tracking-[0.2em] m-0">Steps</h4>
                       </div>
-                      <ArcModeToggle mode={mode} onChange={(m) => updateGoal(goal.id, { mode: m })} />
+                      <ArcModeToggle mode={mode} onChange={(m) => {
+                        updateGoal(goal.id, { mode: m });
+                        if (m === 'advanced') {
+                          const fb = ensureBranch(branches.fail, 'fail');
+                          const sb = ensureBranch(branches.success, 'success');
+                          if (fb.steps.length === 0) addStep(goal.id, 'fail');
+                          if (sb.steps.length === 0) addStep(goal.id, 'success');
+                        }
+                      }} />
                     </div>
 
                     <ArcConnectors type="split" />
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '16px', marginTop: '12px' }}>
-                      <ArcBranchLane
-                        branch={failBranch}
-                        type="fail"
-                        flexibility={goal.flexibility}
-                        isSimpleMode={mode === 'simple'}
-                        onUpdateTrigger={(d) => updateBranch(goal.id, 'fail', { triggerDescription: d })}
-                        onAddStep={() => addStep(goal.id, 'fail')}
-                        onUpdateStep={(id, patch) => updateStep(goal.id, 'fail', id, patch)}
-                        onDeleteStep={(id) => deleteStep(goal.id, 'fail', id)}
-                        onToggleStatus={(id, status) => toggleStatus(goal.id, 'fail', id, status)}
-                      />
-                      <ArcBranchLane
-                        branch={successBranch}
-                        type="success"
-                        flexibility={goal.flexibility}
-                        isSimpleMode={false}
-                        onUpdateTrigger={(d) => updateBranch(goal.id, 'success', { triggerDescription: d })}
-                        onAddStep={() => addStep(goal.id, 'success')}
-                        onUpdateStep={(id, patch) => updateStep(goal.id, 'success', id, patch)}
-                        onDeleteStep={(id) => deleteStep(goal.id, 'success', id)}
-                        onToggleStatus={(id, status) => toggleStatus(goal.id, 'success', id, status)}
-                      />
+                    <div className="relative" style={{ marginTop: '12px' }}>
+                      {/* Dotted connector line between fail and succeed paths */}
+                      <div className="absolute top-1/2 left-[25%] right-[25%] border-t-2 border-dashed border-zinc-500/40 -translate-y-1/2 pointer-events-none z-0" />
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '16px' }} className="relative z-10">
+                        <ArcBranchLane
+                          branch={failBranch}
+                          type="fail"
+                          flexibility={goal.flexibility}
+                          isSimpleMode={mode === 'simple'}
+                          onUpdateTrigger={(d) => updateBranch(goal.id, 'fail', { triggerDescription: d })}
+                          onAddStep={() => addStep(goal.id, 'fail')}
+                          onUpdateStep={(id, patch) => updateStep(goal.id, 'fail', id, patch)}
+                          onDeleteStep={(id) => deleteStep(goal.id, 'fail', id)}
+                          onToggleStatus={(id, status) => toggleStatus(goal.id, 'fail', id, status)}
+                        />
+                        <ArcBranchLane
+                          branch={successBranch}
+                          type="success"
+                          flexibility={goal.flexibility}
+                          isSimpleMode={false}
+                          onUpdateTrigger={(d) => updateBranch(goal.id, 'success', { triggerDescription: d })}
+                          onAddStep={() => addStep(goal.id, 'success')}
+                          onUpdateStep={(id, patch) => updateStep(goal.id, 'success', id, patch)}
+                          onDeleteStep={(id) => deleteStep(goal.id, 'success', id)}
+                          onToggleStatus={(id, status) => toggleStatus(goal.id, 'success', id, status)}
+                        />
+                      </div>
                     </div>
 
                     {(goal.linkedPhases || []).length > 0 && <ArcConnectors type="merge" />}
                   </div>
 
                   {/* Add Next Phase button */}
-                  <div className="flex justify-end" style={{ marginTop: '20px' }}>
-                    <button
-                      type="button"
-                      onClick={() => addPhase(goal.id)}
-                      className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm transition-colors"
-                    >
-                      <Plus className="h-4 w-4" />
-                      <span>Add Next Phase</span>
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => addPhase(goal.id)}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 text-sm bg-transparent border-2 border-dashed border-zinc-500 text-blue-400 hover:border-blue-400 hover:bg-blue-500/5 font-medium rounded-xl transition-colors cursor-pointer mt-5"
+                  >
+                    <Plus className="w-5 h-5" />
+                    Add Next Phase
+                  </button>
                 </div>
 
                 {/* Linked Phases */}

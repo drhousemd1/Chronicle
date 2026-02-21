@@ -235,34 +235,44 @@ export const ArcPhaseCard: React.FC<ArcPhaseCardProps> = ({
               <CheckSquare size={14} className="text-blue-400" />
               <h4 className="text-[10px] font-black text-white uppercase tracking-[0.2em] m-0">Steps</h4>
             </div>
-            <ArcModeToggle mode={mode} onChange={(m) => onUpdate({ mode: m, updatedAt: now() })} />
+            <ArcModeToggle mode={mode} onChange={(m) => {
+              onUpdate({ mode: m, updatedAt: now() });
+              if (m === 'advanced') {
+                if (failBranch.steps.length === 0) addStep('fail');
+                if (successBranch.steps.length === 0) addStep('success');
+              }
+            }} />
           </div>
 
           <ArcConnectors type="split" />
 
-          <div className="grid grid-cols-2 gap-4 mt-3">
-            <ArcBranchLane
-              branch={failBranch}
-              type="fail"
-              flexibility={phase.flexibility}
-              isSimpleMode={mode === 'simple'}
-              onUpdateTrigger={(d) => updateBranch('fail', { triggerDescription: d })}
-              onAddStep={() => addStep('fail')}
-              onUpdateStep={(id, patch) => updateStep('fail', id, patch)}
-              onDeleteStep={(id) => deleteStep('fail', id)}
-              onToggleStatus={(id, status) => toggleStatus('fail', id, status)}
-            />
-            <ArcBranchLane
-              branch={successBranch}
-              type="success"
-              flexibility={phase.flexibility}
-              isSimpleMode={false}
-              onUpdateTrigger={(d) => updateBranch('success', { triggerDescription: d })}
-              onAddStep={() => addStep('success')}
-              onUpdateStep={(id, patch) => updateStep('success', id, patch)}
-              onDeleteStep={(id) => deleteStep('success', id)}
-              onToggleStatus={(id, status) => toggleStatus('success', id, status)}
-            />
+          <div className="relative mt-3">
+            {/* Dotted connector line between fail and succeed paths */}
+            <div className="absolute top-1/2 left-[25%] right-[25%] border-t-2 border-dashed border-zinc-500/40 -translate-y-1/2 pointer-events-none z-0" />
+            <div className="grid grid-cols-2 gap-4 relative z-10">
+              <ArcBranchLane
+                branch={failBranch}
+                type="fail"
+                flexibility={phase.flexibility}
+                isSimpleMode={mode === 'simple'}
+                onUpdateTrigger={(d) => updateBranch('fail', { triggerDescription: d })}
+                onAddStep={() => addStep('fail')}
+                onUpdateStep={(id, patch) => updateStep('fail', id, patch)}
+                onDeleteStep={(id) => deleteStep('fail', id)}
+                onToggleStatus={(id, status) => toggleStatus('fail', id, status)}
+              />
+              <ArcBranchLane
+                branch={successBranch}
+                type="success"
+                flexibility={phase.flexibility}
+                isSimpleMode={false}
+                onUpdateTrigger={(d) => updateBranch('success', { triggerDescription: d })}
+                onAddStep={() => addStep('success')}
+                onUpdateStep={(id, patch) => updateStep('success', id, patch)}
+                onDeleteStep={(id) => deleteStep('success', id)}
+                onToggleStatus={(id, status) => toggleStatus('success', id, status)}
+              />
+            </div>
           </div>
 
           {hasNextPhase && <ArcConnectors type="merge" />}
