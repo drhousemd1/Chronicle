@@ -65,7 +65,7 @@ function getSystemInstruction(
       .join('\n');
   })();
 
-  // Build story goals context
+  // Build story goals context (Story Arcs with branching)
   const storyGoalsContext = (() => {
     if (!appData.world.core.storyGoals?.length) return '';
     const flexLabels: Record<string, { tag: string; directive: string }> = {
@@ -73,22 +73,78 @@ function getSystemInstruction(
       normal: { tag: 'NORMAL - GUIDED', directive: 'GUIDED. Weave in naturally when opportunities arise. Persist through initial user resistance by making repeated attempts. Only adapt gradually if the user sustains consistent conflict over multiple exchanges.' },
       flexible: { tag: 'FLEXIBLE - SUGGESTED', directive: 'LIGHT GUIDANCE. If the user\'s inputs continue to conflict, adapt fully and let the narrative evolve based on player choices.' }
     };
-    const lines = ['\n    STORY GOALS AND DESIRES (Global narrative direction for ALL characters):'];
-    for (const goal of appData.world.core.storyGoals) {
-      const flex = flexLabels[goal.flexibility] || flexLabels.normal;
-      const completedSteps = goal.steps.filter(s => s.completed).length;
-      const totalSteps = goal.steps.length;
-      const progress = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
-      lines.push(`\n    [${flex.tag}] Goal: "${goal.title}"`);
-      if (goal.desiredOutcome) lines.push(`      Desired Outcome: ${goal.desiredOutcome}`);
-      if (totalSteps > 0) {
-        const stepList = goal.steps.map(s => `${s.completed ? '[x]' : '[ ]'} ${s.description}`).join('  ');
-        lines.push(`      Steps: ${stepList}`);
-        lines.push(`      Progress: ${progress}% (${completedSteps}/${totalSteps})`);
+
+    const serializeBranch = (branch: any, label: string) => {
+      if (!branch) return '';
+      const lines: string[] = [];
+      if (branch.triggerDescription) lines.push(`        Trigger: ${branch.triggerDescription}`);
+      if (branch.steps?.length) {
+        const stepLines = branch.steps.map((s: any) => {
+          const statusIcon = s.status === 'succeeded' ? '[✓]' : s.status === 'failed' ? '[✗]' : '[ ]';
+          const orderInfo = s.statusEventOrder > 0 ? ` (event #${s.statusEventOrder})` : '';
+          return `${statusIcon} ${s.description}${orderInfo}`;
+        });
+        lines.push(`        Steps: ${stepLines.join('  ')}`);
+        const succeeded = branch.steps.filter((s: any) => s.status === 'succeeded').length;
+        const failed = branch.steps.filter((s: any) => s.status === 'failed').length;
+        lines.push(`        Status: ${succeeded} succeeded, ${failed} failed, ${branch.steps.length - succeeded - failed} pending`);
+      }
+      return lines.length > 0 ? `      ${label}:\n${lines.join('\n')}` : '';
+    };
+
+    const serializePhaseBlock = (title: string, desiredOutcome: string, flexibility: string, mode: string, branches: any, phaseLabel?: string) => {
+      const flex = flexLabels[flexibility] || flexLabels.normal;
+      const successSteps = branches?.success?.steps || [];
+      const succeeded = successSteps.filter((s: any) => s.status === 'succeeded').length;
+      const progress = successSteps.length > 0 ? Math.round((succeeded / successSteps.length) * 100) : 0;
+      
+      const lines: string[] = [];
+      if (phaseLabel) lines.push(`    ${phaseLabel}:`);
+      lines.push(`    [${flex.tag}] Goal: "${title}"`);
+      if (desiredOutcome) lines.push(`      Desired Outcome: ${desiredOutcome}`);
+      lines.push(`      Mode: ${mode || 'simple'}`);
+      
+      const failBlock = serializeBranch(branches?.fail, 'Fail Path (Recovery)');
+      const successBlock = serializeBranch(branches?.success, 'Success Path (Progression)');
+      if (failBlock) lines.push(failBlock);
+      if (successBlock) lines.push(successBlock);
+      
+      if (successSteps.length > 0) {
+        lines.push(`      Progress: ${progress}% (${succeeded}/${successSteps.length})`);
       }
       lines.push(`      DIRECTIVE: ${flex.directive}`);
+      return lines.join('\n');
+    };
+
+    const allLines = ['\n    STORY ARCS (Global narrative direction for ALL characters):'];
+    for (const goal of appData.world.core.storyGoals) {
+      // Use branches if available, fall back to legacy steps
+      if (goal.branches) {
+        allLines.push(serializePhaseBlock(goal.title, goal.desiredOutcome, goal.flexibility, goal.mode || 'simple', goal.branches));
+        // Linked phases
+        if (goal.linkedPhases?.length) {
+          for (let i = 0; i < goal.linkedPhases.length; i++) {
+            const phase = goal.linkedPhases[i];
+            allLines.push(serializePhaseBlock(phase.title, phase.desiredOutcome, phase.flexibility, phase.mode, phase.branches, `PHASE ${i + 2}`));
+          }
+        }
+      } else {
+        // Legacy fallback
+        const flex = flexLabels[goal.flexibility] || flexLabels.normal;
+        const completedSteps = goal.steps.filter(s => s.completed).length;
+        const totalSteps = goal.steps.length;
+        const progress = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
+        allLines.push(`\n    [${flex.tag}] Goal: "${goal.title}"`);
+        if (goal.desiredOutcome) allLines.push(`      Desired Outcome: ${goal.desiredOutcome}`);
+        if (totalSteps > 0) {
+          const stepList = goal.steps.map(s => `${s.completed ? '[x]' : '[ ]'} ${s.description}`).join('  ');
+          allLines.push(`      Steps: ${stepList}`);
+          allLines.push(`      Progress: ${progress}% (${completedSteps}/${totalSteps})`);
+        }
+        allLines.push(`      DIRECTIVE: ${flex.directive}`);
+      }
     }
-    return lines.join('\n');
+    return allLines.join('\n');
   })();
 
   // Build character goals context with flexibility
