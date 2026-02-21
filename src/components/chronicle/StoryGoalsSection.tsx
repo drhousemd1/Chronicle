@@ -6,6 +6,7 @@ import { ArcBranchLane } from './arc/ArcBranchLane';
 import { ArcModeToggle } from './arc/ArcModeToggle';
 import { ArcConnectors } from './arc/ArcConnectors';
 import { ArcPhaseCard } from './arc/ArcPhaseCard';
+import { ArcFlowConnector } from './arc/ArcFlowConnector';
 import { uid, now } from '@/utils';
 import { cn } from '@/lib/utils';
 
@@ -82,7 +83,7 @@ const calculateArcProgress = (branches?: { fail?: ArcBranch; success?: ArcBranch
 function computeActiveFlow(
   failBranch: ArcBranch,
   successBranch: ArcBranch
-): { sourceId: string; sourceBranch: 'fail' | 'success' } | null {
+): { sourceId: string; sourceBranch: 'fail' | 'success'; targetId: string; targetBranch: 'fail' | 'success' } | null {
   const resolved: Array<{ step: ArcStep; branch: 'fail' | 'success' }> = [];
   failBranch.steps.forEach(s => {
     if (s.statusEventOrder > 0) resolved.push({ step: s, branch: 'fail' });
@@ -95,10 +96,12 @@ function computeActiveFlow(
   const latest = resolved[0];
 
   if (latest.step.status === 'succeeded' && latest.branch === 'fail') {
-    return { sourceId: latest.step.id, sourceBranch: 'fail' };
+    const target = successBranch.steps.find(s => s.statusEventOrder === 0);
+    if (target) return { sourceId: latest.step.id, sourceBranch: 'fail', targetId: target.id, targetBranch: 'success' };
   }
   if (latest.step.status === 'failed' && latest.branch === 'success') {
-    return { sourceId: latest.step.id, sourceBranch: 'success' };
+    const target = failBranch.steps.find(s => s.statusEventOrder === 0);
+    if (target) return { sourceId: latest.step.id, sourceBranch: 'success', targetId: target.id, targetBranch: 'fail' };
   }
   return null;
 }
@@ -333,30 +336,35 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                         <h4 className="text-[10px] font-black text-white uppercase tracking-[0.2em] m-0">Steps</h4>
                       </div>
                       <ArcModeToggle mode={mode} onChange={(m) => {
-                        updateGoal(goal.id, { mode: m });
+                        const patch: Partial<StoryGoal> = { mode: m };
                         if (m === 'advanced') {
                           const fb = ensureBranch(branches.fail, 'fail');
                           const sb = ensureBranch(branches.success, 'success');
-                          if (fb.steps.length === 0) addStep(goal.id, 'fail');
-                          if (sb.steps.length === 0) addStep(goal.id, 'success');
+                          const newFail = fb.steps.length === 0
+                            ? { ...fb, steps: [{ id: uid('astep'), description: '', status: 'pending' as const, statusEventOrder: 0 }] }
+                            : fb;
+                          const newSuccess = sb.steps.length === 0
+                            ? { ...sb, steps: [{ id: uid('astep'), description: '', status: 'pending' as const, statusEventOrder: 0 }] }
+                            : sb;
+                          patch.branches = { ...branches, fail: newFail, success: newSuccess };
                         }
+                        updateGoal(goal.id, patch);
                       }} />
                     </div>
 
                     <ArcConnectors type="split" />
 
-                    <div className="relative mt-3">
-                      {(() => {
-                        const flow = computeActiveFlow(failBranch, successBranch);
-                        return (
+                    {(() => {
+                      const flow = computeActiveFlow(failBranch, successBranch);
+                      const containerRef = React.createRef<HTMLDivElement>();
+                      return (
+                        <div ref={containerRef} className="relative mt-3">
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '16px' }}>
                             <ArcBranchLane
                               branch={failBranch}
                               type="fail"
                               flexibility={goal.flexibility}
                               isSimpleMode={mode === 'simple'}
-                              activeFlowStepId={flow?.sourceBranch === 'fail' ? flow.sourceId : undefined}
-                              flowDirection="right"
                               onUpdateTrigger={(d) => updateBranch(goal.id, 'fail', { triggerDescription: d })}
                               onAddStep={() => addStep(goal.id, 'fail')}
                               onUpdateStep={(id, patch) => updateStep(goal.id, 'fail', id, patch)}
@@ -368,8 +376,6 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                               type="success"
                               flexibility={goal.flexibility}
                               isSimpleMode={false}
-                              activeFlowStepId={flow?.sourceBranch === 'success' ? flow.sourceId : undefined}
-                              flowDirection="left"
                               onUpdateTrigger={(d) => updateBranch(goal.id, 'success', { triggerDescription: d })}
                               onAddStep={() => addStep(goal.id, 'success')}
                               onUpdateStep={(id, patch) => updateStep(goal.id, 'success', id, patch)}
@@ -377,9 +383,16 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                               onToggleStatus={(id, status) => toggleStatus(goal.id, 'success', id, status)}
                             />
                           </div>
-                        );
-                      })()}
-                    </div>
+                          {flow && (
+                            <ArcFlowConnector
+                              containerRef={containerRef}
+                              sourceStepId={flow.sourceId}
+                              targetStepId={flow.targetId}
+                            />
+                          )}
+                        </div>
+                      );
+                    })()}
 
                     {(goal.linkedPhases || []).length > 0 && <ArcConnectors type="merge" />}
                   </div>
