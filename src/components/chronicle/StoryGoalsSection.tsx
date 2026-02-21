@@ -239,50 +239,19 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                   {/* Row 1: Goal Name + Delete + Progress Ring */}
                   <div className="flex items-start gap-4">
                     <div className="flex-1">
-                      <label style={{
-                        fontSize: '11px',
-                        letterSpacing: '0.22em',
-                        color: 'rgba(198,213,238,0.86)',
-                        fontWeight: 700,
-                        textTransform: 'uppercase',
-                        display: 'block',
-                        marginBottom: '8px',
-                      }}>Goal Name</label>
+                      <label className="text-xs font-bold text-zinc-400 uppercase tracking-widest block mb-2">Goal Name</label>
                       <AutoResizeTextarea
                         value={goal.title}
                         onChange={(v) => updateGoal(goal.id, { title: v })}
                         placeholder="Enter goal name..."
-                        style={{
-                          borderRadius: '14px',
-                          background: 'rgba(24,28,37,0.92)',
-                          padding: '0 18px',
-                          fontSize: '16px',
-                          height: '54px',
-                          border: 'none',
-                          color: '#FFFFFF',
-                          lineHeight: '54px',
-                        }}
-                        className="focus:outline-none placeholder:text-[rgba(151,160,180,0.82)]"
+                        className="mt-1 px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                       />
                     </div>
 
                     {/* Delete button */}
                     <button
                       onClick={() => deleteGoal(goal.id)}
-                      style={{
-                        width: '30px',
-                        height: '30px',
-                        borderRadius: '10px',
-                        border: '1px solid rgba(248,113,113,0.5)',
-                        background: 'transparent',
-                        color: '#fca5a5',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer',
-                        marginTop: '28px',
-                        flexShrink: 0,
-                      }}
+                      className="w-[30px] h-[30px] rounded-[10px] border border-red-400/50 bg-transparent text-red-300 flex items-center justify-center cursor-pointer mt-7 shrink-0"
                       title="Delete arc"
                     >
                       <Trash2 size={15} />
@@ -299,22 +268,11 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}>
-                        <span style={{
-                          fontSize: '20px',
-                          fontWeight: 700,
-                          color: 'rgba(195,211,237,0.94)',
-                        }}>
+                        <span className="text-lg font-bold text-slate-300">
                           {progress}%
                         </span>
                       </div>
-                      <p style={{
-                        marginTop: '6px',
-                        fontSize: '9px',
-                        fontWeight: 900,
-                        color: 'rgba(198,213,238,0.6)',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.2em',
-                      }}>
+                      <p className="mt-1.5 text-xs font-black text-zinc-400 uppercase tracking-[0.2em]">
                         {successBranch.steps.length > 0
                           ? `${successBranch.steps.filter(s => s.status === 'succeeded').length}/${successBranch.steps.length} Steps`
                           : 'No Steps'}
@@ -324,14 +282,8 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
 
                   {/* Full width: Desired Outcome */}
                   <div style={{ marginTop: '16px' }}>
-                    <div className="flex items-center gap-2" style={{ marginBottom: '8px' }}>
-                      <label style={{
-                        fontSize: '11px',
-                        letterSpacing: '0.22em',
-                        color: 'rgba(198,213,238,0.86)',
-                        fontWeight: 700,
-                        textTransform: 'uppercase',
-                      }}>Desired Outcome</label>
+                    <div className="flex items-center gap-2 mb-2">
+                      <label className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Desired Outcome</label>
                       <SparkleButton
                         fieldKey={`story_outcome_${goal.id}`}
                         onClick={() => onEnhanceField?.(
@@ -347,16 +299,7 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                       onChange={(v) => updateGoal(goal.id, { desiredOutcome: v })}
                       placeholder="What success looks like..."
                       rows={2}
-                      style={{
-                        borderRadius: '14px',
-                        background: 'rgba(24,28,37,0.92)',
-                        padding: '14px 18px',
-                        fontSize: '16px',
-                        height: '84px',
-                        border: 'none',
-                        color: '#FFFFFF',
-                      }}
-                      className="focus:outline-none placeholder:text-[rgba(151,160,180,0.82)]"
+                      className="mt-1 px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                     />
                   </div>
 
@@ -375,14 +318,7 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                     <div className="flex items-center justify-between" style={{ marginBottom: '12px' }}>
                       <div className="flex items-center gap-2">
                         <CheckSquare size={14} style={{ color: '#67a6ff' }} />
-                        <h4 style={{
-                          fontSize: '11px',
-                          letterSpacing: '0.2em',
-                          fontWeight: 700,
-                          color: 'rgba(226,234,247,0.95)',
-                          textTransform: 'uppercase',
-                          margin: 0,
-                        }}>Steps</h4>
+                        <h4 className="text-xs font-bold text-white uppercase tracking-[0.2em] m-0">Steps</h4>
                       </div>
                       <ArcModeToggle mode={mode} onChange={(m) => updateGoal(goal.id, { mode: m })} />
                     </div>
@@ -422,20 +358,7 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                     <button
                       type="button"
                       onClick={() => addPhase(goal.id)}
-                      className="flex items-center gap-2"
-                      style={{
-                        height: '42px',
-                        padding: '0 16px',
-                        borderRadius: '12px',
-                        border: '1px solid rgba(110,161,255,0.38)',
-                        background: 'rgba(79,106,145,0.42)',
-                        color: '#FFFFFF',
-                        fontWeight: 700,
-                        fontSize: '11px',
-                        letterSpacing: '0.14em',
-                        textTransform: 'uppercase',
-                        cursor: 'pointer',
-                      }}
+                      className="flex items-center gap-2 h-[42px] px-4 rounded-xl border border-blue-400/40 bg-blue-900/30 text-white font-bold text-xs uppercase tracking-wider cursor-pointer hover:bg-blue-900/50 transition-colors"
                     >
                       <Plus size={14} />
                       Add Next Phase
@@ -463,18 +386,7 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
           {/* Add Story Arc */}
           <button
             onClick={addGoal}
-            className="w-full flex items-center justify-center gap-2"
-            style={{
-              height: '64px',
-              border: '2px dashed rgba(177,188,210,0.45)',
-              borderRadius: '18px',
-              background: 'transparent',
-              color: '#67a6ff',
-              fontSize: '16px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              transition: 'border-color 0.15s',
-            }}
+            className="w-full flex items-center justify-center gap-2 py-2.5 text-sm bg-transparent border-2 border-dashed border-zinc-500 text-blue-400 hover:border-blue-400 hover:bg-blue-500/5 font-medium rounded-xl transition-colors cursor-pointer"
           >
             <Plus className="w-5 h-5" />
             Add New Story Arc

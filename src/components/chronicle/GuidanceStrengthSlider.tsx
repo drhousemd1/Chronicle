@@ -31,23 +31,13 @@ export const GuidanceStrengthSlider: React.FC<GuidanceStrengthSliderProps> = ({ 
   return (
     <div>
       {/* Title */}
-      <div style={{ margin: '14px 0 6px' }}>
-        <span style={{
-          fontSize: '11px',
-          letterSpacing: '0.22em',
-          color: 'rgba(198,212,236,0.84)',
-          fontWeight: 700,
-          textTransform: 'uppercase',
-        }}>
+      <div className="mt-3.5 mb-1.5">
+        <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
           Guidance Strength
         </span>
       </div>
       {/* Subtitle */}
-      <p style={{
-        fontSize: '16px',
-        color: 'rgba(171,185,208,0.86)',
-        margin: '0 0 10px',
-      }}>
+      <p className="text-sm text-zinc-400 mb-2.5">
         How strongly the AI should steer toward this goal.
       </p>
 
@@ -65,50 +55,29 @@ export const GuidanceStrengthSlider: React.FC<GuidanceStrengthSliderProps> = ({ 
       >
         {/* Fill */}
         <div
+          className="absolute top-0 left-0 h-full rounded-full transition-[width] duration-200 ease-out"
           style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            height: '100%',
             width: `${fillPercent}%`,
-            borderRadius: '999px',
             background: 'linear-gradient(90deg, #2b4e8d, #4b79d8 60%, #7dadf5)',
-            transition: 'width 0.2s ease',
           }}
         />
         {/* Knob */}
         <div
-          style={{
-            position: 'absolute',
-            top: '50%',
-            left: `${fillPercent}%`,
-            transform: 'translate(-50%, -50%)',
-            width: '24px',
-            height: '24px',
-            borderRadius: '999px',
-            background: '#FFFFFF',
-            border: '3px solid #4b79d8',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-            transition: 'left 0.2s ease',
-          }}
+          className="absolute top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white border-[3px] border-blue-500 shadow-[0_2px_8px_rgba(0,0,0,0.3)] transition-[left] duration-200 ease-out"
+          style={{ left: `${fillPercent}%`, transform: `translate(-50%, -50%)` }}
         />
       </div>
 
       {/* Labels */}
-      <div className="flex justify-between" style={{ marginTop: '8px' }}>
+      <div className="flex justify-between mt-2">
         {LEVELS.map((level) => (
           <span
             key={level.value}
             onClick={() => onChange(level.value)}
-            className="cursor-pointer"
-            style={{
-              fontSize: '11px',
-              letterSpacing: '0.16em',
-              fontWeight: 700,
-              textTransform: 'uppercase' as const,
-              color: value === level.value ? '#6ea1ff' : 'rgba(198,213,238,0.5)',
-              transition: 'color 0.15s',
-            }}
+            className={cn(
+              "cursor-pointer text-xs font-bold uppercase tracking-widest transition-colors",
+              value === level.value ? "text-blue-400" : "text-zinc-500"
+            )}
           >
             {level.label}
           </span>
@@ -116,19 +85,8 @@ export const GuidanceStrengthSlider: React.FC<GuidanceStrengthSliderProps> = ({ 
       </div>
 
       {/* Description body */}
-      <div style={{
-        marginTop: '12px',
-        borderRadius: '16px',
-        background: 'rgba(37,40,50,0.92)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        padding: '18px',
-      }}>
-        <p style={{
-          fontSize: '15px',
-          color: 'rgba(206,216,233,0.88)',
-          lineHeight: 1.45,
-          margin: 0,
-        }}>
+      <div className="mt-3 rounded-2xl bg-[rgba(37,40,50,0.92)] border border-white/10 p-4">
+        <p className="text-sm text-zinc-300 leading-relaxed m-0">
           {DESCRIPTIONS[value]}
         </p>
       </div>
