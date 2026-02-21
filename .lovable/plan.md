@@ -1,100 +1,71 @@
 
 
-# Fix: Counter Race Condition and Dotted Line Visibility
+# Fix: Two Dotted Lines Instead of One
 
-## Root Cause Analysis
+## The Problem
 
-### Bug 1: statusEventCounter race condition (THE REAL PROBLEM)
+`computeActiveFlow` returns two step IDs — one for each branch. Both branch lanes render a dotted line on their respective active step. Since these steps are at different vertical positions (e.g., Recovery Step 2 and Progression Step 1), the result is TWO separate horizontal dashes at different heights instead of ONE connector.
 
-In `StoryGoalsSection.tsx` lines 179-193, `toggleStatus` makes two calls:
+## The Fix
 
+Only pass `activeFlowStepId` to the SOURCE branch (the one containing the step that just got resolved). Don't pass it to the TARGET branch. This produces exactly one dotted line pointing from the source step toward the other column.
+
+## Changes
+
+### File: `src/components/chronicle/StoryGoalsSection.tsx`
+
+Change how `flow` results are passed to the two `ArcBranchLane` components (lines 362-387).
+
+Currently both lanes get an ID:
 ```
-updateGoal(goalId, { statusEventCounter: counter });  // call 1
-updateStep(goalId, type, stepId, { ... });             // call 2 -> calls updateBranch -> calls updateGoal
+activeFlowStepId={flow?.failActiveId}    // fail lane
+activeFlowStepId={flow?.successActiveId} // success lane
 ```
 
-Both calls read from the same `migratedGoals` snapshot. React batches them, so only the LAST `onChange` wins. The counter update from call 1 is overwritten by call 2 (which only patches branches). Result: `statusEventCounter` stays at 0 forever, every step gets `statusEventOrder = 1`, and `computeActiveFlow` can't determine the latest step.
+Change to only pass the ID to the SOURCE lane. `computeActiveFlow` already tells us which branch is the source based on the logic:
+- Succeeded on fail branch: source = fail lane
+- Failed on success branch: source = success lane
 
-### Bug 2: Dotted line is only 8px wide
-
-Even when `computeActiveFlow` returns valid IDs, the dotted connector is `w-[8px]` -- practically invisible.
-
-## Fix
-
-### File 1: `src/components/chronicle/StoryGoalsSection.tsx`
-
-**Merge the two calls into one.** Replace the `toggleStatus` function (lines 179-193) so it does a single `updateGoal` call that includes BOTH the counter update AND the step status update:
+Update `computeActiveFlow` to also return which branch is the source:
 
 ```typescript
-const toggleStatus = (goalId: string, type: 'fail' | 'success', stepId: string, targetStatus: StepStatus) => {
-  const goal = migratedGoals.find(g => g.id === goalId);
-  if (!goal) return;
-  const branch = ensureBranch(goal.branches?.[type], type);
-  const step = branch.steps.find(s => s.id === stepId);
-  if (!step) return;
-  const newStatus = step.status === targetStatus ? 'pending' : targetStatus;
-  const counter = (goal.statusEventCounter || 0) + 1;
-  const updatedSteps = branch.steps.map(s =>
-    s.id === stepId
-      ? { ...s, status: newStatus, statusEventOrder: newStatus !== 'pending' ? counter : 0, completedAt: newStatus === 'succeeded' ? now() : undefined }
-      : s
-  );
-  const branches = goal.branches || {};
-  updateGoal(goalId, {
-    statusEventCounter: counter,
-    branches: { ...branches, [type]: { ...branch, steps: updatedSteps } },
-  });
-};
+function computeActiveFlow(
+  failBranch: ArcBranch,
+  successBranch: ArcBranch
+): { sourceId: string; sourceBranch: 'fail' | 'success' } | null {
+  // ... same resolved/sort logic ...
+  
+  if (latest.step.status === 'succeeded' && latest.branch === 'fail') {
+    return { sourceId: latest.step.id, sourceBranch: 'fail' };
+  }
+  if (latest.step.status === 'failed' && latest.branch === 'success') {
+    return { sourceId: latest.step.id, sourceBranch: 'success' };
+  }
+  return null;
+}
 ```
 
-This is ONE `updateGoal` call containing both the counter and the step change. No race condition.
-
-### File 2: `src/components/chronicle/arc/ArcBranchLane.tsx`
-
-Make the dotted line wider so it's actually visible. Change `w-[8px]` to `w-[16px]` and adjust positioning:
-
+Then pass props like:
 ```
-- flowDirection === 'right' ? "-right-[8px] w-[8px]" : "-left-[8px] w-[8px]"
-+ flowDirection === 'right' ? "-right-[16px] w-[16px]" : "-left-[16px] w-[16px]"
-```
+// Fail lane: only gets activeFlowStepId if it's the source
+activeFlowStepId={flow?.sourceBranch === 'fail' ? flow.sourceId : undefined}
+flowDirection="right"
 
-This makes each side's dotted line extend 16px into the gap (the gap is `gap-4` = 16px), so both sides together visually connect across the full gap.
-
-### File 3: `src/components/chronicle/arc/ArcPhaseCard.tsx`
-
-Apply the same race condition fix to `toggleStatus` in ArcPhaseCard (lines 144-155). Merge counter + step update into a single `onUpdate` call:
-
-```typescript
-const toggleStatus = (type: 'fail' | 'success', stepId: string, targetStatus: StepStatus) => {
-  const branch = type === 'fail' ? failBranch : successBranch;
-  const step = branch.steps.find(s => s.id === stepId);
-  if (!step) return;
-  const newStatus = step.status === targetStatus ? 'pending' : targetStatus;
-  const counter = (phase.statusEventCounter || 0) + 1;
-  const updatedSteps = branch.steps.map(s =>
-    s.id === stepId
-      ? { ...s, status: newStatus, statusEventOrder: newStatus !== 'pending' ? counter : 0, completedAt: newStatus === 'succeeded' ? now() : undefined }
-      : s
-  );
-  onUpdate({
-    statusEventCounter: counter,
-    branches: { ...branches, [type]: { ...branch, steps: updatedSteps } },
-    updatedAt: now(),
-  });
-};
+// Success lane: only gets activeFlowStepId if it's the source
+activeFlowStepId={flow?.sourceBranch === 'success' ? flow.sourceId : undefined}
+flowDirection="left"
 ```
 
-## Summary
+Result: exactly ONE dotted line extending from the source step toward the opposite column.
+
+### File: `src/components/chronicle/arc/ArcPhaseCard.tsx`
+
+Same change — update the duplicated `computeActiveFlow` and only pass `activeFlowStepId` to the source lane.
+
+## Files to Modify
 
 | File | Change |
 |------|--------|
-| `StoryGoalsSection.tsx` | Merge toggleStatus into single updateGoal call to fix counter race |
-| `ArcPhaseCard.tsx` | Same race condition fix for phase-level toggleStatus |
-| `ArcBranchLane.tsx` | Increase dotted line width from 8px to 16px |
+| `StoryGoalsSection.tsx` | Simplify `computeActiveFlow` return type; only pass active ID to source lane |
+| `ArcPhaseCard.tsx` | Same changes for phase-level flow |
 
-## Cross-over logic (unchanged, already correct)
-
-- Succeeded on fail branch -> dotted line crosses to next pending success step
-- Failed on success branch -> dotted line crosses to next pending fail step
-- Failed on fail branch -> no line (stays on same branch)
-- Succeeded on success branch -> no line (stays on same branch)
