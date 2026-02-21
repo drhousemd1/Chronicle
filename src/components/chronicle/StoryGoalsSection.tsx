@@ -241,7 +241,7 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
         </div>
 
         {/* Content */}
-        <div style={{ padding: '24px 30px' }} className="space-y-6">
+        <div style={{ padding: '20px 16px' }} className="space-y-6">
           {migratedGoals.map((goal) => {
             const mode = goal.mode || 'simple';
             const branches = goal.branches || {};
@@ -412,7 +412,7 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
 
                     <ArcConnectors type="split" />
 
-                    <div className="flex gap-4" style={{ marginTop: '12px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '16px', marginTop: '12px' }}>
                       <ArcBranchLane
                         branch={failBranch}
                         type="fail"
