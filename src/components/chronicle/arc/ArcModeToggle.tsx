@@ -1,6 +1,5 @@
 import React from 'react';
 import { ArcMode } from '@/types';
-import { cn } from '@/lib/utils';
 
 interface ArcModeToggleProps {
   mode: ArcMode;
@@ -9,28 +8,49 @@ interface ArcModeToggleProps {
 
 export const ArcModeToggle: React.FC<ArcModeToggleProps> = ({ mode, onChange }) => {
   return (
-    <div className="flex items-center bg-zinc-800/80 rounded-lg border border-white/10 overflow-hidden">
+    <div
+      className="flex items-center overflow-hidden"
+      style={{
+        borderRadius: '999px',
+        border: '1px solid rgba(123,155,203,0.44)',
+        background: 'rgba(21,25,35,0.86)',
+      }}
+    >
       <button
         type="button"
         onClick={() => onChange('simple')}
-        className={cn(
-          "px-3 py-1 text-[10px] font-black uppercase tracking-widest transition-colors",
-          mode === 'simple'
-            ? "bg-blue-500/20 text-blue-400"
-            : "text-zinc-500 hover:text-zinc-300"
-        )}
+        style={{
+          padding: '6px 14px',
+          fontSize: '10px',
+          letterSpacing: '0.14em',
+          fontWeight: 700,
+          textTransform: 'uppercase',
+          borderRadius: '999px',
+          transition: 'all 0.15s',
+          background: mode === 'simple' ? 'rgba(99,135,194,0.58)' : 'transparent',
+          color: mode === 'simple' ? '#edf3ff' : 'rgba(198,213,238,0.82)',
+          border: 'none',
+          cursor: 'pointer',
+        }}
       >
         Simple
       </button>
       <button
         type="button"
         onClick={() => onChange('advanced')}
-        className={cn(
-          "px-3 py-1 text-[10px] font-black uppercase tracking-widest transition-colors",
-          mode === 'advanced'
-            ? "bg-blue-500/20 text-blue-400"
-            : "text-zinc-500 hover:text-zinc-300"
-        )}
+        style={{
+          padding: '6px 14px',
+          fontSize: '10px',
+          letterSpacing: '0.14em',
+          fontWeight: 700,
+          textTransform: 'uppercase',
+          borderRadius: '999px',
+          transition: 'all 0.15s',
+          background: mode === 'advanced' ? 'rgba(99,135,194,0.58)' : 'transparent',
+          color: mode === 'advanced' ? '#edf3ff' : 'rgba(198,213,238,0.82)',
+          border: 'none',
+          cursor: 'pointer',
+        }}
       >
         Advanced
       </button>

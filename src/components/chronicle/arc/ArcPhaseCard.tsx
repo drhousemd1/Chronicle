@@ -1,7 +1,6 @@
 import React from 'react';
 import { ArcPhase, ArcBranch, ArcStep, ArcMode, GoalFlexibility, StepStatus } from '@/types';
-import { Trash2, Sparkles } from 'lucide-react';
-import { CircularProgress } from '../CircularProgress';
+import { Trash2, Sparkles, CheckSquare } from 'lucide-react';
 import { GuidanceStrengthSlider } from '../GuidanceStrengthSlider';
 import { ArcBranchLane } from './ArcBranchLane';
 import { ArcModeToggle } from './ArcModeToggle';
@@ -16,7 +15,8 @@ const AutoResizeTextarea: React.FC<{
   placeholder?: string;
   className?: string;
   rows?: number;
-}> = ({ value, onChange, placeholder, className = '', rows = 1 }) => {
+  style?: React.CSSProperties;
+}> = ({ value, onChange, placeholder, className = '', rows = 1, style }) => {
   const ref = React.useRef<HTMLTextAreaElement>(null);
   React.useEffect(() => {
     if (ref.current) {
@@ -32,6 +32,7 @@ const AutoResizeTextarea: React.FC<{
       placeholder={placeholder}
       rows={rows}
       spellCheck={true}
+      style={style}
       className={cn("w-full min-w-0 resize-none overflow-hidden whitespace-pre-wrap break-words", className)}
     />
   );
@@ -140,41 +141,104 @@ export const ArcPhaseCard: React.FC<ArcPhaseCardProps> = ({
 
   return (
     <div className="relative">
-      {/* Phase connector line */}
-      {phaseNumber > 1 && (
-        <div className="flex justify-center -mt-1 mb-2">
-          <div className="w-px h-8 bg-blue-500/30" />
-        </div>
-      )}
+      {/* Chain connector */}
+      <div className="flex justify-center">
+        <svg width="60" height="48" viewBox="0 0 60 48">
+          <defs>
+            <filter id={`chain-glow-${phase.id}`} x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="0.8" result="blur" />
+              <feFlood floodColor="#FFFFFF" floodOpacity="0.28" result="color" />
+              <feComposite in="color" in2="blur" operator="in" result="glow" />
+              <feMerge>
+                <feMergeNode in="glow" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+          <line x1="30" y1="0" x2="30" y2="48" stroke="rgba(232,238,248,0.82)" strokeWidth="1.8" filter={`url(#chain-glow-${phase.id})`} />
+        </svg>
+      </div>
 
-      <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-blue-500/20 relative">
-        {/* Phase label */}
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em]">
+      {/* Phase card */}
+      <div style={{
+        padding: '30px',
+        borderRadius: '26px',
+        background: 'rgba(46,49,60,0.98)',
+        border: '1px solid rgba(80,111,157,0.5)',
+        position: 'relative',
+      }}>
+        {/* Phase label + delete */}
+        <div className="flex items-center justify-between" style={{ marginBottom: '20px' }}>
+          <span style={{
+            fontSize: '11px',
+            letterSpacing: '0.22em',
+            fontWeight: 700,
+            color: '#6ea1ff',
+            textTransform: 'uppercase',
+          }}>
             Phase {phaseNumber}
           </span>
-          <button onClick={onDelete} className="text-zinc-500 hover:text-rose-400 transition-colors" title="Delete phase">
-            <Trash2 className="h-5 w-5" />
+          <button
+            onClick={onDelete}
+            style={{
+              width: '30px',
+              height: '30px',
+              borderRadius: '10px',
+              border: '1px solid rgba(248,113,113,0.5)',
+              background: 'transparent',
+              color: '#fca5a5',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+            }}
+            title="Delete phase"
+          >
+            <Trash2 size={15} />
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-          <div className="md:col-span-9 space-y-4">
-            {/* Phase Title */}
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_220px] gap-6">
+          <div className="space-y-4">
+            {/* Goal Name */}
             <div>
-              <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Goal Name</label>
+              <label style={{
+                fontSize: '11px',
+                letterSpacing: '0.22em',
+                color: 'rgba(198,213,238,0.86)',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                display: 'block',
+                marginBottom: '8px',
+              }}>Goal Name</label>
               <AutoResizeTextarea
                 value={phase.title}
                 onChange={(v) => onUpdate({ title: v, updatedAt: now() })}
                 placeholder="Enter goal name..."
-                className="mt-1 px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                style={{
+                  borderRadius: '14px',
+                  background: 'rgba(24,28,37,0.92)',
+                  padding: '0 18px',
+                  fontSize: '16px',
+                  height: '54px',
+                  border: 'none',
+                  color: '#FFFFFF',
+                  lineHeight: '54px',
+                }}
+                className="focus:outline-none placeholder:text-[rgba(151,160,180,0.82)]"
               />
             </div>
 
             {/* Desired Outcome */}
             <div>
-              <div className="flex items-center gap-2">
-                <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Desired Outcome</label>
+              <div className="flex items-center gap-2" style={{ marginBottom: '8px' }}>
+                <label style={{
+                  fontSize: '11px',
+                  letterSpacing: '0.22em',
+                  color: 'rgba(198,213,238,0.86)',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                }}>Desired Outcome</label>
                 <SparkleButton
                   fieldKey={`phase_outcome_${phase.id}`}
                   onClick={() => onEnhanceField?.(
@@ -189,8 +253,17 @@ export const ArcPhaseCard: React.FC<ArcPhaseCardProps> = ({
                 value={phase.desiredOutcome}
                 onChange={(v) => onUpdate({ desiredOutcome: v, updatedAt: now() })}
                 placeholder="What success looks like..."
-                className="mt-1 px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 rows={2}
+                style={{
+                  borderRadius: '14px',
+                  background: 'rgba(24,28,37,0.92)',
+                  padding: '14px 18px',
+                  fontSize: '16px',
+                  height: '84px',
+                  border: 'none',
+                  color: '#FFFFFF',
+                }}
+                className="focus:outline-none placeholder:text-[rgba(151,160,180,0.82)]"
               />
             </div>
 
@@ -201,15 +274,29 @@ export const ArcPhaseCard: React.FC<ArcPhaseCardProps> = ({
             />
 
             {/* Steps / Branches */}
-            <div className="mt-4 pt-4 border-t border-white/5">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-[10px] font-bold text-white uppercase tracking-[0.2em]">Steps</h4>
+            <div style={{
+              marginTop: '18px',
+              paddingTop: '20px',
+              borderTop: '1px solid rgba(255,255,255,0.08)',
+            }}>
+              <div className="flex items-center justify-between" style={{ marginBottom: '12px' }}>
+                <div className="flex items-center gap-2">
+                  <CheckSquare size={14} style={{ color: '#67a6ff' }} />
+                  <h4 style={{
+                    fontSize: '11px',
+                    letterSpacing: '0.2em',
+                    fontWeight: 700,
+                    color: 'rgba(226,234,247,0.95)',
+                    textTransform: 'uppercase',
+                    margin: 0,
+                  }}>Steps</h4>
+                </div>
                 <ArcModeToggle mode={mode} onChange={(m) => onUpdate({ mode: m, updatedAt: now() })} />
               </div>
 
               <ArcConnectors type="split" />
 
-              <div className="flex gap-3 mt-3">
+              <div className="flex gap-6" style={{ marginTop: '12px' }}>
                 <ArcBranchLane
                   branch={failBranch}
                   type="fail"
@@ -239,9 +326,32 @@ export const ArcPhaseCard: React.FC<ArcPhaseCardProps> = ({
           </div>
 
           {/* Progress Ring */}
-          <div className="md:col-span-3 flex flex-col items-center justify-start pt-4">
-            <CircularProgress value={progress} size={96} strokeWidth={8} variant="dark" />
-            <p className="mt-2 text-[9px] font-black text-zinc-400 uppercase tracking-[0.2em]">
+          <div className="flex flex-col items-center justify-start" style={{ paddingTop: '16px' }}>
+            <div style={{
+              width: '154px',
+              height: '154px',
+              borderRadius: '999px',
+              border: '12px solid rgba(51,80,125,0.85)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <span style={{
+                fontSize: '42px',
+                fontWeight: 700,
+                color: 'rgba(195,211,237,0.94)',
+              }}>
+                {progress}%
+              </span>
+            </div>
+            <p style={{
+              marginTop: '10px',
+              fontSize: '9px',
+              fontWeight: 900,
+              color: 'rgba(198,213,238,0.6)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.2em',
+            }}>
               {successBranch.steps.length > 0
                 ? `${successBranch.steps.filter(s => s.status === 'succeeded').length}/${successBranch.steps.length} Steps`
                 : 'No Steps'}
