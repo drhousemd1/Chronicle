@@ -233,8 +233,8 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
             const progress = calculateArcProgress(branches);
 
             return (
-              <div key={goal.id} className="space-y-0">
-                {/* Root phase card */}
+              <div key={goal.id}>
+                {/* Single arc container */}
                 <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-blue-500/20 relative">
                   {/* Row 1: Goal Name + Delete + Progress Ring */}
                   <div className="flex items-start gap-4">
@@ -258,16 +258,8 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                     </button>
 
                     {/* Progress ring */}
-                    <div className="flex flex-col items-center" style={{ flexShrink: 0, marginTop: '4px' }}>
-                      <div style={{
-                        width: '80px',
-                        height: '80px',
-                        borderRadius: '999px',
-                        border: '8px solid rgba(51,80,125,0.85)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}>
+                    <div className="flex flex-col items-center shrink-0 mt-1">
+                      <div className="w-20 h-20 rounded-full border-[8px] border-[rgba(51,80,125,0.85)] flex items-center justify-center">
                         <span className="text-lg font-bold text-slate-300">
                           {progress}%
                         </span>
@@ -276,7 +268,7 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                   </div>
 
                   {/* Full width: Desired Outcome */}
-                  <div style={{ marginTop: '16px' }}>
+                  <div className="mt-4">
                     <div className="flex items-center gap-2 mb-2">
                       <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Desired Outcome</label>
                       <SparkleButton
@@ -304,15 +296,11 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                     onChange={(flexibility) => updateGoal(goal.id, { flexibility })}
                   />
 
-                  {/* Steps Section - FULL WIDTH outside grid */}
-                  <div style={{
-                    marginTop: '18px',
-                    paddingTop: '20px',
-                    borderTop: '1px solid rgba(255,255,255,0.08)',
-                  }}>
-                    <div className="flex items-center justify-between" style={{ marginBottom: '12px' }}>
+                  {/* Steps Section */}
+                  <div className="mt-4 pt-5 border-t border-white/10">
+                    <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
-                        <CheckSquare size={14} style={{ color: '#67a6ff' }} />
+                        <CheckSquare size={14} className="text-blue-400" />
                         <h4 className="text-[10px] font-black text-white uppercase tracking-[0.2em] m-0">Steps</h4>
                       </div>
                       <ArcModeToggle mode={mode} onChange={(m) => {
@@ -328,10 +316,8 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
 
                     <ArcConnectors type="split" />
 
-                    <div className="relative" style={{ marginTop: '12px' }}>
-                      {/* Dotted connector line between fail and succeed paths */}
-                      <div className="absolute top-1/2 left-[25%] right-[25%] border-t-2 border-dashed border-zinc-500/40 -translate-y-1/2 pointer-events-none z-0" />
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '16px' }} className="relative z-10">
+                    <div className="relative mt-3">
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '16px' }}>
                         <ArcBranchLane
                           branch={failBranch}
                           type="fail"
@@ -360,6 +346,20 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                     {(goal.linkedPhases || []).length > 0 && <ArcConnectors type="merge" />}
                   </div>
 
+                  {/* Linked Phases - INSIDE the same container */}
+                  {(goal.linkedPhases || []).map((phase, idx) => (
+                    <ArcPhaseCard
+                      key={phase.id}
+                      phase={phase}
+                      phaseNumber={idx + 2}
+                      onUpdate={(patch) => updatePhase(goal.id, phase.id, patch)}
+                      onDelete={() => deletePhase(goal.id, phase.id)}
+                      onEnhanceField={onEnhanceField}
+                      enhancingField={enhancingField}
+                      hasNextPhase={idx < (goal.linkedPhases || []).length - 1}
+                    />
+                  ))}
+
                   {/* Add Next Phase button */}
                   <button
                     type="button"
@@ -370,20 +370,6 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                     Add Next Phase
                   </button>
                 </div>
-
-                {/* Linked Phases */}
-                {(goal.linkedPhases || []).map((phase, idx) => (
-                  <ArcPhaseCard
-                    key={phase.id}
-                    phase={phase}
-                    phaseNumber={idx + 2}
-                    onUpdate={(patch) => updatePhase(goal.id, phase.id, patch)}
-                    onDelete={() => deletePhase(goal.id, phase.id)}
-                    onEnhanceField={onEnhanceField}
-                    enhancingField={enhancingField}
-                    hasNextPhase={idx < (goal.linkedPhases || []).length - 1}
-                  />
-                ))}
               </div>
             );
           })}
