@@ -1,52 +1,100 @@
 
 
-# Fix Active Flow Connector Logic
+# Fix: Counter Race Condition and Dotted Line Visibility
 
-## The Problem
+## Root Cause Analysis
 
-The `computeActiveFlow` function has the logic inverted:
-- Currently: when a step **fails**, it crosses to the opposite branch
-- Correct: when a step **fails**, it stays on the same branch (no connector line); when it **succeeds** on the fail branch, it crosses to the success branch
+### Bug 1: statusEventCounter race condition (THE REAL PROBLEM)
 
-## The Correct Logic
+In `StoryGoalsSection.tsx` lines 179-193, `toggleStatus` makes two calls:
 
-1. Recovery Step 1 **fails** -> no cross-over line, flow continues down to Recovery Step 2
-2. Recovery Step 1 **succeeds** -> dotted line crosses from Recovery Step 1 to next pending Progression step
-3. Progression Step 1 **fails** -> dotted line crosses from Progression Step 1 to next pending Recovery step
-4. Progression Step 1 **succeeds** -> no cross-over, flow continues down Progression path
-
-In short: **failure stays on the same branch, success on the fail branch crosses over, failure on the success branch crosses over**.
-
-## Changes
-
-**File**: `src/components/chronicle/StoryGoalsSection.tsx` (lines 97-112)
-
-Replace the `computeActiveFlow` logic:
-
-```typescript
-// If the latest step SUCCEEDED on the fail branch -> cross to success branch
-if (latest.step.status === 'succeeded' && latest.branch === 'fail') {
-  const nextPending = successBranch.steps.find(s => s.status === 'pending');
-  if (!nextPending) return null;
-  return { failActiveId: latest.step.id, successActiveId: nextPending.id };
-}
-
-// If the latest step FAILED on the success branch -> cross to fail branch
-if (latest.step.status === 'failed' && latest.branch === 'success') {
-  const nextPending = failBranch.steps.find(s => s.status === 'pending');
-  if (!nextPending) return null;
-  return { failActiveId: nextPending.id, successActiveId: latest.step.id };
-}
-
-// All other cases (failed on fail branch = stay, succeeded on success = stay) -> no cross-over
-return null;
+```
+updateGoal(goalId, { statusEventCounter: counter });  // call 1
+updateStep(goalId, type, stepId, { ... });             // call 2 -> calls updateBranch -> calls updateGoal
 ```
 
-This is the only file that needs changing. The same `computeActiveFlow` function is already used by `ArcPhaseCard.tsx` since it was duplicated there -- so both files need the same fix.
+Both calls read from the same `migratedGoals` snapshot. React batches them, so only the LAST `onChange` wins. The counter update from call 1 is overwritten by call 2 (which only patches branches). Result: `statusEventCounter` stays at 0 forever, every step gets `statusEventOrder = 1`, and `computeActiveFlow` can't determine the latest step.
 
-**Files to modify:**
+### Bug 2: Dotted line is only 8px wide
+
+Even when `computeActiveFlow` returns valid IDs, the dotted connector is `w-[8px]` -- practically invisible.
+
+## Fix
+
+### File 1: `src/components/chronicle/StoryGoalsSection.tsx`
+
+**Merge the two calls into one.** Replace the `toggleStatus` function (lines 179-193) so it does a single `updateGoal` call that includes BOTH the counter update AND the step status update:
+
+```typescript
+const toggleStatus = (goalId: string, type: 'fail' | 'success', stepId: string, targetStatus: StepStatus) => {
+  const goal = migratedGoals.find(g => g.id === goalId);
+  if (!goal) return;
+  const branch = ensureBranch(goal.branches?.[type], type);
+  const step = branch.steps.find(s => s.id === stepId);
+  if (!step) return;
+  const newStatus = step.status === targetStatus ? 'pending' : targetStatus;
+  const counter = (goal.statusEventCounter || 0) + 1;
+  const updatedSteps = branch.steps.map(s =>
+    s.id === stepId
+      ? { ...s, status: newStatus, statusEventOrder: newStatus !== 'pending' ? counter : 0, completedAt: newStatus === 'succeeded' ? now() : undefined }
+      : s
+  );
+  const branches = goal.branches || {};
+  updateGoal(goalId, {
+    statusEventCounter: counter,
+    branches: { ...branches, [type]: { ...branch, steps: updatedSteps } },
+  });
+};
+```
+
+This is ONE `updateGoal` call containing both the counter and the step change. No race condition.
+
+### File 2: `src/components/chronicle/arc/ArcBranchLane.tsx`
+
+Make the dotted line wider so it's actually visible. Change `w-[8px]` to `w-[16px]` and adjust positioning:
+
+```
+- flowDirection === 'right' ? "-right-[8px] w-[8px]" : "-left-[8px] w-[8px]"
++ flowDirection === 'right' ? "-right-[16px] w-[16px]" : "-left-[16px] w-[16px]"
+```
+
+This makes each side's dotted line extend 16px into the gap (the gap is `gap-4` = 16px), so both sides together visually connect across the full gap.
+
+### File 3: `src/components/chronicle/arc/ArcPhaseCard.tsx`
+
+Apply the same race condition fix to `toggleStatus` in ArcPhaseCard (lines 144-155). Merge counter + step update into a single `onUpdate` call:
+
+```typescript
+const toggleStatus = (type: 'fail' | 'success', stepId: string, targetStatus: StepStatus) => {
+  const branch = type === 'fail' ? failBranch : successBranch;
+  const step = branch.steps.find(s => s.id === stepId);
+  if (!step) return;
+  const newStatus = step.status === targetStatus ? 'pending' : targetStatus;
+  const counter = (phase.statusEventCounter || 0) + 1;
+  const updatedSteps = branch.steps.map(s =>
+    s.id === stepId
+      ? { ...s, status: newStatus, statusEventOrder: newStatus !== 'pending' ? counter : 0, completedAt: newStatus === 'succeeded' ? now() : undefined }
+      : s
+  );
+  onUpdate({
+    statusEventCounter: counter,
+    branches: { ...branches, [type]: { ...branch, steps: updatedSteps } },
+    updatedAt: now(),
+  });
+};
+```
+
+## Summary
+
 | File | Change |
 |------|--------|
-| `StoryGoalsSection.tsx` | Fix `computeActiveFlow` logic (lines 97-112) |
-| `ArcPhaseCard.tsx` | Fix duplicated `computeActiveFlow` logic |
+| `StoryGoalsSection.tsx` | Merge toggleStatus into single updateGoal call to fix counter race |
+| `ArcPhaseCard.tsx` | Same race condition fix for phase-level toggleStatus |
+| `ArcBranchLane.tsx` | Increase dotted line width from 8px to 16px |
 
+## Cross-over logic (unchanged, already correct)
+
+- Succeeded on fail branch -> dotted line crosses to next pending success step
+- Failed on success branch -> dotted line crosses to next pending fail step
+- Failed on fail branch -> no line (stays on same branch)
+- Succeeded on success branch -> no line (stays on same branch)
