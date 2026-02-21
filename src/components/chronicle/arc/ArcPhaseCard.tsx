@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 function computeActiveFlow(
   failBranch: ArcBranch,
   successBranch: ArcBranch
-): { failActiveId?: string; successActiveId?: string } | null {
+): { sourceId: string; sourceBranch: 'fail' | 'success' } | null {
   const resolved: Array<{ step: ArcStep; branch: 'fail' | 'success' }> = [];
   failBranch.steps.forEach(s => {
     if (s.statusEventOrder > 0) resolved.push({ step: s, branch: 'fail' });
@@ -23,21 +23,13 @@ function computeActiveFlow(
   if (resolved.length === 0) return null;
   resolved.sort((a, b) => b.step.statusEventOrder - a.step.statusEventOrder);
   const latest = resolved[0];
-  // Succeeded on fail branch -> cross to success branch
+
   if (latest.step.status === 'succeeded' && latest.branch === 'fail') {
-    const nextPending = successBranch.steps.find(s => s.status === 'pending');
-    if (!nextPending) return null;
-    return { failActiveId: latest.step.id, successActiveId: nextPending.id };
+    return { sourceId: latest.step.id, sourceBranch: 'fail' };
   }
-
-  // Failed on success branch -> cross to fail branch
   if (latest.step.status === 'failed' && latest.branch === 'success') {
-    const nextPending = failBranch.steps.find(s => s.status === 'pending');
-    if (!nextPending) return null;
-    return { failActiveId: nextPending.id, successActiveId: latest.step.id };
+    return { sourceId: latest.step.id, sourceBranch: 'success' };
   }
-
-  // All other cases: no cross-over
   return null;
 }
 
@@ -274,7 +266,7 @@ export const ArcPhaseCard: React.FC<ArcPhaseCardProps> = ({
                   type="fail"
                   flexibility={phase.flexibility}
                   isSimpleMode={mode === 'simple'}
-                  activeFlowStepId={flow?.failActiveId}
+                  activeFlowStepId={flow?.sourceBranch === 'fail' ? flow.sourceId : undefined}
                   flowDirection="right"
                   onUpdateTrigger={(d) => updateBranch('fail', { triggerDescription: d })}
                   onAddStep={() => addStep('fail')}
@@ -287,7 +279,7 @@ export const ArcPhaseCard: React.FC<ArcPhaseCardProps> = ({
                   type="success"
                   flexibility={phase.flexibility}
                   isSimpleMode={false}
-                  activeFlowStepId={flow?.successActiveId}
+                  activeFlowStepId={flow?.sourceBranch === 'success' ? flow.sourceId : undefined}
                   flowDirection="left"
                   onUpdateTrigger={(d) => updateBranch('success', { triggerDescription: d })}
                   onAddStep={() => addStep('success')}
