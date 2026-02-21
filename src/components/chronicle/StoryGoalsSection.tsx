@@ -333,57 +333,6 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                         value={goal.flexibility}
                         onChange={(flexibility) => updateGoal(goal.id, { flexibility })}
                       />
-
-                      {/* Steps Section */}
-                      <div style={{
-                        marginTop: '18px',
-                        paddingTop: '20px',
-                        borderTop: '1px solid rgba(255,255,255,0.08)',
-                      }}>
-                        <div className="flex items-center justify-between" style={{ marginBottom: '12px' }}>
-                          <div className="flex items-center gap-2">
-                            <CheckSquare size={14} style={{ color: '#67a6ff' }} />
-                            <h4 style={{
-                              fontSize: '11px',
-                              letterSpacing: '0.2em',
-                              fontWeight: 700,
-                              color: 'rgba(226,234,247,0.95)',
-                              textTransform: 'uppercase',
-                              margin: 0,
-                            }}>Steps</h4>
-                          </div>
-                          <ArcModeToggle mode={mode} onChange={(m) => updateGoal(goal.id, { mode: m })} />
-                        </div>
-
-                        <ArcConnectors type="split" />
-
-                        <div className="flex gap-6" style={{ marginTop: '12px' }}>
-                          <ArcBranchLane
-                            branch={failBranch}
-                            type="fail"
-                            flexibility={goal.flexibility}
-                            isSimpleMode={mode === 'simple'}
-                            onUpdateTrigger={(d) => updateBranch(goal.id, 'fail', { triggerDescription: d })}
-                            onAddStep={() => addStep(goal.id, 'fail')}
-                            onUpdateStep={(id, patch) => updateStep(goal.id, 'fail', id, patch)}
-                            onDeleteStep={(id) => deleteStep(goal.id, 'fail', id)}
-                            onToggleStatus={(id, status) => toggleStatus(goal.id, 'fail', id, status)}
-                          />
-                          <ArcBranchLane
-                            branch={successBranch}
-                            type="success"
-                            flexibility={goal.flexibility}
-                            isSimpleMode={false}
-                            onUpdateTrigger={(d) => updateBranch(goal.id, 'success', { triggerDescription: d })}
-                            onAddStep={() => addStep(goal.id, 'success')}
-                            onUpdateStep={(id, patch) => updateStep(goal.id, 'success', id, patch)}
-                            onDeleteStep={(id) => deleteStep(goal.id, 'success', id)}
-                            onToggleStatus={(id, status) => toggleStatus(goal.id, 'success', id, status)}
-                          />
-                        </div>
-
-                        <ArcConnectors type="merge" />
-                      </div>
                     </div>
 
                     {/* Progress Ring + Delete */}
@@ -441,6 +390,57 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                           : 'No Steps'}
                       </p>
                     </div>
+                  </div>
+
+                  {/* Steps Section - FULL WIDTH outside grid */}
+                  <div style={{
+                    marginTop: '18px',
+                    paddingTop: '20px',
+                    borderTop: '1px solid rgba(255,255,255,0.08)',
+                  }}>
+                    <div className="flex items-center justify-between" style={{ marginBottom: '12px' }}>
+                      <div className="flex items-center gap-2">
+                        <CheckSquare size={14} style={{ color: '#67a6ff' }} />
+                        <h4 style={{
+                          fontSize: '11px',
+                          letterSpacing: '0.2em',
+                          fontWeight: 700,
+                          color: 'rgba(226,234,247,0.95)',
+                          textTransform: 'uppercase',
+                          margin: 0,
+                        }}>Steps</h4>
+                      </div>
+                      <ArcModeToggle mode={mode} onChange={(m) => updateGoal(goal.id, { mode: m })} />
+                    </div>
+
+                    <ArcConnectors type="split" />
+
+                    <div className="flex gap-6" style={{ marginTop: '12px' }}>
+                      <ArcBranchLane
+                        branch={failBranch}
+                        type="fail"
+                        flexibility={goal.flexibility}
+                        isSimpleMode={mode === 'simple'}
+                        onUpdateTrigger={(d) => updateBranch(goal.id, 'fail', { triggerDescription: d })}
+                        onAddStep={() => addStep(goal.id, 'fail')}
+                        onUpdateStep={(id, patch) => updateStep(goal.id, 'fail', id, patch)}
+                        onDeleteStep={(id) => deleteStep(goal.id, 'fail', id)}
+                        onToggleStatus={(id, status) => toggleStatus(goal.id, 'fail', id, status)}
+                      />
+                      <ArcBranchLane
+                        branch={successBranch}
+                        type="success"
+                        flexibility={goal.flexibility}
+                        isSimpleMode={false}
+                        onUpdateTrigger={(d) => updateBranch(goal.id, 'success', { triggerDescription: d })}
+                        onAddStep={() => addStep(goal.id, 'success')}
+                        onUpdateStep={(id, patch) => updateStep(goal.id, 'success', id, patch)}
+                        onDeleteStep={(id) => deleteStep(goal.id, 'success', id)}
+                        onToggleStatus={(id, status) => toggleStatus(goal.id, 'success', id, status)}
+                      />
+                    </div>
+
+                    <ArcConnectors type="merge" />
                   </div>
 
                   {/* Add Next Phase button */}
