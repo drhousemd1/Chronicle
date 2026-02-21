@@ -1,7 +1,7 @@
 import React from 'react';
 import { CharacterPersonality, PersonalityTrait, PersonalityTraitFlexibility } from '@/types';
 import { Plus, X, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
-import { Switch } from '@/components/ui/switch';
+
 import { uid } from '@/utils';
 import { cn } from '@/lib/utils';
 
@@ -260,13 +260,31 @@ export const PersonalitySection: React.FC<PersonalitySectionProps> = ({
             <div className="space-y-5">
               {/* Split toggle */}
               {!readOnly && (
-                <div className="flex items-center gap-3">
-                  <Switch
-                    checked={personality.splitMode}
-                    onCheckedChange={(checked) => onChange({ ...personality, splitMode: checked })}
-                    className="data-[state=unchecked]:bg-zinc-700 data-[state=checked]:bg-[#60A5FA]"
-                  />
-                  <span className="text-xs text-zinc-400 font-medium">Split into Outward & Inward Personalities</span>
+                <div className="flex p-1 bg-zinc-900/50 rounded-lg border border-white/10 w-fit">
+                  <button
+                    type="button"
+                    onClick={() => onChange({ ...personality, splitMode: false })}
+                    className={cn(
+                      "px-3.5 py-1.5 text-[10px] font-black uppercase tracking-widest rounded border-none cursor-pointer transition-all",
+                      !personality.splitMode
+                        ? "bg-zinc-700 text-blue-400 shadow-sm"
+                        : "bg-transparent text-zinc-500 hover:text-zinc-300"
+                    )}
+                  >
+                    Standard
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onChange({ ...personality, splitMode: true })}
+                    className={cn(
+                      "px-3.5 py-1.5 text-[10px] font-black uppercase tracking-widest rounded border-none cursor-pointer transition-all",
+                      personality.splitMode
+                        ? "bg-zinc-700 text-blue-400 shadow-sm"
+                        : "bg-transparent text-zinc-500 hover:text-zinc-300"
+                    )}
+                  >
+                    Split
+                  </button>
                 </div>
               )}
 
