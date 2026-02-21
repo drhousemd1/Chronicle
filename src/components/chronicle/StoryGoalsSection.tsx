@@ -244,7 +244,7 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                         value={goal.title}
                         onChange={(v) => updateGoal(goal.id, { title: v })}
                         placeholder="Enter goal name..."
-                        className="mt-1 px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        className="mt-1 px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                       />
                     </div>
 
@@ -294,7 +294,7 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                       onChange={(v) => updateGoal(goal.id, { desiredOutcome: v })}
                       placeholder="What success looks like..."
                       rows={2}
-                      className="mt-1 px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      className="mt-1 px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                     />
                   </div>
 
@@ -353,10 +353,10 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                     <button
                       type="button"
                       onClick={() => addPhase(goal.id)}
-                      className="flex items-center gap-2 h-[42px] px-5 rounded-xl border border-slate-500/40 bg-[#1e293b] text-white font-bold text-xs uppercase tracking-wider cursor-pointer hover:bg-[#253347] transition-colors"
+                      className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm transition-colors"
                     >
-                      <Plus size={14} />
-                      Add Next Phase
+                      <Plus className="h-4 w-4" />
+                      <span>Add Next Phase</span>
                     </button>
                   </div>
                 </div>
