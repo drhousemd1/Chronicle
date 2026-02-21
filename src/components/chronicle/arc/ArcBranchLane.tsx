@@ -75,14 +75,14 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
       <div className="rounded-[18px] bg-[rgba(43,47,57,0.9)] shadow-[0_14px_26px_rgba(0,0,0,0.4)] overflow-hidden">
         {/* Strip (title bar) */}
         <div style={{ background: stripBg }} className="px-4 py-3">
-          <span className="text-xs font-bold text-white/70 uppercase tracking-widest">
+          <span className="text-[10px] font-black text-white/70 uppercase tracking-widest">
             {isFail ? 'FAIL PATH' : 'SUCCEED PATH'}
           </span>
         </div>
 
         {/* Body (trigger) */}
         <div className="p-3.5">
-          <label className="text-xs font-bold text-zinc-400 uppercase tracking-widest block mb-1.5">
+          <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block mb-1.5">
             {triggerLabel}
           </label>
           <AutoResizeTextarea
@@ -109,7 +109,7 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
             >
               {/* Row 1: Step label + delete */}
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
+                <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
                   {stepLabel} {idx + 1}
                 </span>
                 <button
@@ -139,7 +139,7 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
                     >
                       <X size={13} />
                     </button>
-                    <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider">
+                    <span className="text-[10px] font-black text-zinc-300 uppercase tracking-wider">
                       FAILED
                     </span>
                   </div>
@@ -160,7 +160,7 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
                   >
                     <Check size={13} />
                   </button>
-                  <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider">
+                  <span className="text-[10px] font-black text-zinc-300 uppercase tracking-wider">
                     {(!isFail && isRigid) ? 'COMPLETED' : 'SUCCEEDED'}
                   </span>
                 </div>

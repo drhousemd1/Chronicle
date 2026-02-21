@@ -165,7 +165,7 @@ export const ArcPhaseCard: React.FC<ArcPhaseCardProps> = ({
       <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-blue-500/20 relative">
         {/* Phase label + delete */}
         <div className="flex items-center justify-between mb-5">
-          <span className="text-xs font-bold text-blue-400 uppercase tracking-widest">
+          <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">
             Phase {phaseNumber}
           </span>
           <button
@@ -180,7 +180,7 @@ export const ArcPhaseCard: React.FC<ArcPhaseCardProps> = ({
         {/* Row 1: Goal Name + Progress Ring */}
         <div className="flex items-start gap-4">
           <div className="flex-1">
-            <label className="text-xs font-bold text-zinc-400 uppercase tracking-widest block mb-2">Goal Name</label>
+            <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block mb-2">Goal Name</label>
             <AutoResizeTextarea
               value={phase.title}
               onChange={(v) => onUpdate({ title: v, updatedAt: now() })}
@@ -202,7 +202,7 @@ export const ArcPhaseCard: React.FC<ArcPhaseCardProps> = ({
         {/* Full width: Desired Outcome */}
         <div className="mt-4">
           <div className="flex items-center gap-2 mb-2">
-            <label className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Desired Outcome</label>
+            <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Desired Outcome</label>
             <SparkleButton
               fieldKey={`phase_outcome_${phase.id}`}
               onClick={() => onEnhanceField?.(
@@ -233,7 +233,7 @@ export const ArcPhaseCard: React.FC<ArcPhaseCardProps> = ({
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <CheckSquare size={14} className="text-blue-400" />
-              <h4 className="text-xs font-bold text-white uppercase tracking-[0.2em] m-0">Steps</h4>
+              <h4 className="text-[10px] font-black text-white uppercase tracking-[0.2em] m-0">Steps</h4>
             </div>
             <ArcModeToggle mode={mode} onChange={(m) => onUpdate({ mode: m, updatedAt: now() })} />
           </div>
