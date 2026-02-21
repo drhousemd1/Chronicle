@@ -331,7 +331,7 @@ export const ArcPhaseCard: React.FC<ArcPhaseCardProps> = ({
 
           <ArcConnectors type="split" />
 
-          <div className="flex gap-4" style={{ marginTop: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '16px', marginTop: '12px' }}>
             <ArcBranchLane
               branch={failBranch}
               type="fail"
