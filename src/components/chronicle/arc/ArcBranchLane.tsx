@@ -235,18 +235,6 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
           );
         })}
 
-        {/* Add Step link - advanced mode only */}
-        {!isSimpleMode && (
-          <button
-            type="button"
-            onClick={onAddStep}
-            className="flex items-center justify-center gap-2 text-blue-400 hover:text-blue-300 text-sm mt-3 transition-colors w-full"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Add Step</span>
-          </button>
-        )}
-
         {/* Sentinel card - fail branch only */}
         {isFail && (
           <div
@@ -268,6 +256,18 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
               className="px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-zinc-400 italic rounded-lg cursor-default"
             />
           </div>
+        )}
+
+        {/* Add Step link - advanced mode only */}
+        {!isSimpleMode && (
+          <button
+            type="button"
+            onClick={onAddStep}
+            className="flex items-center justify-center gap-2 text-blue-400 hover:text-blue-300 text-sm mt-3 transition-colors w-full"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Add Step</span>
+          </button>
         )}
       </div>
     </div>
