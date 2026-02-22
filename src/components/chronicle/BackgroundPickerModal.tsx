@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ImageLibraryPickerModal } from "./ImageLibraryPickerModal";
+import { Slider } from "@/components/ui/slider";
 
 interface BackgroundPickerModalProps {
   isOpen: boolean;
@@ -25,6 +26,7 @@ interface BackgroundPickerModalProps {
   onUpload: (file: File) => Promise<void>;
   onDelete: (id: string, imageUrl: string) => void;
   isUploading: boolean;
+  onOverlayChange?: (id: string, color: string, opacity: number) => void;
 }
 
 export function BackgroundPickerModal({
@@ -37,9 +39,14 @@ export function BackgroundPickerModal({
   onUpload,
   onDelete,
   isUploading,
+  onOverlayChange,
 }: BackgroundPickerModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+
+  const selectedBg = selectedBackgroundId ? backgrounds.find(bg => bg.id === selectedBackgroundId) : null;
+  const overlayColor = selectedBg?.overlayColor || 'black';
+  const overlayOpacity = selectedBg?.overlayOpacity ?? 10;
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -83,6 +90,52 @@ export function BackgroundPickerModal({
             <input type="file" ref={fileInputRef} className="hidden" accept="image/jpeg,image/png,image/webp" onChange={handleFileChange} />
             <ImageLibraryPickerModal isOpen={isPickerOpen} onClose={() => setIsPickerOpen(false)} onSelect={(url) => { onSelectBackground(url as any); setIsPickerOpen(false); }} />
           </div>
+
+          {/* Overlay Controls - only show when a background is selected */}
+          {selectedBackgroundId && onOverlayChange && (
+            <div className="mb-6 p-4 bg-slate-50 rounded-xl border border-slate-100">
+              <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-3">Overlay Settings</h3>
+              <div className="flex items-center gap-6">
+                {/* Color toggle */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-600">Color:</span>
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      onClick={() => onOverlayChange(selectedBackgroundId, 'black', overlayOpacity)}
+                      className={`w-8 h-8 rounded-lg border-2 transition-all ${
+                        overlayColor === 'black' 
+                          ? 'border-blue-500 ring-2 ring-blue-200' 
+                          : 'border-slate-200 hover:border-slate-300'
+                      } bg-black`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => onOverlayChange(selectedBackgroundId, 'white', overlayOpacity)}
+                      className={`w-8 h-8 rounded-lg border-2 transition-all ${
+                        overlayColor === 'white' 
+                          ? 'border-blue-500 ring-2 ring-blue-200' 
+                          : 'border-slate-200 hover:border-slate-300'
+                      } bg-white`}
+                    />
+                  </div>
+                </div>
+                {/* Opacity slider */}
+                <div className="flex-1 flex items-center gap-3">
+                  <span className="text-xs font-bold text-slate-600 whitespace-nowrap">Opacity:</span>
+                  <Slider
+                    value={[overlayOpacity]}
+                    onValueChange={([val]) => onOverlayChange(selectedBackgroundId, overlayColor, val)}
+                    min={0}
+                    max={80}
+                    step={5}
+                    className="flex-1"
+                  />
+                  <span className="text-xs font-bold text-slate-500 w-8 text-right">{overlayOpacity}%</span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Grid - matches Scene Gallery layout */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-6">

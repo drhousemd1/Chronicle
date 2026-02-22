@@ -1,7 +1,7 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { ScenarioMetadata, ContentThemes } from "@/types";
-import { Eye, Heart, Bookmark, Play, Pencil } from "lucide-react";
+import { Eye, Heart, Bookmark, Play, Pencil, Loader2 } from "lucide-react";
 import { Button } from "./UI";
 import { ScenarioDetailModal } from "./ScenarioDetailModal";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -19,10 +19,10 @@ interface ScenarioCardProps {
   isPublished?: boolean;
   contentThemes?: ContentThemes;
   publishedData?: PublishedScenario;
-  ownerUsername?: string;
+  displayAuthor?: string;
 }
 
-const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDelete, onViewDetails, isPublished, contentThemes, publishedData, ownerUsername }) => {
+const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDelete, onViewDetails, isPublished, contentThemes, publishedData, displayAuthor }) => {
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onDelete(scen.id);
@@ -107,26 +107,36 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDel
           <p className="text-xs text-white/60 line-clamp-2 leading-relaxed italic min-h-[2.5rem]">
             {scen.description || "No summary provided."}
           </p>
+          {/* Stats row: show all 4 for published, only Play for unpublished */}
           <div className="flex items-center gap-3 text-[10px] text-white/50 mt-1">
-            <span className="flex items-center gap-1">
-              <Eye className="w-3 h-3" />
-              {publishedData?.view_count ?? 0}
-            </span>
-            <span className="flex items-center gap-1">
-              <Heart className="w-3 h-3" />
-              {publishedData?.like_count ?? 0}
-            </span>
-            <span className="flex items-center gap-1">
-              <Bookmark className="w-3 h-3" />
-              {publishedData?.save_count ?? 0}
-            </span>
-            <span className="flex items-center gap-1">
-              <Play className="w-3 h-3" />
-              {publishedData?.play_count ?? 0}
-            </span>
+            {publishedData ? (
+              <>
+                <span className="flex items-center gap-1">
+                  <Eye className="w-3 h-3" />
+                  {publishedData.view_count ?? 0}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Heart className="w-3 h-3" />
+                  {publishedData.like_count ?? 0}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Bookmark className="w-3 h-3" />
+                  {publishedData.save_count ?? 0}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Play className="w-3 h-3" />
+                  {publishedData.play_count ?? 0}
+                </span>
+              </>
+            ) : (
+              <span className="flex items-center gap-1">
+                <Play className="w-3 h-3" />
+                0
+              </span>
+            )}
           </div>
           <span className="text-[11px] text-white/50 font-medium mt-1">
-            Written by: {ownerUsername || 'Anonymous'}
+            Created by: {displayAuthor || 'Anonymous'}
           </span>
         </div>
       </div>
@@ -144,6 +154,10 @@ interface ScenarioHubProps {
   contentThemesMap?: Map<string, ContentThemes>;
   publishedScenariosData?: Map<string, PublishedScenario>;
   ownerUsername?: string;
+  bookmarkedCreatorNames?: Map<string, string>;
+  onLoadMore?: () => void;
+  hasMore?: boolean;
+  isLoadingMore?: boolean;
 }
 
 export function ScenarioHub({
@@ -156,6 +170,10 @@ export function ScenarioHub({
   contentThemesMap,
   publishedScenariosData,
   ownerUsername,
+  bookmarkedCreatorNames,
+  onLoadMore,
+  hasMore,
+  isLoadingMore,
 }: ScenarioHubProps) {
   // Detail modal state
   const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -163,6 +181,23 @@ export function ScenarioHub({
   const [selectedContentThemes, setSelectedContentThemes] = useState<ContentThemes | null>(null);
   const [publicationStatus, setPublicationStatus] = useState<PublishedScenario | null>(null);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+
+  // Infinite scroll sentinel
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!onLoadMore || !hasMore) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && !isLoadingMore) {
+          onLoadMore();
+        }
+      },
+      { rootMargin: '200px' }
+    );
+    if (sentinelRef.current) observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [onLoadMore, hasMore, isLoadingMore]);
 
   const handleViewDetails = async (id: string) => {
     const scenario = registry.find(s => s.id === id);
@@ -200,6 +235,13 @@ export function ScenarioHub({
     }
   };
 
+  const getDisplayAuthor = useCallback((scen: ScenarioMetadata) => {
+    if (scen.isBookmarked && bookmarkedCreatorNames?.has(scen.id)) {
+      return bookmarkedCreatorNames.get(scen.id);
+    }
+    return ownerUsername;
+  }, [ownerUsername, bookmarkedCreatorNames]);
+
   return (
     <div className="w-full h-full p-4 lg:p-10 flex flex-col overflow-y-auto">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 lg:gap-8 w-full">
@@ -214,37 +256,27 @@ export function ScenarioHub({
             isPublished={publishedScenarioIds?.has(scen.id)}
             contentThemes={contentThemesMap?.get(scen.id)}
             publishedData={publishedScenariosData?.get(scen.id)}
-            ownerUsername={ownerUsername}
+            displayAuthor={getDisplayAuthor(scen)}
           />
         ))}
-        {registry.length > 0 && (
-          <button 
-            onClick={onCreate}
-            className="aspect-[2/3] w-full rounded-[2rem] border-2 border-dashed border-zinc-600 bg-gradient-to-br from-zinc-800 to-zinc-900 flex flex-col items-center justify-center gap-4 group hover:border-blue-400 transition-all duration-300"
-          >
-            <div className="w-16 h-16 rounded-full bg-zinc-700/50 flex items-center justify-center text-3xl text-zinc-500 group-hover:bg-blue-900/30 group-hover:text-blue-400 transition-colors">
-               +
-            </div>
-            <span className="text-sm font-black uppercase tracking-widest text-zinc-500 group-hover:text-blue-400">New Story</span>
-          </button>
-        )}
-      </div>
-      
-      {registry.length === 0 && (
-        <div className="flex-1 flex flex-col items-center justify-center text-center py-20">
-          <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mb-6 text-4xl text-slate-300 shadow-inner">
-             ✦
+        {/* New Story card - always shown */}
+        <button 
+          onClick={onCreate}
+          className="aspect-[2/3] w-full rounded-[2rem] border-2 border-dashed border-zinc-600 bg-gradient-to-br from-zinc-800 to-zinc-900 flex flex-col items-center justify-center gap-4 group hover:border-blue-400 transition-all duration-300"
+        >
+          <div className="w-16 h-16 rounded-full bg-zinc-700/50 flex items-center justify-center text-3xl text-zinc-500 group-hover:bg-blue-900/30 group-hover:text-blue-400 transition-colors">
+             +
           </div>
-          <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-3">Start Your First Story</h2>
-          <p className="text-lg text-slate-500 mb-8 max-w-md leading-relaxed font-medium">
-            Create a scenario to begin your adventure. Define your world, cast your characters, and let the AI guide your narrative.
-          </p>
-          <Button 
-            onClick={onCreate} 
-            className="!px-10 !py-4 !bg-slate-900 !text-white shadow-xl hover:!shadow-2xl hover:-translate-y-1 transition-all text-base font-bold !rounded-2xl"
-          >
-            Create Scenario
-          </Button>
+          <span className="text-sm font-black uppercase tracking-widest text-zinc-500 group-hover:text-blue-400">New Story</span>
+        </button>
+      </div>
+
+      {/* Infinite scroll sentinel + loading indicator */}
+      {hasMore && (
+        <div ref={sentinelRef} className="flex justify-center py-8">
+          {isLoadingMore && (
+            <Loader2 className="w-6 h-6 text-zinc-500 animate-spin" />
+          )}
         </div>
       )}
 

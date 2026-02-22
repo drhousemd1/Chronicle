@@ -1304,6 +1304,8 @@ export async function fetchUserBackgrounds(userId: string): Promise<UserBackgrou
     userId: row.user_id,
     imageUrl: row.image_url,
     isSelected: row.is_selected || false,
+    overlayColor: row.overlay_color || 'black',
+    overlayOpacity: row.overlay_opacity ?? 10,
     createdAt: new Date(row.created_at).getTime()
   }));
 }
@@ -1342,6 +1344,8 @@ export async function createUserBackground(userId: string, imageUrl: string): Pr
     userId: data.user_id,
     imageUrl: data.image_url,
     isSelected: data.is_selected || false,
+    overlayColor: (data as any).overlay_color || 'black',
+    overlayOpacity: (data as any).overlay_opacity ?? 10,
     createdAt: new Date(data.created_at).getTime()
   };
 }
@@ -1421,6 +1425,36 @@ export async function deleteUserBackground(userId: string, backgroundId: string,
 }
 
 // =============================================
+// BACKGROUND OVERLAY
+// =============================================
+
+export async function updateBackgroundOverlay(userId: string, backgroundId: string, overlayColor: string, overlayOpacity: number): Promise<void> {
+  const { error } = await (supabase as any)
+    .from('user_backgrounds')
+    .update({ overlay_color: overlayColor, overlay_opacity: overlayOpacity })
+    .eq('id', backgroundId)
+    .eq('user_id', userId);
+
+  if (error) throw error;
+}
+
+// =============================================
+// PAGINATED SCENARIO FETCH
+// =============================================
+
+export async function fetchMyScenariosPaginated(userId: string, limit: number, offset: number): Promise<ScenarioMetadata[]> {
+  const { data, error } = await supabase
+    .from('scenarios')
+    .select('id, title, description, cover_image_url, cover_image_position, tags, created_at, updated_at')
+    .eq('user_id', userId)
+    .order('updated_at', { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (error) throw error;
+  return (data || []).map(dbToScenarioMetadata);
+}
+
+// =============================================
 // SIDEBAR BACKGROUNDS (Chat Interface Theme)
 // =============================================
 
@@ -1438,6 +1472,8 @@ export async function fetchSidebarBackgrounds(userId: string): Promise<UserBackg
     userId: row.user_id,
     imageUrl: row.image_url,
     isSelected: row.is_selected || false,
+    overlayColor: row.overlay_color || 'black',
+    overlayOpacity: row.overlay_opacity ?? 10,
     createdAt: new Date(row.created_at).getTime()
   }));
 }
@@ -1477,6 +1513,8 @@ export async function createSidebarBackground(userId: string, imageUrl: string):
     userId: data.user_id,
     imageUrl: data.image_url,
     isSelected: data.is_selected || false,
+    overlayColor: (data as any).overlay_color || 'black',
+    overlayOpacity: (data as any).overlay_opacity ?? 10,
     createdAt: new Date(data.created_at).getTime()
   };
 }
