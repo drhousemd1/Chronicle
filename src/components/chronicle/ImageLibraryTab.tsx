@@ -792,7 +792,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
                     key={tag}
                     className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-500/20 text-blue-300 rounded-full text-xs font-medium border border-blue-500/30"
                   >
-                    #{tag}
+                    {tag}
                     <button
                       type="button"
                       onClick={() => handleUpdateImageTags(lightboxImage.id, lightboxImage.tags.filter((t) => t !== tag))}

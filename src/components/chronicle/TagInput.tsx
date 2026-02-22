@@ -58,7 +58,7 @@ export const TagInput: React.FC<TagInputProps> = ({
             key={tag}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/20 text-blue-300 rounded-full text-sm font-medium border border-blue-500/30"
           >
-            #{tag}
+            {tag}
             <button
               type="button"
               onClick={() => removeTag(tag)}
