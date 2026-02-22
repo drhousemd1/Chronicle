@@ -34,16 +34,15 @@ export function ConversationsTab({
   return (
     <TooltipProvider>
     <div className="max-w-4xl mx-auto py-4">
-      <div className="bg-[#2a2a2f] rounded-2xl border border-[#4a5f7f] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
         {sortedRegistry.length === 0 ? (
-          <div className="py-20 text-center">
+          <div className="bg-[#2a2a2f] rounded-2xl border border-[#4a5f7f] py-20 text-center">
             <div className="text-6xl mb-4">💬</div>
             <p className="font-bold text-zinc-400">No saved sessions found.</p>
             <p className="text-sm text-zinc-500 mt-1">Start playing a scenario to create your first save.</p>
           </div>
         ) : (
           <>
-            <div className="p-3 space-y-3">
+            <div className="space-y-4">
               {visibleItems.map((entry) => {
                 const dateStr = new Date(entry.updatedAt).toLocaleDateString([], { 
                   month: 'short', 
@@ -161,7 +160,6 @@ export function ConversationsTab({
             )}
           </>
         )}
-      </div>
     </div>
     </TooltipProvider>
   );
