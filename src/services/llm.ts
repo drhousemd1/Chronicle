@@ -110,6 +110,11 @@ function getSystemInstruction(
     };
 
     const serializePhaseBlock = (title: string, desiredOutcome: string, flexibility: string, mode: string, branches: any, phaseLabel?: string) => {
+      // Check for recovery-exhausted condition
+      const failSteps = branches?.fail?.steps || [];
+      const successSteps2 = branches?.success?.steps || [];
+      const allFailResolved = failSteps.length > 0 && failSteps.every((s: any) => s.status === 'succeeded' || s.status === 'failed' || s.status === 'deviated');
+      const hasPendingProgression = successSteps2.some((s: any) => s.status === 'pending');
       const flex = flexLabels[flexibility] || flexLabels.normal;
       const successSteps = branches?.success?.steps || [];
       const succeeded = successSteps.filter((s: any) => s.status === 'succeeded').length;
@@ -130,6 +135,11 @@ function getSystemInstruction(
         lines.push(`      Progress: ${progress}% (${succeeded}/${successSteps.length})`);
       }
       lines.push(`      DIRECTIVE: ${flex.directive}`);
+      
+      if (allFailResolved && hasPendingProgression) {
+        lines.push(`      RECOVERY EXHAUSTED DIRECTIVE: All predetermined recovery steps have been attempted. Continue to pursue remaining progression steps by adapting dynamically -- introduce new narrative approaches that organically guide the story back toward pending goals. Do not repeat previously failed approaches verbatim.`);
+      }
+      
       return lines.join('\n');
     };
 
