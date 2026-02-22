@@ -144,10 +144,17 @@ const IndexContent = () => {
     return localStorage.getItem('chronicle_sidebar_collapsed') === 'true';
   });
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [deleteConfirmType, setDeleteConfirmType] = useState<'character' | 'bookmark' | 'scenario'>('character');
+  const [remixConfirmId, setRemixConfirmId] = useState<string | null>(null);
   const [isInImageFolder, setIsInImageFolder] = useState(false);
   const imageLibraryExitFolderRef = React.useRef<(() => void) | null>(null);
   const [adminActiveTool, setAdminActiveTool] = useState<string>('hub');
   const guideSaveRef = React.useRef<(() => Promise<void>) | null>(null);
+  
+  // Pagination state
+  const SCENARIO_PAGE_SIZE = 50;
+  const [hasMoreScenarios, setHasMoreScenarios] = useState(true);
+  const [isLoadingMoreScenarios, setIsLoadingMoreScenarios] = useState(false);
 
   // Hub background state
   const [hubBackgrounds, setHubBackgrounds] = useState<UserBackground[]>([]);
@@ -223,7 +230,7 @@ const IndexContent = () => {
       setIsLoading(true);
       try {
         const [scenarios, characters, conversations, backgrounds, imageLibraryBgId, savedScens, publishedData, profile] = await Promise.all([
-          withTimeout(supabaseData.fetchMyScenarios(user.id), 15000, [], 'fetchMyScenarios'),
+          withTimeout(supabaseData.fetchMyScenariosPaginated(user.id, SCENARIO_PAGE_SIZE, 0), 15000, [], 'fetchMyScenariosPaginated'),
           withTimeout(supabaseData.fetchCharacterLibrary(), 15000, [], 'fetchCharacterLibrary'),
           withTimeout(supabaseData.fetchConversationRegistry(), 15000, [], 'fetchConversationRegistry'),
           withTimeout(supabaseData.fetchUserBackgrounds(user.id), 15000, [], 'fetchUserBackgrounds'),
@@ -233,6 +240,7 @@ const IndexContent = () => {
           withTimeout(supabaseData.fetchUserProfile(user.id), 15000, null, 'fetchUserProfile')
         ]);
         setRegistry(scenarios);
+        setHasMoreScenarios(scenarios.length >= SCENARIO_PAGE_SIZE);
         setLibrary(characters);
         setConversationRegistry(conversations);
         setConversationsEnriched(false);
@@ -241,9 +249,15 @@ const IndexContent = () => {
         setPublishedScenariosData(publishedData);
         setUserProfile(profile);
         
-        // Fetch content themes for all user scenarios
-        if (scenarios.length > 0) {
-          const themesMap = await supabaseData.fetchContentThemesForScenarios(scenarios.map(s => s.id));
+        // Fetch content themes for all user scenarios + bookmarked scenarios
+        const ownedIds = scenarios.map(s => s.id);
+        const bookmarkedIds = savedScens
+          .filter(s => s.published_scenario?.scenario && !ownedIds.includes(s.source_scenario_id))
+          .map(s => s.source_scenario_id);
+        const allThemeIds = [...ownedIds, ...bookmarkedIds];
+        
+        if (allThemeIds.length > 0) {
+          const themesMap = await supabaseData.fetchContentThemesForScenarios(allThemeIds);
           setContentThemesMap(themesMap);
         }
         
@@ -478,6 +492,45 @@ const IndexContent = () => {
     }
   };
 
+  // Build bookmarked creator names map
+  const bookmarkedCreatorNames = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const saved of savedScenarios) {
+      if (saved.published_scenario?.scenario) {
+        const pub = saved.published_scenario as any;
+        const name = pub.publisher?.display_name || pub.publisher?.username || 'Anonymous';
+        map.set(saved.source_scenario_id, name);
+      }
+    }
+    return map;
+  }, [savedScenarios]);
+
+  // Handler for overlay changes
+  const handleOverlayChange = async (bgId: string, color: string, opacity: number) => {
+    if (!user) return;
+    setHubBackgrounds(prev => prev.map(bg => bg.id === bgId ? { ...bg, overlayColor: color, overlayOpacity: opacity } : bg));
+    try {
+      await supabaseData.updateBackgroundOverlay(user.id, bgId, color, opacity);
+    } catch (e: any) {
+      toast({ title: "Failed to update overlay", description: e.message, variant: "destructive" });
+    }
+  };
+
+  // Load more scenarios handler
+  const handleLoadMoreScenarios = useCallback(async () => {
+    if (!user || isLoadingMoreScenarios || !hasMoreScenarios) return;
+    setIsLoadingMoreScenarios(true);
+    try {
+      const more = await supabaseData.fetchMyScenariosPaginated(user.id, SCENARIO_PAGE_SIZE, registry.length);
+      if (more.length < SCENARIO_PAGE_SIZE) setHasMoreScenarios(false);
+      if (more.length > 0) setRegistry(prev => [...prev, ...more]);
+    } catch (e) {
+      console.error('Failed to load more scenarios:', e);
+    } finally {
+      setIsLoadingMoreScenarios(false);
+    }
+  }, [user, isLoadingMoreScenarios, hasMoreScenarios, registry.length]);
+
   // Handler for playing a scenario from the gallery
   const handleGalleryPlay = useCallback((scenarioId: string, publishedScenarioId: string) => {
     // For now, just play the scenario normally
@@ -600,59 +653,24 @@ const IndexContent = () => {
       const isOwnScenario = ownerId === user?.id;
       
       if (!isOwnScenario && user) {
-        // This is a bookmarked/remixed scenario - create a personal clone
-        const newScenarioId = uuid();
-        
-        toast({ 
-          title: "Creating your copy...", 
-          description: "You'll be editing your own version of this story." 
-        });
-        
-        const clonedData = await supabaseData.cloneScenarioForRemix(
-          id,
-          newScenarioId,
-          user.id,
-          data,
-          coverImage,
-          coverImagePosition
-        );
-        
-        // Track the remix for attribution (find the published scenario ID)
-        const savedScenario = savedScenarios.find(s => s.source_scenario_id === id);
-        if (savedScenario?.published_scenario_id) {
-          await supabaseData.trackRemix(savedScenario.published_scenario_id, newScenarioId, user.id);
-        }
-        
-        // Refresh registry to show the new clone
-        const updatedRegistry = await supabaseData.fetchMyScenarios(user.id);
-        setRegistry(updatedRegistry);
-        
-        // Switch to editing the CLONE
-        setActiveId(newScenarioId);
-        setActiveData(clonedData);
-        setActiveCoverImage(coverImage);
-        setActiveCoverPosition(coverImagePosition);
-        setActiveContentThemes(defaultContentThemes); // New clone starts with empty themes
-        
-        toast({ 
-          title: "Your copy is ready!", 
-          description: "Edit freely - your changes won't affect the original." 
-        });
-      } else {
-        // Own scenario - edit directly
-        setActiveId(id);
-        setActiveData(data);
-        setActiveCoverImage(coverImage);
-        setActiveCoverPosition(coverImagePosition);
-        
-        // Load content themes for this scenario
-        try {
-          const themes = await supabaseData.fetchContentThemes(id);
-          setActiveContentThemes(themes);
-        } catch (e) {
-          console.error('Failed to load content themes:', e);
-          setActiveContentThemes(defaultContentThemes);
-        }
+        // Show remix confirmation dialog instead of silently cloning
+        setRemixConfirmId(id);
+        return;
+      }
+      
+      // Own scenario - edit directly
+      setActiveId(id);
+      setActiveData(data);
+      setActiveCoverImage(coverImage);
+      setActiveCoverPosition(coverImagePosition);
+      
+      // Load content themes for this scenario
+      try {
+        const themes = await supabaseData.fetchContentThemes(id);
+        setActiveContentThemes(themes);
+      } catch (e) {
+        console.error('Failed to load content themes:', e);
+        setActiveContentThemes(defaultContentThemes);
       }
       
       setTab("world"); 
@@ -660,6 +678,62 @@ const IndexContent = () => {
       setPlayingConversationId(null);
     } catch (e: any) {
       toast({ title: "Failed to edit scenario", description: e.message, variant: "destructive" });
+    }
+  }
+
+  // Execute the remix clone after user confirms
+  async function executeRemixClone(id: string) {
+    if (!user) return;
+    try {
+      const result = await supabaseData.fetchScenarioById(id);
+      if (!result) {
+        toast({ title: "Scenario not found", variant: "destructive" });
+        return;
+      }
+      const { data, coverImage, coverImagePosition } = result;
+      
+      const newScenarioId = uuid();
+      
+      toast({ 
+        title: "Creating your copy...", 
+        description: "You'll be editing your own version of this story." 
+      });
+      
+      const clonedData = await supabaseData.cloneScenarioForRemix(
+        id,
+        newScenarioId,
+        user.id,
+        data,
+        coverImage,
+        coverImagePosition
+      );
+      
+      // Track the remix for attribution
+      const savedScenario = savedScenarios.find(s => s.source_scenario_id === id);
+      if (savedScenario?.published_scenario_id) {
+        await supabaseData.trackRemix(savedScenario.published_scenario_id, newScenarioId, user.id);
+      }
+      
+      // Refresh registry to show the new clone
+      const updatedRegistry = await supabaseData.fetchMyScenarios(user.id);
+      setRegistry(updatedRegistry);
+      
+      setActiveId(newScenarioId);
+      setActiveData(clonedData);
+      setActiveCoverImage(coverImage);
+      setActiveCoverPosition(coverImagePosition);
+      setActiveContentThemes(defaultContentThemes);
+      
+      toast({ 
+        title: "Your copy is ready!", 
+        description: "Edit freely - your changes won't affect the original." 
+      });
+      
+      setTab("world"); 
+      setSelectedCharacterId(null);
+      setPlayingConversationId(null);
+    } catch (e: any) {
+      toast({ title: "Failed to clone scenario", description: e.message, variant: "destructive" });
     }
   }
 
@@ -898,24 +972,30 @@ const IndexContent = () => {
     const isBookmarked = savedScenario && !registry.some(r => r.id === id);
     
     if (isBookmarked) {
-      // This is a bookmarked scenario - ask to remove from collection
-      if (!confirm("Remove this story from your bookmarks?")) return;
-      
+      // Show styled confirmation dialog for bookmark removal
+      setDeleteConfirmId(id);
+      setDeleteConfirmType('bookmark');
+    } else {
+      // Show styled confirmation dialog for scenario deletion
+      setDeleteConfirmId(id);
+      setDeleteConfirmType('scenario');
+    }
+  }
+
+  async function executeDeleteScenario(id: string) {
+    const savedScenario = savedScenarios.find(s => s.source_scenario_id === id);
+    const isBookmarked = savedScenario && !registry.some(r => r.id === id);
+    
+    if (isBookmarked) {
       try {
         await unsaveScenario(savedScenario.published_scenario_id, user!.id);
-        
-        // Refresh saved scenarios
         const savedScens = await fetchSavedScenarios(user!.id);
         setSavedScenarios(savedScens);
-        
         toast({ title: "Removed from bookmarks" });
       } catch (e: any) {
         toast({ title: "Failed to remove bookmark", description: e.message, variant: "destructive" });
       }
     } else {
-      // This is the user's own scenario - delete it entirely
-      if (!confirm("Delete this entire scenario? This cannot be undone.")) return;
-      
       try {
         await supabaseData.deleteScenario(id);
         const updatedRegistry = await supabaseData.fetchMyScenarios(user!.id);
@@ -1740,9 +1820,12 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
                 backgroundPosition: 'center'
               } : undefined}
             >
-              {selectedBackgroundUrl && (
-                <div className="absolute inset-0 bg-black/10 pointer-events-none" />
-              )}
+              {selectedBackgroundUrl && (() => {
+                const selBg = hubBackgrounds.find(bg => bg.id === selectedHubBackgroundId);
+                const oColor = selBg?.overlayColor || 'black';
+                const oOpacity = (selBg?.overlayOpacity ?? 10) / 100;
+                return <div className="absolute inset-0 pointer-events-none" style={{ backgroundColor: oColor === 'white' ? `rgba(255,255,255,${oOpacity})` : `rgba(0,0,0,${oOpacity})` }} />;
+              })()}
               <ScenarioHub
                 registry={filteredRegistry}
                 onPlay={handlePlayScenario}
@@ -1753,6 +1836,10 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
                 contentThemesMap={contentThemesMap}
                 publishedScenariosData={publishedScenariosData}
                 ownerUsername={userProfile?.display_name || userProfile?.username || undefined}
+                bookmarkedCreatorNames={bookmarkedCreatorNames}
+                onLoadMore={handleLoadMoreScenarios}
+                hasMore={hasMoreScenarios}
+                isLoadingMore={isLoadingMoreScenarios}
               />
             </div>
           )}
@@ -1993,6 +2080,7 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
         onUpload={handleUploadBackground}
         onDelete={handleDeleteBackground}
         isUploading={isUploadingBackground}
+        onOverlayChange={handleOverlayChange}
       />
 
       <BackgroundPickerModal
@@ -2005,17 +2093,45 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
         onUpload={handleUploadBackground}
         onDelete={handleDeleteBackground}
         isUploading={isUploadingBackground}
+        onOverlayChange={handleOverlayChange}
       />
 
-      {/* Delete Character Confirmation Dialog */}
+      {/* Delete Confirmation Dialog - handles characters, bookmarks, and scenarios */}
       <DeleteConfirmDialog
         open={deleteConfirmId !== null}
-        onOpenChange={(open) => { if (!open) setDeleteConfirmId(null); }}
+        onOpenChange={(open) => { if (!open) { setDeleteConfirmId(null); setDeleteConfirmType('character'); } }}
         onConfirm={() => {
-          if (deleteConfirmId) executeDeleteCharacter(deleteConfirmId);
+          if (!deleteConfirmId) return;
+          if (deleteConfirmType === 'bookmark' || deleteConfirmType === 'scenario') {
+            executeDeleteScenario(deleteConfirmId);
+          } else {
+            executeDeleteCharacter(deleteConfirmId);
+          }
           setDeleteConfirmId(null);
+          setDeleteConfirmType('character');
         }}
-        message={tab === "library" ? "This will permanently delete the character from your Global Library." : "This will remove the character from this scenario."}
+        title={
+          deleteConfirmType === 'bookmark' ? 'Remove Bookmark?' :
+          deleteConfirmType === 'scenario' ? 'Delete Scenario?' :
+          undefined
+        }
+        message={
+          deleteConfirmType === 'bookmark' ? 'Remove this story from your bookmarks?' :
+          deleteConfirmType === 'scenario' ? 'Delete this entire scenario? This cannot be undone.' :
+          tab === "library" ? "This will permanently delete the character from your Global Library." : "This will remove the character from this scenario."
+        }
+      />
+
+      {/* Remix Confirmation Dialog */}
+      <DeleteConfirmDialog
+        open={remixConfirmId !== null}
+        onOpenChange={(open) => { if (!open) setRemixConfirmId(null); }}
+        onConfirm={() => {
+          if (remixConfirmId) executeRemixClone(remixConfirmId);
+          setRemixConfirmId(null);
+        }}
+        title="Clone Story for Editing"
+        message="You are about to open another creator's story in the editor. This will clone the details of the story and create a version in 'Your Stories' that you can then edit. This will not affect the original creator's uploaded story."
       />
 
       {/* AI Prompt Modal */}

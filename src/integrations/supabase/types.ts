@@ -1116,6 +1116,8 @@ export type Database = {
           id: string
           image_url: string
           is_selected: boolean | null
+          overlay_color: string
+          overlay_opacity: number
           user_id: string
         }
         Insert: {
@@ -1123,6 +1125,8 @@ export type Database = {
           id?: string
           image_url: string
           is_selected?: boolean | null
+          overlay_color?: string
+          overlay_opacity?: number
           user_id: string
         }
         Update: {
@@ -1130,6 +1134,8 @@ export type Database = {
           id?: string
           image_url?: string
           is_selected?: boolean | null
+          overlay_color?: string
+          overlay_opacity?: number
           user_id?: string
         }
         Relationships: []
@@ -1141,6 +1147,8 @@ export type Database = {
           image_library_selected: boolean | null
           image_url: string
           is_selected: boolean | null
+          overlay_color: string
+          overlay_opacity: number
           user_id: string
         }
         Insert: {
@@ -1149,6 +1157,8 @@ export type Database = {
           image_library_selected?: boolean | null
           image_url: string
           is_selected?: boolean | null
+          overlay_color?: string
+          overlay_opacity?: number
           user_id: string
         }
         Update: {
@@ -1157,6 +1167,8 @@ export type Database = {
           image_library_selected?: boolean | null
           image_url?: string
           is_selected?: boolean | null
+          overlay_color?: string
+          overlay_opacity?: number
           user_id?: string
         }
         Relationships: []

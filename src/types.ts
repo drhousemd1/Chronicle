@@ -463,6 +463,8 @@ export type UserBackground = {
   userId: string;
   imageUrl: string;
   isSelected: boolean;
+  overlayColor: string;
+  overlayOpacity: number;
   createdAt: number;
 };
 
