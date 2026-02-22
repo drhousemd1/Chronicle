@@ -27,6 +27,7 @@ export type LibraryImage = {
   folderId: string;
   imageUrl: string;
   filename: string;
+  title: string;
   isThumbnail: boolean;
   tags: string[];
   createdAt: number;
@@ -47,6 +48,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
   const [editingFolder, setEditingFolder] = useState<ImageFolder | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<LibraryImage | null>(null);
+  const [editTitle, setEditTitle] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'folder' | 'image'; id: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -116,6 +118,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
           folderId: img.folder_id,
           imageUrl: img.image_url,
           filename: img.filename || '',
+          title: img.title || '',
           isThumbnail: img.is_thumbnail || false,
           tags: img.tags || [],
           createdAt: new Date(img.created_at).getTime(),
@@ -307,6 +310,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
                   folderId: imgData.folder_id,
                   imageUrl: imgData.image_url,
                   filename: imgData.filename || '',
+                  title: (imgData as any).title || '',
                   isThumbnail: false,
                   tags: imgData.tags || [],
                   createdAt: new Date(imgData.created_at).getTime(),
@@ -560,11 +564,14 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
     }
   };
 
-  // Filter images by search query (matches against tags)
+  // Filter images by search query (matches against tags, title, filename)
   const filteredImages = searchQuery
-    ? folderImages.filter((img) =>
-        img.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-      )
+    ? folderImages.filter((img) => {
+        const q = searchQuery.toLowerCase();
+        const displayTitle = (img.title || img.filename || '').toLowerCase();
+        const filename = (img.filename || '').toLowerCase();
+        return img.tags.some((tag) => tag.toLowerCase().includes(q)) || displayTitle.includes(q) || filename.includes(q);
+      })
     : folderImages;
 
   // Folder Detail View
@@ -624,9 +631,12 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
                 {/* Clickable image to open lightbox */}
                 <img
                   src={image.imageUrl}
-                  alt={image.filename}
+                  alt={image.title || image.filename}
                   className="w-full h-full object-cover cursor-pointer"
-                  onClick={() => setLightboxImage(image)}
+                  onClick={() => {
+                    setLightboxImage(image);
+                    setEditTitle(image.title || image.filename || '');
+                  }}
                 />
 
                 {/* Hover overlay */}
@@ -660,9 +670,9 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
                   <Trash2 className="w-4 h-4" />
                 </button>
 
-                {/* Filename */}
-                <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                  <p className="text-xs text-white truncate">{image.filename}</p>
+                {/* Title / Filename - always visible */}
+                <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/70 to-transparent pointer-events-none">
+                  <p className="text-xs text-white truncate font-medium">{image.title || image.filename}</p>
                 </div>
               </div>
             ))}
@@ -682,28 +692,32 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
       {lightboxImage && (
         <div 
           className="fixed inset-0 z-50 flex items-center justify-center p-8 bg-black/85"
-          onClick={() => setLightboxImage(null)}
+          onClick={() => {
+            setEditTitle('');
+            setLightboxImage(null);
+          }}
         >
           <div 
-            className="relative bg-zinc-900 rounded-xl shadow-2xl border border-[#4a5f7f] p-3 max-w-[600px] animate-in fade-in zoom-in-95 duration-150"
+            className="relative bg-zinc-900 rounded-xl shadow-2xl border border-[#4a5f7f] p-3 max-w-[600px] animate-in fade-in zoom-in-95 duration-150 flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Close button */}
-            <button
-              onClick={() => setLightboxImage(null)}
-              className="absolute -top-3 -right-3 p-2 bg-zinc-800 text-white rounded-full shadow-lg hover:bg-zinc-700 transition-colors z-10"
-            >
-              <X className="w-4 h-4" />
-            </button>
-            
             <img
               src={lightboxImage.imageUrl}
-              alt={lightboxImage.filename}
-              className="w-full h-auto max-h-[60vh] object-contain rounded-lg"
+              alt={lightboxImage.title || lightboxImage.filename}
+              className="w-full h-auto max-h-[50vh] object-contain rounded-lg"
             />
-            <p className="text-sm text-zinc-400 text-center mt-3 truncate px-2">
-              {lightboxImage.filename}
-            </p>
+
+            {/* Editable Title */}
+            <div className="mt-3 px-2">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-1 block">Title</label>
+              <input
+                type="text"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#4a5f7f]"
+                placeholder="Enter image title..."
+              />
+            </div>
 
             {/* Tag Editor */}
             <div className="mt-3 px-2 space-y-2">
@@ -739,6 +753,44 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
                 }}
               />
               <p className="text-[10px] text-zinc-500">{lightboxImage.tags.length}/10 tags • Press Enter to add</p>
+            </div>
+
+            {/* Save / Cancel footer */}
+            <div className="mt-4 px-2 pb-1 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setEditTitle('');
+                  setLightboxImage(null);
+                }}
+                className="rounded-xl bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] h-10 px-6 text-[10px] font-bold uppercase tracking-wider hover:opacity-90 transition-opacity"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    const { error } = await supabase
+                      .from('library_images')
+                      .update({ title: editTitle } as any)
+                      .eq('id', lightboxImage.id);
+                    if (error) throw error;
+                    setFolderImages((prev) =>
+                      prev.map((img) => (img.id === lightboxImage.id ? { ...img, title: editTitle } : img))
+                    );
+                    toast.success('Title saved');
+                  } catch (e: any) {
+                    console.error('Failed to save title:', e);
+                    toast.error('Failed to save title');
+                  }
+                  setEditTitle('');
+                  setLightboxImage(null);
+                }}
+                className="rounded-xl bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] h-10 px-6 text-[10px] font-bold uppercase tracking-wider hover:opacity-90 transition-opacity"
+              >
+                Save
+              </button>
             </div>
           </div>
         </div>
