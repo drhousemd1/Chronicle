@@ -81,9 +81,9 @@ export const ArcFlowConnector: React.FC<ArcFlowConnectorProps> = ({
     >
       <defs>
         <filter id={`glow-${sourceStepId}-${targetStepId}`} x="-50%" y="-50%" width="200%" height="200%">
-          <feFlood floodColor="#3b82f6" floodOpacity="0.4" result="flood" />
+          <feFlood floodColor="#3b82f6" floodOpacity="0.8" result="flood" />
           <feComposite in="flood" in2="SourceGraphic" operator="in" result="coloredShape" />
-          <feGaussianBlur in="coloredShape" stdDeviation="4" result="blur" />
+          <feGaussianBlur in="coloredShape" stdDeviation="3" result="blur" />
           <feMerge>
             <feMergeNode in="blur" />
             <feMergeNode in="SourceGraphic" />
@@ -93,8 +93,8 @@ export const ArcFlowConnector: React.FC<ArcFlowConnectorProps> = ({
       <path
         d={path}
         fill="none"
-        stroke="#1e3a5f"
-        strokeWidth="2"
+        stroke="#2563eb"
+        strokeWidth="1"
         filter={`url(#glow-${sourceStepId}-${targetStepId})`}
       />
     </svg>
