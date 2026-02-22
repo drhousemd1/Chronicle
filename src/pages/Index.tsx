@@ -138,8 +138,12 @@ const IndexContent = () => {
   // Track which conversations have more older messages to load
   const [hasMoreMessagesMap, setHasMoreMessagesMap] = useState<Record<string, boolean>>({});
   const [aiPromptModal, setAiPromptModal] = useState<{ mode: 'fill' | 'generate' } | null>(null);
-  // Track characters saved to library (by their ID)
-  const [characterInLibrary, setCharacterInLibrary] = useState<Record<string, boolean>>({});
+  // Track characters saved to library (by their ID). Value is the library character's ID (string) or true for library-originating characters.
+  const [characterInLibrary, setCharacterInLibrary] = useState<Record<string, string | boolean>>({});
+  // Track newly created characters in library that haven't been saved yet
+  const [unsavedNewCharacterIds, setUnsavedNewCharacterIds] = useState<Set<string>>(new Set());
+  // Search query for library tab
+  const [librarySearchQuery, setLibrarySearchQuery] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     return localStorage.getItem('chronicle_sidebar_collapsed') === 'true';
   });
@@ -881,8 +885,16 @@ const IndexContent = () => {
     if (!selectedCharacterId) return;
     
     if (tab === "library") {
-      // Remove the character from the library
-      setLibrary(prev => prev.filter(c => c.id !== selectedCharacterId));
+      // Only remove if this is a newly created, unsaved character
+      if (unsavedNewCharacterIds.has(selectedCharacterId)) {
+        setLibrary(prev => prev.filter(c => c.id !== selectedCharacterId));
+        setUnsavedNewCharacterIds(prev => {
+          const next = new Set(prev);
+          next.delete(selectedCharacterId);
+          return next;
+        });
+      }
+      // For already-persisted characters, just deselect (don't remove)
     } else if (activeData) {
       // Remove the character from the scenario
       handleUpdateActive({ 
@@ -947,6 +959,7 @@ const IndexContent = () => {
     if (tab === "library") {
       setLibrary(prev => [c, ...prev]);
       setSelectedCharacterId(c.id);
+      setUnsavedNewCharacterIds(prev => new Set(prev).add(c.id));
       return;
     }
     if (activeData) {
@@ -1282,20 +1295,43 @@ const IndexContent = () => {
     
     setIsSavingToLibrary(true);
     try {
-      const isInLib = characterInLibrary[selected.id] || tab === "library";
-      
-      await supabaseData.saveCharacterToLibrary(selected, user.id);
-      
-      if (!isInLib) {
-        setLibrary(prev => {
-          const exists = prev.some(c => c.id === selected.id);
-          if (exists) return prev;
-          return [selected, ...prev];
+      if (tab === "library") {
+        // Already in library tab - just save/update in place
+        await supabaseData.saveCharacterToLibrary(selected, user.id);
+        // Remove from unsaved set since it's now persisted
+        setUnsavedNewCharacterIds(prev => {
+          const next = new Set(prev);
+          next.delete(selected.id);
+          return next;
         });
-        setCharacterInLibrary(prev => ({ ...prev, [selected.id]: true }));
-        toast({ title: "Added to library", description: "Character has been added to your library." });
-      } else {
         toast({ title: "Character updated", description: "Character profile updated in library." });
+      } else {
+        // From Scenario Builder - check if we already have a library copy
+        const existingLibraryId = characterInLibrary[selected.id];
+        
+        if (existingLibraryId && typeof existingLibraryId === 'string') {
+          // Update existing library copy
+          const libraryCopy = { ...selected, id: existingLibraryId };
+          await supabaseData.saveCharacterToLibrary(libraryCopy, user.id);
+          // Also update local library state
+          setLibrary(prev => prev.map(c => c.id === existingLibraryId ? { ...c, ...selected, id: existingLibraryId } : c));
+          toast({ title: "Character updated", description: "Character profile updated in library." });
+        } else {
+          // Create a NEW copy with a new UUID for the library
+          const newLibraryId = uuid();
+          await supabaseData.saveCharacterCopyToLibrary(selected, user.id, newLibraryId);
+          
+          // Add to local library state with new ID
+          const libraryCopy = { ...selected, id: newLibraryId };
+          setLibrary(prev => {
+            const exists = prev.some(c => c.id === newLibraryId);
+            if (exists) return prev;
+            return [libraryCopy, ...prev];
+          });
+          // Map scenario char ID -> library char ID
+          setCharacterInLibrary(prev => ({ ...prev, [selected.id]: newLibraryId }));
+          toast({ title: "Added to library", description: "Character has been added to your library." });
+        }
       }
     } catch (e: any) {
       console.error(e);
@@ -1308,8 +1344,47 @@ const IndexContent = () => {
   // Check if current character is in library
   const selectedCharacterIsInLibrary = useMemo(() => {
     if (!selectedCharacterId) return false;
-    return characterInLibrary[selectedCharacterId] || tab === "library";
+    return !!characterInLibrary[selectedCharacterId] || tab === "library";
   }, [selectedCharacterId, characterInLibrary, tab]);
+
+  // Filter library characters by search query
+  const filteredLibrary = useMemo(() => {
+    if (!librarySearchQuery.trim()) return library;
+    const q = librarySearchQuery.toLowerCase();
+    return library.filter(c => {
+      // Search name, nicknames, roleDescription, tags
+      if (c.name?.toLowerCase().includes(q)) return true;
+      if (c.nicknames?.toLowerCase().includes(q)) return true;
+      if (c.roleDescription?.toLowerCase().includes(q)) return true;
+      if (c.tags?.toLowerCase().includes(q)) return true;
+      // Search physical appearance fields
+      const pa = c.physicalAppearance;
+      if (pa) {
+        const paValues = [pa.hairColor, pa.eyeColor, pa.build, pa.height, pa.skinTone, pa.bodyHair, pa.breastSize, pa.genitalia, pa.makeup, pa.bodyMarkings, pa.temporaryConditions].join(' ');
+        if (paValues.toLowerCase().includes(q)) return true;
+      }
+      // Search currently wearing
+      const cw = c.currentlyWearing;
+      if (cw) {
+        const cwValues = [cw.top, cw.bottom, cw.undergarments, cw.miscellaneous].join(' ');
+        if (cwValues.toLowerCase().includes(q)) return true;
+      }
+      // Search preferred clothing
+      const pc = c.preferredClothing;
+      if (pc) {
+        const pcValues = [pc.casual, pc.work, pc.sleep, pc.undergarments, pc.miscellaneous].join(' ');
+        if (pcValues.toLowerCase().includes(q)) return true;
+      }
+      // Search sections
+      for (const sec of c.sections || []) {
+        if (sec.title?.toLowerCase().includes(q)) return true;
+        for (const item of sec.items || []) {
+          if (item.label?.toLowerCase().includes(q) || item.value?.toLowerCase().includes(q)) return true;
+        }
+      }
+      return false;
+    });
+  }, [library, librarySearchQuery]);
 
   function handleAddSection() {
      if (!selectedCharacterId) return;
@@ -1402,7 +1477,7 @@ const IndexContent = () => {
           <header className="flex-shrink-0 h-16 border-b border-slate-200 bg-white flex items-center justify-between px-4 lg:px-8 shadow-sm">
             <div className="flex items-center gap-4">
               {tab === "library" && (
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-1">
                   {selectedCharacterId && (
                     <button 
                       onClick={() => setSelectedCharacterId(null)} 
@@ -1414,6 +1489,15 @@ const IndexContent = () => {
                   <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
                     Character Library
                   </h1>
+                  {!selectedCharacterId && (
+                    <input
+                      type="text"
+                      value={librarySearchQuery}
+                      onChange={(e) => setLibrarySearchQuery(e.target.value)}
+                      placeholder="Search characters..."
+                      className="ml-4 h-9 w-64 px-3 py-1.5 text-sm rounded-lg border border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4a5f7f]/30 focus:border-[#4a5f7f]"
+                    />
+                  )}
                 </div>
               )}
               {(tab === "world" || tab === "characters") && (
@@ -1718,7 +1802,8 @@ const IndexContent = () => {
                         <TooltipContent>Have AI generate text for empty fields</TooltipContent>
                       </Tooltip>
 
-                      {/* Save (Quick Save) Button */}
+                      {/* Save (Quick Save) Button - hidden in library tab */}
+                      {tab !== "library" && (
                       <button
                         type="button"
                         onClick={async () => {
@@ -1739,6 +1824,7 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
                       >
                         {isSaving ? 'Saving...' : 'Save'}
                       </button>
+                      )}
 
                       {/* Cancel Button - Dark surface style */}
                       <button
@@ -1870,9 +1956,9 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
           )}
 
           {tab === "library" && (
-            <div className="p-10 overflow-y-auto h-full bg-black">
+            <div className="p-10 overflow-y-auto h-full bg-black relative z-10">
               <CharactersTab
-                appData={{ ...createDefaultScenarioData(), characters: library }}
+                appData={{ ...createDefaultScenarioData(), characters: filteredLibrary }}
                 selectedId={selectedCharacterId}
                 onSelect={setSelectedCharacterId}
                 onUpdate={handleUpdateCharacter}
