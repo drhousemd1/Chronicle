@@ -112,6 +112,7 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
   const [title, setTitle] = useState(docTitle);
   const [markdown, setMarkdown] = useState(docMarkdown);
   const [hasUnsaved, setHasUnsaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const titleRef = useRef<HTMLInputElement>(null);
@@ -133,7 +134,8 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
 
   // Save
   const handleSave = useCallback(async () => {
-    if (!docId) return;
+    if (!docId || isSaving) return;
+    setIsSaving(true);
     const { error } = await (supabase as any)
       .from('guide_documents')
       .update({ markdown, updated_at: new Date().toISOString() })
@@ -146,7 +148,8 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
       setLastSaved(new Date());
       toast({ title: 'Guide saved' });
     }
-  }, [docId, markdown]);
+    setIsSaving(false);
+  }, [docId, markdown, isSaving]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -207,14 +210,14 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
               Saved {lastSaved.toLocaleTimeString()}
             </span>
           )}
-          {hasUnsaved && (
-            <button
-              onClick={handleSave}
-              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors flex items-center gap-1"
-            >
-              <Save className="w-3 h-3" /> Save
-            </button>
-          )}
+          <button
+            onClick={handleSave}
+            disabled={!hasUnsaved || isSaving}
+            className="inline-flex items-center justify-center gap-1.5 h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider disabled:opacity-50 disabled:pointer-events-none"
+          >
+            <Save className="w-3.5 h-3.5" />
+            {isSaving ? 'Saving...' : 'Save'}
+          </button>
         </div>
       </div>
 
