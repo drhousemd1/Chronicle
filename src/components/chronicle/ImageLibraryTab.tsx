@@ -36,9 +36,10 @@ export type LibraryImage = {
 interface ImageLibraryTabProps {
   onFolderChange?: (inFolder: boolean, exitFn?: () => void) => void;
   searchQuery?: string;
+  uploadRef?: React.MutableRefObject<(() => void) | null>;
 }
 
-export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange, searchQuery = '' }) => {
+export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange, searchQuery = '', uploadRef }) => {
   const { user } = useAuth();
   const [folders, setFolders] = useState<ImageFolder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -57,6 +58,16 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
     if (!user) return;
     loadFolders();
   }, [user]);
+
+  // Expose upload trigger via ref
+  useEffect(() => {
+    if (uploadRef) {
+      uploadRef.current = () => fileInputRef.current?.click();
+    }
+    return () => {
+      if (uploadRef) uploadRef.current = null;
+    };
+  }, [uploadRef]);
 
   // Escape key handler for lightbox
   useEffect(() => {
@@ -580,40 +591,20 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div>
+          <div className="flex items-baseline gap-3">
               <h1 className="text-2xl font-black text-white">{selectedFolder.name}</h1>
               {selectedFolder.description && (
                 <p className="text-sm text-white/60">{selectedFolder.description}</p>
               )}
-            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setEditingFolder(selectedFolder)}
-              className="rounded-xl bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] h-10 px-6 text-[10px] font-bold uppercase tracking-wider inline-flex items-center gap-2 hover:opacity-90 transition-opacity"
-            >
-              <Pencil className="w-4 h-4" />
-              Edit Folder
-            </button>
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
-              className="rounded-xl bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] h-10 px-6 text-[10px] font-bold uppercase tracking-wider inline-flex items-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50 disabled:pointer-events-none"
-            >
-              {isUploading ? 'Uploading...' : '+ Upload Images'}
-            </button>
-            <input
-              type="file"
-              ref={fileInputRef}
-              className="hidden"
-              accept="image/*"
-              multiple
-              onChange={handleUploadImages}
-            />
-          </div>
+          <input
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            accept="image/*"
+            multiple
+            onChange={handleUploadImages}
+          />
         </div>
 
         {/* Image Grid */}
@@ -626,52 +617,54 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
             {filteredImages.map((image) => (
               <div
                 key={image.id}
-                className="group relative aspect-square rounded-xl overflow-hidden bg-slate-100 border border-[#4a5f7f] shadow-sm hover:shadow-lg transition-all"
+                className="group relative rounded-xl overflow-hidden border border-[#4a5f7f] shadow-sm hover:shadow-lg transition-all"
               >
-                {/* Clickable image to open lightbox */}
-                <img
-                  src={image.imageUrl}
-                  alt={image.title || image.filename}
-                  className="w-full h-full object-cover cursor-pointer"
-                  onClick={() => {
-                    setLightboxImage(image);
-                    setEditTitle(image.title || image.filename || '');
-                  }}
-                />
+                {/* Image container */}
+                <div className="relative aspect-square bg-slate-100">
+                  <img
+                    src={image.imageUrl}
+                    alt={image.title || image.filename}
+                    className="w-full h-full object-cover cursor-pointer"
+                    onClick={() => {
+                      setLightboxImage(image);
+                      setEditTitle(image.title || image.filename || '');
+                    }}
+                  />
 
-                {/* Hover overlay */}
-                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                  {/* Hover overlay */}
+                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
 
-                {/* Set as thumbnail button */}
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleSetThumbnail(image);
-                  }}
-                  className={`absolute top-2 left-2 p-2 rounded-lg transition-all z-10 ${
-                    selectedFolder.thumbnailImageId === image.id
-                      ? 'bg-amber-500 text-white'
-                      : 'bg-white/80 text-slate-600 opacity-0 group-hover:opacity-100 hover:bg-amber-500 hover:text-white'
-                  }`}
-                >
-                  <Star className="w-4 h-4" fill={selectedFolder.thumbnailImageId === image.id ? 'currentColor' : 'none'} />
-                </button>
+                  {/* Set as thumbnail button */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSetThumbnail(image);
+                    }}
+                    className={`absolute top-2 left-2 p-2 rounded-lg transition-all z-10 ${
+                      selectedFolder.thumbnailImageId === image.id
+                        ? 'bg-amber-500 text-white'
+                        : 'bg-white/80 text-slate-600 opacity-0 group-hover:opacity-100 hover:bg-amber-500 hover:text-white'
+                    }`}
+                  >
+                    <Star className="w-4 h-4" fill={selectedFolder.thumbnailImageId === image.id ? 'currentColor' : 'none'} />
+                  </button>
 
-                {/* Delete button */}
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteImage(image);
-                  }}
-                  className="absolute top-2 right-2 p-2 bg-rose-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-600 z-10"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                  {/* Delete button */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteImage(image);
+                    }}
+                    className="absolute top-2 right-2 p-2 bg-rose-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-600 z-10"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
 
-                {/* Title / Filename - always visible */}
-                <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/70 to-transparent pointer-events-none">
+                {/* Gray footer bar with title */}
+                <div className="bg-zinc-700 px-3 py-2">
                   <p className="text-xs text-white truncate font-medium">{image.title || image.filename}</p>
                 </div>
               </div>
