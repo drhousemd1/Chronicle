@@ -1,82 +1,64 @@
 
 
-# Image Library Fixes + Character Library Search Bar Restyle (5 Items)
+# Image Library Lightbox Improvements (4 Items)
 
 ---
 
 ## What You'll Notice After This
 
-- Image thumbnails inside folders use the slate blue border (#4a5f7f) instead of white
-- Clicking a thumbnail opens a lightbox with a much darker backdrop (bg-black/85 instead of bg-black/60)
-- A tag system lets you add/remove tags on each image via the lightbox view
-- A search bar (dark styled, matching the Gallery header) appears in the Image Library header when inside a folder, filtering images by tags
-- The Character Library search bar is restyled to match the Gallery header pill bar aesthetic (dark rounded container with proper colors)
+- The lightbox replaces the static filename text with an editable "Title" input field, pre-populated with the upload filename
+- Renaming the title updates the database and shows on the thumbnail (always visible, not hover-only)
+- The X close button is replaced with Save and Cancel buttons in the bottom-right, styled using the Shadow Surface button standard
+- The search bar also matches against image titles, not just tags
 
 ---
 
-## 1. Fix image thumbnail borders inside folders
+## 1. Add `title` column to `library_images` table
 
-**The problem:** Line 591 in `ImageLibraryTab.tsx` uses `border-slate-200` (light gray) for image tiles inside folders.
+A new `title` column (text, defaults to empty string) will be added to the `library_images` table. When empty, the UI falls back to displaying `filename`. This keeps the original filename intact as metadata while giving users a human-friendly editable title.
 
-**The fix:** Change to `border border-[#4a5f7f]` to match the unified card border standard used everywhere else (folders, story cards, gallery cards).
-
-**File:** `src/components/chronicle/ImageLibraryTab.tsx` (line 591)
-
----
-
-## 2. Darken lightbox backdrop
-
-**The problem:** The lightbox overlay uses `bg-black/60` which doesn't provide enough contrast -- images behind bleed through.
-
-**The fix:** Change to `bg-black/85` for a much darker backdrop that properly isolates the lightbox image.
-
-**File:** `src/components/chronicle/ImageLibraryTab.tsx` (line 653)
+**Database migration:**
+```sql
+ALTER TABLE public.library_images
+ADD COLUMN title text NOT NULL DEFAULT '';
+```
 
 ---
 
-## 3. Add tag system to images
+## 2. Replace filename text with editable Title input in lightbox
 
-**What it does:** After clicking a thumbnail to open the lightbox, users see a tag area below the filename. They can type tags and press Enter to add them. Tags are saved to the database. This gives images searchable metadata.
+**Current:** Static `<p>` showing `lightboxImage.filename`
+**New:** An input field labeled "Title" pre-populated with `title` (falling back to `filename` if title is empty). Editing updates local state only -- changes are committed when the user clicks Save.
 
-**Implementation:**
-- Add a `tags` column (`text[] DEFAULT '{}'`) to the `library_images` table via migration
-- Add `tags` to the `LibraryImage` type
-- In the lightbox view, render existing tags as removable pills and an input to add new ones (styled dark to match the lightbox)
-- On add/remove, update the database and local state immediately
-- Use the same `TagInput`-style interaction pattern but simplified for inline use
+The input will use the same dark styling as the tag input (`bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white`).
 
-**Files:**
-- Database migration (add `tags` column to `library_images`)
-- `src/components/chronicle/ImageLibraryTab.tsx` (lightbox section, LibraryImage type, loadFolderImages mapping)
+**Files:** `src/components/chronicle/ImageLibraryTab.tsx`
 
 ---
 
-## 4. Add search bar to Image Library header (inside folder view)
+## 3. Replace X close button with Save and Cancel buttons
 
-**What it does:** When viewing images inside a folder, a search input appears to the right of the "Image Library" title in the header. It filters the displayed images by matching against their tags.
+**Current:** Floating X button in top-right corner.
+**New:** A footer row at the bottom of the lightbox with Cancel (left) and Save (right) buttons using the Shadow Surface button standard:
+- `rounded-xl bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] h-10 px-6 text-[10px] font-bold uppercase tracking-wider`
 
-**Styling:** Matches the Gallery header dark style -- `bg-[#2b2b2e] rounded-full` container with the same color palette (`text-white`, `placeholder:text-zinc-500`, `border-[#2b2b2e]`).
+Cancel discards any title changes and closes the lightbox. Save persists the title to the database (and tags, which already save immediately), then closes. Since tags already auto-save on Enter, the Save button primarily handles the title update.
 
-**Implementation:**
-- Add `imageLibrarySearchQuery` state to `Index.tsx`
-- Show the search input next to the "Image Library" title only when `isInImageFolder` is true
-- Pass the search query down to `ImageLibraryTab` which filters `folderImages` client-side by tag matches
-- Clear the search query when exiting a folder
-
-**Files:** `src/pages/Index.tsx` (header section for image_library tab)
+**Files:** `src/components/chronicle/ImageLibraryTab.tsx`
 
 ---
 
-## 5. Restyle Character Library search bar
+## 4. Show title always visible on thumbnails + update search
 
-**The problem:** The current search bar (image 3) uses `bg-[#3a3a3f]/50 border-white/10` which renders as a washed-out gray blob against the white header. It looks nothing like the dark pill bar in the Gallery header (image 4).
+**Current:** Filename shows only on hover via a gradient overlay.
+**New:** The title (or filename fallback) is always visible at the bottom of the thumbnail, overlaid on a persistent gradient. The hover-only behavior is removed.
 
-**The fix:** Wrap the search input in a dark container matching the Gallery header style:
-- Container: `bg-[#2b2b2e] rounded-full p-1 border border-[#2b2b2e]`
-- Input inside: transparent background, `text-white`, `placeholder:text-zinc-500`
-- This creates the same dark rounded bar appearance as the Gallery sort pills
+**Search update:** The `filteredImages` logic will also match against `title` and `filename`, not just tags:
+```
+img.tags.some(...) || title.includes(query) || filename.includes(query)
+```
 
-**File:** `src/pages/Index.tsx` (lines 1492-1499)
+**Files:** `src/components/chronicle/ImageLibraryTab.tsx`
 
 ---
 
@@ -86,30 +68,19 @@
 
 ```sql
 ALTER TABLE public.library_images
-ADD COLUMN tags text[] NOT NULL DEFAULT '{}';
+ADD COLUMN title text NOT NULL DEFAULT '';
 ```
 
 ### Files Modified
 
-- **Database migration** -- add `tags` column to `library_images`
+- **Database migration** -- add `title` column
 - **`src/components/chronicle/ImageLibraryTab.tsx`**
-  - Line 591: Change image tile border from `border-slate-200` to `border-[#4a5f7f]`
-  - Line 653: Change lightbox backdrop from `bg-black/60` to `bg-black/85`
-  - Add `tags` to `LibraryImage` type and `loadFolderImages` mapping
-  - Add tag editor UI below filename in lightbox (dark styled pills + input)
-  - Accept optional `searchQuery` prop to filter images by tags
-- **`src/pages/Index.tsx`**
-  - Add `imageLibrarySearchQuery` state
-  - Add dark-styled search input to image_library header (when in folder)
-  - Pass `searchQuery` prop to `ImageLibraryTab`
-  - Restyle character library search bar to match Gallery dark pill bar aesthetic
-  - Clear image search query on folder exit
-
-### App Guide Update
-
-Update the "Image Library Page" guide document:
-- Document the tag system (how tags are added, stored, searched)
-- Document the search bar in the header
-- Document the updated thumbnail borders and lightbox styling
-- Remove any remaining known issues that are now fixed
-
+  - Add `title` to `LibraryImage` type
+  - Add `title` to `loadFolderImages` mapping
+  - Lightbox: replace static filename `<p>` with editable input, add local `editTitle` state
+  - Lightbox: remove X close button, add Save/Cancel footer with Shadow Surface styling
+  - Save handler: update `title` in DB via supabase update, then close
+  - Thumbnail: make title/filename always visible (remove `opacity-0 group-hover:opacity-100`)
+  - `filteredImages`: also match against `title` and `filename`
+- **`src/components/chronicle/ImageLibraryPickerModal.tsx`**
+  - Add `title` to image mapping
