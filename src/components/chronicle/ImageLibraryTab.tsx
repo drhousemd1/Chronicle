@@ -763,13 +763,13 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
           }}
         >
           <div 
-            className="relative bg-zinc-900 rounded-xl shadow-2xl border border-[#4a5f7f] p-3 max-w-[600px] animate-in fade-in zoom-in-95 duration-150 flex flex-col"
+            className="relative bg-zinc-900 rounded-xl shadow-2xl border border-[#4a5f7f] p-3 w-[600px] max-w-[95vw] animate-in fade-in zoom-in-95 duration-150 flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             <img
               src={lightboxImage.imageUrl}
               alt={lightboxImage.title || lightboxImage.filename}
-              className="w-full h-auto max-h-[50vh] object-contain rounded-lg"
+              className="w-full h-[50vh] object-contain rounded-lg"
             />
 
             {/* Editable Title */}
