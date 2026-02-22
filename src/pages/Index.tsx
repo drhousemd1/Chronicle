@@ -10,7 +10,7 @@ import { WorldTab } from "@/components/chronicle/WorldTab";
 import { ConversationsTab } from "@/components/chronicle/ConversationsTab";
 import { useModelSettings, ModelSettingsProvider } from "@/contexts/ModelSettingsContext";
 import { isAdminUser } from "@/services/app-settings";
-import { AdminPage } from "@/pages/Admin";
+const AdminPage = React.lazy(() => import("@/pages/Admin").then(m => ({ default: m.AdminPage })));
 import { AccountSettingsTab } from "@/components/account/AccountSettingsTab";
 import { SubscriptionTab } from "@/components/account/SubscriptionTab";
 import { PublicProfileTab } from "@/components/account/PublicProfileTab";
@@ -1916,7 +1916,9 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
 
 
           {tab === "admin" && (
-            <AdminPage activeTool={adminActiveTool} onSetActiveTool={setAdminActiveTool} selectedModelId={globalModelId} onSelectModel={setGlobalModelId} />
+            <React.Suspense fallback={<div className="flex items-center justify-center h-full text-slate-400">Loading admin…</div>}>
+              <AdminPage activeTool={adminActiveTool} onSetActiveTool={setAdminActiveTool} selectedModelId={globalModelId} onSelectModel={setGlobalModelId} />
+            </React.Suspense>
           )}
 
           {tab === "account" && (
