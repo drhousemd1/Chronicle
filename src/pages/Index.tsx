@@ -155,6 +155,7 @@ const IndexContent = () => {
   const [imageLibrarySearchQuery, setImageLibrarySearchQuery] = useState('');
   const [adminActiveTool, setAdminActiveTool] = useState<string>('hub');
   const guideSaveRef = React.useRef<(() => Promise<void>) | null>(null);
+  const imageLibraryUploadRef = React.useRef<(() => void) | null>(null);
   
   // Pagination state
   const SCENARIO_PAGE_SIZE = 50;
@@ -1745,22 +1746,33 @@ const IndexContent = () => {
                 </button>
               )}
               {tab === "image_library" && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
+                <div className="flex items-center gap-2">
+                  {isInImageFolder && (
                     <button
                       type="button"
-                      className="inline-flex items-center justify-center rounded-xl px-3 py-2 border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-white/10 transition-all active:scale-95"
+                      onClick={() => imageLibraryUploadRef.current?.()}
+                      className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:opacity-90 transition-opacity text-[10px] font-bold leading-none uppercase tracking-wider"
                     >
-                      <Settings className="w-5 h-5" />
+                      + Upload Images
                     </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem onClick={() => setIsImageLibraryBackgroundModalOpen(true)} className="cursor-pointer">
-                      <ImageIcon className="w-4 h-4 mr-2" />
-                      Change Background
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                  )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        className="inline-flex items-center justify-center rounded-xl px-3 py-2 border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-white/10 transition-all active:scale-95"
+                      >
+                        <Settings className="w-5 h-5" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuItem onClick={() => setIsImageLibraryBackgroundModalOpen(true)} className="cursor-pointer">
+                        <ImageIcon className="w-4 h-4 mr-2" />
+                        Change Background
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               )}
               {(tab === "characters" || tab === "library") && (
                 <>
@@ -1967,6 +1979,7 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
                   if (!inFolder) setImageLibrarySearchQuery('');
                 }}
                 searchQuery={imageLibrarySearchQuery}
+                uploadRef={imageLibraryUploadRef}
               />
             </div>
           )}
