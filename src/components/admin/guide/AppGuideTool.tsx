@@ -4,7 +4,11 @@ import { toast } from '@/hooks/use-toast';
 import { GuideSidebar, type GuideDocument, type TocEntry } from './GuideSidebar';
 import { GuideEditor } from './GuideEditor';
 
-export const AppGuideTool: React.FC = () => {
+interface AppGuideToolProps {
+  onRegisterSave?: (saveFn: (() => Promise<void>) | null) => void;
+}
+
+export const AppGuideTool: React.FC<AppGuideToolProps> = ({ onRegisterSave }) => {
   const [documents, setDocuments] = useState<GuideDocument[]>([]);
   const [activeDocId, setActiveDocId] = useState<string | null>(null);
   const [activeDocTitle, setActiveDocTitle] = useState('');
@@ -89,11 +93,34 @@ export const AppGuideTool: React.FC = () => {
   }, []);
 
   // TOC click
-  const handleTocClick = useCallback((blockId: string) => {
+  const handleTocClick = useCallback((_blockId: string) => {
     // no-op for now
   }, []);
 
+  // Register save callback for external header button
+  useEffect(() => {
+    if (!onRegisterSave) return;
+    if (!activeDocId) {
+      onRegisterSave(null);
+      return;
+    }
+    const saveFn = async () => {
+      const { error } = await (supabase as any)
+        .from('guide_documents')
+        .update({ title: activeDocTitle, markdown: activeDocMarkdown, updated_at: new Date().toISOString() })
+        .eq('id', activeDocId);
+      if (error) {
+        toast({ title: 'Save failed', description: error.message, variant: 'destructive' });
+      } else {
+        toast({ title: 'Document saved' });
+      }
+    };
+    onRegisterSave(saveFn);
+    return () => onRegisterSave(null);
+  }, [onRegisterSave, activeDocId, activeDocTitle, activeDocMarkdown]);
+
   return (
+
     <div className="flex flex-col h-full w-full">
       {/* Page header */}
       <div className="flex items-center justify-between px-4 shrink-0 bg-black" style={{ height: 52, borderBottom: '1px solid #222' }}>
