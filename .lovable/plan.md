@@ -1,33 +1,18 @@
 
 
-# Fix Arc Connector: Single Glowing Line
+# Fix Arc Connector Visibility and Thickness
 
 ## Problem
-The current implementation renders two separate SVG paths — a wide blurred background path and a thin foreground path — which appear as two distinct lines instead of one line with a glow.
+The glow filter's `floodOpacity="0.4"` makes the line too faint, and the `strokeWidth="2"` is thicker than the white structural lines elsewhere in the UI (which appear to be ~1px).
 
-## Solution
-Use a single path with an SVG filter that creates the glow effect around it. The filter will:
-1. Take the original path graphic
-2. Create a blurred, color-shifted copy behind it
-3. Merge them together as one visual unit
-
-This produces one crisp navy line with a soft blue aura around it.
-
-## Technical Details
+## Changes
 
 ### File: `src/components/chronicle/arc/ArcFlowConnector.tsx`
 
-Update the SVG filter and path rendering:
+1. **Increase glow opacity**: Change `floodOpacity` from `0.4` to `0.8` so the glow aura is clearly visible
+2. **Use full-opacity stroke**: Change stroke color from `#1e3a5f` to a brighter navy like `#2563eb` (or keep `#1e3a5f` but ensure the glow compensates) -- the core line needs to be fully visible, not washed out
+3. **Reduce stroke width**: Change `strokeWidth` from `"2"` to `"1"` to match the thin white structural lines in the rest of the UI
+4. **Reduce blur spread slightly**: Change `stdDeviation` from `4` to `3` since a thinner line needs a tighter glow to look proportional
 
-1. **Revise the SVG filter** to use `flood` + `composite` to create a colored glow behind the source graphic:
-   - `feFlood` fills with the glow color (`#3b82f6`, ~40% opacity)
-   - `feComposite` clips the flood to the path shape
-   - `feGaussianBlur` blurs that colored shape
-   - `feMerge` layers: blurred glow on bottom, original crisp path on top
-
-2. **Remove the second (glow) `<path>` element** — only one `<path>` remains
-
-3. **Apply the filter to the single path**, which is stroked with navy `#1e3a5f` at 2px
-
-Result: one line, one DOM element, unified glow effect.
+Result: A crisp, thin navy line with a visible blue glow -- matching the visual weight of the white lines but in the blue/navy color scheme.
 
