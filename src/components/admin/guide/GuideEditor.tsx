@@ -48,6 +48,94 @@ function markdownToHtml(md: string): string {
   return marked.parse(md, { async: false }) as string;
 }
 
+// --- Image compression & upload utility ---
+
+async function compressImage(file: File, maxWidth = 1024, quality = 0.85): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = img.width > maxWidth ? maxWidth / img.width : 1;
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0, w, h);
+      canvas.toBlob(
+        (blob) => (blob ? resolve(blob) : reject(new Error('Canvas toBlob failed'))),
+        'image/jpeg',
+        quality,
+      );
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Failed to load image'));
+    };
+    img.src = url;
+  });
+}
+
+async function uploadGuideImage(file: File): Promise<string> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const compressed = await compressImage(file);
+  const ts = Date.now();
+  const rand = Math.random().toString(36).slice(2, 8);
+  const path = `${user.id}/${ts}-${rand}.jpg`;
+
+  const { error } = await supabase.storage
+    .from('guide_images')
+    .upload(path, compressed, { contentType: 'image/jpeg', upsert: false });
+
+  if (error) throw error;
+
+  const { data: { publicUrl } } = supabase.storage
+    .from('guide_images')
+    .getPublicUrl(path);
+
+  return publicUrl;
+}
+
+function insertImageAtCursor(editorEl: HTMLDivElement, url: string) {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) {
+    // Fallback: append at end
+    const img = document.createElement('img');
+    img.src = url;
+    img.alt = '';
+    img.style.maxWidth = '100%';
+    editorEl.appendChild(img);
+    return;
+  }
+  const range = sel.getRangeAt(0);
+  // Ensure range is inside editor
+  if (!editorEl.contains(range.commonAncestorContainer)) {
+    const img = document.createElement('img');
+    img.src = url;
+    img.alt = '';
+    img.style.maxWidth = '100%';
+    editorEl.appendChild(img);
+    return;
+  }
+  range.deleteContents();
+  const img = document.createElement('img');
+  img.src = url;
+  img.alt = '';
+  img.style.maxWidth = '100%';
+  range.insertNode(img);
+  // Move cursor after image
+  range.setStartAfter(img);
+  range.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+
+// --- Component ---
+
 export const GuideEditor: React.FC<GuideEditorProps> = ({
   docId,
   docTitle,
@@ -58,6 +146,7 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
 }) => {
   const [title, setTitle] = useState(docTitle);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
   const titleRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<HTMLDivElement>(null);
   const isInitializing = useRef(false);
@@ -84,6 +173,86 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
     const md = turndown.turndown(html);
     onMarkdownChange(md);
   }, [onMarkdownChange]);
+
+  // --- Paste handler ---
+  const handlePaste = useCallback(async (e: React.ClipboardEvent<HTMLDivElement>) => {
+    if (!editorRef.current || !onMarkdownChange) return;
+
+    const clipboardData = e.clipboardData;
+
+    // Check for image files in clipboard (screenshots, copied images)
+    const imageFile = Array.from(clipboardData.files).find(f => f.type.startsWith('image/'));
+    if (imageFile) {
+      e.preventDefault();
+      try {
+        const url = await uploadGuideImage(imageFile);
+        insertImageAtCursor(editorRef.current, url);
+        handleInput();
+      } catch (err) {
+        console.error('Failed to upload pasted image:', err);
+      }
+      return;
+    }
+
+    // Also check for image items (some browsers use items instead of files)
+    const imageItem = Array.from(clipboardData.items).find(item => item.type.startsWith('image/'));
+    if (imageItem) {
+      const file = imageItem.getAsFile();
+      if (file) {
+        e.preventDefault();
+        try {
+          const url = await uploadGuideImage(file);
+          insertImageAtCursor(editorRef.current, url);
+          handleInput();
+        } catch (err) {
+          console.error('Failed to upload pasted image:', err);
+        }
+        return;
+      }
+    }
+
+    // Text paste: strip formatting, insert as plain text
+    const plainText = clipboardData.getData('text/plain');
+    if (plainText) {
+      e.preventDefault();
+      document.execCommand('insertText', false, plainText);
+      // handleInput fires via onInput event from execCommand
+    }
+  }, [onMarkdownChange, handleInput]);
+
+  // --- Drop handler ---
+  const handleDrop = useCallback(async (e: React.DragEvent<HTMLDivElement>) => {
+    setIsDragOver(false);
+    if (!editorRef.current || !onMarkdownChange) return;
+
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+    if (files.length === 0) return; // Let default handle non-image drops
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    for (const file of files) {
+      try {
+        const url = await uploadGuideImage(file);
+        insertImageAtCursor(editorRef.current, url);
+      } catch (err) {
+        console.error('Failed to upload dropped image:', err);
+      }
+    }
+    handleInput();
+  }, [onMarkdownChange, handleInput]);
+
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    const hasImages = Array.from(e.dataTransfer.types).includes('Files');
+    if (hasImages) {
+      e.preventDefault();
+      setIsDragOver(true);
+    }
+  }, []);
+
+  const handleDragLeave = useCallback(() => {
+    setIsDragOver(false);
+  }, []);
 
   const commitTitle = () => {
     setIsEditingTitle(false);
@@ -138,7 +307,13 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
           ref={editorRef}
           contentEditable={!!onMarkdownChange}
           onInput={handleInput}
-          className="guide-preview max-w-4xl p-6 outline-none min-h-full"
+          onPaste={handlePaste}
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          className={`guide-preview max-w-4xl p-6 outline-none min-h-full transition-all ${
+            isDragOver ? 'ring-2 ring-[#00F0FF] ring-inset bg-[#00F0FF]/5' : ''
+          }`}
           suppressContentEditableWarning
           spellCheck={false}
         />
