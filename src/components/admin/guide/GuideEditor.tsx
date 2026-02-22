@@ -1,10 +1,14 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useImperativeHandle, forwardRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { TocEntry } from './GuideSidebar';
 import {
-  Bold, Italic, Heading1, Heading2, Heading3, Code, Link, Image, Table, List, ListOrdered, Save,
+  Bold, Italic, Heading1, Heading2, Heading3, Code, Link, Image, Table, List, ListOrdered,
 } from 'lucide-react';
+
+export interface GuideEditorHandle {
+  save: () => Promise<void>;
+}
 
 interface GuideEditorProps {
   docId: string | null;
@@ -12,6 +16,8 @@ interface GuideEditorProps {
   docMarkdown: string;
   onTitleChange: (id: string, newTitle: string) => void;
   onTocUpdate: (entries: TocEntry[]) => void;
+  onUnsavedChange?: (unsaved: boolean) => void;
+  onSavingChange?: (saving: boolean) => void;
 }
 
 /* ── helpers ─────────────────────────────────────────────────── */
@@ -102,13 +108,15 @@ const TB: React.FC<{ icon: React.ReactNode; label: string; onClick: () => void }
 
 /* ── component ───────────────────────────────────────────────── */
 
-export const GuideEditor: React.FC<GuideEditorProps> = ({
+export const GuideEditor = forwardRef<GuideEditorHandle, GuideEditorProps>(({
   docId,
   docTitle,
   docMarkdown,
   onTitleChange,
   onTocUpdate,
-}) => {
+  onUnsavedChange,
+  onSavingChange,
+}, ref) => {
   const [title, setTitle] = useState(docTitle);
   const [markdown, setMarkdown] = useState(docMarkdown);
   const [hasUnsaved, setHasUnsaved] = useState(false);
@@ -121,6 +129,9 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
   // Sync from props
   useEffect(() => { setTitle(docTitle); }, [docTitle]);
   useEffect(() => { setMarkdown(docMarkdown); setHasUnsaved(false); }, [docMarkdown]);
+
+  // Notify parent of unsaved changes
+  useEffect(() => { onUnsavedChange?.(hasUnsaved); }, [hasUnsaved, onUnsavedChange]);
 
   // Extract TOC whenever markdown changes
   useEffect(() => {
@@ -136,6 +147,7 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
   const handleSave = useCallback(async () => {
     if (!docId || isSaving) return;
     setIsSaving(true);
+    onSavingChange?.(true);
     const { error } = await (supabase as any)
       .from('guide_documents')
       .update({ markdown, updated_at: new Date().toISOString() })
@@ -149,7 +161,11 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
       toast({ title: 'Guide saved' });
     }
     setIsSaving(false);
-  }, [docId, markdown, isSaving]);
+    onSavingChange?.(false);
+  }, [docId, markdown, isSaving, onSavingChange]);
+
+  // Expose save to parent
+  useImperativeHandle(ref, () => ({ save: handleSave }), [handleSave]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -210,14 +226,6 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
               Saved {lastSaved.toLocaleTimeString()}
             </span>
           )}
-          <button
-            onClick={handleSave}
-            disabled={!hasUnsaved || isSaving}
-            className="inline-flex items-center justify-center gap-1.5 h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider disabled:opacity-50 disabled:pointer-events-none"
-          >
-            <Save className="w-3.5 h-3.5" />
-            {isSaving ? 'Saving...' : 'Save'}
-          </button>
         </div>
       </div>
 
@@ -260,4 +268,6 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
       </div>
     </div>
   );
-};
+});
+
+GuideEditor.displayName = 'GuideEditor';
