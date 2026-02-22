@@ -101,7 +101,14 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
       {/* Steps */}
       {!isPassive && (
         <div className="space-y-2">
-          {branch.steps.map((step, idx) => (
+          {branch.steps.filter(s => !s.retryOf).map((step, idx) => {
+            // Compute retry info from clones targeting this step
+            const clones = branch.steps.filter(s => s.retryOf === step.id);
+            const maxRetryCount = clones.length > 0 ? Math.max(...clones.map(c => c.retryCount || 1)) : 0;
+            const hasRetries = maxRetryCount > 0;
+            const isPermanentlyFailed = step.permanentlyFailed || clones.some(c => c.permanentlyFailed);
+
+            return (
             <div key={step.id} className="relative" data-step-id={step.id}>
               <div
                 className={cn(
@@ -119,13 +126,13 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
                   <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
                     {stepLabel} {idx + 1}
                   </span>
-                  {step.retryOf && (
+                  {hasRetries && (
                     <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-400/80 bg-amber-500/10 border border-amber-500/20 rounded-full px-1.5 py-0.5">
                       <RotateCcw size={9} />
-                      Retry {step.retryCount || 1} of {flexibility === 'rigid' ? '∞' : flexibility === 'flexible' ? 2 : 4}
+                      Retry {maxRetryCount} of {flexibility === 'rigid' ? '∞' : flexibility === 'flexible' ? 2 : 4}
                     </span>
                   )}
-                  {step.permanentlyFailed && (
+                  {isPermanentlyFailed && (
                     <span className="inline-flex items-center gap-1 text-[9px] font-bold text-red-400/80 bg-red-500/10 border border-red-500/20 rounded-full px-1.5 py-0.5">
                       <Ban size={9} />
                       Max retries
@@ -227,7 +234,8 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
               )}
             </div>
             </div>
-          ))}
+            );
+          })}
 
           {/* Add Step link */}
           <button
