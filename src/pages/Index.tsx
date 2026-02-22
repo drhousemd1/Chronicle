@@ -1495,7 +1495,7 @@ const IndexContent = () => {
                       value={librarySearchQuery}
                       onChange={(e) => setLibrarySearchQuery(e.target.value)}
                       placeholder="Search characters..."
-                      className="ml-4 h-9 w-64 px-3 py-1.5 text-sm rounded-lg border border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4a5f7f]/30 focus:border-[#4a5f7f]"
+                      className="ml-4 h-9 w-64 px-3 py-1.5 text-sm rounded-lg border border-white/10 bg-[#3a3a3f]/50 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#4a5f7f]"
                     />
                   )}
                 </div>

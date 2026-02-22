@@ -44,53 +44,23 @@ export const ImageLibraryPickerModal: React.FC<ImageLibraryPickerModalProps> = (
     if (!user) return;
     setIsLoadingFolders(true);
     try {
-      const { data: foldersData, error } = await supabase
-        .from('image_folders')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('updated_at', { ascending: false });
+      const { data, error } = await supabase.rpc('get_folders_with_details', {
+        p_user_id: user.id,
+      });
 
       if (error) throw error;
 
-      const foldersWithDetails = await Promise.all(
-        (foldersData || []).map(async (folder) => {
-          const { count } = await supabase
-            .from('library_images')
-            .select('*', { count: 'exact', head: true })
-            .eq('folder_id', folder.id);
-
-          let thumbnailUrl = null;
-          if (folder.thumbnail_image_id) {
-            const { data: thumbImg } = await supabase
-              .from('library_images')
-              .select('image_url')
-              .eq('id', folder.thumbnail_image_id)
-              .maybeSingle();
-            thumbnailUrl = thumbImg?.image_url || null;
-          } else {
-            const { data: firstImg } = await supabase
-              .from('library_images')
-              .select('image_url')
-              .eq('folder_id', folder.id)
-              .order('created_at', { ascending: true })
-              .limit(1)
-              .maybeSingle();
-            thumbnailUrl = firstImg?.image_url || null;
-          }
-
-          return {
-            id: folder.id,
-            userId: folder.user_id,
-            name: folder.name,
-            description: folder.description || '',
-            thumbnailImageId: folder.thumbnail_image_id,
-            thumbnailUrl,
-            imageCount: count || 0,
-            createdAt: new Date(folder.created_at).getTime(),
-            updatedAt: new Date(folder.updated_at).getTime(),
-          } as ImageFolder;
-        })
-      );
+      const foldersWithDetails = (data || []).map((row: any) => ({
+        id: row.id,
+        userId: row.user_id,
+        name: row.name,
+        description: row.description || '',
+        thumbnailImageId: row.thumbnail_image_id,
+        thumbnailUrl: row.thumbnail_url,
+        imageCount: Number(row.image_count) || 0,
+        createdAt: new Date(row.created_at).getTime(),
+        updatedAt: new Date(row.updated_at).getTime(),
+      } as ImageFolder));
 
       setFolders(foldersWithDetails);
     } catch (e) {

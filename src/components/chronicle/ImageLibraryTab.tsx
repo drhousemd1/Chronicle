@@ -69,55 +69,23 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
     if (!user) return;
     setIsLoading(true);
     try {
-      const { data: foldersData, error } = await supabase
-        .from('image_folders')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('updated_at', { ascending: false });
+      const { data, error } = await supabase.rpc('get_folders_with_details', {
+        p_user_id: user.id,
+      });
 
       if (error) throw error;
 
-      // Get image counts and thumbnails for each folder
-      const foldersWithDetails = await Promise.all(
-        (foldersData || []).map(async (folder) => {
-          const { count } = await supabase
-            .from('library_images')
-            .select('*', { count: 'exact', head: true })
-            .eq('folder_id', folder.id);
-
-          let thumbnailUrl = null;
-          if (folder.thumbnail_image_id) {
-            const { data: thumbImg } = await supabase
-              .from('library_images')
-              .select('image_url')
-              .eq('id', folder.thumbnail_image_id)
-              .maybeSingle();
-            thumbnailUrl = thumbImg?.image_url || null;
-          } else {
-            // Use first image as default thumbnail
-            const { data: firstImg } = await supabase
-              .from('library_images')
-              .select('image_url')
-              .eq('folder_id', folder.id)
-              .order('created_at', { ascending: true })
-              .limit(1)
-              .maybeSingle();
-            thumbnailUrl = firstImg?.image_url || null;
-          }
-
-          return {
-            id: folder.id,
-            userId: folder.user_id,
-            name: folder.name,
-            description: folder.description || '',
-            thumbnailImageId: folder.thumbnail_image_id,
-            thumbnailUrl,
-            imageCount: count || 0,
-            createdAt: new Date(folder.created_at).getTime(),
-            updatedAt: new Date(folder.updated_at).getTime(),
-          } as ImageFolder;
-        })
-      );
+      const foldersWithDetails = (data || []).map((row: any) => ({
+        id: row.id,
+        userId: row.user_id,
+        name: row.name,
+        description: row.description || '',
+        thumbnailImageId: row.thumbnail_image_id,
+        thumbnailUrl: row.thumbnail_url,
+        imageCount: Number(row.image_count) || 0,
+        createdAt: new Date(row.created_at).getTime(),
+        updatedAt: new Date(row.updated_at).getTime(),
+      } as ImageFolder));
 
       setFolders(foldersWithDetails);
     } catch (e: any) {
@@ -229,9 +197,19 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
 
       if (images && images.length > 0) {
         const filePaths = images.map((img) => {
-          const url = new URL(img.image_url);
-          const pathParts = url.pathname.split('/storage/v1/object/public/image_library/');
-          return pathParts[1] || '';
+          try {
+            const url = new URL(img.image_url);
+            const marker = '/object/public/image_library/';
+            const idx = url.pathname.indexOf(marker);
+            if (idx === -1) {
+              console.warn('Could not extract storage path from:', img.image_url);
+              return '';
+            }
+            return url.pathname.substring(idx + marker.length);
+          } catch {
+            console.warn('Invalid image URL:', img.image_url);
+            return '';
+          }
         }).filter(Boolean);
 
         if (filePaths.length > 0) {
@@ -367,8 +345,12 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
     try {
       // Delete from storage
       const url = new URL(image.imageUrl);
-      const pathParts = url.pathname.split('/storage/v1/object/public/image_library/');
-      const filePath = pathParts[1];
+      const marker = '/object/public/image_library/';
+      const idx = url.pathname.indexOf(marker);
+      const filePath = idx !== -1 ? url.pathname.substring(idx + marker.length) : null;
+      if (!filePath) {
+        console.warn('Could not extract storage path from:', image.imageUrl);
+      }
       
       if (filePath) {
         await supabase.storage.from('image_library').remove([filePath]);
@@ -672,13 +654,13 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
           onClick={() => setLightboxImage(null)}
         >
           <div 
-            className="relative bg-white rounded-xl shadow-2xl border border-slate-200 p-3 max-w-[600px] animate-in fade-in zoom-in-95 duration-150"
+            className="relative bg-zinc-900 rounded-xl shadow-2xl border border-[#4a5f7f] p-3 max-w-[600px] animate-in fade-in zoom-in-95 duration-150"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close button */}
             <button
               onClick={() => setLightboxImage(null)}
-              className="absolute -top-3 -right-3 p-2 bg-white rounded-full shadow-lg hover:bg-slate-100 transition-colors z-10"
+              className="absolute -top-3 -right-3 p-2 bg-zinc-800 text-white rounded-full shadow-lg hover:bg-zinc-700 transition-colors z-10"
             >
               <X className="w-4 h-4" />
             </button>
@@ -688,7 +670,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
               alt={lightboxImage.filename}
               className="w-full h-auto max-h-[75vh] object-contain rounded-lg"
             />
-            <p className="text-sm text-slate-500 text-center mt-3 truncate px-2">
+            <p className="text-sm text-zinc-400 text-center mt-3 truncate px-2">
               {lightboxImage.filename}
             </p>
           </div>
