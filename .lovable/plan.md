@@ -1,50 +1,48 @@
 
+# Add Save Button to White Header for App Guide Tool
 
-# Write "Your Stories" Page Documentation
+## Problem
+The Save button disappeared when the Guide Editor was converted to a read-only markdown viewer. The user wants it back, but placed in the **white header bar** (right side), and it should **only appear when the App Guide tool is active** within the Admin panel.
 
-## What We're Doing
-Writing comprehensive documentation for the "Your Stories" page (the scenario hub) in the same detailed format as the existing Community Gallery guide document. The documentation will be saved as markdown into the existing `guide_documents` row (ID: `4af3bbf2-9b3e-4673-a95b-cfb76fa066c8`).
+## Changes
 
-## Scope
-A single database UPDATE to set the `markdown` column on the existing row. No source code files are modified.
+### 1. `src/pages/Index.tsx`
+Add a conditional Save button in the right-side actions area of the white header (around line 1499), matching this pattern:
 
-## What the Documentation Will Cover
+```
+{tab === "admin" && adminActiveTool === "app_guide" && (
+  <button ...>Save</button>
+)}
+```
 
-All 13 sections matching the Community Gallery template:
+The button will use the same styling as other header buttons (the dark rounded-xl pill style used by "Save and Close", "Save", "Delete All", etc.).
 
-1. **Page Overview** -- Route (`tab === "hub"` in Index.tsx), primary source file (`ScenarioHub.tsx`), purpose (personal scenario management hub), user role access, navigation sidebar position, entry points.
+### 2. Wire a save callback
+- `AppGuideTool` will expose a save function via a ref (using `useImperativeHandle`) or via a callback prop
+- `Index.tsx` will hold a ref to the AppGuideTool and call its save method when the header Save button is clicked
+- The save function will re-persist the current document's title and markdown to the database (confirming current state is saved)
+- A toast will confirm "Document saved" on success
 
-2. **Layout and Structure** -- The hub renders inside the main app shell from Index.tsx. Details the header row (title "Your Stories" + filter pill bar with My Stories / Saved Stories / Published / All), the optional background image layer, the responsive card grid (`grid-cols-1 sm:2 lg:3 xl:4 2xl:5`), the "New Story" dashed card, the empty state with CTA, and settings dropdown (Change Background).
+### 3. `src/components/admin/guide/AppGuideTool.tsx`
+- Accept an `onRegisterSave` prop (a function that receives the save callback) -- this avoids needing `forwardRef` on a lazy-loaded component
+- When the active document changes, register a save function that persists the current title to the database
+- Alternatively, expose a `saveRef` that `Index.tsx` can call
 
-3. **UI Elements -- Complete Inventory** -- Full table of every interactive element: filter pills, settings gear, scenario cards (cover image, badges, hover action buttons, stats row), the "New Story" card, and the empty state CTA.
-
-4. **Cards / List Items -- Scenario Card** -- Detailed breakdown of the `ScenarioCard` component: aspect ratio (2/3), rounded corners (2rem), cover image with object-position, gradient overlay, top-left badge container (Published badge + Remix/Edit icon), top-right SFW/NSFW badge, hover actions (Edit / Delete / Play buttons with scale animation), bottom info bar (title, description, stats: views/likes/saves/plays, "Written by" line).
-
-5. **Modals and Overlays** -- Three modals documented:
-   - `ScenarioDetailModal` -- Full detail view with cover image, action buttons (Edit + Play for owned, Like + Save + Play for gallery), content themes, character roster, reviews section, creator section, unpublish button
-   - `ShareScenarioModal` -- Publish/unpublish flow with Allow Edits toggle
-   - `DeleteConfirmDialog` -- Confirmation dialog for scenario deletion
-   - `BackgroundPickerModal` -- Background image upload/select for the hub
-
-6. **Data Architecture** -- Tables involved: `scenarios`, `published_scenarios`, `saved_scenarios`, `content_themes`, `profiles`, `user_backgrounds`. Key data flows: initial load (parallel fetch of scenarios, saved scenarios, published data, content themes, profile, backgrounds), hub filter logic (My Stories vs Saved vs Published vs All), how saved/bookmarked scenarios are converted to ScenarioMetadata with `isBookmarked: true`.
-
-7. **Component Tree** -- Hierarchy from Index.tsx down through ScenarioHub, ScenarioCard, ScenarioDetailModal, ShareScenarioModal, DeleteConfirmDialog, BackgroundPickerModal.
-
-8. **Custom Events and Callbacks** -- All handler functions: `handlePlayScenario` (optimized fetch for play), `handleEditScenario` (with remix/clone logic for bookmarked scenarios), `handleDeleteScenario` (bookmark removal vs own scenario deletion), `handleCreateNewScenario`, background handlers, filter state management.
-
-9. **Styling Reference** -- Color tokens, the dark pill bar (`bg-[#2b2b2e]`), active pill (`bg-[#4a5f7f]`), card shadow (`shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]`), hover translate (`-translate-y-3`), gradient overlay colors, badge styles.
-
-10. **Cross-Page Dependencies** -- How the hub interacts with: Scenario Builder (edit flow), Chat Interface (play flow), Community Gallery (saved scenarios appear here), Chat History (conversation registry refresh), Creator Profile page (via detail modal links).
-
-11. **Security and Access Control** -- RLS policies on `scenarios` (own or published), `saved_scenarios` (own only), `published_scenarios` (published + not hidden for read, own for write). The hub filter shows only the authenticated user's own scenarios plus their saved/bookmarked scenarios.
-
-12. **Known Issues / Quirks** -- The remix clone flow for bookmarked scenarios, the `confirm()` dialog for deletion (browser native, not the styled DeleteConfirmDialog), the background image overlay opacity, the empty state showing a light theme while the card grid is dark.
-
-13. **Planned / Future Changes** -- Placeholder section for upcoming features.
+### 4. `src/pages/Admin.tsx`
+- Pass through the save registration prop from `Index.tsx` to `AppGuideTool`
 
 ## Technical Details
-- **Table:** `guide_documents`
-- **Row ID:** `4af3bbf2-9b3e-4673-a95b-cfb76fa066c8`
-- **Operation:** UPDATE the `markdown` column with the full documentation
-- **No source code changes**
 
+**Approach:** Use a ref-based pattern. `Index.tsx` creates a `useRef` for the guide save function. When `AdminPage` renders `AppGuideTool`, it passes a callback that sets this ref. The white header Save button calls `guideToolSaveRef.current?.()`.
+
+**Files modified:**
+- `src/pages/Index.tsx` -- Add Save button in header right-side actions, create save ref
+- `src/pages/Admin.tsx` -- Pass `onRegisterSave` prop through to `AppGuideTool`
+- `src/components/admin/guide/AppGuideTool.tsx` -- Accept `onRegisterSave`, register save callback that persists current doc
+
+**Button visibility:** Only when `tab === "admin" && adminActiveTool === "app_guide"`
+
+**Button styling:** Matches existing header buttons:
+```
+className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
+```
