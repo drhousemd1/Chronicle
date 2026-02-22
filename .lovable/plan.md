@@ -1,48 +1,32 @@
 
-# Add Save Button to White Header for App Guide Tool
+
+# Speed Up App Guide Tool Loading
 
 ## Problem
-The Save button disappeared when the Guide Editor was converted to a read-only markdown viewer. The user wants it back, but placed in the **white header bar** (right side), and it should **only appear when the App Guide tool is active** within the Admin panel.
+The App Guide tool is stuck on "Loading..." for a long time because `react-markdown` and `remark-gfm` are large dependencies bundled into the lazy-loaded `AppGuideTool` chunk. Vite has to pre-bundle these on first load, causing significant delay. The previous memory note confirms this exact pattern has caused issues before.
 
-## Changes
+## Solution
+Split the heavy markdown rendering into its own lazy-loaded component so the App Guide shell (sidebar + header) loads instantly. The markdown only renders when you actually click on a document.
 
-### 1. `src/pages/Index.tsx`
-Add a conditional Save button in the right-side actions area of the white header (around line 1499), matching this pattern:
+### Changes
 
-```
-{tab === "admin" && adminActiveTool === "app_guide" && (
-  <button ...>Save</button>
-)}
-```
+**`src/components/admin/guide/GuideEditor.tsx`**
+- Remove the direct imports of `react-markdown` and `remark-gfm`
+- Lazy-load a small `MarkdownRenderer` component only when `docMarkdown` is non-empty
+- The title bar, empty state, and shell render immediately with zero heavy dependencies
+- Use `React.lazy()` for the markdown renderer with a lightweight inline fallback
 
-The button will use the same styling as other header buttons (the dark rounded-xl pill style used by "Save and Close", "Save", "Delete All", etc.).
+**`src/components/admin/guide/MarkdownRenderer.tsx`** (new file)
+- A tiny wrapper component that imports `react-markdown` and `remark-gfm`
+- Accepts `markdown: string` prop and renders `<ReactMarkdown remarkPlugins={[remarkGfm]}>{markdown}</ReactMarkdown>`
+- This isolates the heavy deps into their own chunk that only loads when needed
 
-### 2. Wire a save callback
-- `AppGuideTool` will expose a save function via a ref (using `useImperativeHandle`) or via a callback prop
-- `Index.tsx` will hold a ref to the AppGuideTool and call its save method when the header Save button is clicked
-- The save function will re-persist the current document's title and markdown to the database (confirming current state is saved)
-- A toast will confirm "Document saved" on success
+### Result
+- Clicking "App Guide" in the admin panel shows the sidebar and document list almost instantly (only fetches a lightweight list of titles from the database)
+- The heavy markdown renderer only loads when you select a document to view
+- No change to save functionality or any other behavior
 
-### 3. `src/components/admin/guide/AppGuideTool.tsx`
-- Accept an `onRegisterSave` prop (a function that receives the save callback) -- this avoids needing `forwardRef` on a lazy-loaded component
-- When the active document changes, register a save function that persists the current title to the database
-- Alternatively, expose a `saveRef` that `Index.tsx` can call
+### Technical Notes
+- The `AppGuideTool` itself no longer imports any heavy deps (it was already clean), so it can stop being lazy-loaded entirely OR stay lazy -- either way it'll be fast since its imports are lightweight (just `supabase/client`, native HTML sidebar)
+- Only `GuideEditor` had the heavy `react-markdown` import, and that's what we're splitting out
 
-### 4. `src/pages/Admin.tsx`
-- Pass through the save registration prop from `Index.tsx` to `AppGuideTool`
-
-## Technical Details
-
-**Approach:** Use a ref-based pattern. `Index.tsx` creates a `useRef` for the guide save function. When `AdminPage` renders `AppGuideTool`, it passes a callback that sets this ref. The white header Save button calls `guideToolSaveRef.current?.()`.
-
-**Files modified:**
-- `src/pages/Index.tsx` -- Add Save button in header right-side actions, create save ref
-- `src/pages/Admin.tsx` -- Pass `onRegisterSave` prop through to `AppGuideTool`
-- `src/components/admin/guide/AppGuideTool.tsx` -- Accept `onRegisterSave`, register save callback that persists current doc
-
-**Button visibility:** Only when `tab === "admin" && adminActiveTool === "app_guide"`
-
-**Button styling:** Matches existing header buttons:
-```
-className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
-```
