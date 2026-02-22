@@ -1,30 +1,30 @@
 
+# Fix App Guide Loading: Remove Radix Dependencies from GuideSidebar
 
-# Fix Admin Page Loading
+## The Real Problem
+The editor code is tiny and not the issue. The problem is that `GuideSidebar.tsx` imports two Radix UI components (`ScrollArea` and `Separator`). When Vite tries to dynamically load the App Guide tool, it needs to pre-bundle these Radix packages and their deep dependency trees on the fly -- and that pre-bundling step times out (504 error), killing the dynamic import.
 
-## Problem
-`React.lazy(() => import("@/pages/Admin"))` fails with "Failed to fetch dynamically imported module" because the Vite dev server times out serving the module. This causes the white screen every time you click the Admin link.
+## The Fix
+Replace the two Radix UI imports in `GuideSidebar.tsx` with plain HTML/CSS equivalents. No functionality is lost.
 
-## Solution
-Reverse the lazy-loading strategy: import `AdminPage` directly in `Index.tsx` (it was working before), but lazy-load the heavy sub-tools *inside* `Admin.tsx` so they don't bloat the initial load.
+### File: `src/components/admin/guide/GuideSidebar.tsx`
 
-## Changes
+1. **Remove imports**: Delete the imports of `ScrollArea` from `@/components/ui/scroll-area` and `Separator` from `@/components/ui/separator`
+2. **Replace `<ScrollArea>`** with `<div className="flex-1 min-h-0 overflow-y-auto">` (identical behavior)
+3. **Replace `<Separator>`** with `<div className="h-px w-full bg-[#333]" />` (identical appearance)
 
-### 1. `src/pages/Index.tsx`
-- Replace `React.lazy(() => import("@/pages/Admin"))` with a direct import: `import { AdminPage } from "@/pages/Admin"`
-- Remove the `React.Suspense` wrapper around `<AdminPage />`
+That's it. One file, three small replacements. No other files change.
 
-### 2. `src/pages/Admin.tsx`
-- Remove the direct imports of `AppGuideTool` and `ImageGenerationTool` from the top of the file
-- Lazy-load them inside the component using `React.lazy`:
-  - `const LazyAppGuide = React.lazy(() => import("@/components/admin/guide/AppGuideTool").then(m => ({ default: m.AppGuideTool })))`
-  - `const LazyImageGen = React.lazy(() => import("@/components/admin/ImageGenerationTool").then(m => ({ default: m.ImageGenerationTool })))`
-- Wrap their render locations in `React.Suspense` with a loading fallback
-- The main Admin card grid (which is what loads first) stays lightweight -- it's just divs and a Sparkles icon
+## Technical Details
 
-### Why This Works
-- The Admin card grid loads instantly with no heavy dependencies
-- `AppGuideTool` (which pulls in Separator, ScrollArea) only loads when you click "App Guide"
-- `ImageGenerationTool` (which pulls in Collapsible, Input, Textarea) only loads when you click "Image Generation"
-- No dynamic import at the `Index.tsx` level, so no fetch failure on the main page
+Current problematic imports in GuideSidebar.tsx:
+```
+import { ScrollArea } from '@/components/ui/scroll-area';   // pulls in @radix-ui/react-scroll-area
+import { Separator } from '@/components/ui/separator';       // pulls in @radix-ui/react-separator
+```
 
+These get replaced with zero-dependency HTML equivalents:
+- `<ScrollArea className="flex-1 min-h-0">` becomes `<div className="flex-1 min-h-0 overflow-y-auto">`
+- `<Separator className="bg-[#333]" />` becomes `<div className="h-px w-full bg-[#333]" />`
+
+This completely eliminates the Radix dependency chain from the lazy-loaded module, so the dynamic import will resolve instantly.
