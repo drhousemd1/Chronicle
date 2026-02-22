@@ -1,23 +1,19 @@
 
-# Clip Zoomed Image Behind the Gray Footer
+# Remove Hash Symbol from Tag Display
 
-## The Problem
+## What Changes
 
-The image zoom effect (`group-hover:scale-110`) causes the image to scale beyond its container and visually overflow into the gray title/aspect-ratio footer below it. The `overflow-hidden` on the outer card wrapper clips at the card border, but doesn't prevent the image from covering the footer area inside the card.
+Remove the `#` prefix from tag pills across three files so tags display as clean text (e.g., "futanari" instead of "#futanari").
 
-## The Fix
+## Files to Update
 
-**File:** `src/components/chronicle/ImageLibraryTab.tsx`, line 691
+**1. `src/components/chronicle/TagInput.tsx` (line 61)**
+- Change `#{tag}` to `{tag}`
 
-Add `overflow-hidden` to the image container div so the zoomed image is clipped within the square image area, not spilling over the footer.
+**2. `src/components/chronicle/ImageLibraryTab.tsx` (line 795)**
+- Change `#{tag}` to `{tag}`
 
-Change:
-```
-<div className="relative aspect-square bg-slate-100">
-```
-To:
-```
-<div className="relative aspect-square bg-slate-100 overflow-hidden">
-```
+**3. `src/components/chronicle/GalleryHub.tsx` (line 436)**
+- Change `#{tag}` to `{tag}`
 
-This is the same pattern used by story tiles in `ScenarioHub.tsx`, where the image container has `overflow-hidden` to keep the zoom effect contained.
+All three are simple one-character removals. The tag pills keep their styling, just without the `#` prefix.
