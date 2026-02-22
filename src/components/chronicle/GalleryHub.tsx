@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Search, Loader2, Globe, LayoutGrid, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -8,20 +8,21 @@ import { ScenarioDetailModal } from './ScenarioDetailModal';
 import { GalleryCategorySidebar, CategoryFilters } from './GalleryCategorySidebar';
 import { 
   PublishedScenario, 
-  fetchPublishedScenarios, 
   getUserInteractions,
   toggleLike,
   saveScenarioToCollection,
   unsaveScenario,
   unpublishScenario,
   incrementPlayCount,
-  incrementViewCount,
+  recordView,
+  fetchGalleryScenarios,
   SortOption,
-  ContentThemeFilters
+  FetchGalleryParams
 } from '@/services/gallery-data';
 import { useAuth } from '@/hooks/use-auth';
 import { toast } from 'sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 
 interface GalleryHubProps {
   onPlay: (scenarioId: string, publishedScenarioId: string) => void;
@@ -29,6 +30,8 @@ interface GalleryHubProps {
   sortBy: SortOption;
   onSortChange: (sort: SortOption) => void;
 }
+
+const PAGE_SIZE = 20;
 
 const defaultFilters: CategoryFilters = {
   storyTypes: [],
@@ -40,12 +43,10 @@ const defaultFilters: CategoryFilters = {
 
 export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, sortBy, onSortChange }) => {
   const { user } = useAuth();
-  const [scenarios, setScenarios] = useState<PublishedScenario[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchText, setSearchText] = useState('');
   const [searchTags, setSearchTags] = useState<string[]>([]);
-  const [likes, setLikes] = useState<Set<string>>(new Set());
-  const [saves, setSaves] = useState<Set<string>>(new Set());
   
   // Sidebar state
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -55,101 +56,173 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedPublished, setSelectedPublished] = useState<PublishedScenario | null>(null);
 
-  // Convert CategoryFilters to ContentThemeFilters for the service
-  const getContentThemeFilters = useCallback((): ContentThemeFilters | undefined => {
-    const hasFilters = 
-      categoryFilters.storyTypes.length > 0 ||
-      categoryFilters.genres.length > 0 ||
-      categoryFilters.origins.length > 0 ||
-      categoryFilters.triggerWarnings.length > 0 ||
-      categoryFilters.customTags.length > 0;
+  // Infinite scroll sentinel ref
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
-    if (!hasFilters) return undefined;
+  // Fetch followed creator IDs (for Following tab)
+  const { data: followedCreatorIds } = useQuery({
+    queryKey: ['followed-creators', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data } = await supabase
+        .from('creator_follows')
+        .select('creator_id')
+        .eq('follower_id', user.id);
+      return (data || []).map(f => f.creator_id);
+    },
+    enabled: !!user && sortBy === 'following',
+    staleTime: 60_000,
+  });
 
-    return {
-      storyTypes: categoryFilters.storyTypes.length > 0 ? categoryFilters.storyTypes : undefined,
-      genres: categoryFilters.genres.length > 0 ? categoryFilters.genres : undefined,
-      origins: categoryFilters.origins.length > 0 ? categoryFilters.origins : undefined,
-      triggerWarnings: categoryFilters.triggerWarnings.length > 0 ? categoryFilters.triggerWarnings : undefined,
-      customTags: categoryFilters.customTags.length > 0 ? categoryFilters.customTags : undefined,
-    };
-  }, [categoryFilters]);
+  // Build query params
+  const queryParams = useMemo((): Omit<FetchGalleryParams, 'limit' | 'offset'> => ({
+    searchText: searchText || undefined,
+    searchTags: searchTags.length > 0 ? searchTags : undefined,
+    sortBy,
+    storyTypes: categoryFilters.storyTypes.length > 0 ? categoryFilters.storyTypes : undefined,
+    genres: categoryFilters.genres.length > 0 ? categoryFilters.genres : undefined,
+    origins: categoryFilters.origins.length > 0 ? categoryFilters.origins : undefined,
+    triggerWarnings: categoryFilters.triggerWarnings.length > 0 ? categoryFilters.triggerWarnings : undefined,
+    customTags: categoryFilters.customTags.length > 0 ? categoryFilters.customTags : undefined,
+    publisherIds: sortBy === 'following' ? (followedCreatorIds || []) : undefined,
+  }), [searchText, searchTags, sortBy, categoryFilters, followedCreatorIds]);
 
-  const fetchInProgress = useRef(false);
+  // Main infinite query
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    isError,
+  } = useInfiniteQuery({
+    queryKey: ['gallery-scenarios', queryParams],
+    queryFn: async ({ pageParam = 0 }) => {
+      const results = await fetchGalleryScenarios({
+        ...queryParams,
+        limit: PAGE_SIZE,
+        offset: pageParam,
+      });
+      return results;
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      if (lastPage.length < PAGE_SIZE) return undefined;
+      return allPages.reduce((total, page) => total + page.length, 0);
+    },
+    initialPageParam: 0,
+    staleTime: 30_000,
+    enabled: sortBy !== 'following' || (followedCreatorIds !== undefined),
+  });
 
-  const loadScenarios = useCallback(async () => {
-    if (fetchInProgress.current) return;
-    fetchInProgress.current = true;
-    setIsLoading(true);
-    try {
-      // Handle "following" tab separately
-      if (sortBy === 'following') {
-        if (!user) {
-          setScenarios([]);
-          setIsLoading(false);
-          return;
-        }
-        // Get followed creator IDs
-        const { data: follows } = await supabase.from('creator_follows').select('creator_id').eq('follower_id', user.id);
-        const creatorIds = (follows || []).map(f => f.creator_id);
-        if (creatorIds.length === 0) {
-          setScenarios([]);
-          setIsLoading(false);
-          return;
-        }
-        // Fetch published scenarios from followed creators (server-side filter)
-        const contentFilters = getContentThemeFilters();
-        const data = await fetchPublishedScenarios(
-          searchTags.length > 0 ? searchTags : undefined,
-          'recent', 50, 0, contentFilters, creatorIds
-        );
-        setScenarios(data);
-        if (data.length > 0) {
-          const ids = data.map(s => s.id);
-          const interactions = await getUserInteractions(ids, user.id);
-          setLikes(interactions.likes);
-          setSaves(interactions.saves);
-        }
-        setIsLoading(false);
-        return;
-      }
+  // Flatten pages into single array
+  const scenarios = useMemo(() => {
+    return data?.pages.flat() || [];
+  }, [data]);
 
-      const contentFilters = getContentThemeFilters();
-      const data = await fetchPublishedScenarios(
-        searchTags.length > 0 ? searchTags : undefined,
-        sortBy,
-        50,
-        0,
-        contentFilters
-      );
-      setScenarios(data);
+  // Fetch user interactions (likes/saves) for visible scenarios
+  const scenarioIds = useMemo(() => scenarios.map(s => s.id), [scenarios]);
+  
+  const { data: interactions } = useQuery({
+    queryKey: ['gallery-interactions', user?.id, scenarioIds],
+    queryFn: async () => {
+      if (!user || scenarioIds.length === 0) return { likes: new Set<string>(), saves: new Set<string>() };
+      return getUserInteractions(scenarioIds, user.id);
+    },
+    enabled: !!user && scenarioIds.length > 0,
+    staleTime: 30_000,
+  });
 
-      // Load user interactions
-      if (user && data.length > 0) {
-        const ids = data.map(s => s.id);
-        const interactions = await getUserInteractions(ids, user.id);
-        setLikes(interactions.likes);
-        setSaves(interactions.saves);
-      }
-    } catch (error) {
-      console.error('Failed to load gallery:', error);
-      toast.error('Failed to load gallery');
-    } finally {
-      setIsLoading(false);
-      fetchInProgress.current = false;
-    }
-  }, [user?.id, searchTags, sortBy, getContentThemeFilters]);
+  const likes = interactions?.likes || new Set<string>();
+  const saves = interactions?.saves || new Set<string>();
 
+  // Infinite scroll: IntersectionObserver on sentinel
   useEffect(() => {
-    loadScenarios();
-  }, [loadScenarios]);
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { rootMargin: '200px' }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  // Realtime subscription for published_scenarios
+  useEffect(() => {
+    const channel = supabase
+      .channel('gallery-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'published_scenarios' },
+        () => {
+          // New story published - invalidate to refetch
+          queryClient.invalidateQueries({ queryKey: ['gallery-scenarios'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'published_scenarios' },
+        (payload) => {
+          const updated = payload.new as any;
+          // If unpublished or hidden, remove from cache
+          if (!updated.is_published || updated.is_hidden) {
+            queryClient.setQueryData(['gallery-scenarios', queryParams], (old: any) => {
+              if (!old?.pages) return old;
+              return {
+                ...old,
+                pages: old.pages.map((page: PublishedScenario[]) =>
+                  page.filter(s => s.id !== updated.id)
+                ),
+              };
+            });
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'published_scenarios' },
+        (payload) => {
+          const deleted = payload.old as any;
+          queryClient.setQueryData(['gallery-scenarios', queryParams], (old: any) => {
+            if (!old?.pages) return old;
+            return {
+              ...old,
+              pages: old.pages.map((page: PublishedScenario[]) =>
+                page.filter(s => s.id !== deleted.id)
+              ),
+            };
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient, queryParams]);
 
   const handleSearch = () => {
-    const tags = searchQuery
-      .split(/[,;\s]+/)
-      .map(t => t.trim().toLowerCase().replace(/^#/, ''))
-      .filter(t => t.length > 0);
+    // Extract hashtags as tags, rest as search text
+    const parts = searchQuery.split(/\s+/);
+    const tags: string[] = [];
+    const textParts: string[] = [];
+    
+    for (const part of parts) {
+      if (part.startsWith('#') && part.length > 1) {
+        tags.push(part.slice(1).toLowerCase());
+      } else if (part.trim()) {
+        textParts.push(part);
+      }
+    }
+    
     setSearchTags(tags);
+    setSearchText(textParts.join(' '));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -157,6 +230,19 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
       handleSearch();
     }
   };
+
+  // Helper to update scenario data in the React Query cache
+  const updateScenarioInCache = useCallback((id: string, updater: (s: PublishedScenario) => PublishedScenario) => {
+    queryClient.setQueryData(['gallery-scenarios', queryParams], (old: any) => {
+      if (!old?.pages) return old;
+      return {
+        ...old,
+        pages: old.pages.map((page: PublishedScenario[]) =>
+          page.map(s => s.id === id ? updater(s) : s)
+        ),
+      };
+    });
+  }, [queryClient, queryParams]);
 
   const handleLike = async (published: PublishedScenario) => {
     if (!user) {
@@ -166,21 +252,13 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
 
     try {
       const nowLiked = await toggleLike(published.id, user.id);
-      setLikes(prev => {
-        const next = new Set(prev);
-        if (nowLiked) {
-          next.add(published.id);
-        } else {
-          next.delete(published.id);
-        }
-        return next;
-      });
-      // Update local count
-      setScenarios(prev => prev.map(s => 
-        s.id === published.id 
-          ? { ...s, like_count: s.like_count + (nowLiked ? 1 : -1) }
-          : s
-      ));
+      // Invalidate interactions to refresh likes/saves
+      queryClient.invalidateQueries({ queryKey: ['gallery-interactions'] });
+      // Update local count optimistically
+      updateScenarioInCache(published.id, s => ({
+        ...s,
+        like_count: s.like_count + (nowLiked ? 1 : -1),
+      }));
     } catch (error) {
       console.error('Failed to toggle like:', error);
       toast.error('Failed to update like');
@@ -198,33 +276,21 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
     try {
       if (isSaved) {
         await unsaveScenario(published.id, user.id);
-        setSaves(prev => {
-          const next = new Set(prev);
-          next.delete(published.id);
-          return next;
-        });
-        setScenarios(prev => prev.map(s => 
-          s.id === published.id 
-            ? { ...s, save_count: Math.max(0, s.save_count - 1) }
-            : s
-        ));
+        updateScenarioInCache(published.id, s => ({
+          ...s,
+          save_count: Math.max(0, s.save_count - 1),
+        }));
         toast.success('Removed from your collection');
       } else {
         await saveScenarioToCollection(published.id, published.scenario_id, user.id);
-        setSaves(prev => {
-          const next = new Set(prev);
-          next.add(published.id);
-          return next;
-        });
-        setScenarios(prev => prev.map(s => 
-          s.id === published.id 
-            ? { ...s, save_count: s.save_count + 1 }
-            : s
-        ));
+        updateScenarioInCache(published.id, s => ({
+          ...s,
+          save_count: s.save_count + 1,
+        }));
         toast.success('Saved to your stories!');
       }
       
-      // Notify parent that saves changed
+      queryClient.invalidateQueries({ queryKey: ['gallery-interactions'] });
       onSaveChange?.();
     } catch (error) {
       console.error('Failed to toggle save:', error);
@@ -233,7 +299,6 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
   };
 
   const handlePlay = async (published: PublishedScenario) => {
-    // Increment play count in background
     incrementPlayCount(published.id).catch(console.error);
     onPlay(published.scenario_id, published.id);
   };
@@ -241,22 +306,21 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
   const handleViewDetails = (published: PublishedScenario) => {
     setSelectedPublished(published);
     setDetailModalOpen(true);
-    // Increment view count in background
-    incrementViewCount(published.id).catch(console.error);
-    // Update local count optimistically
-    setScenarios(prev => prev.map(s => 
-      s.id === published.id 
-        ? { ...s, view_count: s.view_count + 1 }
-        : s
-    ));
+    // Record view with 24-hour deduplication
+    if (user) {
+      recordView(published.id).catch(console.error);
+      updateScenarioInCache(published.id, s => ({
+        ...s,
+        view_count: s.view_count + 1,
+      }));
+    }
   };
 
   const handleUnpublish = async () => {
     if (!selectedPublished || !user) return;
     try {
       await unpublishScenario(selectedPublished.scenario_id);
-      // Remove from local list
-      setScenarios(prev => prev.filter(s => s.id !== selectedPublished.id));
+      queryClient.invalidateQueries({ queryKey: ['gallery-scenarios'] });
       setDetailModalOpen(false);
       toast.success('Your story has been removed from the Gallery');
     } catch (e) {
@@ -272,6 +336,12 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
     categoryFilters.origins.length +
     categoryFilters.triggerWarnings.length +
     categoryFilters.customTags.length;
+
+  // Get live data for detail modal
+  const liveSelectedData = useMemo(() => {
+    if (!selectedPublished) return null;
+    return scenarios.find(s => s.id === selectedPublished.id) || selectedPublished;
+  }, [selectedPublished, scenarios]);
 
   return (
     <div className="w-full h-full flex flex-col bg-[#121214]">
@@ -291,7 +361,7 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder=""
+            placeholder="Search titles, descriptions, or #tags..."
             className="w-full pl-12 pr-24 py-3 bg-[#3a3a3f]/50 border border-white/10 rounded-xl text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#4a5f7f] focus:border-transparent"
           />
           <button
@@ -344,10 +414,20 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
         <main className="flex-1 overflow-y-auto">
           {/* Active Filters */}
           <div className="px-8 pt-6 pb-4">
-            {/* Active filters display */}
-            {(searchTags.length > 0 || activeFilterCount > 0) && (
+            {(searchTags.length > 0 || searchText || activeFilterCount > 0) && (
               <div className="flex items-center gap-2 mb-4 flex-wrap">
                 <span className="text-sm text-white/70">Filtering by:</span>
+                {searchText && (
+                  <span className="px-2 py-1 bg-white/20 text-white rounded-full text-xs font-medium flex items-center gap-1">
+                    "{searchText}"
+                    <button
+                      onClick={() => { setSearchText(''); setSearchQuery(searchTags.map(t => `#${t}`).join(' ')); }}
+                      className="hover:text-red-300"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
                 {searchTags.map(tag => (
                   <span
                     key={`search-${tag}`}
@@ -397,6 +477,7 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
                 <button
                   onClick={() => { 
                     setSearchTags([]); 
+                    setSearchText('');
                     setSearchQuery(''); 
                     setCategoryFilters(defaultFilters);
                   }}
@@ -406,7 +487,6 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
                 </button>
               </div>
             )}
-
           </div>
 
           {/* Gallery Grid */}
@@ -426,70 +506,78 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
                 <p className="text-white/60 max-w-md">
                   {sortBy === 'following'
                     ? "Follow creators to see their stories here."
-                    : searchTags.length > 0 || activeFilterCount > 0
+                    : searchTags.length > 0 || searchText || activeFilterCount > 0
                     ? "Try different filters or clear your search to see all stories."
                     : "Be the first to publish a story to the gallery!"}
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 lg:gap-8">
-                {scenarios.map((published) => (
-                  <GalleryScenarioCard
-                    key={published.id}
-                    published={published}
-                    isLiked={likes.has(published.id)}
-                    isSaved={saves.has(published.id)}
-                    onLike={() => handleLike(published)}
-                    onSave={() => handleSave(published)}
-                    onPlay={() => handlePlay(published)}
-                    onViewDetails={() => handleViewDetails(published)}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 lg:gap-8">
+                  {scenarios.map((published) => (
+                    <GalleryScenarioCard
+                      key={published.id}
+                      published={published}
+                      isLiked={likes.has(published.id)}
+                      isSaved={saves.has(published.id)}
+                      onLike={() => handleLike(published)}
+                      onSave={() => handleSave(published)}
+                      onPlay={() => handlePlay(published)}
+                      onViewDetails={() => handleViewDetails(published)}
+                    />
+                  ))}
+                </div>
+
+                {/* Infinite scroll sentinel */}
+                <div ref={sentinelRef} className="flex items-center justify-center py-8">
+                  {isFetchingNextPage && (
+                    <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+                  )}
+                  {!hasNextPage && scenarios.length > 0 && (
+                    <p className="text-white/30 text-sm">You've reached the end</p>
+                  )}
+                </div>
+              </>
             )}
           </div>
         </main>
       </div>
 
       {/* Detail Modal */}
-      {selectedPublished && (() => {
-        // Use live data from scenarios state so counts update immediately
-        const liveData = scenarios.find(s => s.id === selectedPublished.id) || selectedPublished;
-        return (
-          <TooltipProvider>
-            <ScenarioDetailModal
-              open={detailModalOpen}
-              onOpenChange={setDetailModalOpen}
-              scenarioId={liveData.scenario_id}
-              title={liveData.scenario?.title || "Untitled"}
-              description={liveData.scenario?.description || ""}
-              coverImage={liveData.scenario?.cover_image_url || ""}
-              coverImagePosition={liveData.scenario?.cover_image_position || { x: 50, y: 50 }}
-              tags={liveData.tags}
-              contentThemes={liveData.contentThemes}
-              likeCount={liveData.like_count}
-              saveCount={liveData.save_count}
-              playCount={liveData.play_count}
-              viewCount={liveData.view_count}
-              avgRating={liveData.avg_rating}
-              reviewCount={liveData.review_count}
-              publisher={liveData.publisher}
-              publisherId={liveData.publisher_id}
-              publishedScenarioId={liveData.id}
-              publishedAt={liveData.created_at}
-              isLiked={likes.has(liveData.id)}
-              isSaved={saves.has(liveData.id)}
-              allowRemix={liveData.allow_remix}
-              onLike={() => handleLike(liveData)}
-              onSave={() => handleSave(liveData)}
-              onPlay={() => handlePlay(liveData)}
-              isPublished={true}
-              canUnpublish={user?.id === liveData.publisher_id}
-              onUnpublish={user?.id === liveData.publisher_id ? handleUnpublish : undefined}
-            />
-          </TooltipProvider>
-        );
-      })()}
+      {liveSelectedData && (
+        <TooltipProvider>
+          <ScenarioDetailModal
+            open={detailModalOpen}
+            onOpenChange={setDetailModalOpen}
+            scenarioId={liveSelectedData.scenario_id}
+            title={liveSelectedData.scenario?.title || "Untitled"}
+            description={liveSelectedData.scenario?.description || ""}
+            coverImage={liveSelectedData.scenario?.cover_image_url || ""}
+            coverImagePosition={liveSelectedData.scenario?.cover_image_position || { x: 50, y: 50 }}
+            tags={liveSelectedData.tags}
+            contentThemes={liveSelectedData.contentThemes}
+            likeCount={liveSelectedData.like_count}
+            saveCount={liveSelectedData.save_count}
+            playCount={liveSelectedData.play_count}
+            viewCount={liveSelectedData.view_count}
+            avgRating={liveSelectedData.avg_rating}
+            reviewCount={liveSelectedData.review_count}
+            publisher={liveSelectedData.publisher}
+            publisherId={liveSelectedData.publisher_id}
+            publishedScenarioId={liveSelectedData.id}
+            publishedAt={liveSelectedData.created_at}
+            isLiked={likes.has(liveSelectedData.id)}
+            isSaved={saves.has(liveSelectedData.id)}
+            allowRemix={liveSelectedData.allow_remix}
+            onLike={() => handleLike(liveSelectedData)}
+            onSave={() => handleSave(liveSelectedData)}
+            onPlay={() => handlePlay(liveSelectedData)}
+            isPublished={true}
+            canUnpublish={user?.id === liveSelectedData.publisher_id}
+            onUnpublish={user?.id === liveSelectedData.publisher_id ? handleUnpublish : undefined}
+          />
+        </TooltipProvider>
+      )}
     </div>
   );
 };
