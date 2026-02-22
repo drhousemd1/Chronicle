@@ -688,7 +688,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
               >
                 <div className="rounded-xl overflow-hidden border border-[#4a5f7f] shadow-sm group-hover:shadow-lg transition-shadow">
                 {/* Image container */}
-                <div className="relative aspect-square bg-slate-100">
+                <div className="relative aspect-square bg-slate-100 overflow-hidden">
                   <img
                     src={image.imageUrl}
                     alt={image.title || image.filename}
