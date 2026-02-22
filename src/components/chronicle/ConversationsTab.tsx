@@ -34,115 +34,130 @@ export function ConversationsTab({
   return (
     <TooltipProvider>
     <div className="max-w-4xl mx-auto py-4">
-      {sortedRegistry.length === 0 ? (
-        <div className="py-20 text-center opacity-50">
-          <div className="text-6xl mb-4">💬</div>
-          <p className="font-bold text-zinc-500">No saved sessions found.</p>
-          <p className="text-sm text-zinc-600 mt-1">Start playing a scenario to create your first save.</p>
-        </div>
-      ) : (
-        <div className="rounded-2xl overflow-hidden">
-          <div className="divide-y divide-white/10">
-            {visibleItems.map((entry) => {
-              const dateStr = new Date(entry.updatedAt).toLocaleDateString([], { 
-                month: 'short', 
-                day: 'numeric',
-                year: 'numeric'
-              });
-
-              return (
-                <div
-                  key={entry.conversationId}
-                  className="flex items-center gap-4 p-4 hover:bg-white/5 transition-all group"
-                >
-                  {/* Scenario thumbnail - clickable */}
-                  <button
-                    onClick={() => onResume(entry.scenarioId, entry.conversationId)}
-                    className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-zinc-800 border border-[#4a5f7f] hover:ring-2 hover:ring-[#4a5f7f] transition-all"
-                  >
-                    {entry.scenarioImageUrl ? (
-                      <img 
-                        src={entry.scenarioImageUrl} 
-                        alt="" 
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-zinc-500 text-xl">
-                        📖
-                      </div>
-                    )}
-                  </button>
-
-                  {/* Title + Preview - clickable to resume */}
-                  <button
-                    onClick={() => onResume(entry.scenarioId, entry.conversationId)}
-                    className="flex-1 min-w-0 text-left"
-                  >
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-bold text-white truncate">
-                        {entry.scenarioTitle}
-                      </h3>
-                      <span className="flex items-center gap-1 text-sm text-zinc-500">
-                        💬 {entry.messageCount}
-                      </span>
-                      <span className="text-sm text-zinc-500">•</span>
-                      <span className="text-sm text-zinc-500">{dateStr}</span>
-                    </div>
-                    <p className="text-sm text-zinc-400 truncate leading-relaxed">
-                      {entry.lastMessage || "No messages yet"}
-                    </p>
-                  </button>
-
-                  {/* Action buttons - right side */}
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onRename(entry.scenarioId, entry.conversationId);
-                          }}
-                          className="p-2 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-white/10 transition-colors"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent>Rename</TooltipContent>
-                    </Tooltip>
-
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onDelete(entry.scenarioId, entry.conversationId);
-                          }}
-                          className="p-2 rounded-lg text-zinc-500 hover:text-red-500 hover:bg-red-500/10 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent>Delete</TooltipContent>
-                    </Tooltip>
-                  </div>
-                </div>
-              );
-            })}
+      <div className="bg-[#2a2a2f] rounded-2xl border border-[#4a5f7f] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
+        {sortedRegistry.length === 0 ? (
+          <div className="py-20 text-center">
+            <div className="text-6xl mb-4">💬</div>
+            <p className="font-bold text-zinc-400">No saved sessions found.</p>
+            <p className="text-sm text-zinc-500 mt-1">Start playing a scenario to create your first save.</p>
           </div>
+        ) : (
+          <>
+            <div className="p-3 space-y-2">
+              {visibleItems.map((entry) => {
+                const dateStr = new Date(entry.updatedAt).toLocaleDateString([], { 
+                  month: 'short', 
+                  day: 'numeric',
+                  year: 'numeric'
+                });
 
-          {/* Load More pagination */}
-          {hasMore && (
-            <div className="flex justify-center py-6">
-              <button
-                onClick={() => setVisibleCount(prev => prev + PAGE_SIZE)}
-                className="px-6 py-2 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-white/10 transition-all active:scale-95 text-sm font-bold"
-              >
-                Load More ({sortedRegistry.length - visibleCount} remaining)
-              </button>
+                return (
+                  <div
+                    key={entry.conversationId}
+                    className="bg-[#3a3a3f]/30 rounded-xl border border-white/5 hover:bg-[#3a3a3f]/60 transition-all group"
+                  >
+                    <div className="flex items-center gap-4 p-4">
+                      {/* Scenario thumbnail - clickable */}
+                      <button
+                        onClick={() => onResume(entry.scenarioId, entry.conversationId)}
+                        className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-zinc-800 border border-[#4a5f7f] hover:ring-2 hover:ring-[#4a5f7f] transition-all"
+                      >
+                        {entry.scenarioImageUrl ? (
+                          <img 
+                            src={entry.scenarioImageUrl} 
+                            alt="" 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-zinc-500 text-xl">
+                            📖
+                          </div>
+                        )}
+                      </button>
+
+                      {/* Title + meta - clickable to resume */}
+                      <button
+                        onClick={() => onResume(entry.scenarioId, entry.conversationId)}
+                        className="flex-1 min-w-0 text-left"
+                      >
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-bold text-white truncate">
+                            {entry.scenarioTitle}
+                          </h3>
+                          <span className="flex items-center gap-1 text-sm text-zinc-500">
+                            💬 {entry.messageCount}
+                          </span>
+                          <span className="text-sm text-zinc-500">•</span>
+                          <span className="text-sm text-zinc-500">{dateStr}</span>
+                        </div>
+                      </button>
+
+                      {/* Action buttons - right side */}
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onRename(entry.scenarioId, entry.conversationId);
+                              }}
+                              className="p-2 rounded-lg bg-zinc-900/50 border border-white/10 text-zinc-400 hover:text-blue-400 hover:border-blue-500/30 transition-colors"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>Rename</TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDelete(entry.scenarioId, entry.conversationId);
+                              }}
+                              className="p-2 rounded-lg bg-zinc-900/50 border border-white/10 text-zinc-400 hover:text-red-400 hover:border-red-500/30 transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>Delete</TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </div>
+
+                    {/* Last message preview - inset field style */}
+                    <div className="px-4 pb-4">
+                      <button
+                        onClick={() => onResume(entry.scenarioId, entry.conversationId)}
+                        className="w-full text-left"
+                      >
+                        <div className="bg-zinc-900/50 border border-white/10 rounded-lg px-3 py-1.5">
+                          <p className="text-sm text-zinc-400 truncate leading-relaxed">
+                            {entry.lastMessage || "No messages yet"}
+                          </p>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          )}
-        </div>
-      )}
+
+            {/* Load More pagination */}
+            {hasMore && (
+              <div className="flex justify-center py-6">
+                <button
+                  onClick={() => setVisibleCount(prev => prev + PAGE_SIZE)}
+                  className="px-6 py-2 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-white/10 transition-all active:scale-95 text-sm font-bold"
+                >
+                  Load More ({sortedRegistry.length - visibleCount} remaining)
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
     </TooltipProvider>
   );
