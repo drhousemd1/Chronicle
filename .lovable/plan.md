@@ -1,49 +1,39 @@
 
-# Fix App Guide: Copy/Paste + Image Support
 
-## Problems Identified
-1. **Copy/paste broken**: The `contentEditable` div has no `onPaste` handler. Browser default paste inserts raw HTML that doesn't reliably trigger `onInput`, causing content to silently diverge from the markdown state.
-2. **No image support**: No `onDrop` or clipboard-image handling exists. No storage bucket for guide images. No upload logic.
+# Add Drag-to-Resize for Images in Guide Editor
 
-## Solution
+## What This Does
+Adds resize handles (small corner squares) to images inside the Guide Editor's contentEditable area. When you click an image, handles appear; dragging a corner resizes the image proportionally. The new size persists in the markdown via the `width` attribute on the `<img>` tag.
 
-### 1. Create `guide_images` Storage Bucket
-- New database migration to create a `guide_images` public bucket
-- RLS policies: authenticated users can upload, anyone can read (guide content may be shared)
+## How It Works
 
-### 2. Add `onPaste` Handler (GuideEditor.tsx)
-- Intercept paste events on the contentEditable div
-- **Text paste**: Strip formatting from pasted HTML to keep it clean, insert as sanitized HTML, then trigger `handleInput` to sync markdown state
-- **Image paste** (from clipboard screenshots): Extract the image blob from `clipboardData.files`, compress it (JPEG, 0.85 quality, max 1024px width per project standards), upload to `guide_images` bucket, insert an `<img>` tag with the public URL at the cursor position, then trigger `handleInput`
+1. **Click-to-select**: Add a `click` event listener on the editor div that detects clicks on `<img>` elements. When an image is clicked, overlay 4 small resize handles (corner squares) positioned absolutely around the image.
 
-### 3. Add `onDrop` Handler (GuideEditor.tsx)
-- Intercept drop events on the contentEditable div
-- Detect image files from `dataTransfer.files`
-- Same flow as paste: compress, upload to `guide_images/{userId}/{timestamp}.jpg`, insert `<img>` tag at drop position
-- Show a subtle visual indicator (border highlight) during drag-over via `onDragOver`
+2. **Drag-to-resize**: On `mousedown` of a handle, track `mousemove` to calculate the new width based on drag delta. Constrain to maintain aspect ratio. Apply the new width directly to the `img.style.width`. Minimum width: 50px. Maximum width: editor container width.
 
-### 4. Image Upload Utility
-- Create a helper function `uploadGuideImage(file: File): Promise<string>` in the GuideEditor file (or a small utility)
-- Compress using canvas (max 1024px width, JPEG 0.85)
-- Upload to `guide_images` bucket at path `{userId}/{timestamp}-{random}.jpg`
-- Return the public URL
+3. **Deselect**: Clicking anywhere else in the editor (not on the image or handles) removes the handles.
 
-### 5. Turndown Image Rule
-- Ensure the turndown instance converts `<img>` tags back to markdown image syntax `![alt](url)` -- this should work by default with turndown, but will verify and add a custom rule if needed
+4. **Persist size**: After resize ends (`mouseup`), trigger `handleInput()` which runs turndown on the HTML. Turndown will capture the `width` style. Add a custom turndown rule to preserve image width as an HTML `<img>` tag in the markdown output (since standard markdown `![](url)` has no width support).
+
+5. **Touch support**: Include `touchstart`/`touchmove`/`touchend` on handles for iPad usage per project conventions.
 
 ## Technical Details
 
-**Files modified:**
-- `src/components/admin/guide/GuideEditor.tsx` -- add `onPaste`, `onDrop`, `onDragOver` handlers, image upload utility, compression helper
+**Single file changed**: `src/components/admin/guide/GuideEditor.tsx`
 
-**Database migration:**
-- Create `guide_images` storage bucket (public)
-- RLS: authenticated users can INSERT to `guide_images`, public SELECT
+**Changes:**
+- Add a `selectedImage` ref to track the currently selected image element
+- Add a `useEffect` that attaches a delegated click listener to the editor div for image selection
+- Create `showResizeHandles(img)` and `removeResizeHandles()` helper functions that add/remove absolutely-positioned corner divs
+- Each handle div gets mousedown/touchstart listeners that initiate proportional resize tracking
+- On mouseup/touchend, call `handleInput()` to sync the resized dimensions to markdown
+- Add a custom turndown rule for `img` elements that preserves `width`/`style` attributes as inline HTML `<img>` tags rather than converting to `![]()`
+- Add CSS for handles: `8x8px`, `bg-blue-500`, `cursor: nwse-resize` (and appropriate cursors per corner), `position: absolute`, `z-index: 10`
 
-**No other files changed.** The toolbar, sidebar, and AppGuideTool remain untouched.
+**No database changes. No new dependencies. No other files modified.**
 
-## Behavior After Fix
-- **Ctrl+V / Cmd+V text**: Pastes clean content, markdown state syncs immediately
-- **Ctrl+V / Cmd+V screenshot**: Image uploads to storage, appears inline in the editor as an `<img>`, saved as `![](url)` in markdown
-- **Drag-and-drop image file**: Same as screenshot paste -- uploads, inserts inline
-- **Drag-over visual**: Subtle blue border or overlay to indicate drop zone is active
+## User Experience
+- Click an image in the editor -- blue corner handles appear
+- Drag any corner -- image resizes proportionally
+- Click elsewhere -- handles disappear
+- Size is saved automatically when you save the document
