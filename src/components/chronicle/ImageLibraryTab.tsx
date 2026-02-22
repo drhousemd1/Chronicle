@@ -699,9 +699,6 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
                     }}
                   />
 
-                  {/* Hover overlay */}
-                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-
                   {/* Set as thumbnail button */}
                   <button
                     type="button"
