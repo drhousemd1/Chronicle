@@ -1,34 +1,30 @@
 
 
-# Fix White Screen: Reduce Initial Module Load
+# Fix Admin Page Loading
 
 ## Problem
-The app loads 150+ JavaScript modules on startup. The `Index.tsx` page directly imports `AdminPage`, which imports `AppGuideTool`, `GuideSidebar`, and their dependencies (including `@radix-ui/react-separator`). This creates a massive concurrent request waterfall that causes the Vite dev server to time out on some modules (504 errors), resulting in a white screen.
+`React.lazy(() => import("@/pages/Admin"))` fails with "Failed to fetch dynamically imported module" because the Vite dev server times out serving the module. This causes the white screen every time you click the Admin link.
 
-## Fix
+## Solution
+Reverse the lazy-loading strategy: import `AdminPage` directly in `Index.tsx` (it was working before), but lazy-load the heavy sub-tools *inside* `Admin.tsx` so they don't bloat the initial load.
 
-### 1. Lazy-load AdminPage in Index.tsx
-Change the direct import of `AdminPage` in `Index.tsx` to a `React.lazy()` dynamic import. This defers loading all admin-related code until the user actually navigates to the admin section.
+## Changes
 
-```
-// Before (loads admin code on every page visit):
-import { AdminPage } from "@/pages/Admin";
+### 1. `src/pages/Index.tsx`
+- Replace `React.lazy(() => import("@/pages/Admin"))` with a direct import: `import { AdminPage } from "@/pages/Admin"`
+- Remove the `React.Suspense` wrapper around `<AdminPage />`
 
-// After (loads admin code only when needed):
-const AdminPage = React.lazy(() =>
-  import("@/pages/Admin").then(m => ({ default: m.AdminPage }))
-);
-```
+### 2. `src/pages/Admin.tsx`
+- Remove the direct imports of `AppGuideTool` and `ImageGenerationTool` from the top of the file
+- Lazy-load them inside the component using `React.lazy`:
+  - `const LazyAppGuide = React.lazy(() => import("@/components/admin/guide/AppGuideTool").then(m => ({ default: m.AppGuideTool })))`
+  - `const LazyImageGen = React.lazy(() => import("@/components/admin/ImageGenerationTool").then(m => ({ default: m.ImageGenerationTool })))`
+- Wrap their render locations in `React.Suspense` with a loading fallback
+- The main Admin card grid (which is what loads first) stays lightweight -- it's just divs and a Sparkles icon
 
-### 2. Wrap AdminPage render in Suspense
-Find where `<AdminPage ... />` is rendered in `Index.tsx` and wrap it in `React.Suspense` with a simple loading fallback.
-
-## Why This Works
-- The admin page is only used by admin users and only after they click the Admin tab
-- Lazy loading removes ~10-15 modules from the initial load, reducing the request waterfall below the timeout threshold
-- The App Guide editor itself is lightweight now (no BlockNote), so it will load quickly when actually needed
-- No other files need to change
-
-## Files Changed
-- `src/pages/Index.tsx` -- lazy import + Suspense wrapper (2 small edits)
+### Why This Works
+- The Admin card grid loads instantly with no heavy dependencies
+- `AppGuideTool` (which pulls in Separator, ScrollArea) only loads when you click "App Guide"
+- `ImageGenerationTool` (which pulls in Collapsible, Input, Textarea) only loads when you click "Image Generation"
+- No dynamic import at the `Index.tsx` level, so no fetch failure on the main page
 
