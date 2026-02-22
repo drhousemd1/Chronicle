@@ -4,7 +4,7 @@ import { ImageGenerationTool } from '@/components/admin/ImageGenerationTool';
 import { AdminToolEditModal, type ToolMeta } from '@/components/admin/AdminToolEditModal';
 import { ModelSettingsTab } from '@/components/chronicle/ModelSettingsTab';
 const AppGuideTool = React.lazy(() =>
-  import('@/components/admin/guide/AppGuideTool').then(m => ({ default: m.AppGuideTool }))
+  import('../components/admin/guide/AppGuideTool').then(m => ({ default: m.AppGuideTool }))
 );
 import { supabase } from '@/integrations/supabase/client';
 
