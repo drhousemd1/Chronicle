@@ -1,30 +1,59 @@
 
-# Fix App Guide Loading: Remove Radix Dependencies from GuideSidebar
+# Add Persistent Save Button to Guide Editor
 
-## The Real Problem
-The editor code is tiny and not the issue. The problem is that `GuideSidebar.tsx` imports two Radix UI components (`ScrollArea` and `Separator`). When Vite tries to dynamically load the App Guide tool, it needs to pre-bundle these Radix packages and their deep dependency trees on the fly -- and that pre-bundling step times out (504 error), killing the dynamic import.
+## What's Happening Now
+The Guide Editor has a save button, but it only appears after you start typing (when there are unsaved changes). It also uses a small blue button style that doesn't match the rest of the app.
 
-## The Fix
-Replace the two Radix UI imports in `GuideSidebar.tsx` with plain HTML/CSS equivalents. No functionality is lost.
+## What We'll Change
 
-### File: `src/components/admin/guide/GuideSidebar.tsx`
+### File: `src/components/admin/guide/GuideEditor.tsx`
 
-1. **Remove imports**: Delete the imports of `ScrollArea` from `@/components/ui/scroll-area` and `Separator` from `@/components/ui/separator`
-2. **Replace `<ScrollArea>`** with `<div className="flex-1 min-h-0 overflow-y-auto">` (identical behavior)
-3. **Replace `<Separator>`** with `<div className="h-px w-full bg-[#333]" />` (identical appearance)
+Replace the conditional save button in the title bar with a persistent "Save" button that:
+- Is always visible when a document is open
+- Uses the app's standard button style (rounded-xl, shadow surface, uppercase tracking)
+- Is disabled when there are no unsaved changes (grayed out)
+- Shows "Saving..." text while saving is in progress
+- Includes the Save icon
 
-That's it. One file, three small replacements. No other files change.
-
-## Technical Details
-
-Current problematic imports in GuideSidebar.tsx:
+The button style will match what's used throughout the rest of the app:
 ```
-import { ScrollArea } from '@/components/ui/scroll-area';   // pulls in @radix-ui/react-scroll-area
-import { Separator } from '@/components/ui/separator';       // pulls in @radix-ui/react-separator
+inline-flex items-center justify-center h-10 px-6 rounded-xl
+border border-[hsl(var(--ui-border))]
+bg-[hsl(var(--ui-surface-2))]
+text-[hsl(var(--ui-text))]
+shadow-[0_10px_30px_rgba(0,0,0,0.35)]
+hover:brightness-125 active:brightness-150
+text-[10px] font-bold leading-none uppercase tracking-wider
+disabled:opacity-50 disabled:pointer-events-none
 ```
 
-These get replaced with zero-dependency HTML equivalents:
-- `<ScrollArea className="flex-1 min-h-0">` becomes `<div className="flex-1 min-h-0 overflow-y-auto">`
-- `<Separator className="bg-[#333]" />` becomes `<div className="h-px w-full bg-[#333]" />`
+### Technical Details
 
-This completely eliminates the Radix dependency chain from the lazy-loaded module, so the dynamic import will resolve instantly.
+In the title bar section of `GuideEditor.tsx` (around lines 152-170), replace the current conditional save button:
+
+```tsx
+// Current: only shows when hasUnsaved is true, small blue style
+{hasUnsaved && (
+  <button onClick={handleSave} className="px-3 py-1 bg-blue-600 ...">
+    <Save /> Save
+  </button>
+)}
+```
+
+With:
+
+```tsx
+// New: always visible, standard app style, disabled when no changes
+<button
+  onClick={handleSave}
+  disabled={!hasUnsaved || isSaving}
+  className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider disabled:opacity-50 disabled:pointer-events-none"
+>
+  <Save className="w-3.5 h-3.5" />
+  {isSaving ? 'Saving...' : 'Save'}
+</button>
+```
+
+We'll also add an `isSaving` state variable to show loading feedback during saves, consistent with how save buttons work elsewhere in the app.
+
+Only one file changes: `GuideEditor.tsx`.
