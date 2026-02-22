@@ -1,173 +1,189 @@
 
-
-# Scenario Builder Page -- Guide Content
+# Character Builder Page -- Guide Content
 
 ## What This Does
-Write the full markdown documentation for the "Scenario Builder Page (Structure Guide)" document (ID: `135ed2fb-1547-4b4f-b062-df99a625a559`) following the same 13-section structure used in all other guides. This covers the scenario/world-building side only -- the character builder will be a separate guide.
+Write the full markdown documentation for the "Character Builder Page (Structure Guide)" document (ID: `9fd23ab1-4fd0-4b07-a594-599360a2ae90`) following the same 13-section structure used in all other guides. This covers the character creation and editing interface within the Scenario Builder, treated as its own page per user convention.
 
 ## Content Summary (based on code review)
 
-**1. Page Overview** -- Route: `tab === "world"` in `Index.tsx`. Primary source: `WorldTab.tsx` (1270 lines). Purpose: full scenario editing interface for world-building, story arcs, scenes, art style, content themes, and publishing. Sidebar position: 6th item ("Scenario Builder" -- activates for both `world` and `characters` tabs). Entry points: sidebar click (creates new scenario if none active), clicking "Edit" on a scenario card in Your Stories, or clicking the back arrow from Character Builder. No sub-views -- single scrolling page with collapsible sections.
+**1. Page Overview** -- Route: `tab === "characters"` in `Index.tsx`. Primary source: `CharactersTab.tsx` (1299 lines). Purpose: full character creation and editing interface with avatar management, 11 hardcoded trait sections, personality system, goals, and user-created custom sections. Sidebar position: shares 6th item ("Scenario Builder") with the world tab. Entry points: clicking a character in the World tab's Character Roster, clicking "Add Character" placeholder, or clicking the back arrow from world tab navigates here. Two views: character grid (no character selected) and character detail editor (character selected).
 
-**2. Layout and Structure** -- Two-column layout: left sidebar (260px, `bg-[#2a2a2f]`) showing Character Roster, right main area (`flex-1 overflow-y-auto bg-slate-50/30`). Main content is `max-w-4xl mx-auto p-4 lg:p-10 pb-20 space-y-12`. Each major section is a dark card (`bg-[#2a2a2f] rounded-[24px] border border-white/10 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]`) with a steel blue header (`bg-[#4a5f7f]`). Header bar shows back arrow, "Scenario Builder" title, and Save / Save and Close buttons.
+**2. Layout and Structure** -- Two views. **Grid View** (no selection): responsive grid (`grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8`) of character cards with "New Character" placeholder button. **Detail View** (character selected): two-column layout (`grid-cols-1 lg:grid-cols-3 gap-10`). Left column (1/3): Avatar Panel -- sticky sidebar (`lg:sticky lg:top-0 lg:max-h-[calc(100vh-9rem)]`) with avatar image, action buttons, and basic info fields (Name, Nicknames, Age, Sex/Identity, Sexual Orientation, Location, Current Mood, Controlled By toggle, Character Role toggle, Role Description). Right column (2/3): scrollable trait sections stacked vertically (`space-y-6`). Header bar shows back arrow, "Character Builder" title, AI Generate, AI Fill, Save, Cancel, and Character Library buttons.
 
 **3. UI Elements -- Complete Inventory**
 
 | Element | Location | Description |
 |---------|----------|-------------|
-| Back Arrow | Header | Returns to Your Stories (from world tab) or to world tab (from characters tab) |
-| "Save" button | Header | Shadow Surface style, 12s safety timeout, `handleSave(false)` |
-| "Save and Close" button | Header | Shadow Surface style, saves then navigates to hub |
-| Character Roster sidebar | Left panel | Lists Main and Side characters with avatar + name + controlledBy label |
-| Add Character placeholder | Sidebar | Dashed border button, navigates to Characters tab |
-| Story Card section | Main | Cover image (aspect-[2/3]) + Scenario Name + Brief Description fields |
-| Cover Image actions | Story Card | Dropdown: Upload from Device, Select from Library, Generate with AI |
-| Reposition / Remove buttons | Story Card | Only shown when cover image exists |
-| World Core section | Main | Scenario (storyPremise) textarea, Primary Locations rows, Custom World Content sections |
-| Sparkle (AI Enhance) buttons | Per field | Calls `aiEnhanceWorldField` via `world-ai.ts` |
-| Add Location button | Locations | Blue text link style (`text-blue-400`) |
-| Add Custom Content button | World Core | Dashed border, full width |
-| Story Arcs section | Main | Goal name, desired outcome, guidance strength slider, steps with simple/advanced mode toggle |
-| Opening Dialog section | Main | Textarea + HintBox + Starting Day counter + Time of Day icons (Sunrise/Day/Sunset/Night) |
-| Scene Gallery section | Main | HintBox + action buttons (Upload/Library/Generate) + image grid (2-3 cols) + tag editor + starting scene star |
-| Art Style Preference section | Main | Grid of style thumbnails (2-5 cols), radio-select with blue ring |
-| World Codex section | Main | Dialog Formatting (read-only critical rules + editable additional rules) + Additional Entries |
-| Content Themes section | Main | Tag selectors for Character Types, Story Type (SFW/NSFW), Genre, Origin, Trigger Warnings, Custom Tags |
-| Share Your Story section | Main | "Publish to Gallery" button, opens ShareScenarioModal |
+| Back Arrow | Header | Returns to character grid (if in detail) or to world tab (if in grid) |
+| "AI Generate" button | Header (detail view only) | Sparkle gradient button, opens AIPromptModal, calls `aiGenerateCharacter()` |
+| "AI Fill" button | Header (detail view only) | Sparkle gradient button, opens AIPromptModal, calls `aiFillCharacter()` |
+| "Save" button | Header (detail view only) | Shadow Surface style, 12s safety timeout |
+| "Cancel" button | Header (detail view only) | Shadow Surface style, returns to world tab |
+| "+ Character Library" / "Update Character" | Header (detail view only) | Shadow Surface style, saves to persistent library via `saveCharacterToLibrary()` |
+| "Import from Library" button | Header (grid view only) | Opens CharacterPicker modal |
+| "Create New" button | Header (grid view only) | Creates blank character |
+| Avatar image | Left panel | `w-48 h-48 rounded-2xl`, repositionable via drag (mouse + touch), crosshair overlay in reposition mode |
+| AvatarActionButtons | Left panel | Dropdown: Upload from Device, Select from Library, Generate with AI |
+| "Reposition" / "Save Position" button | Left panel | Toggles reposition mode with blue ring indicator |
+| Sparkle (AI Enhance) buttons | Per hardcoded row | Calls `aiEnhanceCharacterField()` via `character-ai.ts` |
+| "Add Row" buttons | Per section | Dashed border, adds user `_extras` row |
+| "Add Category" button | Bottom of traits column | Shadow Surface style, adds new custom section |
+| Controlled By toggle | Left panel | AI / User segmented control (`bg-zinc-800 rounded-xl`) |
+| Character Role toggle | Left panel | Main / Side segmented control |
+| Personality split mode toggle | Personality section | Standard / Split segmented control |
 
 **4. Cards / List Items**
 
-- **Character Roster Button**: `w-14 h-14 rounded-xl border-2 border-slate-100` avatar with name (`text-sm font-bold text-slate-800`) and controlledBy label (`text-[10px] font-black text-slate-400 uppercase`). Hover: `hover:bg-slate-50`, avatar `group-hover:scale-105`, name `group-hover:text-blue-600`.
-- **Cover Image Preview**: `aspect-[2/3] rounded-2xl`, reposition mode shows crosshair + "Drag to Refocus" label + blue ring. Empty state: dashed border gradient placeholder.
-- **Scene Image Tile**: `aspect-video rounded-xl border border-zinc-700 bg-zinc-800`. Bottom gradient bar shows tag count + edit (pencil) button. Hover reveals delete (rose) button and starting scene star toggle. Starting scene shows amber star + "Start" label.
-- **Content Theme Tag Pill**: Selected: `bg-blue-500/20 text-blue-300 border-blue-500/30`. Unselected: `bg-zinc-800 text-zinc-400 border-zinc-700`. Custom tags have X remove button. "Add custom" uses dashed border style.
+- **Character Grid Card**: `aspect-[2/3] rounded-[2rem]` with cover image, gradient overlay (`from-slate-950 via-slate-900/20 to-transparent`), character name, role description, role badge (Main: `bg-indigo-600`, Side: `bg-slate-600`), tag badges (`bg-blue-600`). Hover: `-translate-y-3`, `scale-110` image. Delete button: top-right, `bg-black/40`, appears on hover.
+- **New Character Placeholder**: `aspect-[2/3] rounded-[2rem] border-2 border-dashed border-zinc-600`, centered Plus icon + "New Character" text. Hover: `border-blue-400`, icon/text turn `text-blue-400`.
+- **HardcodedRow**: `[Read-only Label (w-2/5)] [Sparkle button] [AutoResizeTextarea (flex-1)] [Lock icon (w-7)]`. Label: `text-xs font-bold bg-zinc-900/50 text-zinc-400 uppercase tracking-widest`. Lock icon indicates field cannot be renamed.
+- **ExtraRow (user-added)**: `[Editable Label (w-2/5)] [Sparkle button] [Editable Value (flex-1)] [Delete X button]`. Same styling but label is editable and has red X delete instead of lock.
+- **Personality TraitRow**: `[Trait Name (w-1/3)] [Sparkle] [Description (flex-1)] [Flexibility dropdown] [Delete X]`. Flexibility: rigid (red), normal (blue), flexible (emerald).
 
 **5. Modals and Overlays**
 
 | Modal | Trigger | Component |
 |-------|---------|-----------|
-| CoverImageGenerationModal | "Generate with AI" in cover actions | `CoverImageGenerationModal.tsx` |
-| SceneImageGenerationModal | "Generate with AI" in scene actions | `SceneImageGenerationModal.tsx` |
-| SceneTagEditorModal | Pencil icon on scene tile | `SceneTagEditorModal.tsx` |
-| ShareScenarioModal | "Publish to Gallery" button | `ShareScenarioModal.tsx` |
-| ImageLibraryPickerModal | "Select from Library" in cover/scene actions | `ImageLibraryPickerModal.tsx` (reused) |
+| AvatarGenerationModal | "Generate with AI" in avatar actions | `AvatarGenerationModal.tsx` |
+| AIPromptModal | "AI Generate" or "AI Fill" header buttons | `AIPromptModal.tsx` |
+| CharacterPicker | "Import from Library" header button | `CharacterPicker.tsx` |
+| ImageLibraryPickerModal | "Select from Library" in avatar actions | `ImageLibraryPickerModal.tsx` (reused) |
 
-Browser dialogs: `confirm()` for cover removal and scene deletion.
+No browser `confirm()` or `prompt()` dialogs in the character builder itself.
 
 **6. Data Architecture**
 
-- **Primary data type**: `ScenarioData` -- contains `world: World` (with `WorldCore`), `characters: Character[]`, `story: { openingDialog }`, `scenes: Scene[]`, `contentThemes: ContentThemes`, `uiSettings`, `selectedArtStyle`.
-- **WorldCore fields**: `scenarioName`, `briefDescription`, `storyPremise`, `structuredLocations: LocationEntry[]`, `customWorldSections: WorldCustomSection[]`, `factions`, `historyTimeline`, `plotHooks`, `dialogFormatting`, `storyGoals: StoryGoal[]`.
-- **Database tables**: `scenarios` (world_core jsonb, ui_settings jsonb, opening_dialog jsonb, cover_image_url, cover_image_position, selected_model, selected_art_style, title, description, tags), `characters`, `codex_entries`, `scenes`, `content_themes`.
-- **Save flow**: `handleSaveWithData()` in Index.tsx calls `supabaseData.saveScenario()` which uses `Promise.all` for characters, codex, and scenes. Fire-and-forget registry refreshes after save.
-- **State management**: Direct `useState` in `Index.tsx` (`activeData`, `activeId`, `activeCoverImage`, `activeCoverPosition`). No React Query.
-- **Art styles**: Fetched from `art_styles` table via `ArtStylesContext`. Each style has `id`, `displayName`, `thumbnailUrl`, `backendPrompt`, `backendPromptMasculine`, `backendPromptAndrogynous`.
+- **Primary data type**: `Character` -- contains `name`, `nicknames`, `age`, `sexType`, `sexualOrientation`, `roleDescription`, `location`, `currentMood`, `controlledBy`, `characterRole`, `tags`, `avatarDataUrl`, `avatarPosition`, `physicalAppearance: PhysicalAppearance`, `currentlyWearing: CurrentlyWearing`, `preferredClothing: PreferredClothing`, `personality: CharacterPersonality`, `background: CharacterBackground`, `tone: CharacterTone`, `keyLifeEvents: CharacterKeyLifeEvents`, `relationships: CharacterRelationships`, `secrets: CharacterSecrets`, `fears: CharacterFears`, `goals: CharacterGoal[]`, `sections: CharacterTraitSection[]`.
+- **PhysicalAppearance fields**: `hairColor`, `eyeColor`, `build`, `bodyHair`, `height`, `breastSize`, `genitalia`, `skinTone`, `makeup`, `bodyMarkings`, `temporaryConditions`, plus `_extras: CharacterExtraRow[]`.
+- **CurrentlyWearing fields**: `top`, `bottom`, `undergarments`, `miscellaneous`, plus `_extras`.
+- **PreferredClothing fields**: `casual`, `work`, `sleep`, `undergarments`, `miscellaneous`, plus `_extras`.
+- **CharacterBackground fields**: `jobOccupation`, `educationLevel`, `residence`, `hobbies`, `financialStatus`, `motivation`, plus `_extras`.
+- **Extras-only sections** (Tone, Key Life Events, Relationships, Secrets, Fears): Only have `_extras: CharacterExtraRow[]` -- no hardcoded sub-fields.
+- **CharacterPersonality**: `splitMode: boolean`, `traits: PersonalityTrait[]`, `outwardTraits: PersonalityTrait[]`, `inwardTraits: PersonalityTrait[]`. Each trait has `id`, `label`, `value`, `flexibility` (rigid/normal/flexible).
+- **CharacterGoal**: `id`, `title`, `desiredOutcome`, `mode` (guidance strength), `steps: StoryGoalStep[]` with simple/advanced toggle.
+- **Database table**: `characters` -- stores all fields as jsonb columns (`physical_appearance`, `currently_wearing`, `preferred_clothing`, `personality`, `background`, `tone`, `key_life_events`, `relationships`, `secrets`, `fears`, `goals`, `sections`). `is_library` boolean distinguishes library copies from scenario-bound characters.
+- **State management**: Characters live in `activeData.characters` array in `Index.tsx`. Direct `useState`, no React Query. Updates via `onUpdate(id, patch)` which patches the character in the array.
 
 **7. Component Tree**
 
 ```
 Index.tsx
-  > header (back arrow + "Scenario Builder" + Save/Save and Close buttons)
-  > WorldTab
-    > aside (Character Roster sidebar)
-      > CharacterButton (per character)
-      > AddCharacterPlaceholder
-    > main scrollable area
-      > Story Card section (cover image + fields + CoverImageActionButtons)
-      > World Core section (Scenario, Primary Locations, Custom World Content)
-      > StoryGoalsSection
-        > per goal: ArcModeToggle, GuidanceStrengthSlider, ArcBranchLane, ArcConnectors, ArcPhaseCard
-      > Opening Dialog section (HintBox, textarea, day/time controls)
-      > Scene Gallery section (SceneGalleryActionButtons, scene tiles)
-      > Art Style Preference section (style grid)
-      > World Codex section (Dialog Formatting + Additional Entries)
-      > ContentThemesSection (CategorySelector per category + StoryTypeSelector + CustomTagsSection)
-      > Share Your Story section (Publish button)
-    > SceneTagEditorModal
-    > CoverImageGenerationModal
-    > SceneImageGenerationModal
-    > ShareScenarioModal
+  > header (back arrow + "Character Builder" + AI Generate/Fill/Save/Cancel/Library buttons)
+  > CharactersTab
+    > [Grid View - no selection]
+      > Character Grid Cards (per character)
+      > New Character Placeholder
+    > [Detail View - character selected]
+      > Left Column (Avatar Panel)
+        > Avatar image + reposition overlay
+        > AvatarActionButtons
+        > Reposition toggle button
+        > Basic info fields (Name, Nicknames, Age, Sex, Orientation, Location, Mood)
+        > Controlled By toggle (AI/User)
+        > Character Role toggle (Main/Side)
+        > Role Description + AI enhance
+      > Right Column (Trait Sections)
+        > HardcodedSection: Physical Appearance (11 rows + extras)
+        > HardcodedSection: Currently Wearing (4 rows + extras)
+        > HardcodedSection: Preferred Clothing (5 rows + extras)
+        > PersonalitySection (split mode toggle + trait rows)
+        > HardcodedSection: Tone (extras only)
+        > HardcodedSection: Background (6 rows + extras)
+        > HardcodedSection: Key Life Events (extras only)
+        > HardcodedSection: Relationships (extras only)
+        > HardcodedSection: Secrets (extras only)
+        > HardcodedSection: Fears (extras only)
+        > CharacterGoalsSection (goals with arc steps)
+        > Custom Sections (user-created, blue header)
+        > "Add Category" button
+    > AvatarGenerationModal
 ```
 
 **8. Custom Events and Callbacks**
 
 | Callback | Purpose |
 |----------|---------|
-| `onUpdateWorld(world)` | Patches the world object (core + entries) |
-| `updateCore(patch)` | Shorthand for patching `world.core` |
-| `onUpdateOpening(patch)` | Updates opening dialog text, starting day, starting time |
-| `onUpdateScenes(scenes)` | Replaces the full scenes array |
-| `onUpdateCoverImage(url)` | Sets cover image URL |
-| `onUpdateCoverPosition(pos)` | Sets cover image focal point `{x, y}` |
-| `onUpdateArtStyle(styleId)` | Sets selected art style ID |
-| `onUpdateContentThemes(themes)` | Replaces full ContentThemes object |
-| `onNavigateToCharacters()` | Switches to Characters tab |
-| `onSelectCharacter(id)` | Navigates to Characters tab with specific character selected |
-| `handleEnhanceField(fieldName)` | AI enhancement for World Core fields via `world-ai.ts` |
-| `handleCoverUpload` | File input -> resize (1024x1536, 0.85) -> upload to storage -> set URL |
-| `handleAddScene` | File input -> resize (1024x768, 0.7) -> upload -> create Scene object |
-| `handleDeleteScene` / `handleDeleteCover` | Browser confirm -> remove from state |
+| `onUpdate(id, patch)` | Patches a character in the `activeData.characters` array |
+| `onDelete(id)` | Removes character from array |
+| `onSelect(id)` | Switches to detail view for that character |
+| `onAddNew()` | Creates blank character with defaults |
+| `handleEnhanceField(fieldKey, section, getCurrentValue, setValue, customLabel)` | Per-field AI enhancement via `character-ai.ts` |
+| `handlePhysicalAppearanceChange(field, value)` | Updates a PA field on the selected character |
+| `handleCurrentlyWearingChange(field, value)` | Updates a CW field |
+| `handlePreferredClothingChange(field, value)` | Updates a PC field |
+| `handleBackgroundChange(field, value)` | Updates a Background field |
+| `handleAddExtra(section)` / `handleUpdateExtra` / `handleDeleteExtra` | CRUD on `_extras` arrays across all sections |
+| `handleSaveToLibrary` | Saves or updates character in persistent library (`is_library = true`) |
+| `handleAiPortrait` | Opens AvatarGenerationModal |
+| `handleAvatarGenerated(imageUrl)` | Compresses (512x512, 0.85) + uploads to `avatars` bucket + sets URL |
 
 **9. Styling Reference**
 
 - Section card shell: `bg-[#2a2a2f] rounded-[24px] border border-white/10 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]`
-- Section header: `bg-[#4a5f7f] border-b border-white/20 px-6 py-4`
-- Inner content area: `p-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5`
-- Field labels: `text-[10px] font-black text-zinc-400 uppercase tracking-widest`
-- Text inputs: `bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:ring-2 focus:ring-blue-500/20`
-- AI enhance button: `text-zinc-400 hover:text-cyan-400 hover:bg-white/5`, pulsing cyan when active
-- Add Location / Add Item: `text-blue-400 hover:text-blue-300` with Plus icon
-- Add Custom Content / Add New Story Arc: `border-2 border-dashed border-zinc-500 text-blue-400`
-- Save buttons: Shadow Surface style (`border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]`), hover `brightness-125`, active `brightness-150 scale-95`
-- Navy blue section titles (Custom World Content): `bg-[#1e293b] rounded-xl border border-white/5`
-- Sidebar: `bg-[#2a2a2f]`, section headers `bg-[#4a5f7f] px-4 py-2 rounded-xl`
+- Section header (hardcoded): `bg-[#4a5f7f] border-b border-white/20 px-5 py-3` (steel blue)
+- Section header (custom/user-created): `bg-blue-900/40 border-b border-blue-500/20 px-5 py-3` (dark blue, editable title)
+- Inner content area: `p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5`
+- Field labels (hardcoded): `text-xs font-bold bg-zinc-900/50 border border-white/10 text-zinc-400 uppercase tracking-widest`
+- Field labels (user-added): Same styling but `text-white` (editable)
+- Text inputs: `bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:ring-2 focus:ring-blue-500/20`
+- AI enhance button: `text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10`, pulsing blue when active
+- Add Row: `text-blue-400 border-2 border-dashed border-zinc-500 hover:border-blue-400 rounded-xl`
+- Controlled By toggle: AI selected = `text-blue-400`, User selected = `text-amber-400`, within `bg-zinc-800 rounded-xl`
+- Character Role toggle: Main selected = `text-indigo-400`, Side selected = `text-zinc-300`
+- Personality flexibility colors: rigid = `text-red-400`, normal = `text-blue-400`, flexible = `text-emerald-400`
+- Grid card hover: `-translate-y-3`, image `scale-110`, name `text-blue-300`
 
 **10. Backend Injection / AI Prompts**
 
-This is a critical section for the Scenario Builder -- every field ultimately feeds into the LLM system prompt:
+Every character field is injected into the LLM system prompt (in `llm.ts`):
 
-| Field | Injection Point (in `llm.ts` system prompt) | Format |
-|-------|----------------------------------------------|--------|
-| `storyPremise` | `SCENARIO: {value}` | Direct text injection |
-| `factions` | `FACTIONS: {value}` | Direct text injection |
-| `structuredLocations` | `LOCATIONS:\n- Label: Description` per entry | Structured list, falls back to legacy `locations` text |
-| `dialogFormatting` | `DIALOG FORMATTING:` -- hard-coded critical rules (quotes/asterisks/parentheses + POV rules) prepended, user's additional rules appended | Critical rules are immutable; user rules are additive |
-| `customWorldSections` | `CUSTOM WORLD CONTENT:\n[Section Title]:\n- Label: Value` per item | Nested structured injection |
-| `storyGoals` | `STORY DIRECTION:\n[Arc Name] (RIGID/NORMAL/FLEXIBLE)` with serialized branches, step statuses, resistance history | Complex structured injection with status tracking |
-| Content Themes tags | Injected via `buildContentThemeDirectives()` from `tag-injection-registry.ts` in three tiers: Strong (Mandatory), Moderate (Emphasized), Subtle (Flavor) | See tag injection registry for per-tag directives |
-| `selectedArtStyle` | Used by `generate-cover-image` and `generate-scene-image` edge functions -- the style's `backendPrompt` is sent alongside the user's prompt | Not injected into chat LLM, only image generation |
-| Opening Dialog | Inserted as the first assistant message in a new conversation | Direct text, not part of system prompt |
+| Field | Injection Format |
+|-------|-----------------|
+| `name`, `sexType` | `CHARACTER: {name} ({sexType})` |
+| `nicknames` | `NICKNAMES: {value}` |
+| `sexualOrientation` | `SEXUAL ORIENTATION: {value}` |
+| `controlledBy` | `CONTROL: {value}` (AI or User) |
+| `characterRole` | `ROLE: {value}` (Main or Side) |
+| `location` | `LOCATION: {value}` |
+| `currentMood` | `MOOD: {value}` |
+| `personality` | `PERSONALITY:` block -- standard traits as `{label}: {value}`, split mode as `(outward) ...` / `(inward) ...` with `[{flexibility}]` tags |
+| `tone._extras` | `TONE: {label}={value}, ...` |
+| `background` fields | `BACKGROUND: Job: ..., Education: ..., Residence: ..., Hobbies: ..., Financial: ..., Motivation: ...` plus extras |
+| `keyLifeEvents._extras` | `KEY LIFE EVENTS: {label}={value}, ...` |
+| `relationships._extras` | `RELATIONSHIPS: {label}={value}, ...` |
+| `secrets._extras` | `SECRETS: {label}={value}, ...` |
+| `fears._extras` | `FEARS: {label}={value}, ...` |
+| `goals` | `GOALS:\n- {title} [{mode}]: {outcome}` with active step details |
+| `physicalAppearance` | Hardcoded fields injected as structured block; `_extras` appended as `ADDITIONAL ATTRIBUTES` |
+| `currentlyWearing` | Same pattern as PA |
+| `preferredClothing` | Same pattern as PA |
+| `sections` (custom) | `TRAITS:\n{title}: {label}={value}, ...` per section |
+| `tags` | `TAGS: {value}` |
 
-**AI Enhancement (Sparkle buttons)**: The `world-ai.ts` service builds a structured expansion prompt for each field with field-specific instructions (max sentence counts, formatting guidance) and cross-references other filled WorldCore fields for context. Calls the `chat` edge function with `stream: false`.
+**AI Enhancement (Sparkle buttons)**: The `character-ai.ts` service has field-specific prompts in `CHARACTER_FIELD_PROMPTS` with per-field instructions and max sentence counts. Builds full world + other-characters context via `buildFullContext()` and character self-context via `buildCharacterSelfContext()`. Uses Grok-only model chain with content-filter fallback (`grok-3` -> `grok-3-mini` -> `grok-2`).
 
-**GuidanceStrengthSlider descriptions** (injected into system prompt per goal):
-- **Rigid**: "PRIMARY ARC. Allow organic deviations and subplots, but always steer the narrative back... Never abandon or diminish its importance."
-- **Normal**: "GUIDED. Weave in naturally... Persist through initial user resistance... Only adapt gradually if the user sustains consistent conflict."
-- **Flexible**: "LIGHT GUIDANCE. If the user's inputs continue to conflict, adapt fully..."
+**AI Fill**: `aiFillCharacter()` -- scans all sections for empty fields, builds a JSON-returning prompt that instructs the LLM to only fill empties, parses response with robust JSON extraction (markdown stripping, regex, balanced-brace fallback). Applies results only to fields that were actually empty. Supports user guidance prompt and "use existing details" toggle.
 
-**Story Arc step statuses** injected: `[checkmark]` succeeded, `[X]` failed, `[arrow DEVIATED]`, `[circle PERMANENTLY FAILED]`, with retry counts and resistance history.
+**AI Generate**: `aiGenerateCharacter()` -- same as AI Fill but also creates new custom sections based on detected story themes (NSFW -> Kinks & Fantasies, Fantasy -> Abilities & Skills, Mystery -> Secrets & Connections, Sci-Fi -> Tech & Augments). Returns `emptyFieldsFill` + `newSections` + `existingSectionAdditions`.
 
 **11. Security and Access Control**
 
-- `scenarios` table: INSERT/UPDATE/DELETE scoped to `auth.uid() = user_id`. SELECT allows own or published scenarios.
-- `characters` table: Same pattern, SELECT includes characters from published scenarios.
-- `scenes`, `codex_entries`: CRUD scoped via parent scenario ownership (`EXISTS (SELECT 1 FROM scenarios WHERE ...)`).
-- `content_themes`: Own scenario CRUD + public read for published scenarios.
-- `art_styles`: Public read, admin-only write.
-- Storage: Cover images and scene images uploaded to user-scoped paths.
+- `characters` table: INSERT/UPDATE/DELETE scoped to `auth.uid() = user_id`. SELECT allows own characters or characters from published scenarios.
+- Avatar uploads: stored in `avatars` bucket (public read), uploaded to user-scoped paths (`{userId}/avatar-{charId}-{timestamp}.jpg`).
+- Library characters use `is_library = true` flag and same RLS rules.
 
 **12. Known Issues / Quirks**
 
-- Scene deletion and cover removal use browser `confirm()` (not styled modals).
-- Auto-resizing textarea is duplicated in both `WorldTab.tsx` and `StoryGoalsSection.tsx` (same implementation, not extracted to shared component).
-- Legacy fields kept for backward compatibility but hidden from UI: `settingOverview`, `rulesOfMagicTech`, `narrativeStyle`, `locations` (plain text -- replaced by `structuredLocations`).
-- Custom World Content AI enhancement re-uses `briefDescription` field name as a hack (passes custom context via the briefDescription parameter).
-- Scene image generation calls `generate-cover-image` edge function (not a separate scene-specific function) with a landscape-oriented prompt prefix.
-- `handleSaveWithData` includes UUID migration logic for legacy non-UUID IDs.
-- Content theme tags are stored in a separate `content_themes` table but also kept in-memory on `ScenarioData.contentThemes`.
-- The Character Roster sidebar in World tab uses light theme styling (`bg-slate-50`, `text-slate-800`) for character buttons, contrasting with the dark-themed main content.
+- `AutoResizeTextarea` is duplicated across `CharactersTab.tsx`, `PersonalitySection.tsx`, `StoryGoalsSection.tsx`, `WorldTab.tsx`, and `CharacterEditModal.tsx` -- same implementation, not extracted to a shared component.
+- AI Generate/Fill use Grok-only models (`grok-3` with fallback chain) regardless of the user's selected model setting -- hardcoded comment "GROK ONLY" in multiple places.
+- The `tags` field on characters is a comma-separated string, not an array, unlike `content_themes` and scenario tags which use arrays.
+- Grid view delete button uses the legacy `Icons.Trash` component rather than lucide's `Trash2`.
+- When switching from grid view to detail view, all 12 sections start expanded (`expandedSections` defaults all to `true`), which can be a lot of scroll on first load.
+- The AI Fill `AIPromptModal` has a "Use existing details" toggle that controls whether the LLM strongly follows existing character data or treats user guidance as primary.
+- Character Library save is independent from scenario save -- the `isSavingToLibrary` state is separate to prevent UI conflicts.
+- Avatar upload compresses to 512x512 at 0.7 quality; AI-generated avatars compress at 0.85 quality (slight inconsistency).
 
 **13. Planned / Future Changes** -- None documented.
 
 ## Implementation
-Single database update to write the markdown content to `guide_documents` row `135ed2fb-1547-4b4f-b062-df99a625a559`. No code file changes needed.
+Single database update to write the markdown content to `guide_documents` row `9fd23ab1-4fd0-4b07-a594-599360a2ae90`. No code file changes needed.
