@@ -3,7 +3,9 @@ import { Sparkles } from 'lucide-react';
 import { ImageGenerationTool } from '@/components/admin/ImageGenerationTool';
 import { AdminToolEditModal, type ToolMeta } from '@/components/admin/AdminToolEditModal';
 import { ModelSettingsTab } from '@/components/chronicle/ModelSettingsTab';
-import { AppGuideTool } from '@/components/admin/guide/AppGuideTool';
+const AppGuideTool = React.lazy(() =>
+  import('@/components/admin/guide/AppGuideTool').then(m => ({ default: m.AppGuideTool }))
+);
 import { supabase } from '@/integrations/supabase/client';
 
 const DEFAULT_TOOLS: ToolMeta[] = [
@@ -93,7 +95,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
   }
 
   if (activeTool === 'app_guide') {
-    return <AppGuideTool />;
+    return (
+      <React.Suspense fallback={<div className="flex-1 flex items-center justify-center h-full bg-black"><span className="text-muted-foreground text-sm">Loading editor...</span></div>}>
+        <AppGuideTool />
+      </React.Suspense>
+    );
   }
 
   return (
