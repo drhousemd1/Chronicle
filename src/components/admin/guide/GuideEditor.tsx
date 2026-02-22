@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { TocEntry } from './GuideSidebar';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+
+const LazyMarkdownRenderer = React.lazy(() => import('./MarkdownRenderer'));
 
 interface GuideEditorProps {
   docId: string | null;
@@ -86,11 +86,13 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
 
       {/* Rendered markdown */}
       <div className="flex-1 overflow-y-auto min-h-0 p-6">
-        <div className="guide-preview max-w-4xl">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {docMarkdown}
-          </ReactMarkdown>
-        </div>
+        {docMarkdown ? (
+          <Suspense fallback={<div className="text-[#6B7280] text-sm">Loading preview…</div>}>
+            <LazyMarkdownRenderer markdown={docMarkdown} />
+          </Suspense>
+        ) : (
+          <div className="text-[#6B7280] text-sm italic">No content</div>
+        )}
       </div>
     </div>
   );
