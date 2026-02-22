@@ -1,20 +1,23 @@
 
-
-# Remove Black Hover Overlay from Image Library Thumbnails
+# Clip Zoomed Image Behind the Gray Footer
 
 ## The Problem
 
-There's a semi-transparent black overlay (`bg-black/30`) on line 703 of `ImageLibraryTab.tsx` that appears when hovering over image thumbnails. This overlay doesn't scale with the image zoom, creating a visible misaligned dark box. No other tiles in the app use this overlay.
+The image zoom effect (`group-hover:scale-110`) causes the image to scale beyond its container and visually overflow into the gray title/aspect-ratio footer below it. The `overflow-hidden` on the outer card wrapper clips at the card border, but doesn't prevent the image from covering the footer area inside the card.
 
 ## The Fix
 
-**File:** `src/components/chronicle/ImageLibraryTab.tsx`
+**File:** `src/components/chronicle/ImageLibraryTab.tsx`, line 691
 
-Remove line 703 (the hover overlay div):
-```tsx
-{/* Hover overlay */}
-<div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+Add `overflow-hidden` to the image container div so the zoomed image is clipped within the square image area, not spilling over the footer.
+
+Change:
+```
+<div className="relative aspect-square bg-slate-100">
+```
+To:
+```
+<div className="relative aspect-square bg-slate-100 overflow-hidden">
 ```
 
-This leaves only the image zoom effect on hover, matching the behavior of all other tiles in the app.
-
+This is the same pattern used by story tiles in `ScenarioHub.tsx`, where the image container has `overflow-hidden` to keep the zoom effect contained.
