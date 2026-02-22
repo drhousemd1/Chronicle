@@ -1,64 +1,36 @@
 
+# Chat History Page — Guide Content
 
-# WYSIWYG Guide Editor
+## What This Does
+Write the full markdown documentation for the "Chat History Page (Structure Guide)" document (ID: `20b1c410-c7f7-4eca-bccc-febd3dfd21a7`) following the same 13-section structure used in all other guides.
 
-## The Problem
-The editor currently shows raw markdown in a textarea with the toolbar operating on that textarea. You want to edit directly in the styled/rendered view, with toolbar buttons applying formatting at your cursor position -- exactly like Word, Notion, or Google Docs.
+## Content Summary (based on code review)
 
-## Solution
+**1. Page Overview** — Route: `tab === "conversations"` in `Index.tsx`. Primary source: `ConversationsTab.tsx` (127 lines). Purpose: centralized view of all saved chat sessions across all scenarios. Sidebar position: 5th item ("Chat History"). Entry points: sidebar click. No sub-views or nested navigation.
 
-Convert the rendered preview into an editable rich-text area using `contentEditable`. The toolbar uses the browser's built-in `document.execCommand()` API to apply formatting (bold, italic, headings, lists, etc.) directly to the styled content. On every edit, the HTML is converted back to markdown for storage.
+**2. Layout and Structure** — Single flat list layout inside `max-w-4xl mx-auto py-4`, wrapped in a `bg-black` container with `p-10` and `overflow-y-auto h-full`. Each conversation row is a horizontal flex strip: thumbnail (left), title + preview (center), action buttons (right). Rows divided by `divide-y divide-white/10`. A full-screen loading overlay appears when resuming a session (`isResuming` state).
 
-### New dependency
-- **turndown** + **turndown-plugin-gfm** -- lightweight library that converts HTML back to markdown (needed to sync edits back to the markdown stored in the database). These are small, well-established packages.
+**3. UI Elements — Complete Inventory** — "Chat History" heading (header), "Delete All" button (header, rounded-xl, dark themed), conversation rows (thumbnail, title, message count, date, last message preview), Pencil (rename) icon button, Trash (delete) icon button, loading overlay spinner + "Loading session..." text.
 
-### Changes
+**4. Cards / List Items** — Each conversation row: thumbnail `w-12 h-12 rounded-lg border border-[#4a5f7f]` with scenario cover image or fallback book emoji. Title area shows `scenarioTitle` (font-bold text-white truncate), message count emoji (speech bubble + count), dot separator, date string (MMM DD, YYYY). Second line: `lastMessage` (text-sm text-zinc-400 truncate). Hover state: `hover:bg-white/5`. Empty state: centered speech bubble emoji + "No saved sessions found" + helper text.
 
-**`src/components/admin/guide/GuideEditorToolbar.tsx`** -- Rewrite to operate on a contentEditable div instead of a textarea:
-- Remove all textarea-based logic (wrapSelection, prependLine, insertAtCursor, etc.)
-- Each button calls `document.execCommand()`:
-  - Bold -> `execCommand('bold')`
-  - Italic -> `execCommand('italic')`
-  - H1/H2/H3 -> `execCommand('formatBlock', false, 'h1')` etc.
-  - Bullet List -> `execCommand('insertUnorderedList')`
-  - Numbered List -> `execCommand('insertOrderedList')`
-  - Code Block -> Insert a `<pre><code>` block at cursor
-  - Horizontal Rule -> `execCommand('insertHorizontalRule')`
-  - Table -> Same popover grid picker, but inserts an HTML `<table>` element at cursor
-- Props change from `textareaRef` to `editorRef` (a ref to the contentEditable div)
+**5. Modals and Overlays** — No custom modals. Rename uses browser `prompt()` dialog. Delete uses browser `confirm()` dialog. "Delete All" uses browser `confirm()` with count. Loading overlay: absolute-positioned `bg-black/70 backdrop-blur-sm` with white spinner and text.
 
-**`src/components/admin/guide/GuideEditor.tsx`** -- Replace the textarea + MarkdownRenderer split with a single editable view:
-- Remove the `<textarea>` entirely
-- Remove the separate MarkdownRenderer preview
-- Add a single `contentEditable` div that:
-  - Initially renders the markdown as HTML (using react-markdown's output or a simple markdown-to-HTML conversion)
-  - Is directly editable by the user (click, type, select, format)
-  - On every `onInput` event, converts the div's innerHTML back to markdown via turndown, and calls `onMarkdownChange`
-- The div keeps the same styling as the current preview (the `guide-preview` CSS class)
-- The toolbar sits above this editable area
+**6. Data Architecture** — Data type: `ConversationMetadata` (conversationId, scenarioId, scenarioTitle, scenarioImageUrl, conversationTitle, lastMessage, messageCount, createdAt, updatedAt). Source tables: `conversations` and `messages` (joined via `enrichConversationRegistry`). Data is fetched once at app load via `fetchConversationRegistry()`, then enriched lazily when the tab is first viewed (message previews populated). Sorted client-side by `updatedAt` descending. No React Query — direct `useState` management in `Index.tsx`. Registry is optimistically updated on delete.
 
-**`src/components/admin/guide/MarkdownRenderer.tsx`** -- No longer used directly in the editor (may still be used elsewhere). The editor will handle its own rendering.
+**7. Component Tree** — `Index.tsx > header ("Chat History" + "Delete All" button) > div.bg-black > loading overlay (conditional) > ConversationsTab > conversation rows`.
 
-### User Experience
-- You see only the styled view (headings, tables, bold text, code blocks, etc.)
-- Click anywhere to place your cursor
-- Select text and click Bold/Italic to format it
-- Click H1/H2/H3 to turn the current paragraph into a heading
-- Click the Table button, pick dimensions from the grid, and a table appears at your cursor
-- Click Code Block to insert a code block
-- Everything you see is what gets saved -- true WYSIWYG
+**8. Custom Events and Callbacks** — `onResume(scenarioId, conversationId)` — loads the scenario and conversation, transitions to chat interface. `onRename(scenarioId, conversationId)` — browser prompt, then `handleRenameConversationFromHistory` which calls `supabaseData.renameConversation()` and refreshes the registry. `onDelete(scenarioId, conversationId)` — browser confirm, then `handleDeleteConversationFromHistory` with optimistic removal and `supabaseData.deleteConversation()`. `handleDeleteAllConversations()` — confirms, clears entire registry, deletes all conversations sequentially.
 
-### Technical Details
-- `contentEditable` is the same technology that powers most web-based editors (Google Docs, Notion, etc.)
-- `document.execCommand()` handles the formatting natively in the browser
-- `turndown` with the GFM plugin converts HTML tables, strikethrough, etc. back to proper markdown
-- The markdown in the database stays as the source of truth -- the editor just provides a rich editing interface on top of it
-- Initial content is set by converting markdown to HTML (using a simple marked/showdown library or by rendering react-markdown to string)
+**9. Styling Reference** — Container: `bg-black` full height. Row hover: `hover:bg-white/5`. Dividers: `divide-white/10`. Thumbnail border: `border-[#4a5f7f]`. Title: `font-bold text-white`. Preview text: `text-sm text-zinc-400`. Date/count: `text-sm text-zinc-500`. Action icons: `text-zinc-500`, hover rename `hover:text-zinc-300 hover:bg-white/10`, hover delete `hover:text-red-500 hover:bg-red-500/10`. Empty state: `opacity-50`, `text-zinc-500/600`. "Delete All" button: `rounded-xl`, uses CSS custom properties for theming.
 
-### Files Changed
-| File | Change |
-|------|--------|
-| `src/components/admin/guide/GuideEditorToolbar.tsx` | Rewrite to use execCommand on contentEditable div |
-| `src/components/admin/guide/GuideEditor.tsx` | Replace textarea + preview with single contentEditable div |
-| `package.json` | Add `turndown` + `@types/turndown` + `turndown-plugin-gfm` + `marked` (markdown-to-HTML for initial render) |
+**10. Cross-Page Dependencies** — `onResume` triggers a full scenario load + transition to `chat_interface` tab. The registry is populated during the global data load in `Index.tsx` (shared with the scenario builder's conversation list). Deleting a conversation here also updates `activeData.conversations` if the deleted conversation belongs to the currently loaded scenario.
 
+**11. Security and Access Control** — `conversations` table: all CRUD scoped to `auth.uid() = user_id`. `messages` table: all CRUD scoped via parent conversation ownership. No cross-user visibility.
+
+**12. Known Issues / Quirks** — Rename uses browser `prompt()` (not a styled modal). Delete uses browser `confirm()` (not a styled modal). "Delete All" deletes conversations sequentially in a loop rather than a batch operation. Enrichment (message previews) only runs once per session (`conversationsEnriched` flag) — new conversations created after first viewing won't show previews until page reload. Loading overlay uses a simple `isResuming` boolean which may flash briefly on fast connections.
+
+**13. Planned / Future Changes** — None documented.
+
+## Implementation
+Single database update to write the markdown content to `guide_documents` row `20b1c410-c7f7-4eca-bccc-febd3dfd21a7`. No code file changes needed.
