@@ -1,7 +1,5 @@
 import React from 'react';
 import { Plus, Trash2 } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 
 export interface GuideDocument {
   id: string;
@@ -49,7 +47,7 @@ export const GuideSidebar: React.FC<GuideSidebarProps> = ({
           Documents
         </span>
       </div>
-      <ScrollArea className="flex-1 min-h-0">
+      <div className="flex-1 min-h-0 overflow-y-auto">
         <div className="px-2 pb-2 flex flex-col gap-0.5">
           {documents.map((doc) => (
             <div
@@ -88,9 +86,9 @@ export const GuideSidebar: React.FC<GuideSidebarProps> = ({
             New Document
           </button>
         </div>
-      </ScrollArea>
+      </div>
 
-      <Separator className="bg-[#333]" />
+      <div className="h-px w-full bg-[#333]" />
 
       {/* TOC section */}
       <div className="px-3 pt-3 pb-1">
@@ -98,7 +96,7 @@ export const GuideSidebar: React.FC<GuideSidebarProps> = ({
           On This Page
         </span>
       </div>
-      <ScrollArea className="flex-1 min-h-0">
+      <div className="flex-1 min-h-0 overflow-y-auto">
         <div className="px-2 pb-4 flex flex-col gap-0.5">
           {tocEntries.map((entry) => (
             <button
@@ -116,7 +114,7 @@ export const GuideSidebar: React.FC<GuideSidebarProps> = ({
             <span className="text-[10px] text-[#4B5563] px-3 italic">No headings yet</span>
           )}
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 };
