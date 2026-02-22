@@ -684,7 +684,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
             {filteredImages.map((image) => (
               <div
                 key={image.id}
-                className="group relative transition-all duration-300 hover:-translate-y-2"
+                className="group relative"
               >
                 <div className="rounded-xl overflow-hidden border border-[#4a5f7f] shadow-sm group-hover:shadow-lg transition-shadow">
                 {/* Image container */}
@@ -692,7 +692,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
                   <img
                     src={image.imageUrl}
                     alt={image.title || image.filename}
-                    className="w-full h-full object-cover cursor-pointer"
+                    className="w-full h-full object-cover cursor-pointer transition-transform duration-700 group-hover:scale-110"
                     onClick={() => {
                       setLightboxImage(image);
                       setEditTitle(image.title || image.filename || '');
