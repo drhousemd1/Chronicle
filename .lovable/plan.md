@@ -1,63 +1,85 @@
 
 
-# Restyle Conversations Tab to Match App Design Language
+# Restyle Conversations Tab -- Correct Layering
 
-## Overview
+## Problem
 
-The Conversations tab currently has a flat, unstyled black-on-black look that feels disconnected from the rest of the app. This plan restyls it to match the layered dark-card aesthetic used in the Character Builder and Scenario Builder pages.
+The current styling gets the layering direction wrong. In this app, elements stack **lighter as they elevate** (dark base -> lighter cards -> lighter buttons). The current implementation makes buttons darker than the card they sit on, and each conversation entry lacks the navy blue border that other sections use.
+
+## The App's Layering Pattern (from CharactersTab)
+
+```text
+Level 0: Page background (black)
+Level 1: Outer card -- bg-[#2a2a2f], border border-[#4a5f7f]
+Level 2: Inner content card -- bg-[#3a3a3f]/30, border border-white/5 (LIGHTER)
+Level 3: Buttons/actions -- bg-white/5 or similar (LIGHTER still)
+Level 4: Input fields -- bg-zinc-900/50 (goes DARK, creating an inset/recessed look)
+```
+
+Buttons elevate (lighter). Inputs recess (darker). The current code has buttons at zinc-900 (dark/recessed) when they should be elevated.
 
 ## Changes (single file: `src/components/chronicle/ConversationsTab.tsx`)
 
-### 1. Outer wrapper -- slate blue border card
-Wrap the entire conversation list in a card container matching the app's standard:
-- `bg-[#2a2a2f] rounded-2xl border border-[#4a5f7f] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]`
-- This gives the list the same visual weight as character/scenario builder sections
+### 1. Each conversation entry -- add navy blue border and proper inner card
 
-### 2. Each conversation row -- subtle card layering
-Replace the current flat `hover:bg-white/5` rows with layered card-style rows:
-- Background: `bg-[#3a3a3f]/30` with `rounded-xl` and `border border-white/5`
-- Add small margin between rows instead of dividers (`space-y-2` on container, remove `divide-y`)
-- Hover: `hover:bg-[#3a3a3f]/60` for a visible lift effect
-- Padding inside each row card
-
-### 3. Last message preview -- darker inset field
-Style the last message text to look like a read-only text field:
-- Wrap in a container with `bg-zinc-900/50 border border-white/10 rounded-lg px-3 py-1.5`
-- This creates the "darker input area" look that differentiates it from the card background, matching how text fields look in the character builder
-
-### 4. Action buttons -- styled like app buttons
-Replace the bare icon buttons with the app's standard button styling:
-- Use `bg-zinc-900/50 border border-white/10 rounded-lg` background on each button
-- Keep hover states: rename gets `hover:border-blue-500/30 hover:text-blue-400`, delete gets `hover:border-red-500/30 hover:text-red-400`
-- Slightly larger hit targets with proper padding
-
-### 5. Empty state
-Update the empty state to sit inside the same card container for consistency, with text colors adjusted to match the dark card background.
-
-### 6. Load More button
-Already uses the Shadow Surface style -- no changes needed.
-
-## Visual Result
-
-```text
-+--[ #4a5f7f border ]-------------------------------+
-|  bg-[#2a2a2f] outer card                          |
-|                                                    |
-|  +--[ white/5 border ]---------------------------+ |
-|  | bg-[#3a3a3f]/30 row card                      | |
-|  | [thumb] Title  msgs  date     [edit] [delete] | |
-|  | +--[ bg-zinc-900/50 message preview --------+ | |
-|  | | "Last message text..."                     | | |
-|  | +-------------------------------------------+ | |
-|  +-----------------------------------------------+ |
-|                                                    |
-|  +--[ white/5 border ]---------------------------+ |
-|  | (next conversation row)                       | |
-|  +-----------------------------------------------+ |
-|                                                    |
-|            [ Load More ]                           |
-+----------------------------------------------------+
+Currently each row is:
+```
+bg-[#3a3a3f]/30 rounded-xl border border-white/5
 ```
 
-This matches the layered depth pattern: outer card (dark gray + brand border) contains inner row cards (slightly lighter) which contain inset fields (darkest), creating the same visual hierarchy seen throughout the character and scenario builders.
+Change to a proper two-layer structure matching CharactersTab sections:
+- Outer entry wrapper: `bg-[#2a2a2f] rounded-2xl border border-[#4a5f7f] overflow-hidden` (the navy blue border the user is asking for)
+- Inner content area: wrapped in `p-4` then `bg-[#3a3a3f]/30 rounded-2xl border border-white/5 p-4` (the lighter elevated card for title/date/message count)
+
+### 2. Action buttons -- lighter, not darker
+
+Currently:
+```
+bg-zinc-900/50 border border-white/10
+```
+
+Change to elevated style:
+```
+bg-white/10 border border-white/10 hover:bg-white/15
+```
+
+This makes them visibly lighter than the card they sit on, matching how buttons appear elsewhere in the app.
+
+### 3. Title/meta row -- sits on the elevated inner card
+
+The scenario title, message count, and date will be inside the `bg-[#3a3a3f]/30` inner card, giving them visual elevation from the base `#2a2a2f` background.
+
+### 4. Last message preview -- stays dark (inset/recessed)
+
+The `bg-zinc-900/50` message preview is correct -- inputs and read-only fields go darker to create a recessed look. This stays as-is but moves inside the inner card structure.
+
+### 5. Visual result
+
+```text
++--[ #4a5f7f border, bg-#2a2a2f ]--- entry --------+
+|  p-4                                               |
+|  +--[ white/5 border, bg-#3a3a3f/30 ]-- inner ---+|
+|  | [thumb] Title  msgs  date  [edit] [delete]     ||
+|  |                            (lighter bg)        ||
+|  | +--[ bg-zinc-900/50 message preview ]--------+ ||
+|  | | "Last message text..." (darker/recessed)   | ||
+|  | +-------------------------------------------+ ||
+|  +-----------------------------------------------+|
++----------------------------------------------------+
+
++--[ #4a5f7f border ]--- next entry -----------------+
+|  ...                                                |
++-----------------------------------------------------+
+```
+
+Each conversation entry now mirrors the section pattern from CharactersTab: navy blue bordered outer shell, lighter inner content card, with recessed dark fields for text content.
+
+## Technical Details
+
+- File: `src/components/chronicle/ConversationsTab.tsx`
+- The outer list card (`bg-[#2a2a2f] border-[#4a5f7f]`) remains as the page-level container
+- Each row becomes its own mini-section with the same border treatment
+- Button classes change from `bg-zinc-900/50` to `bg-white/10` for proper elevation
+- `space-y-3` between entries for breathing room
+- Thumbnail border stays `border-[#4a5f7f]` as it already matches
 
