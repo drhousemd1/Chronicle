@@ -1,60 +1,94 @@
 
 
-# Fill Out Character Library Page (Structure Guide)
+# Revised Plan: Editor Toolbar + Image Library Guide Content
 
-## Overview
+## Task 1: Add Formatting Toolbar to Guide Editor
 
-Write the full documentation for the "Character Library Page (Structure Guide)" document (ID: `195a779c-58e5-43a7-a460-33406955589a`) in the `guide_documents` table. The markdown content will follow the exact same 13-section structure used by the Community Gallery and Your Stories guides.
+The current `GuideEditor.tsx` is read-only (no textarea, no editing). We need to make it editable with a formatting toolbar, while keeping the same rendered preview look.
 
-## Document Content
+### What changes
 
-The guide will be saved as markdown to the existing `guide_documents` row via a database update. The content covers all aspects of the Character Library page based on thorough code review.
+**New file: `src/components/admin/guide/GuideEditorToolbar.tsx`**
+A toolbar component with icon buttons for:
+- **Bold** (wraps selection in `**`)
+- **Italic** (wraps selection in `*`)
+- **Heading 1 / 2 / 3** (prepends `# ` / `## ` / `### ` to line)
+- **Bullet List** (prepends `- ` to line)
+- **Numbered List** (prepends `1. ` to line)
+- **Code Block** (wraps selection in triple backticks)
+- **Insert Table** -- a small dropdown/popover: a grid of cells (e.g. 5x5 max) where you hover to select dimensions, then it inserts a markdown table with that many rows and columns. Simple and familiar (like Word's table picker).
+- **Horizontal Rule** (inserts `---`)
 
-### Section Breakdown
+Each button operates on a textarea ref -- inserting markdown syntax at the cursor position or wrapping the current selection.
 
-**1. Page Overview** -- Route (`tab === "library"` inside `Index.tsx`), primary source files (`Index.tsx` + `CharactersTab.tsx`), purpose (global reusable character repository independent of any scenario), user role access (any authenticated user), sidebar position (3rd item, "Character Library"), entry points (sidebar click, programmatic navigation).
+**Modified: `src/components/admin/guide/GuideEditor.tsx`**
+- Add a new `onMarkdownChange` prop
+- Below the title bar, render the `GuideEditorToolbar`
+- Below the toolbar, show a `<textarea>` for raw markdown editing (full width, dark themed, monospace font)
+- Below the textarea, keep the existing rendered preview (so you type above and see the result below)
+- The textarea and preview share the same scroll area or are stacked vertically
 
-**2. Layout and Structure** -- Two distinct views: Card Grid (no character selected) and Character Editor (character selected). Card grid uses responsive `grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8` with `p-10 bg-black`. Editor uses a 2-column layout (`lg:grid-cols-3`) with left column for Avatar/Profile panel (sticky) and right column (`lg:col-span-2`) for 11 hardcoded trait sections plus custom sections. Header shows back arrow (when character selected), title, and action buttons (AI Fill, Save, Cancel, Character Library button).
+**Modified: `src/components/admin/guide/AppGuideTool.tsx`**
+- Pass `onMarkdownChange={(md) => setActiveDocMarkdown(md)}` to `GuideEditor`
 
-**3. UI Elements -- Complete Inventory** -- Full table of all interactive elements: title heading, back button, AI Fill button (premium iridescent gradient style), Save button, Cancel button, Update Character button, character cards, "New Character" dashed card, delete confirm dialog, AI Prompt Modal.
+### Table Insertion UX
+When you click the Table button, a small popover appears with a 5x5 grid. As you hover over cells, the grid highlights to show e.g. "3x4" (3 columns, 4 rows). Clicking inserts a markdown table template like:
 
-**4. Cards / List Items** -- Character card breakdown: `aspect-[2/3]`, `rounded-[2rem]`, `border border-[#4a5f7f]`, hover lift (`-translate-y-3`), cover image zoom (`scale-110 duration-700`), gradient overlay, tag badges (`bg-blue-600`), role badge (Main: `bg-indigo-600`, Side: `bg-slate-600`), name, description, delete button on hover. "New Character" card: dashed border, `bg-gradient-to-br from-zinc-800 to-zinc-900`, plus icon.
+```
+| Col 1 | Col 2 | Col 3 |
+|-------|-------|-------|
+|       |       |       |
+|       |       |       |
+|       |       |       |
+```
 
-**5. Modals and Overlays** -- DeleteConfirmDialog (custom message for library: "This will permanently delete the character from your Global Library."), AvatarGenerationModal (AI portrait generation), AIPromptModal (prompt input for AI Fill/Generate), CharacterPicker (NOT available from library tab -- only from Scenario Builder).
+For adding rows/columns to an existing table, a simple approach: when the cursor is inside a table in the textarea, show "+Column" and "+Row" buttons in the toolbar (or at minimum, the user can just type a new `|` cell or a new row line -- markdown tables are straightforward to extend manually once the structure is there).
 
-**6. Data Architecture** -- `characters` table with `is_library = true` filter. Functions: `fetchCharacterLibrary()`, `saveCharacterToLibrary()`, `deleteCharacterFromLibrary()`. No React Query -- direct state management via `useState`. RLS: all CRUD operations scoped to `auth.uid() = user_id`. Library characters are loaded during initial `Promise.all` boot sequence. Character updates are optimistic (local state only until explicit Save).
+---
 
-**7. Component Tree** -- Full tree showing `Index.tsx > header (back, title, action buttons) > CharactersTab > Card Grid OR Editor (Avatar panel + 11 HardcodedSections + PersonalitySection + CharacterGoalsSection + Custom Sections)`.
+## Task 2: Fill Out Image Library Page Guide
 
-**8. Custom Events and Callbacks** -- `handleCreateCharacter()`, `handleUpdateCharacter()`, `handleDeleteCharacterFromList()` / `executeDeleteCharacter()`, `handleSaveCharacter()`, `handleSaveToLibrary()`, `handleCancelCharacterEdit()`, `handleAiFill()`, `handleAiGenerate()`, `handleAddSection()`, `handleEnhanceField()` (per-field AI sparkle).
+Write the full markdown content to the existing document (ID: `6e01c9d9-79c7-4ccd-b182-6db680714e92`) following the same 13-section structure used by the other guides.
 
-**9. Styling Reference** -- Key colors (card border `#4a5f7f`, section headers `#4a5f7f`, card surfaces `#2a2a2f`, inner surfaces `#3a3a3f/30`, field inputs `bg-zinc-900/50 border-white/10`), typography (card title `text-xl font-black`, section headers `text-xl font-bold text-white`, field labels `text-[10px] font-bold uppercase tracking-widest`), radii (`rounded-[2rem]` cards, `rounded-[24px]` sections, `rounded-2xl` inner cards).
+### Sections
 
-**10. Cross-Page Dependencies** -- Scenario Builder (import from library via CharacterPicker), Chat Interface (character session states reference library characters), Your Stories (no direct link but shared data boot).
+1. **Page Overview** -- Route `tab === "image_library"` in `Index.tsx`, primary source `ImageLibraryTab.tsx`, purpose (folder-based image organization for reuse across the app), sidebar position 4th item, entry points (sidebar click, `ImageLibraryPickerModal` from other pages).
 
-**11. Security and Access Control** -- All `characters` table operations scoped to `auth.uid() = user_id`. `is_library = true` filter ensures library queries only return library characters. No cross-user visibility for library characters.
+2. **Layout and Structure** -- Two views: Folder Grid and Folder Detail. Folder grid uses `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5`. Folder Detail has header row + square image grid. Header bar shows back arrow, title, background picker.
 
-**12. Known Issues / Quirks** -- Cancel button on new character removes it from library state (intentional for unsaved characters but could confuse users). No search/filter on the library grid. Save button in header saves to DB then deselects character (navigates back to grid). Empty state text says "Select import a character" (minor grammar issue). Light-theme heading text (`text-slate-900`) on dark background in editor view.
+3. **UI Elements -- Complete Inventory** -- Full table of every interactive element (back button, heading, folder cards, new folder card, edit/upload buttons, image tiles, star/thumbnail button, delete buttons, lightbox, modals).
 
-**13. Planned / Future Changes** -- No planned changes documented.
+4. **Cards / List Items** -- Folder card breakdown (aspect-[2/3], rounded-[2rem], border, hover effects, badges, gradient overlay). "New Folder" dashed card. Image tile details (aspect-square, rounded-xl, hover overlay with star and delete).
 
-### Character Editor -- 11 Hardcoded Sections Detail
+5. **Modals and Overlays** -- FolderEditModal, DeleteConfirmDialog, Lightbox, ImageLibraryPickerModal (used from other pages), BackgroundPickerModal.
 
-Each section documented with its fields, collapsed view behavior, extras support, and AI enhance capability:
+6. **Data Architecture** -- `image_folders` and `library_images` tables. Storage bucket `image_library` with path `{user_id}/{folder_id}/{filename}`. Image resizing (1920x1080, 0.85 quality). Direct useState management. Thumbnail resolution logic.
 
-1. **Physical Appearance** -- 11 fields (Hair Color, Eye Color, Build, Body Hair, Height, Breast Size, Genitalia, Skin Tone, Makeup, Body Markings, Temporary Conditions) + extras + AI per-field
-2. **Currently Wearing** -- 4 fields (Shirt/Top, Pants/Bottoms, Undergarments, Miscellaneous) + extras + AI
-3. **Preferred Clothing** -- 5 fields (Casual, Work, Sleep, Undergarments, Miscellaneous) + extras + AI
-4. **Personality** -- `PersonalitySection` component, split/unified mode, trait rows with flexibility toggle (Rigid/Normal/Flexible), outward vs inward traits
-5. **Tone** -- Extras-only section (no hardcoded fields), user adds rows
-6. **Background** -- 6 fields (Job/Occupation, Education Level, Residence, Hobbies, Financial Status, Motivation) + extras + AI
-7. **Key Life Events** -- Extras-only section
-8. **Relationships** -- Extras-only section
-9. **Secrets** -- Extras-only section
-10. **Fears** -- Extras-only section
-11. **Character Goals** -- `CharacterGoalsSection` component, goal cards with steps, progress tracking, guidance strength slider, flexibility setting
+7. **Component Tree** -- Index.tsx > header > ImageLibraryTab > Folder Grid OR Folder Detail.
 
-## Implementation
+8. **Custom Events and Callbacks** -- loadFolders, loadFolderImages, handleCreateFolder, handleUpdateFolder, handleDeleteFolder, handleOpenFolder, exitFolder, handleUploadImages, handleDeleteImage, handleSetThumbnail, onFolderChange.
 
-Single database update to write the markdown content to the existing `guide_documents` row with ID `195a779c-58e5-43a7-a460-33406955589a`. No code file changes needed.
+9. **Styling Reference** -- Key colors, typography, radii matching the code.
+
+10. **Cross-Page Dependencies** -- ImageLibraryPickerModal used from UploadSourceMenu (Avatar, Cover, Scene image flows). BackgroundPickerModal shared with Your Stories.
+
+11. **Security and Access Control** -- All CRUD on both tables scoped to auth.uid() = user_id. Storage scoped by user_id prefix.
+
+12. **Known Issues / Quirks** -- Fragile storage cleanup via URL string splitting, N+1 count queries, two-query thumbnail resolution, light-theme empty state on dark background, 600px lightbox max-width.
+
+13. **Planned / Future Changes** -- None documented.
+
+### Implementation
+Single database update to write markdown to `guide_documents` row `6e01c9d9-79c7-4ccd-b182-6db680714e92`.
+
+---
+
+## Technical Summary
+
+| Change | Files |
+|--------|-------|
+| New toolbar component | `src/components/admin/guide/GuideEditorToolbar.tsx` (new) |
+| Make editor editable + wire toolbar | `src/components/admin/guide/GuideEditor.tsx` (modified) |
+| Pass onMarkdownChange prop | `src/components/admin/guide/AppGuideTool.tsx` (modified) |
+| Image Library guide content | Database update only (no code files) |
 
