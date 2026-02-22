@@ -1,35 +1,63 @@
 
 
-# Fixed-Size Lightbox (No Black Bars)
+# Restyle Conversations Tab to Match App Design Language
 
-## What Changes
+## Overview
 
-The lightbox modal gets a fixed width and a fixed-height image area. The image scales with `object-contain` inside that area, and the existing `bg-zinc-900` card background shows through around smaller/narrower images -- no black bars, no extra wrapper elements.
+The Conversations tab currently has a flat, unstyled black-on-black look that feels disconnected from the rest of the app. This plan restyls it to match the layered dark-card aesthetic used in the Character Builder and Scenario Builder pages.
 
-## File: `src/components/chronicle/ImageLibraryTab.tsx`
+## Changes (single file: `src/components/chronicle/ConversationsTab.tsx`)
 
-### Change 1: Fixed container width (line 766)
+### 1. Outer wrapper -- slate blue border card
+Wrap the entire conversation list in a card container matching the app's standard:
+- `bg-[#2a2a2f] rounded-2xl border border-[#4a5f7f] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]`
+- This gives the list the same visual weight as character/scenario builder sections
 
-Replace `max-w-[600px]` with `w-[600px] max-w-[95vw]` so the modal is always 600px wide.
+### 2. Each conversation row -- subtle card layering
+Replace the current flat `hover:bg-white/5` rows with layered card-style rows:
+- Background: `bg-[#3a3a3f]/30` with `rounded-xl` and `border border-white/5`
+- Add small margin between rows instead of dividers (`space-y-2` on container, remove `divide-y`)
+- Hover: `hover:bg-[#3a3a3f]/60` for a visible lift effect
+- Padding inside each row card
 
-### Change 2: Fixed-height image area (lines 769-773)
+### 3. Last message preview -- darker inset field
+Style the last message text to look like a read-only text field:
+- Wrap in a container with `bg-zinc-900/50 border border-white/10 rounded-lg px-3 py-1.5`
+- This creates the "darker input area" look that differentiates it from the card background, matching how text fields look in the character builder
 
-Replace the current `img` tag:
+### 4. Action buttons -- styled like app buttons
+Replace the bare icon buttons with the app's standard button styling:
+- Use `bg-zinc-900/50 border border-white/10 rounded-lg` background on each button
+- Keep hover states: rename gets `hover:border-blue-500/30 hover:text-blue-400`, delete gets `hover:border-red-500/30 hover:text-red-400`
+- Slightly larger hit targets with proper padding
+
+### 5. Empty state
+Update the empty state to sit inside the same card container for consistency, with text colors adjusted to match the dark card background.
+
+### 6. Load More button
+Already uses the Shadow Surface style -- no changes needed.
+
+## Visual Result
+
+```text
++--[ #4a5f7f border ]-------------------------------+
+|  bg-[#2a2a2f] outer card                          |
+|                                                    |
+|  +--[ white/5 border ]---------------------------+ |
+|  | bg-[#3a3a3f]/30 row card                      | |
+|  | [thumb] Title  msgs  date     [edit] [delete] | |
+|  | +--[ bg-zinc-900/50 message preview --------+ | |
+|  | | "Last message text..."                     | | |
+|  | +-------------------------------------------+ | |
+|  +-----------------------------------------------+ |
+|                                                    |
+|  +--[ white/5 border ]---------------------------+ |
+|  | (next conversation row)                       | |
+|  +-----------------------------------------------+ |
+|                                                    |
+|            [ Load More ]                           |
++----------------------------------------------------+
 ```
-<img ... className="w-full h-auto max-h-[50vh] object-contain rounded-lg cursor-pointer" />
-```
 
-With:
-```
-<img ... className="w-full h-[50vh] object-contain rounded-lg cursor-pointer" />
-```
+This matches the layered depth pattern: outer card (dark gray + brand border) contains inner row cards (slightly lighter) which contain inset fields (darkest), creating the same visual hierarchy seen throughout the character and scenario builders.
 
-The key change is swapping `h-auto max-h-[50vh]` to just `h-[50vh]`. This makes the image area always 50vh tall. `object-contain` ensures the image scales proportionally within that fixed space, and the surrounding `bg-zinc-900` of the card naturally fills any remaining area -- no black bars, no extra divs.
-
-## Result
-
-- Modal is always 600px wide regardless of image aspect ratio
-- Image area is always 50vh tall
-- Portrait, landscape, and square images all scale to fit within that area
-- The dark card background naturally shows around images that don't fill the space -- seamless, no added elements
-- Title, tags, and buttons stay in a fixed, consistent position
