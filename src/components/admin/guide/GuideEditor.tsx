@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { TocEntry } from './GuideSidebar';
+import { GuideEditorToolbar } from './GuideEditorToolbar';
 
 const LazyMarkdownRenderer = React.lazy(() => import('./MarkdownRenderer'));
 
@@ -10,6 +11,7 @@ interface GuideEditorProps {
   docMarkdown: string;
   onTitleChange: (id: string, newTitle: string) => void;
   onTocUpdate: (entries: TocEntry[]) => void;
+  onMarkdownChange?: (markdown: string) => void;
 }
 
 function extractTocFromMarkdown(md: string): TocEntry[] {
@@ -34,10 +36,12 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
   docMarkdown,
   onTitleChange,
   onTocUpdate,
+  onMarkdownChange,
 }) => {
   const [title, setTitle] = useState(docTitle);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const titleRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => { setTitle(docTitle); }, [docTitle]);
 
@@ -84,15 +88,42 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
         </div>
       </div>
 
-      {/* Rendered markdown */}
-      <div className="flex-1 overflow-y-auto min-h-0 p-6">
-        {docMarkdown ? (
-          <Suspense fallback={<div className="text-[#6B7280] text-sm">Loading preview…</div>}>
-            <LazyMarkdownRenderer markdown={docMarkdown} />
-          </Suspense>
-        ) : (
-          <div className="text-[#6B7280] text-sm italic">No content</div>
+      {/* Formatting toolbar */}
+      {onMarkdownChange && (
+        <GuideEditorToolbar
+          textareaRef={textareaRef}
+          value={docMarkdown}
+          onChange={onMarkdownChange}
+        />
+      )}
+
+      {/* Editor + Preview stacked */}
+      <div className="flex-1 flex flex-col overflow-y-auto min-h-0">
+        {/* Textarea for editing */}
+        {onMarkdownChange && (
+          <div className="shrink-0 border-b border-white/10">
+            <textarea
+              ref={textareaRef}
+              value={docMarkdown}
+              onChange={(e) => onMarkdownChange(e.target.value)}
+              className="w-full bg-transparent text-white/90 text-sm font-mono p-4 resize-none outline-none min-h-[200px]"
+              style={{ tabSize: 2 }}
+              placeholder="Write markdown here…"
+              spellCheck={false}
+            />
+          </div>
         )}
+
+        {/* Rendered preview */}
+        <div className="flex-1 p-6">
+          {docMarkdown ? (
+            <Suspense fallback={<div className="text-[#6B7280] text-sm">Loading preview…</div>}>
+              <LazyMarkdownRenderer markdown={docMarkdown} />
+            </Suspense>
+          ) : (
+            <div className="text-[#6B7280] text-sm italic">No content</div>
+          )}
+        </div>
       </div>
     </div>
   );

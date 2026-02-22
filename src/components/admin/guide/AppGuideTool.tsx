@@ -152,6 +152,7 @@ export const AppGuideTool: React.FC<AppGuideToolProps> = ({ onRegisterSave }) =>
           docMarkdown={activeDocMarkdown}
           onTitleChange={handleTitleChange}
           onTocUpdate={setTocEntries}
+          onMarkdownChange={(md) => setActiveDocMarkdown(md)}
         />
       </div>
     </div>
