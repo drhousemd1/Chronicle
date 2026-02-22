@@ -586,7 +586,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
             <div className="col-span-full py-20 text-center text-slate-400 select-none">
               <div className="text-6xl mb-4 font-thin opacity-30">✦</div>
               <p className="font-bold text-lg text-slate-500">Character Creation</p>
-              <p className="text-sm">Select import a character from Library or Create New</p>
+              <p className="text-sm">Select or import a character from Library or Create New</p>
             </div>
           )}
         </div>

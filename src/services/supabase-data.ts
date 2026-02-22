@@ -780,6 +780,22 @@ export async function saveCharacterToLibrary(char: Character, userId: string): P
   if (error) throw error;
 }
 
+/**
+ * Save a copy of a character to the library with a new ID.
+ * Used when saving from Scenario Builder to avoid overwriting the scenario character.
+ */
+export async function saveCharacterCopyToLibrary(char: Character, userId: string, newId: string): Promise<void> {
+  const dbChar = characterToDb(char, userId, undefined, true);
+  dbChar.id = newId;
+  dbChar.scenario_id = null;
+  
+  const { error } = await supabase
+    .from('characters')
+    .insert(dbChar);
+
+  if (error) throw error;
+}
+
 export async function deleteCharacterFromLibrary(id: string): Promise<void> {
   const { error } = await supabase
     .from('characters')
