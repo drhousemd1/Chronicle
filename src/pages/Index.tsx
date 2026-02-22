@@ -10,7 +10,7 @@ import { WorldTab } from "@/components/chronicle/WorldTab";
 import { ConversationsTab } from "@/components/chronicle/ConversationsTab";
 import { useModelSettings, ModelSettingsProvider } from "@/contexts/ModelSettingsContext";
 import { isAdminUser } from "@/services/app-settings";
-const AdminPage = React.lazy(() => import("@/pages/Admin").then(m => ({ default: m.AdminPage })));
+const AdminPage = React.lazy(() => import("@/pages/Admin"));
 import { AccountSettingsTab } from "@/components/account/AccountSettingsTab";
 import { SubscriptionTab } from "@/components/account/SubscriptionTab";
 import { PublicProfileTab } from "@/components/account/PublicProfileTab";
