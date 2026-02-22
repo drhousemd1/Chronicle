@@ -1,85 +1,64 @@
 
 
-# Image Library Layout & Styling Improvements (5 Items)
+# Fix 5 UI Issues: Tile Clipping, Character Sizing, Upload/Search Placement, Hover Effect
 
 ---
 
 ## What You'll Notice After This
 
-- The "Edit Folder" button inside folders is removed (editing is done from the main folder grid hover overlay)
-- The "+ Upload Images" button moves to the white header bar, to the left of the cogwheel
-- The folder name and description display inline on one line instead of stacked
-- The FolderEditModal gets dark-themed styling to match the rest of the app
-- Image thumbnails get a gray footer bar below the image with the title displayed there, all wrapped in the slate blue border
+- No more corner clipping on story/gallery tiles when hovering
+- Character Library tiles match the same grid sizing as Your Stories and Community Gallery
+- The "+ Upload Images" button and search bar only appear when inside a folder (not on the main Image Library page)
+- Image thumbnails in folders have the same hover lift effect as all other tiles in the app
 
 ---
 
-## 1. Remove "Edit Folder" button from inside-folder view
+## 1. Fix tile card clipping on hover
 
-The edit button at lines 592-599 of `ImageLibraryTab.tsx` is redundant since the main folder grid already has an Edit hover overlay. We simply remove it.
+**The problem:** The `overflow-hidden`, `rounded-[2rem]`, and `group-hover:-translate-y-3` are all on the same `div`. During the CSS transition, the browser clips corners as it composites the rounded overflow with the transform -- causing visible corner artifacts.
 
-**File:** `src/components/chronicle/ImageLibraryTab.tsx` (lines 592-599)
+**The fix:** Move the hover translate to the outer wrapper `div` (the `group relative` element) instead of the inner card. The inner card keeps `overflow-hidden rounded-[2rem]` but no longer transforms itself. This separates the clipping boundary from the moving element.
 
----
-
-## 2. Move "+ Upload Images" button to the header
-
-The upload button needs to move from the `ImageLibraryTab` content area into the white header bar in `Index.tsx`, positioned to the left of the Settings cogwheel.
-
-This requires:
-- Exposing a `onUploadClick` callback prop from `ImageLibraryTab` (or using a ref). The simplest approach: add a ref-based trigger. We'll use `React.useImperativeHandle` on `ImageLibraryTab` to expose a `triggerUpload()` method, then call it from the header button.
-- Alternatively (simpler): move the hidden file input and upload handler to remain inside `ImageLibraryTab`, but expose a callback via the `onFolderChange` mechanism. The cleanest approach is to pass an `uploadRef` from `Index.tsx` into `ImageLibraryTab`, which assigns `fileInputRef.current?.click` to it. The header button then calls `uploadRef.current?.()`.
-- Add the styled upload button to the `tab === "image_library"` header section in `Index.tsx`, shown only when `isInImageFolder` is true, positioned before the cogwheel dropdown.
-- Remove the upload button from the `ImageLibraryTab` content area (lines 600-615).
-
-**Files:**
-- `src/components/chronicle/ImageLibraryTab.tsx` -- add `uploadRef` prop, remove upload button from content
-- `src/pages/Index.tsx` -- add upload button to header, pass `uploadRef` to `ImageLibraryTab`
+**Files affected:**
+- `src/components/chronicle/ScenarioHub.tsx` (line 35) -- move `-translate-y-3` and `shadow-2xl` to outer div
+- `src/components/chronicle/GalleryScenarioCard.tsx` (line 65) -- same fix
+- `src/components/chronicle/ImageLibraryTab.tsx` (line 447, folder tiles) -- same fix
+- `src/pages/CreatorProfile.tsx` (line 286) -- same fix
+- `src/components/account/PublicProfileTab.tsx` (line 460) -- same fix
 
 ---
 
-## 3. Make folder name and description inline
+## 2. Match Character Library tile grid to other pages
 
-Change the folder detail header from a stacked layout:
-```
-Test Folder
-Character Profile Images
-```
-To inline:
-```
-Test Folder  Character Profile Images
-```
+**The problem:** Character Library uses `lg:grid-cols-4` while Your Stories and Community Gallery use `lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5`. This causes a jarring size difference when switching tabs.
 
-Keep the same text styling (h1 for name, p for description) but put them in a `flex items-baseline gap-3` row instead of a stacked div. No color or size changes.
+**The fix:** Update the CharactersTab grid to use the same breakpoints: `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 lg:gap-8`.
 
-**File:** `src/components/chronicle/ImageLibraryTab.tsx` (lines 584-589)
+**File:** `src/components/chronicle/CharactersTab.tsx` (line 522)
 
 ---
 
-## 4. Restyle FolderEditModal to dark theme
+## 3. Fix Upload Images button -- only show inside folder
 
-The modal currently uses default white `DialogContent` (image 3). Update it to match the app's dark theme:
-- `DialogContent`: `bg-zinc-900 border-[#4a5f7f] text-white`
-- Labels: keep `text-slate-500` (they read fine on dark)
-- Input/Textarea: `bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500`
-- Cancel button: Shadow Surface standard styling
-- Save button: Shadow Surface standard styling
-- Remove the X close button by adding a custom close override or hiding it
+**Current state:** The conditional `isInImageFolder` is already in the header code (line 1750 of Index.tsx). If it's showing on the main page, `isInImageFolder` may be getting set incorrectly. However, looking at the code, the logic appears correct. The user may be seeing the button because they entered a folder and the state persisted. No code change needed here -- just confirming the logic is already correct. If the issue persists after the other fixes, we'll investigate further.
 
-**File:** `src/components/chronicle/FolderEditModal.tsx`
+Actually, re-reading the code -- the `isInImageFolder` guard is already in place at line 1750. This should already be working. I'll double-check the `onFolderChange` callback to ensure it properly resets.
 
 ---
 
-## 5. Add gray footer bar to image thumbnails
+## 4. Fix search bar -- only show inside folder
 
-Change the thumbnail from a square with a gradient text overlay to a slightly taller rectangle:
-- The image stays `aspect-square` inside a container
-- Below the image, add a gray bar (`bg-zinc-700`) with padding, displaying the title in white text
-- The entire element (image + footer) is wrapped in the `border border-[#4a5f7f]` with `rounded-xl overflow-hidden`
-- Remove the gradient overlay that currently sits on top of the image for the title
-- The footer text uses `text-xs font-medium text-white truncate`
+**Current state:** The search bar already has `{isInImageFolder && (...)}` at line 1603 of Index.tsx. Same as item 3 -- the conditional is already there. If both items 3 and 4 are showing on the main page, the issue is likely that `isInImageFolder` defaults to or gets stuck as `true`. I'll verify the initial state and the reset logic in `onFolderChange`.
 
-**File:** `src/components/chronicle/ImageLibraryTab.tsx` (lines 626-678, the image grid tiles)
+If both are genuinely showing on the main Image Library page (not inside a folder), the fix would be to ensure `isInImageFolder` initializes as `false` and resets properly. The current code shows `useState(false)` at line 153, which is correct.
+
+---
+
+## 5. Add hover lift effect to Image Library thumbnails
+
+**The fix:** Add `transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-xl` to the image thumbnail wrapper (line 620 of ImageLibraryTab.tsx). Using `-translate-y-2` (slightly less than the 2:3 cards' `-translate-y-3`) since these are smaller tiles. Apply the translate to the outer wrapper to avoid the same clipping issue from item 1.
+
+**File:** `src/components/chronicle/ImageLibraryTab.tsx` (line 618-620)
 
 ---
 
@@ -87,26 +66,25 @@ Change the thumbnail from a square with a gradient text overlay to a slightly ta
 
 ### Files Modified
 
-- **`src/components/chronicle/ImageLibraryTab.tsx`**
-  - Add `uploadRef` prop (type `React.MutableRefObject<(() => void) | null>`)
-  - Assign `fileInputRef.current?.click` to `uploadRef` in a useEffect
-  - Remove Edit Folder button (lines 592-599)
-  - Remove Upload Images button from content (lines 600-607)
-  - Keep hidden file input and upload handler in ImageLibraryTab
-  - Make folder name/description inline (flex row with gap)
-  - Restructure image tiles: image in aspect-square container + gray footer bar with title, all wrapped in slate blue border
+- **`src/components/chronicle/ScenarioHub.tsx`** (line 34-35)
+  - Outer div: add `transition-all duration-300 group-hover:-translate-y-3`
+  - Inner div: remove `group-hover:-translate-y-3` (keep `overflow-hidden rounded-[2rem]`)
+
+- **`src/components/chronicle/GalleryScenarioCard.tsx`** (line 63-65)
+  - Same structural fix as ScenarioHub
+
+- **`src/components/chronicle/ImageLibraryTab.tsx`** (line 445-447, folder tile cards)
+  - Same structural fix for folder tiles
+  - Lines 618-620: Add hover lift to image thumbnails (outer div gets translate, inner keeps overflow-hidden)
+
+- **`src/pages/CreatorProfile.tsx`** (line 285-286)
+  - Same structural fix
+
+- **`src/components/account/PublicProfileTab.tsx`** (line 459-460)
+  - Same structural fix
+
+- **`src/components/chronicle/CharactersTab.tsx`** (line 522)
+  - Grid: change from `lg:grid-cols-4 gap-8` to `lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 lg:gap-8`
 
 - **`src/pages/Index.tsx`**
-  - Create `imageLibraryUploadRef = React.useRef<(() => void) | null>(null)`
-  - Pass `uploadRef={imageLibraryUploadRef}` to `ImageLibraryTab`
-  - Add upload button to header before cogwheel, visible only when `isInImageFolder`:
-    ```
-    Shadow Surface button: "+ Upload Images"
-    ```
-
-- **`src/components/chronicle/FolderEditModal.tsx`**
-  - Dark theme: `DialogContent` bg-zinc-900 border-[#4a5f7f]
-  - Input/Textarea: bg-zinc-800 border-zinc-700 text-white
-  - Buttons: Shadow Surface standard styling for both Cancel and Save
-  - Hide the default X close button via DialogContent className override
-
+  - Verify `isInImageFolder` state management (should already be correct, but will confirm the upload button and search bar only render when inside a folder)
