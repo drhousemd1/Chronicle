@@ -152,6 +152,7 @@ const IndexContent = () => {
   const [remixConfirmId, setRemixConfirmId] = useState<string | null>(null);
   const [isInImageFolder, setIsInImageFolder] = useState(false);
   const imageLibraryExitFolderRef = React.useRef<(() => void) | null>(null);
+  const [imageLibrarySearchQuery, setImageLibrarySearchQuery] = useState('');
   const [adminActiveTool, setAdminActiveTool] = useState<string>('hub');
   const guideSaveRef = React.useRef<(() => Promise<void>) | null>(null);
   
@@ -1490,13 +1491,15 @@ const IndexContent = () => {
                     Character Library
                   </h1>
                   {!selectedCharacterId && (
-                    <input
-                      type="text"
-                      value={librarySearchQuery}
-                      onChange={(e) => setLibrarySearchQuery(e.target.value)}
-                      placeholder="Search characters..."
-                      className="ml-4 h-9 w-64 px-3 py-1.5 text-sm rounded-lg border border-white/10 bg-[#3a3a3f]/50 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#4a5f7f]"
-                    />
+                    <div className="ml-4 bg-[#2b2b2e] rounded-full p-1 border border-[#2b2b2e]">
+                      <input
+                        type="text"
+                        value={librarySearchQuery}
+                        onChange={(e) => setLibrarySearchQuery(e.target.value)}
+                        placeholder="Search characters..."
+                        className="h-7 w-56 px-3 py-1 text-xs font-bold rounded-full bg-transparent text-white placeholder:text-zinc-500 focus:outline-none"
+                      />
+                    </div>
                   )}
                 </div>
               )}
@@ -1596,6 +1599,17 @@ const IndexContent = () => {
                   <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
                     Image Library
                   </h1>
+                  {isInImageFolder && (
+                    <div className="ml-4 bg-[#2b2b2e] rounded-full p-1 border border-[#2b2b2e]">
+                      <input
+                        type="text"
+                        value={imageLibrarySearchQuery}
+                        onChange={(e) => setImageLibrarySearchQuery(e.target.value)}
+                        placeholder="Search by tags..."
+                        className="h-7 w-56 px-3 py-1 text-xs font-bold rounded-full bg-transparent text-white placeholder:text-zinc-500 focus:outline-none"
+                      />
+                    </div>
+                  )}
                 </div>
               )}
               {tab === "admin" && (
@@ -1950,7 +1964,9 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
                 onFolderChange={(inFolder, exitFn) => {
                   setIsInImageFolder(inFolder);
                   imageLibraryExitFolderRef.current = exitFn || null;
+                  if (!inFolder) setImageLibrarySearchQuery('');
                 }}
+                searchQuery={imageLibrarySearchQuery}
               />
             </div>
           )}

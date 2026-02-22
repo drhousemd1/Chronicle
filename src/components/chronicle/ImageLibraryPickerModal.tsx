@@ -82,13 +82,14 @@ export const ImageLibraryPickerModal: React.FC<ImageLibraryPickerModalProps> = (
       if (error) throw error;
 
       setFolderImages(
-        (data || []).map((img) => ({
+        (data || []).map((img: any) => ({
           id: img.id,
           userId: img.user_id,
           folderId: img.folder_id,
           imageUrl: img.image_url,
           filename: img.filename || '',
           isThumbnail: img.is_thumbnail || false,
+          tags: img.tags || [],
           createdAt: new Date(img.created_at).getTime(),
         }))
       );

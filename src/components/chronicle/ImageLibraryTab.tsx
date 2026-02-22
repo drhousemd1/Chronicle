@@ -28,14 +28,16 @@ export type LibraryImage = {
   imageUrl: string;
   filename: string;
   isThumbnail: boolean;
+  tags: string[];
   createdAt: number;
 };
 
 interface ImageLibraryTabProps {
   onFolderChange?: (inFolder: boolean, exitFn?: () => void) => void;
+  searchQuery?: string;
 }
 
-export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange }) => {
+export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange, searchQuery = '' }) => {
   const { user } = useAuth();
   const [folders, setFolders] = useState<ImageFolder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -108,13 +110,14 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
       if (error) throw error;
 
       setFolderImages(
-        (data || []).map((img) => ({
+        (data || []).map((img: any) => ({
           id: img.id,
           userId: img.user_id,
           folderId: img.folder_id,
           imageUrl: img.image_url,
           filename: img.filename || '',
           isThumbnail: img.is_thumbnail || false,
+          tags: img.tags || [],
           createdAt: new Date(img.created_at).getTime(),
         }))
       );
@@ -305,6 +308,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
                   imageUrl: imgData.image_url,
                   filename: imgData.filename || '',
                   isThumbnail: false,
+                  tags: imgData.tags || [],
                   createdAt: new Date(imgData.created_at).getTime(),
                 },
                 ...prev,
@@ -536,6 +540,33 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
     );
   }
 
+  // Tag update handler
+  const handleUpdateImageTags = async (imageId: string, newTags: string[]) => {
+    try {
+      const { error } = await supabase
+        .from('library_images')
+        .update({ tags: newTags } as any)
+        .eq('id', imageId);
+      if (error) throw error;
+      setFolderImages((prev) =>
+        prev.map((img) => (img.id === imageId ? { ...img, tags: newTags } : img))
+      );
+      if (lightboxImage?.id === imageId) {
+        setLightboxImage((prev) => prev ? { ...prev, tags: newTags } : null);
+      }
+    } catch (e: any) {
+      console.error('Failed to update tags:', e);
+      toast.error('Failed to update tags');
+    }
+  };
+
+  // Filter images by search query (matches against tags)
+  const filteredImages = searchQuery
+    ? folderImages.filter((img) =>
+        img.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
+    : folderImages;
+
   // Folder Detail View
   return (
     <div className="h-full overflow-y-auto p-4 lg:p-10">
@@ -585,10 +616,10 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            {folderImages.map((image) => (
+            {filteredImages.map((image) => (
               <div
                 key={image.id}
-                className="group relative aspect-square rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shadow-sm hover:shadow-lg transition-all"
+                className="group relative aspect-square rounded-xl overflow-hidden bg-slate-100 border border-[#4a5f7f] shadow-sm hover:shadow-lg transition-all"
               >
                 {/* Clickable image to open lightbox */}
                 <img
@@ -650,7 +681,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
       {/* Click-based lightbox */}
       {lightboxImage && (
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-8 bg-black/60"
+          className="fixed inset-0 z-50 flex items-center justify-center p-8 bg-black/85"
           onClick={() => setLightboxImage(null)}
         >
           <div 
@@ -668,11 +699,47 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
             <img
               src={lightboxImage.imageUrl}
               alt={lightboxImage.filename}
-              className="w-full h-auto max-h-[75vh] object-contain rounded-lg"
+              className="w-full h-auto max-h-[60vh] object-contain rounded-lg"
             />
             <p className="text-sm text-zinc-400 text-center mt-3 truncate px-2">
               {lightboxImage.filename}
             </p>
+
+            {/* Tag Editor */}
+            <div className="mt-3 px-2 space-y-2">
+              <div className="flex flex-wrap gap-1.5">
+                {(lightboxImage.tags || []).map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-500/20 text-blue-300 rounded-full text-xs font-medium border border-blue-500/30"
+                  >
+                    #{tag}
+                    <button
+                      type="button"
+                      onClick={() => handleUpdateImageTags(lightboxImage.id, lightboxImage.tags.filter((t) => t !== tag))}
+                      className="hover:bg-blue-500/30 rounded-full p-0.5 transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+              <input
+                type="text"
+                placeholder="Add tag and press Enter..."
+                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#4a5f7f]"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    const val = (e.target as HTMLInputElement).value.trim().toLowerCase();
+                    if (val && !lightboxImage.tags.includes(val)) {
+                      handleUpdateImageTags(lightboxImage.id, [...lightboxImage.tags, val]);
+                    }
+                    (e.target as HTMLInputElement).value = '';
+                  }
+                }}
+              />
+              <p className="text-[10px] text-zinc-500">{lightboxImage.tags.length}/10 tags • Press Enter to add</p>
+            </div>
           </div>
         </div>
       )}
