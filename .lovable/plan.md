@@ -1,68 +1,34 @@
 
 
-# Replace BlockNote with a Lightweight Markdown Editor
+# Fix White Screen: Reduce Initial Module Load
 
 ## Problem
-BlockNote's packages are too large (~1MB+) and consistently time out during Vite's dev server pre-bundling, making the App Guide tool completely unusable. This has been the root cause of all the white screen and loading failures.
+The app loads 150+ JavaScript modules on startup. The `Index.tsx` page directly imports `AdminPage`, which imports `AppGuideTool`, `GuideSidebar`, and their dependencies (including `@radix-ui/react-separator`). This creates a massive concurrent request waterfall that causes the Vite dev server to time out on some modules (504 errors), resulting in a white screen.
 
-## Solution
-Remove BlockNote entirely and replace it with a **zero-dependency markdown textarea editor** built with standard React and the components already in the project. This gives you a reliable, instantly-loading editor inspired by MarkText's features.
+## Fix
 
-## What You Get (MarkText-inspired features)
-- **Markdown editing** in a clean textarea with monospace font
-- **Toolbar** with buttons for headings, bold, italic, code blocks, links, images, tables, lists
-- **Document sidebar** with document list and auto-generated Table of Contents (extracted from `#` headings)
-- **Keyboard shortcuts**: Ctrl+S to save, Ctrl+B for bold, Ctrl+I for italic, etc.
-- **Word/character/paragraph count** in the status bar (like MarkText's document stats)
-- **Auto-save** indicator and manual save button
-- **Dark theme** matching your admin panel aesthetic
-- **Tab switching** between documents via the sidebar
-- **Create/delete documents**
+### 1. Lazy-load AdminPage in Index.tsx
+Change the direct import of `AdminPage` in `Index.tsx` to a `React.lazy()` dynamic import. This defers loading all admin-related code until the user actually navigates to the admin section.
 
-## What Changes
+```
+// Before (loads admin code on every page visit):
+import { AdminPage } from "@/pages/Admin";
 
-### 1. Remove BlockNote dependencies
-Uninstall `@blocknote/core`, `@blocknote/react`, `@blocknote/mantine` -- these are the packages causing the crashes.
+// After (loads admin code only when needed):
+const AdminPage = React.lazy(() =>
+  import("@/pages/Admin").then(m => ({ default: m.AdminPage }))
+);
+```
 
-### 2. Rewrite `GuideEditor.tsx`
-Replace the BlockNote-based editor with:
-- A `<textarea>` with monospace styling for markdown input
-- A formatting toolbar (headings, bold, italic, code, links, tables, lists)
-- Status bar showing word count, character count, paragraph count
-- Ctrl+S save, Ctrl+B bold, Ctrl+I italic shortcuts
-- TOC extraction via regex on `#` headings
-- Saves markdown directly to the `markdown` column (no more JSONB `content` needed)
+### 2. Wrap AdminPage render in Suspense
+Find where `<AdminPage ... />` is rendered in `Index.tsx` and wrap it in `React.Suspense` with a simple loading fallback.
 
-### 3. Update `AppGuideTool.tsx`
-- Remove the `docContent` (JSONB) state since we now work with markdown strings directly
-- Load and save using the `markdown` column instead of `content`
-- Remove `React.lazy` and BlockNote-related lazy loading since the editor is now lightweight
+## Why This Works
+- The admin page is only used by admin users and only after they click the Admin tab
+- Lazy loading removes ~10-15 modules from the initial load, reducing the request waterfall below the timeout threshold
+- The App Guide editor itself is lightweight now (no BlockNote), so it will load quickly when actually needed
+- No other files need to change
 
-### 4. Update `Admin.tsx`
-- Remove `React.lazy`, `Suspense`, and the error boundary wrapper since the editor no longer needs heavy lazy loading
-- Direct import of `AppGuideTool` (it's now lightweight)
-
-### 5. Minor update to `GuideSidebar.tsx`
-- Add a delete button for documents
-
-## Database
-No changes needed. The `guide_documents` table already has the `markdown` text column which becomes the primary storage. The `content` JSONB column remains but won't be used going forward.
-
-## Technical Details
-
-The toolbar will insert markdown syntax at the cursor position in the textarea:
-- Headings: inserts `# `, `## `, `### ` at line start
-- Bold: wraps selection in `**`
-- Italic: wraps selection in `*`
-- Code block: wraps in triple backticks with language selector
-- Link: inserts `[text](url)` template
-- Image: inserts `![alt](url)` template
-- Table: inserts a markdown table template
-- Lists: inserts `- ` or `1. ` at line starts
-
-TOC is extracted by scanning the markdown text for lines starting with `#`, `##`, `###` and building the sidebar entries from those.
-
-Word count parses the markdown text with simple string splitting.
-
-All of this uses zero external libraries beyond what's already installed.
+## Files Changed
+- `src/pages/Index.tsx` -- lazy import + Suspense wrapper (2 small edits)
 
