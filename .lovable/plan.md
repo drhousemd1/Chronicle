@@ -1,123 +1,162 @@
 
 
-# Community Gallery -- Complete Overhaul (7 Fixes)
+# Your Stories Page -- Bug Fixes and Improvements (8 Items)
 
-This tackles all 7 issues in one cohesive update. The changes are interconnected (e.g., the new database function serves both pagination and server-side filtering), so it makes sense to do them together.
+This plan fixes all 8 known issues on the Your Stories page, adds background overlay controls, and updates the App Guide document.
 
 ---
 
-## What You'll Notice After This
+## 1. Replace browser `confirm()` with DeleteConfirmDialog
 
-- **Scrolling loads more stories automatically** -- no more 50-story cap. As you scroll down, more appear with a small loading spinner at the bottom.
-- **Search works on story titles and descriptions** -- not just tags. Type "dragon" and it finds stories named "Dragon's Revenge" even if they're not tagged that way.
-- **Filters actually work properly** -- filtering by "Fantasy" genre now searches the entire database, not just the first 50 stories you happened to download.
-- **View counts are honest** -- clicking the same story 10 times in one day only counts as 1 view. After 24 hours it can count again.
-- **New stories appear automatically** -- if someone publishes while you're browsing, it shows up without refreshing.
-- **Following tab works reliably** -- even if you follow hundreds of creators, it won't break.
-- **Everything is faster and more reliable** -- React Query handles caching, retries, and loading states properly.
+**What changes:** In `Index.tsx`, the `handleDeleteScenario` function currently uses native browser `confirm()` popups for both bookmark removal and scenario deletion. These look out of place with the rest of the app's dark themed UI.
+
+**Fix:** Replace both `confirm()` calls with the existing `DeleteConfirmDialog` component. The dialog already exists and is imported in `Index.tsx`. We'll use the `deleteConfirmId` state that already exists, but extend it to distinguish between "remove bookmark" and "delete scenario" flows. A new state `deleteConfirmType` tracks which type of deletion is pending.
+
+- Bookmark removal: title "Remove Bookmark?", message "Remove this story from your bookmarks?", button text stays "Delete" (or we can keep it generic)
+- Scenario deletion: title "Delete Scenario?", message "Delete this entire scenario? This cannot be undone."
+
+**Files:** `src/pages/Index.tsx`
+
+---
+
+## 2. Remix/clone confirmation dialog
+
+**What changes:** When clicking "Edit" on a bookmarked scenario, the app silently clones it. Users have no idea this is happening until after the fact.
+
+**Fix:** Before cloning, show a confirmation dialog (using the same `DeleteConfirmDialog` pattern but with custom title/message/button text -- or a new simple confirmation dialog). The message will read:
+
+> "You are about to open another creator's story in the editor. This will clone the details of the story and create a version in 'Your Stories' that you can then edit. This will not affect the original creator's uploaded story."
+
+We'll add a new state `remixConfirmId` to track which scenario is pending remix confirmation. When confirmed, proceed with the existing clone logic.
+
+**Files:** `src/pages/Index.tsx`
+
+---
+
+## 3. Empty state dark theme fix
+
+**What changes:** When there are no stories, the empty state shows light-themed colors (white backgrounds, dark text) against the black page background.
+
+**Fix:** Replace the current empty state in `ScenarioHub.tsx` (lines 233-248) with just the "New Story" skeleton card -- the same dashed-border dark card shown in the uploaded reference image. No text, no separate CTA section. Just the skeleton placeholder card sitting in the grid by itself. Users click it to create their first story.
+
+**Files:** `src/components/chronicle/ScenarioHub.tsx`
+
+---
+
+## 4. Simplify stats row for unpublished cards
+
+**What changes:** Currently all cards show views, likes, saves, and plays -- even unpublished ones where they're all 0. This adds visual noise.
+
+**Fix:** For unpublished scenarios (no `publishedData`), show only the Play icon with count 0 to maintain consistent card spacing. For published scenarios, show all 4 stats as before.
+
+**Files:** `src/components/chronicle/ScenarioHub.tsx`
+
+---
+
+## 5. "Created by" with correct author attribution
+
+**What changes:** The "Written by" line always shows the hub owner's username, even for bookmarked scenarios from other creators.
+
+**Fix:** 
+- Change "Written by" to "Created by" everywhere
+- For bookmarked scenarios (`scen.isBookmarked === true`), display the original creator's name. This data is available from the `savedScenarios` join -- the published scenario includes the publisher's profile. We'll pass the original creator name through to `ScenarioHub` via a new `bookmarkedCreatorNames` map prop.
+- For owned scenarios, continue showing the owner's username
+
+**Files:** `src/components/chronicle/ScenarioHub.tsx`, `src/pages/Index.tsx`
+
+---
+
+## 6. Background overlay controls (opacity slider, color picker, intensity)
+
+**What changes:** Currently the background overlay is hardcoded at `bg-black/10`. Users can't control it.
+
+**Fix:** Add overlay controls to the `BackgroundPickerModal`:
+- **Overlay color**: Simple toggle between Black and White
+- **Overlay opacity**: Slider from 0% to 80%
+
+These settings are stored in `user_backgrounds` table (new columns: `overlay_color` and `overlay_opacity`) or more simply as user-level preferences in a new pair of columns on the relevant background row. However, since the overlay applies to the selected background globally, the simplest approach is to store `overlay_color` (text, default 'black') and `overlay_opacity` (numeric, default 10) on the `user_backgrounds` table itself so each background can have its own overlay settings.
+
+**Database migration:** Add `overlay_color` (text, default 'black') and `overlay_opacity` (integer, default 10) columns to `user_backgrounds` table.
+
+**Files:** `src/components/chronicle/BackgroundPickerModal.tsx`, `src/pages/Index.tsx`, `src/types.ts`
+
+---
+
+## 7. Lazy loading / pagination for scenarios
+
+**What changes:** The hub loads all scenarios at once. For users with many scenarios, this is inefficient.
+
+**Fix:** Currently `fetchMyScenarios` fetches all scenarios but only needs tile-level data (title, description, cover image, cover position, tags, created/updated dates). Looking at the current implementation, it already only fetches metadata-level fields -- it doesn't load full scenario data (characters, world, conversations) until you click Edit or Play. So the data per card is already minimal.
+
+We'll add pagination consistent with the gallery:
+- Load 50 scenarios at a time
+- IntersectionObserver sentinel at bottom of grid triggers loading more
+- `ScenarioHub` receives a `loadMore` callback and `hasMore` / `isLoadingMore` flags
+- A small spinner shows at the bottom while loading the next batch
+
+**Files:** `src/services/supabase-data.ts` (add paginated fetch), `src/components/chronicle/ScenarioHub.tsx`, `src/pages/Index.tsx`
+
+---
+
+## 8. Fetch content themes for bookmarked scenarios
+
+**What changes:** SFW/NSFW badges don't show on bookmarked scenario cards because content themes are only fetched for owned scenarios.
+
+**Fix:** After loading saved scenarios, also fetch content themes for their source scenario IDs and merge them into the `contentThemesMap`. The content themes are viewable via the existing RLS policy that allows reading themes for published scenarios.
+
+**Files:** `src/pages/Index.tsx`
 
 ---
 
 ## Technical Details
 
-### Database Migration 1: `scenario_views` table + `record_view` function
-
-Creates a table to track who viewed what and when, plus a function that only increments the view count if the user hasn't viewed in the last 24 hours.
+### Database Migration
 
 ```text
-Table: scenario_views
-  - id (uuid, primary key)
-  - published_scenario_id (uuid, NOT NULL, references published_scenarios)
-  - user_id (uuid, NOT NULL)
-  - viewed_at (timestamptz, default now())
-  - Index on (published_scenario_id, user_id, viewed_at DESC) for fast lookups
-
-RLS: users can insert and select their own views only
-
-Function: record_scenario_view(p_published_scenario_id, p_user_id)
-  - Checks for existing view within last 24 hours
-  - If none found: inserts new view record AND increments view_count on published_scenarios
-  - If found: does nothing (returns silently)
+ALTER TABLE user_backgrounds 
+  ADD COLUMN overlay_color text NOT NULL DEFAULT 'black',
+  ADD COLUMN overlay_opacity integer NOT NULL DEFAULT 10;
 ```
 
-### Database Migration 2: `fetch_gallery_scenarios` RPC function
+Also add the same columns to `sidebar_backgrounds` for consistency (the Image Library background uses the same picker pattern).
 
-A single powerful database function that handles all the heavy lifting -- filtering, searching, sorting, and pagination -- all on the server side.
+### Files Modified
 
-```text
-Function: fetch_gallery_scenarios(
-  p_search_text text,        -- full-text search on title + description
-  p_search_tags text[],      -- tag overlap filter
-  p_sort_by text,            -- 'recent', 'liked', 'saved', 'played'
-  p_limit int,               -- page size (default 20)
-  p_offset int,              -- pagination offset
-  p_story_types text[],      -- content theme filters
-  p_genres text[],
-  p_origins text[],
-  p_trigger_warnings text[],
-  p_custom_tags text[],
-  p_publisher_ids uuid[]     -- for Following tab
-)
+- **`src/pages/Index.tsx`**
+  - Replace `confirm()` with `DeleteConfirmDialog` using new `deleteConfirmType` state
+  - Add `remixConfirmId` state and confirmation dialog before clone flow
+  - Fetch content themes for bookmarked scenario IDs (item 8)
+  - Build `bookmarkedCreatorNames` map from `savedScenarios` data
+  - Pass overlay settings to the background div
+  - Add pagination state (`scenarioOffset`, `hasMoreScenarios`, `isLoadingMoreScenarios`)
+  - Pass `loadMore`/`hasMore`/`isLoadingMore` to `ScenarioHub`
 
-Returns: JSON array of published scenarios with joined scenario, profile, and content theme data
+- **`src/components/chronicle/ScenarioHub.tsx`**
+  - Replace empty state with just the "New Story" skeleton card
+  - Update stats row: only show Play for unpublished cards
+  - Change "Written by" to "Created by" with correct attribution for bookmarked scenarios
+  - Add IntersectionObserver sentinel and loading spinner for infinite scroll
+  - Accept new props: `bookmarkedCreatorNames`, `onLoadMore`, `hasMore`, `isLoadingMore`
 
-Logic:
-  - Joins published_scenarios + scenarios + profiles + content_themes
-  - Applies all filters using SQL (array overlap for themes, to_tsvector for text search)
-  - Falls back to ILIKE for partial text matches
-  - Sorts by the chosen column
-  - Returns paginated results
-```
+- **`src/components/chronicle/BackgroundPickerModal.tsx`**
+  - Add overlay color toggle (Black / White) and opacity slider (0-80%)
+  - Pass overlay settings back via new `onOverlayChange` callback
 
-### Database Migration 3: Full-text search index
+- **`src/types.ts`**
+  - Add `overlayColor` and `overlayOpacity` to `UserBackground` type
 
-```text
-CREATE INDEX idx_scenarios_fulltext_search 
-  ON scenarios USING GIN (
-    to_tsvector('english', coalesce(title, '') || ' ' || coalesce(description, ''))
-  );
-```
-
-### Database Migration 4: Enable Realtime
-
-```text
-ALTER PUBLICATION supabase_realtime ADD TABLE public.published_scenarios;
-```
-
-### File: `src/services/gallery-data.ts`
-
-Changes:
-- Add new `fetchGalleryScenarios()` function that calls the `fetch_gallery_scenarios` RPC
-- Add `recordView()` function that calls the `record_scenario_view` RPC (replaces `incrementViewCount`)
-- Keep all existing functions (likes, saves, reviews, etc.) -- they still work fine
-- Remove client-side content theme filtering code (lines 191-224) since it's now server-side
-
-### File: `src/components/chronicle/GalleryHub.tsx`
-
-Major rewrite -- replaces manual state management with React Query:
-
-- **React Query `useInfiniteQuery`**: Replaces all the manual `useState`/`useEffect`/`fetchInProgress` logic. Query key includes sort, search text, search tags, category filters, and followed creator IDs.
-- **Infinite scroll sentinel**: An invisible div at the bottom of the grid, watched by `IntersectionObserver`. When it enters the viewport, triggers `fetchNextPage()`.
-- **Separate `useQuery` for user interactions**: Fetches likes/saves for visible scenario IDs.
-- **Realtime subscription**: `useEffect` that subscribes to `postgres_changes` on `published_scenarios`. On INSERT, invalidates the query. On UPDATE, patches the cached data. On DELETE, removes from cache.
-- **Search input**: Now sends the raw text to the RPC as `search_text` (for title/description search) AND still extracts tags for tag-based search. Both work simultaneously.
-- **View count**: Calls `recordView()` instead of `incrementViewCount()` when opening detail modal.
-- **Following tab**: Fetches followed creator IDs once (via a small `useQuery`), passes them as `p_publisher_ids` to the same RPC function. No URL length issues since RPC sends data in POST body.
-
-### File: `src/pages/Gallery.tsx`
-
-Minor change only -- the search tag splitting logic moves into GalleryHub since it now handles both text and tag search internally. Gallery.tsx just passes the sort option.
+- **`src/services/supabase-data.ts`**
+  - Add `fetchMyScenariosPaginated(userId, limit, offset)` function
+  - Update `fetchUserBackgrounds` to include new overlay columns
 
 ### App Guide Update
 
-Update the Community Gallery page in the App Guide to:
-- Remove the 7 items from "Known Issues" and "Planned/Future Changes"
-- Document the new features: infinite scroll, full-text search, view deduplication, real-time updates
-- Note new implementation details: React Query, server-side filtering, `fetch_gallery_scenarios` RPC
-
----
-
-## No Other Files Affected
-
-GalleryScenarioCard, ScenarioDetailModal, GalleryCategorySidebar, and all other components remain unchanged. The changes are isolated to the data layer and the GalleryHub orchestration component.
+Update the "Your Stories Page (Structure Guide)" document:
+- Remove all 8 items from the Known Issues section
+- Integrate new feature documentation inline with existing sections:
+  - Document the remix confirmation flow in the Edit flow section
+  - Document the overlay controls in the Background Customization section
+  - Document infinite scroll behavior
+  - Document the "Created by" attribution logic
+  - Document stats row display rules (Play only for unpublished, all 4 for published)
 
