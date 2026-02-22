@@ -64,6 +64,7 @@ export const GuideSidebar: React.FC<GuideSidebarProps> = ({
               <button
                 onClick={() => onSelectDoc(doc.id)}
                 className="flex-1 text-left px-3 py-1.5 text-xs truncate min-w-0"
+                title={doc.title}
               >
                 {doc.title}
               </button>

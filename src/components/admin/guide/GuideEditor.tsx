@@ -158,6 +158,7 @@ export const GuideEditor = forwardRef<GuideEditorHandle, GuideEditorProps>(({
     } else {
       setHasUnsaved(false);
       setLastSaved(new Date());
+      if (title !== docTitle) onTitleChange(docId, title);
       toast({ title: 'Guide saved' });
     }
     setIsSaving(false);
@@ -205,7 +206,7 @@ export const GuideEditor = forwardRef<GuideEditorHandle, GuideEditorProps>(({
             <input
               ref={titleRef}
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => { setTitle(e.target.value); setHasUnsaved(true); }}
               onBlur={commitTitle}
               onKeyDown={(e) => e.key === 'Enter' && commitTitle()}
               className="bg-transparent text-white text-sm font-medium outline-none w-full"
