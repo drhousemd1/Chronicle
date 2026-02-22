@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArcBranch, ArcStep, StepStatus, GoalFlexibility } from '@/types';
-import { Plus, X, Check, Trash2, Clock, ArrowUpRight, RotateCcw, Ban } from 'lucide-react';
+import { Plus, X, Check, Trash2, Clock, ArrowUpRight, RotateCcw, Ban, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Auto-resizing textarea
@@ -60,10 +60,13 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
 }) => {
   const isFail = type === 'fail';
   const isRigid = flexibility === 'rigid';
-  const isPassive = isFail && isSimpleMode;
 
   const stepLabel = isFail ? 'RECOVERY STEP' : 'PROGRESSION STEP';
   const triggerLabel = isFail ? 'RESISTANCE TRIGGER' : 'SUCCESS TRIGGER';
+
+  const sentinelText = isSimpleMode
+    ? 'AI will handle recovery steps dynamically'
+    : 'AI will handle ongoing recovery steps dynamically once predetermined recovery attempts have all been attempted.';
 
   const stripBg = isFail ? 'rgba(240,74,95,0.28)' : 'rgba(34,197,127,0.28)';
   const stepCardBg = isFail ? 'rgba(78,58,68,0.78)' : 'rgba(51,75,66,0.78)';
@@ -86,158 +89,154 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
             {triggerLabel}
           </label>
           <AutoResizeTextarea
-            value={isPassive ? 'AI will handle dynamically' : branch.triggerDescription}
+            value={branch.triggerDescription}
             onChange={onUpdateTrigger}
-            readOnly={isPassive}
             placeholder={isFail ? "What causes failure..." : "What triggers success..."}
-            className={cn(
-              "px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-zinc-500",
-              isPassive ? "text-zinc-500 italic" : "text-white"
-            )}
+            className="px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-zinc-500 text-white"
           />
         </div>
       </div>
 
       {/* Steps */}
-      {!isPassive && (
-        <div className="space-y-2">
-          {branch.steps.filter(s => !s.retryOf).map((step, idx) => {
-            // Compute retry info from clones targeting this step
-            const clones = branch.steps.filter(s => s.retryOf === step.id);
-            const maxRetryCount = clones.length > 0 ? Math.max(...clones.map(c => c.retryCount || 1)) : 0;
-            const hasRetries = maxRetryCount > 0;
-            const isPermanentlyFailed = step.permanentlyFailed || clones.some(c => c.permanentlyFailed);
+      <div className="space-y-2">
+        {!isSimpleMode && branch.steps.filter(s => !s.retryOf).map((step, idx) => {
+          // Compute retry info from clones targeting this step
+          const clones = branch.steps.filter(s => s.retryOf === step.id);
+          const maxRetryCount = clones.length > 0 ? Math.max(...clones.map(c => c.retryCount || 1)) : 0;
+          const hasRetries = maxRetryCount > 0;
+          const isPermanentlyFailed = step.permanentlyFailed || clones.some(c => c.permanentlyFailed);
 
-            return (
-            <div key={step.id} className="relative" data-step-id={step.id}>
-              <div
-                className={cn(
-                  "p-2.5 pb-3 rounded-[18px] border",
-                  step.status === 'failed' ? "border-red-500/50" :
-                  step.status === 'deviated' ? "border-orange-500/50" :
-                  step.status === 'succeeded' ? "border-blue-400/50" :
-                  "border-white/15"
-                )}
-                style={{ background: stepCardBg }}
-              >
-              {/* Row 1: Step label + retry badge + delete */}
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-                    {stepLabel} {idx + 1}
+          return (
+          <div key={step.id} className="relative" data-step-id={step.id}>
+            <div
+              className={cn(
+                "p-2.5 pb-3 rounded-[18px] border",
+                step.status === 'failed' ? "border-red-500/50" :
+                step.status === 'deviated' ? "border-orange-500/50" :
+                step.status === 'succeeded' ? "border-blue-400/50" :
+                "border-white/15"
+              )}
+              style={{ background: stepCardBg }}
+            >
+            {/* Row 1: Step label + retry badge + delete */}
+            <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                  {stepLabel} {idx + 1}
+                </span>
+                {hasRetries && (
+                  <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-400/80 bg-amber-500/10 border border-amber-500/20 rounded-full px-1.5 py-0.5">
+                    <RotateCcw size={9} />
+                    Retry {maxRetryCount} of {flexibility === 'rigid' ? '∞' : flexibility === 'flexible' ? 2 : 4}
                   </span>
-                  {hasRetries && (
-                    <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-400/80 bg-amber-500/10 border border-amber-500/20 rounded-full px-1.5 py-0.5">
-                      <RotateCcw size={9} />
-                      Retry {maxRetryCount} of {flexibility === 'rigid' ? '∞' : flexibility === 'flexible' ? 2 : 4}
-                    </span>
-                  )}
-                  {isPermanentlyFailed && (
-                    <span className="inline-flex items-center gap-1 text-[9px] font-bold text-red-400/80 bg-red-500/10 border border-red-500/20 rounded-full px-1.5 py-0.5">
-                      <Ban size={9} />
-                      Max retries
-                    </span>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => onDeleteStep(step.id)}
-                  className="w-[26px] h-[26px] rounded-[8px] border border-red-400/50 bg-transparent text-red-300 flex items-center justify-center cursor-pointer"
-                >
-                  <Trash2 size={13} />
-                </button>
-              </div>
-
-              {/* Row 2: Status buttons */}
-              <div className="flex items-center gap-3 mb-2">
-                {/* Failed/Deviated button */}
-                {!((!isFail) && isRigid) ? (
-                  /* Normal failed button for non-rigid or fail branch */
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => onToggleStatus(step.id, 'failed')}
-                      title="Mark as Failed"
-                      className={cn(
-                        "w-[26px] h-[26px] rounded-[8px] flex items-center justify-center cursor-pointer transition-all",
-                        step.status === 'failed'
-                          ? "border border-red-500/60 bg-red-500/20 text-red-300"
-                          : "border border-white/20 bg-white/5 text-white/40"
-                      )}
-                    >
-                      <X size={13} />
-                    </button>
-                    <span className="text-[10px] font-black text-zinc-300 uppercase tracking-wider">
-                      FAILED
-                    </span>
-                  </div>
-                ) : (
-                  /* Deviated button for rigid success branch */
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => onToggleStatus(step.id, 'deviated')}
-                      title="Mark as Deviated"
-                      className={cn(
-                        "w-[26px] h-[26px] rounded-[8px] flex items-center justify-center cursor-pointer transition-all",
-                        step.status === 'deviated'
-                          ? "border border-orange-500/60 bg-orange-500/20 text-orange-300"
-                          : "border border-white/20 bg-white/5 text-white/40"
-                      )}
-                    >
-                      <ArrowUpRight size={13} />
-                    </button>
-                    <span className="text-[10px] font-black text-zinc-300 uppercase tracking-wider">
-                      DEVIATED
-                    </span>
-                  </div>
                 )}
+                {isPermanentlyFailed && (
+                  <span className="inline-flex items-center gap-1 text-[9px] font-bold text-red-400/80 bg-red-500/10 border border-red-500/20 rounded-full px-1.5 py-0.5">
+                    <Ban size={9} />
+                    Max retries
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => onDeleteStep(step.id)}
+                className="w-[26px] h-[26px] rounded-[8px] border border-red-400/50 bg-transparent text-red-300 flex items-center justify-center cursor-pointer"
+              >
+                <Trash2 size={13} />
+              </button>
+            </div>
 
-                {/* Succeeded button */}
+            {/* Row 2: Status buttons */}
+            <div className="flex items-center gap-3 mb-2">
+              {/* Failed/Deviated button */}
+              {!((!isFail) && isRigid) ? (
+                /* Normal failed button for non-rigid or fail branch */
                 <div className="flex items-center gap-1.5">
                   <button
                     type="button"
-                    onClick={() => onToggleStatus(step.id, 'succeeded')}
-                    title={(!isFail && isRigid) ? "Mark as Completed" : "Mark as Succeeded"}
+                    onClick={() => onToggleStatus(step.id, 'failed')}
+                    title="Mark as Failed"
                     className={cn(
                       "w-[26px] h-[26px] rounded-[8px] flex items-center justify-center cursor-pointer transition-all",
-                      step.status === 'succeeded'
-                        ? "border border-emerald-500/60 bg-emerald-500/20 text-emerald-200"
+                      step.status === 'failed'
+                        ? "border border-red-500/60 bg-red-500/20 text-red-300"
                         : "border border-white/20 bg-white/5 text-white/40"
                     )}
                   >
-                    <Check size={13} />
+                    <X size={13} />
                   </button>
                   <span className="text-[10px] font-black text-zinc-300 uppercase tracking-wider">
-                    {(!isFail && isRigid) ? 'COMPLETED' : 'SUCCEEDED'}
+                    FAILED
                   </span>
                 </div>
-              </div>
-
-              {/* Row 3: Description input */}
-              <AutoResizeTextarea
-                value={step.description}
-                onChange={(v) => onUpdateStep(step.id, { description: v })}
-                placeholder="Describe this step..."
-                className={cn(
-                  "px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
-                  (step.status === 'succeeded' || step.status === 'failed' || step.status === 'deviated') && "line-through opacity-60"
-                )}
-              />
-
-              {/* Row 4: Completion meta - ONLY when completed */}
-              {step.completedAt && (
-                <div className="flex items-center gap-1 mt-2 text-xs text-zinc-400">
-                  <Clock size={12} />
-                  <span>Completed on Day {step.completedAt}</span>
+              ) : (
+                /* Deviated button for rigid success branch */
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => onToggleStatus(step.id, 'deviated')}
+                    title="Mark as Deviated"
+                    className={cn(
+                      "w-[26px] h-[26px] rounded-[8px] flex items-center justify-center cursor-pointer transition-all",
+                      step.status === 'deviated'
+                        ? "border border-orange-500/60 bg-orange-500/20 text-orange-300"
+                        : "border border-white/20 bg-white/5 text-white/40"
+                    )}
+                  >
+                    <ArrowUpRight size={13} />
+                  </button>
+                  <span className="text-[10px] font-black text-zinc-300 uppercase tracking-wider">
+                    DEVIATED
+                  </span>
                 </div>
               )}
-            </div>
-            </div>
-            );
-          })}
 
-          {/* Add Step link */}
+              {/* Succeeded button */}
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => onToggleStatus(step.id, 'succeeded')}
+                  title={(!isFail && isRigid) ? "Mark as Completed" : "Mark as Succeeded"}
+                  className={cn(
+                    "w-[26px] h-[26px] rounded-[8px] flex items-center justify-center cursor-pointer transition-all",
+                    step.status === 'succeeded'
+                      ? "border border-emerald-500/60 bg-emerald-500/20 text-emerald-200"
+                      : "border border-white/20 bg-white/5 text-white/40"
+                  )}
+                >
+                  <Check size={13} />
+                </button>
+                <span className="text-[10px] font-black text-zinc-300 uppercase tracking-wider">
+                  {(!isFail && isRigid) ? 'COMPLETED' : 'SUCCEEDED'}
+                </span>
+              </div>
+            </div>
+
+            {/* Row 3: Description input */}
+            <AutoResizeTextarea
+              value={step.description}
+              onChange={(v) => onUpdateStep(step.id, { description: v })}
+              placeholder="Describe this step..."
+              className={cn(
+                "px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
+                (step.status === 'succeeded' || step.status === 'failed' || step.status === 'deviated') && "line-through opacity-60"
+              )}
+            />
+
+            {/* Row 4: Completion meta - ONLY when completed */}
+            {step.completedAt && (
+              <div className="flex items-center gap-1 mt-2 text-xs text-zinc-400">
+                <Clock size={12} />
+                <span>Completed on Day {step.completedAt}</span>
+              </div>
+            )}
+          </div>
+          </div>
+          );
+        })}
+
+        {/* Add Step link - advanced mode only */}
+        {!isSimpleMode && (
           <button
             type="button"
             onClick={onAddStep}
@@ -246,8 +245,31 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
             <Plus className="h-4 w-4" />
             <span>Add Step</span>
           </button>
-        </div>
-      )}
+        )}
+
+        {/* Sentinel card - fail branch only */}
+        {isFail && (
+          <div
+            className="p-2.5 pb-3 rounded-[18px] border border-white/10 opacity-60"
+            style={{ background: stepCardBg }}
+          >
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                DYNAMIC RECOVERY
+              </span>
+              <div className="w-[26px] h-[26px] rounded-[8px] border border-zinc-600 bg-transparent text-zinc-500 flex items-center justify-center">
+                <Lock size={13} />
+              </div>
+            </div>
+            <AutoResizeTextarea
+              value={sentinelText}
+              onChange={() => {}}
+              readOnly
+              className="px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-zinc-400 italic rounded-lg cursor-default"
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 };
