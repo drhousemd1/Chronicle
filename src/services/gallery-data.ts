@@ -187,42 +187,6 @@ export async function fetchPublishedScenarios(
       contentThemes: themesMap.get(item.scenario_id) || null
     }));
 
-    // Apply content theme filters if provided
-    if (contentThemeFilters) {
-      results = results.filter(scenario => {
-        const themes = scenario.contentThemes;
-        if (!themes) return false;
-
-        if (contentThemeFilters.storyTypes?.length) {
-          if (!themes.storyType || !contentThemeFilters.storyTypes.includes(themes.storyType)) {
-            return false;
-          }
-        }
-
-        if (contentThemeFilters.genres?.length) {
-          const hasMatchingGenre = themes.genres?.some(g => contentThemeFilters.genres!.includes(g));
-          if (!hasMatchingGenre) return false;
-        }
-
-        if (contentThemeFilters.origins?.length) {
-          const hasMatchingOrigin = themes.origin?.some(o => contentThemeFilters.origins!.includes(o));
-          if (!hasMatchingOrigin) return false;
-        }
-
-        if (contentThemeFilters.triggerWarnings?.length) {
-          const hasMatchingWarning = themes.triggerWarnings?.some(w => contentThemeFilters.triggerWarnings!.includes(w));
-          if (!hasMatchingWarning) return false;
-        }
-
-        if (contentThemeFilters.customTags?.length) {
-          const hasMatchingTag = themes.customTags?.some(t => contentThemeFilters.customTags!.includes(t));
-          if (!hasMatchingTag) return false;
-        }
-
-        return true;
-      });
-    }
-
     return results;
   } catch (err) {
     console.error('Error fetching published scenarios:', err);
@@ -486,11 +450,65 @@ export async function incrementPlayCount(publishedScenarioId: string): Promise<v
   });
 }
 
-// Increment view count
-export async function incrementViewCount(publishedScenarioId: string): Promise<void> {
-  await supabase.rpc('increment_view_count', { 
-    published_id: publishedScenarioId 
+// Record view with 24-hour deduplication
+export async function recordView(publishedScenarioId: string): Promise<void> {
+  await supabase.rpc('record_scenario_view', { 
+    p_published_scenario_id: publishedScenarioId 
   });
+}
+
+// Legacy incrementViewCount - kept for backward compatibility
+export async function incrementViewCount(publishedScenarioId: string): Promise<void> {
+  await recordView(publishedScenarioId);
+}
+
+// Fetch gallery scenarios via server-side RPC (pagination, filtering, search)
+export interface FetchGalleryParams {
+  searchText?: string;
+  searchTags?: string[];
+  sortBy?: SortOption;
+  limit?: number;
+  offset?: number;
+  storyTypes?: string[];
+  genres?: string[];
+  origins?: string[];
+  triggerWarnings?: string[];
+  customTags?: string[];
+  publisherIds?: string[];
+}
+
+export async function fetchGalleryScenarios(params: FetchGalleryParams): Promise<PublishedScenario[]> {
+  const sortMapping: Record<string, string> = {
+    'all': 'recent',
+    'recent': 'recent',
+    'liked': 'liked',
+    'saved': 'saved',
+    'played': 'played',
+    'following': 'recent',
+  };
+
+  const { data, error } = await supabase.rpc('fetch_gallery_scenarios', {
+    p_search_text: params.searchText || null,
+    p_search_tags: params.searchTags?.length ? params.searchTags : null,
+    p_sort_by: sortMapping[params.sortBy || 'recent'] || 'recent',
+    p_limit: params.limit || 20,
+    p_offset: params.offset || 0,
+    p_story_types: params.storyTypes?.length ? params.storyTypes : null,
+    p_genres: params.genres?.length ? params.genres : null,
+    p_origins: params.origins?.length ? params.origins : null,
+    p_trigger_warnings: params.triggerWarnings?.length ? params.triggerWarnings : null,
+    p_custom_tags: params.customTags?.length ? params.customTags : null,
+    p_publisher_ids: params.publisherIds?.length ? params.publisherIds : null,
+  });
+
+  if (error) {
+    console.error('Failed to fetch gallery scenarios:', error);
+    return [];
+  }
+
+  // The RPC returns a JSON array directly
+  const results = (data as any[]) || [];
+  return results;
 }
 
 // Track a remix

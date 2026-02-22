@@ -5,8 +5,7 @@ import { ArrowLeft } from 'lucide-react';
 import { GalleryHub } from '@/components/chronicle/GalleryHub';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
-
-type SortOption = 'all' | 'recent' | 'liked' | 'saved' | 'played' | 'following';
+import type { SortOption } from '@/services/gallery-data';
 
 const Gallery: React.FC = () => {
   const { user, loading: authLoading, isAuthenticated } = useAuth();

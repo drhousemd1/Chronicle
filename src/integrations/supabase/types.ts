@@ -900,6 +900,35 @@ export type Database = {
           },
         ]
       }
+      scenario_views: {
+        Row: {
+          id: string
+          published_scenario_id: string
+          user_id: string
+          viewed_at: string
+        }
+        Insert: {
+          id?: string
+          published_scenario_id: string
+          user_id: string
+          viewed_at?: string
+        }
+        Update: {
+          id?: string
+          published_scenario_id?: string
+          user_id?: string
+          viewed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scenario_views_published_scenario_id_fkey"
+            columns: ["published_scenario_id"]
+            isOneToOne: false
+            referencedRelation: "published_scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scenarios: {
         Row: {
           cover_image_position: Json | null
@@ -1163,6 +1192,22 @@ export type Database = {
         Args: { published_id: string }
         Returns: undefined
       }
+      fetch_gallery_scenarios: {
+        Args: {
+          p_custom_tags?: string[]
+          p_genres?: string[]
+          p_limit?: number
+          p_offset?: number
+          p_origins?: string[]
+          p_publisher_ids?: string[]
+          p_search_tags?: string[]
+          p_search_text?: string
+          p_sort_by?: string
+          p_story_types?: string[]
+          p_trigger_warnings?: string[]
+        }
+        Returns: Json
+      }
       get_creator_stats: {
         Args: { creator_user_id: string }
         Returns: {
@@ -1195,6 +1240,10 @@ export type Database = {
       }
       increment_view_count: {
         Args: { published_id: string }
+        Returns: undefined
+      }
+      record_scenario_view: {
+        Args: { p_published_scenario_id: string }
         Returns: undefined
       }
     }
