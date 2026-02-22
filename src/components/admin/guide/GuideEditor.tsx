@@ -23,6 +23,26 @@ function createTurndown() {
     bulletListMarker: '-',
   });
   td.use(gfm);
+
+  // Custom rule: preserve <img> with width/style as raw HTML so size persists
+  td.addRule('imgWithWidth', {
+    filter: (node) => {
+      return node.nodeName === 'IMG' && !!(
+        (node as HTMLImageElement).getAttribute('width') ||
+        (node as HTMLImageElement).style.width
+      );
+    },
+    replacement: (_content, node) => {
+      const img = node as HTMLImageElement;
+      const src = img.getAttribute('src') || '';
+      const alt = img.getAttribute('alt') || '';
+      const width = img.getAttribute('width') || img.style.width;
+      // Strip resize handles data attribute if present
+      const widthAttr = width ? ` width="${width.replace('px', '')}"` : '';
+      return `\n\n<img src="${src}" alt="${alt}"${widthAttr} style="max-width:100%" />\n\n`;
+    },
+  });
+
   return td;
 }
 
@@ -103,7 +123,6 @@ async function uploadGuideImage(file: File): Promise<string> {
 function insertImageAtCursor(editorEl: HTMLDivElement, url: string) {
   const sel = window.getSelection();
   if (!sel || sel.rangeCount === 0) {
-    // Fallback: append at end
     const img = document.createElement('img');
     img.src = url;
     img.alt = '';
@@ -112,7 +131,6 @@ function insertImageAtCursor(editorEl: HTMLDivElement, url: string) {
     return;
   }
   const range = sel.getRangeAt(0);
-  // Ensure range is inside editor
   if (!editorEl.contains(range.commonAncestorContainer)) {
     const img = document.createElement('img');
     img.src = url;
@@ -127,11 +145,130 @@ function insertImageAtCursor(editorEl: HTMLDivElement, url: string) {
   img.alt = '';
   img.style.maxWidth = '100%';
   range.insertNode(img);
-  // Move cursor after image
   range.setStartAfter(img);
   range.collapse(true);
   sel.removeAllRanges();
   sel.addRange(range);
+}
+
+// --- Resize handles helpers ---
+
+const HANDLE_SIZE = 8;
+const HANDLE_POSITIONS = ['nw', 'ne', 'sw', 'se'] as const;
+type HandlePos = typeof HANDLE_POSITIONS[number];
+
+const HANDLE_CURSORS: Record<HandlePos, string> = {
+  nw: 'nwse-resize',
+  ne: 'nesw-resize',
+  sw: 'nesw-resize',
+  se: 'nwse-resize',
+};
+
+function createHandle(pos: HandlePos): HTMLDivElement {
+  const h = document.createElement('div');
+  h.dataset.resizeHandle = pos;
+  h.style.cssText = `
+    position:absolute; width:${HANDLE_SIZE}px; height:${HANDLE_SIZE}px;
+    background:#3b82f6; border:1px solid #fff; border-radius:1px;
+    cursor:${HANDLE_CURSORS[pos]}; z-index:10; touch-action:none;
+  `;
+  return h;
+}
+
+function positionHandles(wrapper: HTMLDivElement, img: HTMLImageElement) {
+  const handles = wrapper.querySelectorAll<HTMLDivElement>('[data-resize-handle]');
+  const w = img.offsetWidth;
+  const h = img.offsetHeight;
+  const half = HANDLE_SIZE / 2;
+  handles.forEach((el) => {
+    const pos = el.dataset.resizeHandle as HandlePos;
+    switch (pos) {
+      case 'nw': el.style.top = `${-half}px`; el.style.left = `${-half}px`; break;
+      case 'ne': el.style.top = `${-half}px`; el.style.left = `${w - half}px`; break;
+      case 'sw': el.style.top = `${h - half}px`; el.style.left = `${-half}px`; break;
+      case 'se': el.style.top = `${h - half}px`; el.style.left = `${w - half}px`; break;
+    }
+  });
+}
+
+function removeResizeUI(editorEl: HTMLDivElement) {
+  editorEl.querySelectorAll<HTMLDivElement>('[data-resize-wrapper]').forEach((w) => {
+    const img = w.querySelector('img');
+    if (img) {
+      w.parentNode?.insertBefore(img, w);
+    }
+    w.remove();
+  });
+}
+
+function wrapImageWithHandles(
+  img: HTMLImageElement,
+  editorEl: HTMLDivElement,
+  onResizeEnd: () => void,
+) {
+  // Already wrapped?
+  if (img.parentElement?.dataset.resizeWrapper) return;
+
+  const wrapper = document.createElement('div');
+  wrapper.dataset.resizeWrapper = '1';
+  wrapper.style.cssText = 'position:relative; display:inline-block;';
+  img.parentNode?.insertBefore(wrapper, img);
+  wrapper.appendChild(img);
+
+  // Outline on image
+  img.style.outline = '2px solid #3b82f6';
+
+  HANDLE_POSITIONS.forEach((pos) => {
+    const handle = createHandle(pos);
+    wrapper.appendChild(handle);
+
+    const startResize = (startX: number, startY: number) => {
+      const startWidth = img.offsetWidth;
+      const aspectRatio = img.naturalHeight / img.naturalWidth || img.offsetHeight / img.offsetWidth;
+      const maxWidth = editorEl.offsetWidth - 48; // padding
+
+      const onMove = (cx: number, _cy: number) => {
+        let deltaX = cx - startX;
+        if (pos === 'nw' || pos === 'sw') deltaX = -deltaX;
+        const newWidth = Math.max(50, Math.min(maxWidth, startWidth + deltaX));
+        img.style.width = `${newWidth}px`;
+        img.style.height = `${Math.round(newWidth * aspectRatio)}px`;
+        img.setAttribute('width', String(Math.round(newWidth)));
+        positionHandles(wrapper, img);
+      };
+
+      const onEnd = () => {
+        document.removeEventListener('mousemove', mouseMove);
+        document.removeEventListener('mouseup', mouseUp);
+        document.removeEventListener('touchmove', touchMove);
+        document.removeEventListener('touchend', touchEnd);
+        onResizeEnd();
+      };
+
+      const mouseMove = (e: MouseEvent) => { e.preventDefault(); onMove(e.clientX, e.clientY); };
+      const mouseUp = () => onEnd();
+      const touchMove = (e: TouchEvent) => { e.preventDefault(); onMove(e.touches[0].clientX, e.touches[0].clientY); };
+      const touchEnd = () => onEnd();
+
+      document.addEventListener('mousemove', mouseMove);
+      document.addEventListener('mouseup', mouseUp);
+      document.addEventListener('touchmove', touchMove, { passive: false });
+      document.addEventListener('touchend', touchEnd);
+    };
+
+    handle.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      startResize(e.clientX, e.clientY);
+    });
+    handle.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      startResize(e.touches[0].clientX, e.touches[0].clientY);
+    }, { passive: false });
+  });
+
+  positionHandles(wrapper, img);
 }
 
 // --- Component ---
@@ -150,6 +287,7 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
   const titleRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<HTMLDivElement>(null);
   const isInitializing = useRef(false);
+  const selectedImgRef = useRef<HTMLImageElement | null>(null);
 
   useEffect(() => { setTitle(docTitle); }, [docTitle]);
 
@@ -164,15 +302,59 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
       editorRef.current.innerHTML = markdownToHtml(docMarkdown);
       isInitializing.current = false;
     }
-  }, [docId]); // Only on doc switch, not on every markdown change
+  }, [docId]);
 
   const handleInput = useCallback(() => {
     if (isInitializing.current) return;
     if (!editorRef.current || !onMarkdownChange) return;
-    const html = editorRef.current.innerHTML;
+    // Strip resize wrappers before converting
+    const clone = editorRef.current.cloneNode(true) as HTMLDivElement;
+    clone.querySelectorAll('[data-resize-wrapper]').forEach((w) => {
+      const img = w.querySelector('img');
+      if (img) {
+        img.style.outline = '';
+        w.parentNode?.insertBefore(img, w);
+      }
+      w.remove();
+    });
+    clone.querySelectorAll('[data-resize-handle]').forEach((h) => h.remove());
+    const html = clone.innerHTML;
     const md = turndown.turndown(html);
     onMarkdownChange(md);
   }, [onMarkdownChange]);
+
+  // --- Image click-to-select for resize ---
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor || !onMarkdownChange) return;
+
+    const onClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+
+      // Ignore clicks on handles
+      if (target.dataset.resizeHandle) return;
+
+      if (target.tagName === 'IMG') {
+        const img = target as HTMLImageElement;
+        if (selectedImgRef.current === img) return;
+
+        // Remove existing handles
+        removeResizeUI(editor);
+        selectedImgRef.current = img;
+        wrapImageWithHandles(img, editor, handleInput);
+      } else {
+        // Deselect
+        if (selectedImgRef.current) {
+          selectedImgRef.current.style.outline = '';
+          selectedImgRef.current = null;
+          removeResizeUI(editor);
+        }
+      }
+    };
+
+    editor.addEventListener('click', onClick);
+    return () => editor.removeEventListener('click', onClick);
+  }, [onMarkdownChange, handleInput]);
 
   // --- Paste handler ---
   const handlePaste = useCallback(async (e: React.ClipboardEvent<HTMLDivElement>) => {
@@ -180,7 +362,6 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
 
     const clipboardData = e.clipboardData;
 
-    // Check for image files in clipboard (screenshots, copied images)
     const imageFile = Array.from(clipboardData.files).find(f => f.type.startsWith('image/'));
     if (imageFile) {
       e.preventDefault();
@@ -194,7 +375,6 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
       return;
     }
 
-    // Also check for image items (some browsers use items instead of files)
     const imageItem = Array.from(clipboardData.items).find(item => item.type.startsWith('image/'));
     if (imageItem) {
       const file = imageItem.getAsFile();
@@ -211,12 +391,10 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
       }
     }
 
-    // Text paste: strip formatting, insert as plain text
     const plainText = clipboardData.getData('text/plain');
     if (plainText) {
       e.preventDefault();
       document.execCommand('insertText', false, plainText);
-      // handleInput fires via onInput event from execCommand
     }
   }, [onMarkdownChange, handleInput]);
 
@@ -226,7 +404,7 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
     if (!editorRef.current || !onMarkdownChange) return;
 
     const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
-    if (files.length === 0) return; // Let default handle non-image drops
+    if (files.length === 0) return;
 
     e.preventDefault();
     e.stopPropagation();
