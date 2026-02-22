@@ -1,54 +1,33 @@
 
 
-# Arc Flow Connector: Right-Angle Routing with Glow Effect
+# Fix Arc Connector: Single Glowing Line
 
-## The Problem
+## Problem
+The current implementation renders two separate SVG paths — a wide blurred background path and a thin foreground path — which appear as two distinct lines instead of one line with a glow.
 
-The current Bezier curve connector tries to draw a smooth S-curve between steps across the two columns, but the narrow gap between columns makes it look awkward and cramped. The dashed styling also feels lightweight and hard to follow visually.
+## Solution
+Use a single path with an SVG filter that creates the glow effect around it. The filter will:
+1. Take the original path graphic
+2. Create a blurred, color-shifted copy behind it
+3. Merge them together as one visual unit
 
-## The Solution
-
-Replace the Bezier curve with a clean **right-angle routed path** (orthogonal routing) and switch to a **solid navy blue line with a glow effect**.
-
-### Visual Style
-- **Path shape**: Horizontal out from source edge, 90-degree turn straight up/down, 90-degree turn horizontal into target edge
-- **Line**: Solid (no dash), 2px stroke
-- **Color**: Navy blue (`#1e3a5f`) with a glowing effect via an SVG blur filter
-- **Glow**: A second copy of the path rendered behind with a Gaussian blur filter in a lighter blue (`#3b82f6` at ~40% opacity) to create a soft neon-like glow
-
-### Path Routing Logic
-
-Instead of a Bezier curve, the path will use three segments:
-
-```text
-Source (right edge) ---horizontal---> midpoint X
-                                        |
-                                     vertical
-                                        |
-                                      midpoint X ---horizontal---> Target (left edge)
-```
-
-The `midX` will be calculated as the exact center between the two columns (halfway between source right edge and target left edge). This creates a clean L-shaped or Z-shaped connector depending on vertical direction.
-
-SVG path: `M sx sy L midX sy L midX ty L tx ty` (three straight segments with right angles).
+This produces one crisp navy line with a soft blue aura around it.
 
 ## Technical Details
 
 ### File: `src/components/chronicle/arc/ArcFlowConnector.tsx`
 
-1. **Replace the Bezier `C` command** with line `L` commands for right-angle routing:
-   - `M sx sy` (start at source edge center)
-   - `L midX sy` (horizontal to column gap center)
-   - `L midX ty` (vertical to target Y)
-   - `L tx ty` (horizontal to target edge)
+Update the SVG filter and path rendering:
 
-2. **Add SVG filter** for the glow effect:
-   - Define a `<filter>` with `<feGaussianBlur>` (stdDeviation ~4) and `<feMerge>` to layer blur behind the crisp line
+1. **Revise the SVG filter** to use `flood` + `composite` to create a colored glow behind the source graphic:
+   - `feFlood` fills with the glow color (`#3b82f6`, ~40% opacity)
+   - `feComposite` clips the flood to the path shape
+   - `feGaussianBlur` blurs that colored shape
+   - `feMerge` layers: blurred glow on bottom, original crisp path on top
 
-3. **Render two paths**:
-   - Background glow path: lighter blue, wider stroke, blur filter applied
-   - Foreground path: solid navy blue, 2px, crisp
+2. **Remove the second (glow) `<path>` element** — only one `<path>` remains
 
-4. **Remove** `strokeDasharray` (no more dashed line)
+3. **Apply the filter to the single path**, which is stroked with navy `#1e3a5f` at 2px
 
-No other files need to change -- the connector component is self-contained.
+Result: one line, one DOM element, unified glow effect.
+
