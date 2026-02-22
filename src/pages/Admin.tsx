@@ -3,6 +3,7 @@ import { Sparkles } from 'lucide-react';
 import { ImageGenerationTool } from '@/components/admin/ImageGenerationTool';
 import { AdminToolEditModal, type ToolMeta } from '@/components/admin/AdminToolEditModal';
 import { ModelSettingsTab } from '@/components/chronicle/ModelSettingsTab';
+import { AppGuideTool } from '@/components/admin/guide/AppGuideTool';
 import { supabase } from '@/integrations/supabase/client';
 
 const DEFAULT_TOOLS: ToolMeta[] = [
@@ -16,6 +17,11 @@ const DEFAULT_TOOLS: ToolMeta[] = [
     id: 'model_settings',
     title: 'Model Settings',
     description: 'Select Grok model and manage API key sharing',
+  },
+  {
+    id: 'app_guide',
+    title: 'App Guide',
+    description: 'Complete documentation for every page and system',
   },
 ];
 
@@ -84,6 +90,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
         <ModelSettingsTab selectedModelId={selectedModelId} onSelectModel={onSelectModel} />
       </div>
     );
+  }
+
+  if (activeTool === 'app_guide') {
+    return <AppGuideTool />;
   }
 
   return (

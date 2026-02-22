@@ -442,6 +442,36 @@ export type Database = {
         }
         Relationships: []
       }
+      guide_documents: {
+        Row: {
+          content: Json | null
+          created_at: string
+          id: string
+          markdown: string | null
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content?: Json | null
+          created_at?: string
+          id?: string
+          markdown?: string | null
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          content?: Json | null
+          created_at?: string
+          id?: string
+          markdown?: string | null
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       image_folders: {
         Row: {
           created_at: string | null

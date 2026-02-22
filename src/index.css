@@ -138,3 +138,14 @@ All colors MUST be HSL.
   background-size: 200% 200%;
   animation: gentle-gradient-shift 15s ease-in-out infinite;
 }
+
+/* BlockNote dark theme overrides for App Guide */
+[data-color-scheme="dark"] {
+  --bn-colors-editor-background: #0d0d0d;
+  --bn-colors-editor-text: #e2e2e2;
+  --bn-colors-menu-background: #1a1a1a;
+  --bn-colors-menu-text: #e2e2e2;
+  --bn-colors-hovered-background: #2a2a2a;
+  --bn-colors-selected-background: #2a2a2a;
+  --bn-colors-border: #333333;
+}
