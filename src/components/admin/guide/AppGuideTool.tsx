@@ -28,7 +28,6 @@ export const AppGuideTool: React.FC<AppGuideToolProps> = ({ onRegisterSave }) =>
 
   // Load a document
   const loadDoc = useCallback(async (id: string) => {
-    setActiveDocId(id);
     setTocEntries([]);
     const { data } = await (supabase as any)
       .from('guide_documents')
@@ -36,6 +35,7 @@ export const AppGuideTool: React.FC<AppGuideToolProps> = ({ onRegisterSave }) =>
       .eq('id', id)
       .maybeSingle();
     if (data) {
+      setActiveDocId(id);
       setActiveDocTitle(data.title);
       setActiveDocMarkdown(data.markdown || '');
       setDocuments((prev) =>
@@ -114,7 +114,7 @@ export const AppGuideTool: React.FC<AppGuideToolProps> = ({ onRegisterSave }) =>
     const saveFn = async () => {
       const { error } = await (supabase as any)
         .from('guide_documents')
-        .update({ title: activeDocTitle, markdown: activeDocMarkdown, updated_at: new Date().toISOString() })
+        .update({ markdown: activeDocMarkdown, updated_at: new Date().toISOString() })
         .eq('id', activeDocId);
       if (error) {
         toast({ title: 'Save failed', description: error.message, variant: 'destructive' });
