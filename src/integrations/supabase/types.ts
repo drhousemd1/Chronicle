@@ -519,6 +519,7 @@ export type Database = {
           image_url: string
           is_thumbnail: boolean | null
           tags: string[]
+          title: string
           user_id: string
         }
         Insert: {
@@ -529,6 +530,7 @@ export type Database = {
           image_url: string
           is_thumbnail?: boolean | null
           tags?: string[]
+          title?: string
           user_id: string
         }
         Update: {
@@ -539,6 +541,7 @@ export type Database = {
           image_url?: string
           is_thumbnail?: boolean | null
           tags?: string[]
+          title?: string
           user_id?: string
         }
         Relationships: [

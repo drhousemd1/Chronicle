@@ -88,6 +88,7 @@ export const ImageLibraryPickerModal: React.FC<ImageLibraryPickerModalProps> = (
           folderId: img.folder_id,
           imageUrl: img.image_url,
           filename: img.filename || '',
+          title: img.title || '',
           isThumbnail: img.is_thumbnail || false,
           tags: img.tags || [],
           createdAt: new Date(img.created_at).getTime(),
