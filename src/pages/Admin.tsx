@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkles } from 'lucide-react';
-import { ImageGenerationTool } from '@/components/admin/ImageGenerationTool';
 import { AdminToolEditModal, type ToolMeta } from '@/components/admin/AdminToolEditModal';
 import { ModelSettingsTab } from '@/components/chronicle/ModelSettingsTab';
-import { AppGuideTool } from '@/components/admin/guide/AppGuideTool';
 import { supabase } from '@/integrations/supabase/client';
+
+const LazyImageGen = React.lazy(() =>
+  import('@/components/admin/ImageGenerationTool').then(m => ({ default: m.ImageGenerationTool }))
+);
+const LazyAppGuide = React.lazy(() =>
+  import('@/components/admin/guide/AppGuideTool').then(m => ({ default: m.AppGuideTool }))
+);
 
 const DEFAULT_TOOLS: ToolMeta[] = [
   {
@@ -81,7 +86,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
   };
 
   if (activeTool === 'image_generation') {
-    return <ImageGenerationTool />;
+    return (
+      <React.Suspense fallback={<div className="flex items-center justify-center h-full text-slate-400">Loading…</div>}>
+        <LazyImageGen />
+      </React.Suspense>
+    );
   }
 
   if (activeTool === 'model_settings') {
@@ -93,7 +102,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
   }
 
   if (activeTool === 'app_guide') {
-    return <AppGuideTool />;
+    return (
+      <React.Suspense fallback={<div className="flex items-center justify-center h-full text-slate-400">Loading…</div>}>
+        <LazyAppGuide />
+      </React.Suspense>
+    );
   }
 
   return (
