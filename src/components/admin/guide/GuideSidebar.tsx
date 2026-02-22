@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 
@@ -21,6 +21,7 @@ interface GuideSidebarProps {
   tocEntries: TocEntry[];
   onSelectDoc: (id: string) => void;
   onNewDoc: () => void;
+  onDeleteDoc: (id: string) => void;
   onTocClick: (blockId: string) => void;
 }
 
@@ -30,6 +31,7 @@ export const GuideSidebar: React.FC<GuideSidebarProps> = ({
   tocEntries,
   onSelectDoc,
   onNewDoc,
+  onDeleteDoc,
   onTocClick,
 }) => {
   return (
@@ -50,13 +52,10 @@ export const GuideSidebar: React.FC<GuideSidebarProps> = ({
       <ScrollArea className="flex-1 min-h-0">
         <div className="px-2 pb-2 flex flex-col gap-0.5">
           {documents.map((doc) => (
-            <button
+            <div
               key={doc.id}
-              onClick={() => onSelectDoc(doc.id)}
-              className={`w-full text-left px-3 py-1.5 rounded text-xs truncate transition-colors ${
-                activeDocId === doc.id
-                  ? 'text-white'
-                  : 'text-[#9CA3AF] hover:text-white'
+              className={`group flex items-center gap-1 rounded transition-colors ${
+                activeDocId === doc.id ? 'text-white' : 'text-[#9CA3AF] hover:text-white'
               }`}
               style={
                 activeDocId === doc.id
@@ -64,8 +63,20 @@ export const GuideSidebar: React.FC<GuideSidebarProps> = ({
                   : { borderLeft: '2px solid transparent' }
               }
             >
-              {doc.title}
-            </button>
+              <button
+                onClick={() => onSelectDoc(doc.id)}
+                className="flex-1 text-left px-3 py-1.5 text-xs truncate min-w-0"
+              >
+                {doc.title}
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); onDeleteDoc(doc.id); }}
+                className="p-1 mr-1 opacity-0 group-hover:opacity-100 hover:text-red-400 transition-all shrink-0"
+                title="Delete document"
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
+            </div>
           ))}
         </div>
         <div className="px-2 pb-3">
