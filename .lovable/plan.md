@@ -1,90 +1,95 @@
 
 
-# Fix 5 UI Issues: Tile Clipping, Character Sizing, Upload/Search Placement, Hover Effect
+# Fix Hover Effect + Add Aspect Ratio with Icon to Image Thumbnails
 
 ---
 
 ## What You'll Notice After This
 
-- No more corner clipping on story/gallery tiles when hovering
-- Character Library tiles match the same grid sizing as Your Stories and Community Gallery
-- The "+ Upload Images" button and search bar only appear when inside a folder (not on the main Image Library page)
-- Image thumbnails in folders have the same hover lift effect as all other tiles in the app
+- Image thumbnails lift up when hovered, matching the rest of the app
+- Below the title in the gray footer, a new line shows "Aspect Ratio:" followed by a small shape icon (tall rectangle, wide rectangle, or square) and the ratio text (e.g. "3:4", "16:9")
+- The icon visually communicates the shape so users don't need to interpret the numbers
 
 ---
 
-## 1. Fix tile card clipping on hover
+## 1. Fix hover lift effect
 
-**The problem:** The `overflow-hidden`, `rounded-[2rem]`, and `group-hover:-translate-y-3` are all on the same `div`. During the CSS transition, the browser clips corners as it composites the rounded overflow with the transform -- causing visible corner artifacts.
+The outer div has `group-hover:-translate-y-2` but it IS the `group` element, so it can't trigger off itself. Change to `hover:-translate-y-2 hover:shadow-lg`.
 
-**The fix:** Move the hover translate to the outer wrapper `div` (the `group relative` element) instead of the inner card. The inner card keeps `overflow-hidden rounded-[2rem]` but no longer transforms itself. This separates the clipping boundary from the moving element.
-
-**Files affected:**
-- `src/components/chronicle/ScenarioHub.tsx` (line 35) -- move `-translate-y-3` and `shadow-2xl` to outer div
-- `src/components/chronicle/GalleryScenarioCard.tsx` (line 65) -- same fix
-- `src/components/chronicle/ImageLibraryTab.tsx` (line 447, folder tiles) -- same fix
-- `src/pages/CreatorProfile.tsx` (line 286) -- same fix
-- `src/components/account/PublicProfileTab.tsx` (line 460) -- same fix
+**File:** `src/components/chronicle/ImageLibraryTab.tsx` (line 620)
 
 ---
 
-## 2. Match Character Library tile grid to other pages
+## 2. Detect aspect ratios from loaded images
 
-**The problem:** Character Library uses `lg:grid-cols-4` while Your Stories and Community Gallery use `lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5`. This causes a jarring size difference when switching tabs.
+Add a `useState<Map>` to store detected aspect ratios keyed by image ID. When `folderImages` changes, load each image URL in a browser `Image()` object, read `naturalWidth`/`naturalHeight`, and match to the closest standard ratio from this list:
 
-**The fix:** Update the CharactersTab grid to use the same breakpoints: `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 lg:gap-8`.
+- 1:1, 9:16, 2:3, 3:4, 4:5, 16:9, 3:2, 4:3, 5:4, 3:5, 7:9, 9:7, 5:3
 
-**File:** `src/components/chronicle/CharactersTab.tsx` (line 522)
-
----
-
-## 3. Fix Upload Images button -- only show inside folder
-
-**Current state:** The conditional `isInImageFolder` is already in the header code (line 1750 of Index.tsx). If it's showing on the main page, `isInImageFolder` may be getting set incorrectly. However, looking at the code, the logic appears correct. The user may be seeing the button because they entered a folder and the state persisted. No code change needed here -- just confirming the logic is already correct. If the issue persists after the other fixes, we'll investigate further.
-
-Actually, re-reading the code -- the `isInImageFolder` guard is already in place at line 1750. This should already be working. I'll double-check the `onFolderChange` callback to ensure it properly resets.
+The matching picks whichever standard ratio has the smallest absolute difference from the actual width/height ratio.
 
 ---
 
-## 4. Fix search bar -- only show inside folder
+## 3. Add aspect ratio icon + label to gray footer
 
-**Current state:** The search bar already has `{isInImageFolder && (...)}` at line 1603 of Index.tsx. Same as item 3 -- the conditional is already there. If both items 3 and 4 are showing on the main page, the issue is likely that `isInImageFolder` defaults to or gets stuck as `true`. I'll verify the initial state and the reset logic in `onFolderChange`.
+Extend the gray footer bar to show a second line:
 
-If both are genuinely showing on the main Image Library page (not inside a folder), the fix would be to ensure `isInImageFolder` initializes as `false` and resets properly. The current code shows `useState(false)` at line 153, which is correct.
+```
+Image Title Here
+[icon] 3:4
+```
 
----
+The icon is a small inline SVG -- a simple rounded rectangle whose proportions reflect the orientation:
+- **Portrait** (taller than wide): a tall narrow rounded rect
+- **Landscape** (wider than tall): a short wide rounded rect  
+- **Square**: a square rounded rect
 
-## 5. Add hover lift effect to Image Library thumbnails
-
-**The fix:** Add `transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-xl` to the image thumbnail wrapper (line 620 of ImageLibraryTab.tsx). Using `-translate-y-2` (slightly less than the 2:3 cards' `-translate-y-3`) since these are smaller tiles. Apply the translate to the outer wrapper to avoid the same clipping issue from item 1.
-
-**File:** `src/components/chronicle/ImageLibraryTab.tsx` (line 618-620)
+Styled subtly: `text-[10px] text-zinc-400` for the ratio text, icon in `text-zinc-400` at ~12px.
 
 ---
 
 ## Technical Details
 
-### Files Modified
+### File: `src/components/chronicle/ImageLibraryTab.tsx`
 
-- **`src/components/chronicle/ScenarioHub.tsx`** (line 34-35)
-  - Outer div: add `transition-all duration-300 group-hover:-translate-y-3`
-  - Inner div: remove `group-hover:-translate-y-3` (keep `overflow-hidden rounded-[2rem]`)
+1. **Line 620:** Change `group-hover:-translate-y-2` to `hover:-translate-y-2`
 
-- **`src/components/chronicle/GalleryScenarioCard.tsx`** (line 63-65)
-  - Same structural fix as ScenarioHub
+2. **New constant** (top of file or inside component):
+   ```typescript
+   const STANDARD_RATIOS = [
+     { w: 1, h: 1, label: '1:1' },
+     { w: 9, h: 16, label: '9:16' },
+     { w: 2, h: 3, label: '2:3' },
+     { w: 3, h: 4, label: '3:4' },
+     { w: 4, h: 5, label: '4:5' },
+     { w: 3, h: 5, label: '3:5' },
+     { w: 7, h: 9, label: '7:9' },
+     { w: 16, h: 9, label: '16:9' },
+     { w: 3, h: 2, label: '3:2' },
+     { w: 4, h: 3, label: '4:3' },
+     { w: 5, h: 4, label: '5:4' },
+     { w: 5, h: 3, label: '5:3' },
+     { w: 9, h: 7, label: '9:7' },
+   ];
+   ```
 
-- **`src/components/chronicle/ImageLibraryTab.tsx`** (line 445-447, folder tile cards)
-  - Same structural fix for folder tiles
-  - Lines 618-620: Add hover lift to image thumbnails (outer div gets translate, inner keeps overflow-hidden)
+3. **New state + useEffect:**
+   - `const [aspectRatios, setAspectRatios] = useState<Record<string, { label: string; orientation: 'portrait' | 'landscape' | 'square' }>>({})`
+   - `useEffect` iterates `folderImages`, creates `new Image()` for each, on load computes ratio and finds closest match, batches updates into state
 
-- **`src/pages/CreatorProfile.tsx`** (line 285-286)
-  - Same structural fix
+4. **New inline component** `AspectRatioIcon`:
+   - Takes `orientation` prop
+   - Renders a 12x12 SVG with a rounded rect sized to match:
+     - Portrait: rect ~6x10
+     - Landscape: rect ~10x6
+     - Square: rect ~9x9
+   - Stroke color: `currentColor` (inherits `text-zinc-400`)
 
-- **`src/components/account/PublicProfileTab.tsx`** (line 459-460)
-  - Same structural fix
+5. **Gray footer bar** (lines 667-670): Add a second row below the title:
+   ```tsx
+   <div className="flex items-center gap-1.5 mt-1">
+     <AspectRatioIcon orientation={ratioInfo.orientation} />
+     <span className="text-[10px] text-zinc-400">{ratioInfo.label}</span>
+   </div>
+   ```
 
-- **`src/components/chronicle/CharactersTab.tsx`** (line 522)
-  - Grid: change from `lg:grid-cols-4 gap-8` to `lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 lg:gap-8`
-
-- **`src/pages/Index.tsx`**
-  - Verify `isInImageFolder` state management (should already be correct, but will confirm the upload button and search bar only render when inside a folder)
