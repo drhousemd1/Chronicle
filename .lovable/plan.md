@@ -1,45 +1,51 @@
 
 
-# Collapse Retry Clones in the UI
+# Sentinel Step + Editable Trigger + LLM Fallback Directive
 
 ## Overview
-Instead of rendering a new step card for each retry attempt, the UI will hide retry clone cards and instead update the retry badge on the **original** step card to reflect the current retry count. All backend data (clone records, resistance history, retry lineage) stays exactly as-is -- this is a **frontend-only display change**.
 
-## How It Works Today
-When a recovery step succeeds, the system clones the failed progression step as a new card inserted below the original. Each clone has `retryOf` pointing to the original, a `retryCount`, and its own status. In rigid mode, this can produce an unbounded number of cards.
+Three changes to the fail (recovery) branch in `ArcBranchLane.tsx`, plus an LLM context directive in `llm.ts`.
 
-## What Changes
+## Changes
 
-### 1. Hide retry clone cards from rendering
+### 1. Make Resistance Trigger editable in Simple mode
 **File:** `src/components/chronicle/arc/ArcBranchLane.tsx`
 
-- Filter out steps where `step.retryOf` is set before rendering. These clones still exist in the data, they just won't render as separate cards.
+- Remove the `isPassive` override that forces the trigger value to "AI will handle dynamically" and makes it read-only
+- The trigger textarea will always show `branch.triggerDescription` and always be editable in both modes
+- Remove the `isPassive`-based italic styling
 
-### 2. Show the retry badge on the original step (not only on clones)
+### 2. Always render the steps section (remove `!isPassive` guard)
 **File:** `src/components/chronicle/arc/ArcBranchLane.tsx`
 
-- Currently the retry badge only shows when `step.retryOf` is truthy (i.e., on clones).
-- Change it so the **original** step shows the badge when it has active retries. Look for any clone in the branch whose `retryOf` matches this step's `id`, and display the highest `retryCount` from those clones.
-- The badge text stays `Retry X of Y` with the same styling.
+- Currently the entire steps block is wrapped in `{!isPassive && (...)}` -- remove that guard
+- In simple mode: hide user-created step cards and the "+ Add Step" button, but still render the sentinel
+- In advanced mode: show everything (user steps, add button, sentinel)
 
-### 3. Update progress calculation to still work correctly
-**Files:** `src/components/chronicle/arc/ArcPhaseCard.tsx`, `src/components/chronicle/StoryGoalsSection.tsx`
+### 3. Add sentinel step card at the bottom of the fail branch
+**File:** `src/components/chronicle/arc/ArcBranchLane.tsx`
 
-- The progress calculation already excludes failed steps that have pending retry clones. This logic remains unchanged since the data model is untouched.
+After the user steps loop and add button (or directly after the trigger in simple mode), render a hardcoded, read-only card for the fail branch only:
 
-### 4. Keep LLM context serialization as-is
-**File:** `src/services/llm.ts`
+- **Simple mode text:** "AI will handle recovery steps dynamically"
+- **Advanced mode text:** "AI will handle ongoing recovery steps dynamically once predetermined recovery attempts have all been attempted."
+- Styled like a regular step card but dimmed (opacity-60), with a lock icon instead of delete, no status toggles
+- Label: "DYNAMIC RECOVERY" instead of "RECOVERY STEP N"
+- This card is purely UI -- not added to the data model
 
-- The LLM still sees the full retry lineage (all clones, all statuses) for proper temporal awareness. No changes needed here.
+### 4. LLM fallback directive
+**File:** `src/services/llm.ts` (in `serializeBranch`, around line 104-110)
+
+After the status summary line, check if:
+- The branch is the fail branch (label contains "Recovery")
+- All fail branch steps have resolved statuses (none pending)
+- There are still pending progression steps
+
+If so, append: "All predetermined recovery steps have been attempted. Continue to pursue remaining progression steps by adapting dynamically -- introduce new narrative approaches that organically guide the story back toward pending goals. Do not repeat previously failed approaches verbatim."
 
 ## What Does NOT Change
-- The clone-on-recovery backend logic (StoryGoalsSection.tsx lines 194-236) -- clones are still created in the data
-- The `ArcStep` type definition -- `retryOf`, `retryCount`, `permanentlyFailed` fields all stay
-- LLM serialization -- AI still sees every retry attempt
-- The `permanentlyFailed` badge -- still shows on the original step when max retries are exhausted
-- Progress percentage calculation
-
-## Result
-- In rigid mode, even after 50 retries, the user sees one card with a badge reading "Retry 50 of (infinity)"
-- All 50 retry records remain in the data for the AI to reference
-- UI stays clean and compact regardless of retry count
+- The data model (`ArcStep` type, clone-on-recovery logic)
+- Progress calculations
+- The success branch behavior
+- Retry badges, status toggles on user-created steps
+- LLM serialization of individual steps and their retry lineage
