@@ -1,66 +1,49 @@
 
+# Fix App Guide: Copy/Paste + Image Support
 
-# Shared Elements / Architecture -- Guide Content
+## Problems Identified
+1. **Copy/paste broken**: The `contentEditable` div has no `onPaste` handler. Browser default paste inserts raw HTML that doesn't reliably trigger `onInput`, causing content to silently diverge from the markdown state.
+2. **No image support**: No `onDrop` or clipboard-image handling exists. No storage bucket for guide images. No upload logic.
 
-## What This Does
-Write the full markdown documentation for the "Shared Elements/Architecture (Structure Guide)" document (ID: `0436c716-da55-4b89-8fe4-8ce775f77412`). This is a cross-reference map showing where components, patterns, and UI elements appear across multiple pages/locations, designed as an at-a-glance guide for identifying all locations that need modification when a shared element changes.
+## Solution
 
-## Structure
+### 1. Create `guide_images` Storage Bucket
+- New database migration to create a `guide_images` public bucket
+- RLS policies: authenticated users can upload, anyone can read (guide content may be shared)
 
-The document uses a hybrid approach:
+### 2. Add `onPaste` Handler (GuideEditor.tsx)
+- Intercept paste events on the contentEditable div
+- **Text paste**: Strip formatting from pasted HTML to keep it clean, insert as sanitized HTML, then trigger `handleInput` to sync markdown state
+- **Image paste** (from clipboard screenshots): Extract the image blob from `clipboardData.files`, compress it (JPEG, 0.85 quality, max 1024px width per project standards), upload to `guide_images` bucket, insert an `<img>` tag with the public URL at the cursor position, then trigger `handleInput`
 
-1. **Quick-Reference Index Table** -- scannable summary with Element Name, Canonical Owner, Location Count, Usage Kind breakdown, and Risk Level (Low/Med/High based on duplication)
-2. **Per-Element Sections** -- each shared element gets its own section with:
-   - A mini usage table (File Path, Page/Context, Usage Kind, Notes)
-   - Propagation rule: "When changing X, also update Y"
-3. **Usage Kind Classification** -- controlled vocabulary:
-   - **Imported**: true shared component, change once
-   - **Duplicated**: copy-paste implementation, must change in each location independently
-   - **Forked**: intentionally diverged variant, review but may not need matching changes
+### 3. Add `onDrop` Handler (GuideEditor.tsx)
+- Intercept drop events on the contentEditable div
+- Detect image files from `dataTransfer.files`
+- Same flow as paste: compress, upload to `guide_images/{userId}/{timestamp}.jpg`, insert `<img>` tag at drop position
+- Show a subtle visual indicator (border highlight) during drag-over via `onDragOver`
 
-## Elements to Document (based on code review)
+### 4. Image Upload Utility
+- Create a helper function `uploadGuideImage(file: File): Promise<string>` in the GuideEditor file (or a small utility)
+- Compress using canvas (max 1024px width, JPEG 0.85)
+- Upload to `guide_images` bucket at path `{userId}/{timestamp}-{random}.jpg`
+- Return the public URL
 
-### High-Risk (Duplicated across multiple files)
+### 5. Turndown Image Rule
+- Ensure the turndown instance converts `<img>` tags back to markdown image syntax `![alt](url)` -- this should work by default with turndown, but will verify and add a custom rule if needed
 
-- **AutoResizeTextarea** -- duplicated in 9 files (CharactersTab, PersonalitySection, StoryGoalsSection, WorldTab, CharacterEditModal, ScenarioCardView, ArcBranchLane, ArcPhaseCard, and more). Same implementation copy-pasted. Risk: High.
-- **CollapsibleSection** -- duplicated in CharacterEditModal and ScenarioCardView. Same pattern, independently defined. Risk: Medium.
-- **HardcodedRow / ExtraRow pattern** -- duplicated between CharactersTab (full-page editor) and CharacterEditModal (popup editor). Both implement the same row layout with label + sparkle + value + lock/delete. Risk: High.
+## Technical Details
 
-### Medium-Risk (Imported but used in many contexts)
+**Files modified:**
+- `src/components/admin/guide/GuideEditor.tsx` -- add `onPaste`, `onDrop`, `onDragOver` handlers, image upload utility, compression helper
 
-- **ImageLibraryPickerModal** -- single component imported into 6 locations: AvatarActionButtons, CoverImageActionButtons, SceneGalleryActionButtons, BackgroundPickerModal, SidebarThemeModal, UploadSourceMenu. Risk: Medium.
-- **AvatarActionButtons** -- imported into 3 locations: CharactersTab, CharacterEditModal, PublicProfileTab. Risk: Medium.
-- **AvatarGenerationModal** -- imported into 2 locations: CharactersTab, PublicProfileTab. Risk: Low-Medium.
-- **GuidanceStrengthSlider** -- imported into 3 locations: CharacterGoalsSection, StoryGoalsSection, ArcPhaseCard. Risk: Medium.
-- **PersonalitySection** -- imported into 2 locations: CharactersTab (full-page), CharacterEditModal (popup). Risk: Medium.
-- **CharacterGoalsSection** -- imported into 2 locations: CharactersTab (full-page), CharacterEditModal (popup). Risk: Medium.
-- **StoryGoalsSection** -- imported into 3 locations: WorldTab, CharacterEditModal (Scenario Card view), ScenarioCardView. Risk: Medium.
-- **DeleteConfirmDialog** -- imported into 3 locations: Index.tsx (character deletion), ImageLibraryTab, ReviewModal. Risk: Low.
-- **AIPromptModal** -- imported into 1 location (Index.tsx) but serves both AI Fill and AI Generate flows. Risk: Low.
+**Database migration:**
+- Create `guide_images` storage bucket (public)
+- RLS: authenticated users can INSERT to `guide_images`, public SELECT
 
-### Cross-Page Character Editing System
+**No other files changed.** The toolbar, sidebar, and AppGuideTool remain untouched.
 
-- **Character editing fields** -- the full set of character trait sections (Physical Appearance, Currently Wearing, Preferred Clothing, Personality, Tone, Background, Key Life Events, Relationships, Secrets, Fears, Goals, Custom Sections) exists in two parallel implementations:
-  - CharactersTab.tsx (full-page Character Builder)
-  - CharacterEditModal.tsx (popup modal in Chat Interface)
-  - Any new field added to one MUST be added to the other
-  - Propagation rule covers field definitions, AI enhancement integration, and styling
-
-### Shared Services / Backend Logic
-
-- **character-ai.ts** -- `buildFullContext()` and `buildCharacterSelfContext()` used by both per-field sparkle enhancement and AI Fill/Generate flows. Single canonical source.
-- **world-ai.ts** -- `aiEnhanceWorldField()` used by WorldTab and potentially ScenarioCardView.
-- **llm.ts** -- character/world injection logic. Single canonical source but any new character field must be added to the injection mapping.
-
-### UI Primitives from chronicle/UI.tsx
-
-- **Button** (from UI.tsx) -- imported into CharactersTab, ChatInterfaceTab, PublicProfileTab, and other chronicle components. Distinct from `@/components/ui/button` (shadcn).
-- **TextArea** (from UI.tsx) -- imported into CharactersTab, ChatInterfaceTab. Distinct from `@/components/ui/textarea` (shadcn).
-
-### Arc System Components
-
-- **ArcModeToggle, ArcBranchLane, ArcConnectors, ArcPhaseCard, ArcFlowConnector** -- imported by StoryGoalsSection and self-referencing (ArcPhaseCard uses ArcBranchLane, ArcModeToggle, ArcConnectors). Properly shared via imports. Risk: Low.
-
-## Implementation
-Single database update to write the markdown content to `guide_documents` row `0436c716-da55-4b89-8fe4-8ce775f77412`. No code file changes needed.
-
+## Behavior After Fix
+- **Ctrl+V / Cmd+V text**: Pastes clean content, markdown state syncs immediately
+- **Ctrl+V / Cmd+V screenshot**: Image uploads to storage, appears inline in the editor as an `<img>`, saved as `![](url)` in markdown
+- **Drag-and-drop image file**: Same as screenshot paste -- uploads, inserts inline
+- **Drag-over visual**: Subtle blue border or overlay to indicate drop zone is active
