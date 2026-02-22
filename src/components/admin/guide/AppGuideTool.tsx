@@ -38,6 +38,9 @@ export const AppGuideTool: React.FC<AppGuideToolProps> = ({ onRegisterSave }) =>
     if (data) {
       setActiveDocTitle(data.title);
       setActiveDocMarkdown(data.markdown || '');
+      setDocuments((prev) =>
+        prev.map((d) => (d.id === id ? { ...d, title: data.title } : d))
+      );
     }
   }, []);
 
@@ -82,10 +85,14 @@ export const AppGuideTool: React.FC<AppGuideToolProps> = ({ onRegisterSave }) =>
 
   // Title change
   const handleTitleChange = useCallback(async (id: string, newTitle: string) => {
-    await (supabase as any)
+    const { error } = await (supabase as any)
       .from('guide_documents')
       .update({ title: newTitle })
       .eq('id', id);
+    if (error) {
+      toast({ title: 'Rename failed', description: error.message, variant: 'destructive' });
+      return;
+    }
     setActiveDocTitle(newTitle);
     setDocuments((prev) =>
       prev.map((d) => (d.id === id ? { ...d, title: newTitle } : d))
