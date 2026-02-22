@@ -1,32 +1,47 @@
 
+# Fix Title Rename Not Persisting in App Guide
 
-# Speed Up App Guide Tool Loading
+## Root Cause
+Two bugs in `AppGuideTool.tsx`:
 
-## Problem
-The App Guide tool is stuck on "Loading..." for a long time because `react-markdown` and `remark-gfm` are large dependencies bundled into the lazy-loaded `AppGuideTool` chunk. Vite has to pre-bundle these on first load, causing significant delay. The previous memory note confirms this exact pattern has caused issues before.
+1. **`handleTitleChange`** silently ignores database errors -- it updates local state optimistically but never checks if the DB write succeeded.
+2. **`loadDoc`** fetches the document from the database and updates `activeDocTitle`, but does NOT update the `documents` array. This causes the sidebar to show the locally-cached (renamed) title while the editor title bar shows the actual DB value (e.g., "S").
 
-## Solution
-Split the heavy markdown rendering into its own lazy-loaded component so the App Guide shell (sidebar + header) loads instantly. The markdown only renders when you actually click on a document.
+## Changes
 
-### Changes
+### `src/components/admin/guide/AppGuideTool.tsx`
 
-**`src/components/admin/guide/GuideEditor.tsx`**
-- Remove the direct imports of `react-markdown` and `remark-gfm`
-- Lazy-load a small `MarkdownRenderer` component only when `docMarkdown` is non-empty
-- The title bar, empty state, and shell render immediately with zero heavy dependencies
-- Use `React.lazy()` for the markdown renderer with a lightweight inline fallback
+**Fix 1: Add error handling to `handleTitleChange`**
+- Check the `error` return from the `.update()` call
+- If it fails, show a toast and do NOT update local state (so the UI stays consistent with the DB)
+- Only update `activeDocTitle` and `documents` if the DB write succeeds
 
-**`src/components/admin/guide/MarkdownRenderer.tsx`** (new file)
-- A tiny wrapper component that imports `react-markdown` and `remark-gfm`
-- Accepts `markdown: string` prop and renders `<ReactMarkdown remarkPlugins={[remarkGfm]}>{markdown}</ReactMarkdown>`
-- This isolates the heavy deps into their own chunk that only loads when needed
+**Fix 2: Sync `documents` array in `loadDoc`**
+- After fetching a document in `loadDoc`, also update the matching entry in the `documents` array with the title from the database
+- This ensures the sidebar always reflects the actual persisted title, preventing stale local names from lingering
 
-### Result
-- Clicking "App Guide" in the admin panel shows the sidebar and document list almost instantly (only fetches a lightweight list of titles from the database)
-- The heavy markdown renderer only loads when you select a document to view
-- No change to save functionality or any other behavior
+### Technical Details
 
-### Technical Notes
-- The `AppGuideTool` itself no longer imports any heavy deps (it was already clean), so it can stop being lazy-loaded entirely OR stay lazy -- either way it'll be fast since its imports are lightweight (just `supabase/client`, native HTML sidebar)
-- Only `GuideEditor` had the heavy `react-markdown` import, and that's what we're splitting out
+```
+handleTitleChange:
+  const { error } = await supabase.from(...).update({ title }).eq('id', id);
+  if (error) {
+    toast({ title: 'Rename failed', description: error.message, variant: 'destructive' });
+    return;  // Don't update local state
+  }
+  // Only then update local state
+  setActiveDocTitle(newTitle);
+  setDocuments(prev => prev.map(...));
 
+loadDoc:
+  if (data) {
+    setActiveDocTitle(data.title);
+    setActiveDocMarkdown(data.markdown || '');
+    // Also sync the documents array
+    setDocuments(prev => prev.map(d => d.id === id ? { ...d, title: data.title } : d));
+  }
+```
+
+**Files modified:** `src/components/admin/guide/AppGuideTool.tsx` only
+
+These are small, targeted fixes -- no new files, no new dependencies, no structural changes.
