@@ -122,7 +122,7 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
                   {step.retryOf && (
                     <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-400/80 bg-amber-500/10 border border-amber-500/20 rounded-full px-1.5 py-0.5">
                       <RotateCcw size={9} />
-                      Retry #{step.retryCount || 1}
+                      Retry {step.retryCount || 1} of {flexibility === 'rigid' ? '∞' : flexibility === 'flexible' ? 2 : 4}
                     </span>
                   )}
                   {step.permanentlyFailed && (
