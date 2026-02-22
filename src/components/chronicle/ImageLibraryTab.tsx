@@ -442,9 +442,9 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
                 {folders.map((folder) => (
                   <div
                     key={folder.id}
-                    className="group relative cursor-pointer"
+                    className="group relative cursor-pointer transition-all duration-300 group-hover:-translate-y-3"
                   >
-                    <div className="aspect-[2/3] w-full overflow-hidden rounded-[2rem] bg-slate-200 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)] transition-all duration-300 group-hover:-translate-y-3 group-hover:shadow-2xl border border-[#4a5f7f] relative">
+                    <div className="aspect-[2/3] w-full overflow-hidden rounded-[2rem] bg-slate-200 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)] transition-shadow duration-300 group-hover:shadow-2xl border border-[#4a5f7f] relative">
                       {folder.thumbnailUrl ? (
                         <img
                           src={folder.thumbnailUrl}
@@ -617,8 +617,9 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
             {filteredImages.map((image) => (
               <div
                 key={image.id}
-                className="group relative rounded-xl overflow-hidden border border-[#4a5f7f] shadow-sm hover:shadow-lg transition-all"
+                className="group relative transition-all duration-300 group-hover:-translate-y-2"
               >
+                <div className="rounded-xl overflow-hidden border border-[#4a5f7f] shadow-sm group-hover:shadow-lg transition-shadow">
                 {/* Image container */}
                 <div className="relative aspect-square bg-slate-100">
                   <img
@@ -666,6 +667,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
                 {/* Gray footer bar with title */}
                 <div className="bg-zinc-700 px-3 py-2">
                   <p className="text-xs text-white truncate font-medium">{image.title || image.filename}</p>
+                </div>
                 </div>
               </div>
             ))}
