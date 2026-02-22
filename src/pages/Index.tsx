@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import * as supabaseData from "@/services/supabase-data";
 import { DeleteConfirmDialog } from "@/components/chronicle/DeleteConfirmDialog";
+import { ChangeNameModal } from "@/components/chronicle/ChangeNameModal";
 
 const IconsList = {
   Gallery: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>,
@@ -149,6 +150,15 @@ const IndexContent = () => {
   });
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [deleteConfirmType, setDeleteConfirmType] = useState<'character' | 'bookmark' | 'scenario'>('character');
+  
+  // Conversations tab modal state
+  const [convDeleteTarget, setConvDeleteTarget] = useState<{ scenarioId: string; conversationId: string } | null>(null);
+  const [convDeleteAllOpen, setConvDeleteAllOpen] = useState(false);
+  const [convRenameTarget, setConvRenameTarget] = useState<{ scenarioId: string; conversationId: string; currentTitle: string } | null>(null);
+  
+  // Delayed resume overlay
+  const resumeTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [showResumingOverlay, setShowResumingOverlay] = useState(false);
   const [remixConfirmId, setRemixConfirmId] = useState<string | null>(null);
   const [isInImageFolder, setIsInImageFolder] = useState(false);
   const imageLibraryExitFolderRef = React.useRef<(() => void) | null>(null);
@@ -292,9 +302,14 @@ const IndexContent = () => {
     loadData();
   }, [isAuthenticated, user, toast]);
 
-  // Lazy-load conversation message previews when the Conversations tab is first viewed
+  // Lazy-load conversation message previews when the Conversations tab is viewed
+  // Re-enrich when registry changes (e.g. new conversations created) by tracking registry length
+  const registryLengthRef = React.useRef(conversationRegistry.length);
   useEffect(() => {
-    if (tab !== "conversations" || conversationsEnriched || conversationRegistry.length === 0) return;
+    if (tab !== "conversations" || conversationRegistry.length === 0) return;
+    // Re-enrich if registry size changed (new conversations added) or never enriched
+    if (conversationsEnriched && registryLengthRef.current === conversationRegistry.length) return;
+    registryLengthRef.current = conversationRegistry.length;
     setConversationsEnriched(true);
     supabaseData.enrichConversationRegistry(conversationRegistry).then(enriched => {
       setConversationRegistry(enriched);
@@ -1034,6 +1049,8 @@ const IndexContent = () => {
   
   async function handleResumeFromHistory(scenarioId: string, conversationId: string) {
     setIsResuming(true);
+    // Only show overlay after 300ms to avoid flash on fast loads
+    resumeTimerRef.current = setTimeout(() => setShowResumingOverlay(true), 300);
     
     try {
       // Parallel fetch: scenario, recent messages (30), and side characters
@@ -1083,6 +1100,9 @@ const IndexContent = () => {
       console.error('[handleResumeFromHistory] Error:', e);
       toast({ title: "Failed to load", description: e.message, variant: "destructive" });
     } finally {
+      if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+      resumeTimerRef.current = null;
+      setShowResumingOverlay(false);
       setIsResuming(false);
     }
   }
@@ -1144,10 +1164,6 @@ const IndexContent = () => {
       return;
     }
     
-    if (!confirm(`Delete all ${conversationRegistry.length} saved session${conversationRegistry.length > 1 ? 's' : ''} forever? This cannot be undone.`)) {
-      return;
-    }
-    
     // Store for potential rollback
     const previousRegistry = [...conversationRegistry];
     
@@ -1157,11 +1173,9 @@ const IndexContent = () => {
       setActiveData(prev => prev ? { ...prev, conversations: [] } : prev);
     }
     
-    // Delete from database in background
+    // Delete from database in parallel batch
     try {
-      for (const entry of previousRegistry) {
-        await supabaseData.deleteConversation(entry.conversationId);
-      }
+      await Promise.all(previousRegistry.map(entry => supabaseData.deleteConversation(entry.conversationId)));
       toast({ title: "All sessions deleted", description: "Your chat history has been cleared." });
     } catch (e: any) {
       // On error, restore previous state
@@ -1712,7 +1726,7 @@ const IndexContent = () => {
               {tab === "conversations" && conversationRegistry.length > 0 && (
                 <button
                   type="button"
-                  onClick={handleDeleteAllConversations}
+                  onClick={() => setConvDeleteAllOpen(true)}
                   className="inline-flex items-center justify-center rounded-xl px-4 py-2 border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-white/10 transition-all active:scale-95 text-sm font-bold"
                 >
                   Delete All
@@ -2046,7 +2060,7 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
 
           {tab === "conversations" && (
             <div className="relative p-10 overflow-y-auto h-full bg-black">
-              {isResuming && (
+              {showResumingOverlay && (
                 <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/70 backdrop-blur-sm">
                   <div className="w-10 h-10 border-4 border-white/20 border-t-white rounded-full animate-spin mb-4" />
                   <p className="text-white font-medium text-lg">Loading session...</p>
@@ -2057,16 +2071,50 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
                 onResume={handleResumeFromHistory}
                 onRename={(scenarioId, conversationId) => {
                   const entry = conversationRegistry.find(e => e.conversationId === conversationId);
-                  const title = prompt("Rename session:", entry?.conversationTitle || "")?.trim();
-                  if (title) {
-                    handleRenameConversationFromHistory(scenarioId, conversationId, title);
-                  }
+                  setConvRenameTarget({ scenarioId, conversationId, currentTitle: entry?.conversationTitle || entry?.scenarioTitle || "" });
                 }}
                 onDelete={(scenarioId, conversationId) => {
-                  if (confirm("Delete this saved session forever?")) {
-                    handleDeleteConversationFromHistory(scenarioId, conversationId);
-                  }
+                  setConvDeleteTarget({ scenarioId, conversationId });
                 }}
+              />
+
+              {/* Rename modal */}
+              <ChangeNameModal
+                open={!!convRenameTarget}
+                onOpenChange={(open) => { if (!open) setConvRenameTarget(null); }}
+                currentName={convRenameTarget?.currentTitle || ""}
+                onSave={(newName) => {
+                  if (convRenameTarget) {
+                    handleRenameConversationFromHistory(convRenameTarget.scenarioId, convRenameTarget.conversationId, newName);
+                  }
+                  setConvRenameTarget(null);
+                }}
+              />
+
+              {/* Single delete confirm */}
+              <DeleteConfirmDialog
+                open={!!convDeleteTarget}
+                onOpenChange={(open) => { if (!open) setConvDeleteTarget(null); }}
+                onConfirm={() => {
+                  if (convDeleteTarget) {
+                    handleDeleteConversationFromHistory(convDeleteTarget.scenarioId, convDeleteTarget.conversationId);
+                  }
+                  setConvDeleteTarget(null);
+                }}
+                title="Delete this session?"
+                message="This saved session will be permanently deleted. This cannot be undone."
+              />
+
+              {/* Delete All confirm */}
+              <DeleteConfirmDialog
+                open={convDeleteAllOpen}
+                onOpenChange={setConvDeleteAllOpen}
+                onConfirm={() => {
+                  setConvDeleteAllOpen(false);
+                  handleDeleteAllConversations();
+                }}
+                title={`Delete all ${conversationRegistry.length} session${conversationRegistry.length !== 1 ? 's' : ''}?`}
+                message="All saved sessions will be permanently deleted. This cannot be undone."
               />
             </div>
           )}

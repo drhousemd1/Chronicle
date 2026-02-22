@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useMemo } from "react";
 import { ConversationMetadata } from "@/types";
 import { Pencil, Trash2 } from "lucide-react";
 import {
@@ -7,6 +7,8 @@ import {
   TooltipTrigger,
   TooltipProvider,
 } from "@/components/ui/tooltip";
+
+const PAGE_SIZE = 30;
 
 export function ConversationsTab({
   globalRegistry,
@@ -19,7 +21,15 @@ export function ConversationsTab({
   onRename: (scenarioId: string, conversationId: string) => void;
   onDelete: (scenarioId: string, conversationId: string) => void;
 }) {
-  const sortedRegistry = [...globalRegistry].sort((a, b) => b.updatedAt - a.updatedAt);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+  const sortedRegistry = useMemo(
+    () => [...globalRegistry].sort((a, b) => b.updatedAt - a.updatedAt),
+    [globalRegistry]
+  );
+
+  const visibleItems = sortedRegistry.slice(0, visibleCount);
+  const hasMore = visibleCount < sortedRegistry.length;
 
   return (
     <TooltipProvider>
@@ -33,7 +43,7 @@ export function ConversationsTab({
       ) : (
         <div className="rounded-2xl overflow-hidden">
           <div className="divide-y divide-white/10">
-            {sortedRegistry.map((entry) => {
+            {visibleItems.map((entry) => {
               const dateStr = new Date(entry.updatedAt).toLocaleDateString([], { 
                 month: 'short', 
                 day: 'numeric',
@@ -119,6 +129,18 @@ export function ConversationsTab({
               );
             })}
           </div>
+
+          {/* Load More pagination */}
+          {hasMore && (
+            <div className="flex justify-center py-6">
+              <button
+                onClick={() => setVisibleCount(prev => prev + PAGE_SIZE)}
+                className="px-6 py-2 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-white/10 transition-all active:scale-95 text-sm font-bold"
+              >
+                Load More ({sortedRegistry.length - visibleCount} remaining)
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
