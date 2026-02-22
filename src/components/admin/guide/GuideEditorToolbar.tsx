@@ -3,53 +3,13 @@ import { Bold, Italic, Heading1, Heading2, Heading3, List, ListOrdered, Code, Ta
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface GuideEditorToolbarProps {
-  textareaRef: React.RefObject<HTMLTextAreaElement>;
-  value: string;
-  onChange: (newValue: string) => void;
+  editorRef: React.RefObject<HTMLDivElement>;
+  onInput: () => void;
 }
 
-type FormatAction = (textarea: HTMLTextAreaElement, value: string) => { newValue: string; cursorPos: number };
-
-const wrapSelection: (before: string, after: string) => FormatAction = (before, after) => (textarea, value) => {
-  const start = textarea.selectionStart;
-  const end = textarea.selectionEnd;
-  const selected = value.slice(start, end);
-  const replacement = `${before}${selected || 'text'}${after}`;
-  const newValue = value.slice(0, start) + replacement + value.slice(end);
-  const cursorPos = selected ? start + replacement.length : start + before.length + 4;
-  return { newValue, cursorPos };
+const execCmd = (command: string, value?: string) => {
+  document.execCommand(command, false, value);
 };
-
-const prependLine: (prefix: string) => FormatAction = (prefix) => (textarea, value) => {
-  const start = textarea.selectionStart;
-  const lineStart = value.lastIndexOf('\n', start - 1) + 1;
-  const newValue = value.slice(0, lineStart) + prefix + value.slice(lineStart);
-  return { newValue, cursorPos: start + prefix.length };
-};
-
-const insertAtCursor: (text: string) => FormatAction = (text) => (textarea, value) => {
-  const start = textarea.selectionStart;
-  const newValue = value.slice(0, start) + text + value.slice(start);
-  return { newValue, cursorPos: start + text.length };
-};
-
-const codeBlockAction: FormatAction = (textarea, value) => {
-  const start = textarea.selectionStart;
-  const end = textarea.selectionEnd;
-  const selected = value.slice(start, end);
-  const block = `\n\`\`\`\n${selected || 'code'}\n\`\`\`\n`;
-  const newValue = value.slice(0, start) + block + value.slice(end);
-  const cursorPos = selected ? start + block.length : start + 5;
-  return { newValue, cursorPos };
-};
-
-function generateTable(cols: number, rows: number): string {
-  const header = '| ' + Array.from({ length: cols }, (_, i) => `Col ${i + 1}`).join(' | ') + ' |';
-  const separator = '| ' + Array.from({ length: cols }, () => '---').join(' | ') + ' |';
-  const emptyRow = '| ' + Array.from({ length: cols }, () => '   ').join(' | ') + ' |';
-  const dataRows = Array.from({ length: rows }, () => emptyRow).join('\n');
-  return `\n${header}\n${separator}\n${dataRows}\n`;
-}
 
 const ToolButton: React.FC<{
   icon: React.ReactNode;
@@ -59,12 +19,22 @@ const ToolButton: React.FC<{
   <button
     type="button"
     title={title}
-    onClick={onClick}
+    onMouseDown={(e) => {
+      e.preventDefault(); // preserve selection in contentEditable
+      onClick();
+    }}
     className="p-1.5 rounded hover:bg-white/10 text-[hsl(var(--ui-text-muted))] hover:text-[hsl(var(--ui-text))] transition-colors"
   >
     {icon}
   </button>
 );
+
+function generateTableHTML(cols: number, rows: number): string {
+  const headerCells = Array.from({ length: cols }, (_, i) => `<th>Col ${i + 1}</th>`).join('');
+  const dataRow = Array.from({ length: cols }, () => '<td>&nbsp;</td>').join('');
+  const dataRows = Array.from({ length: rows }, () => `<tr>${dataRow}</tr>`).join('');
+  return `<table><thead><tr>${headerCells}</tr></thead><tbody>${dataRows}</tbody></table><p><br></p>`;
+}
 
 const TableGrid: React.FC<{ onSelect: (cols: number, rows: number) => void }> = ({ onSelect }) => {
   const [hoverCol, setHoverCol] = useState(0);
@@ -89,7 +59,7 @@ const TableGrid: React.FC<{ onSelect: (cols: number, rows: number) => void }> = 
                   : 'bg-white/5 border-white/10 hover:border-white/20'
               }`}
               onMouseEnter={() => { setHoverCol(col + 1); setHoverRow(row + 1); }}
-              onClick={() => onSelect(col + 1, row + 1)}
+              onMouseDown={(e) => { e.preventDefault(); onSelect(col + 1, row + 1); }}
             />
           ))
         )}
@@ -98,46 +68,71 @@ const TableGrid: React.FC<{ onSelect: (cols: number, rows: number) => void }> = 
   );
 };
 
-export const GuideEditorToolbar: React.FC<GuideEditorToolbarProps> = ({ textareaRef, value, onChange }) => {
+export const GuideEditorToolbar: React.FC<GuideEditorToolbarProps> = ({ editorRef, onInput }) => {
   const [tableOpen, setTableOpen] = useState(false);
 
-  const applyAction = useCallback((action: FormatAction) => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-    const { newValue, cursorPos } = action(textarea, value);
-    onChange(newValue);
-    requestAnimationFrame(() => {
-      textarea.focus();
-      textarea.setSelectionRange(cursorPos, cursorPos);
-    });
-  }, [textareaRef, value, onChange]);
+  const focusEditor = useCallback(() => {
+    editorRef.current?.focus();
+  }, [editorRef]);
+
+  const handleFormat = useCallback((command: string, value?: string) => {
+    focusEditor();
+    execCmd(command, value);
+    onInput();
+  }, [focusEditor, onInput]);
+
+  const handleCodeBlock = useCallback(() => {
+    focusEditor();
+    const sel = window.getSelection();
+    const text = sel?.toString() || 'code';
+    const pre = document.createElement('pre');
+    const code = document.createElement('code');
+    code.textContent = text;
+    pre.appendChild(code);
+    
+    // Delete current selection and insert the pre block
+    if (sel && sel.rangeCount > 0) {
+      const range = sel.getRangeAt(0);
+      range.deleteContents();
+      range.insertNode(pre);
+      // Move cursor after the pre block
+      range.setStartAfter(pre);
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+    onInput();
+  }, [focusEditor, onInput]);
 
   const handleTableSelect = useCallback((cols: number, rows: number) => {
     setTableOpen(false);
-    applyAction(insertAtCursor(generateTable(cols, rows)));
-  }, [applyAction]);
+    focusEditor();
+    execCmd('insertHTML', generateTableHTML(cols, rows));
+    onInput();
+  }, [focusEditor, onInput]);
 
   const s = 14;
 
   return (
     <div className="flex items-center gap-0.5 px-4 py-1.5 border-b border-white/10 bg-white/[0.02] shrink-0">
-      <ToolButton icon={<Bold size={s} />} title="Bold" onClick={() => applyAction(wrapSelection('**', '**'))} />
-      <ToolButton icon={<Italic size={s} />} title="Italic" onClick={() => applyAction(wrapSelection('*', '*'))} />
+      <ToolButton icon={<Bold size={s} />} title="Bold" onClick={() => handleFormat('bold')} />
+      <ToolButton icon={<Italic size={s} />} title="Italic" onClick={() => handleFormat('italic')} />
       <div className="w-px h-4 bg-white/10 mx-1" />
-      <ToolButton icon={<Heading1 size={s} />} title="Heading 1" onClick={() => applyAction(prependLine('# '))} />
-      <ToolButton icon={<Heading2 size={s} />} title="Heading 2" onClick={() => applyAction(prependLine('## '))} />
-      <ToolButton icon={<Heading3 size={s} />} title="Heading 3" onClick={() => applyAction(prependLine('### '))} />
+      <ToolButton icon={<Heading1 size={s} />} title="Heading 1" onClick={() => handleFormat('formatBlock', 'h1')} />
+      <ToolButton icon={<Heading2 size={s} />} title="Heading 2" onClick={() => handleFormat('formatBlock', 'h2')} />
+      <ToolButton icon={<Heading3 size={s} />} title="Heading 3" onClick={() => handleFormat('formatBlock', 'h3')} />
       <div className="w-px h-4 bg-white/10 mx-1" />
-      <ToolButton icon={<List size={s} />} title="Bullet List" onClick={() => applyAction(prependLine('- '))} />
-      <ToolButton icon={<ListOrdered size={s} />} title="Numbered List" onClick={() => applyAction(prependLine('1. '))} />
+      <ToolButton icon={<List size={s} />} title="Bullet List" onClick={() => handleFormat('insertUnorderedList')} />
+      <ToolButton icon={<ListOrdered size={s} />} title="Numbered List" onClick={() => handleFormat('insertOrderedList')} />
       <div className="w-px h-4 bg-white/10 mx-1" />
-      <ToolButton icon={<Code size={s} />} title="Code Block" onClick={() => applyAction(codeBlockAction)} />
+      <ToolButton icon={<Code size={s} />} title="Code Block" onClick={handleCodeBlock} />
 
       <Popover open={tableOpen} onOpenChange={setTableOpen}>
         <PopoverTrigger asChild>
           <button
             type="button"
             title="Insert Table"
+            onMouseDown={(e) => e.preventDefault()}
             className="p-1.5 rounded hover:bg-white/10 text-[hsl(var(--ui-text-muted))] hover:text-[hsl(var(--ui-text))] transition-colors"
           >
             <Table size={s} />
@@ -148,7 +143,7 @@ export const GuideEditorToolbar: React.FC<GuideEditorToolbarProps> = ({ textarea
         </PopoverContent>
       </Popover>
 
-      <ToolButton icon={<Minus size={s} />} title="Horizontal Rule" onClick={() => applyAction(insertAtCursor('\n---\n'))} />
+      <ToolButton icon={<Minus size={s} />} title="Horizontal Rule" onClick={() => handleFormat('insertHorizontalRule')} />
     </div>
   );
 };

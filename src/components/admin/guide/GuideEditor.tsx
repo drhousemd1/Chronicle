@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { TocEntry } from './GuideSidebar';
 import { GuideEditorToolbar } from './GuideEditorToolbar';
-
-const LazyMarkdownRenderer = React.lazy(() => import('./MarkdownRenderer'));
+import { marked } from 'marked';
+import TurndownService from 'turndown';
+import { gfm } from 'turndown-plugin-gfm';
 
 interface GuideEditorProps {
   docId: string | null;
@@ -13,6 +14,19 @@ interface GuideEditorProps {
   onTocUpdate: (entries: TocEntry[]) => void;
   onMarkdownChange?: (markdown: string) => void;
 }
+
+// Configure turndown for HTML -> Markdown conversion
+function createTurndown() {
+  const td = new TurndownService({
+    headingStyle: 'atx',
+    codeBlockStyle: 'fenced',
+    bulletListMarker: '-',
+  });
+  td.use(gfm);
+  return td;
+}
+
+const turndown = createTurndown();
 
 function extractTocFromMarkdown(md: string): TocEntry[] {
   const entries: TocEntry[] = [];
@@ -30,6 +44,10 @@ function extractTocFromMarkdown(md: string): TocEntry[] {
   return entries;
 }
 
+function markdownToHtml(md: string): string {
+  return marked.parse(md, { async: false }) as string;
+}
+
 export const GuideEditor: React.FC<GuideEditorProps> = ({
   docId,
   docTitle,
@@ -41,13 +59,31 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
   const [title, setTitle] = useState(docTitle);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const titleRef = useRef<HTMLInputElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
+  const isInitializing = useRef(false);
 
   useEffect(() => { setTitle(docTitle); }, [docTitle]);
 
   useEffect(() => {
     onTocUpdate(extractTocFromMarkdown(docMarkdown));
   }, [docMarkdown, onTocUpdate]);
+
+  // Set initial HTML content when doc changes
+  useEffect(() => {
+    if (editorRef.current && docMarkdown !== undefined) {
+      isInitializing.current = true;
+      editorRef.current.innerHTML = markdownToHtml(docMarkdown);
+      isInitializing.current = false;
+    }
+  }, [docId]); // Only on doc switch, not on every markdown change
+
+  const handleInput = useCallback(() => {
+    if (isInitializing.current) return;
+    if (!editorRef.current || !onMarkdownChange) return;
+    const html = editorRef.current.innerHTML;
+    const md = turndown.turndown(html);
+    onMarkdownChange(md);
+  }, [onMarkdownChange]);
 
   const commitTitle = () => {
     setIsEditingTitle(false);
@@ -91,39 +127,21 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
       {/* Formatting toolbar */}
       {onMarkdownChange && (
         <GuideEditorToolbar
-          textareaRef={textareaRef}
-          value={docMarkdown}
-          onChange={onMarkdownChange}
+          editorRef={editorRef}
+          onInput={handleInput}
         />
       )}
 
-      {/* Editor + Preview stacked */}
-      <div className="flex-1 flex flex-col overflow-y-auto min-h-0">
-        {/* Textarea for editing */}
-        {onMarkdownChange && (
-          <div className="shrink-0 border-b border-white/10">
-            <textarea
-              ref={textareaRef}
-              value={docMarkdown}
-              onChange={(e) => onMarkdownChange(e.target.value)}
-              className="w-full bg-transparent text-white/90 text-sm font-mono p-4 resize-none outline-none min-h-[200px]"
-              style={{ tabSize: 2 }}
-              placeholder="Write markdown here…"
-              spellCheck={false}
-            />
-          </div>
-        )}
-
-        {/* Rendered preview */}
-        <div className="flex-1 p-6">
-          {docMarkdown ? (
-            <Suspense fallback={<div className="text-[#6B7280] text-sm">Loading preview…</div>}>
-              <LazyMarkdownRenderer markdown={docMarkdown} />
-            </Suspense>
-          ) : (
-            <div className="text-[#6B7280] text-sm italic">No content</div>
-          )}
-        </div>
+      {/* WYSIWYG editable area */}
+      <div className="flex-1 overflow-y-auto min-h-0">
+        <div
+          ref={editorRef}
+          contentEditable={!!onMarkdownChange}
+          onInput={handleInput}
+          className="guide-preview max-w-4xl p-6 outline-none min-h-full"
+          suppressContentEditableWarning
+          spellCheck={false}
+        />
       </div>
     </div>
   );
