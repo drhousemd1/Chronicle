@@ -39,9 +39,9 @@ export const ArcFlowConnector: React.FC<ArcFlowConnectorProps> = ({
     const tx = sourceIsLeft ? tRect.left - cRect.left : tRect.right - cRect.left;
     const ty = tRect.top + tRect.height / 2 - cRect.top;
 
-    // Bezier control points for a smooth curve
+    // Right-angle routing: horizontal -> vertical -> horizontal
     const midX = (sx + tx) / 2;
-    const d = `M ${sx} ${sy} C ${midX} ${sy}, ${midX} ${ty}, ${tx} ${ty}`;
+    const d = `M ${sx} ${sy} L ${midX} ${sy} L ${midX} ${ty} L ${tx} ${ty}`;
 
     setPath(d);
     setSize({ w: cRect.width, h: cRect.height });
@@ -79,12 +79,29 @@ export const ArcFlowConnector: React.FC<ArcFlowConnectorProps> = ({
       height={size.h}
       style={{ overflow: 'visible' }}
     >
+      <defs>
+        <filter id={`glow-${sourceStepId}-${targetStepId}`} x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="4" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+      {/* Glow layer */}
       <path
         d={path}
         fill="none"
-        stroke="rgba(161,178,209,0.6)"
+        stroke="rgba(59,130,246,0.4)"
+        strokeWidth="6"
+        filter={`url(#glow-${sourceStepId}-${targetStepId})`}
+      />
+      {/* Crisp foreground */}
+      <path
+        d={path}
+        fill="none"
+        stroke="#1e3a5f"
         strokeWidth="2"
-        strokeDasharray="6 4"
       />
     </svg>
   );
