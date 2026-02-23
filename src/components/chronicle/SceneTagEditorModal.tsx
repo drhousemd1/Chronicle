@@ -60,22 +60,12 @@ export const SceneTagEditorModal: React.FC<SceneTagEditorModalProps> = ({
       
       {/* Modal */}
       <div className="relative w-[600px] max-w-[95vw] max-h-[90vh] overflow-y-auto bg-zinc-900 rounded-xl border border-[#4a5f7f] p-3">
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute top-3 right-3 z-10 p-1.5 bg-black/50 hover:bg-black/70 text-white/70 hover:text-white rounded-lg transition-colors"
-        >
-          <X size={16} />
-        </button>
-
         {/* Image */}
-        <div className="w-full h-[50vh] bg-black rounded-lg overflow-hidden mb-3">
-          <img 
-            src={scene.url} 
-            alt={localTitle || 'Scene preview'} 
-            className="w-full h-full object-contain"
-          />
-        </div>
+        <img 
+          src={scene.url} 
+          alt={localTitle || 'Scene preview'} 
+          className="w-full max-h-[50vh] object-contain rounded-lg mb-3"
+        />
 
         {/* Title */}
         <div className="mb-3">
