@@ -110,7 +110,7 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
           <div key={step.id} className="relative" data-step-id={step.id}>
             <div
               className={cn(
-                "p-2.5 pb-3 rounded-[18px] border",
+                "p-2.5 pb-3 rounded-[18px] border shadow-[0_14px_26px_rgba(0,0,0,0.4)]",
                 step.status === 'failed' ? "border-red-500/50" :
                 step.status === 'deviated' ? "border-orange-500/50" :
                 step.status === 'succeeded' ? "border-blue-400/50" :
@@ -238,14 +238,14 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
         {/* Sentinel card - fail branch only */}
         {isFail && (
           <div
-            className="p-2.5 pb-3 rounded-[18px] border border-white/10 opacity-60"
+            className="p-2.5 pb-3 rounded-[18px] border border-white/15 shadow-[0_14px_26px_rgba(0,0,0,0.4)]"
             style={{ background: stepCardBg }}
           >
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
                 DYNAMIC RECOVERY
               </span>
-              <div className="w-[26px] h-[26px] rounded-[8px] border border-zinc-600 bg-transparent text-zinc-500 flex items-center justify-center">
+              <div className="w-[26px] h-[26px] rounded-[8px] border border-zinc-600 bg-transparent text-zinc-400 flex items-center justify-center">
                 <Lock size={13} />
               </div>
             </div>
