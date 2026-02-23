@@ -181,6 +181,7 @@ export type World = {
 export type Scene = {
   id: string;
   url: string;
+  title?: string;
   tags: string[];
   isStartingScene?: boolean;
   createdAt: number;

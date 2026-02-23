@@ -1,42 +1,44 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Scene } from '@/types';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { X } from 'lucide-react';
 
 interface SceneTagEditorModalProps {
   isOpen: boolean;
   onClose: () => void;
   scene: Scene | null;
-  onUpdateTags: (sceneId: string, tags: string[]) => void;
+  onSave: (sceneId: string, title: string, tags: string[]) => void;
 }
 
 export const SceneTagEditorModal: React.FC<SceneTagEditorModalProps> = ({
   isOpen,
   onClose,
   scene,
-  onUpdateTags,
+  onSave,
 }) => {
   const [newTag, setNewTag] = useState('');
+  const [localTitle, setLocalTitle] = useState('');
+  const [localTags, setLocalTags] = useState<string[]>([]);
 
-  if (!scene) return null;
+  useEffect(() => {
+    if (scene) {
+      setLocalTitle(scene.title || '');
+      setLocalTags([...scene.tags]);
+      setNewTag('');
+    }
+  }, [scene]);
+
+  if (!isOpen || !scene) return null;
 
   const handleAddTag = () => {
-    const trimmed = newTag.trim();
-    if (trimmed && !scene.tags.includes(trimmed)) {
-      onUpdateTags(scene.id, [...scene.tags, trimmed]);
+    const trimmed = newTag.trim().replace(/^#/, '');
+    if (trimmed && !localTags.includes(trimmed) && localTags.length < 10) {
+      setLocalTags([...localTags, trimmed]);
       setNewTag('');
     }
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    onUpdateTags(scene.id, scene.tags.filter(t => t !== tagToRemove));
+    setLocalTags(localTags.filter(t => t !== tagToRemove));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -46,99 +48,96 @@ export const SceneTagEditorModal: React.FC<SceneTagEditorModalProps> = ({
     }
   };
 
+  const handleSave = () => {
+    onSave(scene.id, localTitle, localTags);
+    onClose();
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-xl bg-white border-slate-200">
-        <DialogHeader className="border-b border-slate-100 pb-4">
-          <DialogTitle className="text-lg font-black text-slate-900 uppercase tracking-tight">
-            Edit Scene Tags
-          </DialogTitle>
-        </DialogHeader>
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/85" onClick={onClose} />
+      
+      {/* Modal */}
+      <div className="relative w-[600px] max-w-[95vw] max-h-[90vh] overflow-y-auto bg-zinc-900 rounded-xl border border-[#4a5f7f] p-3">
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 z-10 p-1.5 bg-black/50 hover:bg-black/70 text-white/70 hover:text-white rounded-lg transition-colors"
+        >
+          <X size={16} />
+        </button>
 
-        <div className="flex gap-6 pt-4">
-          {/* Left: Scene Thumbnail */}
-          <div className="w-40 flex-shrink-0">
-            <div className="aspect-video rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-slate-50">
-              <img 
-                src={scene.url} 
-                alt="Scene preview" 
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mt-2 text-center">
-              Scene Preview
-            </p>
-          </div>
+        {/* Image */}
+        <div className="w-full h-[50vh] bg-black rounded-lg overflow-hidden mb-3">
+          <img 
+            src={scene.url} 
+            alt={localTitle || 'Scene preview'} 
+            className="w-full h-full object-contain"
+          />
+        </div>
 
-          {/* Right: Tag Management */}
-          <div className="flex-1 space-y-4">
-            {/* Current Tags */}
-            <div>
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-2">
-                Current Tags
-              </label>
-              <div className="min-h-[60px] p-3 bg-slate-50 rounded-xl border border-slate-200">
-                {scene.tags.length === 0 ? (
-                  <p className="text-xs text-slate-400 italic">No tags added yet</p>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {scene.tags.map((tag, index) => (
-                      <button
-                        key={index}
-                        onClick={() => handleRemoveTag(tag)}
-                        className="group inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-100 text-blue-700 rounded-full text-sm font-medium transition-all hover:bg-red-100 hover:text-red-600"
-                      >
-                        <span>{tag}</span>
-                        <X 
-                          size={14} 
-                          className="opacity-0 group-hover:opacity-100 transition-opacity" 
-                        />
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+        {/* Title */}
+        <div className="mb-3">
+          <label className="text-[10px] font-black text-zinc-400 uppercase tracking-wider block mb-1.5">
+            Title
+          </label>
+          <input
+            value={localTitle}
+            onChange={(e) => setLocalTitle(e.target.value)}
+            placeholder="Untitled scene"
+            className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm placeholder:text-zinc-500 focus:outline-none focus:border-[#4a5f7f] transition-colors"
+          />
+        </div>
 
-            {/* Add Tag Input */}
-            <div>
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-2">
-                Add New Tag
-              </label>
-              <div className="flex gap-2">
-                <Input
-                  value={newTag}
-                  onChange={(e) => setNewTag(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Enter keyword..."
-                  className="flex-1"
-                />
-                <Button 
-                  onClick={handleAddTag}
-                  disabled={!newTag.trim()}
-                  className="bg-slate-900 text-white hover:bg-slate-800"
+        {/* Tags */}
+        <div className="mb-3">
+          <label className="text-[10px] font-black text-zinc-400 uppercase tracking-wider block mb-1.5">
+            Tags
+          </label>
+          {localTags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {localTags.map((tag, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleRemoveTag(tag)}
+                  className="group inline-flex items-center gap-1 px-2.5 py-1 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full text-xs font-medium transition-all hover:bg-red-500/20 hover:text-red-300 hover:border-red-500/30"
                 >
-                  Add Tag
-                </Button>
-              </div>
-              <p className="text-[10px] text-slate-400 mt-2">
-                Tags are keywords that trigger this scene when mentioned in conversation.
-              </p>
+                  <span>{tag}</span>
+                  <X size={12} className="opacity-50 group-hover:opacity-100 transition-opacity" />
+                </button>
+              ))}
             </div>
-          </div>
+          )}
+          <input
+            value={newTag}
+            onChange={(e) => setNewTag(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Add tag and press Enter..."
+            className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm placeholder:text-zinc-500 focus:outline-none focus:border-[#4a5f7f] transition-colors"
+          />
+          <p className="text-[10px] text-zinc-500 mt-1.5">
+            {localTags.length}/10 tags — Press Enter to add
+          </p>
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end pt-4 border-t border-slate-100 mt-4">
-          <Button 
+        <div className="flex justify-end gap-2 pt-2 border-t border-zinc-800">
+          <button
             onClick={onClose}
-            className="bg-slate-900 text-white hover:bg-slate-800"
+            className="px-4 py-2 text-sm font-medium text-zinc-300 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors"
           >
-            Done
-          </Button>
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            className="px-4 py-2 text-sm font-medium text-white bg-white/10 hover:bg-white/20 rounded-lg transition-colors shadow-[0_2px_8px_rgba(0,0,0,0.3)]"
+          >
+            Save
+          </button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 };
 
