@@ -88,6 +88,25 @@ function computeActiveFlow(
 export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onChange, onEnhanceField, enhancingField }) => {
   const migratedGoals = React.useMemo(() => goals.map(migrateGoalToBranches), [goals]);
 
+  // Auto-populate one blank story arc if none exist
+  React.useEffect(() => {
+    if (goals.length === 0) {
+      onChange([{
+        id: uid('sgoal'),
+        title: '',
+        desiredOutcome: '',
+        steps: [],
+        flexibility: 'normal',
+        mode: 'simple',
+        branches: {},
+        linkedPhases: [],
+        statusEventCounter: 0,
+        createdAt: now(),
+        updatedAt: now(),
+      }]);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const addGoal = () => {
     const newGoal: StoryGoal = {
       id: uid('sgoal'),
