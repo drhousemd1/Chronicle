@@ -814,7 +814,7 @@ const IndexContent = () => {
       const metadata = {
         title: derivedTitle,
         description: dataToSave.world.core.briefDescription || 
-                     truncateLine(dataToSave.world.core.settingOverview || "Created via Builder", 120),
+                     truncateLine(dataToSave.world.core.storyPremise || "Created via Builder", 120),
         coverImage: activeCoverImage,
         coverImagePosition: activeCoverPosition,
         tags: ["Custom"]

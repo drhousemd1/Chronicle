@@ -2,6 +2,7 @@
 import React, { useRef, useState, useCallback } from 'react';
 import { World, OpeningDialog, CodexEntry, Character, Scene, TimeOfDay, WorldCore, ContentThemes, defaultContentThemes, LocationEntry, WorldCustomSection, WorldCustomItem, StoryGoal } from '@/types';
 import { EnhanceableWorldFields } from '@/services/world-ai';
+import { AutoResizeTextarea } from './AutoResizeTextarea';
 import { Button, Card } from './UI';
 import { Icons } from '@/constants';
 import { uid, now, resizeImage, uuid, clamp } from '@/utils';
@@ -22,6 +23,7 @@ import { ShareScenarioModal } from './ShareScenarioModal';
 import { ContentThemesSection } from './ContentThemesSection';
 import { aiEnhanceWorldField } from '@/services/world-ai';
 import { useModelSettings } from '@/contexts/ModelSettingsContext';
+import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 
 interface WorldTabProps {
   scenarioId: string;
@@ -55,33 +57,7 @@ const HintBox: React.FC<{ hints: string[] }> = ({ hints }) => (
   </div>
 );
 
-// Auto-resizing textarea that wraps text and grows with content (no wrapper div)
-const AutoResizeTextarea: React.FC<{
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  className?: string;
-  rows?: number;
-}> = ({ value, onChange, placeholder, className = '', rows = 1 }) => {
-  const ref = React.useRef<HTMLTextAreaElement>(null);
-  React.useEffect(() => {
-    if (ref.current) {
-      ref.current.style.height = 'auto';
-      ref.current.style.height = `${ref.current.scrollHeight}px`;
-    }
-  }, [value]);
-  return (
-    <textarea
-      ref={ref}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      rows={rows}
-      spellCheck={true}
-      className={cn("w-full min-w-0 resize-none overflow-hidden whitespace-pre-wrap break-words", className)}
-    />
-  );
-};
+// AutoResizeTextarea is now imported from ./AutoResizeTextarea
 
 const CharacterButton: React.FC<{ char: Character; onSelect: (id: string) => void }> = ({ char, onSelect }) => (
   <button 
@@ -139,6 +115,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   const [isGeneratingScene, setIsGeneratingScene] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [enhancingField, setEnhancingField] = useState<EnhanceableWorldFields | null>(null);
+  const [pendingDeleteCover, setPendingDeleteCover] = useState(false);
+  const [pendingDeleteSceneId, setPendingDeleteSceneId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverFileInputRef = useRef<HTMLInputElement>(null);
   const coverContainerRef = useRef<HTMLDivElement>(null);
@@ -301,10 +279,13 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   };
 
   const handleDeleteCover = () => {
-    if (confirm('Remove the cover image?')) {
-      onUpdateCoverImage('');
-      onUpdateCoverPosition({ x: 50, y: 50 });
-    }
+    setPendingDeleteCover(true);
+  };
+
+  const confirmDeleteCover = () => {
+    onUpdateCoverImage('');
+    onUpdateCoverPosition({ x: 50, y: 50 });
+    setPendingDeleteCover(false);
   };
 
   const handleAddScene = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -366,8 +347,13 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   };
 
   const handleDeleteScene = (id: string) => {
-    if (confirm('Remove this scene image?')) {
-      onUpdateScenes(scenes.filter(s => s.id !== id));
+    setPendingDeleteSceneId(id);
+  };
+
+  const confirmDeleteScene = () => {
+    if (pendingDeleteSceneId) {
+      onUpdateScenes(scenes.filter(s => s.id !== pendingDeleteSceneId));
+      setPendingDeleteSceneId(null);
     }
   };
 
@@ -666,7 +652,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                                     if (enhancingField) return;
                                     setEnhancingField(fieldKey as any);
                                     aiEnhanceWorldField(
-                                      'briefDescription' as any,
+                                      'customContent',
                                       item.value,
                                       { ...world.core, briefDescription: `Context for "${section.title}" section, field "${item.label}": ${world.core.briefDescription || ''}` },
                                       modelId
@@ -769,7 +755,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
               if (enhancingField) return;
               setEnhancingField(fieldKey as any);
               aiEnhanceWorldField(
-                'briefDescription' as any,
+                'customContent',
                 getCurrentValue(),
                 { ...world.core, briefDescription: `Context for "${customLabel}": ${world.core.briefDescription || ''}` },
                 modelId
@@ -1265,6 +1251,22 @@ export const WorldTab: React.FC<WorldTabProps> = ({
           userId={user.id}
         />
       )}
+      
+      {/* Delete Confirm Dialogs */}
+      <DeleteConfirmDialog
+        open={pendingDeleteCover}
+        onOpenChange={setPendingDeleteCover}
+        onConfirm={confirmDeleteCover}
+        title="Remove cover image?"
+        message="This will remove the cover image from your scenario."
+      />
+      <DeleteConfirmDialog
+        open={!!pendingDeleteSceneId}
+        onOpenChange={(open) => { if (!open) setPendingDeleteSceneId(null); }}
+        onConfirm={confirmDeleteScene}
+        title="Remove scene image?"
+        message="This will remove the scene image from your gallery."
+      />
     </div>
   );
 };

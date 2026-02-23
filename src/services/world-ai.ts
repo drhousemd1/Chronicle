@@ -2,7 +2,7 @@ import { WorldCore } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 
 // Only include string fields that can be AI-enhanced
-export type EnhanceableWorldFields = Extract<keyof WorldCore, 'scenarioName' | 'briefDescription' | 'storyPremise' | 'factions' | 'locations' | 'historyTimeline' | 'plotHooks' | 'dialogFormatting'>;
+export type EnhanceableWorldFields = Extract<keyof WorldCore, 'scenarioName' | 'briefDescription' | 'storyPremise' | 'factions' | 'locations' | 'historyTimeline' | 'plotHooks' | 'dialogFormatting'> | 'customContent';
 
 // Field-specific prompts that enforce structured expansion
 const FIELD_PROMPTS: Record<EnhanceableWorldFields, { label: string; instruction: string; maxSentences: number }> = {
@@ -45,6 +45,11 @@ const FIELD_PROMPTS: Record<EnhanceableWorldFields, { label: string; instruction
     label: "Dialog Formatting",
     instruction: "Specify any additional dialog formatting rules beyond the standard (quotes for speech, asterisks for actions, parentheses for thoughts).",
     maxSentences: 3
+  },
+  customContent: {
+    label: "Custom Content",
+    instruction: "Expand and enrich this world-building content based on the provided context. Be specific and narrative-relevant. Preserve the existing content's intent while adding depth.",
+    maxSentences: 5
   }
 };
 

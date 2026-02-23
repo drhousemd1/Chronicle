@@ -350,14 +350,11 @@ export async function fetchScenarioById(id: string): Promise<{
     scenarioName: '',
     briefDescription: '',
     storyPremise: '',
-    settingOverview: '',
-    rulesOfMagicTech: '',
     factions: '',
     locations: '',
     historyTimeline: '',
     toneThemes: '',
     plotHooks: '',
-    narrativeStyle: '',
     dialogFormatting: ''
   };
 
@@ -427,14 +424,11 @@ export async function fetchScenarioForPlay(id: string): Promise<{
     scenarioName: '',
     briefDescription: '',
     storyPremise: '',
-    settingOverview: '',
-    rulesOfMagicTech: '',
     factions: '',
     locations: '',
     historyTimeline: '',
     toneThemes: '',
     plotHooks: '',
-    narrativeStyle: '',
     dialogFormatting: ''
   };
 

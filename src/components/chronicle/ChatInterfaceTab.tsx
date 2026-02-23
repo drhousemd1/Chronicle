@@ -961,7 +961,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           name, 
           dialogContext, 
           extractedTraits: {},
-          worldContext: appData.world.core.settingOverview,
+          worldContext: appData.world.core.storyPremise,
           modelId  // Pass user's selected model
         }
       });
