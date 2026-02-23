@@ -1,5 +1,5 @@
 
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { World, OpeningDialog, CodexEntry, Character, Scene, TimeOfDay, WorldCore, ContentThemes, defaultContentThemes, LocationEntry, WorldCustomSection, WorldCustomItem, StoryGoal } from '@/types';
 import { EnhanceableWorldFields } from '@/services/world-ai';
 import { AutoResizeTextarea } from './AutoResizeTextarea';
@@ -24,6 +24,7 @@ import { ContentThemesSection } from './ContentThemesSection';
 import { aiEnhanceWorldField } from '@/services/world-ai';
 import { useModelSettings } from '@/contexts/ModelSettingsContext';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
+import { getClosestRatio, AspectRatioIcon } from './AspectRatioUtils';
 
 interface WorldTabProps {
   scenarioId: string;
@@ -120,6 +121,30 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverFileInputRef = useRef<HTMLInputElement>(null);
   const coverContainerRef = useRef<HTMLDivElement>(null);
+  const [sceneAspectRatios, setSceneAspectRatios] = useState<Record<string, { label: string; orientation: 'portrait' | 'landscape' | 'square' }>>({});
+
+  // Detect aspect ratios for scene images
+  useEffect(() => {
+    if (!scenes.length) { setSceneAspectRatios({}); return; }
+    const pending = new Map<string, { label: string; orientation: 'portrait' | 'landscape' | 'square' }>();
+    let cancelled = false;
+    let loaded = 0;
+    scenes.forEach((scene) => {
+      const el = new window.Image();
+      el.crossOrigin = 'anonymous';
+      el.onload = () => {
+        if (cancelled) return;
+        pending.set(scene.id, getClosestRatio(el.naturalWidth, el.naturalHeight));
+        loaded++;
+        if (loaded === scenes.length) {
+          setSceneAspectRatios(Object.fromEntries(pending));
+        }
+      };
+      el.onerror = () => { loaded++; };
+      el.src = scene.url;
+    });
+    return () => { cancelled = true; };
+  }, [scenes]);
 
   const updateCore = (patch: any) => {
     onUpdateWorld({ core: { ...world.core, ...patch } });
@@ -884,7 +909,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                         "Upload images to be used for different scenes.",
                         "Add \"tags\" for each image.",
                         "Background adapts based on tags mentioned in dialog.",
-                        "Recommend: 1024x768, 4:3 aspect ratio."
+                        "Recommend: 1280x896, 4:3 landscape."
                       ]} />
                     </div>
                     <div className="flex flex-col gap-2 shrink-0">
@@ -927,7 +952,14 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                           {/* Footer bar */}
                           <div className="bg-zinc-700 px-3 py-2 flex items-center justify-between">
                             <span className="text-xs text-white/80 font-medium truncate">{scene.title || 'Untitled scene'}</span>
-                            <span className="text-[10px] text-zinc-400 flex-shrink-0 ml-2">16:9</span>
+                            {sceneAspectRatios[scene.id] ? (
+                              <span className="flex items-center gap-1 flex-shrink-0 ml-2">
+                                <AspectRatioIcon orientation={sceneAspectRatios[scene.id].orientation} />
+                                <span className="text-[10px] text-zinc-400">{sceneAspectRatios[scene.id].label}</span>
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-zinc-400 flex-shrink-0 ml-2">…</span>
+                            )}
                           </div>
                           
                           {/* Delete button */}
@@ -1184,7 +1216,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
             
             const { data, error } = await supabase.functions.invoke('generate-cover-image', {
               body: {
-                prompt: `Scene: ${prompt}. Landscape composition, 4:3 aspect ratio environment background.`,
+                prompt: `Scene: ${prompt}. Landscape composition, 4:3 aspect ratio, widescreen environment background.`,
                 artStylePrompt,
                 scenarioTitle: world.core.scenarioName
               }

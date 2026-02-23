@@ -225,6 +225,7 @@ async function generateImage(prompt: string): Promise<string> {
       model: 'grok-2-image-1212', // GROK ONLY
       prompt: prompt,
       n: 1,
+      size: "1280x896", // 4:3 landscape - optimal for scene display in chat
       response_format: "url"
     }),
   });
