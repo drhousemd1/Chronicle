@@ -337,13 +337,9 @@ export const WorldTab: React.FC<WorldTabProps> = ({
     e.target.value = '';
   };
 
-  const handleUpdateSceneTags = (id: string, tags: string[]) => {
-    const updatedScenes = scenes.map(s => s.id === id ? { ...s, tags } : s);
+  const handleSaveScene = (id: string, title: string, tags: string[]) => {
+    const updatedScenes = scenes.map(s => s.id === id ? { ...s, title, tags } : s);
     onUpdateScenes(updatedScenes);
-    // Also update the editing scene state so modal reflects changes
-    if (editingScene?.id === id) {
-      setEditingScene({ ...editingScene, tags });
-    }
   };
 
   const handleDeleteScene = (id: string) => {
@@ -913,52 +909,39 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                     </div>
                   </div>
                   <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAddScene} />
-                  <div className="mt-6 grid grid-cols-2 md:grid-cols-3 gap-6">
+                  <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
                     {scenes.map(scene => {
-                      // Migration: handle legacy single tag
                       const sceneTags = scene.tags ?? ((scene as any).tag ? [(scene as any).tag] : []);
-                      const tagCount = sceneTags.length;
                       
                       return (
-                        <div key={scene.id} className="group relative aspect-video rounded-xl overflow-hidden border border-zinc-700 shadow-sm bg-zinc-800">
-                          <img src={scene.url} alt={sceneTags[0] || 'Scene'} className="w-full h-full object-cover" />
+                        <div key={scene.id} className="group relative rounded-xl overflow-hidden border border-[#4a5f7f] bg-zinc-800 cursor-pointer" onClick={() => setEditingScene({ ...scene, tags: sceneTags })}>
+                          {/* Image with zoom hover */}
+                          <div className="aspect-video overflow-hidden">
+                            <img 
+                              src={scene.url} 
+                              alt={scene.title || 'Scene'} 
+                              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+                            />
+                          </div>
                           
-                          {/* Bottom bar with tag count and edit button */}
-                          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent p-3">
-                            <div className="flex items-center justify-between">
-                              {/* Tag count indicator */}
-                              <div className="flex items-center gap-1.5">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/60 flex-shrink-0">
-                                  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
-                                  <line x1="7" y1="7" x2="7.01" y2="7"/>
-                                </svg>
-                                <span className="text-white/80 text-[11px] font-medium">
-                                  {tagCount === 0 ? 'No tags' : `${tagCount} tag${tagCount !== 1 ? 's' : ''}`}
-                                </span>
-                              </div>
-                              
-                              {/* Edit button - always visible */}
-                              <button
-                                onClick={() => setEditingScene({ ...scene, tags: sceneTags })}
-                                className="p-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all"
-                                title="Edit tags"
-                              >
-                                <Pencil size={14} />
-                              </button>
-                            </div>
+                          {/* Footer bar */}
+                          <div className="bg-zinc-700 px-3 py-2 flex items-center justify-between">
+                            <span className="text-xs text-white/80 font-medium truncate">{scene.title || 'Untitled scene'}</span>
+                            <span className="text-[10px] text-zinc-400 flex-shrink-0 ml-2">16:9</span>
                           </div>
                           
                           {/* Delete button */}
                           <button 
-                            onClick={() => handleDeleteScene(scene.id)}
+                            onClick={(e) => { e.stopPropagation(); handleDeleteScene(scene.id); }}
                             className="absolute top-2 right-2 p-1.5 bg-rose-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-600"
                           >
                             <Icons.Trash />
                           </button>
                           
-                          {/* Starting Scene Checkbox */}
+                          {/* Starting Scene star */}
                           <button
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               const updatedScenes = scenes.map(s => ({
                                 ...s,
                                 isStartingScene: s.id === scene.id ? !s.isStartingScene : false
@@ -1161,7 +1144,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
         isOpen={!!editingScene}
         onClose={() => setEditingScene(null)}
         scene={editingScene}
-        onUpdateTags={handleUpdateSceneTags}
+        onSave={handleSaveScene}
       />
       
       {/* Cover Image Generation Modal */}
