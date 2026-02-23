@@ -1,5 +1,6 @@
 import React from 'react';
 import { StoryGoal, ArcBranch, ArcStep, ArcMode, ArcPhase, GoalFlexibility, GoalStep, StepStatus } from '@/types';
+import { AutoResizeTextarea } from './AutoResizeTextarea';
 import { Trash2, Plus, Sparkles, GitBranch, CheckSquare } from 'lucide-react';
 import { GuidanceStrengthSlider } from './GuidanceStrengthSlider';
 import { ArcBranchLane } from './arc/ArcBranchLane';
@@ -10,35 +11,7 @@ import { ArcFlowConnector } from './arc/ArcFlowConnector';
 import { uid, now } from '@/utils';
 import { cn } from '@/lib/utils';
 
-// Auto-resizing textarea for goals
-const AutoResizeTextarea: React.FC<{
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  className?: string;
-  rows?: number;
-  style?: React.CSSProperties;
-}> = ({ value, onChange, placeholder, className = '', rows = 1, style }) => {
-  const ref = React.useRef<HTMLTextAreaElement>(null);
-  React.useEffect(() => {
-    if (ref.current) {
-      ref.current.style.height = 'auto';
-      ref.current.style.height = `${ref.current.scrollHeight}px`;
-    }
-  }, [value]);
-  return (
-    <textarea
-      ref={ref}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      rows={rows}
-      spellCheck={true}
-      style={style}
-      className={cn("w-full min-w-0 resize-none overflow-hidden whitespace-pre-wrap break-words", className)}
-    />
-  );
-};
+// AutoResizeTextarea is now imported from ./AutoResizeTextarea
 
 interface StoryGoalsSectionProps {
   goals: StoryGoal[];
