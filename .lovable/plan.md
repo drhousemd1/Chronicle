@@ -1,62 +1,33 @@
 
+# Fix Story Arc Step Card Styling
 
-# Fix Scene Image Aspect Ratio: Proper Grok API Integration + Dynamic Detection
+Three issues to fix in `src/components/chronicle/arc/ArcBranchLane.tsx`:
 
-## Background
+## 1. Add drop shadows to step cards
 
-The current code has three problems:
-1. The Grok API call does NOT pass a `size` parameter, so it defaults to 1024x1024 (square) -- regardless of what the hint text says
-2. The hint text recommends "1024x768, 4:3" which isn't even a valid Grok dimension
-3. The thumbnail footer hardcodes "16:9" instead of showing the real aspect ratio
+The Fail Path and Succeed Path header boxes have `shadow-[0_14px_26px_rgba(0,0,0,0.4)]` but the step cards below them have no shadow. Add the same shadow class to step cards (both regular steps and the dynamic recovery sentinel).
 
-## Grok Supported Dimensions
+**File:** `src/components/chronicle/arc/ArcBranchLane.tsx`
+- Line 112-119 (regular step card `div`): Add `shadow-[0_14px_26px_rgba(0,0,0,0.4)]` to the className
+- Line 241 (sentinel card `div`): Add the same shadow
 
-The grok-2-image-1212 API supports these sizes:
-- 1024x1024 (1:1)
-- 1280x896 (4:3)
-- 896x1280 (3:4)
-- 1408x768 (16:9)
-- 768x1408 (9:16)
-- 1296x864 (3:2)
-- 864x1296 (2:3)
+## 2. Unify Dynamic Recovery sentinel styling with regular step cards
 
-## Recommended Default: 4:3 (1280x896)
+The sentinel card currently has `opacity-60` and slightly different border (`border-white/10` instead of `border-white/15`). Make it match regular step cards:
+- Change `border-white/10` to `border-white/15` (matching regular step cards)
+- Remove the `opacity-60` from the outer div -- the content inside (text, textarea) is already styled with muted colors (`text-zinc-400`, `italic`) which is sufficient to communicate its read-only nature
 
-Scene images display in the chat at `max-w-2xl` (672px) with `h-auto`. A 4:3 landscape ratio is the best balance:
-- Wide enough to feel immersive and scene-like
-- Not so wide that the image becomes a thin strip (16:9 at 672px = only 378px tall)
-- 4:3 at 672px = 504px tall, which fills the viewport nicely
-- Matches traditional scene/environment composition ratios
+**File:** `src/components/chronicle/arc/ArcBranchLane.tsx`, line 241
 
-## Changes
+## 3. Fix Lock icon color to match Character Builder
 
-### 1. Pass `size` to Grok API (`supabase/functions/generate-scene-image/index.ts`)
+The lock icon on the sentinel card uses `text-zinc-500` (line 248). The Character Builder uses `text-zinc-400`. Update to match.
 
-In the `generateImage` function, add `size: "1280x896"` to the request body so Grok actually generates a 4:3 landscape image instead of defaulting to 1:1 square.
+**File:** `src/components/chronicle/arc/ArcBranchLane.tsx`, line 248
+- Change `text-zinc-500` to `text-zinc-400`
 
-### 2. Update hint text (`src/components/chronicle/WorldTab.tsx`, line 887)
+## Summary of changes
 
-Change from `"Recommend: 1024x768, 4:3 aspect ratio."` to `"Recommend: 1280x896, 4:3 landscape."` -- this now matches an actual Grok-supported dimension.
-
-### 3. Update AI generation prompt (`src/components/chronicle/WorldTab.tsx`, line 1187)
-
-Keep the "4:3 aspect ratio" wording in the prompt since 4:3 is indeed the correct ratio to use.
-
-### 4. Dynamic aspect ratio detection on thumbnails
-
-Extract the shared `STANDARD_RATIOS`, `getClosestRatio`, and `AspectRatioIcon` from `ImageLibraryTab.tsx` into a new `src/components/chronicle/AspectRatioUtils.tsx` file. Then:
-
-- **`WorldTab.tsx`**: Add a `useEffect` + `useState` that loads each scene image's natural dimensions and detects its real aspect ratio using `getClosestRatio`. Replace the hardcoded "16:9" in the thumbnail footer with the detected ratio and the `AspectRatioIcon` component.
-- **`ImageLibraryTab.tsx`**: Remove the local `STANDARD_RATIOS`, `getClosestRatio`, and `AspectRatioIcon` definitions and import them from the shared file instead.
-
-### 5. Update cover image generation prompt (line 1187)
-
-Change `"4:3 aspect ratio environment background"` to keep it as 4:3 since that is the correct ratio, but update dimensions reference if present.
-
-## Files Changed
-
-1. **`supabase/functions/generate-scene-image/index.ts`** -- add `size: "1280x896"` to Grok image API call
-2. **`src/components/chronicle/AspectRatioUtils.tsx`** (new) -- shared ratio detection utilities
-3. **`src/components/chronicle/WorldTab.tsx`** -- fix hint text, add dynamic ratio detection on thumbnails
-4. **`src/components/chronicle/ImageLibraryTab.tsx`** -- import shared utilities instead of local definitions
-
+All changes are in a single file: `src/components/chronicle/arc/ArcBranchLane.tsx`
+- Add `shadow-[0_14px_26px_rgba(0,0,0,0.4)]` to regular step cards (line 112)
+- Update sentinel card: add shadow, change border from `border-white/10` to `border-white/15`, remove `opacity-60`, fix lock icon from `text-zinc-500` to `text-zinc-400` (lines 241-249)
