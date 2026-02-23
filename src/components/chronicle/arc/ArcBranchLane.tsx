@@ -237,24 +237,26 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
 
         {/* Sentinel card - fail branch only */}
         {isFail && (
-          <div
-            className="p-2.5 pb-3 rounded-[18px] border border-white/15 shadow-[0_14px_26px_-6px_rgba(0,0,0,0.4)]"
-            style={{ background: stepCardBg }}
-          >
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-                DYNAMIC RECOVERY
-              </span>
-              <div className="w-[26px] h-[26px] rounded-[8px] border border-zinc-600 bg-transparent text-zinc-400 flex items-center justify-center">
-                <Lock size={13} />
+          <div className="relative">
+            <div
+              className="p-2.5 pb-3 rounded-[18px] border border-white/15 shadow-[0_14px_26px_-6px_rgba(0,0,0,0.4)]"
+              style={{ background: stepCardBg }}
+            >
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                  DYNAMIC RECOVERY
+                </span>
+                <div className="w-[26px] h-[26px] rounded-[8px] border border-zinc-600 bg-transparent text-zinc-400 flex items-center justify-center">
+                  <Lock size={13} />
+                </div>
               </div>
+              <AutoResizeTextarea
+                value={sentinelText}
+                onChange={() => {}}
+                readOnly
+                className="px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-zinc-400 italic rounded-lg cursor-default"
+              />
             </div>
-            <AutoResizeTextarea
-              value={sentinelText}
-              onChange={() => {}}
-              readOnly
-              className="px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-zinc-400 italic rounded-lg cursor-default"
-            />
           </div>
         )}
 
