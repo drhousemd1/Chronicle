@@ -110,7 +110,7 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
           <div key={step.id} className="relative" data-step-id={step.id}>
             <div
               className={cn(
-                "p-2.5 pb-3 rounded-[18px] border shadow-[0_14px_26px_rgba(0,0,0,0.4)]",
+                "p-2.5 pb-3 rounded-[18px] border shadow-[0_14px_26px_-6px_rgba(0,0,0,0.4)]",
                 step.status === 'failed' ? "border-red-500/50" :
                 step.status === 'deviated' ? "border-orange-500/50" :
                 step.status === 'succeeded' ? "border-blue-400/50" :
@@ -238,7 +238,7 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
         {/* Sentinel card - fail branch only */}
         {isFail && (
           <div
-            className="p-2.5 pb-3 rounded-[18px] border border-white/15 shadow-[0_14px_26px_rgba(0,0,0,0.4)]"
+            className="p-2.5 pb-3 rounded-[18px] border border-white/15 shadow-[0_14px_26px_-6px_rgba(0,0,0,0.4)]"
             style={{ background: stepCardBg }}
           >
             <div className="flex items-center justify-between mb-1.5">
