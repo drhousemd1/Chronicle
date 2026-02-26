@@ -210,7 +210,7 @@ const CHARACTER_FIELD_PROMPTS: Record<string, { label: string; instruction: stri
   build: { label: "Build", instruction: "Describe body type and physique. Format: Type + Defining features.", maxSentences: 2 },
   bodyHair: { label: "Body Hair", instruction: "Describe body hair amount and pattern. Format: Amount + Location/Pattern.", maxSentences: 1 },
   height: { label: "Height", instruction: "Provide height (with measurement) and how they carry themselves.", maxSentences: 1 },
-  breastSize: { label: "Breast Size", instruction: "Describe size and relevant details if applicable.", maxSentences: 1 },
+  breastSize: { label: "Breasts", instruction: "Describe size and relevant details if applicable.", maxSentences: 1 },
   genitalia: { label: "Genitalia", instruction: "Describe relevant anatomical details if applicable.", maxSentences: 1 },
   skinTone: { label: "Skin Tone", instruction: "Describe skin tone and any notable texture or qualities.", maxSentences: 1 },
   makeup: { label: "Makeup", instruction: "Describe makeup style, colors, and intensity.", maxSentences: 2 },

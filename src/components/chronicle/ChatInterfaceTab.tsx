@@ -2536,7 +2536,7 @@ const updatedChar: SideCharacter = {
       { id: 'build', label: 'Build', value: char.physicalAppearance?.build || '', createdAt: 0, updatedAt: 0 },
       { id: 'body-hair', label: 'Body Hair', value: char.physicalAppearance?.bodyHair || '', createdAt: 0, updatedAt: 0 },
       { id: 'height', label: 'Height', value: char.physicalAppearance?.height || '', createdAt: 0, updatedAt: 0 },
-      { id: 'breast-size', label: 'Breast Size', value: char.physicalAppearance?.breastSize || '', createdAt: 0, updatedAt: 0 },
+      { id: 'breast-size', label: 'Breasts', value: char.physicalAppearance?.breastSize || '', createdAt: 0, updatedAt: 0 },
       { id: 'genitalia', label: 'Genitalia', value: char.physicalAppearance?.genitalia || '', createdAt: 0, updatedAt: 0 },
       { id: 'skin-tone', label: 'Skin Tone', value: char.physicalAppearance?.skinTone || '', createdAt: 0, updatedAt: 0 },
       { id: 'makeup', label: 'Makeup', value: char.physicalAppearance?.makeup || '', createdAt: 0, updatedAt: 0 },

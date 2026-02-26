@@ -1429,7 +1429,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                       { label: 'Build', value: draft.physicalAppearance?.build },
                       { label: 'Body Hair', value: draft.physicalAppearance?.bodyHair },
                       { label: 'Height', value: draft.physicalAppearance?.height },
-                      { label: 'Breast Size', value: draft.physicalAppearance?.breastSize },
+                      { label: 'Breasts', value: draft.physicalAppearance?.breastSize },
                       { label: 'Genitalia', value: draft.physicalAppearance?.genitalia },
                       { label: 'Skin Tone', value: draft.physicalAppearance?.skinTone },
                       { label: 'Makeup', value: draft.physicalAppearance?.makeup },
@@ -1443,7 +1443,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                   <HardcodedRow label="Build" value={draft.physicalAppearance?.build || ''} onChange={(v) => updatePhysicalAppearance('build', v)} placeholder="Athletic" />
                   <HardcodedRow label="Body Hair" value={draft.physicalAppearance?.bodyHair || ''} onChange={(v) => updatePhysicalAppearance('bodyHair', v)} placeholder="Light" />
                   <HardcodedRow label="Height" value={draft.physicalAppearance?.height || ''} onChange={(v) => updatePhysicalAppearance('height', v)} placeholder="5ft 8in" />
-                  <HardcodedRow label="Breast Size" value={draft.physicalAppearance?.breastSize || ''} onChange={(v) => updatePhysicalAppearance('breastSize', v)} placeholder="Medium" />
+                  <HardcodedRow label="Breasts" value={draft.physicalAppearance?.breastSize || ''} onChange={(v) => updatePhysicalAppearance('breastSize', v)} placeholder="Size, description" />
                   <HardcodedRow label="Genitalia" value={draft.physicalAppearance?.genitalia || ''} onChange={(v) => updatePhysicalAppearance('genitalia', v)} placeholder="Description" />
                   <HardcodedRow label="Skin Tone" value={draft.physicalAppearance?.skinTone || ''} onChange={(v) => updatePhysicalAppearance('skinTone', v)} placeholder="Fair" />
                   <HardcodedRow label="Makeup" value={draft.physicalAppearance?.makeup || ''} onChange={(v) => updatePhysicalAppearance('makeup', v)} placeholder="Natural" />
