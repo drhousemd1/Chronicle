@@ -3091,13 +3091,15 @@ const updatedChar: SideCharacter = {
                 )}
               </div>
               </div>
-              {/* Standalone "more below" indicator — sits outside the scroll container */}
+              {/* Standalone "more below" hint pill — sits outside the scroll container */}
               {mainCharactersForDisplay.length > 3 && canScrollDownMainChars && (
-                <div className="flex items-center justify-center gap-1 pt-1 pb-0.5">
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 animate-bounce-gentle" />
-                  <span className="text-[10px] text-slate-400">
-                    {mainCharactersForDisplay.length - 3} more below
-                  </span>
+                <div className="flex justify-center mt-2 mb-1">
+                  <div className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 bg-black/60 border border-white/10 backdrop-blur-sm">
+                    <ChevronDown className="w-3.5 h-3.5 text-white/80" />
+                    <span className="text-xs text-white/90 font-medium">
+                      {mainCharactersForDisplay.length - 3} more below
+                    </span>
+                  </div>
                 </div>
               )}
             </div>
