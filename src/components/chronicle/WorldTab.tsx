@@ -67,7 +67,7 @@ const CharacterButton: React.FC<{ char: Character; onSelect: (id: string) => voi
     onClick={() => onSelect(char.id)}
     className="w-full text-left group flex items-center gap-4 p-2 rounded-2xl bg-black/80 hover:bg-black transition-all duration-200 border border-[#4a5f7f] hover:border-[#6b82a8] cursor-pointer"
   >
-    <div className="w-14 h-14 shrink-0 rounded-xl border-2 border-[#4a5f7f] overflow-hidden shadow-sm transition-transform duration-300 group-hover:scale-105 bg-zinc-800">
+    <div className="w-14 h-14 shrink-0 rounded-xl overflow-hidden shadow-sm transition-transform duration-300 group-hover:scale-105 bg-zinc-800">
       {char.avatarDataUrl ? (
         <img src={char.avatarDataUrl} alt={char.name} className="w-full h-full object-cover" />
       ) : (
