@@ -1,63 +1,131 @@
 
+## What I found (why your current fix still fails)
 
-# Fix Plan: Scenario Builder Auto-Fill + Chat Sidebar Character Clipping
+You’re right — the previous fix did not fully solve the layout behavior you’re describing.
 
-## Issue 1: Scenario Builder Pre-Fills With Active Story Data
+After reviewing the current implementation in `src/components/chronicle/ChatInterfaceTab.tsx`, the “Main Characters” panel still uses:
 
-### Problem
-When you're in the chat interface playing a story, the sidebar "Scenario Builder" button runs: `if (activeId) setTab("world")`. Since `activeData` is already populated from the playing scenario, the builder renders with that story's full data. This is wrong for end users playing someone else's story — they'd see/edit data that isn't theirs.
+- `ScrollableSection maxHeight="400px"` (hard cap)
+- hidden scrollbars (`scrollbar-none`)
+- nested scroll regions (sidebar container is now `overflow-y-auto`, plus inner `ScrollableSection` is also scrollable)
 
-### Root Cause
-In `src/pages/Index.tsx` (line 1471-1474), the Scenario Builder sidebar click handler:
-```
-onClick={() => {
-  if (activeId) setTab("world");
-  else handleCreateNewScenario();
-}}
-```
-When coming from the chat interface, `activeId` is still set to the playing scenario's ID. The builder blindly shows whatever `activeData` is loaded.
+### Why this still shows only ~2.75 cards
+Your character cards are now taller than before (avatar + padding + controls), so `400px` is no longer enough for exactly 3 full tiles.  
+With current card height, 400px naturally cuts off part of card 3.
 
-### Fix
-When clicking the Scenario Builder sidebar button while a conversation is playing (`playingConversationId` is set), treat it as a fresh scenario creation rather than editing the playing story's data. The click handler will be updated to:
-- If currently playing a conversation, call `handleCreateNewScenario()` (fresh blank builder)
-- Otherwise, if `activeId` exists, navigate to `world` tab (existing behavior for editing own scenarios)
-- Otherwise, create new scenario
+### Why it feels “not scrollable”
+Even when technically scrollable, this setup is easy to fail in practice because:
+1. Scrollbar is hidden (no visual affordance),
+2. Nested scroll containers can steal scroll behavior,
+3. Collapsible wrapper uses overflow animation container around scroll content.
 
-This ensures the builder is always fresh unless the user explicitly clicked "Edit" on a tile card from the hub.
-
-**File:** `src/pages/Index.tsx` (lines 1471-1474)
+So your experience (“still clipped, can’t scroll”) is consistent with the current code.
 
 ---
 
-## Issue 2: Chat Sidebar Character Cards Clipped / No Scrolling
+## Revised implementation approach (full fix)
 
-### Problem
-The chat sidebar shows only ~2.75 character cards when there are 4+ main characters. The third card is cut off and there's no way to scroll to see the fourth.
-
-### Root Cause
-In `src/components/chronicle/ChatInterfaceTab.tsx`, the sidebar content container (line 3001) is `flex-1 flex flex-col p-4 gap-4 overflow-hidden`. Inside it:
-- The Day/Time panel is `flex-shrink-0` (fixed height)
-- The Main Characters section (line 3054) is `flex-shrink-0` with a `ScrollableSection maxHeight="400px"`
-- The Side Characters section (line 3087) is `flex-1`
-
-The problem is that `flex-shrink-0` on the Main Characters section prevents it from shrinking when space is tight. Combined with the Day/Time panel and the Side Characters header, the 400px max-height exceeds available space, causing clipping since the parent has `overflow-hidden`.
-
-### Fix
-Two changes:
-1. Remove `flex-shrink-0` from the Main Characters section so it can shrink when needed.
-2. Change the parent container (line 3001) from `overflow-hidden` to `overflow-y-auto` so the entire sidebar content area becomes scrollable when content exceeds viewport height. This way all character cards are always reachable.
-
-Alternatively, reduce the Main Characters `ScrollableSection maxHeight` from `400px` to a more responsive value and ensure the parent allows scrolling.
-
-**File:** `src/components/chronicle/ChatInterfaceTab.tsx` (lines 3001, 3054)
+## Goal behavior after fix
+1. Main Characters always shows **exactly 3 full cards by default** (when expanded and enough characters exist).
+2. If there are more than 3, the list itself clearly scrolls.
+3. No clipping of the 3rd card.
+4. Works even with collapsible sections enabled.
+5. Side Characters remains independently scrollable and not broken by Main list.
 
 ---
 
-## Summary of Changes
+## Changes to make
 
-| File | Change |
-|------|--------|
-| `src/pages/Index.tsx` | Update Scenario Builder sidebar click handler to not reuse playing scenario data |
-| `src/components/chronicle/ChatInterfaceTab.tsx` | Fix sidebar layout so all character cards are visible and scrollable |
+### 1) Replace fragile fixed-height guessing with a guaranteed 3-card viewport
+**File:** `src/components/chronicle/ChatInterfaceTab.tsx`
 
-No database changes. No edge function changes.
+- Replace `maxHeight="400px"` for main list with a calculated height that matches card geometry:
+  - `height = 3 * cardHeight + 2 * gap`
+- Make card height explicit (or enforce a min-height) so this remains stable.
+- Example pattern:
+  - add `min-h-[132px]` (or measured final value) to each main card root
+  - set main list container to `h-[calc(132px*3+0.5rem*2)]` (if gap is `space-y-2`)
+
+This removes guesswork and guarantees 3 full cards, not 2.75.
+
+### 2) Make Main Characters the only scroll owner for that section
+**File:** `src/components/chronicle/ChatInterfaceTab.tsx`
+
+- Keep the sidebar body as layout container (`min-h-0`) but avoid relying on outer scroll for character list behavior.
+- Ensure the Main Characters list has:
+  - `overflow-y-auto`
+  - visible or thin scrollbar (not hidden)
+- Remove `scrollbar-none` for this list so users can see that more content exists.
+
+### 3) Avoid nested-scroll conflicts
+**File:** `src/components/chronicle/ChatInterfaceTab.tsx` + `src/components/chronicle/ScrollableSection.tsx` (if needed)
+
+- Use one scrollable layer per section:
+  - Main section scrolls internally for >3 cards
+  - Side section scrolls in its own area
+- If needed, keep outer sidebar container `overflow-hidden` and rely on section-level scrolling to prevent event contention.
+
+### 4) Keep collapsible animation but prevent clipping side effects
+**File:** `src/components/chronicle/ChatInterfaceTab.tsx`
+
+- Keep collapse/expand UI, but avoid placing critical height logic inside a container that masks overflow unpredictably.
+- Apply fixed viewport height at the list container level (inside expanded state), not via parent max-height animation hacks.
+
+### 5) Optional hardening for future UI drift
+**File:** `src/components/chronicle/ChatInterfaceTab.tsx`
+
+- Introduce constants near render code:
+  - `MAIN_CHAR_CARD_MIN_HEIGHT`
+  - `MAIN_CHAR_VISIBLE_COUNT`
+  - `MAIN_CHAR_GAP`
+- Use these constants for both card min-height and container height calc.
+- This prevents regressions when card internals change again.
+
+---
+
+## Technical implementation sequence
+
+1. **Main card sizing normalization**
+   - Add explicit min-height to main character card root in `renderCharacterCard`.
+2. **Main list viewport sizing**
+   - Replace `ScrollableSection maxHeight="400px"` with fixed 3-card viewport sizing.
+3. **Scrollbar visibility**
+   - Remove `scrollbar-none` from Main Characters list; use thin/subtle scrollbar styles.
+4. **Scroll ownership cleanup**
+   - Adjust parent sidebar overflow behavior to avoid nested conflict.
+5. **Side list verification**
+   - Ensure Side Characters still expands/collapses and scrolls correctly with remaining space.
+
+---
+
+## Expected result after this revision
+
+- With 4 main characters:
+  - Cards 1–3 fully visible.
+  - Card 4 accessible via clear scrolling.
+- With 2 or 3 main characters:
+  - No clipping, no awkward empty cut-off.
+- With collapsed/expanded toggles:
+  - Smooth behavior, no hidden partial tiles.
+- The behavior remains stable even if card content slightly changes later.
+
+---
+
+## Validation checklist (must pass)
+
+1. Open chat with 4+ main characters.
+2. Confirm exactly 3 full cards visible in Main Characters.
+3. Confirm scrolling reveals all remaining cards.
+4. Confirm no clipped third card.
+5. Collapse/expand Main Characters and retest.
+6. Confirm Side Characters list still scrolls/behaves correctly.
+7. Test at common widths (1024, 1366, 1536) to ensure no regression.
+
+---
+
+## Files impacted
+
+- `src/components/chronicle/ChatInterfaceTab.tsx` (primary)
+- `src/components/chronicle/ScrollableSection.tsx` (only if we decide to add section-specific scrollbar behavior instead of replacing usage)
+
+This revision directly targets the real failure mode in the current code (hard 400px cap + hidden/nested scroll behavior), not just cosmetic class tweaks.
