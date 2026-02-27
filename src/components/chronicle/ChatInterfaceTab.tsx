@@ -2998,7 +2998,7 @@ const updatedChar: SideCharacter = {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-          <div className="flex-1 flex flex-col p-4 gap-4 overflow-hidden">
+          <div className="flex-1 flex flex-col p-4 gap-4 overflow-y-auto scrollbar-none">
           {/* Day/Time Control Panel - Fixed at top */}
           <section className={`flex-shrink-0 rounded-xl p-4 border border-slate-200 transition-all duration-700 animate-sky ${getTimeBackground(currentTimeOfDay)}`}>
             <div className="flex gap-4 items-center">
@@ -3051,7 +3051,7 @@ const updatedChar: SideCharacter = {
           </section>
 
           {/* Main Characters - Scrollable section */}
-          <section className="flex flex-col min-h-0 flex-shrink-0">
+          <section className="flex flex-col min-h-0">
             <h3
               className="flex-shrink-0 text-[11px] font-bold text-white bg-[#4a5f7f] px-4 py-1.5 rounded-lg mb-3 tracking-tight uppercase flex items-center justify-between cursor-pointer select-none"
               onClick={() => setMainCharsCollapsed(prev => !prev)}

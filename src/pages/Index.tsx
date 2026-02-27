@@ -1469,7 +1469,8 @@ const IndexContent = () => {
               subtitle={activeId ? (activeMeta?.title || "Unsaved Draft") : undefined}
               icon={<IconsList.Builder />} 
               onClick={() => {
-                if (activeId) setTab("world");
+                if (playingConversationId) handleCreateNewScenario();
+                else if (activeId) setTab("world");
                 else handleCreateNewScenario();
               }}
               className={!activeId ? "opacity-80" : ""}
