@@ -3072,7 +3072,7 @@ const updatedChar: SideCharacter = {
                   setCanScrollDownMainChars(el.scrollTop < el.scrollHeight - el.clientHeight - 10);
                 }}
               >
-                <div className={`space-y-2 ${mainCharactersForDisplay.length > 3 ? '' : 'pb-2'}`}>
+                <div className="space-y-2 pb-2">
                 {mainCharactersForDisplay.map(char => 
                   char._source === 'character' 
                     ? renderCharacterCard(appData.characters.find(c => c.id === char.id)!)
@@ -3093,9 +3093,9 @@ const updatedChar: SideCharacter = {
               </div>
               {/* Full-width card-like overflow indicator */}
               {mainCharactersForDisplay.length > 3 && canScrollDownMainChars && (
-                <div className="mt-2 w-full rounded-2xl bg-white/30 backdrop-blur-sm border border-white/10 flex items-center justify-center py-1.5">
-                  <ChevronDown className="w-4 h-4 text-white/90" />
-                  <span className="text-xs text-white/90 font-medium ml-1">
+                <div className="mt-0 mb-3 w-full rounded-2xl bg-white/30 backdrop-blur-sm border border-white/10 flex items-center justify-center py-1.5">
+                  <ChevronDown className="w-4 h-4 text-black/80" />
+                  <span className="text-xs text-black/80 font-medium ml-1">
                     {mainCharactersForDisplay.length - 3}
                   </span>
                 </div>
