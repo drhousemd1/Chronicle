@@ -3000,7 +3000,7 @@ const updatedChar: SideCharacter = {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-          <div className="flex-1 flex flex-col p-4 gap-4 overflow-hidden">
+          <div className="flex-1 flex flex-col p-4 gap-3 overflow-hidden">
           {/* Day/Time Control Panel - Fixed at top */}
           <section className={`flex-shrink-0 rounded-xl p-4 border border-slate-200 transition-all duration-700 animate-sky ${getTimeBackground(currentTimeOfDay)}`}>
             <div className="flex gap-4 items-center">
@@ -3093,7 +3093,7 @@ const updatedChar: SideCharacter = {
               </div>
               {/* Full-width card-like overflow indicator */}
               {mainCharactersForDisplay.length > 3 && canScrollDownMainChars && (
-                <div className="mt-0 mb-3 w-full rounded-2xl bg-white/30 backdrop-blur-sm border border-white/10 flex items-center justify-center py-1.5">
+                <div className="mt-0 w-full rounded-2xl bg-white/30 backdrop-blur-sm border border-white/10 flex items-center justify-center py-1.5">
                   <ChevronDown className="w-4 h-4 text-black/80" />
                   <span className="text-xs text-black/80 font-medium ml-1">
                     {mainCharactersForDisplay.length - 3}
