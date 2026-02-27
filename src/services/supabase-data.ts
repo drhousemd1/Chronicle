@@ -1169,6 +1169,14 @@ export async function fetchSessionStates(conversationId: string): Promise<Charac
     // Control and role overrides
     controlledBy: row.controlled_by || undefined,
     characterRole: row.character_role || undefined,
+    // Change 4: Read 7 missing section fields from DB
+    personality: row.personality || undefined,
+    background: row.background || undefined,
+    tone: row.tone || undefined,
+    keyLifeEvents: row.key_life_events || undefined,
+    relationships: row.relationships || undefined,
+    secrets: row.secrets || undefined,
+    fears: row.fears || undefined,
     createdAt: new Date(row.created_at).getTime(),
     updatedAt: new Date(row.updated_at).getTime()
   }));
@@ -1232,6 +1240,14 @@ export async function updateSessionState(
     avatarPosition: { x: number; y: number };
     controlledBy: string;
     characterRole: string;
+    // Change 4: Add 7 missing section fields
+    personality: any;
+    background: any;
+    tone: any;
+    keyLifeEvents: any;
+    relationships: any;
+    secrets: any;
+    fears: any;
   }>
 ): Promise<void> {
   const updateData: any = {};
@@ -1267,6 +1283,14 @@ export async function updateSessionState(
   // Control and role overrides
   if (patch.controlledBy !== undefined) updateData.controlled_by = patch.controlledBy;
   if (patch.characterRole !== undefined) updateData.character_role = patch.characterRole;
+  // Change 4: Persist 7 missing section fields
+  if (patch.personality !== undefined) updateData.personality = patch.personality;
+  if (patch.background !== undefined) updateData.background = patch.background;
+  if (patch.tone !== undefined) updateData.tone = patch.tone;
+  if (patch.keyLifeEvents !== undefined) updateData.key_life_events = patch.keyLifeEvents;
+  if (patch.relationships !== undefined) updateData.relationships = patch.relationships;
+  if (patch.secrets !== undefined) updateData.secrets = patch.secrets;
+  if (patch.fears !== undefined) updateData.fears = patch.fears;
 
   const { error } = await supabase
     .from('character_session_states')

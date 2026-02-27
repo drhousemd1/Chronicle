@@ -586,6 +586,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       ...baseChar,
       name: sessionState.name || baseChar.name,
       previousNames: sessionState.previousNames || [],  // Hidden field for name history
+      nicknames: sessionState.nicknames || baseChar.nicknames,  // Change 5
       age: sessionState.age || baseChar.age,
       sexType: sessionState.sexType || baseChar.sexType,
       sexualOrientation: sessionState.sexualOrientation || baseChar.sexualOrientation,
@@ -606,6 +607,14 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       // Session-scoped control and role overrides
       controlledBy: sessionState.controlledBy || baseChar.controlledBy,
       characterRole: sessionState.characterRole || baseChar.characterRole,
+      // Change 5: Merge 7 missing section fields
+      personality: (sessionState as any).personality || baseChar.personality,
+      background: (sessionState as any).background || baseChar.background,
+      tone: (sessionState as any).tone || baseChar.tone,
+      keyLifeEvents: (sessionState as any).keyLifeEvents || baseChar.keyLifeEvents,
+      relationships: (sessionState as any).relationships || baseChar.relationships,
+      secrets: (sessionState as any).secrets || baseChar.secrets,
+      fears: (sessionState as any).fears || baseChar.fears,
     };
   }, [sessionStates]);
 
@@ -1376,11 +1385,20 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     value: string;
   }
 
+  // Concurrency guard for extraction (Change 9)
+  const extractionInProgressRef = useRef(false);
+
   // Call the dedicated extraction edge function
   const extractCharacterUpdatesFromDialogue = async (
     userMessage: string, 
     aiResponse: string
   ): Promise<ExtractedUpdate[]> => {
+    // Concurrency guard: skip if another extraction is already running
+    if (extractionInProgressRef.current) {
+      console.log('[extractCharacterUpdates] Skipping — extraction already in progress');
+      return [];
+    }
+    extractionInProgressRef.current = true;
     try {
       // Build character data for context
       const charactersData = appData.characters.map(c => {
@@ -1421,22 +1439,30 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         };
       });
       
-      // Also include side characters
+      // Also include side characters with full section data
       const sideCharsData = (appData.sideCharacters || []).map(sc => ({
         name: sc.name,
         nicknames: sc.nicknames,
         physicalAppearance: sc.physicalAppearance,
         currentlyWearing: sc.currentlyWearing,
+        preferredClothing: sc.preferredClothing,
         location: sc.location,
-        currentMood: sc.currentMood
+        currentMood: sc.currentMood,
+        background: sc.background,
+        personality: sc.personality,
       }));
       
       const allCharacters = [...charactersData, ...sideCharsData];
       
-      // Build recent context (last 6 messages for pattern detection)
+      // Build recent context (last 20 messages for pattern detection) — Change 11
       const conversation = appData.conversations.find(c => c.id === conversationId);
-      const recentMessages = conversation?.messages.slice(-6) || [];
-      const recentContext = recentMessages
+      const recentMessages = conversation?.messages.slice(-20) || [];
+      // Filter out error/system messages that pollute extraction context
+      const errorPatterns = ['Invalid token', 'xAI/Grok error', 'Payment required', '⚠️'];
+      const filteredMessages = recentMessages.filter(m => 
+        !errorPatterns.some(pat => m.text.includes(pat))
+      );
+      const recentContext = filteredMessages
         .map(m => `${m.role === 'user' ? 'USER' : 'AI'}: ${m.text}`)
         .join('\n\n');
       
@@ -1459,6 +1485,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     } catch (err) {
       console.error('[extractCharacterUpdates] Failed:', err);
       return [];
+    } finally {
+      extractionInProgressRef.current = false;
     }
   };
 
@@ -1543,10 +1571,23 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         for (const update of charUpdates) {
           const { field, value } = update;
           
-          // Handle goals.GoalTitle = "desired_outcome: X | current_status: Y | progress: Z | complete_steps: 1,2 | new_steps: Step 7: ..." format
+          // Handle goals.GoalTitle = "desired_outcome: X | ..." or "REMOVE" format
           if (field.startsWith('goals.')) {
             const goalTitle = field.slice(6); // Remove 'goals.' prefix
             if (goalTitle) {
+              // Change 2: Handle REMOVE signal — delete obsolete goals
+              if (value.trim() === 'REMOVE') {
+                const removeIdx = updatedGoals.findIndex(g => 
+                  g.title.toLowerCase() === goalTitle.toLowerCase()
+                );
+                if (removeIdx !== -1) {
+                  console.log(`[applyExtractedUpdates] REMOVED goal "${goalTitle}"`);
+                  updatedGoals.splice(removeIdx, 1);
+                  goalsModified = true;
+                }
+                continue;
+              }
+
               let desiredOutcome = '';
               let currentStatus = value;
               let progress = 0;
@@ -1576,6 +1617,15 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
               // Parse step operations
               const completeStepsMatch = value.match(/complete_steps:\s*([^|]+)/i);
               const newStepsMatch = value.match(/new_steps:\s*(.*)/i);
+
+              // Helper: parse steps with line-boundary-anchored regex (Change 1 - Gap 1)
+              const parseSteps = (raw: string): Array<{ id: string; description: string; completed: boolean }> => {
+                const stepEntries = raw.split(/(?:^|\n)Step\s+\d+:\s*/i).filter(Boolean);
+                return stepEntries
+                  .map(desc => desc.trim().replace(/\|$/, '').trim())
+                  .filter(Boolean)
+                  .map(desc => ({ id: `step_${uuid().slice(0, 12)}`, description: desc, completed: false }));
+              };
               
               // Find existing goal or create new one
               const existingGoalIndex = updatedGoals.findIndex(g => 
@@ -1584,26 +1634,29 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
               
               if (existingGoalIndex !== -1) {
                 const existingGoal = updatedGoals[existingGoalIndex];
+                
+                // Change 1: REPLACE steps instead of appending
                 let updatedSteps = [...(existingGoal.steps || [])];
                 
-                // Handle complete_steps: mark specified step indices as completed (1-indexed)
+                if (newStepsMatch) {
+                  const parsedSteps = parseSteps(newStepsMatch[1].trim());
+                  
+                  // Hard cap: reject absurd payloads (>15 parsed steps = broken output)
+                  if (parsedSteps.length > 15) {
+                    console.warn(`[applyExtractedUpdates] Rejected ${parsedSteps.length} steps for "${goalTitle}" (>15 = broken output). Keeping existing steps.`);
+                    // Only apply progress/status, don't touch steps
+                  } else {
+                    // Cap at 8 steps max
+                    updatedSteps = parsedSteps.slice(0, 8);
+                  }
+                }
+                
+                // Apply complete_steps AFTER replacement (Change 1 fix: order matters)
                 if (completeStepsMatch) {
                   const indices = completeStepsMatch[1].trim().split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
                   for (const idx of indices) {
                     if (idx >= 1 && idx <= updatedSteps.length) {
                       updatedSteps[idx - 1] = { ...updatedSteps[idx - 1], completed: true, completedAt: Date.now() };
-                    }
-                  }
-                }
-                
-                // Handle new_steps: parse and append new steps
-                if (newStepsMatch) {
-                  const newStepsRaw = newStepsMatch[1].trim();
-                  const stepEntries = newStepsRaw.split(/Step\s+\d+:\s*/i).filter(Boolean);
-                  for (const desc of stepEntries) {
-                    const trimmed = desc.trim().replace(/\|$/, '').trim();
-                    if (trimmed) {
-                      updatedSteps.push({ id: `step_${uuid().slice(0, 12)}`, description: trimmed, completed: false });
                     }
                   }
                 }
@@ -1624,18 +1677,32 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
                 };
                 console.log(`[applyExtractedUpdates] Updated goal "${goalTitle}" → ${progress}% (${updatedSteps.filter(s => s.completed).length}/${updatedSteps.length} steps)`);
               } else {
-                // Create new goal - parse any new_steps
-                const newSteps: Array<{ id: string; description: string; completed: boolean }> = [];
-                if (newStepsMatch) {
-                  const newStepsRaw = newStepsMatch[1].trim();
-                  const stepEntries = newStepsRaw.split(/Step\s+\d+:\s*/i).filter(Boolean);
-                  for (const desc of stepEntries) {
-                    const trimmed = desc.trim().replace(/\|$/, '').trim();
-                    if (trimmed) {
-                      newSteps.push({ id: `step_${uuid().slice(0, 12)}`, description: trimmed, completed: false });
-                    }
-                  }
+                // Change 2: Dedupe guard — reject near-duplicate titles
+                const normalizedTitle = goalTitle.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+                const isDuplicate = updatedGoals.some(g => {
+                  const existingNorm = g.title.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+                  if (existingNorm === normalizedTitle) return true;
+                  // Simple similarity: check if 80%+ words overlap
+                  const newWords = new Set(normalizedTitle.split(/\s+/));
+                  const existWords = new Set(existingNorm.split(/\s+/));
+                  const overlap = [...newWords].filter(w => existWords.has(w)).length;
+                  const maxLen = Math.max(newWords.size, existWords.size);
+                  return maxLen > 0 && (overlap / maxLen) > 0.8;
+                });
+                
+                if (isDuplicate) {
+                  console.log(`[applyExtractedUpdates] Rejected duplicate goal "${goalTitle}"`);
+                  continue;
                 }
+                
+                // Change 2: Enforce max 5 active goals
+                if (updatedGoals.length >= 5) {
+                  console.warn(`[applyExtractedUpdates] Goal cap reached (5). Ignoring new goal "${goalTitle}"`);
+                  continue;
+                }
+
+                // Create new goal - parse any new_steps
+                const newSteps = newStepsMatch ? parseSteps(newStepsMatch[1].trim()).slice(0, 8) : [];
                 
                 updatedGoals.push({
                   id: `goal_${uuid().slice(0, 12)}`,
@@ -1704,24 +1771,133 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
             }
           } else if (field.includes('.')) {
             const [parent, child] = field.split('.');
+            // Change 6: Normalize underwear → undergarments
+            let normalizedChild = child;
+            if (parent === 'preferredClothing' && child === 'underwear') normalizedChild = 'undergarments';
+            
             if (parent === 'physicalAppearance') {
-              patch.physicalAppearance = { ...(sessionState.physicalAppearance || {}), ...(patch.physicalAppearance || {}), [child]: value };
+              if (normalizedChild === '_extras') {
+                // Change 7: _extras deduplication for physicalAppearance
+                const existing = patch.physicalAppearance || sessionState.physicalAppearance || mainChar.physicalAppearance || {};
+                const extras = [...((existing as any)._extras || [])];
+                const parts = value.split(':');
+                const newLabel = (parts[0]?.trim() || 'New').toLowerCase();
+                const newValue = parts.slice(1).join(':')?.trim() || value;
+                const existIdx = extras.findIndex((e: any) => e.label.toLowerCase() === newLabel);
+                if (existIdx !== -1) {
+                  extras[existIdx] = { ...extras[existIdx], value: newValue };
+                } else {
+                  extras.push({ id: `extra_${Date.now()}`, label: parts[0]?.trim() || 'New', value: newValue });
+                }
+                patch.physicalAppearance = { ...existing, ...(patch.physicalAppearance || {}), _extras: extras };
+              } else {
+                patch.physicalAppearance = { ...(sessionState.physicalAppearance || {}), ...(patch.physicalAppearance || {}), [normalizedChild]: value };
+              }
             } else if (parent === 'currentlyWearing') {
-              patch.currentlyWearing = { ...(sessionState.currentlyWearing || {}), ...(patch.currentlyWearing || {}), [child]: value };
+              if (normalizedChild === '_extras') {
+                const existing = patch.currentlyWearing || sessionState.currentlyWearing || mainChar.currentlyWearing || {};
+                const extras = [...((existing as any)._extras || [])];
+                const parts = value.split(':');
+                const newLabel = (parts[0]?.trim() || 'New').toLowerCase();
+                const newValue = parts.slice(1).join(':')?.trim() || value;
+                const existIdx = extras.findIndex((e: any) => e.label.toLowerCase() === newLabel);
+                if (existIdx !== -1) {
+                  extras[existIdx] = { ...extras[existIdx], value: newValue };
+                } else {
+                  extras.push({ id: `extra_${Date.now()}`, label: parts[0]?.trim() || 'New', value: newValue });
+                }
+                patch.currentlyWearing = { ...existing, ...(patch.currentlyWearing || {}), _extras: extras };
+              } else {
+                patch.currentlyWearing = { ...(sessionState.currentlyWearing || {}), ...(patch.currentlyWearing || {}), [normalizedChild]: value };
+              }
             } else if (parent === 'preferredClothing') {
-              patch.preferredClothing = { ...(sessionState.preferredClothing || {}), ...(patch.preferredClothing || {}), [child]: value };
+              if (normalizedChild === '_extras') {
+                const existing = patch.preferredClothing || sessionState.preferredClothing || mainChar.preferredClothing || {};
+                const extras = [...((existing as any)._extras || [])];
+                const parts = value.split(':');
+                const newLabel = (parts[0]?.trim() || 'New').toLowerCase();
+                const newValue = parts.slice(1).join(':')?.trim() || value;
+                const existIdx = extras.findIndex((e: any) => e.label.toLowerCase() === newLabel);
+                if (existIdx !== -1) {
+                  extras[existIdx] = { ...extras[existIdx], value: newValue };
+                } else {
+                  extras.push({ id: `extra_${Date.now()}`, label: parts[0]?.trim() || 'New', value: newValue });
+                }
+                patch.preferredClothing = { ...existing, ...(patch.preferredClothing || {}), _extras: extras };
+              } else {
+                patch.preferredClothing = { ...(sessionState.preferredClothing || {}), ...(patch.preferredClothing || {}), [normalizedChild]: value };
+              }
             } else if (parent === 'background') {
               // Update background hardcoded fields in session state
               const bg = patch.background || sessionState.background || mainChar.background || { jobOccupation: '', educationLevel: '', residence: '', hobbies: '', financialStatus: '', motivation: '' };
-              (bg as any)[child] = value;
+              if (normalizedChild === '_extras') {
+                // Change 7: _extras deduplication for background
+                const extras = [...((bg as any)._extras || [])];
+                const parts = value.split(':');
+                const newLabel = (parts[0]?.trim() || 'New').toLowerCase();
+                const newValue = parts.slice(1).join(':')?.trim() || value;
+                const existIdx = extras.findIndex((e: any) => e.label.toLowerCase() === newLabel);
+                if (existIdx !== -1) {
+                  extras[existIdx] = { ...extras[existIdx], value: newValue };
+                } else {
+                  extras.push({ id: `extra_${Date.now()}`, label: parts[0]?.trim() || 'New', value: newValue });
+                }
+                (bg as any)._extras = extras;
+              } else {
+                (bg as any)[normalizedChild] = value;
+              }
               patch.background = bg;
-            } else if (['tone', 'keyLifeEvents', 'relationships', 'secrets', 'fears'].includes(parent) && child === '_extras') {
-              // Append to _extras
+            } else if (parent === 'personality') {
+              // Change 3 (Gap 2): Add personality branch — was completely missing
+              const pers = (patch as any).personality || (sessionState as any).personality || (mainChar as any).personality || {};
+              if (normalizedChild === 'outwardTraits' || normalizedChild === 'inwardTraits' || normalizedChild === 'traits') {
+                // Parse trait entries from "Label: Description" or JSON format
+                let newTraits: Array<{ label: string; value: string }> = [];
+                try {
+                  const parsed = JSON.parse(value);
+                  if (Array.isArray(parsed)) newTraits = parsed;
+                } catch {
+                  // Parse "Label: Description, Label2: Description2" or single "Label: Description"
+                  const traitParts = value.split(/,\s*(?=[A-Z])/);
+                  for (const part of traitParts) {
+                    const colonIdx = part.indexOf(':');
+                    if (colonIdx > 0) {
+                      newTraits.push({ label: part.slice(0, colonIdx).trim(), value: part.slice(colonIdx + 1).trim() });
+                    } else if (part.trim()) {
+                      newTraits.push({ label: part.trim(), value: '' });
+                    }
+                  }
+                }
+                // Merge: update existing traits by label, append new ones
+                const existingTraits = [...(pers[normalizedChild] || [])];
+                for (const nt of newTraits) {
+                  const idx = existingTraits.findIndex((t: any) => t.label.toLowerCase() === nt.label.toLowerCase());
+                  if (idx !== -1) {
+                    existingTraits[idx] = { ...existingTraits[idx], value: nt.value };
+                  } else {
+                    existingTraits.push({ id: `trait_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, ...nt });
+                  }
+                }
+                (patch as any).personality = { ...pers, [normalizedChild]: existingTraits };
+              } else {
+                // Direct assignment for other personality fields (e.g., splitMode)
+                (patch as any).personality = { ...pers, [normalizedChild]: value };
+              }
+            } else if (['tone', 'keyLifeEvents', 'relationships', 'secrets', 'fears'].includes(parent) && normalizedChild === '_extras') {
+              // Change 7: _extras deduplication for extras-only sections
               const sectionKey = parent as 'tone' | 'keyLifeEvents' | 'relationships' | 'secrets' | 'fears';
               const existing = (patch as any)[sectionKey] || (sessionState as any)[sectionKey] || (mainChar as any)[sectionKey] || {};
               const extras = [...(existing._extras || [])];
               const parts = value.split(':');
-              extras.push({ id: `extra_${Date.now()}`, label: parts[0]?.trim() || 'New', value: parts.slice(1).join(':')?.trim() || value });
+              const newLabel = (parts[0]?.trim() || 'New').toLowerCase();
+              const newValue = parts.slice(1).join(':')?.trim() || value;
+              const existIdx = extras.findIndex((e: any) => e.label.toLowerCase() === newLabel);
+              if (existIdx !== -1) {
+                extras[existIdx] = { ...extras[existIdx], value: newValue };
+                console.log(`[applyExtractedUpdates] Updated existing ${parent}._extras entry "${parts[0]?.trim()}"`);
+              } else {
+                extras.push({ id: `extra_${Date.now()}`, label: parts[0]?.trim() || 'New', value: newValue });
+              }
               (patch as any)[sectionKey] = { ...existing, _extras: extras };
             }
           } else {
@@ -1747,18 +1923,71 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         // Show updating indicator
         showCharacterUpdateIndicator(sideChar.id);
         
-        // Build patch from updates
+        // Change 8: Expanded side character update paths (mirrors main character logic)
         const patch: Record<string, any> = {};
         for (const update of charUpdates) {
           const { field, value } = update;
           if (field.includes('.')) {
             const [parent, child] = field.split('.');
+            let normalizedChild = child;
+            if (parent === 'preferredClothing' && child === 'underwear') normalizedChild = 'undergarments';
+            
             if (parent === 'physicalAppearance') {
-              patch.physicalAppearance = { ...(sideChar.physicalAppearance || {}), ...(patch.physicalAppearance || {}), [child]: value };
+              if (normalizedChild === '_extras') {
+                const existing = patch.physicalAppearance || sideChar.physicalAppearance || {};
+                const extras = [...((existing as any)._extras || [])];
+                const parts = value.split(':');
+                const newLabel = (parts[0]?.trim() || 'New').toLowerCase();
+                const newValue = parts.slice(1).join(':')?.trim() || value;
+                const existIdx = extras.findIndex((e: any) => e.label.toLowerCase() === newLabel);
+                if (existIdx !== -1) extras[existIdx] = { ...extras[existIdx], value: newValue };
+                else extras.push({ id: `extra_${Date.now()}`, label: parts[0]?.trim() || 'New', value: newValue });
+                patch.physicalAppearance = { ...existing, ...(patch.physicalAppearance || {}), _extras: extras };
+              } else {
+                patch.physicalAppearance = { ...(sideChar.physicalAppearance || {}), ...(patch.physicalAppearance || {}), [normalizedChild]: value };
+              }
             } else if (parent === 'currentlyWearing') {
-              patch.currentlyWearing = { ...(sideChar.currentlyWearing || {}), ...(patch.currentlyWearing || {}), [child]: value };
+              patch.currentlyWearing = { ...(sideChar.currentlyWearing || {}), ...(patch.currentlyWearing || {}), [normalizedChild]: value };
+            } else if (parent === 'preferredClothing') {
+              patch.preferredClothing = { ...(sideChar.preferredClothing || {}), ...(patch.preferredClothing || {}), [normalizedChild]: value };
+            } else if (parent === 'background') {
+              const bg = patch.background || sideChar.background || {};
+              if (normalizedChild === '_extras') {
+                const extras = [...((bg as any)._extras || [])];
+                const parts = value.split(':');
+                const newLabel = (parts[0]?.trim() || 'New').toLowerCase();
+                const newValue = parts.slice(1).join(':')?.trim() || value;
+                const existIdx = extras.findIndex((e: any) => e.label.toLowerCase() === newLabel);
+                if (existIdx !== -1) extras[existIdx] = { ...extras[existIdx], value: newValue };
+                else extras.push({ id: `extra_${Date.now()}`, label: parts[0]?.trim() || 'New', value: newValue });
+                (bg as any)._extras = extras;
+              } else {
+                (bg as any)[normalizedChild] = value;
+              }
+              patch.background = bg;
+            } else if (parent === 'personality') {
+              const pers = patch.personality || sideChar.personality || {};
+              if (normalizedChild === 'outwardTraits' || normalizedChild === 'inwardTraits' || normalizedChild === 'traits') {
+                let newTraits: Array<{ label: string; value: string }> = [];
+                try { const parsed = JSON.parse(value); if (Array.isArray(parsed)) newTraits = parsed; } catch {
+                  const traitParts = value.split(/,\s*(?=[A-Z])/);
+                  for (const part of traitParts) {
+                    const colonIdx = part.indexOf(':');
+                    if (colonIdx > 0) newTraits.push({ label: part.slice(0, colonIdx).trim(), value: part.slice(colonIdx + 1).trim() });
+                    else if (part.trim()) newTraits.push({ label: part.trim(), value: '' });
+                  }
+                }
+                const existingTraits = [...((pers as any)[normalizedChild] || [])];
+                for (const nt of newTraits) {
+                  const idx = existingTraits.findIndex((t: any) => t.label.toLowerCase() === nt.label.toLowerCase());
+                  if (idx !== -1) existingTraits[idx] = { ...existingTraits[idx], value: nt.value };
+                  else existingTraits.push({ id: `trait_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, ...nt });
+                }
+                patch.personality = { ...pers, [normalizedChild]: existingTraits };
+              } else {
+                patch.personality = { ...pers, [normalizedChild]: value };
+              }
             }
-            // Note: Side characters don't have custom sections in current schema
           } else {
             patch[field] = value;
           }
@@ -2417,7 +2646,7 @@ Do not acknowledge this instruction in your response.`;
         setSessionStates(prev => [...prev, sessionState!]);
       }
       
-// Update session state with draft changes (including avatar, control, role, and previousNames)
+// Update session state with draft changes (including avatar, control, role, previousNames, and 7 section fields)
       await supabaseData.updateSessionState(sessionState.id, {
         name: draft.name,
         previousNames: draft.previousNames,  // Hidden field for name history
@@ -2435,6 +2664,14 @@ Do not acknowledge this instruction in your response.`;
         avatarPosition: draft.avatarPosition,
         controlledBy: draft.controlledBy,
         characterRole: draft.characterRole,
+        // Change 4: Persist 7 section fields from manual save
+        personality: (draft as any).personality,
+        background: (draft as any).background,
+        tone: (draft as any).tone,
+        keyLifeEvents: (draft as any).keyLifeEvents,
+        relationships: (draft as any).relationships,
+        secrets: (draft as any).secrets,
+        fears: (draft as any).fears,
       });
       
       // Refresh session states
