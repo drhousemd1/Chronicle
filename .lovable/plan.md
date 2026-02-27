@@ -1,37 +1,62 @@
 
+Goal: replace the current low-contrast “1 more below” text with a clean, readable, standalone “more content” indicator that is visually separate from the 3rd card and does not overlap or clash with cards/background.
 
-# Fix: Replace Ugly Gradient Overlay With Clean "More Below" Indicator
+What is currently wrong (confirmed in code and screenshot):
+1) The current indicator is just tiny `text-slate-400` + icon on a busy image background, so readability is poor.
+2) It sits too close to the card stack visually, so it feels like an artifact rather than intentional UI.
+3) It uses a bouncing animation that draws attention in an awkward way.
+4) It does not look like a deliberate control/affordance.
 
-## Problem
-The current bottom-fade gradient overlaps the third character card, creating a messy visual effect. It looks like a smudge sitting on top of the card content.
+Implementation plan
 
-## Solution
-Remove the gradient overlay entirely. Instead, add a small, standalone row **below** the scrollable list (outside the scroll container) with a subtle downward arrow icon and text like "scroll for more". This element sits in its own space, doesn't touch or overlap any card.
+1) Replace the current plain-text indicator with a detached “hint pill” row
+- File: `src/components/chronicle/ChatInterfaceTab.tsx`
+- Keep indicator outside the scroll container (as requested), but make it a distinct row with its own spacing.
+- Structure:
+  - Outer row: centered container with `mt-2 mb-2` (or similar) so it is clearly separated from both the 3rd card and the “Side Characters” header.
+  - Inner hint pill: `inline-flex items-center gap-1.5 rounded-full px-3 py-1.5`
+  - Visual treatment (high contrast, neutral): semi-opaque dark background + light text + subtle border + mild backdrop blur.
+- Result: the indicator reads as its own UI element, not something “behind” a card.
 
-## Visual concept
+2) Improve legibility and simplify message
+- Replace tiny low-contrast label with readable semantic text, for example:
+  - “More characters below”
+- Keep optional count in a subtle badge only if it remains legible, otherwise omit count entirely for cleaner appearance.
+- Increase text size slightly (`text-xs`) and use high-contrast color (`text-white/90` style equivalent).
 
-```text
-+---------------------------+
-|  Character Card 1         |
-|  Character Card 2         |
-|  Character Card 3         |
-+---------------------------+
-                             
-      ChevronDown icon       <-- standalone row, not overlapping
-      "X more below"
-```
+3) Use a static downward cue (no awkward animation)
+- Keep a downward chevron icon to satisfy the directional cue request.
+- Remove bounce animation from this indicator (or reduce to near-imperceptible if any motion remains).
+- This avoids the “gimmicky” feel and keeps the UI mature.
 
-## Changes
+4) Keep behavior logic, only improve presentation
+- Continue using existing visibility logic:
+  - show only when `mainCharactersForDisplay.length > 3 && canScrollDownMainChars`
+  - hide automatically when user reaches bottom of the main character list
+- No overlay/absolute positioning for this indicator.
+- No visual effect touching cards.
 
-**File:** `src/components/chronicle/ChatInterfaceTab.tsx`
+5) Cleanup any now-unused animation utility
+- If `animate-bounce-gentle` is no longer used anywhere after this change:
+  - remove unused class usage in `ChatInterfaceTab.tsx`
+  - optionally remove corresponding custom animation/keyframe from `tailwind.config.ts` (only if unused globally) to keep styles clean.
 
-1. **Remove** the `relative` wrapper div and the gradient overlay element (lines 3065, 3095-3100, 3101).
-2. **Add** a new element *after* the scroll container (but still inside the collapsible wrapper), only rendered when `mainCharactersForDisplay.length > 3 && canScrollDownMainChars`:
-   - A centered row with a small `ChevronDown` icon (from lucide) and muted text showing how many more characters are hidden
-   - Styled to match the sidebar aesthetic: small muted text, subtle animation (gentle bounce on the arrow)
-   - Completely separate from the card list -- has its own padding/margin, no absolute positioning, no overlapping
-3. **Update scroll state**: keep the existing `canScrollDownMainChars` logic so the indicator hides once user scrolls to bottom.
+Validation checklist
+1) With 4+ main characters, confirm:
+- exactly 3 full cards visible
+- a separate hint pill appears below the list
+- hint does not overlap any card
+2) Scroll to bottom:
+- hint disappears cleanly
+3) Collapse/expand Main Characters:
+- hint state updates correctly
+4) Test on busy/light/dark sidebar backgrounds:
+- text remains readable and intentional
+5) Confirm spacing:
+- no clashing with “Side Characters” header
 
-The indicator will show something like: a small bouncing down-chevron with "{n} more" in muted text, sitting cleanly below card 3.
-
-**Single file changed:** `src/components/chronicle/ChatInterfaceTab.tsx`
+Technical notes
+- No backend changes are needed.
+- This is a focused front-end refinement in:
+  - `src/components/chronicle/ChatInterfaceTab.tsx`
+  - possibly `tailwind.config.ts` only for animation cleanup if unused.
