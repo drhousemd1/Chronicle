@@ -3072,7 +3072,7 @@ const updatedChar: SideCharacter = {
                   setCanScrollDownMainChars(el.scrollTop < el.scrollHeight - el.clientHeight - 10);
                 }}
               >
-                <div className="space-y-2 pb-2">
+                <div className={`space-y-2 ${mainCharactersForDisplay.length > 3 ? '' : 'pb-2'}`}>
                 {mainCharactersForDisplay.map(char => 
                   char._source === 'character' 
                     ? renderCharacterCard(appData.characters.find(c => c.id === char.id)!)
@@ -3091,15 +3091,13 @@ const updatedChar: SideCharacter = {
                 )}
               </div>
               </div>
-              {/* Standalone "more below" hint pill — sits outside the scroll container */}
+              {/* Full-width card-like overflow indicator */}
               {mainCharactersForDisplay.length > 3 && canScrollDownMainChars && (
-                <div className="flex justify-center mt-2 mb-1">
-                  <div className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 bg-black/60 border border-white/10 backdrop-blur-sm">
-                    <ChevronDown className="w-3.5 h-3.5 text-white/80" />
-                    <span className="text-xs text-white/90 font-medium">
-                      {mainCharactersForDisplay.length - 3} more below
-                    </span>
-                  </div>
+                <div className="mt-2 w-full rounded-2xl bg-white/30 backdrop-blur-sm border border-white/10 flex items-center justify-center py-1.5">
+                  <ChevronDown className="w-4 h-4 text-white/90" />
+                  <span className="text-xs text-white/90 font-medium ml-1">
+                    {mainCharactersForDisplay.length - 3}
+                  </span>
                 </div>
               )}
             </div>
