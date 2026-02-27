@@ -2499,8 +2499,8 @@ const updatedChar: SideCharacter = {
   const handleModalSave = async (draft: CharacterEditDraft) => {
     if (!characterToEdit) return;
     
-    // Check if it's a side character (has 'background' property)
-    if ('background' in characterToEdit) {
+   // Side characters have 'firstMentionedIn'; main characters do not
+    if ('firstMentionedIn' in characterToEdit) {
       await handleSaveSideCharacterEdit(characterToEdit as SideCharacter, draft);
     } else {
       // Find the base character for main characters
