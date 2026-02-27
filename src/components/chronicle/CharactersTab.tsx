@@ -11,7 +11,7 @@ import { AvatarGenerationModal } from './AvatarGenerationModal';
 import { AvatarActionButtons } from './AvatarActionButtons';
 import { Sparkles, ChevronDown, ChevronUp, Trash2, Plus, X, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { aiEnhanceCharacterField } from '@/services/character-ai';
+import { aiEnhanceCharacterField, GENERATE_BOTH_PREFIX, parseGenerateBothResponse } from '@/services/character-ai';
 import { EnhanceModeModal, EnhanceMode } from './EnhanceModeModal';
 import { CharacterGoalsSection } from './CharacterGoalsSection';
 import { PersonalitySection } from './PersonalitySection';
@@ -470,6 +470,30 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
     );
   };
 
+  // Helper to build enhance args for ExtraRow fields with generate-both support
+  const buildExtraEnhanceArgs = (
+    sectionPrefix: string,
+    fieldKeyPrefix: string,
+    extra: CharacterExtraRow,
+    sectionKey: ExtrasSection,
+    sectionLabel: string
+  ) => {
+    if (extra.label) {
+      return {
+        customLabel: extra.label,
+        setValue: (v: string) => handleUpdateExtra(sectionKey, extra.id, { value: v })
+      };
+    }
+    return {
+      customLabel: `${GENERATE_BOTH_PREFIX}${sectionLabel}`,
+      setValue: (v: string) => {
+        const parsed = parseGenerateBothResponse(v);
+        if (parsed) handleUpdateExtra(sectionKey, extra.id, { label: parsed.label, value: parsed.value });
+        else handleUpdateExtra(sectionKey, extra.id, { value: v });
+      }
+    };
+  };
+
   const CollapsedPhysicalAppearance = () => {
     const data = selected?.physicalAppearance;
     const extras = data?._extras?.filter(e => e.label || e.value) || [];
@@ -681,9 +705,8 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                         {isGeneratingImg && (
                           <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-[2px]">
                             <div className="w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
-                          </div>
-                        )}
-
+                           </div>
+                         )}
                         {isRepositioning && (
                           <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
                             <div className="w-full h-[1px] bg-blue-500/30 absolute" />
@@ -926,9 +949,10 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
             <HardcodedRow label="Body Markings" value={selected.physicalAppearance?.bodyMarkings || ''} onChange={(v) => handlePhysicalAppearanceChange('bodyMarkings', v)} placeholder="Scars, tattoos, birthmarks, piercings" onEnhance={() => openEnhanceModeModal('bodyMarkings', 'physicalAppearance', () => selected.physicalAppearance?.bodyMarkings || '', (v) => handlePhysicalAppearanceChange('bodyMarkings', v))} isEnhancing={enhancingField === 'bodyMarkings'} />
             <HardcodedRow label="Temporary Conditions" value={selected.physicalAppearance?.temporaryConditions || ''} onChange={(v) => handlePhysicalAppearanceChange('temporaryConditions', v)} placeholder="Injuries, illness, etc." onEnhance={() => openEnhanceModeModal('temporaryConditions', 'physicalAppearance', () => selected.physicalAppearance?.temporaryConditions || '', (v) => handlePhysicalAppearanceChange('temporaryConditions', v))} isEnhancing={enhancingField === 'temporaryConditions'} />
             {/* User-added extras */}
-            {(selected.physicalAppearance?._extras || []).map(extra => (
-              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('physicalAppearance', extra.id, patch)} onDelete={() => handleDeleteExtra('physicalAppearance', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_pa_${extra.id}`, 'custom', () => extra.value, (v) => handleUpdateExtra('physicalAppearance', extra.id, { value: v }), extra.label || 'Physical Appearance detail')} isEnhancing={enhancingField === `extra_pa_${extra.id}`} />
-            ))}
+            {(selected.physicalAppearance?._extras || []).map(extra => {
+              const args = buildExtraEnhanceArgs('extra_pa', `extra_pa_${extra.id}`, extra, 'physicalAppearance', 'physical appearance detail');
+              return <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('physicalAppearance', extra.id, patch)} onDelete={() => handleDeleteExtra('physicalAppearance', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_pa_${extra.id}`, 'custom', () => extra.value, args.setValue, args.customLabel)} isEnhancing={enhancingField === `extra_pa_${extra.id}`} />;
+            })}
             <button type="button" onClick={() => handleAddExtra('physicalAppearance')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
             </button>
@@ -946,9 +970,10 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
             <HardcodedRow label="Undergarments" value={selected.currentlyWearing?.undergarments || ''} onChange={(v) => handleCurrentlyWearingChange('undergarments', v)} placeholder="Bras, panties, boxers, etc." onEnhance={() => openEnhanceModeModal('undergarments', 'currentlyWearing', () => selected.currentlyWearing?.undergarments || '', (v) => handleCurrentlyWearingChange('undergarments', v))} isEnhancing={enhancingField === 'undergarments'} />
             <HardcodedRow label="Miscellaneous" value={selected.currentlyWearing?.miscellaneous || ''} onChange={(v) => handleCurrentlyWearingChange('miscellaneous', v)} placeholder="Outerwear, footwear, accessories" onEnhance={() => openEnhanceModeModal('cw_miscellaneous', 'currentlyWearing', () => selected.currentlyWearing?.miscellaneous || '', (v) => handleCurrentlyWearingChange('miscellaneous', v))} isEnhancing={enhancingField === 'cw_miscellaneous'} />
             {/* User-added extras */}
-            {(selected.currentlyWearing?._extras || []).map(extra => (
-              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('currentlyWearing', extra.id, patch)} onDelete={() => handleDeleteExtra('currentlyWearing', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_cw_${extra.id}`, 'custom', () => extra.value, (v) => handleUpdateExtra('currentlyWearing', extra.id, { value: v }), extra.label || 'Currently Wearing detail')} isEnhancing={enhancingField === `extra_cw_${extra.id}`} />
-            ))}
+            {(selected.currentlyWearing?._extras || []).map(extra => {
+              const args = buildExtraEnhanceArgs('extra_cw', `extra_cw_${extra.id}`, extra, 'currentlyWearing', 'currently wearing detail');
+              return <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('currentlyWearing', extra.id, patch)} onDelete={() => handleDeleteExtra('currentlyWearing', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_cw_${extra.id}`, 'custom', () => extra.value, args.setValue, args.customLabel)} isEnhancing={enhancingField === `extra_cw_${extra.id}`} />;
+            })}
             <button type="button" onClick={() => handleAddExtra('currentlyWearing')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
             </button>
@@ -967,9 +992,10 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
             <HardcodedRow label="Undergarments" value={selected.preferredClothing?.undergarments || ''} onChange={(v) => handlePreferredClothingChange('undergarments', v)} placeholder="Cotton basics, Lace" onEnhance={() => openEnhanceModeModal('pc_undergarments', 'preferredClothing', () => selected.preferredClothing?.undergarments || '', (v) => handlePreferredClothingChange('undergarments', v))} isEnhancing={enhancingField === 'pc_undergarments'} />
             <HardcodedRow label="Miscellaneous" value={selected.preferredClothing?.miscellaneous || ''} onChange={(v) => handlePreferredClothingChange('miscellaneous', v)} placeholder="Formal, athletic, swimwear, etc." onEnhance={() => openEnhanceModeModal('pc_miscellaneous', 'preferredClothing', () => selected.preferredClothing?.miscellaneous || '', (v) => handlePreferredClothingChange('miscellaneous', v))} isEnhancing={enhancingField === 'pc_miscellaneous'} />
             {/* User-added extras */}
-            {(selected.preferredClothing?._extras || []).map(extra => (
-              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('preferredClothing', extra.id, patch)} onDelete={() => handleDeleteExtra('preferredClothing', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_pc_${extra.id}`, 'custom', () => extra.value, (v) => handleUpdateExtra('preferredClothing', extra.id, { value: v }), extra.label || 'Preferred Clothing detail')} isEnhancing={enhancingField === `extra_pc_${extra.id}`} />
-            ))}
+            {(selected.preferredClothing?._extras || []).map(extra => {
+              const args = buildExtraEnhanceArgs('extra_pc', `extra_pc_${extra.id}`, extra, 'preferredClothing', 'preferred clothing detail');
+              return <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('preferredClothing', extra.id, patch)} onDelete={() => handleDeleteExtra('preferredClothing', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_pc_${extra.id}`, 'custom', () => extra.value, args.setValue, args.customLabel)} isEnhancing={enhancingField === `extra_pc_${extra.id}`} />;
+            })}
             <button type="button" onClick={() => handleAddExtra('preferredClothing')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
             </button>
@@ -1002,9 +1028,10 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
               })()
             }
           >
-            {(selected.tone?._extras || []).map(extra => (
-              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('tone', extra.id, patch)} onDelete={() => handleDeleteExtra('tone', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_tone_${extra.id}`, 'custom', () => extra.value, (v) => handleUpdateExtra('tone', extra.id, { value: v }), extra.label || 'Tone detail')} isEnhancing={enhancingField === `extra_tone_${extra.id}`} />
-            ))}
+            {(selected.tone?._extras || []).map(extra => {
+              const args = buildExtraEnhanceArgs('extra_tone', `extra_tone_${extra.id}`, extra, 'tone', 'character tone/voice detail');
+              return <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('tone', extra.id, patch)} onDelete={() => handleDeleteExtra('tone', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_tone_${extra.id}`, 'custom', () => extra.value, args.setValue, args.customLabel)} isEnhancing={enhancingField === `extra_tone_${extra.id}`} />;
+            })}
             <button type="button" onClick={() => handleAddExtra('tone')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
             </button>
@@ -1041,9 +1068,10 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
             <HardcodedRow label="Hobbies" value={selected.background?.hobbies || ''} onChange={(v) => handleBackgroundChange('hobbies', v)} placeholder="Reading, Hiking, Gaming" onEnhance={() => openEnhanceModeModal('bg_hobbies', 'custom', () => selected.background?.hobbies || '', (v) => handleBackgroundChange('hobbies', v), 'Hobbies')} isEnhancing={enhancingField === 'bg_hobbies'} />
             <HardcodedRow label="Financial Status" value={selected.background?.financialStatus || ''} onChange={(v) => handleBackgroundChange('financialStatus', v)} placeholder="Middle class, Wealthy" onEnhance={() => openEnhanceModeModal('bg_financialStatus', 'custom', () => selected.background?.financialStatus || '', (v) => handleBackgroundChange('financialStatus', v), 'Financial Status')} isEnhancing={enhancingField === 'bg_financialStatus'} />
             <HardcodedRow label="Motivation" value={selected.background?.motivation || ''} onChange={(v) => handleBackgroundChange('motivation', v)} placeholder="What drives this character" onEnhance={() => openEnhanceModeModal('bg_motivation', 'custom', () => selected.background?.motivation || '', (v) => handleBackgroundChange('motivation', v), 'Motivation')} isEnhancing={enhancingField === 'bg_motivation'} />
-            {(selected.background?._extras || []).map(extra => (
-              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('background', extra.id, patch)} onDelete={() => handleDeleteExtra('background', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_bg_${extra.id}`, 'custom', () => extra.value, (v) => handleUpdateExtra('background', extra.id, { value: v }), extra.label || 'Background detail')} isEnhancing={enhancingField === `extra_bg_${extra.id}`} />
-            ))}
+            {(selected.background?._extras || []).map(extra => {
+              const args = buildExtraEnhanceArgs('extra_bg', `extra_bg_${extra.id}`, extra, 'background', 'background detail');
+              return <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('background', extra.id, patch)} onDelete={() => handleDeleteExtra('background', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_bg_${extra.id}`, 'custom', () => extra.value, args.setValue, args.customLabel)} isEnhancing={enhancingField === `extra_bg_${extra.id}`} />;
+            })}
             <button type="button" onClick={() => handleAddExtra('background')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
             </button>
@@ -1066,9 +1094,10 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
               })()
             }
           >
-            {(selected.keyLifeEvents?._extras || []).map(extra => (
-              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('keyLifeEvents', extra.id, patch)} onDelete={() => handleDeleteExtra('keyLifeEvents', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_kle_${extra.id}`, 'custom', () => extra.value, (v) => handleUpdateExtra('keyLifeEvents', extra.id, { value: v }), extra.label || 'Key Life Event')} isEnhancing={enhancingField === `extra_kle_${extra.id}`} />
-            ))}
+            {(selected.keyLifeEvents?._extras || []).map(extra => {
+              const args = buildExtraEnhanceArgs('extra_kle', `extra_kle_${extra.id}`, extra, 'keyLifeEvents', 'key life event');
+              return <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('keyLifeEvents', extra.id, patch)} onDelete={() => handleDeleteExtra('keyLifeEvents', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_kle_${extra.id}`, 'custom', () => extra.value, args.setValue, args.customLabel)} isEnhancing={enhancingField === `extra_kle_${extra.id}`} />;
+            })}
             <button type="button" onClick={() => handleAddExtra('keyLifeEvents')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
             </button>
@@ -1091,9 +1120,10 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
               })()
             }
           >
-            {(selected.relationships?._extras || []).map(extra => (
-              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('relationships', extra.id, patch)} onDelete={() => handleDeleteExtra('relationships', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_rel_${extra.id}`, 'custom', () => extra.value, (v) => handleUpdateExtra('relationships', extra.id, { value: v }), extra.label || 'Relationship')} isEnhancing={enhancingField === `extra_rel_${extra.id}`} />
-            ))}
+            {(selected.relationships?._extras || []).map(extra => {
+              const args = buildExtraEnhanceArgs('extra_rel', `extra_rel_${extra.id}`, extra, 'relationships', 'relationship');
+              return <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('relationships', extra.id, patch)} onDelete={() => handleDeleteExtra('relationships', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_rel_${extra.id}`, 'custom', () => extra.value, args.setValue, args.customLabel)} isEnhancing={enhancingField === `extra_rel_${extra.id}`} />;
+            })}
             <button type="button" onClick={() => handleAddExtra('relationships')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
             </button>
@@ -1116,9 +1146,10 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
               })()
             }
           >
-            {(selected.secrets?._extras || []).map(extra => (
-              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('secrets', extra.id, patch)} onDelete={() => handleDeleteExtra('secrets', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_sec_${extra.id}`, 'custom', () => extra.value, (v) => handleUpdateExtra('secrets', extra.id, { value: v }), extra.label || 'Secret')} isEnhancing={enhancingField === `extra_sec_${extra.id}`} />
-            ))}
+            {(selected.secrets?._extras || []).map(extra => {
+              const args = buildExtraEnhanceArgs('extra_sec', `extra_sec_${extra.id}`, extra, 'secrets', 'secret');
+              return <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('secrets', extra.id, patch)} onDelete={() => handleDeleteExtra('secrets', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_sec_${extra.id}`, 'custom', () => extra.value, args.setValue, args.customLabel)} isEnhancing={enhancingField === `extra_sec_${extra.id}`} />;
+            })}
             <button type="button" onClick={() => handleAddExtra('secrets')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
             </button>
@@ -1141,9 +1172,10 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
               })()
             }
           >
-            {(selected.fears?._extras || []).map(extra => (
-              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('fears', extra.id, patch)} onDelete={() => handleDeleteExtra('fears', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_fear_${extra.id}`, 'custom', () => extra.value, (v) => handleUpdateExtra('fears', extra.id, { value: v }), extra.label || 'Fear')} isEnhancing={enhancingField === `extra_fear_${extra.id}`} />
-            ))}
+            {(selected.fears?._extras || []).map(extra => {
+              const args = buildExtraEnhanceArgs('extra_fear', `extra_fear_${extra.id}`, extra, 'fears', 'fear');
+              return <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('fears', extra.id, patch)} onDelete={() => handleDeleteExtra('fears', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_fear_${extra.id}`, 'custom', () => extra.value, args.setValue, args.customLabel)} isEnhancing={enhancingField === `extra_fear_${extra.id}`} />;
+            })}
             <button type="button" onClick={() => handleAddExtra('fears')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
             </button>
@@ -1209,19 +1241,35 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                                   placeholder="Label"
                                   className="flex-1 px-3 py-2 text-xs font-bold bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
                                 />
-                                {item.label && (
-                                  <button
+                                <button
                                     type="button"
-                                    onClick={() => openEnhanceModeModal(
-                                      `custom_${item.id}`,
-                                      'custom',
-                                      () => item.value,
-                                      (v) => {
-                                        const nextItems = section.items.map(it => it.id === item.id ? { ...it, value: v } : it);
-                                        handleUpdateSection(selected.id, section.id, { items: nextItems });
-                                      },
-                                      item.label
-                                    )}
+                                    onClick={() => {
+                                      const customLabel = item.label
+                                        ? item.label
+                                        : `${GENERATE_BOTH_PREFIX}custom field for ${section.title}`;
+                                      const setValue = item.label
+                                        ? (v: string) => {
+                                            const nextItems = section.items.map(it => it.id === item.id ? { ...it, value: v } : it);
+                                            handleUpdateSection(selected.id, section.id, { items: nextItems });
+                                          }
+                                        : (v: string) => {
+                                            const parsed = parseGenerateBothResponse(v);
+                                            if (parsed) {
+                                              const nextItems = section.items.map(it => it.id === item.id ? { ...it, label: parsed.label, value: parsed.value } : it);
+                                              handleUpdateSection(selected.id, section.id, { items: nextItems });
+                                            } else {
+                                              const nextItems = section.items.map(it => it.id === item.id ? { ...it, value: v } : it);
+                                              handleUpdateSection(selected.id, section.id, { items: nextItems });
+                                            }
+                                          };
+                                      openEnhanceModeModal(
+                                        `custom_${item.id}`,
+                                        'custom',
+                                        () => item.value,
+                                        setValue,
+                                        customLabel
+                                      );
+                                    }}
                                     disabled={enhancingField !== null}
                                     title="Enhance with AI"
                                     className={cn(
@@ -1233,7 +1281,6 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                                   >
                                     <Sparkles size={14} />
                                   </button>
-                                )}
                               </div>
                               <AutoResizeTextarea
                                 value={item.value}

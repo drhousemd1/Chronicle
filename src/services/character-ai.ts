@@ -202,6 +202,16 @@ function buildCharacterSelfContext(character: Character): string {
 // Per-Field AI Enhancement (Structured Expansion)
 // ============================================================
 
+// "Generate both" mode: when label is empty, AI generates label + description
+export const GENERATE_BOTH_PREFIX = '__GENERATE_BOTH__:';
+const SPLIT_DELIMITER = '\n---SPLIT---\n';
+
+export function parseGenerateBothResponse(response: string): { label: string; value: string } | null {
+  if (!response.includes('---SPLIT---')) return null;
+  const [label, ...rest] = response.split('---SPLIT---');
+  return { label: label.trim(), value: rest.join('---SPLIT---').trim() };
+}
+
 // Field-specific prompts that enforce structured expansion
 const CHARACTER_FIELD_PROMPTS: Record<string, { label: string; instruction: string; maxSentences: number }> = {
   // Physical Appearance
@@ -252,11 +262,39 @@ function buildCharacterFieldPrompt(
   mode: 'precise' | 'detailed' = 'detailed'
 ): string {
   const fieldConfig = CHARACTER_FIELD_PROMPTS[fieldName] || CHARACTER_FIELD_PROMPTS.custom;
-  const label = customLabel || fieldConfig.label;
+  const isGenerateBoth = customLabel?.startsWith(GENERATE_BOTH_PREFIX);
+  const sectionHint = isGenerateBoth ? customLabel!.slice(GENERATE_BOTH_PREFIX.length) : '';
+  const label = isGenerateBoth ? sectionHint : (customLabel || fieldConfig.label);
 
   const currentValueSection = currentValue.trim()
     ? `CURRENT VALUE (enhance while preserving intent):\n${currentValue}\n\n`
     : 'CURRENT VALUE: Empty - generate appropriate content based on context.\n\n';
+
+  // Generate-both mode: AI must return LABEL + DESCRIPTION
+  if (isGenerateBoth) {
+    return `You are a character creation assistant for an interactive roleplay scenario.
+
+You need to generate BOTH a short label/name AND a description for a ${sectionHint} field on this character.
+
+RULES:
+1. The LABEL should be 1-4 words — a concise name for this trait/detail (e.g. "Loyal", "Childhood Trauma", "Raspy Voice")
+2. The DESCRIPTION should be 1-2 sentences explaining/expanding on it
+3. Look at all existing character data and world context to determine what trait/detail would be most fitting and NOT duplicate existing ones
+4. Stay consistent with the character's established identity
+5. NO purple prose. Be factual and story-relevant.
+
+WORLD & SCENARIO CONTEXT:
+${fullContext}
+
+THIS CHARACTER'S EXISTING DATA:
+${selfContext || 'No data filled yet.'}
+
+${currentValueSection}SECTION TYPE: ${sectionHint}
+
+You MUST respond in EXACTLY this format (two lines, no extra text):
+LABEL: <your label here>
+DESCRIPTION: <your description here>`;
+  }
 
   if (mode === 'precise') {
     return `You are enhancing a character field for an interactive roleplay.
@@ -357,6 +395,8 @@ export async function aiEnhanceCharacterField(
 
   console.log(`[character-ai] Enhancing field: ${fieldName} with model: ${modelId} (mode: ${mode})`);
 
+  const isGenerateBoth = customLabel?.startsWith(GENERATE_BOTH_PREFIX);
+
   const result = await callAIWithFallback(
     [
       { role: 'system', content: 'You are a concise character creation assistant. Return only the requested content, no explanations.' },
@@ -364,6 +404,17 @@ export async function aiEnhanceCharacterField(
     ],
     modelId
   );
+
+  // Parse generate-both response into delimiter format for callers
+  if (isGenerateBoth) {
+    const labelMatch = result.match(/^LABEL:\s*(.+)/m);
+    const descMatch = result.match(/^DESCRIPTION:\s*(.+)/m);
+    if (labelMatch && descMatch) {
+      return `${labelMatch[1].trim()}${SPLIT_DELIMITER}${descMatch[1].trim()}`;
+    }
+    // Fallback: return as-is if parsing fails
+    return result;
+  }
 
   // Post-process precise mode: clean up formatting
   if (mode === 'precise') {
