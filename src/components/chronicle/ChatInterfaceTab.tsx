@@ -355,6 +355,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   // Collapsible character sections
   const [mainCharsCollapsed, setMainCharsCollapsed] = useState(false);
   const [sideCharsCollapsed, setSideCharsCollapsed] = useState(false);
+  const [canScrollDownMainChars, setCanScrollDownMainChars] = useState(true);
+  const mainCharsScrollRef = useRef<HTMLDivElement>(null);
 
   // Build effective world core by merging base with session overrides
   const effectiveWorldCore = useMemo((): WorldCore => {
@@ -3060,26 +3062,43 @@ const updatedChar: SideCharacter = {
               <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${mainCharsCollapsed ? 'rotate-180' : ''}`} />
             </h3>
             <div className={`transition-all duration-300 ease-in-out overflow-hidden ${mainCharsCollapsed ? 'max-h-0 opacity-0' : 'max-h-[2000px] opacity-100'}`}>
-              <div className="max-h-[calc(140px*3+0.5rem*2+0.5rem)] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin', scrollbarColor: '#94a3b8 transparent' }}>
-                <div className="space-y-2 pb-2">
-                {mainCharactersForDisplay.map(char => 
-                  char._source === 'character' 
-                    ? renderCharacterCard(appData.characters.find(c => c.id === char.id)!)
-                    : (
-                      <SideCharacterCard
-                        key={char.id}
-                        character={char as SideCharacter}
-                        onStartEdit={() => openCharacterEditModal(char as SideCharacter)}
-                        onDelete={() => handleDeleteSideCharacter(char.id)}
-                        isUpdating={updatingCharacterIds.has(char.id)}
-                      />
-                    )
-                )}
-                {mainCharactersForDisplay.length === 0 && (
-                  <p className="text-[10px] text-slate-400 text-center italic py-4">No main characters.</p>
+              <div className="relative">
+                <div
+                  ref={mainCharsScrollRef}
+                  className="max-h-[calc(140px*3+0.5rem*2+0.5rem)] overflow-y-auto pr-1"
+                  style={{ scrollbarWidth: 'thin', scrollbarColor: '#94a3b8 transparent' }}
+                  onScroll={() => {
+                    const el = mainCharsScrollRef.current;
+                    if (!el) return;
+                    setCanScrollDownMainChars(el.scrollTop < el.scrollHeight - el.clientHeight - 10);
+                  }}
+                >
+                  <div className="space-y-2 pb-2">
+                  {mainCharactersForDisplay.map(char => 
+                    char._source === 'character' 
+                      ? renderCharacterCard(appData.characters.find(c => c.id === char.id)!)
+                      : (
+                        <SideCharacterCard
+                          key={char.id}
+                          character={char as SideCharacter}
+                          onStartEdit={() => openCharacterEditModal(char as SideCharacter)}
+                          onDelete={() => handleDeleteSideCharacter(char.id)}
+                          isUpdating={updatingCharacterIds.has(char.id)}
+                        />
+                      )
+                  )}
+                  {mainCharactersForDisplay.length === 0 && (
+                    <p className="text-[10px] text-slate-400 text-center italic py-4">No main characters.</p>
+                  )}
+                </div>
+                </div>
+                {/* Bottom fade indicator when more cards exist below */}
+                {mainCharactersForDisplay.length > 3 && (
+                  <div 
+                    className={`absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white/60 to-transparent z-10 pointer-events-none transition-opacity duration-300 rounded-b-lg ${canScrollDownMainChars ? 'opacity-100' : 'opacity-0'}`}
+                  />
                 )}
               </div>
-             </div>
             </div>
           </section>
 
