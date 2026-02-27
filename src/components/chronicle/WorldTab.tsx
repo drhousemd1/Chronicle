@@ -65,21 +65,25 @@ const CharacterButton: React.FC<{ char: Character; onSelect: (id: string) => voi
   <button 
     type="button"
     onClick={() => onSelect(char.id)}
-    className="w-full text-left group flex items-center gap-4 p-2 rounded-2xl bg-slate-50 hover:bg-white transition-all duration-200 border border-slate-100 hover:border-slate-200 cursor-pointer"
+    className="w-full text-left group flex items-center gap-4 p-2 rounded-2xl bg-black/80 hover:bg-black transition-all duration-200 border border-[#4a5f7f] hover:border-[#6b82a8] cursor-pointer"
   >
-    <div className="w-14 h-14 shrink-0 rounded-xl border-2 border-slate-100 overflow-hidden shadow-sm transition-transform duration-300 group-hover:scale-105 bg-slate-50">
+    <div className="w-14 h-14 shrink-0 rounded-xl border-2 border-[#4a5f7f] overflow-hidden shadow-sm transition-transform duration-300 group-hover:scale-105 bg-zinc-800">
       {char.avatarDataUrl ? (
         <img src={char.avatarDataUrl} alt={char.name} className="w-full h-full object-cover" />
       ) : (
-        <div className="w-full h-full flex items-center justify-center font-black text-slate-300 text-lg italic uppercase">
+        <div className="w-full h-full flex items-center justify-center font-black text-slate-400 text-lg italic uppercase">
           {char.name.charAt(0)}
         </div>
       )}
     </div>
     <div className="min-w-0">
-      <div className="text-sm font-bold text-slate-800 truncate leading-tight group-hover:text-blue-600 transition-colors">{char.name}</div>
+      <div className="text-sm font-bold text-white truncate leading-tight group-hover:text-blue-300 transition-colors">{char.name}</div>
       {(char.sexType || char.age) && (
-        <div className="text-[10px] text-slate-500 truncate mt-0.5">{[char.sexType, char.age].filter(Boolean).join(' · ')}</div>
+        <div className="text-[10px] text-slate-400 truncate mt-0.5">
+          {char.sexType && <span>Sex: {char.sexType}</span>}
+          {char.sexType && char.age && <span> · </span>}
+          {char.age && <span>Age: {char.age}</span>}
+        </div>
       )}
       <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider mt-0.5 truncate">{char.controlledBy}</div>
     </div>
