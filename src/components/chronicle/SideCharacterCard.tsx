@@ -26,7 +26,7 @@ export const SideCharacterCard: React.FC<SideCharacterCardProps> = ({
   isUpdating = false
 }) => {
   return (
-    <div className={`group rounded-2xl transition-all duration-300 border-2 backdrop-blur-sm relative bg-white/30 border-transparent hover:bg-white ${isUpdating ? 'ring-2 ring-blue-400/60' : ''}`}>
+    <div className={`rounded-2xl transition-all duration-300 border-2 backdrop-blur-sm relative bg-white/30 border-transparent hover:bg-white ${isUpdating ? 'ring-2 ring-blue-400/60' : ''}`}>
       {/* Blue vignette overlay - scoped to this card */}
       {isUpdating && (
         <div 
@@ -77,14 +77,9 @@ export const SideCharacterCard: React.FC<SideCharacterCardProps> = ({
               {character.controlledBy}
             </Badge>
           </div>
-          <div className="text-sm font-bold tracking-tight text-white group-hover:text-slate-800 transition-colors duration-300">
+          <div className="text-sm font-bold tracking-tight text-slate-800">
             {character.name}
           </div>
-          {(character.sexType || character.age) && (
-            <div className="text-[11px] text-white/70 group-hover:text-slate-500 transition-colors duration-300">
-              {[character.sexType, character.age].filter(Boolean).join(' · ')}
-            </div>
-          )}
         </div>
         
         {/* Edit dropdown menu - always visible */}
