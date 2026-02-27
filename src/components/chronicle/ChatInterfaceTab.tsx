@@ -2853,7 +2853,7 @@ const updatedChar: SideCharacter = {
     return (
       <div
         key={char.id}
-        className={`rounded-2xl transition-all duration-300 border-2 backdrop-blur-sm relative bg-white/30 border-transparent hover:bg-white ${isUpdating ? 'ring-2 ring-blue-400/60' : ''}`}
+        className={`min-h-[140px] rounded-2xl transition-all duration-300 border-2 backdrop-blur-sm relative bg-white/30 border-transparent hover:bg-white ${isUpdating ? 'ring-2 ring-blue-400/60' : ''}`}
       >
         {/* Blue vignette overlay - scoped to this card */}
         {isUpdating && (
@@ -2998,7 +2998,7 @@ const updatedChar: SideCharacter = {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-          <div className="flex-1 flex flex-col p-4 gap-4 overflow-y-auto scrollbar-none">
+          <div className="flex-1 flex flex-col p-4 gap-4 overflow-hidden">
           {/* Day/Time Control Panel - Fixed at top */}
           <section className={`flex-shrink-0 rounded-xl p-4 border border-slate-200 transition-all duration-700 animate-sky ${getTimeBackground(currentTimeOfDay)}`}>
             <div className="flex gap-4 items-center">
@@ -3051,7 +3051,7 @@ const updatedChar: SideCharacter = {
           </section>
 
           {/* Main Characters - Scrollable section */}
-          <section className="flex flex-col min-h-0">
+          <section className="flex flex-col min-h-0 flex-shrink-0">
             <h3
               className="flex-shrink-0 text-[11px] font-bold text-white bg-[#4a5f7f] px-4 py-1.5 rounded-lg mb-3 tracking-tight uppercase flex items-center justify-between cursor-pointer select-none"
               onClick={() => setMainCharsCollapsed(prev => !prev)}
@@ -3060,7 +3060,7 @@ const updatedChar: SideCharacter = {
               <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${mainCharsCollapsed ? 'rotate-180' : ''}`} />
             </h3>
             <div className={`transition-all duration-300 ease-in-out overflow-hidden ${mainCharsCollapsed ? 'max-h-0 opacity-0' : 'max-h-[2000px] opacity-100'}`}>
-              <ScrollableSection maxHeight="400px" className="pr-1">
+              <div className="max-h-[calc(140px*3+0.5rem*2+0.5rem)] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin', scrollbarColor: '#94a3b8 transparent' }}>
                 <div className="space-y-2 pb-2">
                 {mainCharactersForDisplay.map(char => 
                   char._source === 'character' 
@@ -3079,7 +3079,7 @@ const updatedChar: SideCharacter = {
                   <p className="text-[10px] text-slate-400 text-center italic py-4">No main characters.</p>
                 )}
               </div>
-            </ScrollableSection>
+             </div>
             </div>
           </section>
 
