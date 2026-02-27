@@ -420,6 +420,7 @@ export type ScenarioData = {
     narrativePov?: 'first' | 'third';  // First-person or third-person narration
     nsfwIntensity?: 'normal' | 'high';  // How proactively AI engages in mature content
     realismMode?: boolean;  // Physical actions have realistic consequences
+    responseVerbosity?: 'concise' | 'balanced' | 'detailed';  // Controls response length/detail density
   };
   conversations: Conversation[];
   selectedModel?: string;

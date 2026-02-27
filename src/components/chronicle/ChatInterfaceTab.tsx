@@ -59,7 +59,7 @@ interface ChatInterfaceTabProps {
   onUpdate: (convs: Conversation[]) => void;
   onBack: () => void;
   onSaveScenario: (conversations?: Conversation[]) => void;
-  onUpdateUiSettings?: (patch: { showBackgrounds?: boolean; transparentBubbles?: boolean; darkMode?: boolean; offsetBubbles?: boolean; proactiveCharacterDiscovery?: boolean; dynamicText?: boolean; proactiveNarrative?: boolean; narrativePov?: 'first' | 'third'; nsfwIntensity?: 'normal' | 'high'; realismMode?: boolean }) => void;
+  onUpdateUiSettings?: (patch: { showBackgrounds?: boolean; transparentBubbles?: boolean; darkMode?: boolean; offsetBubbles?: boolean; proactiveCharacterDiscovery?: boolean; dynamicText?: boolean; proactiveNarrative?: boolean; narrativePov?: 'first' | 'third'; nsfwIntensity?: 'normal' | 'high'; realismMode?: boolean; responseVerbosity?: 'concise' | 'balanced' | 'detailed' }) => void;
   onUpdateSideCharacters?: (sideCharacters: SideCharacter[]) => void;
   // Lazy loading props
   onLoadOlderMessages?: (conversationId: string, beforeCreatedAt: string) => Promise<Message[]>;
@@ -1387,22 +1387,55 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     value: string;
   }
 
-  // Concurrency guard for extraction (Change 9)
+  // Concurrency guard + lightweight queue for extraction
   const extractionInProgressRef = useRef(false);
+  const pendingExtractionRef = useRef<{ userMessage: string; aiResponse: string } | null>(null);
+
+  // Build eligible character set from latest exchange
+  const buildEligibleCharacterNames = useCallback((userMessage: string, aiResponse: string): Set<string> => {
+    const eligible = new Set<string>();
+    const combinedText = (userMessage + ' ' + aiResponse).toLowerCase();
+    
+    // Check all characters (main + side) by name, nicknames, previousNames
+    const effectiveMainChars = appData.characters.map(c => getEffectiveCharacter(c));
+    for (const c of effectiveMainChars) {
+      const names = [c.name, ...(c.nicknames?.split(',').map(n => n.trim()) || []), ...(c.previousNames || [])].filter(Boolean);
+      const mentioned = names.some(n => combinedText.includes(n.toLowerCase()));
+      const hasAvatar = !!(c.avatarDataUrl);
+      if (mentioned || hasAvatar) {
+        eligible.add(c.name.toLowerCase());
+      }
+    }
+    for (const sc of (appData.sideCharacters || [])) {
+      const names = [sc.name, ...(sc.nicknames?.split(',').map(n => n.trim()) || [])].filter(Boolean);
+      const mentioned = names.some(n => combinedText.includes(n.toLowerCase()));
+      const hasAvatar = !!(sc.avatarDataUrl);
+      if (mentioned || hasAvatar) {
+        eligible.add(sc.name.toLowerCase());
+      }
+    }
+    return eligible;
+  }, [appData.characters, appData.sideCharacters, getEffectiveCharacter]);
 
   // Call the dedicated extraction edge function
   const extractCharacterUpdatesFromDialogue = async (
     userMessage: string, 
     aiResponse: string
   ): Promise<ExtractedUpdate[]> => {
-    // Concurrency guard: skip if another extraction is already running
+    // Concurrency guard: if busy, enqueue latest request
     if (extractionInProgressRef.current) {
-      console.log('[extractCharacterUpdates] Skipping — extraction already in progress');
+      console.log('[extractCharacterUpdates] Queuing — extraction already in progress');
+      pendingExtractionRef.current = { userMessage, aiResponse };
       return [];
     }
     extractionInProgressRef.current = true;
+    console.log('[extractCharacterUpdates] Started');
     try {
-      // Build character data for context
+      // Build eligible character set
+      const eligibleNames = buildEligibleCharacterNames(userMessage, aiResponse);
+      console.log('[extractCharacterUpdates] Eligible characters:', [...eligibleNames]);
+
+      // Build character data for context — only eligible characters
       const charactersData = appData.characters.map(c => {
         const effective = getEffectiveCharacter(c);
         return {
@@ -1425,7 +1458,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
             title: s.title,
             items: s.items.map(i => ({ label: i.label, value: i.value }))
           })),
-          // New sections
           background: effective.background,
           personality: effective.personality ? {
             splitMode: effective.personality.splitMode,
@@ -1439,10 +1471,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           secrets: effective.secrets,
           fears: effective.fears,
         };
-      });
+      }).filter(c => eligibleNames.has(c.name.toLowerCase()));
       
-      // Also include side characters with full section data
-      const sideCharsData = (appData.sideCharacters || []).map(sc => ({
+      // Also include eligible side characters
+      const sideCharsData = (appData.sideCharacters || []).filter(sc => 
+        eligibleNames.has(sc.name.toLowerCase())
+      ).map(sc => ({
         name: sc.name,
         nicknames: sc.nicknames,
         physicalAppearance: sc.physicalAppearance,
@@ -1456,10 +1490,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       
       const allCharacters = [...charactersData, ...sideCharsData];
       
-      // Build recent context (last 20 messages for pattern detection) — Change 11
+      // Build recent context (last 20 messages for pattern detection)
       const conversation = appData.conversations.find(c => c.id === conversationId);
       const recentMessages = conversation?.messages.slice(-20) || [];
-      // Filter out error/system messages that pollute extraction context
       const errorPatterns = ['Invalid token', 'xAI/Grok error', 'Payment required', '⚠️'];
       const filteredMessages = recentMessages.filter(m => 
         !errorPatterns.some(pat => m.text.includes(pat))
@@ -1474,7 +1507,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           aiResponse,
           recentContext,
           characters: allCharacters,
-          modelId
+          modelId,
+          eligibleCharacters: [...eligibleNames]
         }
       });
       
@@ -1483,12 +1517,31 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         return [];
       }
       
-      return data?.updates || [];
+      // Defensive: filter out updates for non-eligible characters
+      const updates = (data?.updates || []).filter((u: ExtractedUpdate) =>
+        eligibleNames.has(u.character.toLowerCase())
+      );
+      console.log(`[extractCharacterUpdates] Completed — ${updates.length} updates (filtered from ${data?.updates?.length || 0})`);
+      return updates;
     } catch (err) {
       console.error('[extractCharacterUpdates] Failed:', err);
       return [];
     } finally {
       extractionInProgressRef.current = false;
+      // Process queued extraction if any
+      const pending = pendingExtractionRef.current;
+      if (pending) {
+        pendingExtractionRef.current = null;
+        console.log('[extractCharacterUpdates] Processing queued extraction');
+        extractCharacterUpdatesFromDialogue(pending.userMessage, pending.aiResponse).then(updates => {
+          if (updates.length > 0) {
+            console.log(`[extractCharacterUpdates] Queued extraction yielded ${updates.length} updates`);
+            applyExtractedUpdates(updates);
+          }
+        }).catch(err => {
+          console.error('[extractCharacterUpdates] Queued extraction failed:', err);
+        });
+      }
     }
   };
 
@@ -1553,8 +1606,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       }
       
       if (mainChar) {
-        // Show updating indicator
-        showCharacterUpdateIndicator(mainChar.id);
+        // Build patch first, then only show indicator if there are real changes
         
         // Find or create session state
         let sessionState = sessionStates.find(s => s.characterId === mainChar!.id);
@@ -1917,13 +1969,14 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         }
         
         if (Object.keys(patch).length > 0) {
+          // Only show indicator when there are real changes to apply
+          showCharacterUpdateIndicator(mainChar.id);
           await supabaseData.updateSessionState(sessionState.id, patch);
           setSessionStates(prev => prev.map(s => s.id === sessionState!.id ? { ...s, ...patch } : s));
           console.log(`[applyExtractedUpdates] Updated ${mainChar.name}:`, Object.keys(patch));
         }
       } else if (sideChar) {
-        // Show updating indicator
-        showCharacterUpdateIndicator(sideChar.id);
+        // Build patch first, then show indicator only if real changes
         
         // Change 8: Expanded side character update paths (mirrors main character logic)
         const patch: Record<string, any> = {};
@@ -1996,6 +2049,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         }
         
         if (Object.keys(patch).length > 0) {
+          // Only show indicator when there are real changes
+          showCharacterUpdateIndicator(sideChar.id);
           await supabaseData.updateSideCharacter(sideChar.id, patch);
           if (onUpdateSideCharacters) {
             const updated = (appData.sideCharacters || []).map(sc => 
@@ -2940,7 +2995,7 @@ const updatedChar: SideCharacter = {
   const offsetBubbles = appData.uiSettings?.offsetBubbles;
   const dynamicText = appData.uiSettings?.dynamicText !== false;
 
-  const handleUpdateUiSettings = (patch: { showBackgrounds?: boolean; transparentBubbles?: boolean; darkMode?: boolean; offsetBubbles?: boolean; proactiveCharacterDiscovery?: boolean; dynamicText?: boolean; proactiveNarrative?: boolean; narrativePov?: 'first' | 'third'; nsfwIntensity?: 'normal' | 'high'; realismMode?: boolean }) => {
+  const handleUpdateUiSettings = (patch: { showBackgrounds?: boolean; transparentBubbles?: boolean; darkMode?: boolean; offsetBubbles?: boolean; proactiveCharacterDiscovery?: boolean; dynamicText?: boolean; proactiveNarrative?: boolean; narrativePov?: 'first' | 'third'; nsfwIntensity?: 'normal' | 'high'; realismMode?: boolean; responseVerbosity?: 'concise' | 'balanced' | 'detailed' }) => {
     if (onUpdateUiSettings) {
       onUpdateUiSettings(patch);
     }
@@ -3750,6 +3805,32 @@ const updatedChar: SideCharacter = {
                   offLabel="Normal"
                   onLabel="High"
                 />
+              </div>
+              
+              {/* Response Verbosity */}
+              <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 rounded-xl">
+                <div className="flex-1">
+                  <span className="text-sm font-semibold text-slate-700">Response Detail</span>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Controls description length and sensory depth
+                  </p>
+                </div>
+                <div className="flex gap-1">
+                  {(['concise', 'balanced', 'detailed'] as const).map(level => (
+                    <button
+                      key={level}
+                      onClick={() => handleUpdateUiSettings({ responseVerbosity: level })}
+                      className={cn(
+                        "px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors capitalize",
+                        (appData.uiSettings?.responseVerbosity || 'balanced') === level
+                          ? "bg-blue-500 text-white"
+                          : "bg-slate-200 text-slate-600 hover:bg-slate-300"
+                      )}
+                    >
+                      {level}
+                    </button>
+                  ))}
+                </div>
               </div>
               
               {/* Realism Mode */}
