@@ -76,16 +76,13 @@ const CharacterButton: React.FC<{ char: Character; onSelect: (id: string) => voi
         </div>
       )}
     </div>
-    <div className="min-w-0">
-      <div className="text-sm font-bold text-white truncate leading-tight group-hover:text-blue-300 transition-colors">{char.name}</div>
-      {(char.sexType || char.age) && (
-        <div className="text-[10px] text-slate-400 truncate mt-0.5">
-          {char.sexType && <span>Sex: {char.sexType}</span>}
-          {char.sexType && char.age && <span> · </span>}
-          {char.age && <span>Age: {char.age}</span>}
-        </div>
-      )}
-      <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider mt-0.5 truncate">{char.controlledBy}</div>
+    <div className="min-w-0 flex-1">
+      <div className="flex justify-between items-center">
+        <div className="text-sm font-bold text-white truncate leading-tight group-hover:text-blue-300 transition-colors">{char.name}</div>
+        <div className="text-xs font-black text-slate-400 uppercase tracking-wider shrink-0 ml-2">{char.controlledBy}</div>
+      </div>
+      <div className="text-xs text-slate-400 mt-0.5">Sex: {char.sexType || ''}</div>
+      <div className="text-xs text-slate-400 mt-0.5">Age: {char.age || ''}</div>
     </div>
   </button>
 );
