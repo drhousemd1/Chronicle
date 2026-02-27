@@ -444,6 +444,14 @@ Return ONLY valid JSON. No explanations.`;
       }
       const errorText = await response.text();
       console.error("AI gateway error:", response.status, errorText);
+      // 403 = content safety rejection -- return empty updates gracefully instead of crashing
+      if (response.status === 403) {
+        console.log("[extract-character-updates] Content safety rejection (403), returning empty updates");
+        return new Response(
+          JSON.stringify({ updates: [] }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
       throw new Error("Failed to extract character updates");
     }
 
