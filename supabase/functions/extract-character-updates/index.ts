@@ -198,53 +198,86 @@ serve(async (req) => {
 CHARACTERS IN THIS SCENE:
 ${characterContext || 'No character data provided'}
 
-YOUR MANDATORY PROCESS (TWO PHASES - NEVER SKIP PHASE 2):
+YOUR MANDATORY PROCESS (THREE PHASES - NEVER SKIP ANY):
 
 ═══════════════════════════════════════════════════
-PHASE 1 - SCAN FOR NEW INFORMATION
+PHASE 1 - SCAN FOR NEW INFORMATION (ALL CATEGORIES, EQUAL WEIGHT)
 ═══════════════════════════════════════════════════
-Read the dialogue carefully and identify:
-- New facts, traits, or details about any character
-- Changes in mood, location, clothing, or physical state
-- New desires, interests, preferences, or ambitions expressed
-- Actions that reveal or develop character personality
+Read the dialogue carefully. For EACH active character, check ALL of these categories:
+
+A) VOLATILE STATE — mood, location, clothing changes, temporary physical conditions
+   → If a character is actively present, you MUST update at least mood and location.
+   → An active character should NEVER produce zero non-goal updates.
+
+B) APPEARANCE CHANGES — new descriptions of hair, clothing, physical traits
+
+C) PERSONALITY EVOLUTION — Does their behavior across these messages reveal personality traits?
+   → Repeated behavior patterns (sarcasm, nurturing, aggression) should update personality traits, NOT create micro-goals.
+   → Example: If a character has been consistently sarcastic across several exchanges → update personality.outwardTraits, don't create a "Be More Sarcastic" goal.
+
+D) BACKGROUND REVEALS — job, education, residence, hobbies, financial status, motivation mentioned
+   → Update background.* fields when new info is revealed.
+
+E) RELATIONSHIP DEVELOPMENTS — new relationships formed, existing ones evolved
+   → Update relationships._extras with "PersonName: relationship description"
+
+F) TONE/SPEECH PATTERNS — character develops a distinctive speaking style
+   → Update tone._extras with "Context: description" (e.g., "With strangers: formal and guarded")
+
+G) FEARS/SECRETS REVEALED — character reveals fears, secrets, or vulnerabilities
+   → Update fears._extras or secrets._extras
+
+H) KEY LIFE EVENTS — significant events that shape the character
+   → Update keyLifeEvents._extras
+
+I) GOALS & DESIRES — sustained ambitions, NOT casual mentions
+   → Only create goals for sustained/repeated interests or explicitly stated ambitions
+   → Max 1 NEW goal per character per extraction
+   → Prefer UPDATING existing goals over creating new ones
 
 ═══════════════════════════════════════════════════
-PHASE 2 - REVIEW EXISTING STATE (MANDATORY - DO NOT SKIP)
+PHASE 2 - REVIEW EXISTING STATE (MANDATORY - ALL SECTIONS)
 ═══════════════════════════════════════════════════
-For EACH character who is present or mentioned in the dialogue:
+For EACH character present or mentioned:
 
-A) REVIEW EVERY EXISTING GOAL:
-   - Has this goal progressed, even slightly? → Update current_status with new developments APPENDED to existing status
-   - Has the character's attitude toward this goal changed? → Update current_status to reflect the shift
-   - Has the character taken any action related to this goal? → Increment progress and describe the action
-   - Is the desired_outcome still accurate? → Update if the character has refined what they want
+A) REVIEW ALL SECTION DATA:
+   - Is any stored value contradicted by the dialogue? → Update it
+   - Has new context made any item outdated? → Correct it
+   - Are there placeholder values? → Replace with real content
 
-B) REVIEW EVERY EXISTING SECTION ITEM:
-   - Is this item still accurate given what just happened? → Update if contradicted or evolved
-   - Has new context made this item outdated? → Update with corrected information
-   - Example: If "Hidden Fear = Afraid of being caught" but the character was caught → Update to reflect new state
-
-C) CHECK FOR MISSING GOALS:
-   - Has the character expressed a desire, want, preference, or ambition that isn't tracked as a goal? → Create one
-   - Has the character repeatedly engaged in or shown enthusiasm for an activity? → Create a goal tracking that interest
-   - Has the character shown a behavioral pattern across multiple exchanges? → Create a goal capturing that pattern
-
-DO NOT return empty updates if the character is actively present. At minimum, mood and location should reflect current scene context.
+B) REVIEW EXISTING GOALS (one subsection, not dominant):
+   - Has this goal progressed? → Update current_status and progress
+   - Has the character's direction CHANGED, making a goal obsolete? → Output: goals.OldGoalTitle = "REMOVE"
+   - Do two goals CONFLICT? → Keep one (update it), REMOVE the other
+   - Has the goal's desired outcome shifted? → Update it, don't create a duplicate
 
 ═══════════════════════════════════════════════════
-PHASE 3 - PLACEHOLDER SCAN (MANDATORY - DO NOT SKIP)
+GOAL LIFECYCLE MANAGEMENT (CRITICAL)
 ═══════════════════════════════════════════════════
-For EACH character, scan ALL custom section items in their current state:
-- If an item has a PLACEHOLDER LABEL (e.g., "Trait 1", "Trait 2", "Item 1", or any generic numbered label):
-  -> You MUST output a replacement using a DESCRIPTIVE label and a dialogue-informed value
-  -> Example: If you see "Trait 1: trait one" in a Personality section, output:
-     sections.Personality.Nurturing Nature = "Nurturing and protective, especially toward family members. Shows warmth through physical affection and verbal reassurance."
-- If an item has a PLACEHOLDER VALUE (e.g., "trait one", "trait two", "example text", empty/generic filler):
-  -> You MUST output a replacement with real, dialogue-informed content
-- Generate content based on what the dialogue reveals about the character's personality, background, or status
-- This phase ensures NO placeholder content survives a scan
-- You must output one update per placeholder item found
+Goals are NOT permanent. They must evolve with the character:
+
+REMOVE obsolete goals:
+- If a character abandons or achieves a goal → goals.GoalTitle = "REMOVE"
+- If two goals conflict (e.g., "Move to New York" vs "Stay in hometown") → REMOVE the outdated one, update the current one
+- If a goal becomes irrelevant due to story changes → REMOVE it
+
+UPDATE over CREATE:
+- When a character's direction shifts, UPDATE the existing goal's title and desired_outcome rather than creating a new one
+- This preserves progress history
+- Example: "Learn Guitar" evolves to "Master Guitar Performance" → update, don't create new
+
+CONSTRAINTS:
+- Max 1 NEW goal per character per extraction
+- Max 5 total active goals per character
+- Only sustained/repeated interests become goals, not casual one-off mentions
+- Behavioral patterns should update personality traits, NOT create goals
+
+═══════════════════════════════════════════════════
+PHASE 3 - PLACEHOLDER SCAN (MANDATORY)
+═══════════════════════════════════════════════════
+Scan ALL custom section items for placeholder labels/values:
+- "Trait 1", "Item 1", generic numbered labels → Replace with descriptive labels
+- "trait one", "example text", empty filler → Replace with dialogue-informed content
 
 ═══════════════════════════════════════════════════
 TRACKABLE FIELDS
@@ -253,130 +286,93 @@ TRACKABLE FIELDS
 HARDCODED FIELDS:
 - nicknames (comma-separated alternative names, aliases, pet names)
 - physicalAppearance.hairColor, physicalAppearance.eyeColor, physicalAppearance.build, physicalAppearance.height, physicalAppearance.skinTone, physicalAppearance.bodyHair, physicalAppearance.breastSize, physicalAppearance.genitalia, physicalAppearance.makeup, physicalAppearance.bodyMarkings, physicalAppearance.temporaryConditions
-- physicalAppearance._extras (array of {id, label, value} for user-added appearance rows - append new entries here instead of creating custom sections for appearance-related traits)
+- physicalAppearance._extras (array of {id, label, value})
 - currentlyWearing.top, currentlyWearing.bottom, currentlyWearing.undergarments, currentlyWearing.miscellaneous
-- currentlyWearing._extras (array of {id, label, value} for user-added clothing rows)
+- currentlyWearing._extras (array of {id, label, value})
 - preferredClothing.casual, preferredClothing.work, preferredClothing.sleep, preferredClothing.underwear, preferredClothing.miscellaneous
-- preferredClothing._extras (array of {id, label, value} for user-added clothing preference rows)
+- preferredClothing._extras (array of {id, label, value})
 - background.jobOccupation, background.educationLevel, background.residence, background.hobbies, background.financialStatus, background.motivation
-- background._extras (array of {id, label, value} for user-added background rows)
-- personality.outwardTraits, personality.inwardTraits (update trait values by referencing them as personality.outwardTraits or personality.inwardTraits)
-- tone._extras (array of {id, label, value} for tone/speaking style entries)
-- keyLifeEvents._extras (array of {id, label, value} for key life event entries)
-- relationships._extras (array of {id, label, value} for relationship entries)
-- secrets._extras (array of {id, label, value} for secret entries)
-- fears._extras (array of {id, label, value} for fear entries)
+- background._extras (array of {id, label, value})
+- personality.outwardTraits, personality.inwardTraits (trait arrays — provide value as "Label: Description" format)
+- tone._extras (array of {id, label, value} — e.g., "With strangers: formal and clipped")
+- keyLifeEvents._extras (array of {id, label, value})
+- relationships._extras (array of {id, label, value} — e.g., "Emma: Close friend and confidante")
+- secrets._extras (array of {id, label, value})
+- fears._extras (array of {id, label, value})
 - location (current location/place)
 - currentMood (emotional state)
-- location (current location/place)
-- currentMood (emotional state)
 
-GOALS (structured tracking with progression and steps):
-- goals.GoalTitle = "desired_outcome: What fulfillment looks like | progress: XX | complete_steps: 1,3 | new_steps: Step 1: Two-sentence description. Step 2: Two-sentence description. Step 3: ... Step 4: ... Step 5: ..."
-  IMPORTANT: Always include desired_outcome and progress for every goal update.
-  Use complete_steps to mark step numbers (1-indexed) that were achieved in the dialogue.
+GOALS (structured tracking):
+- goals.GoalTitle = "desired_outcome: What fulfillment looks like (2-3 sentences) | progress: XX | complete_steps: 1,3 | new_steps: Step 1: Description. Step 2: Description. ..."
+- goals.GoalTitle = "REMOVE" (to delete an obsolete/contradicted goal)
 
-  new_steps RULES (CRITICAL - READ CAREFULLY):
-  - new_steps must contain the COMPLETE list of ALL steps for the goal, numbered from Step 1
-  - Include BOTH already-completed steps AND future steps in new_steps
-  - The total count must be 5-8 steps that map the FULL journey from start to desired outcome
-  - Do NOT only include "continuation" steps -- always include the full plan from Step 1
-  - Use complete_steps to indicate which of these steps are already done
-  - Every goal update MUST include new_steps with 5-8 steps. No exceptions.
-  - Each step MUST be 2+ sentences describing a discrete actionable milestone.
+IMPORTANT GOAL STEP RULES:
+- new_steps must contain the COMPLETE replacement list of 4-6 steps (the full journey)
+- Include both completed and future steps
+- Use complete_steps to mark which are done
+- Each step: 1-2 sentences describing a discrete milestone
 
-CUSTOM SECTIONS (for factual information without progression):
+CUSTOM SECTIONS:
 - sections.SectionTitle.ItemLabel = value
-
-═══════════════════════════════════════════════════
-DESIRES & PREFERENCES AS GOALS (CRITICAL RULE)
-═══════════════════════════════════════════════════
-Any desire, preference, kink, fantasy, or evolving interest a character develops MUST be tracked as a GOAL, not a custom section item. These have natural progression:
-- A character who is curious about something → later tries it → later embraces it = progression
-- A character who desires a particular experience → works toward it → achieves it = progression
-
-NEVER create custom sections named: Desires, Kinks, Preferences, Fantasies, Interests, or Wants.
-These categories ALL belong in the goals system because they have a desired end state and can progress.
-
-Example goal for a desire:
-  goals.Explore Rock Climbing = "desired_outcome: Becomes a confident climber who regularly visits the climbing gym, feels the thrill of completing challenging routes, and has integrated it as a core part of their active lifestyle. | progress: 5 | new_steps: Step 1: Research local climbing gyms and indoor bouldering walls, comparing prices and beginner-friendly options. Make a shortlist of two or three places worth visiting. Step 2: Visit the top-choice climbing gym for the first time, try a beginner route, and get a feel for the sport. Step 3: Sign up for a beginner climbing class or workshop to learn proper technique, safety, and belaying skills. Step 4: Start climbing regularly at least once a week, gradually increasing difficulty levels as confidence grows. Step 5: Invest in personal climbing gear (shoes, chalk bag) as a commitment to the hobby. Step 6: Attempt an intermediate-level route and complete it successfully, marking a major skill milestone."
-
-═══════════════════════════════════════════════════
-DESCRIPTION DEPTH REQUIREMENTS (MANDATORY)
-═══════════════════════════════════════════════════
-- desired_outcome: 2-3 sentences minimum. Describe the emotional and behavioral state that represents fulfillment. What does success look like? How does the character feel when this is achieved? What has changed in their life or relationship?
-- Do NOT write one-liners. "Wants to try X" is NOT an acceptable desired_outcome.
-
-═══════════════════════════════════════════════════
-GOAL LIFECYCLE (MANDATORY REVIEW EVERY EXCHANGE)
-═══════════════════════════════════════════════════
-- EVERY existing goal must be reviewed against the dialogue
-- Even subtle cues warrant a progress update
-- Behavioral patterns imply progress: if a character repeatedly does something enthusiastically, the related goal's progress should increment
-- Progress increments should be realistic: small steps = 2-5%, moderate developments = 5-15%, major milestones = 15-30%
-- Set progress to 100 when fully achieved, 0 when abandoned
 
 ═══════════════════════════════════════════════════
 FIELD VOLATILITY RULES
 ═══════════════════════════════════════════════════
 
 HIGH VOLATILITY (mood, location, clothing, temporaryConditions):
-- These change frequently and should be ACTIVELY tracked
-- Contextual inference is ALLOWED — if a character walks into a bar, update location
-- If a character removes clothing, update currentlyWearing accordingly
-- If the dialogue conveys emotion, update currentMood even if not explicitly stated
+- Change frequently, actively track
+- Contextual inference ALLOWED (walks into bar → update location)
 
-LOW VOLATILITY (hair color, eye color, build, height, skin tone, stable physical traits):
+LOW VOLATILITY (hair, eye color, build, height, stable traits):
 - ONLY update when EXPLICITLY described
-- Do NOT infer or assume stable traits
 
 ═══════════════════════════════════════════════════
-SECTION MANAGEMENT RULES
+EXAMPLES OF NON-GOAL UPDATES (USE THESE FORMATS)
 ═══════════════════════════════════════════════════
-- ALWAYS prefer updating items in EXISTING sections over creating new sections
-- Only create a new custom section if the information genuinely does NOT fit any existing section
-- If a section already exists with a similar name, use the EXISTING one
-- NEVER create a "Session Summary" section
-- NEVER create sections named "Plans", "Objectives", "Ambitions", "Intentions", "Desires", "Kinks", "Preferences", "Fantasies", "Interests", or "Wants" — use goals instead
-- When information could be a goal (has a desired end state), it MUST be a goal, not a section item
 
-═══════════════════════════════════════════════════
-STALENESS CORRECTION & PLACEHOLDER DETECTION
-═══════════════════════════════════════════════════
-- If a stored value is CONTRADICTED by the dialogue, UPDATE it with corrected information
-- Check existing custom section items for accuracy against the current dialogue context
-- Correct outdated information even if the exact topic isn't directly discussed
-- If a stored value contains obvious PLACEHOLDER text (e.g., "trait one", "trait two", "trait three", "example text", "placeholder", or generic numbered filler), treat it as EMPTY and generate real content based on dialogue context
-- Replace any generic or template-style values with specific, dialogue-informed content
-- Do NOT preserve placeholder values — always overwrite them with meaningful data
-- If a custom section item has a PLACEHOLDER LABEL (e.g., "Trait 1", "Trait 2", "Item 1", or any generic numbered label), you MUST use a DESCRIPTIVE label instead. Example: Instead of "sections.Personality.Trait 1 = Nurturing", use "sections.Personality.Nurturing Nature = Nurturing and protective...".
-- NEVER use generic labels like "Trait 1", "Trait 2", "Item 1", "Item 2" in your output. Always use meaningful, descriptive labels.
+Personality trait update:
+  { "character": "Ashley", "field": "personality.outwardTraits", "value": "Nurturing: Shows warmth through physical affection and verbal reassurance, especially with those she cares about" }
+
+Tone update:
+  { "character": "Ashley", "field": "tone._extras", "value": "With patients: Calm and professional, using medical terminology naturally" }
+
+Relationship update:
+  { "character": "Ashley", "field": "relationships._extras", "value": "Marcus: Ex-boyfriend, still harbors unresolved feelings but maintains distance" }
+
+Background update:
+  { "character": "Ashley", "field": "background.jobOccupation", "value": "Emergency room nurse at City General Hospital, 3 years experience" }
+
+Fear update:
+  { "character": "Ashley", "field": "fears._extras", "value": "Abandonment: Deeply fears being left behind by people she loves, stemming from childhood experience" }
+
+Goal REMOVE:
+  { "character": "Ashley", "field": "goals.Move to New York", "value": "REMOVE" }
 
 ═══════════════════════════════════════════════════
 RULES
 ═══════════════════════════════════════════════════
-1. SCAN the user message AND AI response for character state changes
-2. Match character names exactly as provided (also check nicknames and previous names)
-3. Use the exact field names from TRACKABLE FIELDS for hardcoded fields
-4. Use sections.SectionTitle.ItemLabel format for custom/dynamic content
-5. Keep values concise but descriptive for hardcoded fields (e.g., "Short brown" for hair)
-6. For goals, write DETAILED multi-sentence descriptions (see DEPTH REQUIREMENTS above)
-7. For appearance details in action text like "*runs hand through short brown hair*", extract the trait
-8. For clothing described like "wearing navy blue scrubs", extract to currentlyWearing fields
-9. For new nicknames/aliases, add to nicknames as comma-separated
-10. Do NOT hallucinate updates — only track what is supported by the text
-11. Do NOT repeat current values if they haven't changed AND are still accurate
-12. When updating existing section items, provide the COMPLETE updated value
-13. When updating goal current_status, APPEND new developments rather than replacing
+1. SCAN user message AND AI response for ALL character state changes
+2. Match character names exactly (check nicknames and previous names)
+3. Use exact field names from TRACKABLE FIELDS
+4. Keep values concise but descriptive for hardcoded fields
+5. For goals, write detailed multi-sentence descriptions for desired_outcome
+6. For appearance/clothing in action text, extract the trait
+7. Do NOT hallucinate updates — only track what is supported by text
+8. Do NOT repeat unchanged values
+9. When updating _extras, use "Label: Description" format in the value string
+10. Behavioral patterns across messages → update personality, NOT create goals
+11. ALWAYS prefer updating existing sections/goals over creating new ones
+12. NEVER create sections named: Desires, Kinks, Preferences, Fantasies, Interests, Wants — use goals if sustained
 
 RESPONSE FORMAT (JSON only):
 {
   "updates": [
     { "character": "CharacterName", "field": "currentMood", "value": "Nervous but excited" },
     { "character": "CharacterName", "field": "location", "value": "Downtown coffee shop" },
-    { "character": "CharacterName", "field": "currentlyWearing.top", "value": "Navy blue scrubs" },
-    { "character": "CharacterName", "field": "goals.Save Enough Money", "value": "desired_outcome: Build a $10,000 emergency fund that provides peace of mind and financial security. Feels confident knowing unexpected expenses won't cause panic or debt. Has developed a consistent saving habit that feels natural rather than restrictive. | progress: 0 | new_steps: Step 1: Research high-yield savings accounts and compare interest rates to find the best option for building an emergency fund. Make a shortlist of three candidates. Step 2: Open the chosen savings account and set up automatic transfers from each paycheck, starting with a comfortable amount. Step 3: Track monthly spending for one full month to identify discretionary expenses that could be redirected toward savings. Step 4: Cut two identified discretionary expenses and increase the automatic transfer amount accordingly. Step 5: Reach the first $1,000 milestone and celebrate the achievement to reinforce the habit. Step 6: Review and adjust the savings plan quarterly, increasing contributions as income grows or expenses decrease." },
-    { "character": "CharacterName", "field": "sections.Background.Occupation", "value": "Doctor at City Hospital" }
+    { "character": "CharacterName", "field": "personality.outwardTraits", "value": "Sarcastic: Deflects emotional vulnerability with sharp wit and dry humor" },
+    { "character": "CharacterName", "field": "relationships._extras", "value": "Emma: Close friend and roommate, provides emotional support" },
+    { "character": "CharacterName", "field": "goals.Old Goal", "value": "REMOVE" },
+    { "character": "CharacterName", "field": "goals.Save Money", "value": "desired_outcome: Build $10k emergency fund. | progress: 15 | complete_steps: 1 | new_steps: Step 1: Open savings account. Step 2: Set up auto-transfer. Step 3: Cut discretionary spending. Step 4: Reach $1k milestone. Step 5: Increase contributions quarterly." }
   ]
 }
 
@@ -422,7 +418,7 @@ Return ONLY valid JSON. No explanations.`;
         model: modelForRequest,
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Analyze this dialogue and extract ALL character state changes. Remember: Phase 2 (reviewing existing state) is MANDATORY. Phase 3 (placeholder scan) is MANDATORY -- check every custom section item for placeholder labels or values and replace them with descriptive, dialogue-informed content. For EVERY goal (new or existing), new_steps must contain the FULL list of 5-8 steps starting from Step 1 (the complete journey, not just continuation steps).\n\n${combinedText}` }
+          { role: "user", content: `Analyze this dialogue and extract ALL character state changes. Remember: Phase 2 (review existing state) and Phase 3 (placeholder scan) are MANDATORY. For active characters, you MUST update at least mood and location. Behavioral patterns across messages should update personality traits, NOT create micro-goals. Use goals.GoalTitle = "REMOVE" to delete obsolete/contradicted goals.\n\n${combinedText}` }
         ],
         temperature: 0.3,
         max_tokens: 8192,
