@@ -248,7 +248,8 @@ function buildCharacterFieldPrompt(
   currentValue: string,
   fullContext: string,
   selfContext: string,
-  customLabel?: string
+  customLabel?: string,
+  mode: 'precise' | 'detailed' = 'detailed'
 ): string {
   const fieldConfig = CHARACTER_FIELD_PROMPTS[fieldName] || CHARACTER_FIELD_PROMPTS.custom;
   const label = customLabel || fieldConfig.label;
@@ -256,6 +257,24 @@ function buildCharacterFieldPrompt(
   const currentValueSection = currentValue.trim()
     ? `CURRENT VALUE (enhance while preserving intent):\n${currentValue}\n\n`
     : 'CURRENT VALUE: Empty - generate appropriate content based on context.\n\n';
+
+  if (mode === 'precise') {
+    return `You are enhancing a character field for an interactive roleplay.
+
+Expand the following character detail into 3-5 short tags separated by semicolons.
+Focus on visual or key attributes only. No sentences, no explanations, no narrative rationale.
+
+WORLD & SCENARIO CONTEXT:
+${fullContext}
+
+THIS CHARACTER'S EXISTING DATA:
+${selfContext || 'No data filled yet.'}
+
+${currentValueSection}FIELD: ${label}
+
+Output format: Tag1; Tag2; Tag3; Tag4
+Return ONLY the semicolon-separated tags. Nothing else.`;
+  }
 
   return `You are enhancing a character field for an interactive roleplay. Use STRUCTURED EXPANSION:
 
@@ -329,21 +348,33 @@ export async function aiEnhanceCharacterField(
   character: Character,
   appData: ScenarioData,
   modelId: string,
-  customLabel?: string
+  customLabel?: string,
+  mode: 'precise' | 'detailed' = 'detailed'
 ): Promise<string> {
   const fullContext = buildFullContext(appData, character.id);
   const selfContext = buildCharacterSelfContext(character);
-  const prompt = buildCharacterFieldPrompt(fieldName, currentValue, fullContext, selfContext, customLabel);
+  const prompt = buildCharacterFieldPrompt(fieldName, currentValue, fullContext, selfContext, customLabel, mode);
 
-  console.log(`[character-ai] Enhancing field: ${fieldName} with model: ${modelId}`);
+  console.log(`[character-ai] Enhancing field: ${fieldName} with model: ${modelId} (mode: ${mode})`);
 
-  return callAIWithFallback(
+  const result = await callAIWithFallback(
     [
       { role: 'system', content: 'You are a concise character creation assistant. Return only the requested content, no explanations.' },
       { role: 'user', content: prompt }
     ],
     modelId
   );
+
+  // Post-process precise mode: clean up formatting
+  if (mode === 'precise') {
+    return result
+      .replace(/\.\s*;/g, ';')     // Remove periods before semicolons
+      .replace(/\.$/g, '')           // Remove trailing period
+      .replace(/;\s*$/g, '')         // Remove trailing semicolon
+      .trim();
+  }
+
+  return result;
 }
 
 // ============================================================
