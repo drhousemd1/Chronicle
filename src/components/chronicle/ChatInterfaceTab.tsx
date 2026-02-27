@@ -2855,7 +2855,7 @@ const updatedChar: SideCharacter = {
     return (
       <div
         key={char.id}
-        className={`group min-h-[140px] rounded-2xl transition-all duration-300 border-2 backdrop-blur-sm relative bg-white/30 border-transparent hover:bg-white ${isUpdating ? 'ring-2 ring-blue-400/60' : ''}`}
+        className={`min-h-[140px] rounded-2xl transition-all duration-300 border-2 backdrop-blur-sm relative bg-white/30 border-transparent hover:bg-white ${isUpdating ? 'ring-2 ring-blue-400/60' : ''}`}
       >
         {/* Blue vignette overlay - scoped to this card */}
         {isUpdating && (
@@ -2903,12 +2903,7 @@ const updatedChar: SideCharacter = {
                 {char.controlledBy}
               </Badge>
             </div>
-            <div className="text-sm font-bold tracking-tight text-white group-hover:text-slate-800 transition-colors duration-300">{char.name}</div>
-            {(char.sexType || char.age) && (
-              <div className="text-[11px] text-white/70 group-hover:text-slate-500 transition-colors duration-300">
-                {[char.sexType, char.age].filter(Boolean).join(' · ')}
-              </div>
-            )}
+            <div className="text-sm font-bold tracking-tight text-slate-800">{char.name}</div>
           </div>
           
           {/* Edit dropdown menu - always visible */}

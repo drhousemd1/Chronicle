@@ -65,7 +65,7 @@ const CharacterButton: React.FC<{ char: Character; onSelect: (id: string) => voi
   <button 
     type="button"
     onClick={() => onSelect(char.id)}
-    className="w-full text-left group flex items-center gap-4 p-2 rounded-2xl hover:bg-slate-50 transition-all duration-200 border border-transparent hover:border-slate-100 cursor-pointer"
+    className="w-full text-left group flex items-center gap-4 p-2 rounded-2xl bg-slate-50 hover:bg-white transition-all duration-200 border border-slate-100 hover:border-slate-200 cursor-pointer"
   >
     <div className="w-14 h-14 shrink-0 rounded-xl border-2 border-slate-100 overflow-hidden shadow-sm transition-transform duration-300 group-hover:scale-105 bg-slate-50">
       {char.avatarDataUrl ? (
@@ -78,6 +78,9 @@ const CharacterButton: React.FC<{ char: Character; onSelect: (id: string) => voi
     </div>
     <div className="min-w-0">
       <div className="text-sm font-bold text-slate-800 truncate leading-tight group-hover:text-blue-600 transition-colors">{char.name}</div>
+      {(char.sexType || char.age) && (
+        <div className="text-[10px] text-slate-500 truncate mt-0.5">{[char.sexType, char.age].filter(Boolean).join(' · ')}</div>
+      )}
       <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider mt-0.5 truncate">{char.controlledBy}</div>
     </div>
   </button>
