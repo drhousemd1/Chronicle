@@ -99,12 +99,17 @@ export default {
             opacity: "0.6",
           },
         },
+        "bounce-gentle": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(3px)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "character-update-glow": "character-update-glow 1.4s ease-in-out infinite",
         "vignette-pulse": "vignette-pulse 2s ease-in-out infinite",
+        "bounce-gentle": "bounce-gentle 1.5s ease-in-out infinite",
       },
     },
   },
