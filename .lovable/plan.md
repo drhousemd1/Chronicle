@@ -1,38 +1,37 @@
 
 
-# Add "More Characters Below" Visual Indicator
+# Fix: Replace Ugly Gradient Overlay With Clean "More Below" Indicator
 
-## What
-When there are more than 3 main characters, add a bottom fade/gradient overlay at the bottom of the character list to hint that more cards exist below the visible area -- similar to how `ScrollableSection` already works with its bottom fade indicator.
+## Problem
+The current bottom-fade gradient overlaps the third character card, creating a messy visual effect. It looks like a smudge sitting on top of the card content.
 
-## Change
+## Solution
+Remove the gradient overlay entirely. Instead, add a small, standalone row **below** the scrollable list (outside the scroll container) with a subtle downward arrow icon and text like "scroll for more". This element sits in its own space, doesn't touch or overlap any card.
 
-**File:** `src/components/chronicle/ChatInterfaceTab.tsx` (lines ~3062-3083)
-
-Wrap the scrollable character list `div` in a `relative` container and add a conditional bottom gradient overlay when `mainCharactersForDisplay.length > 3`:
-
-- Add a `relative` wrapper around the scrollable div
-- Add an absolutely-positioned bottom gradient that fades from transparent to the sidebar's background tone (a warm semi-transparent white, matching the sidebar aesthetic)
-- The gradient should be ~32px tall, `pointer-events-none`, and sit at `z-10`
-- Only render it when there are more than 3 characters
-- Optionally: hide the gradient when the user has scrolled to the bottom (using a simple scroll listener + state, mirroring the pattern from `ScrollableSection.tsx`)
-
-This gives a clear visual cue that more content is below without being intrusive.
-
-### Technical detail
+## Visual concept
 
 ```text
 +---------------------------+
 |  Character Card 1         |
 |  Character Card 2         |
 |  Character Card 3         |
-|  ~~~~~~~~fade~~~~~~~~~~~~ |  <-- gradient overlay (only when >3 chars)
 +---------------------------+
-   (scroll to see Card 4+)
+                             
+      ChevronDown icon       <-- standalone row, not overlapping
+      "X more below"
 ```
 
-The gradient colors will use `from-transparent to-white/60` (or similar warm tone) to blend naturally with the sidebar background.
+## Changes
 
-A scroll event handler on the list div will track whether the user is at the bottom -- if so, hide the fade (same logic as `ScrollableSection`'s `canScrollDown` pattern).
+**File:** `src/components/chronicle/ChatInterfaceTab.tsx`
+
+1. **Remove** the `relative` wrapper div and the gradient overlay element (lines 3065, 3095-3100, 3101).
+2. **Add** a new element *after* the scroll container (but still inside the collapsible wrapper), only rendered when `mainCharactersForDisplay.length > 3 && canScrollDownMainChars`:
+   - A centered row with a small `ChevronDown` icon (from lucide) and muted text showing how many more characters are hidden
+   - Styled to match the sidebar aesthetic: small muted text, subtle animation (gentle bounce on the arrow)
+   - Completely separate from the card list -- has its own padding/margin, no absolute positioning, no overlapping
+3. **Update scroll state**: keep the existing `canScrollDownMainChars` logic so the indicator hides once user scrolls to bottom.
+
+The indicator will show something like: a small bouncing down-chevron with "{n} more" in muted text, sitting cleanly below card 3.
 
 **Single file changed:** `src/components/chronicle/ChatInterfaceTab.tsx`
