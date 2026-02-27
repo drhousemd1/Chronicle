@@ -4,6 +4,7 @@ import { Plus, X, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 
 import { uid } from '@/utils';
 import { cn } from '@/lib/utils';
+import { GENERATE_BOTH_PREFIX, parseGenerateBothResponse } from '@/services/character-ai';
 
 interface PersonalitySectionProps {
   personality: CharacterPersonality;
@@ -217,13 +218,32 @@ export const PersonalitySection: React.FC<PersonalitySectionProps> = ({
   };
 
   const handleEnhanceTrait = (key: 'traits' | 'outwardTraits' | 'inwardTraits', trait: PersonalityTrait) => {
-    if (!onEnhanceField || !trait.label) return;
-    onEnhanceField(
-      `personality_${trait.id}`,
-      () => trait.value,
-      (v) => updateTraits(key, trait.id, { value: v }),
-      `Personality trait: ${trait.label}`
-    );
+    if (!onEnhanceField) return;
+    
+    if (trait.label) {
+      // Has label: enhance value only (existing behavior)
+      onEnhanceField(
+        `personality_${trait.id}`,
+        () => trait.value,
+        (v) => updateTraits(key, trait.id, { value: v }),
+        `Personality trait: ${trait.label}`
+      );
+    } else {
+      // No label: generate both label and description
+      onEnhanceField(
+        `personality_${trait.id}`,
+        () => trait.value,
+        (v) => {
+          const parsed = parseGenerateBothResponse(v);
+          if (parsed) {
+            updateTraits(key, trait.id, { label: parsed.label, value: parsed.value });
+          } else {
+            updateTraits(key, trait.id, { value: v });
+          }
+        },
+        `${GENERATE_BOTH_PREFIX}personality trait`
+      );
+    }
   };
 
   const CollapsedView = () => {
