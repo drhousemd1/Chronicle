@@ -12,6 +12,7 @@ import { AvatarActionButtons } from './AvatarActionButtons';
 import { Sparkles, ChevronDown, ChevronUp, Trash2, Plus, X, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { aiEnhanceCharacterField } from '@/services/character-ai';
+import { EnhanceModeModal, EnhanceMode } from './EnhanceModeModal';
 import { CharacterGoalsSection } from './CharacterGoalsSection';
 import { PersonalitySection } from './PersonalitySection';
 import { defaultPersonality } from './PersonalitySection';
@@ -200,6 +201,13 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
   const [dragStart, setDragStart] = useState<{ x: number, y: number, pos: { x: number, y: number } } | null>(null);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [enhancingField, setEnhancingField] = useState<string | null>(null);
+  const [enhanceModeTarget, setEnhanceModeTarget] = useState<{
+    fieldKey: string;
+    section: 'physicalAppearance' | 'currentlyWearing' | 'preferredClothing' | 'custom';
+    getCurrentValue: () => string;
+    setValue: (value: string) => void;
+    customLabel?: string;
+  } | null>(null);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     avatar: true,
     physicalAppearance: true,
@@ -231,13 +239,26 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
 
   const selected = characters.find(c => c.id === selectedId);
 
-  // Handler for per-field AI enhancement
-  const handleEnhanceField = async (
+  // Open modal to choose enhance mode before calling AI
+  const openEnhanceModeModal = (
     fieldKey: string,
     section: 'physicalAppearance' | 'currentlyWearing' | 'preferredClothing' | 'custom',
     getCurrentValue: () => string,
     setValue: (value: string) => void,
     customLabel?: string
+  ) => {
+    if (enhancingField) return;
+    setEnhanceModeTarget({ fieldKey, section, getCurrentValue, setValue, customLabel });
+  };
+
+  // Handler for per-field AI enhancement (called after mode selection)
+  const handleEnhanceField = async (
+    fieldKey: string,
+    section: 'physicalAppearance' | 'currentlyWearing' | 'preferredClothing' | 'custom',
+    getCurrentValue: () => string,
+    setValue: (value: string) => void,
+    customLabel?: string,
+    mode: EnhanceMode = 'detailed'
   ) => {
     if (!selected || enhancingField) return;
     
@@ -250,8 +271,9 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
         currentValue,
         selected,
         appData,
-        appData.selectedModel || 'grok-3', // GROK ONLY
-        customLabel
+        appData.selectedModel || 'grok-3',
+        customLabel,
+        mode
       );
       
       setValue(enhanced);
@@ -262,6 +284,13 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
     } finally {
       setEnhancingField(null);
     }
+  };
+
+  const handleEnhanceModeSelect = (mode: EnhanceMode) => {
+    if (!enhanceModeTarget) return;
+    const { fieldKey, section, getCurrentValue, setValue, customLabel } = enhanceModeTarget;
+    setEnhanceModeTarget(null);
+    handleEnhanceField(fieldKey, section, getCurrentValue, setValue, customLabel, mode);
   };
 
   const handleUpdateSection = (charId: string, sectionId: string, patch: Partial<CharacterTraitSection>) => {
@@ -812,7 +841,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                           <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Role Description</label>
                           <button
                             type="button"
-                            onClick={() => handleEnhanceField(
+                            onClick={() => openEnhanceModeModal(
                               'roleDescription',
                               'custom',
                               () => selected.roleDescription || '',
@@ -885,20 +914,20 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
             onToggle={() => toggleSection('physicalAppearance')}
             collapsedContent={<CollapsedPhysicalAppearance />}
           >
-            <HardcodedRow label="Hair Color" value={selected.physicalAppearance?.hairColor || ''} onChange={(v) => handlePhysicalAppearanceChange('hairColor', v)} placeholder="Brunette, Blonde, Black" onEnhance={() => handleEnhanceField('hairColor', 'physicalAppearance', () => selected.physicalAppearance?.hairColor || '', (v) => handlePhysicalAppearanceChange('hairColor', v))} isEnhancing={enhancingField === 'hairColor'} />
-            <HardcodedRow label="Eye Color" value={selected.physicalAppearance?.eyeColor || ''} onChange={(v) => handlePhysicalAppearanceChange('eyeColor', v)} placeholder="Blue, Brown, Green" onEnhance={() => handleEnhanceField('eyeColor', 'physicalAppearance', () => selected.physicalAppearance?.eyeColor || '', (v) => handlePhysicalAppearanceChange('eyeColor', v))} isEnhancing={enhancingField === 'eyeColor'} />
-            <HardcodedRow label="Build" value={selected.physicalAppearance?.build || ''} onChange={(v) => handlePhysicalAppearanceChange('build', v)} placeholder="Athletic, Slim, Curvy" onEnhance={() => handleEnhanceField('build', 'physicalAppearance', () => selected.physicalAppearance?.build || '', (v) => handlePhysicalAppearanceChange('build', v))} isEnhancing={enhancingField === 'build'} />
-            <HardcodedRow label="Body Hair" value={selected.physicalAppearance?.bodyHair || ''} onChange={(v) => handlePhysicalAppearanceChange('bodyHair', v)} placeholder="Smooth, Light, Natural" onEnhance={() => handleEnhanceField('bodyHair', 'physicalAppearance', () => selected.physicalAppearance?.bodyHair || '', (v) => handlePhysicalAppearanceChange('bodyHair', v))} isEnhancing={enhancingField === 'bodyHair'} />
-            <HardcodedRow label="Height" value={selected.physicalAppearance?.height || ''} onChange={(v) => handlePhysicalAppearanceChange('height', v)} placeholder="5 foot 8" onEnhance={() => handleEnhanceField('height', 'physicalAppearance', () => selected.physicalAppearance?.height || '', (v) => handlePhysicalAppearanceChange('height', v))} isEnhancing={enhancingField === 'height'} />
-            <HardcodedRow label="Breasts" value={selected.physicalAppearance?.breastSize || ''} onChange={(v) => handlePhysicalAppearanceChange('breastSize', v)} placeholder="Size, description" onEnhance={() => handleEnhanceField('breastSize', 'physicalAppearance', () => selected.physicalAppearance?.breastSize || '', (v) => handlePhysicalAppearanceChange('breastSize', v))} isEnhancing={enhancingField === 'breastSize'} />
-            <HardcodedRow label="Genitalia" value={selected.physicalAppearance?.genitalia || ''} onChange={(v) => handlePhysicalAppearanceChange('genitalia', v)} placeholder="Size, description" onEnhance={() => handleEnhanceField('genitalia', 'physicalAppearance', () => selected.physicalAppearance?.genitalia || '', (v) => handlePhysicalAppearanceChange('genitalia', v))} isEnhancing={enhancingField === 'genitalia'} />
-            <HardcodedRow label="Skin Tone" value={selected.physicalAppearance?.skinTone || ''} onChange={(v) => handlePhysicalAppearanceChange('skinTone', v)} placeholder="Fair, Olive, Dark" onEnhance={() => handleEnhanceField('skinTone', 'physicalAppearance', () => selected.physicalAppearance?.skinTone || '', (v) => handlePhysicalAppearanceChange('skinTone', v))} isEnhancing={enhancingField === 'skinTone'} />
-            <HardcodedRow label="Makeup" value={selected.physicalAppearance?.makeup || ''} onChange={(v) => handlePhysicalAppearanceChange('makeup', v)} placeholder="Light, Heavy, None" onEnhance={() => handleEnhanceField('makeup', 'physicalAppearance', () => selected.physicalAppearance?.makeup || '', (v) => handlePhysicalAppearanceChange('makeup', v))} isEnhancing={enhancingField === 'makeup'} />
-            <HardcodedRow label="Body Markings" value={selected.physicalAppearance?.bodyMarkings || ''} onChange={(v) => handlePhysicalAppearanceChange('bodyMarkings', v)} placeholder="Scars, tattoos, birthmarks, piercings" onEnhance={() => handleEnhanceField('bodyMarkings', 'physicalAppearance', () => selected.physicalAppearance?.bodyMarkings || '', (v) => handlePhysicalAppearanceChange('bodyMarkings', v))} isEnhancing={enhancingField === 'bodyMarkings'} />
-            <HardcodedRow label="Temporary Conditions" value={selected.physicalAppearance?.temporaryConditions || ''} onChange={(v) => handlePhysicalAppearanceChange('temporaryConditions', v)} placeholder="Injuries, illness, etc." onEnhance={() => handleEnhanceField('temporaryConditions', 'physicalAppearance', () => selected.physicalAppearance?.temporaryConditions || '', (v) => handlePhysicalAppearanceChange('temporaryConditions', v))} isEnhancing={enhancingField === 'temporaryConditions'} />
+            <HardcodedRow label="Hair Color" value={selected.physicalAppearance?.hairColor || ''} onChange={(v) => handlePhysicalAppearanceChange('hairColor', v)} placeholder="Brunette, Blonde, Black" onEnhance={() => openEnhanceModeModal('hairColor', 'physicalAppearance', () => selected.physicalAppearance?.hairColor || '', (v) => handlePhysicalAppearanceChange('hairColor', v))} isEnhancing={enhancingField === 'hairColor'} />
+            <HardcodedRow label="Eye Color" value={selected.physicalAppearance?.eyeColor || ''} onChange={(v) => handlePhysicalAppearanceChange('eyeColor', v)} placeholder="Blue, Brown, Green" onEnhance={() => openEnhanceModeModal('eyeColor', 'physicalAppearance', () => selected.physicalAppearance?.eyeColor || '', (v) => handlePhysicalAppearanceChange('eyeColor', v))} isEnhancing={enhancingField === 'eyeColor'} />
+            <HardcodedRow label="Build" value={selected.physicalAppearance?.build || ''} onChange={(v) => handlePhysicalAppearanceChange('build', v)} placeholder="Athletic, Slim, Curvy" onEnhance={() => openEnhanceModeModal('build', 'physicalAppearance', () => selected.physicalAppearance?.build || '', (v) => handlePhysicalAppearanceChange('build', v))} isEnhancing={enhancingField === 'build'} />
+            <HardcodedRow label="Body Hair" value={selected.physicalAppearance?.bodyHair || ''} onChange={(v) => handlePhysicalAppearanceChange('bodyHair', v)} placeholder="Smooth, Light, Natural" onEnhance={() => openEnhanceModeModal('bodyHair', 'physicalAppearance', () => selected.physicalAppearance?.bodyHair || '', (v) => handlePhysicalAppearanceChange('bodyHair', v))} isEnhancing={enhancingField === 'bodyHair'} />
+            <HardcodedRow label="Height" value={selected.physicalAppearance?.height || ''} onChange={(v) => handlePhysicalAppearanceChange('height', v)} placeholder="5 foot 8" onEnhance={() => openEnhanceModeModal('height', 'physicalAppearance', () => selected.physicalAppearance?.height || '', (v) => handlePhysicalAppearanceChange('height', v))} isEnhancing={enhancingField === 'height'} />
+            <HardcodedRow label="Breasts" value={selected.physicalAppearance?.breastSize || ''} onChange={(v) => handlePhysicalAppearanceChange('breastSize', v)} placeholder="Size, description" onEnhance={() => openEnhanceModeModal('breastSize', 'physicalAppearance', () => selected.physicalAppearance?.breastSize || '', (v) => handlePhysicalAppearanceChange('breastSize', v))} isEnhancing={enhancingField === 'breastSize'} />
+            <HardcodedRow label="Genitalia" value={selected.physicalAppearance?.genitalia || ''} onChange={(v) => handlePhysicalAppearanceChange('genitalia', v)} placeholder="Size, description" onEnhance={() => openEnhanceModeModal('genitalia', 'physicalAppearance', () => selected.physicalAppearance?.genitalia || '', (v) => handlePhysicalAppearanceChange('genitalia', v))} isEnhancing={enhancingField === 'genitalia'} />
+            <HardcodedRow label="Skin Tone" value={selected.physicalAppearance?.skinTone || ''} onChange={(v) => handlePhysicalAppearanceChange('skinTone', v)} placeholder="Fair, Olive, Dark" onEnhance={() => openEnhanceModeModal('skinTone', 'physicalAppearance', () => selected.physicalAppearance?.skinTone || '', (v) => handlePhysicalAppearanceChange('skinTone', v))} isEnhancing={enhancingField === 'skinTone'} />
+            <HardcodedRow label="Makeup" value={selected.physicalAppearance?.makeup || ''} onChange={(v) => handlePhysicalAppearanceChange('makeup', v)} placeholder="Light, Heavy, None" onEnhance={() => openEnhanceModeModal('makeup', 'physicalAppearance', () => selected.physicalAppearance?.makeup || '', (v) => handlePhysicalAppearanceChange('makeup', v))} isEnhancing={enhancingField === 'makeup'} />
+            <HardcodedRow label="Body Markings" value={selected.physicalAppearance?.bodyMarkings || ''} onChange={(v) => handlePhysicalAppearanceChange('bodyMarkings', v)} placeholder="Scars, tattoos, birthmarks, piercings" onEnhance={() => openEnhanceModeModal('bodyMarkings', 'physicalAppearance', () => selected.physicalAppearance?.bodyMarkings || '', (v) => handlePhysicalAppearanceChange('bodyMarkings', v))} isEnhancing={enhancingField === 'bodyMarkings'} />
+            <HardcodedRow label="Temporary Conditions" value={selected.physicalAppearance?.temporaryConditions || ''} onChange={(v) => handlePhysicalAppearanceChange('temporaryConditions', v)} placeholder="Injuries, illness, etc." onEnhance={() => openEnhanceModeModal('temporaryConditions', 'physicalAppearance', () => selected.physicalAppearance?.temporaryConditions || '', (v) => handlePhysicalAppearanceChange('temporaryConditions', v))} isEnhancing={enhancingField === 'temporaryConditions'} />
             {/* User-added extras */}
             {(selected.physicalAppearance?._extras || []).map(extra => (
-              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('physicalAppearance', extra.id, patch)} onDelete={() => handleDeleteExtra('physicalAppearance', extra.id)} onEnhance={() => handleEnhanceField(`extra_pa_${extra.id}`, 'custom', () => extra.value, (v) => handleUpdateExtra('physicalAppearance', extra.id, { value: v }), extra.label || 'Physical Appearance detail')} isEnhancing={enhancingField === `extra_pa_${extra.id}`} />
+              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('physicalAppearance', extra.id, patch)} onDelete={() => handleDeleteExtra('physicalAppearance', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_pa_${extra.id}`, 'custom', () => extra.value, (v) => handleUpdateExtra('physicalAppearance', extra.id, { value: v }), extra.label || 'Physical Appearance detail')} isEnhancing={enhancingField === `extra_pa_${extra.id}`} />
             ))}
             <button type="button" onClick={() => handleAddExtra('physicalAppearance')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
@@ -912,13 +941,13 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
             onToggle={() => toggleSection('currentlyWearing')}
             collapsedContent={<CollapsedCurrentlyWearing />}
           >
-            <HardcodedRow label="Shirt/Top" value={selected.currentlyWearing?.top || ''} onChange={(v) => handleCurrentlyWearingChange('top', v)} placeholder="White blouse, T-shirt" onEnhance={() => handleEnhanceField('top', 'currentlyWearing', () => selected.currentlyWearing?.top || '', (v) => handleCurrentlyWearingChange('top', v))} isEnhancing={enhancingField === 'top'} />
-            <HardcodedRow label="Pants/Bottoms" value={selected.currentlyWearing?.bottom || ''} onChange={(v) => handleCurrentlyWearingChange('bottom', v)} placeholder="Jeans, Skirt, Shorts" onEnhance={() => handleEnhanceField('bottom', 'currentlyWearing', () => selected.currentlyWearing?.bottom || '', (v) => handleCurrentlyWearingChange('bottom', v))} isEnhancing={enhancingField === 'bottom'} />
-            <HardcodedRow label="Undergarments" value={selected.currentlyWearing?.undergarments || ''} onChange={(v) => handleCurrentlyWearingChange('undergarments', v)} placeholder="Bras, panties, boxers, etc." onEnhance={() => handleEnhanceField('undergarments', 'currentlyWearing', () => selected.currentlyWearing?.undergarments || '', (v) => handleCurrentlyWearingChange('undergarments', v))} isEnhancing={enhancingField === 'undergarments'} />
-            <HardcodedRow label="Miscellaneous" value={selected.currentlyWearing?.miscellaneous || ''} onChange={(v) => handleCurrentlyWearingChange('miscellaneous', v)} placeholder="Outerwear, footwear, accessories" onEnhance={() => handleEnhanceField('cw_miscellaneous', 'currentlyWearing', () => selected.currentlyWearing?.miscellaneous || '', (v) => handleCurrentlyWearingChange('miscellaneous', v))} isEnhancing={enhancingField === 'cw_miscellaneous'} />
+            <HardcodedRow label="Shirt/Top" value={selected.currentlyWearing?.top || ''} onChange={(v) => handleCurrentlyWearingChange('top', v)} placeholder="White blouse, T-shirt" onEnhance={() => openEnhanceModeModal('top', 'currentlyWearing', () => selected.currentlyWearing?.top || '', (v) => handleCurrentlyWearingChange('top', v))} isEnhancing={enhancingField === 'top'} />
+            <HardcodedRow label="Pants/Bottoms" value={selected.currentlyWearing?.bottom || ''} onChange={(v) => handleCurrentlyWearingChange('bottom', v)} placeholder="Jeans, Skirt, Shorts" onEnhance={() => openEnhanceModeModal('bottom', 'currentlyWearing', () => selected.currentlyWearing?.bottom || '', (v) => handleCurrentlyWearingChange('bottom', v))} isEnhancing={enhancingField === 'bottom'} />
+            <HardcodedRow label="Undergarments" value={selected.currentlyWearing?.undergarments || ''} onChange={(v) => handleCurrentlyWearingChange('undergarments', v)} placeholder="Bras, panties, boxers, etc." onEnhance={() => openEnhanceModeModal('undergarments', 'currentlyWearing', () => selected.currentlyWearing?.undergarments || '', (v) => handleCurrentlyWearingChange('undergarments', v))} isEnhancing={enhancingField === 'undergarments'} />
+            <HardcodedRow label="Miscellaneous" value={selected.currentlyWearing?.miscellaneous || ''} onChange={(v) => handleCurrentlyWearingChange('miscellaneous', v)} placeholder="Outerwear, footwear, accessories" onEnhance={() => openEnhanceModeModal('cw_miscellaneous', 'currentlyWearing', () => selected.currentlyWearing?.miscellaneous || '', (v) => handleCurrentlyWearingChange('miscellaneous', v))} isEnhancing={enhancingField === 'cw_miscellaneous'} />
             {/* User-added extras */}
             {(selected.currentlyWearing?._extras || []).map(extra => (
-              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('currentlyWearing', extra.id, patch)} onDelete={() => handleDeleteExtra('currentlyWearing', extra.id)} onEnhance={() => handleEnhanceField(`extra_cw_${extra.id}`, 'custom', () => extra.value, (v) => handleUpdateExtra('currentlyWearing', extra.id, { value: v }), extra.label || 'Currently Wearing detail')} isEnhancing={enhancingField === `extra_cw_${extra.id}`} />
+              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('currentlyWearing', extra.id, patch)} onDelete={() => handleDeleteExtra('currentlyWearing', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_cw_${extra.id}`, 'custom', () => extra.value, (v) => handleUpdateExtra('currentlyWearing', extra.id, { value: v }), extra.label || 'Currently Wearing detail')} isEnhancing={enhancingField === `extra_cw_${extra.id}`} />
             ))}
             <button type="button" onClick={() => handleAddExtra('currentlyWearing')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
@@ -932,14 +961,14 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
             onToggle={() => toggleSection('preferredClothing')}
             collapsedContent={<CollapsedPreferredClothing />}
           >
-            <HardcodedRow label="Casual" value={selected.preferredClothing?.casual || ''} onChange={(v) => handlePreferredClothingChange('casual', v)} placeholder="Jeans and t-shirts" onEnhance={() => handleEnhanceField('casual', 'preferredClothing', () => selected.preferredClothing?.casual || '', (v) => handlePreferredClothingChange('casual', v))} isEnhancing={enhancingField === 'casual'} />
-            <HardcodedRow label="Work" value={selected.preferredClothing?.work || ''} onChange={(v) => handlePreferredClothingChange('work', v)} placeholder="Business casual, Uniform" onEnhance={() => handleEnhanceField('work', 'preferredClothing', () => selected.preferredClothing?.work || '', (v) => handlePreferredClothingChange('work', v))} isEnhancing={enhancingField === 'work'} />
-            <HardcodedRow label="Sleep" value={selected.preferredClothing?.sleep || ''} onChange={(v) => handlePreferredClothingChange('sleep', v)} placeholder="Pajamas, Nightgown" onEnhance={() => handleEnhanceField('sleep', 'preferredClothing', () => selected.preferredClothing?.sleep || '', (v) => handlePreferredClothingChange('sleep', v))} isEnhancing={enhancingField === 'sleep'} />
-            <HardcodedRow label="Undergarments" value={selected.preferredClothing?.undergarments || ''} onChange={(v) => handlePreferredClothingChange('undergarments', v)} placeholder="Cotton basics, Lace" onEnhance={() => handleEnhanceField('pc_undergarments', 'preferredClothing', () => selected.preferredClothing?.undergarments || '', (v) => handlePreferredClothingChange('undergarments', v))} isEnhancing={enhancingField === 'pc_undergarments'} />
-            <HardcodedRow label="Miscellaneous" value={selected.preferredClothing?.miscellaneous || ''} onChange={(v) => handlePreferredClothingChange('miscellaneous', v)} placeholder="Formal, athletic, swimwear, etc." onEnhance={() => handleEnhanceField('pc_miscellaneous', 'preferredClothing', () => selected.preferredClothing?.miscellaneous || '', (v) => handlePreferredClothingChange('miscellaneous', v))} isEnhancing={enhancingField === 'pc_miscellaneous'} />
+            <HardcodedRow label="Casual" value={selected.preferredClothing?.casual || ''} onChange={(v) => handlePreferredClothingChange('casual', v)} placeholder="Jeans and t-shirts" onEnhance={() => openEnhanceModeModal('casual', 'preferredClothing', () => selected.preferredClothing?.casual || '', (v) => handlePreferredClothingChange('casual', v))} isEnhancing={enhancingField === 'casual'} />
+            <HardcodedRow label="Work" value={selected.preferredClothing?.work || ''} onChange={(v) => handlePreferredClothingChange('work', v)} placeholder="Business casual, Uniform" onEnhance={() => openEnhanceModeModal('work', 'preferredClothing', () => selected.preferredClothing?.work || '', (v) => handlePreferredClothingChange('work', v))} isEnhancing={enhancingField === 'work'} />
+            <HardcodedRow label="Sleep" value={selected.preferredClothing?.sleep || ''} onChange={(v) => handlePreferredClothingChange('sleep', v)} placeholder="Pajamas, Nightgown" onEnhance={() => openEnhanceModeModal('sleep', 'preferredClothing', () => selected.preferredClothing?.sleep || '', (v) => handlePreferredClothingChange('sleep', v))} isEnhancing={enhancingField === 'sleep'} />
+            <HardcodedRow label="Undergarments" value={selected.preferredClothing?.undergarments || ''} onChange={(v) => handlePreferredClothingChange('undergarments', v)} placeholder="Cotton basics, Lace" onEnhance={() => openEnhanceModeModal('pc_undergarments', 'preferredClothing', () => selected.preferredClothing?.undergarments || '', (v) => handlePreferredClothingChange('undergarments', v))} isEnhancing={enhancingField === 'pc_undergarments'} />
+            <HardcodedRow label="Miscellaneous" value={selected.preferredClothing?.miscellaneous || ''} onChange={(v) => handlePreferredClothingChange('miscellaneous', v)} placeholder="Formal, athletic, swimwear, etc." onEnhance={() => openEnhanceModeModal('pc_miscellaneous', 'preferredClothing', () => selected.preferredClothing?.miscellaneous || '', (v) => handlePreferredClothingChange('miscellaneous', v))} isEnhancing={enhancingField === 'pc_miscellaneous'} />
             {/* User-added extras */}
             {(selected.preferredClothing?._extras || []).map(extra => (
-              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('preferredClothing', extra.id, patch)} onDelete={() => handleDeleteExtra('preferredClothing', extra.id)} onEnhance={() => handleEnhanceField(`extra_pc_${extra.id}`, 'custom', () => extra.value, (v) => handleUpdateExtra('preferredClothing', extra.id, { value: v }), extra.label || 'Preferred Clothing detail')} isEnhancing={enhancingField === `extra_pc_${extra.id}`} />
+              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('preferredClothing', extra.id, patch)} onDelete={() => handleDeleteExtra('preferredClothing', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_pc_${extra.id}`, 'custom', () => extra.value, (v) => handleUpdateExtra('preferredClothing', extra.id, { value: v }), extra.label || 'Preferred Clothing detail')} isEnhancing={enhancingField === `extra_pc_${extra.id}`} />
             ))}
             <button type="button" onClick={() => handleAddExtra('preferredClothing')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
@@ -952,7 +981,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
             onChange={(personality) => onUpdate(selected.id, { personality })}
             isExpanded={expandedSections.personality}
             onToggle={() => toggleSection('personality')}
-            onEnhanceField={(fieldKey, getCurrentValue, setValue, customLabel) => handleEnhanceField(fieldKey, 'custom', getCurrentValue, setValue, customLabel)}
+            onEnhanceField={(fieldKey, getCurrentValue, setValue, customLabel) => openEnhanceModeModal(fieldKey, 'custom', getCurrentValue, setValue, customLabel)}
             enhancingField={enhancingField}
           />
 
@@ -974,7 +1003,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
             }
           >
             {(selected.tone?._extras || []).map(extra => (
-              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('tone', extra.id, patch)} onDelete={() => handleDeleteExtra('tone', extra.id)} onEnhance={() => handleEnhanceField(`extra_tone_${extra.id}`, 'custom', () => extra.value, (v) => handleUpdateExtra('tone', extra.id, { value: v }), extra.label || 'Tone detail')} isEnhancing={enhancingField === `extra_tone_${extra.id}`} />
+              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('tone', extra.id, patch)} onDelete={() => handleDeleteExtra('tone', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_tone_${extra.id}`, 'custom', () => extra.value, (v) => handleUpdateExtra('tone', extra.id, { value: v }), extra.label || 'Tone detail')} isEnhancing={enhancingField === `extra_tone_${extra.id}`} />
             ))}
             <button type="button" onClick={() => handleAddExtra('tone')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
@@ -1006,14 +1035,14 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
               })()
             }
           >
-            <HardcodedRow label="Job / Occupation" value={selected.background?.jobOccupation || ''} onChange={(v) => handleBackgroundChange('jobOccupation', v)} placeholder="Software Engineer, Teacher" onEnhance={() => handleEnhanceField('bg_jobOccupation', 'custom', () => selected.background?.jobOccupation || '', (v) => handleBackgroundChange('jobOccupation', v), 'Job / Occupation')} isEnhancing={enhancingField === 'bg_jobOccupation'} />
-            <HardcodedRow label="Education Level" value={selected.background?.educationLevel || ''} onChange={(v) => handleBackgroundChange('educationLevel', v)} placeholder="Bachelor's, High School" onEnhance={() => handleEnhanceField('bg_educationLevel', 'custom', () => selected.background?.educationLevel || '', (v) => handleBackgroundChange('educationLevel', v), 'Education Level')} isEnhancing={enhancingField === 'bg_educationLevel'} />
-            <HardcodedRow label="Residence" value={selected.background?.residence || ''} onChange={(v) => handleBackgroundChange('residence', v)} placeholder="Downtown apartment, Suburban house" onEnhance={() => handleEnhanceField('bg_residence', 'custom', () => selected.background?.residence || '', (v) => handleBackgroundChange('residence', v), 'Residence')} isEnhancing={enhancingField === 'bg_residence'} />
-            <HardcodedRow label="Hobbies" value={selected.background?.hobbies || ''} onChange={(v) => handleBackgroundChange('hobbies', v)} placeholder="Reading, Hiking, Gaming" onEnhance={() => handleEnhanceField('bg_hobbies', 'custom', () => selected.background?.hobbies || '', (v) => handleBackgroundChange('hobbies', v), 'Hobbies')} isEnhancing={enhancingField === 'bg_hobbies'} />
-            <HardcodedRow label="Financial Status" value={selected.background?.financialStatus || ''} onChange={(v) => handleBackgroundChange('financialStatus', v)} placeholder="Middle class, Wealthy" onEnhance={() => handleEnhanceField('bg_financialStatus', 'custom', () => selected.background?.financialStatus || '', (v) => handleBackgroundChange('financialStatus', v), 'Financial Status')} isEnhancing={enhancingField === 'bg_financialStatus'} />
-            <HardcodedRow label="Motivation" value={selected.background?.motivation || ''} onChange={(v) => handleBackgroundChange('motivation', v)} placeholder="What drives this character" onEnhance={() => handleEnhanceField('bg_motivation', 'custom', () => selected.background?.motivation || '', (v) => handleBackgroundChange('motivation', v), 'Motivation')} isEnhancing={enhancingField === 'bg_motivation'} />
+            <HardcodedRow label="Job / Occupation" value={selected.background?.jobOccupation || ''} onChange={(v) => handleBackgroundChange('jobOccupation', v)} placeholder="Software Engineer, Teacher" onEnhance={() => openEnhanceModeModal('bg_jobOccupation', 'custom', () => selected.background?.jobOccupation || '', (v) => handleBackgroundChange('jobOccupation', v), 'Job / Occupation')} isEnhancing={enhancingField === 'bg_jobOccupation'} />
+            <HardcodedRow label="Education Level" value={selected.background?.educationLevel || ''} onChange={(v) => handleBackgroundChange('educationLevel', v)} placeholder="Bachelor's, High School" onEnhance={() => openEnhanceModeModal('bg_educationLevel', 'custom', () => selected.background?.educationLevel || '', (v) => handleBackgroundChange('educationLevel', v), 'Education Level')} isEnhancing={enhancingField === 'bg_educationLevel'} />
+            <HardcodedRow label="Residence" value={selected.background?.residence || ''} onChange={(v) => handleBackgroundChange('residence', v)} placeholder="Downtown apartment, Suburban house" onEnhance={() => openEnhanceModeModal('bg_residence', 'custom', () => selected.background?.residence || '', (v) => handleBackgroundChange('residence', v), 'Residence')} isEnhancing={enhancingField === 'bg_residence'} />
+            <HardcodedRow label="Hobbies" value={selected.background?.hobbies || ''} onChange={(v) => handleBackgroundChange('hobbies', v)} placeholder="Reading, Hiking, Gaming" onEnhance={() => openEnhanceModeModal('bg_hobbies', 'custom', () => selected.background?.hobbies || '', (v) => handleBackgroundChange('hobbies', v), 'Hobbies')} isEnhancing={enhancingField === 'bg_hobbies'} />
+            <HardcodedRow label="Financial Status" value={selected.background?.financialStatus || ''} onChange={(v) => handleBackgroundChange('financialStatus', v)} placeholder="Middle class, Wealthy" onEnhance={() => openEnhanceModeModal('bg_financialStatus', 'custom', () => selected.background?.financialStatus || '', (v) => handleBackgroundChange('financialStatus', v), 'Financial Status')} isEnhancing={enhancingField === 'bg_financialStatus'} />
+            <HardcodedRow label="Motivation" value={selected.background?.motivation || ''} onChange={(v) => handleBackgroundChange('motivation', v)} placeholder="What drives this character" onEnhance={() => openEnhanceModeModal('bg_motivation', 'custom', () => selected.background?.motivation || '', (v) => handleBackgroundChange('motivation', v), 'Motivation')} isEnhancing={enhancingField === 'bg_motivation'} />
             {(selected.background?._extras || []).map(extra => (
-              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('background', extra.id, patch)} onDelete={() => handleDeleteExtra('background', extra.id)} onEnhance={() => handleEnhanceField(`extra_bg_${extra.id}`, 'custom', () => extra.value, (v) => handleUpdateExtra('background', extra.id, { value: v }), extra.label || 'Background detail')} isEnhancing={enhancingField === `extra_bg_${extra.id}`} />
+              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('background', extra.id, patch)} onDelete={() => handleDeleteExtra('background', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_bg_${extra.id}`, 'custom', () => extra.value, (v) => handleUpdateExtra('background', extra.id, { value: v }), extra.label || 'Background detail')} isEnhancing={enhancingField === `extra_bg_${extra.id}`} />
             ))}
             <button type="button" onClick={() => handleAddExtra('background')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
@@ -1038,7 +1067,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
             }
           >
             {(selected.keyLifeEvents?._extras || []).map(extra => (
-              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('keyLifeEvents', extra.id, patch)} onDelete={() => handleDeleteExtra('keyLifeEvents', extra.id)} onEnhance={() => handleEnhanceField(`extra_kle_${extra.id}`, 'custom', () => extra.value, (v) => handleUpdateExtra('keyLifeEvents', extra.id, { value: v }), extra.label || 'Key Life Event')} isEnhancing={enhancingField === `extra_kle_${extra.id}`} />
+              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('keyLifeEvents', extra.id, patch)} onDelete={() => handleDeleteExtra('keyLifeEvents', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_kle_${extra.id}`, 'custom', () => extra.value, (v) => handleUpdateExtra('keyLifeEvents', extra.id, { value: v }), extra.label || 'Key Life Event')} isEnhancing={enhancingField === `extra_kle_${extra.id}`} />
             ))}
             <button type="button" onClick={() => handleAddExtra('keyLifeEvents')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
@@ -1063,7 +1092,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
             }
           >
             {(selected.relationships?._extras || []).map(extra => (
-              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('relationships', extra.id, patch)} onDelete={() => handleDeleteExtra('relationships', extra.id)} onEnhance={() => handleEnhanceField(`extra_rel_${extra.id}`, 'custom', () => extra.value, (v) => handleUpdateExtra('relationships', extra.id, { value: v }), extra.label || 'Relationship')} isEnhancing={enhancingField === `extra_rel_${extra.id}`} />
+              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('relationships', extra.id, patch)} onDelete={() => handleDeleteExtra('relationships', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_rel_${extra.id}`, 'custom', () => extra.value, (v) => handleUpdateExtra('relationships', extra.id, { value: v }), extra.label || 'Relationship')} isEnhancing={enhancingField === `extra_rel_${extra.id}`} />
             ))}
             <button type="button" onClick={() => handleAddExtra('relationships')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
@@ -1088,7 +1117,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
             }
           >
             {(selected.secrets?._extras || []).map(extra => (
-              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('secrets', extra.id, patch)} onDelete={() => handleDeleteExtra('secrets', extra.id)} onEnhance={() => handleEnhanceField(`extra_sec_${extra.id}`, 'custom', () => extra.value, (v) => handleUpdateExtra('secrets', extra.id, { value: v }), extra.label || 'Secret')} isEnhancing={enhancingField === `extra_sec_${extra.id}`} />
+              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('secrets', extra.id, patch)} onDelete={() => handleDeleteExtra('secrets', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_sec_${extra.id}`, 'custom', () => extra.value, (v) => handleUpdateExtra('secrets', extra.id, { value: v }), extra.label || 'Secret')} isEnhancing={enhancingField === `extra_sec_${extra.id}`} />
             ))}
             <button type="button" onClick={() => handleAddExtra('secrets')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
@@ -1113,7 +1142,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
             }
           >
             {(selected.fears?._extras || []).map(extra => (
-              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('fears', extra.id, patch)} onDelete={() => handleDeleteExtra('fears', extra.id)} onEnhance={() => handleEnhanceField(`extra_fear_${extra.id}`, 'custom', () => extra.value, (v) => handleUpdateExtra('fears', extra.id, { value: v }), extra.label || 'Fear')} isEnhancing={enhancingField === `extra_fear_${extra.id}`} />
+              <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('fears', extra.id, patch)} onDelete={() => handleDeleteExtra('fears', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_fear_${extra.id}`, 'custom', () => extra.value, (v) => handleUpdateExtra('fears', extra.id, { value: v }), extra.label || 'Fear')} isEnhancing={enhancingField === `extra_fear_${extra.id}`} />
             ))}
             <button type="button" onClick={() => handleAddExtra('fears')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
@@ -1126,7 +1155,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
             onChange={(goals) => onUpdate(selected.id, { goals })}
             isExpanded={expandedSections.characterGoals}
             onToggle={() => toggleSection('characterGoals')}
-            onEnhanceField={(fieldKey, getCurrentValue, setValue, customLabel) => handleEnhanceField(fieldKey, 'custom', getCurrentValue, setValue, customLabel)}
+            onEnhanceField={(fieldKey, getCurrentValue, setValue, customLabel) => openEnhanceModeModal(fieldKey, 'custom', getCurrentValue, setValue, customLabel)}
             enhancingField={enhancingField}
           />
 
@@ -1183,7 +1212,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                                 {item.label && (
                                   <button
                                     type="button"
-                                    onClick={() => handleEnhanceField(
+                                    onClick={() => openEnhanceModeModal(
                                       `custom_${item.id}`,
                                       'custom',
                                       () => item.value,
@@ -1293,6 +1322,13 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
           age: selected?.age
         }}
         modelId={appData.selectedModel || "grok-3"} /* GROK ONLY */
+      />
+
+      {/* Enhance Mode Selector Modal */}
+      <EnhanceModeModal
+        open={enhanceModeTarget !== null}
+        onClose={() => setEnhanceModeTarget(null)}
+        onSelect={handleEnhanceModeSelect}
       />
     </div>
   );

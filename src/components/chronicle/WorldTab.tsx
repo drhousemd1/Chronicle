@@ -22,6 +22,7 @@ import { SceneGalleryActionButtons } from './SceneGalleryActionButtons';
 import { ShareScenarioModal } from './ShareScenarioModal';
 import { ContentThemesSection } from './ContentThemesSection';
 import { aiEnhanceWorldField } from '@/services/world-ai';
+import { EnhanceModeModal, EnhanceMode } from './EnhanceModeModal';
 import { useModelSettings } from '@/contexts/ModelSettingsContext';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 import { getClosestRatio, AspectRatioIcon } from './AspectRatioUtils';
@@ -116,6 +117,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   const [isGeneratingScene, setIsGeneratingScene] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [enhancingField, setEnhancingField] = useState<EnhanceableWorldFields | null>(null);
+  const [enhanceModeTarget, setEnhanceModeTarget] = useState<EnhanceableWorldFields | null>(null);
   const [pendingDeleteCover, setPendingDeleteCover] = useState(false);
   const [pendingDeleteSceneId, setPendingDeleteSceneId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -151,7 +153,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   };
 
   // AI enhancement handler for World Core fields
-  const handleEnhanceField = async (fieldName: EnhanceableWorldFields) => {
+  const handleEnhanceField = async (fieldName: EnhanceableWorldFields, mode: EnhanceMode = 'detailed') => {
     if (!modelId) {
       toast.error("No model selected. Please select a model in settings.");
       return;
@@ -163,7 +165,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
         fieldName,
         (world.core[fieldName] as string) || '',
         world.core,
-        modelId
+        modelId,
+        mode
       );
       updateCore({ [fieldName]: enhanced });
       toast.success(`${fieldName.replace(/([A-Z])/g, ' $1').trim()} enhanced`);
@@ -173,6 +176,13 @@ export const WorldTab: React.FC<WorldTabProps> = ({
     } finally {
       setEnhancingField(null);
     }
+  };
+
+  const handleEnhanceModeSelect = (mode: EnhanceMode) => {
+    if (!enhanceModeTarget) return;
+    const fieldName = enhanceModeTarget;
+    setEnhanceModeTarget(null);
+    handleEnhanceField(fieldName, mode);
   };
 
   // Reusable field label with AI enhance button (dark theme)
@@ -188,7 +198,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
         </label>
         <button
           type="button"
-          onClick={() => handleEnhanceField(fieldName)}
+          onClick={() => setEnhanceModeTarget(fieldName)}
           disabled={isLoading || enhancingField !== null}
           title="Enhance with AI"
           className={cn(
@@ -1281,6 +1291,13 @@ export const WorldTab: React.FC<WorldTabProps> = ({
         onConfirm={confirmDeleteScene}
         title="Remove scene image?"
         message="This will remove the scene image from your gallery."
+      />
+
+      {/* Enhance Mode Selector Modal */}
+      <EnhanceModeModal
+        open={enhanceModeTarget !== null}
+        onClose={() => setEnhanceModeTarget(null)}
+        onSelect={handleEnhanceModeSelect}
       />
     </div>
   );

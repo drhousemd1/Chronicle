@@ -59,7 +59,8 @@ const FIELD_PROMPTS: Record<EnhanceableWorldFields, { label: string; instruction
 function buildPrompt(
   fieldName: EnhanceableWorldFields,
   currentValue: string,
-  worldContext: Partial<WorldCore>
+  worldContext: Partial<WorldCore>,
+  mode: 'precise' | 'detailed' = 'detailed'
 ): string {
   const fieldConfig = FIELD_PROMPTS[fieldName];
   
@@ -83,6 +84,18 @@ function buildPrompt(
     ? `CURRENT VALUE (enhance while preserving intent):\n${currentValue}\n\n`
     : 'CURRENT VALUE: Empty - generate appropriate content based on context.\n\n';
 
+  if (mode === 'precise') {
+    return `You are enhancing a story/scenario field for an interactive roleplay.
+
+Expand the following into 3-6 short key points separated by semicolons.
+Focus on essential facts only. No sentences, no explanations, no narrative rationale.
+
+${contextSection}${currentValueSection}FIELD: ${fieldConfig.label}
+
+Output format: Point1; Point2; Point3; Point4
+Return ONLY the semicolon-separated points. Nothing else.`;
+  }
+
   return `You are enhancing a story/scenario field for an interactive roleplay. Use STRUCTURED EXPANSION:
 
 RULES:
@@ -105,11 +118,12 @@ export async function aiEnhanceWorldField(
   fieldName: EnhanceableWorldFields,
   currentValue: string,
   worldContext: Partial<WorldCore>,
-  modelId: string
+  modelId: string,
+  mode: 'precise' | 'detailed' = 'detailed'
 ): Promise<string> {
-  const prompt = buildPrompt(fieldName, currentValue, worldContext);
+  const prompt = buildPrompt(fieldName, currentValue, worldContext, mode);
 
-  console.log(`[world-ai] Enhancing field: ${fieldName} with model: ${modelId}`);
+  console.log(`[world-ai] Enhancing field: ${fieldName} with model: ${modelId} (mode: ${mode})`);
 
   const { data, error } = await supabase.functions.invoke('chat', {
     body: {
@@ -132,8 +146,18 @@ export async function aiEnhanceWorldField(
     throw new Error('No content returned from AI');
   }
 
-  // Clean up response - remove any accidental markdown or quotes
-  return content.trim().replace(/^["']|["']$/g, '');
+  let result = content.trim().replace(/^["']|["']$/g, '');
+
+  // Post-process precise mode
+  if (mode === 'precise') {
+    result = result
+      .replace(/\.\s*;/g, ';')
+      .replace(/\.$/g, '')
+      .replace(/;\s*$/g, '')
+      .trim();
+  }
+
+  return result;
 }
 
 /**
