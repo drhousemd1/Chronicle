@@ -181,7 +181,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Invalid token' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    const { userMessage, aiResponse, recentContext, characters, modelId } = await req.json();
+    const { userMessage, aiResponse, recentContext, characters, modelId, eligibleCharacters } = await req.json();
     
     if (!userMessage && !aiResponse) {
       return new Response(
@@ -190,11 +190,20 @@ serve(async (req) => {
       );
     }
 
-    // Build character state blocks
-    const characterContext = (characters || []).map((c: CharacterData) => buildCharacterStateBlock(c)).join('\n\n');
+    // Build character state blocks — only for eligible characters if provided
+    const eligibleSet = eligibleCharacters ? new Set((eligibleCharacters as string[]).map((n: string) => n.toLowerCase())) : null;
+    const filteredCharacters = eligibleSet 
+      ? (characters || []).filter((c: CharacterData) => eligibleSet.has(c.name.toLowerCase()))
+      : (characters || []);
+    const characterContext = filteredCharacters.map((c: CharacterData) => buildCharacterStateBlock(c)).join('\n\n');
+
+    // Build eligible character constraint for prompt
+    const eligibleConstraint = eligibleSet 
+      ? `\n\nELIGIBLE CHARACTERS (ONLY emit updates for these — ignore all others):\n${[...eligibleSet].join(', ')}\n`
+      : '';
 
     const systemPrompt = `You are a CHARACTER EVOLUTION ANALYST for a roleplay/narrative application. Your role is to meticulously track how characters change, grow, and develop through dialogue. You are thorough, detail-oriented, and never lazy.
-
+${eligibleConstraint}
 CHARACTERS IN THIS SCENE:
 ${characterContext || 'No character data provided'}
 
@@ -203,17 +212,23 @@ YOUR MANDATORY PROCESS (THREE PHASES - NEVER SKIP ANY):
 ═══════════════════════════════════════════════════
 PHASE 1 - SCAN FOR NEW INFORMATION (ALL CATEGORIES, EQUAL WEIGHT)
 ═══════════════════════════════════════════════════
-Read the dialogue carefully. For EACH active character, check ALL of these categories:
+Read the dialogue carefully. For EACH eligible character mentioned or active in the exchange, check ALL of these categories:
 
 A) VOLATILE STATE — mood, location, clothing changes, temporary physical conditions
-   → If a character is actively present, you MUST update at least mood and location.
-   → An active character should NEVER produce zero non-goal updates.
+   → If a character is actively present and speaking/acting, update mood and location.
+   → Characters NOT mentioned or acting in this exchange should NOT receive updates.
 
 B) APPEARANCE CHANGES — new descriptions of hair, clothing, physical traits
 
 C) PERSONALITY EVOLUTION — Does their behavior across these messages reveal personality traits?
-   → Repeated behavior patterns (sarcasm, nurturing, aggression) should update personality traits, NOT create micro-goals.
-   → Example: If a character has been consistently sarcastic across several exchanges → update personality.outwardTraits, don't create a "Be More Sarcastic" goal.
+   → INFER traits from ACTIONS and DIALOGUE PATTERNS, not explicit statements.
+   → Example: A character who consistently deflects questions with humor → "Deflective: Uses humor as a shield to avoid vulnerability"
+   → Example: A character who touches others frequently → "Physically Affectionate: Expresses care through touch and proximity"
+   → Convert observed behavior into concise trait labels with grounded, specific descriptions.
+   → FORBIDDEN: Vague/generic traits like "interesting", "complex", "unique", "nice", "good".
+   → FORBIDDEN: Empty labels or descriptions.
+   → Prefer UPDATING existing personality trait labels over creating new ones.
+   → Only append a new trait if it adds genuinely non-duplicate signal.
 
 D) BACKGROUND REVEALS — job, education, residence, hobbies, financial status, motivation mentioned
    → Update background.* fields when new info is revealed.
@@ -440,9 +455,39 @@ Return ONLY valid JSON. No explanations.`;
       }
       const errorText = await response.text();
       console.error("AI gateway error:", response.status, errorText);
-      // 403 = content safety rejection -- return empty updates gracefully instead of crashing
       if (response.status === 403) {
-        console.log("[extract-character-updates] Content safety rejection (403), returning empty updates");
+        console.log("[extract-character-updates] Content safety rejection (403), retrying with safe extraction mode");
+        // Retry with a sanitized prompt focused on non-explicit metadata only
+        const safeResponse = await fetch(apiUrl, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: modelForRequest,
+            messages: [
+              { role: "system", content: "Extract ONLY non-sexual character metadata: mood, location, personality traits inferred from behavior, relationship changes, background reveals. Ignore any explicit/sexual content. Return JSON with {updates: [{character, field, value}]}." },
+              { role: "user", content: `Characters: ${filteredCharacters.map((c: CharacterData) => c.name).join(', ')}. Analyze:\n${combinedText}` }
+            ],
+            temperature: 0.3,
+            max_tokens: 4096,
+          }),
+        });
+        if (safeResponse.ok) {
+          const safeData = await safeResponse.json();
+          const safeContent = safeData.choices?.[0]?.message?.content || '{"updates":[]}';
+          try {
+            const jsonMatch = safeContent.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              const parsed = JSON.parse(jsonMatch[0]);
+              const safeUpdates = (parsed.updates || []).filter((u: any) =>
+                typeof u.character === 'string' && typeof u.field === 'string' && typeof u.value === 'string' &&
+                u.character.trim() && u.field.trim() && u.value.trim()
+              );
+              console.log(`[extract-character-updates] Safe retry yielded ${safeUpdates.length} updates`);
+              return new Response(JSON.stringify({ updates: safeUpdates }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            }
+          } catch { /* fall through */ }
+        }
+        // If safe retry also fails, return empty
         return new Response(
           JSON.stringify({ updates: [] }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }

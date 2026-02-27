@@ -407,6 +407,7 @@ export function normalizeScenarioData(raw: any): ScenarioData {
     narrativePov: (raw?.uiSettings?.narrativePov === 'first' || raw?.uiSettings?.narrativePov === 'third') ? raw.uiSettings.narrativePov : 'third' as const,
     nsfwIntensity: (raw?.uiSettings?.nsfwIntensity === 'normal' || raw?.uiSettings?.nsfwIntensity === 'high') ? raw.uiSettings.nsfwIntensity : 'normal' as const,
     realismMode: typeof raw?.uiSettings?.realismMode === "boolean" ? raw.uiSettings.realismMode : false,
+    responseVerbosity: (['concise', 'balanced', 'detailed'].includes(raw?.uiSettings?.responseVerbosity)) ? raw.uiSettings.responseVerbosity : 'balanced' as const,
   };
 
   // Normalize TimeOfDay value

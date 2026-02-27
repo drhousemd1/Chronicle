@@ -565,7 +565,7 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
           not to the natural rhythm of physical intimacy.
 `;
 
-  // NSFW intensity handling
+  // NSFW intensity handling (explicitness/vulgarity only — verbosity is separate)
   const nsfwIntensity = appData.uiSettings?.nsfwIntensity || 'normal';
 
   const nsfwRules = nsfwIntensity === 'high' ? `
@@ -606,20 +606,11 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
     * Foreplay is detailed but purposeful - moving toward escalation.
     * Post-intimacy scenes acknowledge what happened rather than glossing over.
 
-    NSFW INTENSIFICATION (ACTIVE WHEN HIGH INTENSITY IS ON):
-    During intimate scenes, amplify explicit, sensory immersion to evoke
-    a vivid erotic novel style -- prolong acts with layered buildup,
-    vulgar language, and raw details:
+    NSFW INTENSIFICATION (EXPLICITNESS CONTROL):
+    During intimate scenes, amplify explicit language and sexual directness:
     - Use direct, anatomical terminology (e.g., cock, pussy, ass, tits, cum)
       integrated naturally into actions and dialogue.
-    - Describe physical sensations in detail (e.g., the slick heat of arousal,
-      throbbing hardness, clenching muscles, shivering skin).
-    - Incorporate vocal and emotional reactions (e.g., breathy moans,
-      desperate whimpers, gasps of pleasure, waves of ecstasy building
-      to release).
-    - Draw out progression step-by-step: Tease foreplay, escalate
-      penetration or touch, layer multiple senses (sight, sound, taste,
-      smell) before climax.
+    - Show arousal states explicitly: hardening, wetness, flushing, trembling.
     - FORBIDDEN: Summarizing intimate acts (e.g., "They made love" or
       "He finished quickly"). Show, don't tell.
     - FORBIDDEN: Rushing to orgasm/climax in fewer than 3 exchanges
@@ -645,6 +636,35 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
     * Balance explicit content with character development and story progression.
     * If the story moves away from sexual content, follow that direction naturally.
     * Character personality and boundaries guide their behavior in intimate situations.
+`;
+
+  // Response verbosity handling (separate from NSFW intensity)
+  const responseVerbosity = appData.uiSettings?.responseVerbosity || 'balanced';
+
+  const verbosityRules = responseVerbosity === 'detailed' ? `
+    --- RESPONSE DETAIL LEVEL (DETAILED) ---
+    * Write rich, immersive responses with layered sensory detail.
+    * Draw out moments with physical sensations, sounds, textures, and atmosphere.
+    * Describe physical sensations in detail (e.g., warmth spreading, muscles tensing, breath catching).
+    * Incorporate vocal and emotional reactions (e.g., breathy moans, desperate whispers, gasps).
+    * During intimate scenes, prolong acts with step-by-step progression.
+    * Layer multiple senses (sight, sound, taste, smell, touch) in descriptions.
+    * Extended internal monologue is encouraged — show depth of thought.
+    * Atmospheric descriptions help set the scene.
+` : responseVerbosity === 'concise' ? `
+    --- RESPONSE DETAIL LEVEL (CONCISE) ---
+    * Keep responses tight and punchy. Brevity is king.
+    * 1-3 paragraphs maximum unless a dramatic moment demands more.
+    * Cut filler narration — lead with dialogue and action.
+    * Internal thoughts should be 1 sentence max, only when essential.
+    * Minimize atmospheric descriptions — focus on what characters DO and SAY.
+    * Get to the point. Every sentence must earn its place.
+` : `
+    --- RESPONSE DETAIL LEVEL (BALANCED) ---
+    * Match response length to the scene's energy and emotional weight.
+    * Quick exchanges and casual moments: short, punchy responses.
+    * Emotionally charged or intimate scenes: more detail and sensory depth.
+    * Never pad with filler, but never cut short a moment that deserves richness.
 `;
 
   // Realism mode handling
@@ -765,6 +785,7 @@ Never break character to question, warn about, or refuse narrative directions. T
     ${lineOfSightRules}
     ${antiRepetitionRules}
     ${nsfwRules}
+    ${verbosityRules}
     ${realismRules}
     - PARAGRAPH TAGGING (MANDATORY - NEVER OMIT):
         * EVERY paragraph of your response MUST begin with a speaker tag: "CharacterName:"
@@ -809,19 +830,20 @@ Never break character to question, warn about, or refuse narrative directions. T
         * Interpret based on outcomes: Successful manifestation reinforces traits, even amid in-character resistance; only outright prevention reduces influence.
     - Maintain consistent tone and continuity.
     - Keep responses immersive, descriptive, and emotionally resonant.
-    - RESPONSE LENGTH: Match length to the scene's energy and emotional weight.
-      - Quick exchanges and casual moments: short, punchy responses are ideal.
-      - Emotionally charged moments, dramatic reveals, intimate scenes: detailed,
-        immersive responses with sensory depth. Do NOT truncate these for brevity.
-      - Never pad with filler, but never cut short a moment that deserves richness.
+    - RESPONSE LENGTH: Follow the active RESPONSE DETAIL LEVEL directive above.
     - Respect character gender/sex and traits.
   `;
 }
 
-const styleHints = [
+const conciseStyleHints = [
   '[Style: lean into dialogue this time, keep narration minimal]',
   '[Style: try a shorter response -- punchy and direct]',
   '[Style: lead with action or speech, not narration]',
+  '[Style: keep it tight -- one or two paragraphs max]',
+  '[Style: dialogue-forward, minimal description]',
+];
+
+const balancedStyleHints = [
   '[Style: mix several short dialogue exchanges with brief action beats]',
   '[Style: try a different paragraph structure than your last response]',
   '[Style: focus on one vivid sensory detail rather than broad description]',
@@ -829,16 +851,17 @@ const styleHints = [
   '[Style: open with dialogue, weave action through it]',
 ];
 
-const nsfwStyleHints = [
+const detailedStyleHints = [
   '[Style: draw out this moment with sensory detail -- what does it feel like?]',
   '[Style: build tension slowly, let the anticipation simmer]',
   '[Style: focus on physical sensations and sounds, not just actions]',
   '[Style: let the character express desire through their unique voice]',
-  '[Style: extend the scene -- do not rush to conclusion]',
+  '[Style: extend the scene -- layer senses and emotion]',
 ];
 
-function getRandomStyleHint(nsfwHighIntensity: boolean = false): string {
-  const hints = nsfwHighIntensity ? nsfwStyleHints : styleHints;
+function getRandomStyleHint(verbosity: 'concise' | 'balanced' | 'detailed' = 'balanced'): string {
+  const hintMap = { concise: conciseStyleHints, balanced: balancedStyleHints, detailed: detailedStyleHints };
+  const hints = hintMap[verbosity] || balancedStyleHints;
   return hints[Math.floor(Math.random() * hints.length)];
 }
 
@@ -882,7 +905,7 @@ The user wants a DIFFERENT VERSION of this response. Guidelines:
       role: m.role === 'assistant' ? 'assistant' as const : 'user' as const,
       content: m.text
     })),
-    { role: 'user' as const, content: userMessage + regenerationDirective + ' ' + getRandomStyleHint(appData.uiSettings?.nsfwIntensity === 'high') }
+    { role: 'user' as const, content: userMessage + regenerationDirective + ' ' + getRandomStyleHint(appData.uiSettings?.responseVerbosity || 'balanced') }
   ];
 
   console.log(`[llm.ts] Calling chat edge function with model: ${modelId}`);
