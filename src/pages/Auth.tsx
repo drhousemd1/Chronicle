@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
 
 const emailSchema = z.string().email('Please enter a valid email address');
@@ -17,11 +16,10 @@ export default function Auth() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string; confirmPassword?: string }>({});
+  const [errors, setErrors] = useState<{ email?: string; password?: string; confirmPassword?: string; form?: string }>({});
 
   const { signIn, signUp, isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   useEffect(() => {
     if (!loading && isAuthenticated) {
@@ -56,46 +54,27 @@ export default function Auth() {
     if (!validateForm()) return;
 
     setIsLoading(true);
+    setErrors(prev => ({ ...prev, form: undefined }));
 
     try {
       if (isSignUp) {
         const { error } = await signUp(email, password);
         if (error) {
           if (error.message.includes('already registered')) {
-            toast({
-              title: 'Account exists',
-              description: 'This email is already registered. Please sign in instead.',
-              variant: 'destructive'
-            });
+            setErrors({ form: 'This email is already registered. Please sign in instead.' });
           } else {
-            toast({
-              title: 'Sign up failed',
-              description: error.message,
-              variant: 'destructive'
-            });
+            setErrors({ form: error.message });
           }
         } else {
-          toast({
-            title: 'Account created!',
-            description: 'You are now signed in.'
-          });
           navigate('/');
         }
       } else {
         const { error } = await signIn(email, password);
         if (error) {
           if (error.message.includes('Invalid login credentials')) {
-            toast({
-              title: 'Sign in failed',
-              description: 'Invalid email or password. Please try again.',
-              variant: 'destructive'
-            });
+            setErrors({ form: 'Invalid email or password. Please try again.' });
           } else {
-            toast({
-              title: 'Sign in failed',
-              description: error.message,
-              variant: 'destructive'
-            });
+            setErrors({ form: error.message });
           }
         } else {
           navigate('/');
@@ -169,6 +148,10 @@ export default function Auth() {
                 />
                 {errors.confirmPassword && <p className="text-red-400 text-sm">{errors.confirmPassword}</p>}
               </div>
+            )}
+
+            {errors.form && (
+              <p className="text-red-400 text-sm text-center">{errors.form}</p>
             )}
 
             <Button

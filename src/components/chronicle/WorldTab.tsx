@@ -9,7 +9,7 @@ import { uid, now, resizeImage, uuid, clamp } from '@/utils';
 import { useAuth } from '@/hooks/use-auth';
 import { uploadSceneImage, uploadCoverImage, dataUrlToBlob } from '@/services/supabase-data';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+
 import { Sunrise, Sun, Sunset, Moon, ChevronUp, ChevronDown, Pencil, Sparkles, Share2, Trash2, Plus, X } from 'lucide-react';
 import { StoryGoalsSection } from './StoryGoalsSection';
 import { useArtStyles } from '@/contexts/ArtStylesContext';
@@ -159,7 +159,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   // AI enhancement handler for World Core fields
   const handleEnhanceField = async (fieldName: EnhanceableWorldFields, mode: EnhanceMode = 'detailed') => {
     if (!modelId) {
-      toast.error("No model selected. Please select a model in settings.");
+      console.error("No model selected. Please select a model in settings.");
       return;
     }
     
@@ -173,10 +173,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
         mode
       );
       updateCore({ [fieldName]: enhanced });
-      toast.success(`${fieldName.replace(/([A-Z])/g, ' $1').trim()} enhanced`);
     } catch (error: any) {
       console.error('Enhancement failed:', error);
-      toast.error(error.message || "Enhancement failed");
     } finally {
       setEnhancingField(null);
     }
@@ -300,10 +298,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
           
           onUpdateCoverImage(publicUrl);
           onUpdateCoverPosition({ x: 50, y: 50 });
-          toast.success('Cover image uploaded');
         } catch (error) {
           console.error('Cover upload failed:', error);
-          toast.error('Failed to upload cover');
         } finally {
           setIsUploadingCover(false);
         }
@@ -311,7 +307,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
       reader.readAsDataURL(file);
     } catch (error) {
       console.error('Cover upload failed:', error);
-      toast.error('Failed to upload cover');
+      console.error('Cover upload failed:', error);
       setIsUploadingCover(false);
     }
     e.target.value = '';
@@ -332,7 +328,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
     if (!file) return;
     
     if (!user) {
-      toast.error('Please sign in to upload scenes');
+      console.error('Please sign in to upload scenes');
       return;
     }
 
@@ -359,10 +355,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
           };
           onUpdateScenes([newScene, ...scenes]);
           setEditingScene(newScene); // Open editor immediately for new scenes
-          toast.success('Scene uploaded');
         } catch (error) {
           console.error('Scene upload failed:', error);
-          toast.error('Failed to upload scene');
         } finally {
           setIsUploading(false);
         }
@@ -370,7 +364,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
       reader.readAsDataURL(file);
     } catch (error) {
       console.error('Scene upload failed:', error);
-      toast.error('Failed to upload scene');
+      console.error('Scene upload failed:', error);
       setIsUploading(false);
     }
     e.target.value = '';
@@ -697,10 +691,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                                       items[iIdx] = { ...items[iIdx], value: enhanced };
                                       sections[sIdx] = { ...sections[sIdx], items };
                                       updateCore({ customWorldSections: sections });
-                                      toast.success('Field enhanced');
                                     }).catch(err => {
                                       console.error('Enhancement failed:', err);
-                                      toast.error('Enhancement failed');
                                     }).finally(() => {
                                       setEnhancingField(null);
                                     });
@@ -796,10 +788,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                 modelId
               ).then(enhanced => {
                 setValue(enhanced);
-                toast.success('Field enhanced');
               }).catch(err => {
                 console.error('Enhancement failed:', err);
-                toast.error('Enhancement failed');
               }).finally(() => {
                 setEnhancingField(null);
               });
@@ -938,7 +928,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                           };
                           onUpdateScenes([newScene, ...scenes]);
                           setEditingScene(newScene);
-                          toast.success('Scene added from library');
+                          
                         }}
                         onGenerateClick={() => setShowSceneGenModal(true)}
                         disabled={isUploading || isGeneratingScene}
@@ -1208,7 +1198,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
           }
           onUpdateCoverPosition({ x: 50, y: 50 });
           setShowCoverGenModal(false);
-          toast.success('Cover image generated!');
+          
         }}
         scenarioTitle={world.core.scenarioName}
       />
@@ -1219,7 +1209,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
         onClose={() => setShowSceneGenModal(false)}
         onGenerate={async (prompt, styleId) => {
           if (!user) {
-            toast.error('Please sign in to generate scenes');
+            console.error('Please sign in to generate scenes');
             return;
           }
           
@@ -1255,13 +1245,13 @@ export const WorldTab: React.FC<WorldTabProps> = ({
               onUpdateScenes([newScene, ...scenes]);
               setEditingScene(newScene);
               setShowSceneGenModal(false);
-              toast.success('Scene generated!');
+              
             } else {
               throw new Error('No image URL returned');
             }
           } catch (err) {
             console.error('Scene generation failed:', err);
-            toast.error('Failed to generate scene');
+            console.error('Failed to generate scene:', err);
           } finally {
             setIsGeneratingScene(false);
           }

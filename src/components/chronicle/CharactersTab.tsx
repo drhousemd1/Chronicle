@@ -6,7 +6,7 @@ import { Icons } from '@/constants';
 import { uid, now, clamp, resizeImage } from '@/utils';
 import { useAuth } from '@/hooks/use-auth';
 import { uploadAvatar, dataUrlToBlob } from '@/services/supabase-data';
-import { toast } from 'sonner';
+
 import { AvatarGenerationModal } from './AvatarGenerationModal';
 import { AvatarActionButtons } from './AvatarActionButtons';
 import { Sparkles, ChevronDown, ChevronUp, Trash2, Plus, X, Lock } from 'lucide-react';
@@ -277,10 +277,8 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
       );
       
       setValue(enhanced);
-      toast.success('Field enhanced');
     } catch (error) {
       console.error('Enhancement failed:', error);
-      toast.error('Enhancement failed');
     } finally {
       setEnhancingField(null);
     }
@@ -329,7 +327,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
         avatarDataUrl: finalUrl,
         avatarPosition: { x: 50, y: 50 }
       });
-      toast.success('Avatar generated successfully!');
+      
     }
     setShowAvatarModal(false);
   };
@@ -751,7 +749,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                         onChange={async (e) => {
                           const f = e.target.files?.[0];
                           if (!f || !selected || !user) {
-                            if (!user) toast.error('Please sign in to upload avatars');
+                            if (!user) console.error('Please sign in to upload avatars');
                             return;
                           }
                           
@@ -774,7 +772,6 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                                 setIsRepositioning(true);
                               } catch (error) {
                                 console.error('Avatar upload failed:', error);
-                                toast.error('Failed to upload avatar');
                               } finally {
                                 setIsUploading(false);
                               }
@@ -782,7 +779,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                             reader.readAsDataURL(f);
                           } catch (error) {
                             console.error('Avatar upload failed:', error);
-                            toast.error('Failed to upload avatar');
+                            
                             setIsUploading(false);
                           }
                         }} 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useArtStyles } from '@/contexts/ArtStylesContext';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -69,10 +69,8 @@ export const ImageGenerationTool: React.FC = () => {
           d.id === draft.id ? { ...d, isDirty: false, isSaving: false } : d
         )
       );
-      toast.success(`${draft.displayName} saved`);
     } catch (err: any) {
       console.error('Failed to save style:', err);
-      toast.error(`Failed to save: ${err.message}`);
       setDrafts((prev) =>
         prev.map((d) => (d.id === draft.id ? { ...d, isSaving: false } : d))
       );
@@ -101,9 +99,8 @@ export const ImageGenerationTool: React.FC = () => {
           .getPublicUrl(path);
 
         updateDraft(draftId, { thumbnailUrl: urlData.publicUrl });
-        toast.success('Thumbnail uploaded');
       } catch (err: any) {
-        toast.error(`Upload failed: ${err.message}`);
+        console.error('Upload failed:', err.message);
       }
     };
     input.click();

@@ -7,7 +7,7 @@ import { ScenarioDetailModal } from "./ScenarioDetailModal";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { fetchContentThemes } from "@/services/supabase-data";
 import { getPublishedScenario, unpublishScenario, PublishedScenario } from "@/services/gallery-data";
-import { toast } from "sonner";
+
 import { cn } from "@/lib/utils";
 
 interface ScenarioCardProps {
@@ -228,10 +228,8 @@ export function ScenarioHub({
     try {
       await unpublishScenario(selectedScenario.id);
       setPublicationStatus(null);
-      toast.success('Your story has been removed from the Gallery');
     } catch (e) {
       console.error('Failed to unpublish:', e);
-      toast.error('Failed to remove from gallery');
     }
   };
 

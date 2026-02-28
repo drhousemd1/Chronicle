@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff, Shield, Mail } from 'lucide-react';
 
 interface AccountSettingsTabProps {
@@ -8,33 +7,32 @@ interface AccountSettingsTabProps {
 }
 
 export const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({ user }) => {
-  const { toast } = useToast();
-  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    setStatusMessage(null);
     if (newPassword.length < 6) {
-      toast({ title: 'Password too short', description: 'Must be at least 6 characters.', variant: 'destructive' });
+      setStatusMessage({ type: 'error', text: 'Password must be at least 6 characters.' });
       return;
     }
     if (newPassword !== confirmPassword) {
-      toast({ title: 'Passwords do not match', variant: 'destructive' });
+      setStatusMessage({ type: 'error', text: 'Passwords do not match.' });
       return;
     }
     setIsChangingPassword(true);
     try {
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
-      toast({ title: 'Password updated', description: 'Your password has been changed successfully.' });
-      setCurrentPassword('');
+      setStatusMessage({ type: 'success', text: 'Password updated successfully.' });
       setNewPassword('');
       setConfirmPassword('');
     } catch (e: any) {
-      toast({ title: 'Failed to update password', description: e.message, variant: 'destructive' });
+      setStatusMessage({ type: 'error', text: e.message || 'Failed to update password.' });
     } finally {
       setIsChangingPassword(false);
     }
@@ -100,6 +98,11 @@ export const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({ user }) 
               placeholder="••••••••"
             />
           </div>
+          {statusMessage && (
+            <p className={`text-sm ${statusMessage.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+              {statusMessage.text}
+            </p>
+          )}
           <button
             type="submit"
             disabled={isChangingPassword || !newPassword}

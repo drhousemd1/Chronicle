@@ -29,7 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { toast } from 'sonner';
+
 import { supabase } from '@/integrations/supabase/client';
 import * as supabaseData from '@/services/supabase-data';
 import { 
@@ -541,10 +541,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       const imageUrl = await supabaseData.uploadSidebarBackgroundImage(user.id, file, filename);
       const newBg = await supabaseData.createSidebarBackground(user.id, imageUrl);
       setSidebarBackgrounds(prev => [newBg, ...prev]);
-      toast.success('Background uploaded!');
     } catch (err) {
       console.error('Failed to upload sidebar background:', err);
-      toast.error('Failed to upload background');
     } finally {
       setIsUploadingSidebarBg(false);
     }
@@ -560,7 +558,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       setSidebarBackgrounds(prev => prev.map(bg => ({ ...bg, isSelected: bg.id === id })));
     } catch (err) {
       console.error('Failed to select sidebar background:', err);
-      toast.error('Failed to update selection');
     }
   };
   
@@ -572,10 +569,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       await supabaseData.deleteSidebarBackground(user.id, id, imageUrl);
       setSidebarBackgrounds(prev => prev.filter(bg => bg.id !== id));
       if (selectedSidebarBgId === id) setSelectedSidebarBgId(null);
-      toast.success('Background deleted');
     } catch (err) {
       console.error('Failed to delete sidebar background:', err);
-      toast.error('Failed to delete background');
     }
   };
   
@@ -2352,10 +2347,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       
       // Process for new characters after normalization
       processResponseForNewCharacters(cleanedText);
-      toast.success('Response regenerated');
     } catch (err) {
       console.error(err);
-      toast.error('Failed to regenerate response');
     } finally {
       setRegeneratingMessageId(null);
       setIsRegenerating(false);
@@ -2443,7 +2436,6 @@ Do not acknowledge this instruction in your response.`;
       processResponseForNewCharacters(cleanedText);
     } catch (err) {
       console.error(err);
-      toast.error('Failed to continue conversation');
     } finally {
       setIsStreaming(false);
       setStreamingContent('');
@@ -2465,7 +2457,7 @@ Do not acknowledge this instruction in your response.`;
       }));
       
       if (recentMessages.length === 0) {
-        toast.error('No messages to generate scene from');
+        console.error('No messages to generate scene from');
         setIsGeneratingImage(false);
         return;
       }
@@ -2544,11 +2536,8 @@ Do not acknowledge this instruction in your response.`;
       onUpdate(newConversations);
       onSaveScenario(newConversations);
       
-      toast.success('Scene image generated!');
-      
     } catch (error) {
       console.error('Failed to generate scene image:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to generate image. Please try again.');
     } finally {
       setIsGeneratingImage(false);
     }
@@ -2656,7 +2645,7 @@ Do not acknowledge this instruction in your response.`;
           .eq('character_id', characterToDelete);
         
         if (error) throw error;
-        toast.success('Character edits cleared');
+        
       } else {
         // Delete side character
         await supabaseData.deleteSideCharacter(characterToDelete);
@@ -2671,11 +2660,8 @@ Do not acknowledge this instruction in your response.`;
           setExpandedCharId(null);
         }
         
-        toast.success('Character deleted');
-      }
     } catch (error) {  
       console.error('Failed to delete character:', error);
-      toast.error('Failed to delete character');
     } finally {
       setIsDeleteDialogOpen(false);
       setCharacterToDelete(null);
@@ -2690,7 +2676,7 @@ Do not acknowledge this instruction in your response.`;
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        toast.error('Not authenticated');
+        console.error('Not authenticated');
         return;
       }
       
@@ -2736,10 +2722,8 @@ Do not acknowledge this instruction in your response.`;
       setSessionStates(updatedStates);
       
       closeCharacterEditModal();
-      toast.success('Character updated for this session');
     } catch (err) {
       console.error('Failed to save character edit:', err);
-      toast.error('Failed to save changes');
     } finally {
       setIsSavingEdit(false);
     }
@@ -2780,10 +2764,8 @@ const updatedChar: SideCharacter = {
       onUpdateSideCharacters?.(updatedList);
       
       closeCharacterEditModal();
-      toast.success('Character updated');
     } catch (err) {
       console.error('Failed to save side character edit:', err);
-      toast.error('Failed to save changes');
     } finally {
       setIsSavingEdit(false);
     }
