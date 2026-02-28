@@ -22,7 +22,7 @@ import {
 import { Loader2, Plus, Trash2, X, Pencil, ChevronDown, ChevronUp, Sparkles, Globe, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client'; 
 import * as supabaseData from '@/services/supabase-data'; 
-import { toast } from 'sonner';
+
 import { cn } from '@/lib/utils';
 import { AvatarActionButtons } from './AvatarActionButtons';
 import { ChangeNameModal } from './ChangeNameModal';
@@ -426,7 +426,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
   // Deep scan handler - fetch conversation history and extract updates via edge function
   const handleDeepScan = async () => {
     if (!character || !conversationId) {
-      toast.error('No conversation context available');
+      console.error('No conversation context available');
       return;
     }
     
@@ -442,7 +442,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
       
       if (msgError) throw msgError;
       if (!messages || messages.length === 0) {
-        toast.info('No messages to analyze');
+        console.log('No messages to analyze');
         setIsDeepScanning(false);
         return;
       }
@@ -524,7 +524,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
       
       const updates = data?.updates || [];
       if (updates.length === 0) {
-        toast.info('No updates found from dialogue');
+        console.log('No updates found from dialogue');
         setIsDeepScanning(false);
         return;
       }
@@ -752,10 +752,8 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
         return next;
       });
       
-      toast.success('Character card updated from dialogue');
     } catch (err) {
       console.error('[handleDeepScan] Failed:', err);
-      toast.error('Failed to scan dialogue');
     } finally {
       setIsDeepScanning(false);
     }
@@ -808,10 +806,8 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
         avatarDataUrl: publicUrl,
         avatarPosition: { x: 50, y: 50 }
       }));
-      toast.success('Avatar uploaded');
     } catch (err) {
       console.error('Avatar upload failed:', err);
-      toast.error('Failed to upload avatar');
     } finally {
       setIsUploadingAvatar(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -859,11 +855,9 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
           avatarDataUrl: data.imageUrl,
           avatarPosition: { x: 50, y: 50 }
         }));
-        toast.success('Portrait generated');
       }
     } catch (err) {
       console.error('Avatar regeneration failed:', err);
-      toast.error('Failed to generate portrait');
     } finally {
       setIsRegeneratingAvatar(false);
     }
@@ -1276,7 +1270,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                           avatarDataUrl: imageUrl,
                           avatarPosition: { x: 50, y: 50 }
                         }));
-                        toast.success('Avatar selected from library');
+                        
                       }}
                       onGenerateClick={handleRegenerateAvatar}
                       disabled={isUploadingAvatar}
@@ -1912,7 +1906,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
             name: newName,
             previousNames: updatedPreviousNames,
           }));
-          toast.success(`Name changed to ${newName}`);
+          
         }}
       />
     </Dialog>

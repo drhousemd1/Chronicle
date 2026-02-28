@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
+
 import { GuideSidebar, type GuideDocument, type TocEntry } from './GuideSidebar';
 import { GuideEditor } from './GuideEditor';
 
@@ -70,7 +70,7 @@ export const AppGuideTool: React.FC<AppGuideToolProps> = ({ onRegisterSave }) =>
       .eq('id', id);
 
     if (error) {
-      toast({ title: 'Delete failed', description: error.message, variant: 'destructive' });
+      console.error('Delete failed:', error.message);
       return;
     }
 
@@ -90,7 +90,7 @@ export const AppGuideTool: React.FC<AppGuideToolProps> = ({ onRegisterSave }) =>
       .update({ title: newTitle })
       .eq('id', id);
     if (error) {
-      toast({ title: 'Rename failed', description: error.message, variant: 'destructive' });
+      console.error('Rename failed:', error.message);
       return;
     }
     setActiveDocTitle(newTitle);
@@ -117,9 +117,9 @@ export const AppGuideTool: React.FC<AppGuideToolProps> = ({ onRegisterSave }) =>
         .update({ markdown: activeDocMarkdown, updated_at: new Date().toISOString() })
         .eq('id', activeDocId);
       if (error) {
-        toast({ title: 'Save failed', description: error.message, variant: 'destructive' });
+        console.error('Save failed:', error.message);
       } else {
-        toast({ title: 'Document saved' });
+        console.log('Document saved');
       }
     };
     onRegisterSave(saveFn);

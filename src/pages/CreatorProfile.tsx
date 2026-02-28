@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { Heart, Bookmark, Play, Eye, FileText, Users, ArrowLeft, UserPlus, UserMinus, Loader2, Pencil } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
 interface CreatorProfileData {
@@ -46,7 +45,7 @@ export default function CreatorProfile() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { toast } = useToast();
+  
 
   const [profile, setProfile] = useState<CreatorProfileData | null>(null);
   const [stats, setStats] = useState<CreatorStats | null>(null);
@@ -121,15 +120,13 @@ export default function CreatorProfile() {
         await supabase.from('creator_follows').delete().eq('follower_id', user.id).eq('creator_id', userId);
         setIsFollowing(false);
         setStats(prev => prev ? { ...prev, follower_count: Math.max(0, prev.follower_count - 1) } : prev);
-        toast({ title: 'Unfollowed' });
       } else {
         await supabase.from('creator_follows').insert({ follower_id: user.id, creator_id: userId });
         setIsFollowing(true);
         setStats(prev => prev ? { ...prev, follower_count: prev.follower_count + 1 } : prev);
-        toast({ title: 'Following creator' });
       }
     } catch (e: any) {
-      toast({ title: 'Failed', description: e.message, variant: 'destructive' });
+      console.error('Failed to toggle follow:', e);
     } finally {
       setIsToggling(false);
     }

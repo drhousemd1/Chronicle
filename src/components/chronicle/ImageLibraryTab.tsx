@@ -6,7 +6,7 @@ import { Star, ArrowLeft, Trash2, Pencil, FolderOpen, Plus, Image as ImageIcon, 
 import { FolderEditModal } from './FolderEditModal';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 import { useAuth } from '@/hooks/use-auth';
-import { toast } from 'sonner';
+
 import { supabase } from '@/integrations/supabase/client';
 import { resizeImage, uuid } from '@/utils';
 
@@ -131,7 +131,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
       setFolders(foldersWithDetails);
     } catch (e: any) {
       console.error('Failed to load folders:', e);
-      toast.error('Failed to load folders');
+      console.error('Failed to load folders:', e);
     } finally {
       setIsLoading(false);
     }
@@ -163,7 +163,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
       );
     } catch (e: any) {
       console.error('Failed to load images:', e);
-      toast.error('Failed to load images');
+      console.error('Failed to load images:', e);
     } finally {
       setIsLoadingImages(false);
     }
@@ -200,7 +200,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
       setEditingFolder(newFolder);
     } catch (e: any) {
       console.error('Failed to create folder:', e);
-      toast.error('Failed to create folder');
+      console.error('Failed to create folder:', e);
     }
   };
 
@@ -222,7 +222,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
       }
     } catch (e: any) {
       console.error('Failed to update folder:', e);
-      toast.error('Failed to update folder');
+      console.error('Failed to update folder:', e);
     }
   };
 
@@ -274,7 +274,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
       }
     } catch (e: any) {
       console.error('Failed to delete folder:', e);
-      toast.error('Failed to delete folder');
+      console.error('Failed to delete folder:', e);
     }
   };
 
@@ -371,10 +371,8 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
           reader.readAsDataURL(file);
         });
       }
-      toast.success('Images uploaded');
     } catch (e: any) {
       console.error('Failed to upload images:', e);
-      toast.error('Failed to upload images');
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -421,7 +419,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
       }
     } catch (e: any) {
       console.error('Failed to delete image:', e);
-      toast.error('Failed to delete image');
+      console.error('Failed to delete image:', e);
     }
   };
 
@@ -446,10 +444,8 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
       setSelectedFolder((prev) =>
         prev ? { ...prev, thumbnailImageId: image.id, thumbnailUrl: image.imageUrl } : null
       );
-      toast.success('Thumbnail set');
     } catch (e: any) {
       console.error('Failed to set thumbnail:', e);
-      toast.error('Failed to set thumbnail');
     }
   };
 
@@ -597,7 +593,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
       }
     } catch (e: any) {
       console.error('Failed to update tags:', e);
-      toast.error('Failed to update tags');
+      console.error('Failed to update tags:', e);
     }
   };
 
@@ -803,10 +799,8 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
                     setFolderImages((prev) =>
                       prev.map((img) => (img.id === lightboxImage.id ? { ...img, title: editTitle } : img))
                     );
-                    toast.success('Title saved');
                   } catch (e: any) {
                     console.error('Failed to save title:', e);
-                    toast.error('Failed to save title');
                   }
                   setEditTitle('');
                   setLightboxImage(null);

@@ -5,7 +5,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Share2, Globe, Pencil, Check, Loader2 } from 'lucide-react';
 import { getPublishedScenario, publishScenario, unpublishScenario, PublishedScenario } from '@/services/gallery-data';
-import { toast } from 'sonner';
+
 
 interface ShareScenarioModalProps {
   isOpen: boolean;
@@ -55,7 +55,6 @@ export const ShareScenarioModal: React.FC<ShareScenarioModalProps> = ({
     setIsPublishing(true);
     try {
       await publishScenario(scenarioId, userId, allowRemix, []);
-      toast.success(existingPublication ? 'Publication updated!' : 'Your story is now live in the Gallery!');
       setExistingPublication({
         id: '',
         scenario_id: scenarioId,
@@ -74,7 +73,6 @@ export const ShareScenarioModal: React.FC<ShareScenarioModalProps> = ({
       });
     } catch (error: any) {
       console.error('Failed to publish:', error);
-      toast.error(error.message || 'Failed to publish scenario');
     } finally {
       setIsPublishing(false);
     }
@@ -84,11 +82,9 @@ export const ShareScenarioModal: React.FC<ShareScenarioModalProps> = ({
     setIsPublishing(true);
     try {
       await unpublishScenario(scenarioId);
-      toast.success('Your story has been removed from the Gallery');
       setExistingPublication(null);
     } catch (error: any) {
       console.error('Failed to unpublish:', error);
-      toast.error(error.message || 'Failed to unpublish scenario');
     } finally {
       setIsPublishing(false);
     }

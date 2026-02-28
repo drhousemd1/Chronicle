@@ -23,7 +23,7 @@ import {
   Moon,
   Calendar
 } from 'lucide-react';
-import { toast } from 'sonner';
+
 import {
   Select,
   SelectContent,
@@ -81,24 +81,16 @@ export const MemoriesModal: React.FC<MemoriesModalProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleAddMemory = async () => {
-    if (!newMemoryText.trim()) {
-      toast.error('Please enter a memory');
-      return;
-    }
-    
-    if (newMemoryText.length > 300) {
-      toast.error('Memory is too long (max 300 characters)');
-      return;
-    }
+    if (!newMemoryText.trim()) return;
+    if (newMemoryText.length > 300) return;
 
     setIsSaving(true);
     try {
       await onCreateMemory(newMemoryText.trim(), newMemoryDay, newMemoryTime);
       setNewMemoryText('');
       setIsAddingMemory(false);
-      toast.success('Memory saved');
     } catch (error) {
-      toast.error('Failed to save memory');
+      console.error('Failed to save memory:', error);
     } finally {
       setIsSaving(false);
     }
@@ -110,24 +102,16 @@ export const MemoriesModal: React.FC<MemoriesModalProps> = ({
   };
 
   const handleSaveEdit = async (id: string) => {
-    if (!editText.trim()) {
-      toast.error('Memory cannot be empty');
-      return;
-    }
-    
-    if (editText.length > 300) {
-      toast.error('Memory is too long (max 300 characters)');
-      return;
-    }
+    if (!editText.trim()) return;
+    if (editText.length > 300) return;
 
     setIsSaving(true);
     try {
       await onUpdateMemory(id, editText.trim());
       setEditingId(null);
       setEditText('');
-      toast.success('Memory updated');
     } catch (error) {
-      toast.error('Failed to update memory');
+      console.error('Failed to update memory:', error);
     } finally {
       setIsSaving(false);
     }
@@ -136,9 +120,8 @@ export const MemoriesModal: React.FC<MemoriesModalProps> = ({
   const handleDelete = async (id: string) => {
     try {
       await onDeleteMemory(id);
-      toast.success('Memory deleted');
     } catch (error) {
-      toast.error('Failed to delete memory');
+      console.error('Failed to delete memory:', error);
     }
   };
 
@@ -150,9 +133,8 @@ export const MemoriesModal: React.FC<MemoriesModalProps> = ({
     setIsDeleting(true);
     try {
       await onDeleteAllMemories();
-      toast.success('All memories deleted');
     } catch (error) {
-      toast.error('Failed to delete memories');
+      console.error('Failed to delete memories:', error);
     } finally {
       setIsDeleting(false);
     }

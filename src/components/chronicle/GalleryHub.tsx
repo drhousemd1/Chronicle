@@ -20,7 +20,7 @@ import {
   FetchGalleryParams
 } from '@/services/gallery-data';
 import { useAuth } from '@/hooks/use-auth';
-import { toast } from 'sonner';
+
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -246,7 +246,7 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
 
   const handleLike = async (published: PublishedScenario) => {
     if (!user) {
-      toast.error('Please sign in to like stories');
+      console.error('Please sign in to like stories');
       return;
     }
 
@@ -261,13 +261,12 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
       }));
     } catch (error) {
       console.error('Failed to toggle like:', error);
-      toast.error('Failed to update like');
     }
   };
 
   const handleSave = async (published: PublishedScenario) => {
     if (!user) {
-      toast.error('Please sign in to save stories');
+      console.error('Please sign in to save stories');
       return;
     }
 
@@ -280,21 +279,18 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
           ...s,
           save_count: Math.max(0, s.save_count - 1),
         }));
-        toast.success('Removed from your collection');
       } else {
         await saveScenarioToCollection(published.id, published.scenario_id, user.id);
         updateScenarioInCache(published.id, s => ({
           ...s,
           save_count: s.save_count + 1,
         }));
-        toast.success('Saved to your stories!');
       }
       
       queryClient.invalidateQueries({ queryKey: ['gallery-interactions'] });
       onSaveChange?.();
     } catch (error) {
       console.error('Failed to toggle save:', error);
-      toast.error('Failed to update save');
     }
   };
 
@@ -322,10 +318,8 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
       await unpublishScenario(selectedPublished.scenario_id);
       queryClient.invalidateQueries({ queryKey: ['gallery-scenarios'] });
       setDetailModalOpen(false);
-      toast.success('Your story has been removed from the Gallery');
     } catch (e) {
       console.error('Failed to unpublish:', e);
-      toast.error('Failed to remove from gallery');
     }
   };
 
