@@ -178,6 +178,25 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
 
   const markdownComponents = useMemo(() => createMarkdownComponents(isDark), [isDark]);
 
+  // Strip the AI instruction blockquote from view mode only
+  const displayMarkdown = useMemo(() => {
+    const lines = docMarkdown.split('\n');
+    const result: string[] = [];
+    let skipping = false;
+    for (const line of lines) {
+      if (!skipping && line.match(/^>\s*\*\*INSTRUCTIONS FOR LOVABLE \/ AI AGENTS\*\*/)) {
+        skipping = true;
+        continue;
+      }
+      if (skipping) {
+        if (line.startsWith('>') || line.trim() === '') continue;
+        skipping = false;
+      }
+      result.push(line);
+    }
+    return result.join('\n');
+  }, [docMarkdown]);
+
   useEffect(() => { setTitle(docTitle); }, [docTitle]);
   useEffect(() => { onTocUpdate(extractTocFromMarkdown(docMarkdown)); }, [docMarkdown, onTocUpdate]);
 
@@ -371,7 +390,7 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
               rehypePlugins={[rehypeHighlight]}
               components={markdownComponents}
             >
-              {docMarkdown}
+              {displayMarkdown}
             </ReactMarkdown>
           </div>
         </div>
