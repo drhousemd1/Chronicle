@@ -381,8 +381,9 @@ The `character-ai.ts` service provides per-field AI enhancement:
 
 - **RESOLVED — Bug #1 — 2026-03-01**: `buildCharacterStateBlock()` now outputs scaffolding placeholders for all section types when empty, including `currentlyWearing`, `physicalAppearance`, `preferredClothing`, `background`, `personality`, and all extras-only sections (tone, keyLifeEvents, relationships, secrets, fears). AI can now see and populate all 16 section types.
 - **RESOLVED — Bug #2 — 2026-03-01**: `personality.traits` added to TRACKABLE FIELDS for unified personality mode. Characters not using split mode will now have traits extracted correctly.
-- **ACTIVE — Bug #3**: `preferredClothing` field name mismatch — UI uses `preferred_clothing` (snake_case) but extraction uses `preferredClothing` (camelCase). Updates may silently fail.
+- **RESOLVED — Bug #3 — 2026-03-01**: Extraction prompt now uses correct field name `undergarments`. Frontend normalization retained as legacy safety net.
 - **RESOLVED — Bug #4 — 2026-03-01**: Default extraction model changed from `grok-3-mini` to `grok-3`. Deep Scan also uses `grok-3`. The 403 safe-mode retry path intentionally remains on `grok-3-mini`.
+- **RESOLVED — Bug #5 — 2026-03-01**: Extraction prompt augmented with 7-block analytical depth framework covering psychological inference, progressive trait refinement, conflict resolution, split personality mode detection, tone inference from dialogue, cross-field coherence enforcement, and complete trait lifecycle management.
 - **ACTIVE — Bug #6**: Memory system architecture incomplete — no long-term accumulation. Memories are extracted per-message but never summarized or consolidated.
 - **RESOLVED — Bug #7**: Previous issue resolved.
 - **RESOLVED — Bug #8**: Previous issue resolved.

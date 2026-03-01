@@ -243,6 +243,119 @@ I) GOALS & DESIRES — sustained ambitions, NOT casual mentions
    → Prefer UPDATING existing goals over creating new ones
 
 ═══════════════════════════════════════════════════
+ANALYTICAL DEPTH FRAMEWORK (apply to ALL phases above and below)
+═══════════════════════════════════════════════════
+
+--- BLOCK 1: PSYCHOLOGICAL INFERENCE FRAMEWORK ---
+(Apply to ALL personality, tone, fear, and relationship extractions)
+
+Before writing any trait or section entry, reason through THREE layers:
+- LAYER 1 (Surface): What did the character do or say in this specific moment?
+- LAYER 2 (Pattern): Is this consistent with earlier behavior, or new? One occurrence = tentative. Two or more = pattern. A revealing moment = decisive.
+- LAYER 3 (Psychology): What does this behavior suggest about the underlying personality, need, fear, or defense mechanism? What is the WHY behind the WHAT?
+
+Write ALL traits and entries at LAYER 3 depth, not LAYER 1.
+
+WRONG (Layer 1): "Humorous: Makes jokes frequently"
+RIGHT (Layer 3): "Deflective Humor: Uses wit and levity as a primary buffer against emotional vulnerability. Humor increases noticeably when conversation moves toward personal territory or when the character feels cornered — functions as both a social shield and a way to maintain control of the emotional temperature of an interaction."
+
+FORBIDDEN trait descriptions:
+- Single words without context (e.g., "Funny", "Shy", "Smart")
+- Vague adjectives without behavioral grounding (e.g., "Interesting", "Complex")
+- Circular descriptions (e.g., "Reserved: Is reserved in social situations")
+- Generic positives with no specificity (e.g., "Kind: Is a kind person")
+
+--- BLOCK 2: PROGRESSIVE TRAIT REFINEMENT ---
+Treat every trait as a hypothesis that gets more precise over time, never less. When updating an existing trait, ask: "Can I make this more specific with the evidence I now have?" If yes, you MUST refine it.
+
+REFINEMENT STAGES:
+- STAGE 1 (Tentative, 1 observation): Broad label with minimal description. Example: "Reserved: Tends toward quietness in social settings."
+- STAGE 2 (Contextualised, 2-3 observations): Specify WHEN and WITH WHOM. Example: "Selectively Reserved: Comfortable and open in one-on-one conversation but noticeably quieter and more guarded in group settings."
+- STAGE 3 (Psychologically Grounded, 4+ observations or revealing moment): Describe the underlying mechanism and what it costs the character. Example: "Social Performance Anxiety: Functions confidently in intimate settings where they control the conversational frame. In groups, fear of being evaluated triggers withdrawal — shorter sentences, physical distancing, deflecting attention to others."
+
+RULES:
+- Always advance the stage if evidence supports it.
+- Never collapse a Stage 3 trait back to Stage 1 — only forward, never backward.
+- If you cannot yet reach Stage 2, write Stage 1 with tentative language.
+
+--- BLOCK 3: TRAIT CONFLICT RESOLUTION ---
+(CRITICAL — apply before finalising any update)
+
+When new evidence CONTRADICTS or COMPLICATES an existing trait or entry, DO NOT simply add a second contradictory entry. Choose one resolution path:
+
+PATH A (Genuine Evolution): The character has changed over the session. Update the single trait entry to capture the arc. Example: Old "Conflict-Avoidant" + new directness → "Emerging Assertiveness: Initially defaulted to conflict avoidance, but across this session has shown growing willingness to state disagreement directly — particularly when the topic feels important."
+
+PATH B (Context Dependency): Both observations are true in different contexts. Merge into a single nuanced entry that specifies WHEN each applies. Example: Old "Outgoing" + new guardedness → "Contextually Social: Projects genuine warmth in structured settings where the social script is clear. In unstructured personal contexts, becomes noticeably more guarded."
+
+PATH C (False Presentation): The character is performing a trait they do not hold. This is a split-mode candidate. Move the performed trait to outwardTraits and the true underlying trait to inwardTraits.
+
+RESOLUTION RULE: After resolution, exactly ONE entry per psychological concept. Zero duplicates. Zero silent contradictions.
+
+STALENESS RULE: If a trait is contradicted and no resolution path applies cleanly, append "(REVIEW: may no longer be accurate based on recent behaviour)" to the description.
+
+--- BLOCK 4: SPLIT PERSONALITY MODE DETECTION ---
+The character card supports two personality modes:
+- STANDARD MODE: A single unified trait list (personality.traits)
+- SPLIT MODE: Separate outwardTraits (public persona) and inwardTraits (private self)
+
+Flag a character as a Split Mode candidate when you observe CONSISTENT divergence between:
+- How the character presents publicly vs. what internal dialogue reveals about their actual state
+- What they say vs. what they do when alone or off-guard
+- How they behave with strangers vs. with trusted people
+- Emotions they perform vs. emotions they clearly feel
+
+When detected across 3+ exchanges, add to the personality section:
+[SPLIT MODE CANDIDATE: Consistent divergence observed between public persona and internal state. Recommend switching to Split Mode. Outward: [brief]. Inward: [brief].]
+
+When a character IS already in Split Mode:
+- outwardTraits = How others perceive them; the face they show the world
+- inwardTraits = Their actual emotional experience; private self
+- The two lists must COMPLEMENT each other, never duplicate
+- NEVER make outward = positive and inward = negative. Both should contain complex, realistic entries.
+
+--- BLOCK 5: TONE INFERENCE FROM DIALOGUE ---
+(for tone._extras — extract from the text itself, do NOT wait for explicit statements)
+
+Tone captures HOW this character communicates — their linguistic fingerprint. Extract from:
+- VOCABULARY: Technical terms, slang, formal register, monosyllabic replies, elaborate sentences?
+- RHYTHM: Short/punchy or long/winding? Trail off, self-interrupt, or speak in polished thoughts?
+- FORMALITY SHIFTS: Does language change by audience? Map these shifts.
+- EMOTIONAL DIRECTNESS: Name feelings plainly ("I am angry") or obliquely ("It is fine. Whatever.")?
+- DEFLECTION PATTERNS: When pressed on uncomfortable topics — change subject? Counter-question? Go flat?
+- INTENSITY ESCALATION: Stay measured when emotional, or become clipped/expansive/erratic under pressure?
+
+FORMAT: "[Context]: [specific description of how they communicate]"
+Examples:
+- "Under pressure: Voice becomes clipped and transactional. Stops using filler words. Emotional content stripped from language entirely."
+- "With trusted people: Longer sentences with self-interruptions. Allows thoughts to trail off. Uses 'I mean' and 'the thing is' as openers."
+- "When deflecting: Pivots to questions rather than answering directly. Increases hedging language."
+
+--- BLOCK 6: CROSS-FIELD COHERENCE ENFORCEMENT ---
+(Run after all updates are determined, before finalising output)
+
+Verify the character card tells a coherent story across all fields:
+- BACKGROUND → PERSONALITY: Do experiences produce the observed traits? Instability/trauma should show coping mechanisms.
+- FEARS → BEHAVIOUR: Do stored fears echo in personality and tone? If fear of abandonment exists, look for behavioural echoes.
+- GOALS → MOTIVATION: Does at least one goal connect to background motivation?
+- TONE → PERSONALITY: Does speech style align with personality? "Emotionally open" + "deflective and guarded" tone = incoherence.
+- RELATIONSHIPS → FEARS/SECRETS: Do dynamics reflect known vulnerabilities?
+
+When incoherence is found: flag it with a correction update, or note the inconsistency in the relevant field.
+
+--- BLOCK 7: COMPLETE TRAIT LIFECYCLE ---
+Every stored value passes through this lifecycle. Use the appropriate operation:
+
+- CREATE: New info with no existing home. Must pass Layer 3 depth. No duplicates. Max 1 new non-goal entry per section per extraction.
+- REFINE: Existing info can be more specific. Always advance precision. PREFERRED over CREATE when topic is already represented.
+- MERGE: Two entries cover same psychological territory. Combine into one richer entry.
+- CORRECT: Entry factually contradicted. Apply Conflict Resolution (Block 3). Result: one accurate entry.
+- CONTEXTUALISE: Entry true in some situations. Specify contexts in one entry, do not split into two.
+- REMOVE: Entry definitively no longer accurate. For goals: goals.GoalTitle = "REMOVE". For traits: empty string ONLY if actively harmful to coherence. Err on CORRECT or CONTEXTUALISE over REMOVE.
+- HOLD: Entry not contradicted but not reinforced. Do not modify. Only flag if it creates active incoherence.
+
+GOLDEN RULE: "Every section of the character card should tell the same story as every other section. The card is a portrait — every brushstroke should contribute to one coherent image."
+
+═══════════════════════════════════════════════════
 PHASE 2 - REVIEW EXISTING STATE (MANDATORY - ALL SECTIONS)
 ═══════════════════════════════════════════════════
 For EACH character present or mentioned:
@@ -296,7 +409,7 @@ HARDCODED FIELDS:
 - physicalAppearance._extras (array of {id, label, value})
 - currentlyWearing.top, currentlyWearing.bottom, currentlyWearing.undergarments, currentlyWearing.miscellaneous
 - currentlyWearing._extras (array of {id, label, value})
-- preferredClothing.casual, preferredClothing.work, preferredClothing.sleep, preferredClothing.underwear, preferredClothing.miscellaneous
+- preferredClothing.casual, preferredClothing.work, preferredClothing.sleep, preferredClothing.undergarments, preferredClothing.miscellaneous
 - preferredClothing._extras (array of {id, label, value})
 - background.jobOccupation, background.educationLevel, background.residence, background.hobbies, background.financialStatus, background.motivation
 - background._extras (array of {id, label, value})

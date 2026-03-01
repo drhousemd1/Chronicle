@@ -1820,7 +1820,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
             }
           } else if (field.includes('.')) {
             const [parent, child] = field.split('.');
-            // Change 6: Normalize underwear → undergarments
+            // Legacy compat: prompt now uses 'undergarments' but old cached extractions may still use 'underwear'
             let normalizedChild = child;
             if (parent === 'preferredClothing' && child === 'underwear') normalizedChild = 'undergarments';
             
