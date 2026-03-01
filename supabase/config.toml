@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.check-shared-keys]
 verify_jwt = false
+
+[functions.compress-day-memories]
+verify_jwt = false
