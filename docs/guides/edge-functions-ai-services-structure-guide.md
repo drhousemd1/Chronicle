@@ -30,6 +30,7 @@
 | `generate-side-character` | `supabase/functions/generate-side-character/index.ts` | AI-generates side character profiles | AI model |
 | `generate-side-character-avatar` | `supabase/functions/generate-side-character-avatar/index.ts` | Generates avatars for side characters | Image generation model |
 | `check-shared-keys` | `supabase/functions/check-shared-keys/index.ts` | Validates shared API keys | N/A |
+| `compress-day-memories` | `supabase/functions/compress-day-memories/index.ts` | Compresses completed-day bullet memories into a 2-3 sentence synopsis | grok-3-mini |
 | `sync-guide-to-github` | `supabase/functions/sync-guide-to-github/index.ts` | Syncs guide documents to GitHub repo | N/A |
 | `migrate-base64-images` | `supabase/functions/migrate-base64-images/index.ts` | Migrates legacy base64 images to storage | N/A |
 
@@ -117,7 +118,7 @@ The system prompt in `getSystemInstruction()` is constructed in this order:
 | #3 | `preferredClothing` field name mismatch (underwear vs undergarments) | `supabase/functions/extract-character-updates/index.ts` | RESOLVED — 2026-03-01 — preferredClothing.underwear renamed to preferredClothing.undergarments in TRACKABLE FIELDS |
 | #4 | Default model changed to `grok-3`; 403 retry remains `grok-3-mini` | `supabase/functions/extract-character-updates/index.ts` | RESOLVED — 2026-03-01 |
 | #5 | Extraction prompt lacks analytical depth | `supabase/functions/extract-character-updates/index.ts` | RESOLVED — 2026-03-01 — Added 7-block analytical depth framework: psychological inference, progressive refinement, conflict resolution, split mode detection, tone inference, cross-field coherence, complete trait lifecycle |
-| #6 | Memory system incomplete — no long-term accumulation | `supabase/functions/extract-memory-events/index.ts`, `supabase/functions/compress-day-memories/index.ts`, `src/services/llm.ts`, `src/services/supabase-data.ts`, `src/types.ts`, `src/components/chronicle/ChatInterfaceTab.tsx` | RESOLVED — 2026-03-01 — Auto-extraction fires after every AI response, day-transition compression via new compress-day-memories edge function, entryType field distinguishes bullets from synopses |
+| #6 | Memory system incomplete — no long-term accumulation | `supabase/functions/extract-memory-events/index.ts`, `supabase/functions/compress-day-memories/index.ts`, `src/services/llm.ts`, `src/services/supabase-data.ts`, `src/types.ts`, `src/components/chronicle/ChatInterfaceTab.tsx` | RESOLVED — 2026-03-01 — Auto-extraction fires after every AI response, day-transition compression via compress-day-memories edge function (grok-3-mini), entryType field distinguishes bullets from synopses, previousDayRef reset on conversation switch, memoriesLoaded guard prevents stale-state compression |
 | #7 | Response length anchoring — all responses same length | `src/services/llm.ts`, `src/components/chronicle/ChatInterfaceTab.tsx` | RESOLVED — 2026-03-01 — Added adaptive length directive system with responseLengthsRef tracking, removed RESPONSE SHAPE & LENGTH from antiRepetitionRules |
 | #8 | Forward momentum — AI re-narrates user-authored AI character content | `src/services/llm.ts`, `src/components/chronicle/ChatInterfaceTab.tsx` | RESOLVED — 2026-03-01 — Added AI-character canon rule to FORWARD MOMENTUM, canon note detection in handleSend |
 | #9 | Control rule reliability — AI generates for user-controlled characters | `src/services/llm.ts` | RESOLVED — 2026-03-01 — CAST filtered to AI-only, DO NOT GENERATE FOR quick-reference at top of INSTRUCTIONS |
@@ -163,6 +164,6 @@ See Section 5 above for comprehensive bug list.
 
 ## 13. Planned / Future Changes
 
-- Memory consolidation system (long-term memory summarization)
+None documented.
 
-> Last updated: 2026-03-01 — Bugs #3, #5, #7-#11 resolved.
+> Last updated: 2026-03-01 — All bugs #1-#11 resolved. Memory compression deployed.

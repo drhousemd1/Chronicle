@@ -153,10 +153,11 @@ Service: `src/services/side-character-generator.ts`
 
 ### 6d. Memory System
 
-- Edge Function: `extract-memory-events`
-- Memories extracted from conversation and stored in `memories` table
-- Manual save via `MemoryQuickSaveButton` component
-- Memory context injected into system prompt when enabled
+- **Auto-extraction**: After every AI response in `handleSend`, `extract-memory-events` is invoked non-blocking. Extracted events are saved as `entryType: 'bullet'` memories tagged with current day/time.
+- **Day-transition compression**: When `currentDay` increments, a `useEffect` (guarded by `currentDay > prevDay && memoriesEnabled && memoriesLoaded`) invokes `compress-day-memories` edge function (grok-3-mini). Completed-day bullets are compressed into a 2-3 sentence synopsis (`entryType: 'synopsis'`), raw bullets deleted.
+- **Conversation-switch safety**: `previousDayRef.current` is reset in the `conversationId` reset effect to prevent stale-state compression on conversation switch.
+- **Manual save**: `MemoryQuickSaveButton` component for user-initiated memory entries.
+- **Prompt injection**: `memoriesContext` in `llm.ts` separates synopses under "COMPLETED DAYS" and today's bullets under "TODAY" with memory rules preventing contradiction.
 
 ### 6e. Key Tables
 
@@ -206,6 +207,8 @@ Service: `src/services/side-character-generator.ts`
 | `currentTimeOfDay` | `TimeOfDay` | sunrise/day/sunset/night |
 | `responseLengthsRef` | `useRef<number[]>` | Tracks word counts of recent AI responses for adaptive length directives |
 | `sessionMessageCountRef` | `useRef<number>` | Increments per exchange; injected as `[SESSION: Message N]` for trait evolution |
+| `previousDayRef` | `useRef<number>` | Tracks previous day value; reset on conversation switch; used by compression effect to detect real day increments |
+| `memoriesLoaded` | `boolean` | Guards compression effect — prevents firing before conversation memories are fetched |
 
 ---
 
@@ -272,7 +275,7 @@ Configurable via `onUpdateUiSettings`:
 - **RESOLVED — Bug #9**: Control rule reliability — AI generates for user-controlled characters. Fixed by filtering CAST to AI-only + high-authority quick-reference. (2026-03-01)
 - **RESOLVED — Bug #10**: No in-session trait evolution guidance. Fixed with IN-SESSION TRAIT DYNAMICS block + `sessionMessageCountRef` + personality-driven NSFW pacing. (2026-03-01)
 - **RESOLVED — Bug #11**: NSFW intensity and verbosity instruction overlap. Fixed by moving sensory detail lines from nsfwRules to verbosityRules. (2026-03-01)
-- **RESOLVED — Bug #6**: Memory system incomplete — no long-term accumulation. Fixed with auto-extraction in `handleSend`, `previousDayRef` + day-compression `useEffect` (dependency array: `[currentDay, memories, memoriesEnabled, conversationId]`), `entryType` field on Memory type, and split `memoriesContext` builder in `llm.ts`. (2026-03-01)
+- **RESOLVED — Bug #6**: Memory system incomplete — no long-term accumulation. Fixed with auto-extraction in `handleSend`, `previousDayRef` (reset on conversation switch) + day-compression `useEffect` (guarded by `memoriesLoaded`, dependency array: `[currentDay, memories, memoriesEnabled, conversationId]`), `entryType` field on Memory type, split `memoriesContext` builder in `llm.ts`, and `compress-day-memories` edge function (grok-3-mini). (2026-03-01)
 - **ACTIVE**: `ChatInterfaceTab.tsx` is ~3900 lines — extremely large single component. (2026-03-01)
 - **ACTIVE**: Message parsing regex may miss edge cases with nested formatting markers. (2026-03-01)
 
@@ -282,4 +285,4 @@ Configurable via `onUpdateUiSettings`:
 
 None documented.
 
-> Last updated: 2026-03-01 — Bugs #6-#11 resolved.
+> Last updated: 2026-03-01 — All bugs #1-#11 resolved. Memory compression deployed with conversation-switch safety.

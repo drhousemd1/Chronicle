@@ -385,6 +385,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   useEffect(() => {
     responseLengthsRef.current = [];
     sessionMessageCountRef.current = 0;
+    previousDayRef.current = currentDay;
   }, [conversationId]);
   
   // Issue #7: Compute length directive based on recent response pattern
@@ -474,7 +475,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     previousDayRef.current = currentDay;
 
     // Only compress when day increments (not decrements or initial load)
-    if (currentDay > prevDay && memoriesEnabled) {
+    if (currentDay > prevDay && memoriesEnabled && memoriesLoaded) {
       const completedDay = prevDay;
       const bulletMemories = memories.filter(
         m => m.day === completedDay && m.entryType === 'bullet'
