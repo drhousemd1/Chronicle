@@ -27,9 +27,10 @@ import { GuideEditor } from './GuideEditor';
 
 interface AppGuideToolProps {
   onRegisterSave?: (saveFn: (() => Promise<void>) | null) => void;
+  onRegisterSyncAll?: (syncFn: (() => Promise<void>) | null) => void;
 }
 
-export const AppGuideTool: React.FC<AppGuideToolProps> = ({ onRegisterSave }) => {
+export const AppGuideTool: React.FC<AppGuideToolProps> = ({ onRegisterSave, onRegisterSyncAll }) => {
   const [documents, setDocuments] = useState<GuideDocument[]>([]);
   const [activeDocId, setActiveDocId] = useState<string | null>(null);
   const [activeDocTitle, setActiveDocTitle] = useState('');
@@ -153,6 +154,31 @@ export const AppGuideTool: React.FC<AppGuideToolProps> = ({ onRegisterSave }) =>
     onRegisterSave(saveFn);
     return () => onRegisterSave(null);
   }, [onRegisterSave, activeDocId, activeDocTitle, activeDocMarkdown]);
+
+  // Register sync-all callback for external header button
+  useEffect(() => {
+    if (!onRegisterSyncAll) return;
+    const syncAllFn = async () => {
+      const { data, error } = await (supabase as any)
+        .from('guide_documents')
+        .select('id, title, markdown');
+      if (error) {
+        console.error('Failed to fetch documents for sync:', error.message);
+        return;
+      }
+      if (!data || data.length === 0) {
+        console.log('No documents to sync');
+        return;
+      }
+      console.log(`Syncing ${data.length} documents to GitHub...`);
+      for (const doc of data) {
+        syncToGitHub('upsert', doc.title, doc.markdown || '');
+      }
+      console.log('Bulk sync dispatched');
+    };
+    onRegisterSyncAll(syncAllFn);
+    return () => onRegisterSyncAll(null);
+  }, [onRegisterSyncAll]);
 
   return (
 
