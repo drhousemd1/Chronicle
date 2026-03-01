@@ -3,23 +3,23 @@ import { supabase } from '@/integrations/supabase/client';
 
 /** Fire-and-forget sync to GitHub repo */
 function syncToGitHub(action: 'upsert' | 'delete', title: string, markdown?: string) {
-  supabase.functions
-    .invoke('sync-guide-to-github', {
-      body: { action, title, markdown },
-    })
-    .then(({ error, data }) => {
-      if (error) {
-        console.error('GitHub sync request failed:', error);
-        return;
-      }
+  syncToGitHubAsync(action, title, markdown);
+}
 
-      if (data?.success === false) {
-        console.warn('GitHub sync warning:', data.error);
-        return;
-      }
-
-      console.log('GitHub sync:', data);
-    });
+/** Awaitable sync to GitHub repo */
+async function syncToGitHubAsync(action: 'upsert' | 'delete', title: string, markdown?: string) {
+  const { error, data } = await supabase.functions.invoke('sync-guide-to-github', {
+    body: { action, title, markdown },
+  });
+  if (error) {
+    console.error('GitHub sync request failed:', error);
+    return;
+  }
+  if (data?.success === false) {
+    console.warn('GitHub sync warning:', data.error);
+    return;
+  }
+  console.log('GitHub sync:', data);
 }
 
 import { GuideSidebar, type GuideDocument, type TocEntry } from './GuideSidebar';
@@ -172,7 +172,7 @@ export const AppGuideTool: React.FC<AppGuideToolProps> = ({ onRegisterSave, onRe
       }
       console.log(`Syncing ${data.length} documents to GitHub...`);
       for (const doc of data) {
-        syncToGitHub('upsert', doc.title, doc.markdown || '');
+        await syncToGitHubAsync('upsert', doc.title, doc.markdown || '');
       }
       console.log('Bulk sync dispatched');
     };
