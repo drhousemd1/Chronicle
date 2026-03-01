@@ -22,7 +22,7 @@
 | Function | Path | Purpose | AI Model Used |
 |----------|------|---------|---------------|
 | `chat` | `supabase/functions/chat/index.ts` | Main LLM chat endpoint — streams roleplay responses | User-selected model |
-| `extract-character-updates` | `supabase/functions/extract-character-updates/index.ts` | Extracts character state changes from conversation | grok-3-mini (Bug #4: should be grok-3) |
+| `extract-character-updates` | `supabase/functions/extract-character-updates/index.ts` | Extracts character state changes from conversation | grok-3 (default), grok-3-mini (403 safe-mode retry) |
 | `extract-memory-events` | `supabase/functions/extract-memory-events/index.ts` | Extracts memory-worthy events from messages | AI model |
 | `evaluate-arc-progress` | `supabase/functions/evaluate-arc-progress/index.ts` | Evaluates story arc progress against goals | AI model |
 | `generate-cover-image` | `supabase/functions/generate-cover-image/index.ts` | Generates scenario cover images | Image generation model |
@@ -102,10 +102,10 @@ The system prompt in `getSystemInstruction()` is constructed in this order:
 
 | Bug # | Description | Affected Files | Status |
 |-------|-------------|----------------|--------|
-| #1 | `buildCharacterStateBlock()` omits empty sections — AI cannot see 13/16 possible character section types | `src/services/llm.ts` | ACTIVE |
-| #2 | `personality.traits` missing from TRACKABLE FIELDS | `supabase/functions/extract-character-updates/index.ts` | ACTIVE |
+| #1 | `buildCharacterStateBlock()` now outputs scaffolding placeholders for all section types when empty | `supabase/functions/extract-character-updates/index.ts` | RESOLVED — 2026-03-01 |
+| #2 | `personality.traits` added to TRACKABLE FIELDS for unified mode | `supabase/functions/extract-character-updates/index.ts` | RESOLVED — 2026-03-01 |
 | #3 | `preferredClothing` field name mismatch (camelCase vs snake_case) | `supabase/functions/extract-character-updates/index.ts` | ACTIVE |
-| #4 | Wrong model: `grok-3-mini` instead of `grok-3` for extraction | `supabase/functions/extract-character-updates/index.ts` | ACTIVE |
+| #4 | Default model changed to `grok-3`; 403 retry remains `grok-3-mini` | `supabase/functions/extract-character-updates/index.ts` | RESOLVED — 2026-03-01 |
 | #5 | Extraction prompt lacks analytical depth | `supabase/functions/extract-character-updates/index.ts` | ACTIVE |
 | #6 | Memory system incomplete — no long-term accumulation | `supabase/functions/extract-memory-events/index.ts` | ACTIVE |
 
@@ -149,7 +149,7 @@ See Section 5 above for comprehensive bug list.
 ## 13. Planned / Future Changes
 
 - Memory consolidation system (long-term memory summarization)
-- Fix extraction model from grok-3-mini to grok-3
-- Improve extraction prompt depth
+- Fix `preferredClothing` field name mismatch (Bug #3)
+- Improve extraction prompt depth (Bug #5)
 
 > Last updated: 2026-03-01 — Initial creation.
