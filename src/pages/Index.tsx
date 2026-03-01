@@ -25,7 +25,7 @@ import { aiFillCharacter, aiGenerateCharacter } from "@/services/character-ai";
 import { CharacterPicker, CharacterPickerWithRefresh } from "@/components/chronicle/CharacterPicker";
 import { BackgroundPickerModal } from "@/components/chronicle/BackgroundPickerModal";
 import { useAuth } from "@/hooks/use-auth";
-import { useToast } from "@/hooks/use-toast";
+
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PanelLeftClose, PanelLeft, Settings, Image as ImageIcon, Sparkles, ArrowLeft, UserCircle } from "lucide-react";
@@ -112,7 +112,7 @@ function SidebarItem({
 const IndexContent = () => {
   const { user, loading: authLoading, signOut, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
+  
   const { modelId: globalModelId, setModelId: setGlobalModelId } = useModelSettings();
 
   const [registry, setRegistry] = useState<ScenarioMetadata[]>([]);
@@ -289,18 +289,13 @@ const IndexContent = () => {
         }
       } catch (e: any) {
         console.error("Failed to load data:", e);
-        toast({
-          title: "Failed to load data",
-          description: e.message,
-          variant: "destructive"
-        });
       } finally {
         setIsLoading(false);
       }
     }
     
     loadData();
-  }, [isAuthenticated, user, toast]);
+  }, [isAuthenticated, user]);
 
   // Lazy-load conversation message previews when the Conversations tab is viewed
   // Re-enrich when registry changes (e.g. new conversations created) by tracking registry length
@@ -449,18 +444,18 @@ const IndexContent = () => {
           
           setHubBackgrounds(prev => [newBg, ...prev]);
         } catch (e: any) {
-          toast({ title: "Upload failed", description: e.message, variant: "destructive" });
+          console.error("Upload failed:", e.message);
         } finally {
           setIsUploadingBackground(false);
         }
       };
       reader.onerror = () => {
-        toast({ title: "Failed to read file", variant: "destructive" });
+        console.error("Failed to read file");
         setIsUploadingBackground(false);
       };
       reader.readAsDataURL(file);
     } catch (e: any) {
-      toast({ title: "Upload failed", description: e.message, variant: "destructive" });
+      console.error("Upload failed:", e.message);
       setIsUploadingBackground(false);
     }
   };
@@ -475,7 +470,7 @@ const IndexContent = () => {
         isSelected: bg.id === id
       })));
     } catch (e: any) {
-      toast({ title: "Failed to set background", description: e.message, variant: "destructive" });
+      console.error("Failed to set background:", e.message);
     }
   };
 
@@ -488,7 +483,7 @@ const IndexContent = () => {
         setSelectedHubBackgroundId(null);
       }
     } catch (e: any) {
-      toast({ title: "Failed to delete background", description: e.message, variant: "destructive" });
+      console.error("Failed to delete background:", e.message);
     }
   };
 
@@ -509,7 +504,7 @@ const IndexContent = () => {
       await supabaseData.setImageLibraryBackground(user.id, id);
       setSelectedImageLibraryBackgroundId(id);
     } catch (e: any) {
-      toast({ title: "Failed to set background", description: e.message, variant: "destructive" });
+      console.error("Failed to set background:", e.message);
     }
   };
 
@@ -533,7 +528,7 @@ const IndexContent = () => {
     try {
       await supabaseData.updateBackgroundOverlay(user.id, bgId, color, opacity);
     } catch (e: any) {
-      toast({ title: "Failed to update overlay", description: e.message, variant: "destructive" });
+      console.error("Failed to update overlay:", e.message);
     }
   };
 
@@ -584,7 +579,7 @@ const IndexContent = () => {
       // Use optimized fetch that skips loading all existing conversation messages
       const result = await supabaseData.fetchScenarioForPlay(id);
       if (!result) {
-        toast({ title: "Scenario not found", variant: "destructive" });
+        console.error("Scenario not found");
         setTab("hub");
         setPlayingConversationId(null);
         return;
@@ -654,7 +649,7 @@ const IndexContent = () => {
       setActiveData(data);
       setPlayingConversationId(newConv.id);
     } catch (e: any) {
-      toast({ title: "Failed to play scenario", description: e.message, variant: "destructive" });
+      console.error("Failed to play scenario:", e.message);
       setTab("hub");
       setPlayingConversationId(null);
     }
@@ -664,7 +659,7 @@ const IndexContent = () => {
     try {
       const result = await supabaseData.fetchScenarioById(id);
       if (!result) {
-        toast({ title: "Scenario not found", variant: "destructive" });
+        console.error("Scenario not found");
         return;
       }
       const { data, coverImage, coverImagePosition } = result;
@@ -698,7 +693,7 @@ const IndexContent = () => {
       setSelectedCharacterId(null);
       setPlayingConversationId(null);
     } catch (e: any) {
-      toast({ title: "Failed to edit scenario", description: e.message, variant: "destructive" });
+      console.error("Failed to edit scenario:", e.message);
     }
   }
 
@@ -708,17 +703,13 @@ const IndexContent = () => {
     try {
       const result = await supabaseData.fetchScenarioById(id);
       if (!result) {
-        toast({ title: "Scenario not found", variant: "destructive" });
+        console.error("Scenario not found");
         return;
       }
       const { data, coverImage, coverImagePosition } = result;
       
       const newScenarioId = uuid();
       
-      toast({ 
-        title: "Creating your copy...", 
-        description: "You'll be editing your own version of this story." 
-      });
       
       const clonedData = await supabaseData.cloneScenarioForRemix(
         id,
@@ -745,16 +736,12 @@ const IndexContent = () => {
       setActiveCoverPosition(coverImagePosition);
       setActiveContentThemes(defaultContentThemes);
       
-      toast({ 
-        title: "Your copy is ready!", 
-        description: "Edit freely - your changes won't affect the original." 
-      });
       
       setTab("world"); 
       setSelectedCharacterId(null);
       setPlayingConversationId(null);
     } catch (e: any) {
-      toast({ title: "Failed to clone scenario", description: e.message, variant: "destructive" });
+      console.error("Failed to clone scenario:", e.message);
     }
   }
 
@@ -774,7 +761,7 @@ const IndexContent = () => {
   const handleSaveWithData = useCallback(async (dataOverride: ScenarioData | null, navigateToHub: boolean = false): Promise<boolean> => {
     const dataToUse = dataOverride || activeData;
     if (!activeId || !dataToUse || !user) {
-      toast({ title: "Error", description: "No active scenario found to save.", variant: "destructive" });
+      console.error("No active scenario found to save.");
       return false;
     }
 
@@ -847,11 +834,10 @@ const IndexContent = () => {
       return true;
     } catch (e: any) {
       console.error("Save failed:", e);
-      toast({ title: "Save failed", description: e.message, variant: "destructive" });
       return false;
     } finally {
     }
-  }, [activeId, activeData, activeCoverImage, activeCoverPosition, user, toast, isValidUuid, migrateScenarioDataIds, library]);
+  }, [activeId, activeData, activeCoverImage, activeCoverPosition, user, isValidUuid, migrateScenarioDataIds, library]);
 
   // Wrapper for backward compatibility - uses current activeData
   const handleSave = useCallback(async (navigateToHub: boolean = false): Promise<boolean> => {
@@ -887,7 +873,7 @@ const IndexContent = () => {
         }
         setSelectedCharacterId(null);
       } catch (e: any) {
-        toast({ title: "Error saving character", description: e.message, variant: "destructive" });
+        console.error("Error saving character:", e.message);
       }
     } else {
       const success = await handleSave();
@@ -988,7 +974,7 @@ const IndexContent = () => {
   function handleImportCharacter(char: Character) {
     if (!activeData) return;
     if (activeData.characters.some(c => c.id === char.id)) {
-      toast({ title: "Character already in scenario", variant: "destructive" });
+      console.error("Character already in scenario");
       return;
     }
     const copy = JSON.parse(JSON.stringify(char));
@@ -1021,9 +1007,9 @@ const IndexContent = () => {
         await unsaveScenario(savedScenario.published_scenario_id, user!.id);
         const savedScens = await fetchSavedScenarios(user!.id);
         setSavedScenarios(savedScens);
-        toast({ title: "Removed from bookmarks" });
+        
       } catch (e: any) {
-        toast({ title: "Failed to remove bookmark", description: e.message, variant: "destructive" });
+        console.error("Failed to remove bookmark:", e.message);
       }
     } else {
       try {
@@ -1042,7 +1028,7 @@ const IndexContent = () => {
           setTab("hub");
         }
       } catch (e: any) {
-        toast({ title: "Delete failed", description: e.message, variant: "destructive" });
+        console.error("Delete failed:", e.message);
       }
     }
   }
@@ -1061,12 +1047,12 @@ const IndexContent = () => {
       ]);
 
       if (!scenarioResult) {
-        toast({ title: "Scenario not found", variant: "destructive" });
+        console.error("Scenario not found");
         setIsResuming(false);
         return;
       }
       if (!threadResult) {
-        toast({ title: "Conversation not found", variant: "destructive" });
+        console.error("Conversation not found");
         setIsResuming(false);
         return;
       }
@@ -1098,7 +1084,7 @@ const IndexContent = () => {
       console.log('[handleResumeFromHistory] Loaded', thread.messages.length, 'messages (hasMore:', hasMore, ')');
     } catch (e: any) {
       console.error('[handleResumeFromHistory] Error:', e);
-      toast({ title: "Failed to load", description: e.message, variant: "destructive" });
+      
     } finally {
       if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
       resumeTimerRef.current = null;
@@ -1153,14 +1139,14 @@ const IndexContent = () => {
       await supabaseData.deleteConversation(conversationId);
     } catch (e: any) {
       // On error, restore previous state
-      toast({ title: "Failed to delete conversation", description: e.message, variant: "destructive" });
+      console.error("Failed to delete conversation:", e.message);
       setConversationRegistry(previousRegistry);
     }
   }
   
   async function handleDeleteAllConversations() {
     if (conversationRegistry.length === 0) {
-      toast({ title: "No sessions to delete", description: "Your chat history is already empty." });
+      
       return;
     }
     
@@ -1176,10 +1162,10 @@ const IndexContent = () => {
     // Delete from database in parallel batch
     try {
       await Promise.all(previousRegistry.map(entry => supabaseData.deleteConversation(entry.conversationId)));
-      toast({ title: "All sessions deleted", description: "Your chat history has been cleared." });
+      
     } catch (e: any) {
       // On error, restore previous state
-      toast({ title: "Failed to delete sessions", description: e.message, variant: "destructive" });
+      console.error("Failed to delete sessions:", e.message);
       setConversationRegistry(previousRegistry);
     }
   }
@@ -1203,7 +1189,7 @@ const IndexContent = () => {
       
       
     } catch (e: any) {
-      toast({ title: "Failed to rename conversation", description: e.message, variant: "destructive" });
+      console.error("Failed to rename conversation:", e.message);
     }
   }
 
@@ -1235,7 +1221,7 @@ const IndexContent = () => {
         if (selectedCharacterId === id) setSelectedCharacterId(null);
         
       } catch (e: any) {
-        toast({ title: "Failed to delete character", description: e.message, variant: "destructive" });
+        console.error("Failed to delete character:", e.message);
       }
     } else if (activeData) {
       const nextChars = activeData.characters.filter((c) => c.id !== id);
@@ -1260,13 +1246,11 @@ const IndexContent = () => {
       const patch = await aiFillCharacter(character, activeData || createDefaultScenarioData(), globalModelId, userPrompt, useExistingDetails);
       if (Object.keys(patch).length > 0) {
         handleUpdateCharacter(character.id, { ...patch, updatedAt: now() });
-        toast({ title: "AI Fill complete", description: "Empty fields have been filled." });
       } else {
-        toast({ title: "Nothing to fill", description: "All fields already have values." });
       }
     } catch (e) {
       console.error(e);
-      toast({ title: "AI Fill failed", variant: "destructive" });
+      console.error("AI Fill failed:", e);
     } finally {
       setIsAiFilling(false);
     }
@@ -1281,13 +1265,11 @@ const IndexContent = () => {
       const patch = await aiGenerateCharacter(character, activeData || createDefaultScenarioData(), globalModelId, userPrompt, useExistingDetails);
       if (Object.keys(patch).length > 0) {
         handleUpdateCharacter(character.id, { ...patch, updatedAt: now() });
-        toast({ title: "AI Generate complete", description: "Character has been enhanced with new sections and filled fields." });
       } else {
-        toast({ title: "Generation complete", description: "No new content was needed." });
       }
     } catch (e) {
       console.error(e);
-      toast({ title: "AI Generate failed", variant: "destructive" });
+      console.error("AI Generate failed:", e);
     } finally {
       setIsAiGenerating(false);
     }
@@ -1320,7 +1302,6 @@ const IndexContent = () => {
           next.delete(selected.id);
           return next;
         });
-        toast({ title: "Character updated", description: "Character profile updated in library." });
       } else {
         // From Scenario Builder - check if we already have a library copy
         const existingLibraryId = characterInLibrary[selected.id];
@@ -1331,7 +1312,7 @@ const IndexContent = () => {
           await supabaseData.saveCharacterToLibrary(libraryCopy, user.id);
           // Also update local library state
           setLibrary(prev => prev.map(c => c.id === existingLibraryId ? { ...c, ...selected, id: existingLibraryId } : c));
-          toast({ title: "Character updated", description: "Character profile updated in library." });
+          
         } else {
           // Create a NEW copy with a new UUID for the library
           const newLibraryId = uuid();
@@ -1346,12 +1327,12 @@ const IndexContent = () => {
           });
           // Map scenario char ID -> library char ID
           setCharacterInLibrary(prev => ({ ...prev, [selected.id]: newLibraryId }));
-          toast({ title: "Added to library", description: "Character has been added to your library." });
+          
         }
       }
     } catch (e: any) {
       console.error(e);
-      toast({ title: "Save failed", description: e.message, variant: "destructive" });
+      console.error("Save failed:", e.message);
     } finally {
       setIsSavingToLibrary(false);
     }
@@ -2149,11 +2130,6 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
                       })
                       .catch(err => {
                         console.error('Failed to save conversation:', err);
-                        toast({ 
-                          title: "Save failed", 
-                          description: "Your messages may not be saved.", 
-                          variant: "destructive" 
-                        });
                       });
                   }
                   
