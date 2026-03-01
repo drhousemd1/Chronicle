@@ -1,82 +1,170 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const GITHUB_OWNER = 'drhousemd1';
-const GITHUB_REPO = 'Chronicle';
-const GUIDES_PATH = 'docs/guides';
+const GITHUB_OWNER = "drhousemd1";
+const GITHUB_REPO = "Chronicle";
+const GUIDES_PATH = "docs/guides";
 
 function slugify(title: string): string {
   return title
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function githubHeaders(token: string, withJson = false): HeadersInit {
+  return {
+    Authorization: `token ${token}`,
+    Accept: "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+    "User-Agent": "lovable-sync-guide-to-github",
+    ...(withJson ? { "Content-Type": "application/json" } : {}),
+  };
+}
+
+function toBase64Utf8(value: string): string {
+  const bytes = new TextEncoder().encode(value);
+  let binary = "";
+  const chunkSize = 0x8000;
+
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+
+  return btoa(binary);
+}
+
+async function parseGitHubError(res: Response): Promise<string> {
+  const raw = await res.text();
+  let message = raw;
+
+  try {
+    const parsed = JSON.parse(raw);
+    message = parsed?.message || raw;
+  } catch {
+    // raw is not JSON
+  }
+
+  const accepted = res.headers.get("x-accepted-github-permissions");
+  const scopes = res.headers.get("x-oauth-scopes");
+  const sso = res.headers.get("x-github-sso");
+
+  const tips: string[] = [];
+  if (accepted) tips.push(`required_permissions=${accepted}`);
+  if (scopes) tips.push(`token_scopes=${scopes}`);
+  if (sso) tips.push(`sso=${sso}`);
+
+  const suffix = tips.length ? ` | ${tips.join(" | ")}` : "";
+  return `${message}${suffix}`;
+}
+
+async function assertRepoAccess(token: string): Promise<void> {
+  const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}`;
+  const res = await fetch(url, { headers: githubHeaders(token) });
+  if (res.ok) {
+    await res.text();
+    return;
+  }
+
+  const details = await parseGitHubError(res);
+  throw new Error(
+    `Repository access failed [${res.status}] for ${GITHUB_OWNER}/${GITHUB_REPO}: ${details}. ` +
+      "Ensure token has repository access and Contents: Read & write."
+  );
 }
 
 async function getFileSha(token: string, path: string): Promise<string | null> {
-  const res = await fetch(
-    `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${path}`,
-    { headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github.v3+json' } }
-  );
-  if (res.status === 200) {
-    const data = await res.json();
-    return data.sha;
+  const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${path}`;
+  const res = await fetch(url, { headers: githubHeaders(token) });
+
+  if (res.status === 404) {
+    await res.text();
+    return null;
   }
-  await res.text(); // consume body
-  return null;
+
+  if (!res.ok) {
+    const details = await parseGitHubError(res);
+    throw new Error(`Get file SHA failed [${res.status}]: ${details}`);
+  }
+
+  const data = await res.json();
+  return data.sha ?? null;
 }
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    const token = Deno.env.get('GITHUB_PAT');
+    const token = Deno.env.get("GITHUB_PAT");
     if (!token) {
-      return new Response(JSON.stringify({ error: 'GITHUB_PAT not configured' }), {
-        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return new Response(
+        JSON.stringify({ success: false, error: "GITHUB_PAT not configured" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    const { action, title, markdown } = await req.json();
+    const payload = await req.json();
+    const action = payload?.action as "upsert" | "delete";
+    const title = String(payload?.title || "").trim();
+    const markdown = String(payload?.markdown || "");
+
+    if (!title) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Missing required field: title" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (action !== "upsert" && action !== "delete") {
+      return new Response(
+        JSON.stringify({ success: false, error: "Invalid action. Use 'upsert' or 'delete'." }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    await assertRepoAccess(token);
+
     const slug = slugify(title);
     const filePath = `${GUIDES_PATH}/${slug}.md`;
 
-    if (action === 'delete') {
+    if (action === "delete") {
       const sha = await getFileSha(token, filePath);
       if (!sha) {
-        return new Response(JSON.stringify({ success: true, message: 'File not found, nothing to delete' }), {
-          status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return new Response(
+          JSON.stringify({ success: true, message: "File not found, nothing to delete", path: filePath }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
 
       const res = await fetch(
         `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${filePath}`,
         {
-          method: 'DELETE',
-          headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+          method: "DELETE",
+          headers: githubHeaders(token, true),
           body: JSON.stringify({ message: `Delete guide: ${title}`, sha }),
         }
       );
 
       if (!res.ok) {
-        const err = await res.text();
-        throw new Error(`GitHub delete failed [${res.status}]: ${err}`);
+        const details = await parseGitHubError(res);
+        throw new Error(`GitHub delete failed [${res.status}]: ${details}`);
       }
-      await res.text();
 
-      return new Response(JSON.stringify({ success: true }), {
-        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      await res.text();
+      return new Response(JSON.stringify({ success: true, path: filePath }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Default: upsert
     const sha = await getFileSha(token, filePath);
-    const content = btoa(unescape(encodeURIComponent(markdown || '')));
+    const content = toBase64Utf8(markdown);
 
     const body: Record<string, string> = {
       message: `Update guide: ${title}`,
@@ -87,26 +175,29 @@ serve(async (req) => {
     const res = await fetch(
       `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${filePath}`,
       {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+        method: "PUT",
+        headers: githubHeaders(token, true),
         body: JSON.stringify(body),
       }
     );
 
     if (!res.ok) {
-      const err = await res.text();
-      throw new Error(`GitHub upsert failed [${res.status}]: ${err}`);
+      const details = await parseGitHubError(res);
+      throw new Error(`GitHub upsert failed [${res.status}]: ${details}`);
     }
-    await res.text();
 
+    await res.text();
     return new Response(JSON.stringify({ success: true, path: filePath }), {
-      status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: unknown) {
-    console.error('sync-guide-to-github error:', error);
-    const msg = error instanceof Error ? error.message : 'Unknown error';
-    return new Response(JSON.stringify({ success: false, error: msg }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    console.error("sync-guide-to-github error:", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
+
+    return new Response(JSON.stringify({ success: false, error: message }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
