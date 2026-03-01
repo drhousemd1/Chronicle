@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import 'highlight.js/styles/github-dark.css';
+import 'highlight.js/styles/github.css';
 import { Pencil, Eye, Save, Search, X, ChevronUp, ChevronDown } from 'lucide-react';
 import type { TocEntry } from './GuideSidebar';
 
@@ -13,6 +14,7 @@ interface GuideEditorProps {
   onTitleChange: (id: string, newTitle: string) => void;
   onTocUpdate: (entries: TocEntry[]) => void;
   onMarkdownChange?: (markdown: string) => void;
+  theme?: 'dark' | 'light';
 }
 
 function extractTocFromMarkdown(md: string): TocEntry[] {
@@ -31,40 +33,55 @@ function extractTocFromMarkdown(md: string): TocEntry[] {
   return entries;
 }
 
-// --- Markdown components for ReactMarkdown (dark theme) ---
+// --- Theme-aware Markdown components ---
 
-const markdownComponents: Record<string, React.FC<any>> = {
-  h1: ({ children }) => <h1 className="text-white text-3xl font-bold mt-6 mb-3">{children}</h1>,
-  h2: ({ children }) => <h2 className="text-white text-2xl font-bold mt-5 mb-2 pb-2 border-b border-[#333333]">{children}</h2>,
-  h3: ({ children }) => <h3 className="text-white text-xl font-semibold mt-4 mb-2">{children}</h3>,
-  h4: ({ children }) => <h4 className="text-gray-400 text-base font-semibold mt-3 mb-1">{children}</h4>,
-  p: ({ children }) => <p className="text-[#e2e2e2] text-sm leading-relaxed mb-3">{children}</p>,
-  strong: ({ children }) => <strong className="text-white font-bold">{children}</strong>,
-  em: ({ children }) => <em className="text-[#e2e2e2] italic">{children}</em>,
-  a: ({ href, children }) => <a href={href} className="text-blue-400 underline hover:text-blue-300" target="_blank" rel="noopener noreferrer">{children}</a>,
-  blockquote: ({ children }) => <blockquote className="border-l-4 border-[#444444] pl-4 text-gray-400 italic my-3">{children}</blockquote>,
-  ul: ({ children }) => <ul className="text-[#e2e2e2] pl-6 my-2 list-disc">{children}</ul>,
-  ol: ({ children }) => <ol className="text-[#e2e2e2] pl-6 my-2 list-decimal">{children}</ol>,
-  li: ({ children }) => <li className="mb-1 text-sm">{children}</li>,
-  hr: () => <hr className="border-[#333333] my-4" />,
-  pre: ({ children }) => <pre className="bg-[#1e1e1e] rounded-lg p-4 overflow-x-auto my-3 border border-[#333333]">{children}</pre>,
-  code: ({ className, children, ...props }: any) => {
-    const isInline = !className;
-    if (isInline) {
-      return <code className="text-[#e2e2e2] bg-[#2a2a2a] rounded px-1 py-0.5 text-xs font-mono">{children}</code>;
-    }
-    return <code className={`${className || ''} font-mono text-sm`} {...props}>{children}</code>;
-  },
-  table: ({ children }) => (
-    <div className="overflow-x-auto my-3">
-      <table className="w-full border-collapse border border-[#333333]">{children}</table>
-    </div>
-  ),
-  thead: ({ children }) => <thead className="bg-[#1a1a1a]">{children}</thead>,
-  th: ({ children }) => <th className="border border-[#333333] px-3 py-2 text-left text-white text-xs font-semibold">{children}</th>,
-  td: ({ children }) => <td className="border border-[#333333] px-3 py-2 text-[#e2e2e2] text-xs">{children}</td>,
-  tr: ({ children, ...props }: any) => <tr className="even:bg-[#111111]" {...props}>{children}</tr>,
-};
+function createMarkdownComponents(isDark: boolean): Record<string, React.FC<any>> {
+  const text = isDark ? '#e2e2e2' : '#374151';
+  const heading = isDark ? '#ffffff' : '#111827';
+  const mutedHeading = isDark ? '#9CA3AF' : '#6B7280';
+  const border = isDark ? '#333333' : '#d1d5db';
+  const codeBg = isDark ? '#1e1e1e' : '#f3f4f6';
+  const inlineCodeBg = isDark ? '#2a2a2a' : '#e5e7eb';
+  const theadBg = isDark ? '#1a1a1a' : '#f9fafb';
+  const stripeBg = isDark ? '#111111' : '#f9fafb';
+  const linkColor = isDark ? '#60a5fa' : '#2563eb';
+  const blockquoteBorder = isDark ? '#444444' : '#d1d5db';
+  const blockquoteText = isDark ? '#9CA3AF' : '#6B7280';
+  const bold = isDark ? '#ffffff' : '#111827';
+
+  return {
+    h1: ({ children }) => <h1 style={{ color: heading }} className="text-3xl font-bold mt-6 mb-3">{children}</h1>,
+    h2: ({ children }) => <h2 style={{ color: heading, borderBottomColor: border }} className="text-2xl font-bold mt-5 mb-2 pb-2 border-b">{children}</h2>,
+    h3: ({ children }) => <h3 style={{ color: heading }} className="text-xl font-semibold mt-4 mb-2">{children}</h3>,
+    h4: ({ children }) => <h4 style={{ color: mutedHeading }} className="text-base font-semibold mt-3 mb-1">{children}</h4>,
+    p: ({ children }) => <p style={{ color: text }} className="text-sm leading-relaxed mb-3">{children}</p>,
+    strong: ({ children }) => <strong style={{ color: bold }} className="font-bold">{children}</strong>,
+    em: ({ children }) => <em style={{ color: text }} className="italic">{children}</em>,
+    a: ({ href, children }) => <a href={href} style={{ color: linkColor }} className="underline hover:opacity-80" target="_blank" rel="noopener noreferrer">{children}</a>,
+    blockquote: ({ children }) => <blockquote style={{ borderLeftColor: blockquoteBorder, color: blockquoteText }} className="border-l-4 pl-4 italic my-3">{children}</blockquote>,
+    ul: ({ children }) => <ul style={{ color: text }} className="pl-6 my-2 list-disc">{children}</ul>,
+    ol: ({ children }) => <ol style={{ color: text }} className="pl-6 my-2 list-decimal">{children}</ol>,
+    li: ({ children }) => <li className="mb-1 text-sm">{children}</li>,
+    hr: () => <hr style={{ borderColor: border }} className="my-4" />,
+    pre: ({ children }) => <pre style={{ background: codeBg, borderColor: border }} className="rounded-lg p-4 overflow-x-auto my-3 border">{children}</pre>,
+    code: ({ className, children, ...props }: any) => {
+      const isInline = !className;
+      if (isInline) {
+        return <code style={{ color: text, background: inlineCodeBg }} className="rounded px-1 py-0.5 text-xs font-mono">{children}</code>;
+      }
+      return <code className={`${className || ''} font-mono text-sm`} {...props}>{children}</code>;
+    },
+    table: ({ children }) => (
+      <div className="overflow-x-auto my-3">
+        <table style={{ borderColor: border }} className="w-full border-collapse border">{children}</table>
+      </div>
+    ),
+    thead: ({ children }) => <thead style={{ background: theadBg }}>{children}</thead>,
+    th: ({ children }) => <th style={{ borderColor: border, color: heading }} className="border px-3 py-2 text-left text-xs font-semibold">{children}</th>,
+    td: ({ children }) => <td style={{ borderColor: border, color: text }} className="border px-3 py-2 text-xs">{children}</td>,
+    tr: ({ children, ...props }: any) => <tr style={{ }} {...props}>{children}</tr>,
+  };
+}
 
 // --- Search Component ---
 
@@ -76,9 +93,16 @@ const SearchBar: React.FC<{
   onNext: () => void;
   onPrev: () => void;
   onClose: () => void;
-}> = ({ searchQuery, onSearchChange, matchCount, currentMatch, onNext, onPrev, onClose }) => (
-  <div className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] border-b border-[#333333]">
-    <Search size={14} className="text-gray-500 shrink-0" />
+  isDark: boolean;
+}> = ({ searchQuery, onSearchChange, matchCount, currentMatch, onNext, onPrev, onClose, isDark }) => (
+  <div
+    className="flex items-center gap-2 px-4 py-2 border-b transition-colors"
+    style={{
+      background: isDark ? '#1a1a1a' : '#f9fafb',
+      borderBottomColor: isDark ? '#333333' : '#d1d5db',
+    }}
+  >
+    <Search size={14} className={isDark ? 'text-gray-500' : 'text-gray-400'} />
     <input
       autoFocus
       value={searchQuery}
@@ -88,27 +112,32 @@ const SearchBar: React.FC<{
         if (e.key === 'Escape') onClose();
       }}
       placeholder="Search..."
-      className="bg-transparent text-white text-sm outline-none flex-1 placeholder-gray-500"
+      className="bg-transparent text-sm outline-none flex-1"
+      style={{ color: isDark ? '#ffffff' : '#111827' }}
     />
     {searchQuery && (
-      <span className="text-xs text-gray-400 shrink-0">
+      <span className="text-xs shrink-0" style={{ color: isDark ? '#9CA3AF' : '#6B7280' }}>
         {matchCount > 0 ? `${currentMatch + 1}/${matchCount}` : '0 results'}
       </span>
     )}
-    <button onClick={onPrev} className="p-1 hover:bg-white/10 rounded text-gray-400 hover:text-white"><ChevronUp size={14} /></button>
-    <button onClick={onNext} className="p-1 hover:bg-white/10 rounded text-gray-400 hover:text-white"><ChevronDown size={14} /></button>
-    <button onClick={onClose} className="p-1 hover:bg-white/10 rounded text-gray-400 hover:text-white"><X size={14} /></button>
+    <button onClick={onPrev} className="p-1 rounded transition-colors" style={{ color: isDark ? '#9CA3AF' : '#6B7280' }}><ChevronUp size={14} /></button>
+    <button onClick={onNext} className="p-1 rounded transition-colors" style={{ color: isDark ? '#9CA3AF' : '#6B7280' }}><ChevronDown size={14} /></button>
+    <button onClick={onClose} className="p-1 rounded transition-colors" style={{ color: isDark ? '#9CA3AF' : '#6B7280' }}><X size={14} /></button>
   </div>
 );
 
 // --- Line Numbers Gutter ---
 
-const LineNumberGutter: React.FC<{ lineCount: number; scrollTop: number }> = ({ lineCount, scrollTop }) => {
+const LineNumberGutter: React.FC<{ lineCount: number; scrollTop: number; isDark: boolean }> = ({ lineCount, scrollTop, isDark }) => {
   const lines = useMemo(() => Array.from({ length: lineCount }, (_, i) => i + 1), [lineCount]);
   return (
     <div
-      className="bg-[#1e1e1e] text-[#555555] font-mono text-xs text-right pr-2 w-12 select-none overflow-hidden shrink-0 pt-4"
-      style={{ marginTop: -scrollTop }}
+      className="font-mono text-xs text-right pr-2 w-12 select-none overflow-hidden shrink-0 pt-4 transition-colors"
+      style={{
+        marginTop: -scrollTop,
+        background: isDark ? '#1e1e1e' : '#f3f4f6',
+        color: isDark ? '#555555' : '#9CA3AF',
+      }}
     >
       {lines.map((n) => (
         <div key={n} style={{ height: '1.5rem', lineHeight: '1.5rem' }}>{n}</div>
@@ -126,7 +155,10 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
   onTitleChange,
   onTocUpdate,
   onMarkdownChange,
+  theme = 'dark',
 }) => {
+  const isDark = theme === 'dark';
+
   const [title, setTitle] = useState(docTitle);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -141,6 +173,8 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
   const titleRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
+
+  const markdownComponents = useMemo(() => createMarkdownComponents(isDark), [isDark]);
 
   useEffect(() => { setTitle(docTitle); }, [docTitle]);
   useEffect(() => { onTocUpdate(extractTocFromMarkdown(docMarkdown)); }, [docMarkdown, onTocUpdate]);
@@ -164,7 +198,7 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
-  // Search match count (simple text search in markdown)
+  // Search match count
   const matchCount = useMemo(() => {
     if (!searchQuery) return 0;
     const text = docMarkdown.toLowerCase();
@@ -183,19 +217,16 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
     });
   }, [matchCount]);
 
-  // Enter edit mode
   const enterEditMode = useCallback(() => {
     setEditBuffer(docMarkdown);
     setIsEditMode(true);
     setScrollTop(0);
   }, [docMarkdown]);
 
-  // Enter view mode (discard unsaved changes)
   const enterViewMode = useCallback(() => {
     setIsEditMode(false);
   }, []);
 
-  // Save from edit mode
   const handleSave = useCallback(() => {
     if (onMarkdownChange) {
       onMarkdownChange(editBuffer);
@@ -216,18 +247,30 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
 
   const lineCount = useMemo(() => editBuffer.split('\n').length, [editBuffer]);
 
+  // Theme-dependent colors
+  const pageBg = isDark ? '#000000' : '#ffffff';
+  const titleBarBorder = isDark ? '#222' : '#e5e7eb';
+  const titleColor = isDark ? '#ffffff' : '#111827';
+  const titleHover = isDark ? '#00F0FF' : '#2563eb';
+  const btnBg = isDark ? '#1a1a1a' : '#f3f4f6';
+  const btnBorder = isDark ? '#333' : '#d1d5db';
+  const btnText = isDark ? '#9CA3AF' : '#6B7280';
+  const emptyText = isDark ? '#6B7280' : '#9CA3AF';
+  const textareaBg = isDark ? '#0d0d0d' : '#ffffff';
+  const textareaColor = isDark ? '#e2e2e2' : '#111827';
+
   if (!docId) {
     return (
-      <div className="flex-1 flex items-center justify-center h-full bg-black">
-        <span className="text-[#6B7280] text-sm">Select or create a document</span>
+      <div className="flex-1 flex items-center justify-center h-full transition-colors" style={{ background: pageBg }}>
+        <span className="text-sm" style={{ color: emptyText }}>Select or create a document</span>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full min-w-0 bg-black">
+    <div className={`flex-1 flex flex-col h-full min-w-0 transition-colors ${isDark ? 'guide-hljs-dark' : 'guide-hljs-light'}`} style={{ background: pageBg }}>
       {/* Title bar */}
-      <div className="flex items-center justify-between px-4 shrink-0" style={{ height: 40, borderBottom: '1px solid #222' }}>
+      <div className="flex items-center justify-between px-4 shrink-0 transition-colors" style={{ height: 40, borderBottom: `1px solid ${titleBarBorder}` }}>
         <div className="flex-1 min-w-0">
           {isEditingTitle ? (
             <input
@@ -236,13 +279,17 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
               onChange={(e) => setTitle(e.target.value)}
               onBlur={commitTitle}
               onKeyDown={(e) => e.key === 'Enter' && commitTitle()}
-              className="bg-transparent text-white text-sm font-medium outline-none w-full"
+              className="bg-transparent text-sm font-medium outline-none w-full"
+              style={{ color: titleColor }}
               autoFocus
             />
           ) : (
             <button
               onClick={() => setIsEditingTitle(true)}
-              className="text-white text-sm font-medium truncate hover:text-[#00F0FF] transition-colors text-left"
+              className="text-sm font-medium truncate transition-colors text-left"
+              style={{ color: titleColor }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = titleHover; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = titleColor; }}
             >
               {title}
             </button>
@@ -263,7 +310,8 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
                 </button>
                 <button
                   onClick={enterViewMode}
-                  className="flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium bg-[#1a1a1a] border border-[#333] text-gray-400 hover:text-white transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium border transition-colors"
+                  style={{ background: btnBg, borderColor: btnBorder, color: btnText }}
                 >
                   <Eye size={12} />
                   View
@@ -272,7 +320,8 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
             ) : (
               <button
                 onClick={enterEditMode}
-                className="flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium bg-[#1a1a1a] border border-[#333] text-gray-400 hover:text-white transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium border transition-colors"
+                style={{ background: btnBg, borderColor: btnBorder, color: btnText }}
               >
                 <Pencil size={12} />
                 Edit
@@ -292,15 +341,15 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
           onNext={() => navigateMatch('next')}
           onPrev={() => navigateMatch('prev')}
           onClose={() => { setShowSearch(false); setSearchQuery(''); }}
+          isDark={isDark}
         />
       )}
 
       {/* Content area */}
       {isEditMode ? (
-        /* Edit mode: raw markdown textarea with line numbers */
         <div className="flex-1 flex min-h-0 overflow-hidden">
           <div className="overflow-hidden shrink-0">
-            <LineNumberGutter lineCount={lineCount} scrollTop={scrollTop} />
+            <LineNumberGutter lineCount={lineCount} scrollTop={scrollTop} isDark={isDark} />
           </div>
           <textarea
             ref={textareaRef}
@@ -308,11 +357,11 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
             onChange={(e) => setEditBuffer(e.target.value)}
             onScroll={handleTextareaScroll}
             spellCheck={false}
-            className="flex-1 bg-[#0d0d0d] text-[#e2e2e2] font-mono text-sm p-4 w-full h-full resize-none border-none outline-none leading-6"
+            className="flex-1 font-mono text-sm p-4 w-full h-full resize-none border-none outline-none leading-6 transition-colors"
+            style={{ background: textareaBg, color: textareaColor }}
           />
         </div>
       ) : (
-        /* View mode: rendered markdown */
         <div ref={viewRef} className="flex-1 overflow-y-auto min-h-0">
           <div className="max-w-4xl p-6">
             <ReactMarkdown

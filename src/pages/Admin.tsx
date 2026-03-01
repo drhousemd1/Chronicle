@@ -37,9 +37,10 @@ interface AdminPageProps {
   onSelectModel: (id: string) => void;
   onRegisterGuideSave?: (saveFn: (() => Promise<void>) | null) => void;
   onRegisterGuideSyncAll?: (syncFn: (() => Promise<void>) | null) => void;
+  guideTheme?: 'dark' | 'light';
 }
 
-export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveTool, selectedModelId, onSelectModel, onRegisterGuideSave, onRegisterGuideSyncAll }) => {
+export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveTool, selectedModelId, onSelectModel, onRegisterGuideSave, onRegisterGuideSyncAll, guideTheme }) => {
   const [tools, setTools] = useState<ToolMeta[]>(DEFAULT_TOOLS);
   const [editingTool, setEditingTool] = useState<ToolMeta | null>(null);
 
@@ -106,7 +107,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
   if (activeTool === 'app_guide') {
     return (
       <React.Suspense fallback={<div className="flex items-center justify-center h-full text-slate-400">Loading…</div>}>
-        <LazyAppGuide onRegisterSave={onRegisterGuideSave} onRegisterSyncAll={onRegisterGuideSyncAll} />
+        <LazyAppGuide onRegisterSave={onRegisterGuideSave} onRegisterSyncAll={onRegisterGuideSyncAll} theme={guideTheme} />
       </React.Suspense>
     );
   }

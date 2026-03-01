@@ -28,7 +28,7 @@ import { useAuth } from "@/hooks/use-auth";
 
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { PanelLeftClose, PanelLeft, Settings, Image as ImageIcon, Sparkles, ArrowLeft, UserCircle } from "lucide-react";
+import { PanelLeftClose, PanelLeft, Settings, Image as ImageIcon, Sparkles, ArrowLeft, UserCircle, Sun, Moon } from "lucide-react";
 import { AIPromptModal } from "@/components/chronicle/AIPromptModal";
 import {
   DropdownMenu,
@@ -164,6 +164,7 @@ const IndexContent = () => {
   const imageLibraryExitFolderRef = React.useRef<(() => void) | null>(null);
   const [imageLibrarySearchQuery, setImageLibrarySearchQuery] = useState('');
   const [adminActiveTool, setAdminActiveTool] = useState<string>('hub');
+  const [guideTheme, setGuideTheme] = useState<'dark' | 'light'>('dark');
   const guideSaveRef = React.useRef<(() => Promise<void>) | null>(null);
   const guideSyncAllRef = React.useRef<(() => Promise<void>) | null>(null);
   const imageLibraryUploadRef = React.useRef<(() => void) | null>(null);
@@ -1737,6 +1738,14 @@ const IndexContent = () => {
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
+                    onClick={() => setGuideTheme(prev => prev === 'dark' ? 'light' : 'dark')}
+                    className="inline-flex items-center justify-center h-10 w-10 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95"
+                    title={guideTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                  >
+                    {guideTheme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => guideSaveRef.current?.()}
                     className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
                   >
@@ -2163,7 +2172,7 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
 
 
           {tab === "admin" && (
-              <AdminPage activeTool={adminActiveTool} onSetActiveTool={setAdminActiveTool} selectedModelId={globalModelId} onSelectModel={setGlobalModelId} onRegisterGuideSave={(fn) => { guideSaveRef.current = fn; }} onRegisterGuideSyncAll={(fn) => { guideSyncAllRef.current = fn; }} />
+              <AdminPage activeTool={adminActiveTool} onSetActiveTool={setAdminActiveTool} selectedModelId={globalModelId} onSelectModel={setGlobalModelId} onRegisterGuideSave={(fn) => { guideSaveRef.current = fn; }} onRegisterGuideSyncAll={(fn) => { guideSyncAllRef.current = fn; }} guideTheme={guideTheme} />
           )}
 
           {tab === "account" && (

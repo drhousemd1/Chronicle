@@ -28,9 +28,10 @@ import { GuideEditor } from './GuideEditor';
 interface AppGuideToolProps {
   onRegisterSave?: (saveFn: (() => Promise<void>) | null) => void;
   onRegisterSyncAll?: (syncFn: (() => Promise<void>) | null) => void;
+  theme?: 'dark' | 'light';
 }
 
-export const AppGuideTool: React.FC<AppGuideToolProps> = ({ onRegisterSave, onRegisterSyncAll }) => {
+export const AppGuideTool: React.FC<AppGuideToolProps> = ({ onRegisterSave, onRegisterSyncAll, theme = 'dark' }) => {
   const [documents, setDocuments] = useState<GuideDocument[]>([]);
   const [activeDocId, setActiveDocId] = useState<string | null>(null);
   const [activeDocTitle, setActiveDocTitle] = useState('');
@@ -180,12 +181,25 @@ export const AppGuideTool: React.FC<AppGuideToolProps> = ({ onRegisterSave, onRe
     return () => onRegisterSyncAll(null);
   }, [onRegisterSyncAll]);
 
-  return (
+  const isDark = theme === 'dark';
 
+  return (
     <div className="flex flex-col h-full w-full">
       {/* Page header */}
-      <div className="flex items-center justify-between px-4 shrink-0 bg-black" style={{ height: 52, borderBottom: '1px solid #222' }}>
-        <h2 className="text-[hsl(var(--ui-text))] text-sm font-bold uppercase tracking-wider">App Guide</h2>
+      <div
+        className="flex items-center justify-between px-4 shrink-0 transition-colors"
+        style={{
+          height: 52,
+          borderBottom: `1px solid ${isDark ? '#222' : '#e5e7eb'}`,
+          background: isDark ? '#000' : '#ffffff',
+        }}
+      >
+        <h2
+          className="text-sm font-bold uppercase tracking-wider transition-colors"
+          style={{ color: isDark ? 'hsl(210 20% 93%)' : '#111827' }}
+        >
+          App Guide
+        </h2>
       </div>
 
       {/* Content */}
@@ -198,6 +212,7 @@ export const AppGuideTool: React.FC<AppGuideToolProps> = ({ onRegisterSave, onRe
           onNewDoc={handleNewDoc}
           onDeleteDoc={handleDeleteDoc}
           onTocClick={handleTocClick}
+          theme={theme}
         />
         <GuideEditor
           key={activeDocId}
@@ -207,6 +222,7 @@ export const AppGuideTool: React.FC<AppGuideToolProps> = ({ onRegisterSave, onRe
           onTitleChange={handleTitleChange}
           onTocUpdate={setTocEntries}
           onMarkdownChange={(md) => setActiveDocMarkdown(md)}
+          theme={theme}
         />
       </div>
     </div>
