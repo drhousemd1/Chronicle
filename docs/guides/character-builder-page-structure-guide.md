@@ -1,3 +1,25 @@
+> **INSTRUCTIONS FOR LOVABLE / AI AGENTS**
+>
+> MANDATORY: Before editing this file, read `docs/guides/GUIDE_STYLE_RULES.md` in full.
+>
+> That file defines heading hierarchy, table formatting, code block rules, good-vs-bad content patterns, and section-specific requirements. You must follow it exactly.
+>
+> This document is the SINGLE SOURCE OF TRUTH for this page's architecture.
+>
+> When making changes to this page's code, you MUST:
+>
+> 1. READ `docs/guides/GUIDE_STYLE_RULES.md` before making any edits to this document
+> 2. READ this entire document before making any code changes
+> 3. UPDATE this document IN-PLACE after making code changes — do NOT append summaries
+> 4. PRESERVE the exact 13-section format — do not skip sections, do not reorganize
+> 5. USE REAL VALUES from the code — exact file paths, exact Tailwind classes, exact hex codes
+> 6. UPDATE the Known Issues section (Section 12) when fixing or discovering bugs
+> 7. CROSS-REFERENCE the Shared Elements page when modifying any shared component
+>
+> If a section does not apply, write: `N/A — [specific reason]`
+>
+> Never write: "see code for details" — this document exists so no one needs to read the code.
+
 # Character Builder Page
 
 ## 1. Page Overview
@@ -352,6 +374,18 @@ The `character-ai.ts` service provides per-field AI enhancement:
 - **AI Fill toggle**: The AIPromptModal has a "Use existing details" toggle that controls whether the LLM strongly follows existing character data or treats user guidance as primary.
 - **Independent library save**: Character Library save (`isSavingToLibrary`) is independent from scenario save to prevent UI state conflicts.
 - **Avatar compression inconsistency**: User-uploaded avatars compress to 512x512 at 0.7 quality; AI-generated avatars compress at 0.85 quality.
+
+---
+
+### Bug Report Items (Added 2026-03-01)
+
+- **ACTIVE — Bug #1**: `buildCharacterStateBlock()` omits empty sections — 13/16 section types invisible to AI when empty. The function only includes sections with data, so AI never knows those sections exist for a character.
+- **ACTIVE — Bug #2**: `personality.traits` missing from TRACKABLE FIELDS constant — only `outward` and `inward` are listed. Traits changes are never extracted.
+- **ACTIVE — Bug #3**: `preferredClothing` field name mismatch — UI uses `preferred_clothing` (snake_case) but extraction uses `preferredClothing` (camelCase). Updates may silently fail.
+- **ACTIVE — Bug #4**: Wrong AI model — `grok-3-mini` used for character extraction instead of `grok-3`. Mini model lacks analytical depth for complex personality extraction.
+- **ACTIVE — Bug #6**: Memory system architecture incomplete — no long-term accumulation. Memories are extracted per-message but never summarized or consolidated.
+- **RESOLVED — Bug #7**: Previous issue resolved.
+- **RESOLVED — Bug #8**: Previous issue resolved.
 
 ---
 
