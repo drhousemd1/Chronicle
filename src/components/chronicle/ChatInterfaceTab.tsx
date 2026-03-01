@@ -374,6 +374,32 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   // Persistent map for placeholder name replacements (ensures consistency across the conversation)
   const placeholderMapRef = useRef<PlaceholderNameMap>({});
   
+  // Issue #7: Response length tracking for adaptive length directives
+  const responseLengthsRef = useRef<number[]>([]);
+  // Issue #7 + #10: Session message counter for precise session depth awareness
+  const sessionMessageCountRef = useRef<number>(0);
+  
+  // Reset session tracking when conversation changes
+  useEffect(() => {
+    responseLengthsRef.current = [];
+    sessionMessageCountRef.current = 0;
+  }, [conversationId]);
+  
+  // Issue #7: Compute length directive based on recent response pattern
+  const getLengthDirective = (): string => {
+    const lengths = responseLengthsRef.current;
+    if (lengths.length < 3) return '';
+    const last3 = lengths.slice(-3);
+    const avg = last3.reduce((a, b) => a + b, 0) / 3;
+    const allWithin20 = last3.every(l => Math.abs(l - avg) / avg < 0.2);
+    if (!allWithin20) return '';
+    if (avg > 150) {
+      return `[LENGTH: Last 3 responses were ~${Math.round(avg)} words each. This response MUST be noticeably different in length -- try SHORT: 1-3 paragraphs max.]`;
+    } else {
+      return `[LENGTH: Last 3 responses were ~${Math.round(avg)} words each. This response MUST be noticeably different in length -- try LONGER with more sensory detail and internal thought.]`;
+    }
+  };
+
   // Ref to always hold current sideCharacters - avoids stale closure in async callbacks
   const sideCharactersRef = useRef<SideCharacter[]>(appData.sideCharacters || []);
   useEffect(() => {
@@ -2142,7 +2168,22 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     try {
       let fullText = '';
       const llmAppData = buildLLMAppData();
-      const stream = generateRoleplayResponseStream(llmAppData, conversationId, input, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled);
+      // Issue #8: Detect user-authored AI character content and prepend canon note
+      const aiCharNames = appData.characters.filter(c => c.controlledBy === 'AI').map(c => c.name);
+      const hasCanonContent = aiCharNames.some(name => {
+        const regex = new RegExp(`(?:^|\\n)\\s*${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*:`, 'i');
+        return regex.test(input);
+      });
+      const canonNote = hasCanonContent
+        ? '[CANON NOTE: User wrote content for AI character(s) in this message. That content is established fact -- do not re-narrate it. Continue the story from after those events.] '
+        : '';
+      
+      // Issue #7: Compute length directive and increment session counter
+      const lengthDirective = getLengthDirective();
+      sessionMessageCountRef.current += 1;
+      
+      const llmInput = canonNote + input;
+      const stream = generateRoleplayResponseStream(llmAppData, conversationId, llmInput, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled, undefined, lengthDirective || undefined, sessionMessageCountRef.current);
 
       for await (const chunk of stream) {
         fullText += chunk;
@@ -2179,6 +2220,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       const existingNames = getKnownCharacterNames(appData);
       const { normalizedText } = normalizePlaceholderNames(cleanedText, existingNames, placeholderMapRef.current);
       cleanedText = normalizedText;
+      
+      // Issue #7: Track response word count for adaptive length directives
+      responseLengthsRef.current.push(cleanedText.split(/\s+/).length);
 
       const aiMsg: Message = { 
         id: uuid(), 

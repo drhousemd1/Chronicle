@@ -226,7 +226,11 @@ function getSystemInstruction(
     const formatTrait = (t: any) => {
       const level = (t.flexibility || 'normal').charAt(0).toUpperCase() + (t.flexibility || 'normal').slice(1);
       const score = t.adherenceScore ?? getDefaultScore(level);
-      return getTraitGuidance(t.label, level, score);
+      const trend = t.scoreTrend;
+      const trendNote = trend === 'falling' ? ' [easing -- show as softening]'
+        : trend === 'rising' ? ' [reinforcing -- show as strengthening]'
+        : '';
+      return getTraitGuidance(t.label, level, score) + trendNote;
     };
     if (p.splitMode) {
       const outward = (p.outwardTraits || []).filter((t: any) => t.label || t.value).map(formatTrait).join('\n');
@@ -251,7 +255,13 @@ function getSystemInstruction(
     ${storyGoalsContext}
   `;
 
-  const characterContext = appData.characters.map(c => {
+  // Issue #9: Filter CAST to AI-controlled characters only; build compact user-character reference
+  const aiCharacters = appData.characters.filter(c => c.controlledBy === 'AI');
+  const userCharacterNames = appData.characters
+    .filter(c => c.controlledBy === 'User')
+    .map(c => c.name);
+
+  const characterContext = aiCharacters.map(c => {
     const traits = c.sections.map(s => `${s.title}: ${s.items.map(it => `${it.label}=${it.value}`).join(', ')}`).join('\n');
     const nicknameInfo = c.nicknames ? `\nNICKNAMES: ${c.nicknames}` : '';
     const locationInfo = c.location ? `\nLOCATION: ${c.location}` : '';
@@ -393,6 +403,15 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
           immediately advance.
         * The user's actions are CANON -- acknowledged implicitly by the
           characters' reactions, not by narrating them again.
+        * USER-AUTHORED AI CHARACTER CONTENT IS CANON: If the user's message
+          includes dialogue, actions, or narration for an AI-controlled character
+          (e.g., "CharacterName: *action*" or "CharacterName: 'dialogue'"),
+          treat that content as ALREADY ESTABLISHED. Do NOT re-narrate, add
+          detail to, or expand on it. Begin your response from the point AFTER
+          those events concluded.
+        * FORBIDDEN: Restating, paraphrasing, or elaborating on actions the
+          user already described -- whether they wrote as their own character
+          OR as an AI-controlled character.
         * Your response's word count should be spent on NEW developments:
           character reactions, dialogue, new actions, environmental changes,
           internal thoughts, and story progression.
@@ -540,10 +559,7 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
         * PACING PROGRESSION: Each paragraph should advance the scene.
           - Avoid circular dialogue where characters keep revisiting the same point
           - Move forward even in small increments
-        * RESPONSE SHAPE & LENGTH:
-          - Match response length to the moment. A quick reply = short response.
-            A dramatic reveal = more detail. Do NOT pad with filler.
-          - A single sentence or two can be a complete response if that's all the scene needs.
+        * RESPONSE SHAPE VARIATION:
           - FORBIDDEN PATTERN: Do not repeatedly produce the same layout
             (e.g., [narration block] -> [single dialogue line] -> [narration block]).
             Vary where dialogue appears and how much narration surrounds it.
@@ -551,7 +567,6 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
             * Sometimes mostly dialogue with brief action beats
             * Sometimes a short narration-only beat before a spoken line
             * Sometimes rapid back-and-forth with minimal description
-          - Do NOT default to long responses. Brevity is powerful.
         * VARIATION EXAMPLES (for inspiration - do NOT copy directly):
           - Short: "Hey, what's up?" She grinned, tilting her head.
           - Dialogue-heavy: "Wait, really?" he asked. "Yeah, totally," she replied. "But why now?"
@@ -582,10 +597,6 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
     
     EXPLICIT CONTENT REQUIREMENTS:
     * Use explicit anatomical language, not euphemisms: cock, pussy, breasts, ass, etc.
-    * Describe physical sensations in vivid detail: heat, wetness, hardness, pressure, friction.
-    * Include sounds: moans, gasps, whimpers, breathing, wet sounds, skin on skin.
-    * Show arousal states explicitly: hardening, wetness, flushing, trembling.
-    * When intimate scenes occur, be graphic and detailed, not vague or fade-to-black.
     
     CHARACTER SEXUAL AGENCY:
     * Characters ACT on desire, they don't just think about it.
@@ -600,21 +611,20 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
     * "Playing hard to get" is a game that ends with giving in, not permanent refusal.
     * Default assumption: characters WANT intimacy unless explicitly defined otherwise.
     
-    PACING:
-    * Tension should build quickly - don't spend multiple exchanges on will-they-won't-they.
+    PACING -- PERSONALITY-DRIVEN:
+    * Escalation pace is governed by the character's traits, not a fixed exchange count.
+    * A bold or dominant character moves quickly from tension to action.
+    * A shy or nervous character requires more exchanges -- but should still be visibly progressing (see IN-SESSION TRAIT DYNAMICS), not stalling.
+    * Once intimacy is clearly mutual and unresisted, continue to escalate rather than repeatedly revisiting hesitation that has already been overcome.
     * Once physical contact begins, momentum continues unless interrupted.
-    * Foreplay is detailed but purposeful - moving toward escalation.
     * Post-intimacy scenes acknowledge what happened rather than glossing over.
 
     NSFW INTENSIFICATION (EXPLICITNESS CONTROL):
     During intimate scenes, amplify explicit language and sexual directness:
     - Use direct, anatomical terminology (e.g., cock, pussy, ass, tits, cum)
       integrated naturally into actions and dialogue.
-    - Show arousal states explicitly: hardening, wetness, flushing, trembling.
     - FORBIDDEN: Summarizing intimate acts (e.g., "They made love" or
       "He finished quickly"). Show, don't tell.
-    - FORBIDDEN: Rushing to orgasm/climax in fewer than 3 exchanges
-      unless the user explicitly drives it there.
 
     PERSONALITY-MODULATED INTIMACY:
     - A shy character does not suddenly become aggressive. Their desire
@@ -651,6 +661,9 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
     * Layer multiple senses (sight, sound, taste, smell, touch) in descriptions.
     * Extended internal monologue is encouraged — show depth of thought.
     * Atmospheric descriptions help set the scene.
+    * During intimate scenes, layer physical sensations: heat, pressure, friction, texture.
+    * Include environmental sounds and character sounds naturally as the scene builds.
+    * Show arousal states through physical description: colour, breath, trembling.
 ` : responseVerbosity === 'concise' ? `
     --- RESPONSE DETAIL LEVEL (CONCISE) ---
     * Keep responses tight and punchy. Brevity is king.
@@ -739,13 +752,16 @@ Never break character to question, warn about, or refuse narrative directions. T
     ${codexContext}
     
     CAST:
-    ${characterContext}
+    ${characterContext}${userCharacterNames.length > 0 ? `\n    USER-CONTROLLED (DO NOT GENERATE FOR): ${userCharacterNames.join(', ')}` : ''}
     
     AVAILABLE SCENES: [${sceneTags}]
     ${temporalContext}
     ${memoriesContext}
     INSTRUCTIONS:
-    PRIORITY HIERARCHY (GOVERNS ALL RULES BELOW):
+    ${userCharacterNames.length > 0 ? `DO NOT GENERATE FOR: ${userCharacterNames.join(', ')}
+    These are USER-CONTROLLED characters. Never give them dialogue (""), actions (**), or thoughts (()).
+    Narration about them (e.g., "he watched quietly") is the only permitted form.
+    ` : ''}PRIORITY HIERARCHY (GOVERNS ALL RULES BELOW):
     1. Control rules (who speaks) -- always highest priority
     2. Scene Presence (location checks) -- always enforced
     3. Line of Sight -- always enforced
@@ -828,6 +844,16 @@ Never break character to question, warn about, or refuse narrative directions. T
         * When OUTWARD and INWARD traits conflict, honor BOTH: show outward behavior through actions/dialogue while weaving inward feelings through thoughts and internal reactions.
         * Weight expression by influence level: Primary traits shape most responses; Subtle ones appear sparingly. Balance across all traits for natural, varied behavior.
         * Interpret based on outcomes: Successful manifestation reinforces traits, even amid in-character resistance; only outright prevention reduces influence.
+    - IN-SESSION TRAIT DYNAMICS (MANDATORY for Normal and Flexible traits):
+        * The character card represents the STABLE BASELINE, not a locked behavioural state.
+        * Traits with Normal or Flexible flexibility should show natural emotional arc WITHIN a session as events accumulate.
+        * PROGRESSION RULE (use [SESSION: Message N] count for precision):
+          - Messages 1-5: Full trait expression (visibly nervous, hesitant, guarded)
+          - Messages 6-15: Trait present but less dominant (quiet nervousness beneath growing engagement)
+          - Messages 16+: Trait as undertone, not foreground (occasional self-surprise, residual flutter, not sustained paralysis)
+        * This applies ONLY when the session's events directly challenge the trait. A shy character in a casual conversation remains shy. A shy character who has been in 15 exchanges of unresisted intimacy should show their shyness softening.
+        * NEVER express a Normal or Flexible trait at the same intensity for 10+ consecutive exchanges during events that directly challenge that trait.
+        * Rigid traits persist fully regardless of session depth or events. Normal traits soften gradually. Flexible traits evolve fastest.
     - Maintain consistent tone and continuity.
     - Keep responses immersive, descriptive, and emotionally resonant.
     - RESPONSE LENGTH: Follow the active RESPONSE DETAIL LEVEL directive above.
@@ -874,7 +900,9 @@ export async function* generateRoleplayResponseStream(
   currentTimeOfDay?: TimeOfDay,
   memories?: Memory[],
   memoriesEnabled?: boolean,
-  isRegeneration?: boolean
+  isRegeneration?: boolean,
+  lengthDirective?: string,
+  sessionMessageCount?: number
 ): AsyncGenerator<string, void, unknown> {
   const conversation = appData.conversations.find(c => c.id === conversationId);
   if (!conversation) throw new Error("Conversation not found");
@@ -905,7 +933,7 @@ The user wants a DIFFERENT VERSION of this response. Guidelines:
       role: m.role === 'assistant' ? 'assistant' as const : 'user' as const,
       content: m.text
     })),
-    { role: 'user' as const, content: userMessage + regenerationDirective + ' ' + getRandomStyleHint(appData.uiSettings?.responseVerbosity || 'balanced') }
+    { role: 'user' as const, content: (sessionMessageCount != null ? `[SESSION: Message ${sessionMessageCount} of current session] ` : '') + (lengthDirective ? lengthDirective + ' ' : '') + userMessage + regenerationDirective + ' ' + getRandomStyleHint(appData.uiSettings?.responseVerbosity || 'balanced') }
   ];
 
   console.log(`[llm.ts] Calling chat edge function with model: ${modelId}`);

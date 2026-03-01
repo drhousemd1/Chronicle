@@ -43,8 +43,8 @@ Core LLM integration service.
 
 | Export | Purpose |
 |--------|--------|
-| `generateRoleplayResponseStream()` | Streams AI responses for chat |
-| `getSystemInstruction()` | Builds the complete system prompt |
+| `generateRoleplayResponseStream()` | Streams AI responses for chat. Accepts optional `lengthDirective` (adaptive length control) and `sessionMessageCount` (precise session depth). |
+| `getSystemInstruction()` | Builds the complete system prompt. Includes IN-SESSION TRAIT DYNAMICS, personality-driven NSFW pacing, control quick-reference at top of INSTRUCTIONS, and forward momentum AI-character canon rule. |
 | `buildCharacterStateBlock()` | Constructs character context for prompt injection |
 | `getCriticalDialogRules()` | Dialog formatting rules (first/third person POV) |
 | `buildContentThemeDirectives()` | Imported from `tag-injection-registry.ts` |
@@ -85,7 +85,7 @@ The system prompt in `getSystemInstruction()` is constructed in this order:
 
 ```
 1. Role definition + world context
-2. Character state blocks (all characters)
+2. Character state blocks (AI-controlled characters only; user-controlled listed as names-only reference)
 3. Story arc/goal directives (with flexibility levels)
 4. Content theme directives (genres, character types, trigger warnings)
 5. Custom world sections
@@ -94,6 +94,16 @@ The system prompt in `getSystemInstruction()` is constructed in this order:
 8. Time of day context
 9. Memory context (if enabled)
 10. Opening dialog (if first message)
+11. INSTRUCTIONS block:
+    a. DO NOT GENERATE FOR quick-reference (user-controlled characters, top of block)
+    b. Priority hierarchy
+    c. Control context + scene presence
+    d. Forward momentum (includes AI-character canon rule)
+    e. Anti-repetition (shape variation only, no length rules)
+    f. NSFW rules (intensity/permissiveness only, no verbosity overlap)
+    g. Verbosity rules (includes intimate scene detail lines for detailed mode)
+    h. IN-SESSION TRAIT DYNAMICS (trait softening over session depth)
+    i. Personality trait adherence
 ```
 
 ---
@@ -108,6 +118,11 @@ The system prompt in `getSystemInstruction()` is constructed in this order:
 | #4 | Default model changed to `grok-3`; 403 retry remains `grok-3-mini` | `supabase/functions/extract-character-updates/index.ts` | RESOLVED — 2026-03-01 |
 | #5 | Extraction prompt lacks analytical depth | `supabase/functions/extract-character-updates/index.ts` | RESOLVED — 2026-03-01 — Added 7-block analytical depth framework: psychological inference, progressive refinement, conflict resolution, split mode detection, tone inference, cross-field coherence, complete trait lifecycle |
 | #6 | Memory system incomplete — no long-term accumulation | `supabase/functions/extract-memory-events/index.ts` | ACTIVE |
+| #7 | Response length anchoring — all responses same length | `src/services/llm.ts`, `src/components/chronicle/ChatInterfaceTab.tsx` | RESOLVED — 2026-03-01 — Added adaptive length directive system with responseLengthsRef tracking, removed RESPONSE SHAPE & LENGTH from antiRepetitionRules |
+| #8 | Forward momentum — AI re-narrates user-authored AI character content | `src/services/llm.ts`, `src/components/chronicle/ChatInterfaceTab.tsx` | RESOLVED — 2026-03-01 — Added AI-character canon rule to FORWARD MOMENTUM, canon note detection in handleSend |
+| #9 | Control rule reliability — AI generates for user-controlled characters | `src/services/llm.ts` | RESOLVED — 2026-03-01 — CAST filtered to AI-only, DO NOT GENERATE FOR quick-reference at top of INSTRUCTIONS |
+| #10 | No in-session trait evolution guidance | `src/services/llm.ts`, `src/types.ts` | RESOLVED — 2026-03-01 — Added IN-SESSION TRAIT DYNAMICS block, personality-driven NSFW pacing, adherenceScore/scoreTrend on PersonalityTrait |
+| #11 | NSFW intensity and verbosity instruction overlap | `src/services/llm.ts` | RESOLVED — 2026-03-01 — Moved sensory detail lines from nsfwRules to verbosityRules detailed block |
 
 ---
 
@@ -150,4 +165,4 @@ See Section 5 above for comprehensive bug list.
 
 - Memory consolidation system (long-term memory summarization)
 
-> Last updated: 2026-03-01 — Bugs #3 and #5 resolved.
+> Last updated: 2026-03-01 — Bugs #3, #5, #7-#11 resolved.

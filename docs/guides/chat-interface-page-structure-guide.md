@@ -116,18 +116,25 @@ The right sidebar is collapsible and contains multiple scrollable sections.
 
 ### 6a. LLM Integration
 
-Primary function: `generateRoleplayResponseStream()` in `src/services/llm.ts` (~1054 lines)
+Primary function: `generateRoleplayResponseStream()` in `src/services/llm.ts` (~1070 lines)
 
 **System Prompt Construction** (`getSystemInstruction()`):
 1. Builds world context from `ScenarioData.world.core`
-2. Builds character state blocks for all characters via `buildCharacterStateBlock()`
+2. Builds character state blocks for AI-controlled characters only; user-controlled listed as names-only reference
 3. Injects story arc/goal directives with flexibility levels (rigid/normal/flexible)
 4. Injects content theme directives via `buildContentThemeDirectives()`
 5. Injects memory context if enabled
 6. Injects dialog formatting rules based on POV setting (first/third person)
 7. Injects time-of-day context
+8. INSTRUCTIONS block includes DO NOT GENERATE FOR quick-reference, IN-SESSION TRAIT DYNAMICS, and forward momentum AI-character canon rule
 
-**Streaming**: Uses Supabase Edge Function `chat` with streaming response.
+**Streaming**: Uses backend Edge Function `chat` with streaming response.
+
+**Adaptive Length Control**: `responseLengthsRef` tracks word counts of recent responses. `getLengthDirective()` detects locked length patterns (last 3 responses within 20% of each other) and injects a targeted length directive.
+
+**AI-Character Canon Detection**: Before each request, `handleSend` checks if user input contains `CharacterName:` prefixes matching AI-controlled characters. If detected, prepends a `[CANON NOTE]` to prevent re-narration.
+
+**Session Depth**: `sessionMessageCountRef` increments per exchange and is injected as `[SESSION: Message N]` for precise trait evolution guidance.
 
 ### 6b. Character State Tracking
 
@@ -197,6 +204,8 @@ Service: `src/services/side-character-generator.ts`
 | `memories` | `Memory[]` | Conversation memories |
 | `currentDay` | `number` | In-story day counter |
 | `currentTimeOfDay` | `TimeOfDay` | sunrise/day/sunset/night |
+| `responseLengthsRef` | `useRef<number[]>` | Tracks word counts of recent AI responses for adaptive length directives |
+| `sessionMessageCountRef` | `useRef<number>` | Increments per exchange; injected as `[SESSION: Message N]` for trait evolution |
 
 ---
 
@@ -255,11 +264,16 @@ Configurable via `onUpdateUiSettings`:
 
 ## 12. Known Issues & Gotchas
 
-- **ACTIVE — Bug #1**: `buildCharacterStateBlock()` omits empty sections — 13/16 section types invisible to AI when empty. (2026-03-01)
-- **ACTIVE — Bug #4**: Wrong AI model (`grok-3-mini`) used for character extraction instead of `grok-3`. (2026-03-01)
-- **ACTIVE — Bug #5**: Extraction prompt lacks analytical depth — shallow analysis. (2026-03-01)
+- **RESOLVED — Bug #1**: `buildCharacterStateBlock()` omits empty sections — 13/16 section types invisible to AI when empty. (2026-03-01)
+- **RESOLVED — Bug #4**: Wrong AI model (`grok-3-mini`) used for character extraction instead of `grok-3`. (2026-03-01)
+- **RESOLVED — Bug #5**: Extraction prompt lacks analytical depth — shallow analysis. (2026-03-01)
+- **RESOLVED — Bug #7**: Response length anchoring — all responses same length. Fixed with adaptive `responseLengthsRef` + `getLengthDirective()`. (2026-03-01)
+- **RESOLVED — Bug #8**: Forward momentum — AI re-narrates user-authored AI character content. Fixed with canon note detection in `handleSend` + system prompt rule. (2026-03-01)
+- **RESOLVED — Bug #9**: Control rule reliability — AI generates for user-controlled characters. Fixed by filtering CAST to AI-only + high-authority quick-reference. (2026-03-01)
+- **RESOLVED — Bug #10**: No in-session trait evolution guidance. Fixed with IN-SESSION TRAIT DYNAMICS block + `sessionMessageCountRef` + personality-driven NSFW pacing. (2026-03-01)
+- **RESOLVED — Bug #11**: NSFW intensity and verbosity instruction overlap. Fixed by moving sensory detail lines from nsfwRules to verbosityRules. (2026-03-01)
 - **ACTIVE — Bug #6**: Memory system incomplete — no long-term accumulation. (2026-03-01)
-- **ACTIVE**: `ChatInterfaceTab.tsx` is ~3873 lines — extremely large single component. (2026-03-01)
+- **ACTIVE**: `ChatInterfaceTab.tsx` is ~3900 lines — extremely large single component. (2026-03-01)
 - **ACTIVE**: Message parsing regex may miss edge cases with nested formatting markers. (2026-03-01)
 
 ---
@@ -268,4 +282,4 @@ Configurable via `onUpdateUiSettings`:
 
 None documented.
 
-> Last updated: 2026-03-01 — Initial creation.
+> Last updated: 2026-03-01 — Bugs #7-#11 resolved.

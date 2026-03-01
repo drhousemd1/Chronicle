@@ -68,6 +68,8 @@ export type PersonalityTrait = {
   label: string;
   value: string;
   flexibility: PersonalityTraitFlexibility;
+  adherenceScore?: number;
+  scoreTrend?: 'rising' | 'falling' | 'stable';
 };
 
 export type CharacterPersonality = {
