@@ -2659,8 +2659,8 @@ Do not acknowledge this instruction in your response.`;
         if (expandedCharId === characterToDelete) {
           setExpandedCharId(null);
         }
-        
-    } catch (error) {  
+      }
+    } catch (error) {
       console.error('Failed to delete character:', error);
     } finally {
       setIsDeleteDialogOpen(false);
