@@ -1,3 +1,25 @@
+> **INSTRUCTIONS FOR LOVABLE / AI AGENTS**
+>
+> MANDATORY: Before editing this file, read `docs/guides/GUIDE_STYLE_RULES.md` in full.
+>
+> That file defines heading hierarchy, table formatting, code block rules, good-vs-bad content patterns, and section-specific requirements. You must follow it exactly.
+>
+> This document is the SINGLE SOURCE OF TRUTH for this page's architecture.
+>
+> When making changes to this page's code, you MUST:
+>
+> 1. READ `docs/guides/GUIDE_STYLE_RULES.md` before making any edits to this document
+> 2. READ this entire document before making any code changes
+> 3. UPDATE this document IN-PLACE after making code changes — do NOT append summaries
+> 4. PRESERVE the exact 13-section format — do not skip sections, do not reorganize
+> 5. USE REAL VALUES from the code — exact file paths, exact Tailwind classes, exact hex codes
+> 6. UPDATE the Known Issues section (Section 12) when fixing or discovering bugs
+> 7. CROSS-REFERENCE the Shared Elements page when modifying any shared component
+>
+> If a section does not apply, write: `N/A — [specific reason]`
+>
+> Never write: "see code for details" — this document exists so no one needs to read the code.
+
 # Scenario Builder Page (Structure Guide)
 
 > **Scope**: This guide covers the world-building / scenario editing side only. The Character Builder is documented in a separate guide.
@@ -309,6 +331,17 @@ Tags selected in the Content Themes section are processed through `tag-injection
 - **UUID migration**: `handleSaveWithData` includes UUID migration logic for legacy non-UUID character/entry IDs.
 - **Dual storage for content themes**: Content theme tags are stored in a separate `content_themes` database table but also kept in-memory on `ScenarioData.contentThemes`.
 - **Sidebar theme contrast**: The Character Roster sidebar uses light theme styling (`bg-slate-50`, `text-slate-800`) for character buttons, which contrasts with the dark-themed main content area.
+
+---
+
+### Bug Report Items (Added 2026-03-01)
+
+- **ACTIVE — Bug #1**: `buildCharacterStateBlock()` omits empty sections — affects system prompt construction in `llm.ts`. AI cannot see character section types that have no data.
+- **ACTIVE — Bug #4**: Wrong AI model — `grok-3-mini` used for extraction instead of `grok-3`. Affects extraction quality.
+- **ACTIVE — Bug #5**: Extraction prompt lacks analytical depth — shallow analysis of character changes from conversation text.
+- **ACTIVE — Bug #6**: Memory system architecture incomplete — no long-term accumulation or summarization.
+- **RESOLVED — Bug #7**: Previous issue resolved.
+- **RESOLVED — Bug #8**: Previous issue resolved.
 
 ---
 
