@@ -1,25 +1,35 @@
 
 
-## Add "Sync All" Button Next to Save
+## Fix: Sequential GitHub Sync to Prevent 409 Conflicts
 
-**What it does:** Adds a "Sync All" button next to the existing "Save" button in the App Guide header. Save continues to save + sync the current document only. Sync All iterates through every guide document, fetches its markdown, and pushes each one to GitHub via the existing `syncToGitHub` function.
+### Problem
+The "Sync All" button fires all GitHub sync requests in parallel. The GitHub Contents API commits sequentially -- each commit changes the repo HEAD, so concurrent requests see a stale SHA and fail with `409 Conflict`. Only the first 1-2 documents succeed.
+
+### Solution
+Change the edge function invocations from parallel (fire-and-forget) to sequential (await each before starting the next).
 
 ### Changes
 
-**1. `src/components/admin/guide/AppGuideTool.tsx`**
-- Add a `syncAllToGitHub` function that queries all documents from `guide_documents`, then calls `syncToGitHub('upsert', title, markdown)` for each one
-- Register this function via a new `onRegisterSyncAll` callback prop (same pattern as `onRegisterSave`)
+**`src/components/admin/guide/AppGuideTool.tsx`**
+- Replace the fire-and-forget loop in `syncAllFn` with a sequential `for...of` loop that `await`s each `syncToGitHub` call
+- Change `syncToGitHub` to return a Promise (currently it's fire-and-forget with `.then()`) so it can be awaited
+- Add a new `syncToGitHubAsync` helper (or refactor the existing one) that returns the Promise directly instead of using `.then()`
 
-**2. `src/pages/Index.tsx`**
-- Add a `guideSyncAllRef` similar to `guideSaveRef`
-- Next to the existing "Save" button (line ~1735-1743), add a "Sync All" button that calls `guideSyncAllRef.current?.()`
-- Pass `onRegisterSyncAll` down through `AdminPage`
+### Technical Detail
 
-**3. `src/pages/Admin.tsx`**
-- Add `onRegisterSyncAll` to `AdminPageProps` and pass it through to `LazyAppGuide`
+Current code (parallel, broken):
+```typescript
+for (const doc of data) {
+  syncToGitHub('upsert', doc.title, doc.markdown || '');
+}
+```
 
-### Technical Details
+Fixed code (sequential):
+```typescript
+for (const doc of data) {
+  await syncToGitHubAsync('upsert', doc.title, doc.markdown || '');
+}
+```
 
-- The Sync All function will fetch all docs via `select('id, title, markdown')` and loop through them calling the existing fire-and-forget `syncToGitHub` helper
-- A toast notification will confirm when the bulk sync has been dispatched
-- The button will use the same styling as the Save button for visual consistency
+The existing `syncToGitHub` fire-and-forget helper will remain for single-document saves. A new awaitable version will be used by the bulk sync path.
+
