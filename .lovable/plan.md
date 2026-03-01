@@ -1,310 +1,254 @@
 
 
-# Fix Issues #7-#11: Master Prompt Improvements
+# Fix Issue #6: Memory System Architecture (3 Sub-Issues)
 
-These five issues all affect `src/services/llm.ts` (the main chat prompt) and/or `src/components/chronicle/ChatInterfaceTab.tsx` (the chat handler). They are independent of each other but all live in the same files, making them efficient to batch.
-
-Issue #6 (Memory System Architecture) is excluded from this batch because it requires new edge functions, database migrations, and substantial frontend work -- it should be its own plan.
+The only remaining active issue from the Bug Report. Issues #1-#5, #7-#11 have all been verified as correctly implemented.
 
 ---
 
-## Issue #7: Response Length Anchoring
+## Issue #6A: Auto-Extraction Never Fires
 
 ### 1. Current Problem
 
-Two mechanisms exist to prevent repetitive response formatting: `antiRepetitionRules` (system prompt, lines 525-565) and `getRandomStyleHint()` (appended to every user message at line 908). They conflict:
-
-- `antiRepetitionRules` RESPONSE SHAPE & LENGTH subsection (lines 543-554) says: "Do NOT default to long responses. Brevity is powerful."
-- `verbosityRules` detailed mode (lines 644-653) says: "Draw out moments with layered sensory detail."
-- `getRandomStyleHint()` (lines 838-866) picks a random hint from 5 options with zero awareness of recent response patterns. It's appended to the user message (lowest authority position in the prompt).
-
-The model resolves the contradiction by anchoring to a consistent middle length (~6 paragraphs). The random hints carry no weight because they lack context awareness.
+The `extract-memory-events` edge function (168 lines, fully functional, uses xAI Grok) exists but is never called automatically. The `MemoryQuickSaveButton` component is imported at line 49 of `ChatInterfaceTab.tsx` but is no longer rendered anywhere in the JSX. In `handleSend()`, after every AI response, two background processes fire in parallel: `extractCharacterUpdatesFromDialogue()` (line 2202) and `evaluateArcProgress()` (line 2212). A third parallel call for memory extraction should exist here but is absent.
 
 ### 2. What This Causes
 
-Every response is approximately the same length regardless of scene energy, user input length, or narrative moment. Quick exchanges get padded; dramatic moments get truncated. The user perceives the AI as "on autopilot."
+The `memories` array is always empty unless the user manually opens the Memories modal and adds entries. The entire memory system -- day/time tagging, injection into the chat prompt via `memoriesContext` (llm.ts line 336), chronological ordering -- sits idle. The AI has no awareness of past events beyond the conversation window.
 
 ### 3. Scope
 
 | File | Change |
 |------|--------|
-| `src/components/chronicle/ChatInterfaceTab.tsx` | Add `responseLengthsRef` (useRef) and `sessionMessageCountRef` (useRef), add `getLengthDirective()` function, pass directive + session count to `generateRoleplayResponseStream` |
-| `src/services/llm.ts` | Accept optional `lengthDirective` and `sessionMessageCount` parameters, prepend to user message before random hint. Remove RESPONSE SHAPE & LENGTH from `antiRepetitionRules` (lines 543-554) since it overlaps with `verbosityRules`. |
+| `src/components/chronicle/ChatInterfaceTab.tsx` | Add auto-invocation of `extract-memory-events` in `handleSend()` post-response block (after line 2225), mirroring the existing `extractCharacterUpdatesFromDialogue` pattern |
 
 ### 4. Proposed Fix
 
-**ChatInterfaceTab.tsx**: Add `responseLengthsRef = useRef<number[]>([])` and `sessionMessageCountRef = useRef<number>(0)`. After each AI response completes (line 2176, after `cleanedText` is finalized), record word count via `responseLengthsRef.current.push(cleanedText.split(/\s+/).length)` and increment `sessionMessageCountRef.current += 1`. Before each new request (line 2145), compute whether the last 3 responses are within 20% of each other (locked pattern). If locked, generate a targeted length directive.
-
-The `sessionMessageCountRef` resets to 0 when `conversationId` changes (add to existing `useEffect` that watches `conversationId`).
-
-**llm.ts**: 
-- Add `lengthDirective?: string` and `sessionMessageCount?: number` parameters to `generateRoleplayResponseStream()` (line 868).
-- When building the user message (line 908), prepend both: `[SESSION: Message ${sessionMessageCount} of current session] ${lengthDirective} ${userMessage} ${styleHint}`.
-- In `antiRepetitionRules` (lines 543-554), remove the RESPONSE SHAPE & LENGTH subsection. Keep the VARIATION EXAMPLES (lines 555-560) and NSFW EXCEPTION (lines 561-565). The anti-repetition block governs structure and vocabulary variety only; `verbosityRules` governs length and detail.
-
-### 5. Expected Behavior
-
-When the model produces 3 responses of similar length, the next request includes a targeted directive like `[LENGTH: Last 3 responses were ~180 words each. This response MUST be noticeably different in length -- try SHORT: 1-3 paragraphs.]` The model breaks out of the pattern. When responses naturally vary, no directive is sent and the random style hint continues as before. The session message count gives the model precise awareness of session depth.
-
----
-
-## Issue #8: Forward Momentum -- User Writing as AI Character
-
-### 1. Current Problem
-
-The FORWARD MOMENTUM rule (lines 384-401 of `llm.ts`) prevents the AI from re-narrating actions the user wrote for their OWN character. But users commonly write dialogue for AI-controlled characters to steer scenes (e.g., `Ashley: *She walked into the room.*`). The rule doesn't cover this case, so the AI re-narrates Ashley's arrival with added detail before continuing.
-
-### 2. What This Causes
-
-Double narration: the AI re-describes what the user already established for an AI character. This wastes tokens and stalls the story.
-
-### 3. Scope
-
-| File | Change |
-|------|--------|
-| `src/services/llm.ts` | Extend FORWARD MOMENTUM rule text (after line 395) |
-| `src/components/chronicle/ChatInterfaceTab.tsx` | Add detection of user-authored AI character content in `handleSend`; prepend canon note to user message when detected |
-
-### 4. Proposed Fix
-
-**llm.ts** (after line 395, within FORWARD MOMENTUM block): Add:
-```
-        * USER-AUTHORED AI CHARACTER CONTENT IS CANON: If the user's message
-          includes dialogue, actions, or narration for an AI-controlled character
-          (e.g., "CharacterName: *action*" or "CharacterName: 'dialogue'"),
-          treat that content as ALREADY ESTABLISHED. Do NOT re-narrate, add
-          detail to, or expand on it. Begin your response from the point AFTER
-          those events concluded.
-        * FORBIDDEN: Restating, paraphrasing, or elaborating on actions the
-          user already described -- whether they wrote as their own character
-          OR as an AI-controlled character.
-```
-
-**ChatInterfaceTab.tsx** (in `handleSend`, before building the LLM request at line 2144): Check if the user's input contains a `CharacterName:` prefix matching any AI-controlled character name from `appData.characters.filter(c => c.controlledBy === 'ai').map(c => c.name)`. If detected, prepend a per-message canon note to the input string passed to `generateRoleplayResponseStream`:
-```
-[CANON NOTE: User wrote content for AI character(s) in this message. That content is established fact -- do not re-narrate it. Continue the story from after those events.]
-```
-
-### 5. Expected Behavior
-
-When the user writes as an AI character, the model receives both a permanent system-level rule and a per-message reminder to treat that content as canon and continue forward without re-narration.
-
----
-
-## Issue #9: Control Rule Reliability
-
-### 1. Current Problem
-
-The MAINTAIN CONTROL CONTEXT rule (lines 759-764 of `llm.ts`) prevents the AI from generating dialogue for user-controlled characters. The rule fails occasionally because:
-1. It appears ~700 tokens into the system prompt, where attention weight is reduced.
-2. User-controlled characters appear in the full CAST block (line 254) with complete character data, giving the model material to generate from.
-3. Issue #8 (user writing as AI characters) causes model confusion about control boundaries.
-
-### 2. What This Causes
-
-The AI occasionally generates dialogue, actions, or internal thoughts for user-controlled characters, breaking the user's creative control.
-
-### 3. Scope
-
-| File | Change |
-|------|--------|
-| `src/services/llm.ts` | Filter CAST block (line 254) to AI-controlled characters only; build compact user-character reference; add high-authority control quick-reference at top of INSTRUCTIONS block (before line 757) |
-
-### 4. Proposed Fix
-
-**llm.ts line 254**: Split `characterContext` into two parts:
+In `handleSend()`, after line 2225 (where `responseLengthsRef` is updated), add a non-blocking memory extraction call:
 
 ```typescript
-const aiCharacters = appData.characters.filter(c => c.controlledBy === 'ai');
-const userCharacterNames = appData.characters
-  .filter(c => c.controlledBy === 'user')
-  .map(c => c.name);
-
-const characterContext = aiCharacters.map(c => {
-  // ... existing block construction unchanged ...
-}).join('\n\n');
-
-const userCharacterRef = userCharacterNames.length > 0
-  ? `\nUSER-CONTROLLED (DO NOT GENERATE FOR): ${userCharacterNames.join(', ')}`
-  : '';
+// Issue #6A: Auto-extract memory events (non-blocking, mirrors character extraction pattern)
+if (memoriesEnabled) {
+  supabase.functions.invoke('extract-memory-events', {
+    body: {
+      messageText: cleanedText,
+      characterNames: allCharacterNames,
+      modelId
+    }
+  }).then(({ data, error }) => {
+    if (!error && data?.extractedEvents?.length > 0) {
+      const events: string[] = data.extractedEvents;
+      const combinedContent = events.length === 1
+        ? events[0]
+        : events.map((e: string) => `- ${e}`).join('\n');
+      handleCreateMemory(combinedContent, currentDay, currentTimeOfDay);
+    }
+  }).catch(err => {
+    console.error('[handleSend] Memory extraction failed:', err);
+  });
+}
 ```
 
-Add `userCharacterRef` to the CAST section (line 742):
-```
-CAST:
-${characterContext}
-${userCharacterRef}
-```
-
-Add a compact control quick-reference at the very top of the INSTRUCTIONS block (before line 748), so it receives maximum attention weight:
-```
-    DO NOT GENERATE FOR: ${userCharacterNames.join(', ')}
-    These are USER-CONTROLLED characters. Never give them dialogue (""), actions (**), or thoughts (()).
-    Narration about them (e.g., "he watched quietly") is the only permitted form.
-```
-
-The existing detailed MAINTAIN CONTROL CONTEXT rule at lines 759-764 remains as secondary reinforcement.
+This mirrors the existing fire-and-forget pattern used by `extractCharacterUpdatesFromDialogue` (line 2202) and `evaluateArcProgress` (line 2212). It uses the already-existing `allCharacterNames` memo (line 507), `handleCreateMemory` function (line 470), and `memoriesEnabled` state (line 340).
 
 ### 5. Expected Behavior
 
-User-controlled characters are excluded from the CAST (the model can't see their full character data and has no material to generate from). A high-authority compact rule at the very top of INSTRUCTIONS reinforces the control boundary. Combined with the existing detailed rule lower in the prompt, this provides triple-layer protection.
+After every AI response, 0-2 key story events are silently extracted and saved as memory entries tagged with the current day and time of day. The memories array populates automatically and is injected into the chat prompt via the existing `memoriesContext` builder in `llm.ts` (line 336). No user action required.
 
 ---
 
-## Issue #10: No In-Session Trait Evolution Guidance
+## Issue #6B: Day-Transition Compression Not Built
 
 ### 1. Current Problem
 
-The prompt instructs the model to express personality traits at their adherence score intensity, but provides no guidance for showing trait evolution WITHIN a session. A character defined as "shy [75%]" remains identically hesitant from message 1 to message 200. The NSFW PACING section (lines 603-607) worsens this with contradictory directives: "tension should build quickly" immediately followed by "FORBIDDEN: Rushing to orgasm/climax in fewer than 3 exchanges."
+The memory system has no mechanism for compressing completed days. When the user increments `currentDay` (via `incrementDay()` at line 2100), raw bullet-point memories from the completed day remain forever. Every memory ever saved is injected into the chat prompt in full (llm.ts lines 336-351), growing unboundedly. A long session will accumulate hundreds of tokens of memory context with no ceiling.
+
+The intended architecture is a two-layer model: while the current day is active, events accumulate as individual bullet points. When the day advances, all bullets from the completed day are compressed into a 2-3 sentence synopsis, the raw bullets are deleted, and the synopsis replaces them.
 
 ### 2. What This Causes
 
-Characters feel frozen in place. A shy character engaged in intense intimate scenes remains identically hesitant throughout, producing repetitive "still nervous" beats that break immersion.
+Token cost for the `memoriesContext` block grows linearly with session length. After many days of play, the memory injection becomes large enough to crowd out other prompt content or hit context window limits.
 
 ### 3. Scope
 
 | File | Change |
 |------|--------|
-| `src/services/llm.ts` | Add IN-SESSION TRAIT DYNAMICS block to system prompt; replace contradictory PACING directives in `nsfwRules` (lines 603-617); add trend annotation to `formatTrait()` |
-| `src/types.ts` | Add optional `adherenceScore` and `scoreTrend` fields to `PersonalityTrait` type |
+| `supabase/functions/compress-day-memories/index.ts` | NEW edge function -- accepts bullet strings, returns a 2-3 sentence synopsis |
+| `src/components/chronicle/ChatInterfaceTab.tsx` | Add `previousDayRef` and a `useEffect` watching `currentDay` that triggers compression of the completed day |
 
 ### 4. Proposed Fix
 
-**src/types.ts line 66**: Add to `PersonalityTrait`:
+**New edge function `compress-day-memories/index.ts`:**
+- Accepts `{ bullets: string[], day: number, conversationId: string }`
+- Auth check (same pattern as existing functions like `extract-memory-events`)
+- Calls xAI Grok (`grok-3-mini`) with system prompt:
+
+```
+You are compressing a list of story memory bullet points from a single day of roleplay into a brief narrative synopsis for long-term storage.
+
+INPUT: An array of bullet point strings from one day.
+OUTPUT: A single plain-text synopsis of 2-3 sentences maximum.
+
+Rules:
+- Capture only changes, revelations, decisions, and events with future impact.
+- Distill the narrative essence of the day.
+- Use past tense.
+- No bullet points or formatting -- plain prose only.
+```
+
+- Returns `{ synopsis: string }`
+
+**ChatInterfaceTab.tsx:**
+Add `previousDayRef = useRef<number>(currentDay)` and a `useEffect`:
+
 ```typescript
-export type PersonalityTrait = {
-  id: string;
-  label: string;
-  value: string;
-  flexibility: PersonalityTraitFlexibility;
-  adherenceScore?: number;
-  scoreTrend?: 'rising' | 'falling' | 'stable';
-};
+const previousDayRef = useRef<number>(currentDay);
+
+useEffect(() => {
+  const prevDay = previousDayRef.current;
+  previousDayRef.current = currentDay;
+
+  // Only compress when day increments (not decrements or initial load)
+  if (currentDay > prevDay && memoriesEnabled) {
+    const completedDay = prevDay;
+    const bulletMemories = memories.filter(
+      m => m.day === completedDay && m.entryType === 'bullet'
+    );
+    if (bulletMemories.length === 0) return;
+
+    const bullets = bulletMemories.map(m => m.content);
+
+    supabase.functions.invoke('compress-day-memories', {
+      body: { bullets, day: completedDay, conversationId }
+    }).then(async ({ data, error }) => {
+      if (!error && data?.synopsis) {
+        await handleCreateMemory(data.synopsis, completedDay, null, undefined, 'synopsis');
+        for (const bm of bulletMemories) {
+          await handleDeleteMemory(bm.id);
+        }
+      }
+    }).catch(err => {
+      console.error('[Day compression] Failed:', err);
+    });
+  }
+}, [currentDay, memories, memoriesEnabled, conversationId]);
 ```
 
-**llm.ts** -- Add IN-SESSION TRAIT DYNAMICS block (after PERSONALITY TRAIT ADHERENCE at line 830, before the closing instructions):
-```
-    - IN-SESSION TRAIT DYNAMICS (MANDATORY for Normal and Flexible traits):
-        * The character card represents the STABLE BASELINE, not a locked behavioural state.
-        * Traits with Normal or Flexible flexibility should show natural emotional arc WITHIN a session as events accumulate.
-        * PROGRESSION RULE (use [SESSION: Message N] count for precision):
-          - Messages 1-5: Full trait expression (visibly nervous, hesitant, guarded)
-          - Messages 6-15: Trait present but less dominant (quiet nervousness beneath growing engagement)
-          - Messages 16+: Trait as undertone, not foreground (occasional self-surprise, residual flutter, not sustained paralysis)
-        * This applies ONLY when the session's events directly challenge the trait. A shy character in a casual conversation remains shy. A shy character who has been in 15 exchanges of unresisted intimacy should show their shyness softening.
-        * NEVER express a Normal or Flexible trait at the same intensity for 10+ consecutive exchanges during events that directly challenge that trait.
-        * Rigid traits persist fully regardless of session depth or events. Normal traits soften gradually. Flexible traits evolve fastest.
-```
-
-**llm.ts** -- Replace PACING block in nsfwRules (lines 603-617):
-Remove the current PACING block and replace with:
-```
-    PACING -- PERSONALITY-DRIVEN:
-    * Escalation pace is governed by the character's traits, not a fixed exchange count.
-    * A bold or dominant character moves quickly from tension to action.
-    * A shy or nervous character requires more exchanges -- but should still be visibly progressing (see IN-SESSION TRAIT DYNAMICS), not stalling.
-    * Once intimacy is clearly mutual and unresisted, continue to escalate rather than repeatedly revisiting hesitation that has already been overcome.
-```
-
-**llm.ts** -- Update `formatTrait()` (line 226) to include trend annotation:
-```typescript
-const formatTrait = (t: any) => {
-  const level = (t.flexibility || 'normal').charAt(0).toUpperCase() + (t.flexibility || 'normal').slice(1);
-  const score = t.adherenceScore ?? getDefaultScore(level);
-  const trend = t.scoreTrend;
-  const trendNote = trend === 'falling' ? ' [easing -- show as softening]'
-    : trend === 'rising' ? ' [reinforcing -- show as strengthening]'
-    : '';
-  return getTraitGuidance(t.label, level, score) + trendNote;
-};
-```
+**IMPORTANT**: The dependency array is `[currentDay, memories, memoriesEnabled, conversationId]` -- not just `[currentDay]`. All four values are used inside the effect body. The `currentDay > prevDay` guard prevents compression from running when only `memories`, `memoriesEnabled`, or `conversationId` change, so there is no risk of spurious compression.
 
 ### 5. Expected Behavior
 
-Shy characters who have been in 10+ exchanges of unresisted intimacy will show their shyness as a softening undertone rather than a frozen repeating beat. The model uses the precise `[SESSION: Message N]` count (from Issue #7's `sessionMessageCount`) to determine progression stage. NSFW pacing is driven by personality rather than arbitrary exchange counts. When trait score trends are available, the model gets explicit direction about which way a trait is moving.
+When the user clicks the day increment button, a background process fetches all bullet memories for the completed day, sends them to the compression edge function, saves the resulting synopsis, and deletes the raw bullets. The memory list stays compact: one synopsis per completed day plus live bullets for the active day only.
 
 ---
 
-## Issue #11: NSFW Intensity and Verbosity Instruction Overlap
+## Issue #6C: Memory Type Cannot Distinguish Bullets from Synopses
 
 ### 1. Current Problem
 
-The HIGH NSFW block (lines 583-631 of `llm.ts`) contains verbosity-type instructions that should only be in the `verbosityRules` block:
-- Line 585: "Describe physical sensations in vivid detail: heat, wetness, hardness, pressure, friction."
-- Line 586: "Include sounds: moans, gasps, whimpers, breathing, wet sounds, skin on skin."
-- Line 587: "Show arousal states explicitly: hardening, wetness, flushing, trembling."
-- Line 588: "When intimate scenes occur, be graphic and detailed, not vague or fade-to-black."
-- Line 613: Duplicate "Show arousal states explicitly: hardening, wetness, flushing, trembling."
-
-These are DETAIL LEVEL instructions, not INTENSITY instructions. They conflict with verbosity=concise.
+The `Memory` type in `src/types.ts` (line 502) has no field to identify whether a stored entry is a current-day bullet point or a completed-day synopsis. The `memories` database table also has no such column. Without this distinction, the compression logic in Issue #6B cannot identify which entries to compress and which to skip.
 
 ### 2. What This Causes
 
-When NSFW=High but Verbosity=Concise, the model receives contradicting instructions at the same authority level and produces a muddy middle ground. The two settings cannot function independently.
+Without an `entryType` field:
+- Compression logic cannot filter only bullet entries (skipping already-compressed synopses)
+- The prompt cannot format bullets and synopses differently
+- Traits only accumulate and can never be structurally separated for display
 
 ### 3. Scope
 
 | File | Change |
 |------|--------|
-| `src/services/llm.ts` | Remove verbosity-type lines from `nsfwRules` HIGH block (lines 585-588, 613); add intimate scene detail lines to `verbosityRules` detailed block (after line 653) |
+| `src/types.ts` | Add `MemoryEntryType` type and `entryType` field to `Memory` |
+| Database migration | Add `entry_type` column to `memories` table |
+| `src/services/supabase-data.ts` | Update `dbToMemory()`, `createMemory()` to handle the new field |
+| `src/services/llm.ts` | Update `memoriesContext` builder (lines 336-351) to format bullets and synopses differently |
 
 ### 4. Proposed Fix
 
-**Remove from nsfwRules HIGH block** (lines 585-588):
-- "Describe physical sensations in vivid detail..."
-- "Include sounds: moans, gasps, whimpers..."
-- "Show arousal states explicitly..."
-- "When intimate scenes occur, be graphic and detailed..."
-
-Also remove the duplicate at line 613: "Show arousal states explicitly..."
-
-**Keep in nsfwRules HIGH block** (these are true intensity/permissiveness controls):
-- "Use explicit anatomical language, not euphemisms..."
-- All SEXUAL PROACTIVITY lines
-- All CHARACTER SEXUAL AGENCY lines
-- All RESISTANCE ONLY WHEN WARRANTED lines
-- "FORBIDDEN: Summarizing intimate acts"
-- All PERSONALITY-MODULATED INTIMACY lines
-
-**Add to verbosityRules detailed block** (after line 653):
+**Database migration:**
+```sql
+ALTER TABLE memories ADD COLUMN entry_type TEXT NOT NULL DEFAULT 'bullet';
 ```
-    * During intimate scenes, layer physical sensations: heat, pressure, friction, texture.
-    * Include environmental sounds and character sounds naturally as the scene builds.
-    * Show arousal states through physical description: colour, breath, trembling.
+Existing rows correctly default to `'bullet'`.
+
+**src/types.ts** (after line 500):
+```typescript
+export type MemoryEntryType = 'bullet' | 'synopsis';
+```
+
+Update `Memory` type to include:
+```typescript
+entryType: MemoryEntryType;
+```
+
+**supabase-data.ts:**
+- `dbToMemory()` (line 1724): Add `entryType: row.entry_type || 'bullet'`
+- `createMemory()` (line 1750): Accept optional `entryType` parameter (defaults to `'bullet'`), include `entry_type: entryType` in the insert
+
+**ChatInterfaceTab.tsx:**
+- `handleCreateMemory()` (line 470): Accept optional `entryType` parameter and pass through to `supabaseData.createMemory()`
+
+**llm.ts** -- Replace `memoriesContext` builder (lines 336-351) to separate synopses from bullets:
+```typescript
+const synopses = memories.filter(m => m.entryType === 'synopsis');
+const bullets = memories.filter(m => m.entryType === 'bullet' && m.day === currentDay);
+
+const memoriesContext = (synopses.length > 0 || bullets.length > 0) ? `
+    STORY MEMORIES:
+    ${synopses.length > 0 ? `COMPLETED DAYS (summaries):
+    ${synopses.sort((a, b) => (a.day || 0) - (b.day || 0))
+      .map(m => `[Day ${m.day}] ${m.content}`).join('\n    ')}` : ''}
+    ${bullets.length > 0 ? `\n    TODAY (Day ${currentDay} -- key events so far):
+    ${bullets.map(m => `- ${m.content}`).join('\n    ')}` : ''}
+
+    MEMORY RULES:
+    - These events HAVE HAPPENED. Do not write them as new occurrences.
+    - Characters should remember and reference past events appropriately.
+    - Never contradict or "re-do" events listed in memories.
+` : '';
 ```
 
 ### 5. Expected Behavior
 
-NSFW=High + Verbosity=Concise = explicit and direct language but SHORT responses. NSFW=Normal + Verbosity=Detailed = tasteful but rich with sensory description. The two axes function independently as intended.
+Memory entries are typed as either `'bullet'` (live event entries) or `'synopsis'` (compressed day summaries). The compression logic filters by type safely. The chat prompt formats them differently: completed days appear as compact summaries under "COMPLETED DAYS", today's events appear as bullet points under "TODAY". Token cost stays flat regardless of session length.
+
+---
+
+## Implementation Order
+
+These three sub-issues are interdependent and must be delivered together:
+
+1. **#6C first** (database migration + type changes) -- foundation for the other two
+2. **#6A second** (auto-extraction in handleSend) -- can now create bullets with the correct `entryType`
+3. **#6B last** (compression edge function + day-change trigger) -- depends on #6C's `entryType` and #6A's bullets existing
 
 ---
 
 ## 6. Codebase Analysis Confirmation
 
-I have read and analyzed in full:
-- `src/services/llm.ts` (all 1054 lines) -- `getSystemInstruction()`, `narrativeBehaviorRules` (lines 370-401), `antiRepetitionRules` (lines 525-566), `nsfwRules` (lines 571-639), `verbosityRules` (lines 641-668), `realismRules` (lines 670-713), `personalityContext` builder (lines 223-242), `characterContext` builder (lines 254-306), `getRandomStyleHint()` (lines 838-866), `generateRoleplayResponseStream()` (lines 868-1054), INSTRUCTIONS block (lines 747-835)
-- `src/components/chronicle/ChatInterfaceTab.tsx` -- `handleSend` (lines 2121-2207), streaming loop (lines 2142-2156), post-response processing (lines 2158-2198)
-- `src/types.ts` -- `PersonalityTrait` (lines 66-71), `CharacterPersonality` (lines 73-78)
-- `docs/guides/edge-functions-ai-services-structure-guide.md` -- full file (153 lines)
-- `docs/guides/chat-interface-page-structure-guide.md` -- full file (271 lines)
-- The full Bug Report v2 document (Issues #7-#11 and Recommendations 1-6)
+I have read and analyzed:
+- `src/components/chronicle/ChatInterfaceTab.tsx` -- `handleSend()` post-response block (lines 2200-2250), `incrementDay()` (line 2100), `handleCreateMemory()` (line 470), `handleDeleteMemory()` (line 492), `allCharacterNames` memo (line 507), `memoriesEnabled` state (line 340), `memories` state (line 339)
+- `src/types.ts` -- `Memory` type (lines 502-512), `MemorySource` (line 500)
+- `src/services/supabase-data.ts` -- `dbToMemory()` (line 1724), `createMemory()` (line 1750), `fetchMemories()` (line 1738), `deleteMemory()` (line 1786)
+- `src/services/llm.ts` -- `memoriesContext` builder (lines 336-351)
+- `supabase/functions/extract-memory-events/index.ts` -- full file (168 lines, functional, uses xAI Grok)
 
 ## 7. Guide Document Confirmation
 
 I have read:
-- `docs/guides/GUIDE_STYLE_RULES.md` -- formatting rules referenced by all guides
-- `docs/guides/edge-functions-ai-services-structure-guide.md` -- Sections 3, 4, 5, 13
-- `docs/guides/chat-interface-page-structure-guide.md` -- Sections 6, 8, 9, 12
+- `docs/guides/GUIDE_STYLE_RULES.md` -- formatting rules
+- `docs/guides/edge-functions-ai-services-structure-guide.md` -- Bug #6 listed as ACTIVE (line 120), Section 2 (edge functions inventory)
+- `docs/guides/chat-interface-page-structure-guide.md` -- Bug #6 listed as ACTIVE (line 275), memory-related state at lines 338-342
 
 ## 8. Guide Documentation Updates
 
 ### `docs/guides/edge-functions-ai-services-structure-guide.md`
-- Section 3 (`src/services/llm.ts`): Add `lengthDirective` and `sessionMessageCount` as new parameters on `generateRoleplayResponseStream()`. Note NSFW/verbosity separation and IN-SESSION TRAIT DYNAMICS block.
-- Section 4 (System Prompt Architecture): Add items for control quick-reference at top of INSTRUCTIONS, IN-SESSION TRAIT DYNAMICS block, and forward momentum user-as-AI-character extension
-- Section 5: Add bugs #7-#11 as RESOLVED with dates and descriptions
+- Section 2: Add `compress-day-memories` to edge functions inventory
+- Section 5: Bug #6 status from `ACTIVE` to `RESOLVED -- 2026-03-01 -- Auto-extraction fires after every AI response, day-transition compression via new compress-day-memories edge function, entryType field distinguishes bullets from synopses`
 
 ### `docs/guides/chat-interface-page-structure-guide.md`
-- Section 6 (Data Architecture): Document `responseLengthsRef`, `sessionMessageCountRef`, `getLengthDirective()`, and the AI-character canon detection logic
-- Section 8 (State Management): Add `responseLengthsRef` and `sessionMessageCountRef` to the state table
-- Section 12 (Known Issues): Add Issues #7-#11 as RESOLVED with dates and descriptions
+- Section 6 (Data Architecture): Document `previousDayRef`, auto-memory extraction in handleSend, day-compression useEffect with full dependency array
+- Section 8 (State Management): Add `previousDayRef` to state table
+- Section 12: Bug #6 from `ACTIVE` to `RESOLVED -- 2026-03-01`
 
