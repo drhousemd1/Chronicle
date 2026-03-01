@@ -1,3 +1,25 @@
+> **INSTRUCTIONS FOR LOVABLE / AI AGENTS**
+>
+> MANDATORY: Before editing this file, read `docs/guides/GUIDE_STYLE_RULES.md` in full.
+>
+> That file defines heading hierarchy, table formatting, code block rules, good-vs-bad content patterns, and section-specific requirements. You must follow it exactly.
+>
+> This document is the SINGLE SOURCE OF TRUTH for this page's architecture.
+>
+> When making changes to this page's code, you MUST:
+>
+> 1. READ `docs/guides/GUIDE_STYLE_RULES.md` before making any edits to this document
+> 2. READ this entire document before making any code changes
+> 3. UPDATE this document IN-PLACE after making code changes — do NOT append summaries
+> 4. PRESERVE the exact 13-section format — do not skip sections, do not reorganize
+> 5. USE REAL VALUES from the code — exact file paths, exact Tailwind classes, exact hex codes
+> 6. UPDATE the Known Issues section (Section 12) when fixing or discovering bugs
+> 7. CROSS-REFERENCE the Shared Elements page when modifying any shared component
+>
+> If a section does not apply, write: `N/A — [specific reason]`
+>
+> Never write: "see code for details" — this document exists so no one needs to read the code.
+
 # Shared Elements / Architecture
 
 > **Purpose**: At-a-glance cross-reference map of components, patterns, and UI elements that appear in multiple locations. When changing a shared element, consult this document to identify every location that needs modification.
@@ -338,3 +360,10 @@ When adding a **new image picker context**:
 
 When modifying **AutoResizeTextarea** behavior:
 - [ ] Update all 9 files listed above (or extract to shared component first)
+
+---
+
+## Known Issues from Bug Report (Added 2026-03-01)
+
+- **ACTIVE — Bug #2**: `personality.traits` missing from TRACKABLE FIELDS constant in extraction logic — only `outward` and `inward` personality sub-fields are tracked. The top-level `traits` array is never extracted or updated.
+- **ACTIVE — Bug #3**: `preferredClothing` field name mismatch — the UI and database use `preferred_clothing` (snake_case) but the extraction prompt references `preferredClothing` (camelCase). This inconsistency means extracted clothing preference updates may silently fail to apply.
