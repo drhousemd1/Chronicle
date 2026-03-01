@@ -1,3 +1,25 @@
+> **INSTRUCTIONS FOR LOVABLE / AI AGENTS**
+>
+> MANDATORY: Before editing this file, read `docs/guides/GUIDE_STYLE_RULES.md` in full.
+>
+> That file defines heading hierarchy, table formatting, code block rules, good-vs-bad content patterns, and section-specific requirements. You must follow it exactly.
+>
+> This document is the SINGLE SOURCE OF TRUTH for this page's architecture.
+>
+> When making changes to this page's code, you MUST:
+>
+> 1. READ `docs/guides/GUIDE_STYLE_RULES.md` before making any edits to this document
+> 2. READ this entire document before making any code changes
+> 3. UPDATE this document IN-PLACE after making code changes — do NOT append summaries
+> 4. PRESERVE the exact 13-section format — do not skip sections, do not reorganize
+> 5. USE REAL VALUES from the code — exact file paths, exact Tailwind classes, exact hex codes
+> 6. UPDATE the Known Issues section (Section 12) when fixing or discovering bugs
+> 7. CROSS-REFERENCE the Shared Elements page when modifying any shared component
+>
+> If a section does not apply, write: `N/A — [specific reason]`
+>
+> Never write: "see code for details" — this document exists so no one needs to read the code.
+
 # Image Library Page (Structure Guide)
 
 ---
