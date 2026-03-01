@@ -272,7 +272,7 @@ Configurable via `onUpdateUiSettings`:
 - **RESOLVED — Bug #9**: Control rule reliability — AI generates for user-controlled characters. Fixed by filtering CAST to AI-only + high-authority quick-reference. (2026-03-01)
 - **RESOLVED — Bug #10**: No in-session trait evolution guidance. Fixed with IN-SESSION TRAIT DYNAMICS block + `sessionMessageCountRef` + personality-driven NSFW pacing. (2026-03-01)
 - **RESOLVED — Bug #11**: NSFW intensity and verbosity instruction overlap. Fixed by moving sensory detail lines from nsfwRules to verbosityRules. (2026-03-01)
-- **ACTIVE — Bug #6**: Memory system incomplete — no long-term accumulation. (2026-03-01)
+- **RESOLVED — Bug #6**: Memory system incomplete — no long-term accumulation. Fixed with auto-extraction in `handleSend`, `previousDayRef` + day-compression `useEffect` (dependency array: `[currentDay, memories, memoriesEnabled, conversationId]`), `entryType` field on Memory type, and split `memoriesContext` builder in `llm.ts`. (2026-03-01)
 - **ACTIVE**: `ChatInterfaceTab.tsx` is ~3900 lines — extremely large single component. (2026-03-01)
 - **ACTIVE**: Message parsing regex may miss edge cases with nested formatting markers. (2026-03-01)
 
@@ -282,4 +282,4 @@ Configurable via `onUpdateUiSettings`:
 
 None documented.
 
-> Last updated: 2026-03-01 — Bugs #7-#11 resolved.
+> Last updated: 2026-03-01 — Bugs #6-#11 resolved.

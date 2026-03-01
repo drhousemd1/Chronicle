@@ -498,6 +498,7 @@ export const defaultContentThemes: ContentThemes = {
 // =============================================
 
 export type MemorySource = 'user' | 'message';
+export type MemoryEntryType = 'bullet' | 'synopsis';
 
 export type Memory = {
   id: string;
@@ -506,6 +507,7 @@ export type Memory = {
   day: number | null;
   timeOfDay: TimeOfDay | null;
   source: MemorySource;
+  entryType: MemoryEntryType;
   sourceMessageId?: string;
   createdAt: number;
   updatedAt: number;

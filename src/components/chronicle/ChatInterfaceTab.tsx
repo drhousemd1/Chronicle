@@ -378,6 +378,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const responseLengthsRef = useRef<number[]>([]);
   // Issue #7 + #10: Session message counter for precise session depth awareness
   const sessionMessageCountRef = useRef<number>(0);
+  // Issue #6B: Track previous day for compression trigger
+  const previousDayRef = useRef<number>(currentDay);
   
   // Reset session tracking when conversation changes
   useEffect(() => {
@@ -466,8 +468,38 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     return () => cancelAnimationFrame(frameId);
   }, [conversationId]);
   
+  // Issue #6B: Day-transition compression -- compress bullet memories when day increments
+  useEffect(() => {
+    const prevDay = previousDayRef.current;
+    previousDayRef.current = currentDay;
+
+    // Only compress when day increments (not decrements or initial load)
+    if (currentDay > prevDay && memoriesEnabled) {
+      const completedDay = prevDay;
+      const bulletMemories = memories.filter(
+        m => m.day === completedDay && m.entryType === 'bullet'
+      );
+      if (bulletMemories.length === 0) return;
+
+      const bullets = bulletMemories.map(m => m.content);
+
+      supabase.functions.invoke('compress-day-memories', {
+        body: { bullets, day: completedDay, conversationId }
+      }).then(async ({ data, error }) => {
+        if (!error && data?.synopsis) {
+          await handleCreateMemory(data.synopsis, completedDay, null, undefined, 'synopsis');
+          for (const bm of bulletMemories) {
+            await handleDeleteMemory(bm.id);
+          }
+        }
+      }).catch(err => {
+        console.error('[Day compression] Failed:', err);
+      });
+    }
+  }, [currentDay, memories, memoriesEnabled, conversationId]);
+
   // Memory CRUD handlers
-  const handleCreateMemory = async (content: string, day: number | null, timeOfDay: TimeOfDay | null, sourceMessageId?: string) => {
+  const handleCreateMemory = async (content: string, day: number | null, timeOfDay: TimeOfDay | null, sourceMessageId?: string, entryType: import('@/types').MemoryEntryType = 'bullet') => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Not authenticated');
     
@@ -478,7 +510,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       day,
       timeOfDay,
       sourceMessageId ? 'message' : 'user',
-      sourceMessageId
+      sourceMessageId,
+      entryType
     );
     setMemories(prev => [...prev, memory]);
     return memory;
@@ -2223,6 +2256,27 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       
       // Issue #7: Track response word count for adaptive length directives
       responseLengthsRef.current.push(cleanedText.split(/\s+/).length);
+
+      // Issue #6A: Auto-extract memory events (non-blocking, mirrors character extraction pattern)
+      if (memoriesEnabled) {
+        supabase.functions.invoke('extract-memory-events', {
+          body: {
+            messageText: cleanedText,
+            characterNames: allCharacterNames,
+            modelId
+          }
+        }).then(({ data, error }) => {
+          if (!error && data?.extractedEvents?.length > 0) {
+            const events: string[] = data.extractedEvents;
+            const combinedContent = events.length === 1
+              ? events[0]
+              : events.map((e: string) => `- ${e}`).join('\n');
+            handleCreateMemory(combinedContent, currentDay, currentTimeOfDay);
+          }
+        }).catch(err => {
+          console.error('[handleSend] Memory extraction failed:', err);
+        });
+      }
 
       const aiMsg: Message = { 
         id: uuid(), 

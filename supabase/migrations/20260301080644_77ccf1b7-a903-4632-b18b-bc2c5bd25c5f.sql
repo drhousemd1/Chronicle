@@ -1,0 +1,1 @@
+ALTER TABLE memories ADD COLUMN entry_type TEXT NOT NULL DEFAULT 'bullet';
