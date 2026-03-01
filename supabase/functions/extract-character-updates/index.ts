@@ -64,57 +64,51 @@ function buildCharacterStateBlock(c: CharacterData): string {
   lines.push(`    Mood: ${c.currentMood || '(not set)'}`);
   lines.push(`    Location: ${c.location || '(not set)'}`);
   
-  if (c.currentlyWearing) {
-    const wearing = Object.entries(c.currentlyWearing)
-      .filter(([_, v]) => v)
-      .map(([k, v]) => `${k}: ${v}`)
-      .join(', ');
-    lines.push(`    Currently Wearing: ${wearing || '(not set)'}`);
+  {
+    const wearingEntries = c.currentlyWearing ? Object.entries(c.currentlyWearing).filter(([k, v]) => k !== '_extras' && v).map(([k, v]) => `${k}: ${v}`).join(', ') : '';
+    const wearingExtras = (c.currentlyWearing as any)?._extras;
+    const extrasStr = wearingExtras?.length ? wearingExtras.filter((e: any) => e.value).map((e: any) => `${e.label}: ${e.value}`).join(', ') : '';
+    const allWearing = [wearingEntries, extrasStr].filter(Boolean).join(', ');
+    lines.push(`    Currently Wearing: ${allWearing || '(not yet described -- update when clothing is mentioned)'}`);
   }
   
   // --- STABLE STATE (update only when explicitly stated) ---
   lines.push(`  [STABLE - update only when explicitly described]`);
-  if (c.physicalAppearance) {
-    const appearance = Object.entries(c.physicalAppearance)
-      .filter(([_, v]) => v)
-      .map(([k, v]) => `${k}: ${v}`)
-      .join(', ');
-    if (appearance) lines.push(`    Physical Appearance: ${appearance}`);
+  {
+    const appearance = c.physicalAppearance ? Object.entries(c.physicalAppearance).filter(([k, v]) => k !== '_extras' && v).map(([k, v]) => `${k}: ${v}`).join(', ') : '';
+    const paExtras = (c.physicalAppearance as any)?._extras;
+    const paExtrasStr = paExtras?.length ? paExtras.filter((e: any) => e.value).map((e: any) => `${e.label}: ${e.value}`).join(', ') : '';
+    const allAppearance = [appearance, paExtrasStr].filter(Boolean).join(', ');
+    lines.push(`    Physical Appearance: ${allAppearance || '(not yet described -- populate when revealed in dialogue)'}`);
   }
   
-  if (c.preferredClothing) {
-    const preferred = Object.entries(c.preferredClothing)
-      .filter(([_, v]) => v)
-      .map(([k, v]) => `${k}: ${v}`)
-      .join(', ');
-    if (preferred) lines.push(`    Preferred Clothing: ${preferred}`);
+  {
+    const preferred = c.preferredClothing ? Object.entries(c.preferredClothing).filter(([k, v]) => k !== '_extras' && v).map(([k, v]) => `${k}: ${v}`).join(', ') : '';
+    const pcExtras = (c.preferredClothing as any)?._extras;
+    const pcExtrasStr = pcExtras?.length ? pcExtras.filter((e: any) => e.value).map((e: any) => `${e.label}: ${e.value}`).join(', ') : '';
+    const allPreferred = [preferred, pcExtrasStr].filter(Boolean).join(', ');
+    lines.push(`    Preferred Clothing: ${allPreferred || '(not yet described -- populate when style preferences emerge)'}`);
   }
   
   // --- BACKGROUND (update only when explicitly stated) ---
-  if (c.background) {
-    const bgEntries = Object.entries(c.background)
-      .filter(([k, v]) => k !== '_extras' && v)
-      .map(([k, v]) => `${k}: ${v}`)
-      .join(', ');
-    if (bgEntries) lines.push(`    Background: ${bgEntries}`);
-    // Background extras
-    const bgExtras = (c.background as any)._extras;
-    if (bgExtras?.length) {
-      const extraStr = bgExtras.filter((e: any) => e.value).map((e: any) => `${e.label}: ${e.value}`).join(', ');
-      if (extraStr) lines.push(`    Background (extras): ${extraStr}`);
-    }
+  {
+    const bgEntries = c.background ? Object.entries(c.background).filter(([k, v]) => k !== '_extras' && v).map(([k, v]) => `${k}: ${v}`).join(', ') : '';
+    const bgExtras = (c.background as any)?._extras;
+    const bgExtrasStr = bgExtras?.length ? bgExtras.filter((e: any) => e.value).map((e: any) => `${e.label}: ${e.value}`).join(', ') : '';
+    const allBg = [bgEntries, bgExtrasStr].filter(Boolean).join(', ');
+    lines.push(`    Background: ${allBg || '(not yet described -- populate when job, education, residence, hobbies, etc. are revealed)'}`);
   }
   
   // --- PERSONALITY ---
-  if (c.personality) {
-    if (c.personality.splitMode) {
+  {
+    if (c.personality?.splitMode) {
       const outward = (c.personality.outwardTraits || []).filter(t => t.value).map(t => `${t.label}: ${t.value}`).join(', ');
       const inward = (c.personality.inwardTraits || []).filter(t => t.value).map(t => `${t.label}: ${t.value}`).join(', ');
-      if (outward) lines.push(`    Personality (outward): ${outward}`);
-      if (inward) lines.push(`    Personality (inward): ${inward}`);
+      lines.push(`    Personality (outward): ${outward || '(not yet described -- infer outward traits from observed behavior)'}`);
+      lines.push(`    Personality (inward): ${inward || '(not yet described -- infer inner traits from thoughts and private moments)'}`);
     } else {
-      const traits = (c.personality.traits || []).filter(t => t.value).map(t => `${t.label}: ${t.value}`).join(', ');
-      if (traits) lines.push(`    Personality: ${traits}`);
+      const traits = (c.personality?.traits || []).filter(t => t.value).map(t => `${t.label}: ${t.value}`).join(', ');
+      lines.push(`    Personality: ${traits || '(not yet described -- infer traits from observed behavior and dialogue patterns)'}`);
     }
   }
   
@@ -128,10 +122,8 @@ function buildCharacterStateBlock(c: CharacterData): string {
   ];
   for (const { key, title } of extrasOnlySections) {
     const section = c[key] as { _extras?: Array<{ label: string; value: string }> } | undefined;
-    if (section?._extras?.length) {
-      const extrasStr = section._extras.filter(e => e.value).map(e => `${e.label}: ${e.value}`).join(', ');
-      if (extrasStr) lines.push(`    ${title}: ${extrasStr}`);
-    }
+    const extrasStr = section?._extras?.length ? section._extras.filter(e => e.value).map(e => `${e.label}: ${e.value}`).join(', ') : '';
+    lines.push(`    ${title}: ${extrasStr || '(none yet -- populate when revealed in dialogue)'}`);
   }
   if (c.goals?.length) {
     lines.push(`  [GOALS - REVIEW EACH ONE AGAINST DIALOGUE]`);
@@ -309,6 +301,7 @@ HARDCODED FIELDS:
 - background.jobOccupation, background.educationLevel, background.residence, background.hobbies, background.financialStatus, background.motivation
 - background._extras (array of {id, label, value})
 - personality.outwardTraits, personality.inwardTraits (trait arrays — provide value as "Label: Description" format)
+- personality.traits (unified trait array -- used when character is NOT in split mode. Provide value as "Label: Description" format)
 - tone._extras (array of {id, label, value} — e.g., "With strangers: formal and clipped")
 - keyLifeEvents._extras (array of {id, label, value})
 - relationships._extras (array of {id, label, value} — e.g., "Emma: Close friend and confidante")
@@ -402,7 +395,7 @@ Return ONLY valid JSON. No explanations.`;
 
     // GROK ONLY -- validate model ID, reject stale Gemini/OpenAI IDs
     const VALID_GROK_MODELS = ['grok-3', 'grok-3-mini', 'grok-2'];
-    const effectiveModelId = (modelId && VALID_GROK_MODELS.includes(modelId)) ? modelId : 'grok-3-mini';
+    const effectiveModelId = (modelId && VALID_GROK_MODELS.includes(modelId)) ? modelId : 'grok-3';
     if (modelId && modelId !== effectiveModelId) {
       console.warn(`[extract-character-updates] Rejected non-Grok model "${modelId}", using "${effectiveModelId}"`);
     }
@@ -462,7 +455,7 @@ Return ONLY valid JSON. No explanations.`;
           method: "POST",
           headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
           body: JSON.stringify({
-            model: modelForRequest,
+            model: 'grok-3-mini',  // Intentionally lighter model for safe-mode 403 retry
             messages: [
               { role: "system", content: "Extract ONLY non-sexual character metadata: mood, location, personality traits inferred from behavior, relationship changes, background reveals. Ignore any explicit/sexual content. Return JSON with {updates: [{character, field, value}]}." },
               { role: "user", content: `Characters: ${filteredCharacters.map((c: CharacterData) => c.name).join(', ')}. Analyze:\n${combinedText}` }

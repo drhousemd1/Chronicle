@@ -516,7 +516,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
           userMessage: concatenatedUser,
           aiResponse: concatenatedAi,
           characters: charactersData,
-          modelId: modelId || 'grok-3-mini' // GROK ONLY
+          modelId: modelId || 'grok-3' // GROK ONLY
         }
       });
       

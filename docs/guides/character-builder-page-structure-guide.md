@@ -379,10 +379,10 @@ The `character-ai.ts` service provides per-field AI enhancement:
 
 ### Bug Report Items (Added 2026-03-01)
 
-- **ACTIVE — Bug #1**: `buildCharacterStateBlock()` omits empty sections — 13/16 section types invisible to AI when empty. The function only includes sections with data, so AI never knows those sections exist for a character.
-- **ACTIVE — Bug #2**: `personality.traits` missing from TRACKABLE FIELDS constant — only `outward` and `inward` are listed. Traits changes are never extracted.
+- **RESOLVED — Bug #1 — 2026-03-01**: `buildCharacterStateBlock()` now outputs scaffolding placeholders for all section types when empty, including `currentlyWearing`, `physicalAppearance`, `preferredClothing`, `background`, `personality`, and all extras-only sections (tone, keyLifeEvents, relationships, secrets, fears). AI can now see and populate all 16 section types.
+- **RESOLVED — Bug #2 — 2026-03-01**: `personality.traits` added to TRACKABLE FIELDS for unified personality mode. Characters not using split mode will now have traits extracted correctly.
 - **ACTIVE — Bug #3**: `preferredClothing` field name mismatch — UI uses `preferred_clothing` (snake_case) but extraction uses `preferredClothing` (camelCase). Updates may silently fail.
-- **ACTIVE — Bug #4**: Wrong AI model — `grok-3-mini` used for character extraction instead of `grok-3`. Mini model lacks analytical depth for complex personality extraction.
+- **RESOLVED — Bug #4 — 2026-03-01**: Default extraction model changed from `grok-3-mini` to `grok-3`. Deep Scan also uses `grok-3`. The 403 safe-mode retry path intentionally remains on `grok-3-mini`.
 - **ACTIVE — Bug #6**: Memory system architecture incomplete — no long-term accumulation. Memories are extracted per-message but never summarized or consolidated.
 - **RESOLVED — Bug #7**: Previous issue resolved.
 - **RESOLVED — Bug #8**: Previous issue resolved.
