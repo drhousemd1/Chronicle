@@ -21,6 +21,7 @@ interface GuideSidebarProps {
   onNewDoc: () => void;
   onDeleteDoc: (id: string) => void;
   onTocClick: (blockId: string) => void;
+  theme?: 'dark' | 'light';
 }
 
 export const GuideSidebar: React.FC<GuideSidebarProps> = ({
@@ -31,19 +32,34 @@ export const GuideSidebar: React.FC<GuideSidebarProps> = ({
   onNewDoc,
   onDeleteDoc,
   onTocClick,
+  theme = 'dark',
 }) => {
+  const isDark = theme === 'dark';
+
+  const bg = isDark ? '#111111' : '#f5f5f5';
+  const headerText = isDark ? '#9CA3AF' : '#6B7280';
+  const sectionLabel = isDark ? '#6B7280' : '#9CA3AF';
+  const itemText = isDark ? '#9CA3AF' : '#6B7280';
+  const itemTextHover = isDark ? '#ffffff' : '#111827';
+  const activeText = isDark ? '#ffffff' : '#111827';
+  const activeBg = isDark ? '#2a2a2a' : '#e5e7eb';
+  const divider = isDark ? '#333' : '#d1d5db';
+  const tocText = isDark ? '#9CA3AF' : '#6B7280';
+  const tocEmptyText = isDark ? '#4B5563' : '#9CA3AF';
+  const newDocText = isDark ? '#6B7280' : '#9CA3AF';
+
   return (
-    <div className="w-60 shrink-0 flex flex-col h-full" style={{ background: '#111111' }}>
+    <div className="w-60 shrink-0 flex flex-col h-full transition-colors" style={{ background: bg }}>
       {/* Header */}
       <div className="px-4 pt-4 pb-2">
-        <span className="text-[10px] uppercase tracking-[0.15em] text-[#9CA3AF] font-semibold">
+        <span className="text-[10px] uppercase tracking-[0.15em] font-semibold" style={{ color: headerText }}>
           App Guide
         </span>
       </div>
 
       {/* Documents section */}
       <div className="px-3 pt-2 pb-1">
-        <span className="text-[10px] uppercase tracking-[0.12em] text-[#6B7280] font-medium">
+        <span className="text-[10px] uppercase tracking-[0.12em] font-medium" style={{ color: sectionLabel }}>
           Documents
         </span>
       </div>
@@ -52,19 +68,20 @@ export const GuideSidebar: React.FC<GuideSidebarProps> = ({
           {documents.map((doc) => (
             <div
               key={doc.id}
-              className={`group flex items-center gap-1 rounded transition-colors ${
-                activeDocId === doc.id ? 'text-white' : 'text-[#9CA3AF] hover:text-white'
-              }`}
+              className="group flex items-center gap-1 rounded transition-colors"
               style={
                 activeDocId === doc.id
-                  ? { background: '#2a2a2a', borderLeft: '2px solid #00F0FF' }
-                  : { borderLeft: '2px solid transparent' }
+                  ? { background: activeBg, borderLeft: '2px solid #00F0FF', color: activeText }
+                  : { borderLeft: '2px solid transparent', color: itemText }
               }
+              onMouseEnter={(e) => { if (activeDocId !== doc.id) e.currentTarget.style.color = itemTextHover; }}
+              onMouseLeave={(e) => { if (activeDocId !== doc.id) e.currentTarget.style.color = itemText; }}
             >
               <button
                 onClick={() => onSelectDoc(doc.id)}
                 className="flex-1 text-left px-3 py-1.5 text-xs truncate min-w-0"
                 title={doc.title}
+                style={{ color: 'inherit' }}
               >
                 {doc.title}
               </button>
@@ -81,7 +98,10 @@ export const GuideSidebar: React.FC<GuideSidebarProps> = ({
         <div className="px-2 pb-3">
           <button
             onClick={onNewDoc}
-            className="flex items-center gap-1.5 text-[10px] text-[#6B7280] hover:text-white transition-colors px-3 py-1.5 w-full"
+            className="flex items-center gap-1.5 text-[10px] transition-colors px-3 py-1.5 w-full"
+            style={{ color: newDocText }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = itemTextHover; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = newDocText; }}
           >
             <Plus className="w-3 h-3" />
             New Document
@@ -89,11 +109,11 @@ export const GuideSidebar: React.FC<GuideSidebarProps> = ({
         </div>
       </div>
 
-      <div className="h-px w-full bg-[#333]" />
+      <div className="h-px w-full" style={{ background: divider }} />
 
       {/* TOC section */}
       <div className="px-3 pt-3 pb-1">
-        <span className="text-[10px] uppercase tracking-[0.12em] text-[#6B7280] font-medium">
+        <span className="text-[10px] uppercase tracking-[0.12em] font-medium" style={{ color: sectionLabel }}>
           On This Page
         </span>
       </div>
@@ -103,16 +123,18 @@ export const GuideSidebar: React.FC<GuideSidebarProps> = ({
             <button
               key={entry.id}
               onClick={() => onTocClick(entry.id)}
-              className={`w-full text-left text-xs text-[#9CA3AF] hover:text-white transition-colors truncate py-0.5 ${
+              className={`w-full text-left text-xs transition-colors truncate py-0.5 ${
                 entry.level === 2 ? 'ml-3' : entry.level === 3 ? 'ml-6' : ''
               }`}
-              style={{ paddingLeft: entry.level === 1 ? '12px' : undefined }}
+              style={{ color: tocText, paddingLeft: entry.level === 1 ? '12px' : undefined }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = itemTextHover; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = tocText; }}
             >
               {entry.text}
             </button>
           ))}
           {tocEntries.length === 0 && (
-            <span className="text-[10px] text-[#4B5563] px-3 italic">No headings yet</span>
+            <span className="text-[10px] px-3 italic" style={{ color: tocEmptyText }}>No headings yet</span>
           )}
         </div>
       </div>
