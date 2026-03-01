@@ -165,6 +165,7 @@ const IndexContent = () => {
   const [imageLibrarySearchQuery, setImageLibrarySearchQuery] = useState('');
   const [adminActiveTool, setAdminActiveTool] = useState<string>('hub');
   const guideSaveRef = React.useRef<(() => Promise<void>) | null>(null);
+  const guideSyncAllRef = React.useRef<(() => Promise<void>) | null>(null);
   const imageLibraryUploadRef = React.useRef<(() => void) | null>(null);
   
   // Pagination state
@@ -1733,13 +1734,22 @@ const IndexContent = () => {
                 </DropdownMenu>
               )}
               {tab === "admin" && adminActiveTool === "app_guide" && (
-                <button
-                  type="button"
-                  onClick={() => guideSaveRef.current?.()}
-                  className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
-                >
-                  Save
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => guideSaveRef.current?.()}
+                    className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
+                  >
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => guideSyncAllRef.current?.()}
+                    className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
+                  >
+                    Sync All
+                  </button>
+                </div>
               )}
               {tab === "image_library" && (
                 <div className="flex items-center gap-2">
@@ -2153,7 +2163,7 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
 
 
           {tab === "admin" && (
-              <AdminPage activeTool={adminActiveTool} onSetActiveTool={setAdminActiveTool} selectedModelId={globalModelId} onSelectModel={setGlobalModelId} onRegisterGuideSave={(fn) => { guideSaveRef.current = fn; }} />
+              <AdminPage activeTool={adminActiveTool} onSetActiveTool={setAdminActiveTool} selectedModelId={globalModelId} onSelectModel={setGlobalModelId} onRegisterGuideSave={(fn) => { guideSaveRef.current = fn; }} onRegisterGuideSyncAll={(fn) => { guideSyncAllRef.current = fn; }} />
           )}
 
           {tab === "account" && (
