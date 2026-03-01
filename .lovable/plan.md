@@ -1,150 +1,54 @@
 
-Objective: enforce the global no-toast policy by removing every toast system and every toast callsite across the app, then replacing user feedback with inline UI state and console logging.
 
-What I found in the codebase
-- There are two parallel toast systems active at once:
-  1) Sonner (`import { toast } from 'sonner'`, plus `<Sonner />` in `App.tsx`)
-  2) shadcn hook toasts (`useToast` / `toast` from `@/hooks/use-toast`, plus `<Toaster />` in `App.tsx`)
-- Toast usage currently exists in 20+ source files, including core flow files (`Index.tsx`, `ChatInterfaceTab.tsx`, `CharactersTab.tsx`, `WorldTab.tsx`, `CharacterEditModal.tsx`, auth/account/admin/gallery/memory files).
-- There is also toast infrastructure code (`src/components/ui/toast.tsx`, `src/components/ui/toaster.tsx`, `src/components/ui/sonner.tsx`, `src/hooks/use-toast.ts`, `src/components/ui/use-toast.ts`) that should be removed or detached to prevent reintroduction.
-- This matches your reported regression: toasts were reintroduced in multiple areas after prior cleanup.
+## Dual-Save: Database + GitHub Repo Files
 
-Implementation plan
+### How it works
+When you click **Save** in the App Guide editor, two things happen simultaneously:
+1. The document saves to the database (as it does today)
+2. A backend function commits/updates a `.md` file in your GitHub repo under `docs/guides/`
 
-1) Remove global toast renderers and kill the entry points
-- File: `src/App.tsx`
-  - Remove:
-    - `import { Toaster } from "@/components/ui/toaster";`
-    - `import { Toaster as Sonner } from "@/components/ui/sonner";`
-    - `<Toaster />`
-    - `<Sonner />`
-- Result: no toast container mounted anywhere in the app.
+Claude (or any tool reading your repo) will always see the latest version of each guide document.
 
-2) Remove all toast infrastructure files/usages
-- Files to neutralize/remove from active graph:
-  - `src/components/ui/sonner.tsx`
-  - `src/components/ui/toaster.tsx`
-  - `src/components/ui/toast.tsx`
-  - `src/hooks/use-toast.ts`
-  - `src/components/ui/use-toast.ts`
-- Approach:
-  - Remove imports/usages first across app files.
-  - Then either delete the files or leave unused (prefer delete if no references remain).
-- Guardrail: final search should return zero references to:
-  - `from 'sonner'`
-  - `useToast`
-  - `hooks/use-toast`
-  - `components/ui/toast`
-  - `components/ui/toaster`
-  - `toast.` and `toast(`
+### What you need to provide
+- A **GitHub Personal Access Token** (classic) with `repo` scope -- this lets the backend function push commits to your repository
+- You can create one at github.com > Settings > Developer Settings > Personal Access Tokens
 
-3) Replace callsite behavior with policy-compliant feedback patterns
-The replacement strategy is intentionally consistent:
-- Success feedback: rely on immediate UI state changes already visible in the interface (updated lists, counts, modal close, changed button label, spinner stop).
-- Error feedback: keep `console.error(...)` and show inline/local message where needed.
-- Progress feedback: use existing loading flags (`isSaving`, `isUploading`, `isPublishing`, etc.) and button label/state changes.
-- Validation feedback: inline field error text next to inputs instead of toast popups.
+### Implementation steps
 
-4) File-by-file remediation map
+**1. Create the backend function `sync-guide-to-github`**
+- Accepts: `{ title, markdown, filename }` 
+- Uses the GitHub Contents API (`PUT /repos/{owner}/{repo}/contents/{path}`) to create or update a file
+- Converts the title to a slug for the filename (e.g., "Character Builder Page" becomes `docs/guides/character-builder-page.md`)
+- Gets the file's current SHA first (required by GitHub API for updates), then commits the new content
+- Uses the stored GitHub token for authentication
 
-A) Hook-toast consumers
-- `src/pages/Auth.tsx`
-  - Remove `useToast`.
-  - Keep and expand existing inline `errors` object for auth failures (already present for validation).
-  - For backend/auth failures, set form-level error message under submit button.
-- `src/pages/Index.tsx`
-  - Remove `useToast`.
-  - Add lightweight scoped status state per major action cluster (background upload/select/delete, play/edit/clone/save, conversation ops).
-  - Show inline error text in relevant panels/dialogs instead of popups.
-  - Keep console logging for diagnostics.
-- `src/pages/CreatorProfile.tsx`
-  - Remove `useToast`.
-  - Keep optimistic follow/unfollow UI updates; on failure revert optimistic state and show inline small status near follow button.
-- `src/components/account/AccountSettingsTab.tsx`
-  - Remove `useToast`.
-  - Add inline password form status:
-    - validation error text under fields
-    - success text after save
-    - failure text under submit button
-- `src/components/admin/guide/AppGuideTool.tsx`
-  - Remove hook toast import.
-  - For save/delete/rename failures, surface inline status in header/sidebar area.
-  - For save success, use transient inline “Saved” label near save control rather than toast.
+**2. Store the GitHub token as a secret**
+- Secret name: `GITHUB_PAT`
+- Also need repo owner/name -- these can be stored as secrets or hardcoded in the function since they're not sensitive
 
-B) Sonner consumers
-- `src/components/chronicle/ChatInterfaceTab.tsx`
-  - Remove all `toast.success/error`.
-  - Use existing loading flags and existing visual state transitions as primary UX feedback.
-  - For hard errors (e.g., continue/regenerate/generate image), set component-level error banner/message region in chat panel.
-- `src/components/chronicle/CharactersTab.tsx`
-  - Remove toasts for enhance/upload/generate.
-  - Use existing per-field loading (`enhancingField`, `isUploading`, `isGeneratingImg`) and inline helper/error text near the affected field/avatar panel.
-- `src/components/chronicle/WorldTab.tsx`
-  - Remove toasts for enhance/upload/generate.
-  - Use inline status text inside section cards (world core, cover, scenes) plus existing loading indicators.
-- `src/components/chronicle/CharacterEditModal.tsx`
-  - Remove toasts from deep scan, avatar upload/generation, name-change notices.
-  - Add modal-local status area:
-    - info (“No messages to analyze”, “No updates found”) as inline muted text
-    - errors in red text
-    - success as subtle inline confirmation text.
-- `src/components/chronicle/ImageLibraryTab.tsx`
-  - Remove toasts for folder/image/tag/title actions.
-  - Add section-level inline status strip in folder grid/detail views and modal footer feedback.
-- `src/components/chronicle/MemoriesModal.tsx`
-  - Replace toast validation with inline validation text directly under input/editor.
-  - Replace success/failure toasts with small status text in modal footer.
-- `src/components/chronicle/GalleryHub.tsx`
-  - Remove toasts for like/save/unpublish.
-  - Keep optimistic updates; on error show inline message in toolbar/detail modal.
-- `src/components/chronicle/ScenarioHub.tsx`
-  - Remove unpublish toasts; show inline modal status/error.
-- `src/components/chronicle/ShareScenarioModal.tsx`
-  - Remove toasts for publish/unpublish.
-  - Use existing `isPublishing` and add inline success/error text below action buttons.
-- `src/components/admin/ImageGenerationTool.tsx`
-  - Remove toasts for save/upload.
-  - Add per-card inline status (saved/error) tied to each style draft row.
+**3. Update the save flow in `AppGuideTool.tsx`**
+- After the successful database save, call the backend function with the document title and markdown
+- The GitHub sync is fire-and-forget (don't block the UI on it)
+- Log success/failure to console
 
-5) Prevent regressions by adding a strict lint/policy checkpoint
-- Add a simple repository-level check (or documented grep rule) used before merge:
-  - no `toast` imports/usages in `src/`
-  - no `useToast` usage
-- Optional: eslint restricted-imports rule to block:
-  - `'sonner'`
-  - `'@/hooks/use-toast'`
-  - `'@/components/ui/use-toast'`
-  - `'@/components/ui/toast'`
-  - `'@/components/ui/toaster'`
-This makes “never add toasts” enforceable, not just convention.
+**4. Handle delete sync**
+- When a document is deleted, also call the backend function to delete the corresponding file from the repo
 
-6) Validation checklist after implementation
-- Code-level:
-  - Search returns zero matches for toast infrastructure/imports/usages.
-- UX-level:
-  - Critical flows still show actionable feedback:
-    - Auth failures and success transitions
-    - Save/publish/upload errors
-    - AI enhance/deep-scan outcomes
-    - Image library CRUD and metadata edits
-- Stability:
-  - No unresolved imports after removing toast files.
-  - App root renders without toaster components.
+### File changes
 
-Risk and mitigation
-- Risk: removing toasts can hide feedback in some flows.
-- Mitigation: every removed toast call gets one of:
-  - explicit inline status message
-  - existing loading/disabled state confirmation
-  - visible data-state mutation confirmation
-  - console.error for debugging.
+| File | Change |
+|------|--------|
+| `supabase/functions/sync-guide-to-github/index.ts` | New backend function that commits markdown files to GitHub |
+| `supabase/config.toml` | Register the new function with `verify_jwt = false` |
+| `src/components/admin/guide/AppGuideTool.tsx` | Add GitHub sync calls after database save/delete |
 
-No backend migration needed
-- This request is frontend feedback-policy cleanup only; no database/auth schema changes are required.
+### Technical details
 
-Execution order
-1. Remove app-level toasters.
-2. Remove all toast imports/calls in feature files with inline replacements.
-3. Remove toast infra files once references are gone.
-4. Run final project-wide toast search + fix stragglers.
-5. Verify main user flows for feedback visibility and no popup notifications.
+The backend function will:
+- Slugify the document title for the filename
+- Call `GET /repos/{owner}/{repo}/contents/docs/guides/{slug}.md` to get the current SHA (if file exists)
+- Call `PUT /repos/{owner}/{repo}/contents/docs/guides/{slug}.md` with base64-encoded markdown content and the SHA
+- For deletes, call `DELETE /repos/{owner}/{repo}/contents/docs/guides/{slug}.md`
+- Return success/failure status
+
+The GitHub sync runs after the database save succeeds, so even if the GitHub push fails, your data is safe in the database. Console logs will indicate sync status.
