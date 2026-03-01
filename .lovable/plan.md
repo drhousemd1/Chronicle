@@ -1,197 +1,310 @@
 
 
-# Fix Bugs #3 and #5: Field Name Mismatch + Complete Extraction Prompt Depth
+# Fix Issues #7-#11: Master Prompt Improvements
+
+These five issues all affect `src/services/llm.ts` (the main chat prompt) and/or `src/components/chronicle/ChatInterfaceTab.tsx` (the chat handler). They are independent of each other but all live in the same files, making them efficient to batch.
+
+Issue #6 (Memory System Architecture) is excluded from this batch because it requires new edge functions, database migrations, and substantial frontend work -- it should be its own plan.
 
 ---
 
-## Bug #3: `preferredClothing` Field Name Mismatch
+## Issue #7: Response Length Anchoring
 
 ### 1. Current Problem
 
-In the extraction prompt's TRACKABLE FIELDS (line 299 of `extract-character-updates/index.ts`), the `preferredClothing` section lists a field called `underwear`:
+Two mechanisms exist to prevent repetitive response formatting: `antiRepetitionRules` (system prompt, lines 525-565) and `getRandomStyleHint()` (appended to every user message at line 908). They conflict:
 
-```text
-preferredClothing.casual, preferredClothing.work, preferredClothing.sleep, preferredClothing.underwear, preferredClothing.miscellaneous
-```
+- `antiRepetitionRules` RESPONSE SHAPE & LENGTH subsection (lines 543-554) says: "Do NOT default to long responses. Brevity is powerful."
+- `verbosityRules` detailed mode (lines 644-653) says: "Draw out moments with layered sensory detail."
+- `getRandomStyleHint()` (lines 838-866) picks a random hint from 5 options with zero awareness of recent response patterns. It's appended to the user message (lowest authority position in the prompt).
 
-But the TypeScript type (`PreferredClothing` in `src/types.ts`, line 237) uses `undergarments`, and the database column also stores it as `undergarments`.
+The model resolves the contradiction by anchoring to a consistent middle length (~6 paragraphs). The random hints carry no weight because they lack context awareness.
 
-### 2. What This Bug Causes
+### 2. What This Causes
 
-The AI emits `preferredClothing.underwear` updates. The frontend has a normalization workaround at `ChatInterfaceTab.tsx` line 1825 that maps `underwear` to `undergarments`, so the bug is currently patched at the consumer level. But the root cause remains in the prompt -- any other consumer of extraction results without this normalization would silently lose data.
+Every response is approximately the same length regardless of scene energy, user input length, or narrative moment. Quick exchanges get padded; dramatic moments get truncated. The user perceives the AI as "on autopilot."
 
 ### 3. Scope
 
 | File | Change |
 |------|--------|
-| `supabase/functions/extract-character-updates/index.ts` | Line 299: `underwear` to `undergarments` |
-| `src/components/chronicle/ChatInterfaceTab.tsx` | Line 1823: Add comment noting prompt is now correct; keep normalization as legacy safety net |
-| `docs/guides/edge-functions-ai-services-structure-guide.md` | Bug #3 to RESOLVED |
-| `docs/guides/character-builder-page-structure-guide.md` | Bug #3 to RESOLVED |
+| `src/components/chronicle/ChatInterfaceTab.tsx` | Add `responseLengthsRef` (useRef) and `sessionMessageCountRef` (useRef), add `getLengthDirective()` function, pass directive + session count to `generateRoleplayResponseStream` |
+| `src/services/llm.ts` | Accept optional `lengthDirective` and `sessionMessageCount` parameters, prepend to user message before random hint. Remove RESPONSE SHAPE & LENGTH from `antiRepetitionRules` (lines 543-554) since it overlaps with `verbosityRules`. |
 
 ### 4. Proposed Fix
 
-Change line 299 from `preferredClothing.underwear` to `preferredClothing.undergarments`. Keep the frontend normalization with a comment: `// Legacy compat: prompt now uses 'undergarments' but old cached extractions may still use 'underwear'`.
+**ChatInterfaceTab.tsx**: Add `responseLengthsRef = useRef<number[]>([])` and `sessionMessageCountRef = useRef<number>(0)`. After each AI response completes (line 2176, after `cleanedText` is finalized), record word count via `responseLengthsRef.current.push(cleanedText.split(/\s+/).length)` and increment `sessionMessageCountRef.current += 1`. Before each new request (line 2145), compute whether the last 3 responses are within 20% of each other (locked pattern). If locked, generate a targeted length directive.
+
+The `sessionMessageCountRef` resets to 0 when `conversationId` changes (add to existing `useEffect` that watches `conversationId`).
+
+**llm.ts**: 
+- Add `lengthDirective?: string` and `sessionMessageCount?: number` parameters to `generateRoleplayResponseStream()` (line 868).
+- When building the user message (line 908), prepend both: `[SESSION: Message ${sessionMessageCount} of current session] ${lengthDirective} ${userMessage} ${styleHint}`.
+- In `antiRepetitionRules` (lines 543-554), remove the RESPONSE SHAPE & LENGTH subsection. Keep the VARIATION EXAMPLES (lines 555-560) and NSFW EXCEPTION (lines 561-565). The anti-repetition block governs structure and vocabulary variety only; `verbosityRules` governs length and detail.
 
 ### 5. Expected Behavior
 
-AI will emit `preferredClothing.undergarments` directly, matching the TypeScript type and database. Frontend normalization remains as a belt-and-suspenders safety net.
+When the model produces 3 responses of similar length, the next request includes a targeted directive like `[LENGTH: Last 3 responses were ~180 words each. This response MUST be noticeably different in length -- try SHORT: 1-3 paragraphs.]` The model breaks out of the pattern. When responses naturally vary, no directive is sent and the random style hint continues as before. The session message count gives the model precise awareness of session depth.
 
 ---
 
-## Bug #5: Extraction Prompt Lacks Analytical Depth (COMPLETE — All 7 Blocks)
+## Issue #8: Forward Momentum -- User Writing as AI Character
 
 ### 1. Current Problem
 
-The extraction prompt operates at surface level. It maps observed behaviors to labels but has no mechanism for:
-- Progressive trait refinement (traits written early never get refined as evidence accumulates)
-- Conflict resolution (contradictory traits coexist without resolution)
-- Split personality mode detection (the model never recommends switching to split mode)
-- Tone inference from dialogue patterns (tone section stays empty without explicit statements)
-- Cross-field coherence (personality, background, fears, tone can become internally contradictory)
-- Trait lifecycle management (traits only accumulate, never get revised, merged, or retired)
+The FORWARD MOMENTUM rule (lines 384-401 of `llm.ts`) prevents the AI from re-narrating actions the user wrote for their OWN character. But users commonly write dialogue for AI-controlled characters to steer scenes (e.g., `Ashley: *She walked into the room.*`). The rule doesn't cover this case, so the AI re-narrates Ashley's arrival with added detail before continuing.
 
-### 2. What This Bug Causes
+### 2. What This Causes
 
-- Traits ossify: "Shy" written in message 3 remains forever, even when message 50 reveals a more nuanced "Performance-Anxious in Groups"
-- Contradictions stack: old and new observations coexist without resolution
-- Tone section remains empty because the model only extracts tone from explicit statements, not speech pattern analysis
-- No mechanism to recommend split personality mode when public/private behavior diverges
-- Character cards become internally incoherent over long sessions
-- Traits only accumulate and are never merged, corrected, or retired
+Double narration: the AI re-describes what the user already established for an AI character. This wastes tokens and stalls the story.
 
 ### 3. Scope
 
 | File | Change |
 |------|--------|
-| `supabase/functions/extract-character-updates/index.ts` | Insert 7 new prompt blocks into the system prompt between Phase 1 and Phase 2 |
-| `docs/guides/edge-functions-ai-services-structure-guide.md` | Bug #5 to RESOLVED |
-| `docs/guides/character-builder-page-structure-guide.md` | Add Bug #5 resolution note |
+| `src/services/llm.ts` | Extend FORWARD MOMENTUM rule text (after line 395) |
+| `src/components/chronicle/ChatInterfaceTab.tsx` | Add detection of user-authored AI character content in `handleSend`; prepend canon note to user message when detected |
 
-### 4. Proposed Fix — All 7 Prompt Blocks
+### 4. Proposed Fix
 
-The following 7 blocks will be inserted into the system prompt as a new section between the existing Phase 1 and Phase 2. They replace/augment the current Phase 1 Section C personality guidance.
+**llm.ts** (after line 395, within FORWARD MOMENTUM block): Add:
+```
+        * USER-AUTHORED AI CHARACTER CONTENT IS CANON: If the user's message
+          includes dialogue, actions, or narration for an AI-controlled character
+          (e.g., "CharacterName: *action*" or "CharacterName: 'dialogue'"),
+          treat that content as ALREADY ESTABLISHED. Do NOT re-narrate, add
+          detail to, or expand on it. Begin your response from the point AFTER
+          those events concluded.
+        * FORBIDDEN: Restating, paraphrasing, or elaborating on actions the
+          user already described -- whether they wrote as their own character
+          OR as an AI-controlled character.
+```
 
-**Block 1 — Psychological Inference Framework** (replaces current Phase 1 Section C depth)
+**ChatInterfaceTab.tsx** (in `handleSend`, before building the LLM request at line 2144): Check if the user's input contains a `CharacterName:` prefix matching any AI-controlled character name from `appData.characters.filter(c => c.controlledBy === 'ai').map(c => c.name)`. If detected, prepend a per-message canon note to the input string passed to `generateRoleplayResponseStream`:
+```
+[CANON NOTE: User wrote content for AI character(s) in this message. That content is established fact -- do not re-narrate it. Continue the story from after those events.]
+```
 
-Introduces a three-layer reasoning requirement before writing any trait:
-- LAYER 1 (Surface): What did the character do or say?
-- LAYER 2 (Pattern): Is this consistent with earlier behavior, or new?
-- LAYER 3 (Psychology): What does this behavior suggest about underlying personality, need, fear, or defense mechanism?
+### 5. Expected Behavior
 
-All traits must be written at Layer 3 depth. Forbidden: single-word traits, vague adjectives, circular descriptions, generic positives.
+When the user writes as an AI character, the model receives both a permanent system-level rule and a per-message reminder to treat that content as canon and continue forward without re-narration.
 
-Example of wrong (Layer 1): "Humorous: Makes jokes frequently"
-Example of right (Layer 3): "Deflective Humor: Uses wit and levity as a primary buffer against emotional vulnerability. Humor increases noticeably when conversation moves toward personal territory..."
+---
 
-**Block 2 — Progressive Trait Refinement**
+## Issue #9: Control Rule Reliability
 
-Traits are treated as evolving hypotheses with three refinement stages:
-- Stage 1 (Tentative, 1 observation): Broad label with minimal description
-- Stage 2 (Contextualised, 2-3 observations): Specifies WHEN and WITH WHOM
-- Stage 3 (Psychologically Grounded, 4+ observations or revealing moment): Describes underlying mechanism and cost
+### 1. Current Problem
 
-Rule: Always advance the stage if evidence supports it. Never collapse a Stage 3 back to Stage 1.
+The MAINTAIN CONTROL CONTEXT rule (lines 759-764 of `llm.ts`) prevents the AI from generating dialogue for user-controlled characters. The rule fails occasionally because:
+1. It appears ~700 tokens into the system prompt, where attention weight is reduced.
+2. User-controlled characters appear in the full CAST block (line 254) with complete character data, giving the model material to generate from.
+3. Issue #8 (user writing as AI characters) causes model confusion about control boundaries.
 
-**Block 3 — Trait Conflict Resolution**
+### 2. What This Causes
 
-Defines exactly what to do when new evidence contradicts stored data:
-- Path A (Genuine Evolution): Character has changed -- update the single trait to capture the arc
-- Path B (Context Dependency): Both observations are true in different contexts -- merge into one nuanced entry
-- Path C (False Presentation): Character is performing a trait they don't hold -- split mode candidate
+The AI occasionally generates dialogue, actions, or internal thoughts for user-controlled characters, breaking the user's creative control.
 
-Resolution rule: After resolution, exactly ONE entry per psychological concept. Zero duplicates. Zero silent contradictions.
+### 3. Scope
 
-Staleness rule: If a trait is contradicted and no resolution path applies cleanly, append "(REVIEW: may no longer be accurate based on recent behaviour)".
+| File | Change |
+|------|--------|
+| `src/services/llm.ts` | Filter CAST block (line 254) to AI-controlled characters only; build compact user-character reference; add high-authority control quick-reference at top of INSTRUCTIONS block (before line 757) |
 
-**Block 4 — Split Personality Mode Detection**
+### 4. Proposed Fix
 
-Teaches the model when to flag a character as a split mode candidate:
-- Consistent divergence between public presentation and internal dialogue
-- What they say vs. what they do when alone
-- Behavior with strangers vs. trusted people
-- Emotions performed vs. emotions felt
+**llm.ts line 254**: Split `characterContext` into two parts:
 
-When detected across 3+ exchanges, add a note: `[SPLIT MODE CANDIDATE: Consistent divergence observed...]`
+```typescript
+const aiCharacters = appData.characters.filter(c => c.controlledBy === 'ai');
+const userCharacterNames = appData.characters
+  .filter(c => c.controlledBy === 'user')
+  .map(c => c.name);
 
-When a character IS already in split mode:
-- outwardTraits = how others perceive them
-- inwardTraits = their actual emotional experience
-- The two lists must complement each other, never duplicate
+const characterContext = aiCharacters.map(c => {
+  // ... existing block construction unchanged ...
+}).join('\n\n');
 
-**Block 5 — Tone Inference from Dialogue**
+const userCharacterRef = userCharacterNames.length > 0
+  ? `\nUSER-CONTROLLED (DO NOT GENERATE FOR): ${userCharacterNames.join(', ')}`
+  : '';
+```
 
-Concrete framework for extracting tone from the text itself:
-- Vocabulary level (technical, slang, formal, monosyllabic)
-- Rhythm (short/punchy vs. long/winding, self-interruptions)
-- Formality shifts (language changes by audience)
-- Emotional directness (names feelings plainly vs. obliquely)
-- Deflection patterns (when pressed on uncomfortable topics)
-- Intensity escalation (measured vs. clipped/erratic under pressure)
+Add `userCharacterRef` to the CAST section (line 742):
+```
+CAST:
+${characterContext}
+${userCharacterRef}
+```
 
-Format: "[Context]: [specific description of how they communicate]"
+Add a compact control quick-reference at the very top of the INSTRUCTIONS block (before line 748), so it receives maximum attention weight:
+```
+    DO NOT GENERATE FOR: ${userCharacterNames.join(', ')}
+    These are USER-CONTROLLED characters. Never give them dialogue (""), actions (**), or thoughts (()).
+    Narration about them (e.g., "he watched quietly") is the only permitted form.
+```
 
-**Block 6 — Cross-Field Coherence Enforcement**
+The existing detailed MAINTAIN CONTROL CONTEXT rule at lines 759-764 remains as secondary reinforcement.
 
-Final-pass check that the card tells a coherent story:
-- Background to Personality: Do experiences produce the observed traits?
-- Fears to Behaviour: Do stored fears echo in personality and tone?
-- Goals to Motivation: Does at least one goal connect to background motivation?
-- Tone to Personality: Does speech style align with personality traits?
-- Relationships to Fears/Secrets: Do dynamics reflect known vulnerabilities?
+### 5. Expected Behavior
 
-When incoherence is found: flag it or correct it.
+User-controlled characters are excluded from the CAST (the model can't see their full character data and has no material to generate from). A high-authority compact rule at the very top of INSTRUCTIONS reinforces the control boundary. Combined with the existing detailed rule lower in the prompt, this provides triple-layer protection.
 
-**Block 7 — Complete Trait Lifecycle**
+---
 
-Consolidated reference for all trait operations:
-- CREATE: New info with no existing home. Must pass Layer 3 depth. No duplicates. Max 1 new non-goal entry per section per extraction.
-- REFINE: Existing info can be more specific. Always advance precision. Preferred over CREATE.
-- MERGE: Two entries cover same territory. Combine into one richer entry.
-- CORRECT: Entry is factually contradicted. Apply Conflict Resolution (Block 3).
-- CONTEXTUALISE: Entry true in some situations. Specify contexts in one entry.
-- REMOVE: Entry definitively no longer accurate. For goals: `goals.GoalTitle = "REMOVE"`. For traits: empty string only if actively harmful to coherence.
-- HOLD: Entry not contradicted but not reinforced. Leave it. Only flag if it creates active incoherence.
+## Issue #10: No In-Session Trait Evolution Guidance
 
-Golden Rule: "Every section of the character card should tell the same story as every other section."
+### 1. Current Problem
 
-### 5. Expected Behavior After Fix
+The prompt instructs the model to express personality traits at their adherence score intensity, but provides no guidance for showing trait evolution WITHIN a session. A character defined as "shy [75%]" remains identically hesitant from message 1 to message 200. The NSFW PACING section (lines 603-607) worsens this with contradictory directives: "tension should build quickly" immediately followed by "FORBIDDEN: Rushing to orgasm/climax in fewer than 3 exchanges."
 
-- Traits will be actively refined, corrected, and deepened as sessions progress
-- "Shy" written in message 3 will evolve to "Performance-Anxious in Groups" by message 20 as evidence accumulates
-- Contradictory traits will be resolved via one of three paths, not left to coexist
-- The Tone section will begin populating automatically from speech patterns
-- Characters showing consistent public/private divergence will be flagged as split mode candidates
-- The card will maintain coherence across all fields as a unified psychological portrait
-- Traits can be merged, corrected, contextualized, or retired -- not just accumulated
+### 2. What This Causes
+
+Characters feel frozen in place. A shy character engaged in intense intimate scenes remains identically hesitant throughout, producing repetitive "still nervous" beats that break immersion.
+
+### 3. Scope
+
+| File | Change |
+|------|--------|
+| `src/services/llm.ts` | Add IN-SESSION TRAIT DYNAMICS block to system prompt; replace contradictory PACING directives in `nsfwRules` (lines 603-617); add trend annotation to `formatTrait()` |
+| `src/types.ts` | Add optional `adherenceScore` and `scoreTrend` fields to `PersonalityTrait` type |
+
+### 4. Proposed Fix
+
+**src/types.ts line 66**: Add to `PersonalityTrait`:
+```typescript
+export type PersonalityTrait = {
+  id: string;
+  label: string;
+  value: string;
+  flexibility: PersonalityTraitFlexibility;
+  adherenceScore?: number;
+  scoreTrend?: 'rising' | 'falling' | 'stable';
+};
+```
+
+**llm.ts** -- Add IN-SESSION TRAIT DYNAMICS block (after PERSONALITY TRAIT ADHERENCE at line 830, before the closing instructions):
+```
+    - IN-SESSION TRAIT DYNAMICS (MANDATORY for Normal and Flexible traits):
+        * The character card represents the STABLE BASELINE, not a locked behavioural state.
+        * Traits with Normal or Flexible flexibility should show natural emotional arc WITHIN a session as events accumulate.
+        * PROGRESSION RULE (use [SESSION: Message N] count for precision):
+          - Messages 1-5: Full trait expression (visibly nervous, hesitant, guarded)
+          - Messages 6-15: Trait present but less dominant (quiet nervousness beneath growing engagement)
+          - Messages 16+: Trait as undertone, not foreground (occasional self-surprise, residual flutter, not sustained paralysis)
+        * This applies ONLY when the session's events directly challenge the trait. A shy character in a casual conversation remains shy. A shy character who has been in 15 exchanges of unresisted intimacy should show their shyness softening.
+        * NEVER express a Normal or Flexible trait at the same intensity for 10+ consecutive exchanges during events that directly challenge that trait.
+        * Rigid traits persist fully regardless of session depth or events. Normal traits soften gradually. Flexible traits evolve fastest.
+```
+
+**llm.ts** -- Replace PACING block in nsfwRules (lines 603-617):
+Remove the current PACING block and replace with:
+```
+    PACING -- PERSONALITY-DRIVEN:
+    * Escalation pace is governed by the character's traits, not a fixed exchange count.
+    * A bold or dominant character moves quickly from tension to action.
+    * A shy or nervous character requires more exchanges -- but should still be visibly progressing (see IN-SESSION TRAIT DYNAMICS), not stalling.
+    * Once intimacy is clearly mutual and unresisted, continue to escalate rather than repeatedly revisiting hesitation that has already been overcome.
+```
+
+**llm.ts** -- Update `formatTrait()` (line 226) to include trend annotation:
+```typescript
+const formatTrait = (t: any) => {
+  const level = (t.flexibility || 'normal').charAt(0).toUpperCase() + (t.flexibility || 'normal').slice(1);
+  const score = t.adherenceScore ?? getDefaultScore(level);
+  const trend = t.scoreTrend;
+  const trendNote = trend === 'falling' ? ' [easing -- show as softening]'
+    : trend === 'rising' ? ' [reinforcing -- show as strengthening]'
+    : '';
+  return getTraitGuidance(t.label, level, score) + trendNote;
+};
+```
+
+### 5. Expected Behavior
+
+Shy characters who have been in 10+ exchanges of unresisted intimacy will show their shyness as a softening undertone rather than a frozen repeating beat. The model uses the precise `[SESSION: Message N]` count (from Issue #7's `sessionMessageCount`) to determine progression stage. NSFW pacing is driven by personality rather than arbitrary exchange counts. When trait score trends are available, the model gets explicit direction about which way a trait is moving.
+
+---
+
+## Issue #11: NSFW Intensity and Verbosity Instruction Overlap
+
+### 1. Current Problem
+
+The HIGH NSFW block (lines 583-631 of `llm.ts`) contains verbosity-type instructions that should only be in the `verbosityRules` block:
+- Line 585: "Describe physical sensations in vivid detail: heat, wetness, hardness, pressure, friction."
+- Line 586: "Include sounds: moans, gasps, whimpers, breathing, wet sounds, skin on skin."
+- Line 587: "Show arousal states explicitly: hardening, wetness, flushing, trembling."
+- Line 588: "When intimate scenes occur, be graphic and detailed, not vague or fade-to-black."
+- Line 613: Duplicate "Show arousal states explicitly: hardening, wetness, flushing, trembling."
+
+These are DETAIL LEVEL instructions, not INTENSITY instructions. They conflict with verbosity=concise.
+
+### 2. What This Causes
+
+When NSFW=High but Verbosity=Concise, the model receives contradicting instructions at the same authority level and produces a muddy middle ground. The two settings cannot function independently.
+
+### 3. Scope
+
+| File | Change |
+|------|--------|
+| `src/services/llm.ts` | Remove verbosity-type lines from `nsfwRules` HIGH block (lines 585-588, 613); add intimate scene detail lines to `verbosityRules` detailed block (after line 653) |
+
+### 4. Proposed Fix
+
+**Remove from nsfwRules HIGH block** (lines 585-588):
+- "Describe physical sensations in vivid detail..."
+- "Include sounds: moans, gasps, whimpers..."
+- "Show arousal states explicitly..."
+- "When intimate scenes occur, be graphic and detailed..."
+
+Also remove the duplicate at line 613: "Show arousal states explicitly..."
+
+**Keep in nsfwRules HIGH block** (these are true intensity/permissiveness controls):
+- "Use explicit anatomical language, not euphemisms..."
+- All SEXUAL PROACTIVITY lines
+- All CHARACTER SEXUAL AGENCY lines
+- All RESISTANCE ONLY WHEN WARRANTED lines
+- "FORBIDDEN: Summarizing intimate acts"
+- All PERSONALITY-MODULATED INTIMACY lines
+
+**Add to verbosityRules detailed block** (after line 653):
+```
+    * During intimate scenes, layer physical sensations: heat, pressure, friction, texture.
+    * Include environmental sounds and character sounds naturally as the scene builds.
+    * Show arousal states through physical description: colour, breath, trembling.
+```
+
+### 5. Expected Behavior
+
+NSFW=High + Verbosity=Concise = explicit and direct language but SHORT responses. NSFW=Normal + Verbosity=Detailed = tasteful but rich with sensory description. The two axes function independently as intended.
 
 ---
 
 ## 6. Codebase Analysis Confirmation
 
 I have read and analyzed in full:
-- `supabase/functions/extract-character-updates/index.ts` (all 534 lines) -- the complete extraction prompt, TRACKABLE FIELDS at line 299, all three phases, the field volatility rules, examples, and response format
-- `src/types.ts` -- PreferredClothing type confirming `undergarments` is the correct field name
-- `src/components/chronicle/ChatInterfaceTab.tsx` line 1825 -- the `underwear` to `undergarments` normalization
-- The full Bug Report v2 document (all 7 prompt blocks for Issue #5, all sub-issues for Issue #6, and Issues #7-#11)
-- `docs/guides/edge-functions-ai-services-structure-guide.md` -- Bug #3 and #5 listed as ACTIVE
-- `docs/guides/character-builder-page-structure-guide.md` -- Bug #3 listed as ACTIVE
+- `src/services/llm.ts` (all 1054 lines) -- `getSystemInstruction()`, `narrativeBehaviorRules` (lines 370-401), `antiRepetitionRules` (lines 525-566), `nsfwRules` (lines 571-639), `verbosityRules` (lines 641-668), `realismRules` (lines 670-713), `personalityContext` builder (lines 223-242), `characterContext` builder (lines 254-306), `getRandomStyleHint()` (lines 838-866), `generateRoleplayResponseStream()` (lines 868-1054), INSTRUCTIONS block (lines 747-835)
+- `src/components/chronicle/ChatInterfaceTab.tsx` -- `handleSend` (lines 2121-2207), streaming loop (lines 2142-2156), post-response processing (lines 2158-2198)
+- `src/types.ts` -- `PersonalityTrait` (lines 66-71), `CharacterPersonality` (lines 73-78)
+- `docs/guides/edge-functions-ai-services-structure-guide.md` -- full file (153 lines)
+- `docs/guides/chat-interface-page-structure-guide.md` -- full file (271 lines)
+- The full Bug Report v2 document (Issues #7-#11 and Recommendations 1-6)
 
 ## 7. Guide Document Confirmation
 
 I have read:
-- `docs/guides/GUIDE_STYLE_RULES.md` -- referenced by all guide documents
-- `docs/guides/edge-functions-ai-services-structure-guide.md` -- Section 5 (bugs) and Section 13 (planned)
-- `docs/guides/character-builder-page-structure-guide.md` -- Section 12 (known issues, lines 365-394)
+- `docs/guides/GUIDE_STYLE_RULES.md` -- formatting rules referenced by all guides
+- `docs/guides/edge-functions-ai-services-structure-guide.md` -- Sections 3, 4, 5, 13
+- `docs/guides/chat-interface-page-structure-guide.md` -- Sections 6, 8, 9, 12
 
 ## 8. Guide Documentation Updates
 
 ### `docs/guides/edge-functions-ai-services-structure-guide.md`
-- Section 5: Bug #3 status from `ACTIVE` to `RESOLVED -- 2026-03-01 -- preferredClothing.underwear renamed to preferredClothing.undergarments in TRACKABLE FIELDS`
-- Section 5: Bug #5 status from `ACTIVE` to `RESOLVED -- 2026-03-01 -- Added 7-block analytical depth framework: psychological inference, progressive refinement, conflict resolution, split mode detection, tone inference, cross-field coherence, complete trait lifecycle`
-- Section 13: Remove Bug #3 and Bug #5 from planned items
+- Section 3 (`src/services/llm.ts`): Add `lengthDirective` and `sessionMessageCount` as new parameters on `generateRoleplayResponseStream()`. Note NSFW/verbosity separation and IN-SESSION TRAIT DYNAMICS block.
+- Section 4 (System Prompt Architecture): Add items for control quick-reference at top of INSTRUCTIONS, IN-SESSION TRAIT DYNAMICS block, and forward momentum user-as-AI-character extension
+- Section 5: Add bugs #7-#11 as RESOLVED with dates and descriptions
 
-### `docs/guides/character-builder-page-structure-guide.md`
-- Section 12: Bug #3 from `ACTIVE` to `RESOLVED -- 2026-03-01 -- Extraction prompt now uses correct field name 'undergarments'. Frontend normalization retained as legacy safety net.`
-- Section 12: Add Bug #5: `RESOLVED -- 2026-03-01 -- Extraction prompt augmented with 7-block analytical depth framework covering psychological inference, progressive trait refinement, conflict resolution, split personality mode detection, tone inference from dialogue, cross-field coherence enforcement, and complete trait lifecycle management.`
+### `docs/guides/chat-interface-page-structure-guide.md`
+- Section 6 (Data Architecture): Document `responseLengthsRef`, `sessionMessageCountRef`, `getLengthDirective()`, and the AI-character canon detection logic
+- Section 8 (State Management): Add `responseLengthsRef` and `sessionMessageCountRef` to the state table
+- Section 12 (Known Issues): Add Issues #7-#11 as RESOLVED with dates and descriptions
 
