@@ -41,17 +41,19 @@ function createMarkdownComponents(isDark: boolean): Record<string, React.FC<any>
   const mutedHeading = isDark ? '#9CA3AF' : '#6B7280';
   const border = isDark ? '#333333' : '#d1d5db';
   const codeBg = isDark ? '#1e1e1e' : '#f3f4f6';
-  const inlineCodeBg = isDark ? '#2a2a2a' : '#e5e7eb';
-  const theadBg = isDark ? '#1a1a1a' : '#f9fafb';
-  const stripeBg = isDark ? '#111111' : '#f9fafb';
+  const inlineCodeBg = isDark ? '#1e293b' : '#e2e8f0';
+  const theadBg = isDark ? '#1e293b' : '#e2e8f0';
+  const thText = isDark ? '#94a3b8' : '#1e293b';
   const linkColor = isDark ? '#60a5fa' : '#2563eb';
-  const blockquoteBorder = isDark ? '#444444' : '#d1d5db';
+  const blockquoteBorder = isDark ? '#00F0FF' : '#3b82f6';
   const blockquoteText = isDark ? '#9CA3AF' : '#6B7280';
   const bold = isDark ? '#ffffff' : '#111827';
+  const h2Border = isDark ? '#00F0FF' : '#3b82f6';
+  const tableClass = isDark ? 'guide-table-dark' : 'guide-table-light';
 
   return {
     h1: ({ children }) => <h1 style={{ color: heading }} className="text-3xl font-bold mt-6 mb-3">{children}</h1>,
-    h2: ({ children }) => <h2 style={{ color: heading, borderBottomColor: border }} className="text-2xl font-bold mt-5 mb-2 pb-2 border-b">{children}</h2>,
+    h2: ({ children }) => <h2 style={{ color: heading, borderBottomColor: h2Border }} className="text-2xl font-bold mt-5 mb-2 pb-2 border-b">{children}</h2>,
     h3: ({ children }) => <h3 style={{ color: heading }} className="text-xl font-semibold mt-4 mb-2">{children}</h3>,
     h4: ({ children }) => <h4 style={{ color: mutedHeading }} className="text-base font-semibold mt-3 mb-1">{children}</h4>,
     p: ({ children }) => <p style={{ color: text }} className="text-sm leading-relaxed mb-3">{children}</p>,
@@ -72,14 +74,14 @@ function createMarkdownComponents(isDark: boolean): Record<string, React.FC<any>
       return <code className={`${className || ''} font-mono text-sm`} {...props}>{children}</code>;
     },
     table: ({ children }) => (
-      <div className="overflow-x-auto my-3">
+      <div className={`overflow-x-auto my-3 ${tableClass}`}>
         <table style={{ borderColor: border }} className="w-full border-collapse border">{children}</table>
       </div>
     ),
     thead: ({ children }) => <thead style={{ background: theadBg }}>{children}</thead>,
-    th: ({ children }) => <th style={{ borderColor: border, color: heading }} className="border px-3 py-2 text-left text-xs font-semibold">{children}</th>,
+    th: ({ children }) => <th style={{ borderColor: border, color: thText }} className="border px-3 py-2 text-left text-xs font-semibold">{children}</th>,
     td: ({ children }) => <td style={{ borderColor: border, color: text }} className="border px-3 py-2 text-xs">{children}</td>,
-    tr: ({ children, ...props }: any) => <tr style={{ }} {...props}>{children}</tr>,
+    tr: ({ children, ...props }: any) => <tr {...props}>{children}</tr>,
   };
 }
 
