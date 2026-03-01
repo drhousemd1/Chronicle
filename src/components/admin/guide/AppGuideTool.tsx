@@ -1,6 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+/** Fire-and-forget sync to GitHub repo */
+function syncToGitHub(action: 'upsert' | 'delete', title: string, markdown?: string) {
+  supabase.functions.invoke('sync-guide-to-github', {
+    body: { action, title, markdown },
+  }).then(({ error, data }) => {
+    if (error) console.error('GitHub sync failed:', error);
+    else console.log('GitHub sync:', data);
+  });
+}
+
 import { GuideSidebar, type GuideDocument, type TocEntry } from './GuideSidebar';
 import { GuideEditor } from './GuideEditor';
 
@@ -64,6 +74,8 @@ export const AppGuideTool: React.FC<AppGuideToolProps> = ({ onRegisterSave }) =>
 
   // Delete document
   const handleDeleteDoc = useCallback(async (id: string) => {
+    // Find title before removing from state
+    const doc = documents.find((d) => d.id === id);
     const { error } = await (supabase as any)
       .from('guide_documents')
       .delete()
@@ -74,6 +86,9 @@ export const AppGuideTool: React.FC<AppGuideToolProps> = ({ onRegisterSave }) =>
       return;
     }
 
+    // Sync delete to GitHub
+    if (doc) syncToGitHub('delete', doc.title);
+
     setDocuments((prev) => prev.filter((d) => d.id !== id));
     if (activeDocId === id) {
       setActiveDocId(null);
@@ -81,7 +96,7 @@ export const AppGuideTool: React.FC<AppGuideToolProps> = ({ onRegisterSave }) =>
       setActiveDocMarkdown('');
       setTocEntries([]);
     }
-  }, [activeDocId]);
+  }, [activeDocId, documents]);
 
   // Title change
   const handleTitleChange = useCallback(async (id: string, newTitle: string) => {
@@ -120,6 +135,8 @@ export const AppGuideTool: React.FC<AppGuideToolProps> = ({ onRegisterSave }) =>
         console.error('Save failed:', error.message);
       } else {
         console.log('Document saved');
+        // Sync to GitHub after successful DB save
+        syncToGitHub('upsert', activeDocTitle, activeDocMarkdown);
       }
     };
     onRegisterSave(saveFn);
