@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeHighlight from 'rehype-highlight';
+import 'highlight.js/styles/github-dark.css';
+import { Pencil, Eye, Save, Search, X, ChevronUp, ChevronDown } from 'lucide-react';
 import type { TocEntry } from './GuideSidebar';
-import { GuideEditorToolbar } from './GuideEditorToolbar';
-import { marked } from 'marked';
-import TurndownService from 'turndown';
-import { gfm } from 'turndown-plugin-gfm';
 
 interface GuideEditorProps {
   docId: string | null;
@@ -14,39 +14,6 @@ interface GuideEditorProps {
   onTocUpdate: (entries: TocEntry[]) => void;
   onMarkdownChange?: (markdown: string) => void;
 }
-
-// Configure turndown for HTML -> Markdown conversion
-function createTurndown() {
-  const td = new TurndownService({
-    headingStyle: 'atx',
-    codeBlockStyle: 'fenced',
-    bulletListMarker: '-',
-  });
-  td.use(gfm);
-
-  // Custom rule: preserve <img> with width/style as raw HTML so size persists
-  td.addRule('imgWithWidth', {
-    filter: (node) => {
-      return node.nodeName === 'IMG' && !!(
-        (node as HTMLImageElement).getAttribute('width') ||
-        (node as HTMLImageElement).style.width
-      );
-    },
-    replacement: (_content, node) => {
-      const img = node as HTMLImageElement;
-      const src = img.getAttribute('src') || '';
-      const alt = img.getAttribute('alt') || '';
-      const width = img.getAttribute('width') || img.style.width;
-      // Strip resize handles data attribute if present
-      const widthAttr = width ? ` width="${width.replace('px', '')}"` : '';
-      return `\n\n<img src="${src}" alt="${alt}"${widthAttr} style="max-width:100%" />\n\n`;
-    },
-  });
-
-  return td;
-}
-
-const turndown = createTurndown();
 
 function extractTocFromMarkdown(md: string): TocEntry[] {
   const entries: TocEntry[] = [];
@@ -64,214 +31,93 @@ function extractTocFromMarkdown(md: string): TocEntry[] {
   return entries;
 }
 
-function markdownToHtml(md: string): string {
-  return marked.parse(md, { async: false }) as string;
-}
+// --- Markdown components for ReactMarkdown (dark theme) ---
 
-// --- Image compression & upload utility ---
-
-async function compressImage(file: File, maxWidth = 1024, quality = 0.85): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      const scale = img.width > maxWidth ? maxWidth / img.width : 1;
-      const w = Math.round(img.width * scale);
-      const h = Math.round(img.height * scale);
-      const canvas = document.createElement('canvas');
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext('2d')!;
-      ctx.drawImage(img, 0, 0, w, h);
-      canvas.toBlob(
-        (blob) => (blob ? resolve(blob) : reject(new Error('Canvas toBlob failed'))),
-        'image/jpeg',
-        quality,
-      );
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error('Failed to load image'));
-    };
-    img.src = url;
-  });
-}
-
-async function uploadGuideImage(file: File): Promise<string> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const compressed = await compressImage(file);
-  const ts = Date.now();
-  const rand = Math.random().toString(36).slice(2, 8);
-  const path = `${user.id}/${ts}-${rand}.jpg`;
-
-  const { error } = await supabase.storage
-    .from('guide_images')
-    .upload(path, compressed, { contentType: 'image/jpeg', upsert: false });
-
-  if (error) throw error;
-
-  const { data: { publicUrl } } = supabase.storage
-    .from('guide_images')
-    .getPublicUrl(path);
-
-  return publicUrl;
-}
-
-function insertImageAtCursor(editorEl: HTMLDivElement, url: string) {
-  const sel = window.getSelection();
-  if (!sel || sel.rangeCount === 0) {
-    const img = document.createElement('img');
-    img.src = url;
-    img.alt = '';
-    img.style.maxWidth = '100%';
-    editorEl.appendChild(img);
-    return;
-  }
-  const range = sel.getRangeAt(0);
-  if (!editorEl.contains(range.commonAncestorContainer)) {
-    const img = document.createElement('img');
-    img.src = url;
-    img.alt = '';
-    img.style.maxWidth = '100%';
-    editorEl.appendChild(img);
-    return;
-  }
-  range.deleteContents();
-  const img = document.createElement('img');
-  img.src = url;
-  img.alt = '';
-  img.style.maxWidth = '100%';
-  range.insertNode(img);
-  range.setStartAfter(img);
-  range.collapse(true);
-  sel.removeAllRanges();
-  sel.addRange(range);
-}
-
-// --- Resize handles helpers ---
-
-const HANDLE_SIZE = 8;
-const HANDLE_POSITIONS = ['nw', 'ne', 'sw', 'se'] as const;
-type HandlePos = typeof HANDLE_POSITIONS[number];
-
-const HANDLE_CURSORS: Record<HandlePos, string> = {
-  nw: 'nwse-resize',
-  ne: 'nesw-resize',
-  sw: 'nesw-resize',
-  se: 'nwse-resize',
+const markdownComponents: Record<string, React.FC<any>> = {
+  h1: ({ children }) => <h1 className="text-white text-3xl font-bold mt-6 mb-3">{children}</h1>,
+  h2: ({ children }) => <h2 className="text-white text-2xl font-bold mt-5 mb-2 pb-2 border-b border-[#333333]">{children}</h2>,
+  h3: ({ children }) => <h3 className="text-white text-xl font-semibold mt-4 mb-2">{children}</h3>,
+  h4: ({ children }) => <h4 className="text-gray-400 text-base font-semibold mt-3 mb-1">{children}</h4>,
+  p: ({ children }) => <p className="text-[#e2e2e2] text-sm leading-relaxed mb-3">{children}</p>,
+  strong: ({ children }) => <strong className="text-white font-bold">{children}</strong>,
+  em: ({ children }) => <em className="text-[#e2e2e2] italic">{children}</em>,
+  a: ({ href, children }) => <a href={href} className="text-blue-400 underline hover:text-blue-300" target="_blank" rel="noopener noreferrer">{children}</a>,
+  blockquote: ({ children }) => <blockquote className="border-l-4 border-[#444444] pl-4 text-gray-400 italic my-3">{children}</blockquote>,
+  ul: ({ children }) => <ul className="text-[#e2e2e2] pl-6 my-2 list-disc">{children}</ul>,
+  ol: ({ children }) => <ol className="text-[#e2e2e2] pl-6 my-2 list-decimal">{children}</ol>,
+  li: ({ children }) => <li className="mb-1 text-sm">{children}</li>,
+  hr: () => <hr className="border-[#333333] my-4" />,
+  pre: ({ children }) => <pre className="bg-[#1e1e1e] rounded-lg p-4 overflow-x-auto my-3 border border-[#333333]">{children}</pre>,
+  code: ({ className, children, ...props }: any) => {
+    const isInline = !className;
+    if (isInline) {
+      return <code className="text-[#e2e2e2] bg-[#2a2a2a] rounded px-1 py-0.5 text-xs font-mono">{children}</code>;
+    }
+    return <code className={`${className || ''} font-mono text-sm`} {...props}>{children}</code>;
+  },
+  table: ({ children }) => (
+    <div className="overflow-x-auto my-3">
+      <table className="w-full border-collapse border border-[#333333]">{children}</table>
+    </div>
+  ),
+  thead: ({ children }) => <thead className="bg-[#1a1a1a]">{children}</thead>,
+  th: ({ children }) => <th className="border border-[#333333] px-3 py-2 text-left text-white text-xs font-semibold">{children}</th>,
+  td: ({ children }) => <td className="border border-[#333333] px-3 py-2 text-[#e2e2e2] text-xs">{children}</td>,
+  tr: ({ children, ...props }: any) => <tr className="even:bg-[#111111]" {...props}>{children}</tr>,
 };
 
-function createHandle(pos: HandlePos): HTMLDivElement {
-  const h = document.createElement('div');
-  h.dataset.resizeHandle = pos;
-  h.style.cssText = `
-    position:absolute; width:${HANDLE_SIZE}px; height:${HANDLE_SIZE}px;
-    background:#3b82f6; border:1px solid #fff; border-radius:1px;
-    cursor:${HANDLE_CURSORS[pos]}; z-index:10; touch-action:none;
-  `;
-  return h;
-}
+// --- Search Component ---
 
-function positionHandles(wrapper: HTMLDivElement, img: HTMLImageElement) {
-  const handles = wrapper.querySelectorAll<HTMLDivElement>('[data-resize-handle]');
-  const w = img.offsetWidth;
-  const h = img.offsetHeight;
-  const half = HANDLE_SIZE / 2;
-  handles.forEach((el) => {
-    const pos = el.dataset.resizeHandle as HandlePos;
-    switch (pos) {
-      case 'nw': el.style.top = `${-half}px`; el.style.left = `${-half}px`; break;
-      case 'ne': el.style.top = `${-half}px`; el.style.left = `${w - half}px`; break;
-      case 'sw': el.style.top = `${h - half}px`; el.style.left = `${-half}px`; break;
-      case 'se': el.style.top = `${h - half}px`; el.style.left = `${w - half}px`; break;
-    }
-  });
-}
+const SearchBar: React.FC<{
+  searchQuery: string;
+  onSearchChange: (q: string) => void;
+  matchCount: number;
+  currentMatch: number;
+  onNext: () => void;
+  onPrev: () => void;
+  onClose: () => void;
+}> = ({ searchQuery, onSearchChange, matchCount, currentMatch, onNext, onPrev, onClose }) => (
+  <div className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] border-b border-[#333333]">
+    <Search size={14} className="text-gray-500 shrink-0" />
+    <input
+      autoFocus
+      value={searchQuery}
+      onChange={(e) => onSearchChange(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') { e.shiftKey ? onPrev() : onNext(); }
+        if (e.key === 'Escape') onClose();
+      }}
+      placeholder="Search..."
+      className="bg-transparent text-white text-sm outline-none flex-1 placeholder-gray-500"
+    />
+    {searchQuery && (
+      <span className="text-xs text-gray-400 shrink-0">
+        {matchCount > 0 ? `${currentMatch + 1}/${matchCount}` : '0 results'}
+      </span>
+    )}
+    <button onClick={onPrev} className="p-1 hover:bg-white/10 rounded text-gray-400 hover:text-white"><ChevronUp size={14} /></button>
+    <button onClick={onNext} className="p-1 hover:bg-white/10 rounded text-gray-400 hover:text-white"><ChevronDown size={14} /></button>
+    <button onClick={onClose} className="p-1 hover:bg-white/10 rounded text-gray-400 hover:text-white"><X size={14} /></button>
+  </div>
+);
 
-function removeResizeUI(editorEl: HTMLDivElement) {
-  editorEl.querySelectorAll<HTMLDivElement>('[data-resize-wrapper]').forEach((w) => {
-    const img = w.querySelector('img');
-    if (img) {
-      w.parentNode?.insertBefore(img, w);
-    }
-    w.remove();
-  });
-}
+// --- Line Numbers Gutter ---
 
-function wrapImageWithHandles(
-  img: HTMLImageElement,
-  editorEl: HTMLDivElement,
-  onResizeEnd: () => void,
-) {
-  // Already wrapped?
-  if (img.parentElement?.dataset.resizeWrapper) return;
+const LineNumberGutter: React.FC<{ lineCount: number; scrollTop: number }> = ({ lineCount, scrollTop }) => {
+  const lines = useMemo(() => Array.from({ length: lineCount }, (_, i) => i + 1), [lineCount]);
+  return (
+    <div
+      className="bg-[#1e1e1e] text-[#555555] font-mono text-xs text-right pr-2 w-12 select-none overflow-hidden shrink-0 pt-4"
+      style={{ marginTop: -scrollTop }}
+    >
+      {lines.map((n) => (
+        <div key={n} style={{ height: '1.5rem', lineHeight: '1.5rem' }}>{n}</div>
+      ))}
+    </div>
+  );
+};
 
-  const wrapper = document.createElement('div');
-  wrapper.dataset.resizeWrapper = '1';
-  wrapper.style.cssText = 'position:relative; display:inline-block;';
-  img.parentNode?.insertBefore(wrapper, img);
-  wrapper.appendChild(img);
-
-  // Outline on image
-  img.style.outline = '2px solid #3b82f6';
-
-  HANDLE_POSITIONS.forEach((pos) => {
-    const handle = createHandle(pos);
-    wrapper.appendChild(handle);
-
-    const startResize = (startX: number, startY: number) => {
-      const startWidth = img.offsetWidth;
-      const aspectRatio = img.naturalHeight / img.naturalWidth || img.offsetHeight / img.offsetWidth;
-      const maxWidth = editorEl.offsetWidth - 48; // padding
-
-      const onMove = (cx: number, _cy: number) => {
-        let deltaX = cx - startX;
-        if (pos === 'nw' || pos === 'sw') deltaX = -deltaX;
-        const newWidth = Math.max(50, Math.min(maxWidth, startWidth + deltaX));
-        img.style.width = `${newWidth}px`;
-        img.style.height = `${Math.round(newWidth * aspectRatio)}px`;
-        img.setAttribute('width', String(Math.round(newWidth)));
-        positionHandles(wrapper, img);
-      };
-
-      const onEnd = () => {
-        document.removeEventListener('mousemove', mouseMove);
-        document.removeEventListener('mouseup', mouseUp);
-        document.removeEventListener('touchmove', touchMove);
-        document.removeEventListener('touchend', touchEnd);
-        onResizeEnd();
-      };
-
-      const mouseMove = (e: MouseEvent) => { e.preventDefault(); onMove(e.clientX, e.clientY); };
-      const mouseUp = () => onEnd();
-      const touchMove = (e: TouchEvent) => { e.preventDefault(); onMove(e.touches[0].clientX, e.touches[0].clientY); };
-      const touchEnd = () => onEnd();
-
-      document.addEventListener('mousemove', mouseMove);
-      document.addEventListener('mouseup', mouseUp);
-      document.addEventListener('touchmove', touchMove, { passive: false });
-      document.addEventListener('touchend', touchEnd);
-    };
-
-    handle.addEventListener('mousedown', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      startResize(e.clientX, e.clientY);
-    });
-    handle.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      startResize(e.touches[0].clientX, e.touches[0].clientY);
-    }, { passive: false });
-  });
-
-  positionHandles(wrapper, img);
-}
-
-// --- Component ---
+// --- Main Component ---
 
 export const GuideEditor: React.FC<GuideEditorProps> = ({
   docId,
@@ -283,159 +129,92 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
 }) => {
   const [title, setTitle] = useState(docTitle);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [isDragOver, setIsDragOver] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editBuffer, setEditBuffer] = useState('');
+  const [scrollTop, setScrollTop] = useState(0);
+
+  // Search state
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentMatch, setCurrentMatch] = useState(0);
+
   const titleRef = useRef<HTMLInputElement>(null);
-  const editorRef = useRef<HTMLDivElement>(null);
-  const isInitializing = useRef(false);
-  const selectedImgRef = useRef<HTMLImageElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const viewRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setTitle(docTitle); }, [docTitle]);
+  useEffect(() => { onTocUpdate(extractTocFromMarkdown(docMarkdown)); }, [docMarkdown, onTocUpdate]);
 
+  // Reset mode when doc changes
   useEffect(() => {
-    onTocUpdate(extractTocFromMarkdown(docMarkdown));
-  }, [docMarkdown, onTocUpdate]);
-
-  // Set initial HTML content when doc changes
-  useEffect(() => {
-    if (editorRef.current && docMarkdown !== undefined) {
-      isInitializing.current = true;
-      editorRef.current.innerHTML = markdownToHtml(docMarkdown);
-      isInitializing.current = false;
-    }
+    setIsEditMode(false);
+    setShowSearch(false);
+    setSearchQuery('');
   }, [docId]);
 
-  const handleInput = useCallback(() => {
-    if (isInitializing.current) return;
-    if (!editorRef.current || !onMarkdownChange) return;
-    // Strip resize wrappers before converting
-    const clone = editorRef.current.cloneNode(true) as HTMLDivElement;
-    clone.querySelectorAll('[data-resize-wrapper]').forEach((w) => {
-      const img = w.querySelector('img');
-      if (img) {
-        img.style.outline = '';
-        w.parentNode?.insertBefore(img, w);
-      }
-      w.remove();
-    });
-    clone.querySelectorAll('[data-resize-handle]').forEach((h) => h.remove());
-    const html = clone.innerHTML;
-    const md = turndown.turndown(html);
-    onMarkdownChange(md);
-  }, [onMarkdownChange]);
-
-  // --- Image click-to-select for resize ---
+  // Keyboard shortcut for search
   useEffect(() => {
-    const editor = editorRef.current;
-    if (!editor || !onMarkdownChange) return;
-
-    const onClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-
-      // Ignore clicks on handles
-      if (target.dataset.resizeHandle) return;
-
-      if (target.tagName === 'IMG') {
-        const img = target as HTMLImageElement;
-        if (selectedImgRef.current === img) return;
-
-        // Remove existing handles
-        removeResizeUI(editor);
-        selectedImgRef.current = img;
-        wrapImageWithHandles(img, editor, handleInput);
-      } else {
-        // Deselect
-        if (selectedImgRef.current) {
-          selectedImgRef.current.style.outline = '';
-          selectedImgRef.current = null;
-          removeResizeUI(editor);
-        }
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        setShowSearch(true);
       }
     };
-
-    editor.addEventListener('click', onClick);
-    return () => editor.removeEventListener('click', onClick);
-  }, [onMarkdownChange, handleInput]);
-
-  // --- Paste handler ---
-  const handlePaste = useCallback(async (e: React.ClipboardEvent<HTMLDivElement>) => {
-    if (!editorRef.current || !onMarkdownChange) return;
-
-    const clipboardData = e.clipboardData;
-
-    const imageFile = Array.from(clipboardData.files).find(f => f.type.startsWith('image/'));
-    if (imageFile) {
-      e.preventDefault();
-      try {
-        const url = await uploadGuideImage(imageFile);
-        insertImageAtCursor(editorRef.current, url);
-        handleInput();
-      } catch (err) {
-        console.error('Failed to upload pasted image:', err);
-      }
-      return;
-    }
-
-    const imageItem = Array.from(clipboardData.items).find(item => item.type.startsWith('image/'));
-    if (imageItem) {
-      const file = imageItem.getAsFile();
-      if (file) {
-        e.preventDefault();
-        try {
-          const url = await uploadGuideImage(file);
-          insertImageAtCursor(editorRef.current, url);
-          handleInput();
-        } catch (err) {
-          console.error('Failed to upload pasted image:', err);
-        }
-        return;
-      }
-    }
-
-    const plainText = clipboardData.getData('text/plain');
-    if (plainText) {
-      e.preventDefault();
-      document.execCommand('insertText', false, plainText);
-    }
-  }, [onMarkdownChange, handleInput]);
-
-  // --- Drop handler ---
-  const handleDrop = useCallback(async (e: React.DragEvent<HTMLDivElement>) => {
-    setIsDragOver(false);
-    if (!editorRef.current || !onMarkdownChange) return;
-
-    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
-    if (files.length === 0) return;
-
-    e.preventDefault();
-    e.stopPropagation();
-
-    for (const file of files) {
-      try {
-        const url = await uploadGuideImage(file);
-        insertImageAtCursor(editorRef.current, url);
-      } catch (err) {
-        console.error('Failed to upload dropped image:', err);
-      }
-    }
-    handleInput();
-  }, [onMarkdownChange, handleInput]);
-
-  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    const hasImages = Array.from(e.dataTransfer.types).includes('Files');
-    if (hasImages) {
-      e.preventDefault();
-      setIsDragOver(true);
-    }
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
   }, []);
 
-  const handleDragLeave = useCallback(() => {
-    setIsDragOver(false);
+  // Search match count (simple text search in markdown)
+  const matchCount = useMemo(() => {
+    if (!searchQuery) return 0;
+    const text = docMarkdown.toLowerCase();
+    const q = searchQuery.toLowerCase();
+    let count = 0;
+    let idx = -1;
+    while ((idx = text.indexOf(q, idx + 1)) !== -1) count++;
+    return count;
+  }, [docMarkdown, searchQuery]);
+
+  const navigateMatch = useCallback((direction: 'next' | 'prev') => {
+    if (matchCount === 0) return;
+    setCurrentMatch((prev) => {
+      if (direction === 'next') return (prev + 1) % matchCount;
+      return (prev - 1 + matchCount) % matchCount;
+    });
+  }, [matchCount]);
+
+  // Enter edit mode
+  const enterEditMode = useCallback(() => {
+    setEditBuffer(docMarkdown);
+    setIsEditMode(true);
+    setScrollTop(0);
+  }, [docMarkdown]);
+
+  // Enter view mode (discard unsaved changes)
+  const enterViewMode = useCallback(() => {
+    setIsEditMode(false);
+  }, []);
+
+  // Save from edit mode
+  const handleSave = useCallback(() => {
+    if (onMarkdownChange) {
+      onMarkdownChange(editBuffer);
+    }
+    setIsEditMode(false);
+  }, [editBuffer, onMarkdownChange]);
+
+  const handleTextareaScroll = useCallback(() => {
+    if (textareaRef.current) {
+      setScrollTop(textareaRef.current.scrollTop);
+    }
   }, []);
 
   const commitTitle = () => {
     setIsEditingTitle(false);
     if (docId && title !== docTitle) onTitleChange(docId, title);
   };
+
+  const lineCount = useMemo(() => editBuffer.split('\n').length, [editBuffer]);
 
   if (!docId) {
     return (
@@ -469,33 +248,83 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
             </button>
           )}
         </div>
+
+        {/* View/Edit toggle + Save */}
+        {onMarkdownChange && (
+          <div className="flex items-center gap-2 ml-2 shrink-0">
+            {isEditMode ? (
+              <>
+                <button
+                  onClick={handleSave}
+                  className="flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+                >
+                  <Save size={12} />
+                  Save
+                </button>
+                <button
+                  onClick={enterViewMode}
+                  className="flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium bg-[#1a1a1a] border border-[#333] text-gray-400 hover:text-white transition-colors"
+                >
+                  <Eye size={12} />
+                  View
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={enterEditMode}
+                className="flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium bg-[#1a1a1a] border border-[#333] text-gray-400 hover:text-white transition-colors"
+              >
+                <Pencil size={12} />
+                Edit
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Formatting toolbar */}
-      {onMarkdownChange && (
-        <GuideEditorToolbar
-          editorRef={editorRef}
-          onInput={handleInput}
+      {/* Search bar */}
+      {showSearch && (
+        <SearchBar
+          searchQuery={searchQuery}
+          onSearchChange={(q) => { setSearchQuery(q); setCurrentMatch(0); }}
+          matchCount={matchCount}
+          currentMatch={currentMatch}
+          onNext={() => navigateMatch('next')}
+          onPrev={() => navigateMatch('prev')}
+          onClose={() => { setShowSearch(false); setSearchQuery(''); }}
         />
       )}
 
-      {/* WYSIWYG editable area */}
-      <div className="flex-1 overflow-y-auto min-h-0">
-        <div
-          ref={editorRef}
-          contentEditable={!!onMarkdownChange}
-          onInput={handleInput}
-          onPaste={handlePaste}
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          className={`guide-preview max-w-4xl p-6 outline-none min-h-full transition-all ${
-            isDragOver ? 'ring-2 ring-[#00F0FF] ring-inset bg-[#00F0FF]/5' : ''
-          }`}
-          suppressContentEditableWarning
-          spellCheck={false}
-        />
-      </div>
+      {/* Content area */}
+      {isEditMode ? (
+        /* Edit mode: raw markdown textarea with line numbers */
+        <div className="flex-1 flex min-h-0 overflow-hidden">
+          <div className="overflow-hidden shrink-0">
+            <LineNumberGutter lineCount={lineCount} scrollTop={scrollTop} />
+          </div>
+          <textarea
+            ref={textareaRef}
+            value={editBuffer}
+            onChange={(e) => setEditBuffer(e.target.value)}
+            onScroll={handleTextareaScroll}
+            spellCheck={false}
+            className="flex-1 bg-[#0d0d0d] text-[#e2e2e2] font-mono text-sm p-4 w-full h-full resize-none border-none outline-none leading-6"
+          />
+        </div>
+      ) : (
+        /* View mode: rendered markdown */
+        <div ref={viewRef} className="flex-1 overflow-y-auto min-h-0">
+          <div className="max-w-4xl p-6">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              rehypePlugins={[rehypeHighlight]}
+              components={markdownComponents}
+            >
+              {docMarkdown}
+            </ReactMarkdown>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
