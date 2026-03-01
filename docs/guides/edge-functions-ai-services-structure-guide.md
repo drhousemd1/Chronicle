@@ -104,9 +104,9 @@ The system prompt in `getSystemInstruction()` is constructed in this order:
 |-------|-------------|----------------|--------|
 | #1 | `buildCharacterStateBlock()` now outputs scaffolding placeholders for all section types when empty | `supabase/functions/extract-character-updates/index.ts` | RESOLVED — 2026-03-01 |
 | #2 | `personality.traits` added to TRACKABLE FIELDS for unified mode | `supabase/functions/extract-character-updates/index.ts` | RESOLVED — 2026-03-01 |
-| #3 | `preferredClothing` field name mismatch (camelCase vs snake_case) | `supabase/functions/extract-character-updates/index.ts` | ACTIVE |
+| #3 | `preferredClothing` field name mismatch (underwear vs undergarments) | `supabase/functions/extract-character-updates/index.ts` | RESOLVED — 2026-03-01 — preferredClothing.underwear renamed to preferredClothing.undergarments in TRACKABLE FIELDS |
 | #4 | Default model changed to `grok-3`; 403 retry remains `grok-3-mini` | `supabase/functions/extract-character-updates/index.ts` | RESOLVED — 2026-03-01 |
-| #5 | Extraction prompt lacks analytical depth | `supabase/functions/extract-character-updates/index.ts` | ACTIVE |
+| #5 | Extraction prompt lacks analytical depth | `supabase/functions/extract-character-updates/index.ts` | RESOLVED — 2026-03-01 — Added 7-block analytical depth framework: psychological inference, progressive refinement, conflict resolution, split mode detection, tone inference, cross-field coherence, complete trait lifecycle |
 | #6 | Memory system incomplete — no long-term accumulation | `supabase/functions/extract-memory-events/index.ts` | ACTIVE |
 
 ---
@@ -149,7 +149,5 @@ See Section 5 above for comprehensive bug list.
 ## 13. Planned / Future Changes
 
 - Memory consolidation system (long-term memory summarization)
-- Fix `preferredClothing` field name mismatch (Bug #3)
-- Improve extraction prompt depth (Bug #5)
 
-> Last updated: 2026-03-01 — Initial creation.
+> Last updated: 2026-03-01 — Bugs #3 and #5 resolved.
