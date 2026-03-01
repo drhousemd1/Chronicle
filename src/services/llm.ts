@@ -332,21 +332,21 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
     - Be consistent with time-appropriate lighting, activities, and character energy levels
   ` : '';
 
-  // Memories context section
-  const memoriesContext = memoriesEnabled !== false && memories && memories.length > 0 ? `
-    STORY MEMORIES (Established facts and events - DO NOT contradict these):
-    ${memories
-      .sort((a, b) => (a.day || 0) - (b.day || 0))
-      .map(m => {
-        const timeInfo = m.day ? `[Day ${m.day}${m.timeOfDay ? `, ${m.timeOfDay}` : ''}]` : '[Unknown time]';
-        return `• ${timeInfo} ${m.content}`;
-      }).join('\n')}
-    
+  // Memories context section — separate synopses (completed days) from bullets (today)
+  const synopses = memories?.filter(m => m.entryType === 'synopsis') || [];
+  const bullets = memories?.filter(m => m.entryType === 'bullet' && m.day === (currentDay || 1)) || [];
+
+  const memoriesContext = memoriesEnabled !== false && (synopses.length > 0 || bullets.length > 0) ? `
+    STORY MEMORIES:
+    ${synopses.length > 0 ? `COMPLETED DAYS (summaries):
+    ${synopses.sort((a, b) => (a.day || 0) - (b.day || 0))
+      .map(m => `[Day ${m.day}] ${m.content}`).join('\n    ')}` : ''}
+    ${bullets.length > 0 ? `\n    TODAY (Day ${currentDay || 1} -- key events so far):
+    ${bullets.map(m => `- ${m.content}`).join('\n    ')}` : ''}
+
     MEMORY RULES:
     - These events HAVE HAPPENED. Do not write them as new occurrences.
     - Characters should remember and reference past events appropriately.
-    - Maintain chronological consistency (current day is ${currentDay || 1}).
-    - Events from earlier days should feel like memories, not recent events.
     - Never contradict or "re-do" events listed in memories.
   ` : '';
 

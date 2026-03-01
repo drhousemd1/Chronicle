@@ -560,6 +560,7 @@ export type Database = {
           conversation_id: string
           created_at: string | null
           day: number | null
+          entry_type: string
           id: string
           source: string | null
           source_message_id: string | null
@@ -572,6 +573,7 @@ export type Database = {
           conversation_id: string
           created_at?: string | null
           day?: number | null
+          entry_type?: string
           id?: string
           source?: string | null
           source_message_id?: string | null
@@ -584,6 +586,7 @@ export type Database = {
           conversation_id?: string
           created_at?: string | null
           day?: number | null
+          entry_type?: string
           id?: string
           source?: string | null
           source_message_id?: string | null

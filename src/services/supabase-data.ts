@@ -1729,6 +1729,7 @@ function dbToMemory(row: any): Memory {
     day: row.day,
     timeOfDay: row.time_of_day,
     source: row.source || 'user',
+    entryType: row.entry_type || 'bullet',
     sourceMessageId: row.source_message_id,
     createdAt: new Date(row.created_at).getTime(),
     updatedAt: new Date(row.updated_at).getTime()
@@ -1754,7 +1755,8 @@ export async function createMemory(
   day?: number | null,
   timeOfDay?: TimeOfDay | null,
   source: MemorySource = 'user',
-  sourceMessageId?: string
+  sourceMessageId?: string,
+  entryType: import('@/types').MemoryEntryType = 'bullet'
 ): Promise<Memory> {
   const { data, error } = await supabase
     .from('memories')
@@ -1765,7 +1767,8 @@ export async function createMemory(
       day: day ?? null,
       time_of_day: timeOfDay ?? null,
       source,
-      source_message_id: sourceMessageId ?? null
+      source_message_id: sourceMessageId ?? null,
+      entry_type: entryType
     })
     .select()
     .single();
