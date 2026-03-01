@@ -73,9 +73,11 @@ export const AppGuideTool: React.FC<AppGuideToolProps> = ({ onRegisterSave, onRe
       ? Math.max(...documents.map((d) => d.sort_order))
       : -1;
 
+    const defaultMarkdown = `> **INSTRUCTIONS FOR LOVABLE / AI AGENTS**\n> This document is part of the Chronicle App Guide. When editing, preserve existing structure and formatting. Follow the style rules defined in GUIDE_STYLE_RULES.md. Do not remove this instruction block.\n\n`;
+
     const { data, error } = await (supabase as any)
       .from('guide_documents')
-      .insert({ title: 'Untitled Document', sort_order: maxSort + 1 })
+      .insert({ title: 'Untitled Document', sort_order: maxSort + 1, markdown: defaultMarkdown })
       .select('id, title, sort_order')
       .single();
 
