@@ -1,25 +1,25 @@
 
 
-# Add "Test A" Mockup Section to Character Builder
+# Fix Test A Color Scheme to Match App Theme
 
-## What
-Add a purely visual, hardcoded mockup section called **"Test A"** below the Goals and Desires section in the character builder detail view. This uses the shadcn card styling from your uploaded code/screenshot -- no database connections, no app wiring, just a static visual test.
+## Problem
+The Test A mockup uses shadcn CSS variable tokens (`bg-card`, `border-input`, `text-muted-foreground`) which don't resolve to the correct dark colors in this app. The app uses direct Tailwind color values for its dark UI.
 
-## Where
-**File:** `src/components/chronicle/CharactersTab.tsx`
-**Location:** Between line 1189 (after `CharacterGoalsSection`) and line 1191 (before user-created custom sections)
+## Changes
+**File:** `src/components/chronicle/CharactersTab.tsx` (lines 1192-1234)
 
-## What Gets Added
-A self-contained JSX block using shadcn's Card component structure with:
-- Card shell with header ("Test A" title + description subtitle)
-- 11 static rows matching the Physical Appearance layout from your mockup: Hair Color, Eye Color, Build, Body Hair, Height, Breasts, Genitalia, Skin Tone, Makeup, Body Markings, Temporary Conditions
-- Each row uses a 4-column grid: label pill, sparkle icon, value field, lock icon
-- Styling uses shadcn/Tailwind dark theme tokens (`bg-card`, `border-input`, `dark:bg-input/30`, `text-muted-foreground`)
-- "Add Row" dashed button in the footer
-- All elements are static/non-functional -- purely for visual comparison
+Replace the shadcn tokens with the app's actual dark theme colors:
 
-## Technical Detail
-- Uses Lucide icons (`Sparkles`, `Lock`, `Plus`) already imported in the file
-- No new components, no new state, no props -- just a block of JSX
-- Easy to remove later once you've decided on the styling direction
+| Element | Current (wrong) | Updated (correct) |
+|---------|-----------------|-------------------|
+| Card shell | `bg-card text-card-foreground border` | `bg-[#1c1c1e] border border-white/10 text-white` |
+| Card header border | none | `border-b border-white/10` on header div |
+| Title | inherits card-foreground | `text-white` |
+| Subtitle | `text-muted-foreground` | `text-zinc-500` |
+| Label pills | `border-input bg-transparent text-muted-foreground` | `border-white/10 bg-zinc-900/50 text-zinc-400 uppercase font-bold tracking-widest text-xs` |
+| Value fields | `border-input dark:bg-input/30 text-foreground` | `border-white/10 bg-zinc-900/30 text-zinc-300` |
+| Sparkle + Lock icons | `text-muted-foreground` | `text-zinc-500` |
+| Add Row button | `border-input text-muted-foreground hover:bg-accent` | `border-white/10 text-zinc-500 hover:border-zinc-400 hover:text-zinc-300` |
+
+These values match the existing hardcoded section styling used throughout the character builder (per the guide: `bg-[#2a2a2f]`, `border-white/10`, `text-zinc-400` labels). The card background is slightly darker (`#1c1c1e`) to match the screenshot reference.
 
