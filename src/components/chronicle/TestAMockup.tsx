@@ -24,10 +24,10 @@ export const TestAMockup: React.FC = () => {
     setValues((prev) => ({ ...prev, [label]: val }));
 
   return (
-    <div className="w-full rounded-lg border border-white/10 bg-[#1c1c1e] text-white shadow-sm">
-      <div className="flex flex-col space-y-1.5 p-6 border-b border-white/10">
-        <h3 className="text-2xl font-semibold leading-none tracking-tight text-white">Test A</h3>
-        <p className="text-sm text-zinc-500">Physical Appearance mockup — visual test only</p>
+    <div className="w-full rounded-lg border bg-card text-card-foreground shadow-sm">
+      <div className="flex flex-col space-y-1.5 p-6 border-b">
+        <h3 className="text-2xl font-semibold leading-none tracking-tight">Test A</h3>
+        <p className="text-sm text-muted-foreground">Physical Appearance mockup — visual test only</p>
       </div>
       <div className="p-6 pt-4">
         <div className="space-y-3">
