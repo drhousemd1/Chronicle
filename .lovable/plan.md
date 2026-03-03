@@ -1,47 +1,40 @@
 
-Goal: make Test A visually match your screenshot by restoring the dark hardcoded container while keeping the value fields editable.
 
-What went wrong
-- The latest edit changed the outer wrapper to theme tokens (`bg-card`, `text-card-foreground`).
-- In this app, those tokens resolve to a light card (white) unless dark mode classing is active globally.
-- That is why the block turned white and stopped matching your screenshot.
+# Replace TestAMockup with Codex's Exact Code
 
-Implementation plan
+## What went wrong
 
-1) Update only `src/components/chronicle/TestAMockup.tsx`
-- Keep the editable input behavior exactly as-is (the `useState` + `onChange` logic stays).
-- Revert the outer shell/header text colors back to the hardcoded dark values that matched your image.
+Every previous attempt tried to mix Tailwind classes and theme tokens. The Codex-provided file (`OptionA.lovable.tsx`) uses **zero Tailwind classes** — it's entirely inline `style` objects with explicit hex colors, pixel sizes, and layout values. That's the only way to guarantee the exact look regardless of theme context.
 
-2) Apply exact container/header classes (restore dark shell)
-- Card shell:
-  - from: `w-full rounded-lg border bg-card text-card-foreground shadow-sm`
-  - to: `w-full rounded-lg border border-white/10 bg-[#1c1c1e] text-white shadow-sm`
-- Header wrapper:
-  - from: `flex flex-col space-y-1.5 p-6 border-b`
-  - to: `flex flex-col space-y-1.5 p-6 border-b border-white/10`
-- Title:
-  - ensure explicit `text-white`
-- Subtitle:
-  - ensure `text-zinc-500`
+## Plan
 
-3) Keep rows editable and preserve the row styling you requested
-- Leave each value as an `<input>` (not static text).
-- Keep your token-based row field styling:
-  - labels: `border-input dark:bg-input/30 ...`
-  - values: `border-input dark:bg-input/30 ... text-muted-foreground`
-  - sparkles/lock: `text-muted-foreground`
-- No structural change to row grid or Add Row button behavior in this pass.
+**Replace `src/components/chronicle/TestAMockup.tsx` entirely** with the contents of the uploaded `OptionA.lovable.tsx`, with two small adaptations:
 
-4) Visual parity pass (“look at every element”)
-- Confirm:
-  - dark card background, subtle white border, white title, muted gray subtitle
-  - label chips/input fields/icons match current screenshot proportions/colors
-  - all value fields are still typeable for testing
+1. Copy the file as-is (inline styles, inline SVG icons, explicit colors)
+2. Rename the export from `OptionALovable` to `TestAMockup` (named export) so existing imports don't break
+3. Make the value fields editable (`<input>` instead of static `<div>`) using the same `useState` pattern, but styled with the exact inline styles from the Codex file
 
-Expected result
-- The container matches the dark screenshot style again.
-- Inputs remain editable for test typing.
-- Only the wrapper/header coloring is changed; interaction behavior remains intact.
+### Key differences from current code
 
-Technical note
-- This component intentionally mixes hardcoded dark container colors with token-based inner row styling because that is the combination you requested and is what matches your screenshot in the current app theme setup.
+| Aspect | Current (broken) | Codex file (correct) |
+|--------|------------------|----------------------|
+| Styling method | Tailwind classes | Inline `style` objects |
+| Card background | `bg-[#1c1c1e]` class | `background: "#15181e"` inline |
+| Card border | `border-white/10` class | `border: "1px solid #2f3440"` inline |
+| Border radius | `rounded-lg` (8px) | `borderRadius: 20` (20px) |
+| Label height | auto (~36px) | `height: 52` (52px) |
+| Label background | theme token | `background: "#232730"` inline |
+| Label border | theme token | `border: "1px solid rgba(255,255,255,0.14)"` |
+| Value field border | theme token | `border: "1px solid rgba(255,255,255,0.14)"` |
+| Icon color | `text-muted-foreground` | `color: "#9da5b5"` inline |
+| Title size | `text-2xl` (24px) | `fontSize: 54` (54px) |
+| Row grid | `grid-cols-[160px_28px_1fr_28px]` | `gridTemplateColumns: "minmax(220px,360px) 24px minmax(0,1fr) 24px"` |
+| Add button | Tailwind dashed border | Inline dashed border with explicit colors |
+
+### What stays the same
+- The field data array (same 11 rows)
+- Sparkles / Lock / Plus icons (Codex uses inline SVGs instead of lucide-react)
+- The editable input behavior (will add `useState` + `onChange` to value fields using the Codex inline styles)
+
+No other files need to change.
+
