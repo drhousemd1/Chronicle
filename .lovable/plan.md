@@ -1,39 +1,22 @@
 
 
-# Fix Test A: Editable Fields + Correct Styling
+# Fix Test A Mockup to Match Screenshot Exactly
 
 ## Problem
-1. Value fields are static `<span>` elements -- need to be editable `<input>` elements for testing
-2. Styling uses hardcoded zinc colors instead of the shadcn tokens from your provided code (`border-input`, `dark:bg-input/30`, `text-muted-foreground`)
-3. Default values should use the simpler placeholder text you provided
+The outer card wrapper uses hardcoded colors (`bg-[#1c1c1e]`, `border-white/10`, `text-white`, `text-zinc-500`) instead of the standard shadcn card tokens. The screenshot shows the base shadcn card style in dark mode, which the app already supports via CSS custom properties.
 
 ## Changes
 
-**File:** `src/components/chronicle/CharactersTab.tsx` (lines 1191-1235)
+**File:** `src/components/chronicle/TestAMockup.tsx`
 
-### 1. Add local state for editable fields
-Add a `useState` hook holding the 11 field values so typing updates them in real time. Initialized with your provided defaults:
+Replace the outer card wrapper styling to use shadcn tokens exactly:
 
-```text
-Hair Color -> "Brunette, Blonde, Black"
-Eye Color -> "Blue, Brown, Green"
-Build -> "Athletic, Slim, Curvy"
-...etc
-```
+| Line | Current | Corrected |
+|------|---------|-----------|
+| 27 (card shell) | `border border-white/10 bg-[#1c1c1e] text-white` | `border bg-card text-card-foreground` |
+| 28 (header div) | `border-b border-white/10` | `border-b` (inherits border color) |
+| 29 (title h3) | `text-white` | remove -- inherits from `text-card-foreground` |
+| 30 (subtitle p) | `text-zinc-500` | `text-muted-foreground` |
 
-### 2. Replace static spans with input elements
-Each value field becomes an `<input>` wired to the local state, so you can type freely to test the look.
-
-### 3. Apply exact styling from your code
-
-| Element | Classes (matching your code) |
-|---------|------------------------------|
-| Label cell | `rounded-md border border-input dark:bg-input/30 px-4 py-2 text-sm font-semibold uppercase tracking-[0.12em]` |
-| Sparkles icon | `text-muted-foreground` |
-| Value input | `rounded-md border border-input dark:bg-input/30 bg-transparent h-9 w-full min-w-0 px-3 py-1 text-base text-muted-foreground shadow-xs` |
-| Lock button | `text-muted-foreground` |
-| Row container | `space-y-3` gap between rows |
-
-### 4. Keep container hardcoded
-The outer card shell, header, title, and "Add Row" button remain static (not wired to anything) -- only the text values are editable.
+Everything else (row grid, label pills, input fields, icons, Add Row button) stays exactly as-is -- those already use the correct `border-input`, `dark:bg-input/30`, and `text-muted-foreground` tokens matching the user's provided code and screenshot.
 
