@@ -1188,6 +1188,52 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
             enhancingField={enhancingField}
           />
 
+          {/* ── TEST A — static mockup section ── */}
+          <div className="w-full rounded-lg border bg-card text-card-foreground shadow-sm">
+            <div className="flex flex-col space-y-1.5 p-6">
+              <h3 className="text-2xl font-semibold leading-none tracking-tight">Test A</h3>
+              <p className="text-sm text-muted-foreground">Physical Appearance mockup — visual test only</p>
+            </div>
+            <div className="p-6 pt-0">
+              <div className="space-y-2">
+                {[
+                  { label: 'Hair Color', value: 'Jet-black, waist-length, silky straight with a blue-violet sheen' },
+                  { label: 'Eye Color', value: 'Deep emerald green with gold flecks near the iris' },
+                  { label: 'Build', value: 'Lean and athletic, toned arms, defined waist' },
+                  { label: 'Body Hair', value: 'Smooth, well-maintained' },
+                  { label: 'Height', value: "5'7\" (170 cm)" },
+                  { label: 'Breasts', value: 'Medium, natural' },
+                  { label: 'Genitalia', value: 'Female' },
+                  { label: 'Skin Tone', value: 'Warm olive with a sun-kissed glow' },
+                  { label: 'Makeup', value: 'Subtle eyeliner, nude lip, light bronzer on cheekbones' },
+                  { label: 'Body Markings', value: 'Small crescent-moon tattoo behind her left ear; faint scar across right forearm' },
+                  { label: 'Temporary Conditions', value: 'Faint dark circles from sleepless nights; light bruising on knuckles' },
+                ].map((row) => (
+                  <div key={row.label} className="grid grid-cols-[160px_28px_1fr_28px] items-center gap-2">
+                    <span className="rounded-md border border-input bg-transparent px-3 py-1 text-sm text-muted-foreground truncate">
+                      {row.label}
+                    </span>
+                    <span className="flex items-center justify-center text-muted-foreground">
+                      <Sparkles size={14} />
+                    </span>
+                    <span className="rounded-md border border-input dark:bg-input/30 px-3 py-1 text-sm text-foreground">
+                      {row.value}
+                    </span>
+                    <span className="flex items-center justify-center text-muted-foreground">
+                      <Lock size={14} />
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center p-6 pt-0">
+              <button className="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium border border-dashed border-input bg-transparent px-4 py-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors w-full">
+                <Plus size={16} />
+                Add Row
+              </button>
+            </div>
+          </div>
+
           {/* USER-CREATED CUSTOM SECTIONS */}
           {selected.sections.map(section => (
             <div key={section.id} className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
