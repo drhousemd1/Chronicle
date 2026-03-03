@@ -12,7 +12,7 @@ import { AvatarActionButtons } from './AvatarActionButtons';
 import { Sparkles, ChevronDown, ChevronUp, Trash2, Plus, X, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { aiEnhanceCharacterField, GENERATE_BOTH_PREFIX, parseGenerateBothResponse } from '@/services/character-ai';
-import { TestAMockup } from './TestAMockup';
+
 import { EnhanceModeModal, EnhanceMode } from './EnhanceModeModal';
 import { CharacterGoalsSection } from './CharacterGoalsSection';
 import { PersonalitySection } from './PersonalitySection';
@@ -1189,8 +1189,6 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
             enhancingField={enhancingField}
           />
 
-          {/* ── TEST A — editable mockup section ── */}
-          <TestAMockup />
 
           {/* USER-CREATED CUSTOM SECTIONS */}
           {selected.sections.map(section => (
