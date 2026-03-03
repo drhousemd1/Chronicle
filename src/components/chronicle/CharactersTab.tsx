@@ -1189,12 +1189,12 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
           />
 
           {/* ── TEST A — static mockup section ── */}
-          <div className="w-full rounded-lg border bg-card text-card-foreground shadow-sm">
-            <div className="flex flex-col space-y-1.5 p-6">
-              <h3 className="text-2xl font-semibold leading-none tracking-tight">Test A</h3>
-              <p className="text-sm text-muted-foreground">Physical Appearance mockup — visual test only</p>
+          <div className="w-full rounded-lg border border-white/10 bg-[#1c1c1e] text-white shadow-sm">
+            <div className="flex flex-col space-y-1.5 p-6 border-b border-white/10">
+              <h3 className="text-2xl font-semibold leading-none tracking-tight text-white">Test A</h3>
+              <p className="text-sm text-zinc-500">Physical Appearance mockup — visual test only</p>
             </div>
-            <div className="p-6 pt-0">
+            <div className="p-6 pt-4">
               <div className="space-y-2">
                 {[
                   { label: 'Hair Color', value: 'Jet-black, waist-length, silky straight with a blue-violet sheen' },
@@ -1210,16 +1210,16 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                   { label: 'Temporary Conditions', value: 'Faint dark circles from sleepless nights; light bruising on knuckles' },
                 ].map((row) => (
                   <div key={row.label} className="grid grid-cols-[160px_28px_1fr_28px] items-center gap-2">
-                    <span className="rounded-md border border-input bg-transparent px-3 py-1 text-sm text-muted-foreground truncate">
+                    <span className="rounded-md border border-white/10 bg-zinc-900/50 px-3 py-1 text-xs font-bold uppercase tracking-widest text-zinc-400 truncate">
                       {row.label}
                     </span>
-                    <span className="flex items-center justify-center text-muted-foreground">
+                    <span className="flex items-center justify-center text-zinc-500">
                       <Sparkles size={14} />
                     </span>
-                    <span className="rounded-md border border-input dark:bg-input/30 px-3 py-1 text-sm text-foreground">
+                    <span className="rounded-md border border-white/10 bg-zinc-900/30 px-3 py-1 text-sm text-zinc-300">
                       {row.value}
                     </span>
-                    <span className="flex items-center justify-center text-muted-foreground">
+                    <span className="flex items-center justify-center text-zinc-500">
                       <Lock size={14} />
                     </span>
                   </div>
@@ -1227,7 +1227,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
               </div>
             </div>
             <div className="flex items-center p-6 pt-0">
-              <button className="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium border border-dashed border-input bg-transparent px-4 py-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors w-full">
+              <button className="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium border border-dashed border-white/10 bg-transparent px-4 py-2 text-zinc-500 hover:border-zinc-400 hover:text-zinc-300 transition-colors w-full">
                 <Plus size={16} />
                 Add Row
               </button>
