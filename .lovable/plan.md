@@ -1,40 +1,57 @@
 
+Goal: make `TestAMockup` match your uploaded reference (`image-45.png`) exactly for borders and input fields, while keeping fields editable.
 
-# Replace TestAMockup with Codex's Exact Code
+What I found (root cause)
+1. The current `src/components/chronicle/TestAMockup.tsx` is the “Lovable-safe” inline-style version (large typography, 52px fields, 20px radius, maxWidth 1120).
+2. Your uploaded “try this” reference (`Untitled_document_1-2.md`) is a different visual system:
+   - shadcn-scale card sizing (`rounded-xl`, `text-2xl`, `text-sm`)
+   - tighter rows (`h-9`, `rounded-md`, `gap-3`)
+   - token-based borders/inputs (`border-input`, `dark:bg-input/30`)
+3. That reference also depends on local dark-token context (`.dark` + specific token values). This app does not globally enforce that same token set for this section, which is why previous versions drifted visually.
 
-## What went wrong
+Implementation approach
+1. Rebuild `TestAMockup.tsx` from the uploaded reference structure (not the current inline-style file):
+   - card/header/content/footer hierarchy
+   - row grid: `minmax(180px,220px) 24px minmax(0,1fr) 24px`
+   - same label/value/icon arrangement as the reference
+2. Keep editable behavior:
+   - preserve `useState` values map
+   - render value column as `<input>` (not static `<div>`) with reference-equivalent classes
+3. Lock in visual fidelity without relying on global app theme:
+   - add a local `.dark` scope wrapper inside this component
+   - provide local CSS variable overrides on the wrapper (the exact reference values for `--card`, `--border`, `--input`, `--muted-foreground`, etc.)
+   - this ensures borders and input backgrounds render exactly like your reference even if the rest of the app theme differs
+4. Remove conflicting old styling:
+   - delete current `styles` object-based large sizing system
+   - remove `maxWidth: 1120`, large 54/26 typography, and 52px field heights
+5. Keep icons and semantics aligned:
+   - keep the same sparkle/lock/plus icon shapes
+   - set icon sizing/color to match the reference classes (`h-4/h-5`, muted foreground)
+6. Keep row scrolling behavior consistent:
+   - use reference-equivalent scroll container sizing and spacing
+   - keep clean overflow behavior so long values still look right
 
-Every previous attempt tried to mix Tailwind classes and theme tokens. The Codex-provided file (`OptionA.lovable.tsx`) uses **zero Tailwind classes** — it's entirely inline `style` objects with explicit hex colors, pixel sizes, and layout values. That's the only way to guarantee the exact look regardless of theme context.
+File changes (planned)
+- `src/components/chronicle/TestAMockup.tsx` only.
 
-## Plan
+Validation checklist after implementation
+1. Card shell:
+   - correct corner radius (rounded-xl-like), border tone, and dark card fill
+2. Header:
+   - title/subtitle scale matches screenshot (smaller than current oversized variant)
+3. Rows:
+   - label and input height/rounding match (`h-9` / `rounded-md` feel)
+   - border contrast matches screenshot (not too bright, not too faint)
+4. Inputs:
+   - editable, full width, no layout shift
+   - text color and placeholder tone match reference
+5. Add Row button:
+   - dashed border and muted text match screenshot
+6. Regressions:
+   - no white fallback card in this section
+   - component still renders correctly inside `CharactersTab`
 
-**Replace `src/components/chronicle/TestAMockup.tsx` entirely** with the contents of the uploaded `OptionA.lovable.tsx`, with two small adaptations:
-
-1. Copy the file as-is (inline styles, inline SVG icons, explicit colors)
-2. Rename the export from `OptionALovable` to `TestAMockup` (named export) so existing imports don't break
-3. Make the value fields editable (`<input>` instead of static `<div>`) using the same `useState` pattern, but styled with the exact inline styles from the Codex file
-
-### Key differences from current code
-
-| Aspect | Current (broken) | Codex file (correct) |
-|--------|------------------|----------------------|
-| Styling method | Tailwind classes | Inline `style` objects |
-| Card background | `bg-[#1c1c1e]` class | `background: "#15181e"` inline |
-| Card border | `border-white/10` class | `border: "1px solid #2f3440"` inline |
-| Border radius | `rounded-lg` (8px) | `borderRadius: 20` (20px) |
-| Label height | auto (~36px) | `height: 52` (52px) |
-| Label background | theme token | `background: "#232730"` inline |
-| Label border | theme token | `border: "1px solid rgba(255,255,255,0.14)"` |
-| Value field border | theme token | `border: "1px solid rgba(255,255,255,0.14)"` |
-| Icon color | `text-muted-foreground` | `color: "#9da5b5"` inline |
-| Title size | `text-2xl` (24px) | `fontSize: 54` (54px) |
-| Row grid | `grid-cols-[160px_28px_1fr_28px]` | `gridTemplateColumns: "minmax(220px,360px) 24px minmax(0,1fr) 24px"` |
-| Add button | Tailwind dashed border | Inline dashed border with explicit colors |
-
-### What stays the same
-- The field data array (same 11 rows)
-- Sparkles / Lock / Plus icons (Codex uses inline SVGs instead of lucide-react)
-- The editable input behavior (will add `useState` + `onChange` to value fields using the Codex inline styles)
-
-No other files need to change.
-
+Technical notes
+- I will convert the uploaded markdown-style HTML reference into clean React/Tailwind JSX (the upload includes escaped markdown formatting that cannot be pasted directly as-is).
+- I will scope dark tokens locally to this component so it is deterministic and does not depend on app-wide dark mode toggles.
+- No backend/database/auth changes are needed.
