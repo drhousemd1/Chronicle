@@ -14,21 +14,27 @@ export type LLMModel = {
 
 // GROK ONLY -- These are the only models available. Do NOT add Gemini or OpenAI.
 export const LLM_MODELS: LLMModel[] = [
-  { id: 'grok-3', name: 'Grok 3', provider: 'xAI', gateway: 'xai', description: 'xAI\'s most capable model. Excellent for complex narratives and mature roleplay scenarios.' },
-  { id: 'grok-3-mini', name: 'Grok 3 Mini', provider: 'xAI', gateway: 'xai', description: 'Fast and efficient Grok variant. Good balance of speed and capability.' },
-  { id: 'grok-2', name: 'Grok 2', provider: 'xAI', gateway: 'xai', description: 'Previous generation Grok. Reliable performance with minimal restrictions.' },
+  { id: 'grok-4-1-fast-non-reasoning', name: 'Grok 4.1 Fast', provider: 'xAI', gateway: 'xai', description: 'Latest xAI model. Best value at $0.20/M tokens with 2M context window.' },
+  { id: 'grok-4-1-fast-reasoning', name: 'Grok 4.1 Fast (Reasoning)', provider: 'xAI', gateway: 'xai', description: 'Adds chain-of-thought reasoning to Grok 4.1 Fast. Same price, deeper analysis.' },
+  { id: 'grok-4-fast-non-reasoning', name: 'Grok 4 Fast', provider: 'xAI', gateway: 'xai', description: 'Previous generation flagship. $0.60/M tokens with 2M context.' },
+  { id: 'grok-4-fast-reasoning', name: 'Grok 4 Fast (Reasoning)', provider: 'xAI', gateway: 'xai', description: 'Grok 4 with reasoning. Strong complex narrative performance at $0.60/M tokens.' },
+  { id: 'grok-3-mini', name: 'Grok 3 Mini', provider: 'xAI', gateway: 'xai', description: 'Lightweight and fast. $0.30/M tokens, 131K context. Good for quick interactions.' },
+  { id: 'grok-3', name: 'Grok 3', provider: 'xAI', gateway: 'xai', description: 'Legacy flagship. $3.00/M tokens, 131K context. Admin use only.' },
 ];
 
-// GROK ONLY -- All image generation uses grok-2-image-1212
+// GROK ONLY -- All image generation uses grok-imagine-image
 export const IMAGE_MODEL_MAP: Record<string, string> = {
-  'grok-3': 'grok-2-image-1212',
-  'grok-3-mini': 'grok-2-image-1212',
-  'grok-2': 'grok-2-image-1212',
+  'grok-4-1-fast-non-reasoning': 'grok-imagine-image',
+  'grok-4-1-fast-reasoning': 'grok-imagine-image',
+  'grok-4-fast-non-reasoning': 'grok-imagine-image',
+  'grok-4-fast-reasoning': 'grok-imagine-image',
+  'grok-3-mini': 'grok-imagine-image',
+  'grok-3': 'grok-imagine-image-pro',
 };
 
 // GROK ONLY -- Always returns grok image model
 export function getImageModelForTextModel(textModelId: string): { imageModel: string; gateway: 'xai' } {
-  const imageModel = IMAGE_MODEL_MAP[textModelId] || 'grok-2-image-1212';
+  const imageModel = IMAGE_MODEL_MAP[textModelId] || 'grok-imagine-image';
   return { imageModel, gateway: 'xai' };
 }
 

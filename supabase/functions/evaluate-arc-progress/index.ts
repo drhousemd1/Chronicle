@@ -115,7 +115,7 @@ Respond in JSON format ONLY:
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "grok-3-mini",
+        model: "grok-4-1-fast-non-reasoning",
         messages: [
           { role: "system", content: "You are a precise story arc classifier. Respond only in valid JSON." },
           { role: "user", content: classificationPrompt },

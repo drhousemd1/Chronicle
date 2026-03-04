@@ -272,7 +272,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
         currentValue,
         selected,
         appData,
-        appData.selectedModel || 'grok-3',
+        appData.selectedModel || 'grok-4-1-fast-non-reasoning',
         customLabel,
         mode
       );
@@ -1367,7 +1367,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
           sexType: selected?.sexType,
           age: selected?.age
         }}
-        modelId={appData.selectedModel || "grok-3"} /* GROK ONLY */
+        modelId={appData.selectedModel || "grok-4-1-fast-non-reasoning"} /* GROK ONLY */
       />
 
       {/* Enhance Mode Selector Modal */}

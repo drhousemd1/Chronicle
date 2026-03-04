@@ -31,7 +31,7 @@ serve(async (req) => {
     const { name, dialogContext, extractedTraits, worldContext, modelId } = await req.json();
     
     // GROK ONLY -- always use xAI
-    const effectiveModelId = modelId || 'grok-3';
+    const effectiveModelId = modelId || 'grok-4-1-fast-non-reasoning';
     
     console.log(`[generate-side-character] Using model: ${effectiveModelId} (xAI)`);
 

@@ -507,8 +507,8 @@ Return ONLY valid JSON. No explanations.`;
     ].filter(Boolean).join('\n\n---\n\n');
 
     // GROK ONLY -- validate model ID, reject stale Gemini/OpenAI IDs
-    const VALID_GROK_MODELS = ['grok-3', 'grok-3-mini', 'grok-2'];
-    const effectiveModelId = (modelId && VALID_GROK_MODELS.includes(modelId)) ? modelId : 'grok-3';
+    const VALID_GROK_MODELS = ['grok-4-1-fast-non-reasoning', 'grok-4-1-fast-reasoning', 'grok-4-fast-non-reasoning', 'grok-4-fast-reasoning', 'grok-3-mini', 'grok-3'];
+    const effectiveModelId = (modelId && VALID_GROK_MODELS.includes(modelId)) ? modelId : 'grok-4-1-fast-non-reasoning';
     if (modelId && modelId !== effectiveModelId) {
       console.warn(`[extract-character-updates] Rejected non-Grok model "${modelId}", using "${effectiveModelId}"`);
     }

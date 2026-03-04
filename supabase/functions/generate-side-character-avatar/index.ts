@@ -1,6 +1,6 @@
 // ============================================================================
 // GROK ONLY -- Avatar generation uses xAI Grok exclusively.
-// Text prompt optimization: grok-3-mini. Image generation: grok-2-image-1212.
+// Text prompt optimization: grok-4-1-fast-non-reasoning. Image generation: grok-imagine-image.
 // Do NOT add Gemini or OpenAI.
 // ============================================================================
 
@@ -50,7 +50,7 @@ Write a focused prompt under ${maxLength} characters:`;
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: 'grok-3-mini', // GROK ONLY
+      model: 'grok-4-1-fast-non-reasoning', // GROK ONLY
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
@@ -125,7 +125,7 @@ serve(async (req) => {
       console.log(`[generate-avatar] Truncated prompt to ${encoder.encode(optimizedPrompt).length} bytes`);
     }
 
-    // Step 2: Generate image using grok-2-image-1212
+    // Step 2: Generate image using grok-imagine-image
     const XAI_API_KEY = Deno.env.get("XAI_API_KEY");
     if (!XAI_API_KEY) {
       throw new Error("XAI_API_KEY not configured. Please add your Grok API key in settings.");
@@ -138,7 +138,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: 'grok-2-image-1212', // GROK ONLY
+        model: 'grok-imagine-image', // GROK ONLY
         prompt: optimizedPrompt,
         n: 1,
       }),

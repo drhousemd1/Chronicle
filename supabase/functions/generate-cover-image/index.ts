@@ -1,6 +1,6 @@
 // ============================================================================
 // GROK ONLY -- Cover image generation uses xAI Grok exclusively.
-// Image model: grok-2-image-1212. No Gemini. No OpenAI. No Lovable gateway.
+// Image model: grok-imagine-image. No Gemini. No OpenAI. No Lovable gateway.
 // ============================================================================
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -68,7 +68,7 @@ serve(async (req) => {
       compressedPrompt = compressedPrompt.substring(0, 700);
     }
 
-    console.log(`[generate-cover-image] Using xAI with model: grok-2-image-1212`);
+    console.log(`[generate-cover-image] Using xAI with model: grok-imagine-image`);
 
     const response = await fetch("https://api.x.ai/v1/images/generations", {
       method: "POST",
@@ -77,7 +77,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "grok-2-image-1212", // GROK ONLY
+        model: "grok-imagine-image", // GROK ONLY
         prompt: compressedPrompt,
         n: 1,
       }),

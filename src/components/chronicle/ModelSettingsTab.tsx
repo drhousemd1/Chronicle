@@ -27,7 +27,7 @@ export function ModelSettingsTab({ selectedModelId, onSelectModel }: ModelSettin
   const selectedModel = LLM_MODELS.find(m => m.id === selectedModelId);
   const description = selectedModel?.description || 'xAI Grok powers all AI interactions.';
 
-  const [connectionStatus, setConnectionStatus] = useState<'idle' | 'checking' | 'connected' | 'error'>('connected');
+  const [connectionStatus, setConnectionStatus] = useState<'idle' | 'checking' | 'connected' | 'error'>('checking');
   const [sharedKeyStatus, setSharedKeyStatus] = useState<SharedKeyStatus>({ 
     xaiShared: false, 
     xaiConfigured: false 
@@ -36,14 +36,17 @@ export function ModelSettingsTab({ selectedModelId, onSelectModel }: ModelSettin
   const isAdmin = isAdminUser(user?.id);
 
   useEffect(() => {
-    checkSharedKeyStatus().then(setSharedKeyStatus);
+    checkSharedKeyStatus().then(status => {
+      setSharedKeyStatus(status);
+      setConnectionStatus(status.xaiConfigured ? 'connected' : 'error');
+    });
   }, []);
 
   const handleRefreshConnection = async () => {
     setConnectionStatus('checking');
     const status = await checkSharedKeyStatus();
     setSharedKeyStatus(status);
-    setTimeout(() => setConnectionStatus('connected'), 500);
+    setTimeout(() => setConnectionStatus(status.xaiConfigured ? 'connected' : 'error'), 500);
   };
 
   const handleToggleShare = async (checked: boolean) => {

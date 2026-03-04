@@ -63,7 +63,7 @@ Rules:
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "grok-3-mini",
+        model: "grok-4-1-fast-non-reasoning",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage }
