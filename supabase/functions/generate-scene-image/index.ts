@@ -184,7 +184,7 @@ async function callAnalysisLLM(prompt: string, modelId: string): Promise<string>
     throw new Error("XAI_API_KEY not configured");
   }
 
-  const textModel = TEXT_MODEL_MAP[modelId] || 'grok-4-1-fast-non-reasoning';
+  const textModel = TEXT_MODEL_MAP[modelId] || 'grok-4-1-fast-reasoning';
   
   const response = await fetch("https://api.x.ai/v1/chat/completions", {
     method: "POST",

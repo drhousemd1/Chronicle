@@ -516,7 +516,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
           userMessage: concatenatedUser,
           aiResponse: concatenatedAi,
           characters: charactersData,
-          modelId: modelId || 'grok-4-1-fast-non-reasoning' // GROK ONLY
+          modelId: modelId || 'grok-4-1-fast-reasoning' // GROK ONLY
         }
       });
       
@@ -843,7 +843,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
         body: {
           avatarPrompt,
           characterName: draft.name || character.name,
-          modelId: modelId || 'grok-4-1-fast-non-reasoning' // GROK ONLY
+          modelId: modelId || 'grok-4-1-fast-reasoning' // GROK ONLY
         }
       });
       
