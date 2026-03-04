@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/use-auth";
 import { 
   checkSharedKeyStatus, 
-  isAdminUser, 
+  checkIsAdmin, 
   updateSharedKeySetting,
   SharedKeyStatus 
 } from "@/services/app-settings";
@@ -33,7 +33,11 @@ export function ModelSettingsTab({ selectedModelId, onSelectModel }: ModelSettin
     xaiConfigured: false 
   });
   const [isUpdatingShare, setIsUpdatingShare] = useState(false);
-  const isAdmin = isAdminUser(user?.id);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (user?.id) checkIsAdmin(user.id).then(setIsAdmin);
+  }, [user?.id]);
 
   useEffect(() => {
     checkSharedKeyStatus().then(status => {
