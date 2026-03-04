@@ -14,8 +14,8 @@ export type LLMModel = {
 
 // GROK ONLY -- These are the only models available. Do NOT add Gemini or OpenAI.
 export const LLM_MODELS: LLMModel[] = [
-  { id: 'grok-4-1-fast-non-reasoning', name: 'Grok 4.1 Fast', provider: 'xAI', gateway: 'xai', description: 'Latest xAI model. Best value at $0.20/M tokens with 2M context window.' },
-  { id: 'grok-4-1-fast-reasoning', name: 'Grok 4.1 Fast (Reasoning)', provider: 'xAI', gateway: 'xai', description: 'Adds chain-of-thought reasoning to Grok 4.1 Fast. Same price, deeper analysis.' },
+  { id: 'grok-4-1-fast-reasoning', name: 'Grok 4.1 Fast (Reasoning)', provider: 'xAI', gateway: 'xai', description: 'Latest xAI model with reasoning. Best value at $0.20/M tokens with 2M context window.' },
+  { id: 'grok-4-1-fast-non-reasoning', name: 'Grok 4.1 Fast', provider: 'xAI', gateway: 'xai', description: 'Same speed and price without chain-of-thought. Good for simple interactions.' },
   { id: 'grok-4-fast-non-reasoning', name: 'Grok 4 Fast', provider: 'xAI', gateway: 'xai', description: 'Previous generation flagship. $0.60/M tokens with 2M context.' },
   { id: 'grok-4-fast-reasoning', name: 'Grok 4 Fast (Reasoning)', provider: 'xAI', gateway: 'xai', description: 'Grok 4 with reasoning. Strong complex narrative performance at $0.60/M tokens.' },
   { id: 'grok-3-mini', name: 'Grok 3 Mini', provider: 'xAI', gateway: 'xai', description: 'Lightweight and fast. $0.30/M tokens, 131K context. Good for quick interactions.' },

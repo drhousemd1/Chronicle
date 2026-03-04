@@ -84,9 +84,9 @@ serve(async (req) => {
     const body: ChatRequest = await req.json();
     const { messages, stream = true, max_tokens: maxTokens = 4096 } = body;
     
-    // GROK ONLY -- Force any non-Grok model to grok-4-1-fast-non-reasoning
-    const VALID_GROK_MODELS = ['grok-4-1-fast-non-reasoning', 'grok-4-1-fast-reasoning', 'grok-4-fast-non-reasoning', 'grok-4-fast-reasoning', 'grok-3-mini', 'grok-3'];
-    const modelId = VALID_GROK_MODELS.includes(body.modelId) ? body.modelId : 'grok-4-1-fast-non-reasoning';
+    // GROK ONLY -- Force any non-Grok model to grok-4-1-fast-reasoning
+    const VALID_GROK_MODELS = ['grok-4-1-fast-reasoning', 'grok-4-1-fast-non-reasoning', 'grok-4-fast-non-reasoning', 'grok-4-fast-reasoning', 'grok-3-mini', 'grok-3'];
+    const modelId = VALID_GROK_MODELS.includes(body.modelId) ? body.modelId : 'grok-4-1-fast-reasoning';
     
     if (body.modelId !== modelId) {
       console.warn(`[chat] Rejected non-Grok model "${body.modelId}", using "${modelId}" instead`);

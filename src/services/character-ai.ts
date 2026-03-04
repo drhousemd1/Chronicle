@@ -341,7 +341,7 @@ Return ONLY the enhanced text. No explanations, no prefixes, no markdown formatt
 // ============================================================
 
 // GROK ONLY -- All AI calls use xAI Grok. No Gemini. No OpenAI.
-const FALLBACK_MODELS = ['grok-4-1-fast-non-reasoning', 'grok-3-mini'];
+const FALLBACK_MODELS = ['grok-4-1-fast-reasoning', 'grok-3-mini'];
 
 async function callAIWithFallback(
   messages: { role: string; content: string }[],
