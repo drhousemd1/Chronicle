@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { LLM_MODELS } from '@/constants';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ModelSettingsContextType {
   modelId: string;
@@ -13,20 +14,37 @@ const ModelSettingsContext = createContext<ModelSettingsContextType | undefined>
 export function ModelSettingsProvider({ children }: { children: ReactNode }) {
   const [modelId, setModelIdState] = useState<string>(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
-    // Validate stored model exists, fallback to first model if not
     if (stored && LLM_MODELS.some(m => m.id === stored)) {
       return stored;
     }
     return LLM_MODELS[0].id;
   });
 
-  // Persist to localStorage on change
+  // On mount: fetch from DB and override localStorage cache
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, modelId);
-  }, [modelId]);
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from('profiles')
+        .select('preferred_model')
+        .eq('id', user.id)
+        .single();
+      if (data?.preferred_model && LLM_MODELS.some(m => m.id === data.preferred_model)) {
+        setModelIdState(data.preferred_model);
+        localStorage.setItem(STORAGE_KEY, data.preferred_model);
+      }
+    })();
+  }, []);
 
   const setModelId = useCallback((id: string) => {
     setModelIdState(id);
+    localStorage.setItem(STORAGE_KEY, id);
+    // Write to DB (fire-and-forget)
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase.from('profiles').update({ preferred_model: id } as any).eq('id', user.id).then();
+    });
   }, []);
 
   return (

@@ -380,12 +380,15 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const sessionMessageCountRef = useRef<number>(0);
   // Issue #6B: Track previous day for compression trigger
   const previousDayRef = useRef<number>(currentDay);
+  // Throttle character extraction to every 5th message
+  const extractionCountRef = useRef<number>(0);
   
   // Reset session tracking when conversation changes
   useEffect(() => {
     responseLengthsRef.current = [];
     sessionMessageCountRef.current = 0;
     previousDayRef.current = currentDay;
+    extractionCountRef.current = 0;
   }, [conversationId]);
   
   // Issue #7: Compute length directive based on recent response pattern
@@ -2231,16 +2234,19 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       }
 
       // Use dedicated extraction service (runs in parallel, non-blocking)
-      // This replaces the old parseCharacterUpdates + applyCharacterUpdates flow
+      // Throttled to every 5th message to reduce API costs
       const userInput = input; // Capture before clearing
-      extractCharacterUpdatesFromDialogue(userInput, fullText).then(updates => {
-        if (updates.length > 0) {
-          console.log(`[handleSend] Extracted ${updates.length} character updates:`, updates);
-          applyExtractedUpdates(updates);
-        }
-      }).catch(err => {
-        console.error('[handleSend] Character extraction failed:', err);
-      });
+      extractionCountRef.current += 1;
+      if (extractionCountRef.current % 5 === 0) {
+        extractCharacterUpdatesFromDialogue(userInput, fullText).then(updates => {
+          if (updates.length > 0) {
+            console.log(`[handleSend] Extracted ${updates.length} character updates:`, updates);
+            applyExtractedUpdates(updates);
+          }
+        }).catch(err => {
+          console.error('[handleSend] Character extraction failed:', err);
+        });
+      }
 
       // Evaluate arc progress (resistance scoring) - runs in parallel, non-blocking
       evaluateArcProgress(userInput, fullText).catch(err => {

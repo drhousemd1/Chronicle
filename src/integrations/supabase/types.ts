@@ -645,6 +645,7 @@ export type Database = {
           hide_published_works: boolean | null
           id: string
           preferred_genres: string[] | null
+          preferred_model: string | null
           updated_at: string | null
           username: string | null
         }
@@ -658,6 +659,7 @@ export type Database = {
           hide_published_works?: boolean | null
           id: string
           preferred_genres?: string[] | null
+          preferred_model?: string | null
           updated_at?: string | null
           username?: string | null
         }
@@ -671,6 +673,7 @@ export type Database = {
           hide_published_works?: boolean | null
           id?: string
           preferred_genres?: string[] | null
+          preferred_model?: string | null
           updated_at?: string | null
           username?: string | null
         }

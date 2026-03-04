@@ -9,7 +9,7 @@ import { CharactersTab } from "@/components/chronicle/CharactersTab";
 import { WorldTab } from "@/components/chronicle/WorldTab";
 import { ConversationsTab } from "@/components/chronicle/ConversationsTab";
 import { useModelSettings, ModelSettingsProvider } from "@/contexts/ModelSettingsContext";
-import { isAdminUser } from "@/services/app-settings";
+import { checkIsAdmin } from "@/services/app-settings";
 import { AdminPage } from "@/pages/Admin";
 import { AccountSettingsTab } from "@/components/account/AccountSettingsTab";
 import { SubscriptionTab } from "@/components/account/SubscriptionTab";
@@ -164,6 +164,7 @@ const IndexContent = () => {
   const imageLibraryExitFolderRef = React.useRef<(() => void) | null>(null);
   const [imageLibrarySearchQuery, setImageLibrarySearchQuery] = useState('');
   const [adminActiveTool, setAdminActiveTool] = useState<string>('hub');
+  const [isAdminState, setIsAdminState] = useState(false);
   const [guideTheme, setGuideTheme] = useState<'dark' | 'light'>('dark');
   const guideSaveRef = React.useRef<(() => Promise<void>) | null>(null);
   const guideSyncAllRef = React.useRef<(() => Promise<void>) | null>(null);
@@ -223,6 +224,11 @@ const IndexContent = () => {
       navigate('/auth');
     }
   }, [authLoading, isAuthenticated, navigate]);
+
+  // Check admin status from database
+  useEffect(() => {
+    if (user?.id) checkIsAdmin(user.id).then(setIsAdminState);
+  }, [user?.id]);
 
   // Track whether conversation previews have been enriched
   const [conversationsEnriched, setConversationsEnriched] = useState(false);
@@ -1460,7 +1466,7 @@ const IndexContent = () => {
               collapsed={sidebarCollapsed}
             />
 
-            {isAdminUser(user?.id) && (
+            {isAdminState && (
               <div className="pt-4 mt-4 border-t border-white/10">
                 <SidebarItem active={tab === "admin"} label="Admin" icon={<Settings className="w-5 h-5" />} onClick={() => { setAdminActiveTool('hub'); setTab("admin"); }} collapsed={sidebarCollapsed} />
               </div>

@@ -1,7 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
 
-const ADMIN_USER_ID = "98d690d7-ac5a-4b04-b15e-78b462f5eec6";
-
 export interface SharedKeyStatus {
   xaiShared: boolean;
   xaiConfigured: boolean;
@@ -20,8 +18,15 @@ export async function checkSharedKeyStatus(): Promise<SharedKeyStatus> {
   }
 }
 
-export function isAdminUser(userId: string | undefined): boolean {
-  return userId === ADMIN_USER_ID;
+export async function checkIsAdmin(userId: string | undefined): Promise<boolean> {
+  if (!userId) return false;
+  try {
+    const { data, error } = await supabase.rpc('has_role', { _user_id: userId, _role: 'admin' });
+    if (error) { console.error('Admin check failed:', error); return false; }
+    return data === true;
+  } catch {
+    return false;
+  }
 }
 
 export async function updateSharedKeySetting(xaiShared: boolean): Promise<boolean> {
