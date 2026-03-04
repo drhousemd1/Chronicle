@@ -1,6 +1,6 @@
 // ============================================================================
 // GROK ONLY -- Scene image generation uses xAI Grok exclusively.
-// Text analysis: grok-3 / grok-3-mini. Image generation: grok-2-image-1212.
+// Text analysis: grok-4-1-fast. Image generation: grok-imagine-image.
 // Do NOT add Gemini or OpenAI.
 // ============================================================================
 
@@ -45,9 +45,12 @@ function getStyleBlock(styleId: string, gender: GenderPresentation, fallbackProm
 // ============================================================================
 
 const TEXT_MODEL_MAP: Record<string, string> = {
-  'grok-3': 'grok-3',
+  'grok-4-1-fast-non-reasoning': 'grok-4-1-fast-non-reasoning',
+  'grok-4-1-fast-reasoning': 'grok-4-1-fast-reasoning',
+  'grok-4-fast-non-reasoning': 'grok-4-fast-non-reasoning',
+  'grok-4-fast-reasoning': 'grok-4-fast-reasoning',
   'grok-3-mini': 'grok-3-mini',
-  'grok-2': 'grok-2',
+  'grok-3': 'grok-3',
 };
 
 // ============================================================================
@@ -181,7 +184,7 @@ async function callAnalysisLLM(prompt: string, modelId: string): Promise<string>
     throw new Error("XAI_API_KEY not configured");
   }
 
-  const textModel = TEXT_MODEL_MAP[modelId] || 'grok-3';
+  const textModel = TEXT_MODEL_MAP[modelId] || 'grok-4-1-fast-non-reasoning';
   
   const response = await fetch("https://api.x.ai/v1/chat/completions", {
     method: "POST",
@@ -206,14 +209,14 @@ async function callAnalysisLLM(prompt: string, modelId: string): Promise<string>
   return data.choices?.[0]?.message?.content || "";
 }
 
-// GROK ONLY -- image generation always uses grok-2-image-1212
+// GROK ONLY -- image generation always uses grok-imagine-image
 async function generateImage(prompt: string): Promise<string> {
   const XAI_API_KEY = Deno.env.get("XAI_API_KEY");
   if (!XAI_API_KEY) {
     throw new Error("XAI_API_KEY not configured");
   }
 
-  console.log(`[generate-scene-image] Sending to Grok (grok-2-image-1212), prompt length: ${prompt.length} chars`);
+  console.log(`[generate-scene-image] Sending to Grok (grok-imagine-image), prompt length: ${prompt.length} chars`);
 
   const response = await fetch("https://api.x.ai/v1/images/generations", {
     method: "POST",
@@ -222,7 +225,7 @@ async function generateImage(prompt: string): Promise<string> {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: 'grok-2-image-1212', // GROK ONLY
+      model: 'grok-imagine-image', // GROK ONLY
       prompt: prompt,
       n: 1,
       size: "1280x896", // 4:3 landscape - optimal for scene display in chat
@@ -286,7 +289,7 @@ serve(async (req) => {
     const effectiveTextModel = modelId || 'grok-3';
     
     console.log(`[generate-scene-image] Text model: ${effectiveTextModel} (xAI only)`);
-    console.log(`[generate-scene-image] Image model: grok-2-image-1212 (xAI only)`);
+    console.log(`[generate-scene-image] Image model: grok-imagine-image (xAI only)`);
 
     // Build character descriptions
     const characterDescriptions = (characters || []).map((c: any) => {
