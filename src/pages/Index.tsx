@@ -2054,7 +2054,8 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
                   }
                 }
               }}
-              onNavigateToCharacters={() => { setTab("characters"); setSelectedCharacterId(null); }}
+              onCreateCharacter={() => { handleCreateCharacter(); }}
+              onOpenLibraryPicker={() => { setIsCharacterPickerOpen(true); }}
               onSelectCharacter={(id) => { setSelectedCharacterId(id); setTab("characters"); }}
             />
           )}

@@ -23,6 +23,7 @@ import { ShareScenarioModal } from './ShareScenarioModal';
 import { ContentThemesSection } from './ContentThemesSection';
 import { aiEnhanceWorldField } from '@/services/world-ai';
 import { EnhanceModeModal, EnhanceMode } from './EnhanceModeModal';
+import { CharacterCreationModal } from './CharacterCreationModal';
 import { useModelSettings } from '@/contexts/ModelSettingsContext';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 import { getClosestRatio, AspectRatioIcon } from './AspectRatioUtils';
@@ -44,7 +45,8 @@ interface WorldTabProps {
   onUpdateArtStyle: (styleId: string) => void;
   contentThemes: ContentThemes;
   onUpdateContentThemes: (themes: ContentThemes) => void;
-  onNavigateToCharacters: () => void;
+  onCreateCharacter: () => void;
+  onOpenLibraryPicker: () => void;
   onSelectCharacter: (id: string) => void;
 }
 
@@ -104,7 +106,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   onUpdateArtStyle,
   contentThemes,
   onUpdateContentThemes,
-  onNavigateToCharacters, 
+  onCreateCharacter,
+  onOpenLibraryPicker,
   onSelectCharacter 
 }) => {
   const { user } = useAuth();
@@ -128,6 +131,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   const coverFileInputRef = useRef<HTMLInputElement>(null);
   const coverContainerRef = useRef<HTMLDivElement>(null);
   const [sceneAspectRatios, setSceneAspectRatios] = useState<Record<string, { label: string; orientation: 'portrait' | 'landscape' | 'square' }>>({});
+  const [isCharacterCreationOpen, setIsCharacterCreationOpen] = useState(false);
 
   // Detect aspect ratios for scene images
   useEffect(() => {
@@ -392,7 +396,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   const AddCharacterPlaceholder = () => (
     <button 
       type="button"
-      onClick={onNavigateToCharacters}
+      onClick={() => setIsCharacterCreationOpen(true)}
       className="group/add w-full flex items-center gap-4 p-3 rounded-2xl transition-all duration-300 bg-[#3a3a3f]/30 hover:bg-[#3a3a3f]/50 border-2 border-dashed border-zinc-600 hover:border-zinc-500 cursor-pointer"
     >
       <div className="w-14 h-14 shrink-0 rounded-xl bg-[#1a1a1f] border-2 border-dashed border-zinc-600 flex items-center justify-center text-zinc-500 transition-all duration-300 group-hover/add:border-zinc-400 group-hover/add:bg-[#3a3a3f]/70 group-hover/add:text-zinc-300">
@@ -1292,6 +1296,14 @@ export const WorldTab: React.FC<WorldTabProps> = ({
         open={enhanceModeTarget !== null}
         onClose={() => setEnhanceModeTarget(null)}
         onSelect={handleEnhanceModeSelect}
+      />
+
+      {/* Character Creation Modal */}
+      <CharacterCreationModal
+        open={isCharacterCreationOpen}
+        onClose={() => setIsCharacterCreationOpen(false)}
+        onImportFromLibrary={onOpenLibraryPicker}
+        onCreateNew={onCreateCharacter}
       />
     </div>
   );
