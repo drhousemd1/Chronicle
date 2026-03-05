@@ -27,7 +27,7 @@
 | **Tab Key** | `admin` |
 | **Source File** | `src/pages/Admin.tsx` (174 lines) |
 | **Purpose** | Admin hub providing access to 3 sub-tools: Image Generation, Model Settings, and App Guide. Only visible to users with `admin` role. |
-| **Access** | Requires `isAdminUser()` check — queries `user_roles` table for `admin` role |
+| **Access** | Requires async `checkIsAdmin(userId)` — calls `has_role()` RPC against `user_roles` table for `admin` role |
 | **Sidebar Label** | Settings (gear icon from lucide) |
 
 ---
@@ -157,10 +157,11 @@ Component: `AppGuideTool` → `GuideEditor` + `GuideSidebar`
 
 ## 10. Security & Access Control
 
-- Admin panel tab only visible when `isAdminUser()` returns true
-- `app_settings` table: Admin-only insert/update (hardcoded UUID check in RLS)
+- Admin panel tab only visible when async `checkIsAdmin(userId)` resolves to `true` (uses `isAdminState` in `Index.tsx`)
+- `app_settings` table: Admin-only insert/update via `has_role(auth.uid(), 'admin')` RLS
 - `art_styles` table: Admin-only write, public read
 - `guide_documents` table: Admin-only CRUD via `has_role(auth.uid(), 'admin')` RLS
+- All Edge Functions use CORS hardening with dynamic origin check (`getCorsHeaders(req)`) against `ALLOWED_ORIGINS` whitelist
 
 ---
 
@@ -176,7 +177,8 @@ Component: `AppGuideTool` → `GuideEditor` + `GuideSidebar`
 
 ## 12. Known Issues & Gotchas
 
-- **ACTIVE**: `app_settings` RLS uses hardcoded admin UUID (`98d690d7-ac5a-4b04-b15e-78b462f5eec6`) instead of role-based check. (2026-03-01)
+- **RESOLVED — 2026-03-04**: `app_settings` RLS previously used hardcoded admin UUID — now uses `has_role(auth.uid(), 'admin')` database function.
+- **RESOLVED — 2026-03-04**: Admin check previously used sync `isAdminUser()` with hardcoded UUID — now uses async `checkIsAdmin(userId)` calling `has_role()` RPC in `src/services/app-settings.ts`.
 - **ACTIVE**: Tool metadata persistence uses upsert pattern (update then insert on failure) which may race. (2026-03-01)
 
 ---
@@ -185,4 +187,4 @@ Component: `AppGuideTool` → `GuideEditor` + `GuideSidebar`
 
 None documented.
 
-> Last updated: 2026-03-01 — Initial creation.
+> Last updated: 2026-03-04 — Admin security hardened: hardcoded UUID replaced with database role check via `has_role()` RPC. CORS hardening applied.

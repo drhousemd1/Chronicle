@@ -151,11 +151,11 @@ Hook: `useAuth()` (`src/hooks/use-auth.ts`)
 
 | Role | Table | Check Function |
 |------|-------|----------------|
-| `admin` | `user_roles` | `isAdminUser()` in `src/services/app-settings.ts` |
+| `admin` | `user_roles` | `checkIsAdmin(userId)` (async) in `src/services/app-settings.ts` — calls `has_role()` RPC |
 | `moderator` | `user_roles` | `has_role()` database function |
 | `user` | Default | All authenticated users |
 
-Admin check: `isAdminUser()` queries `user_roles` table for role = 'admin'. Admin-only features: Admin Panel tab visibility.
+Admin check: `checkIsAdmin(userId)` is an async function that calls `supabase.rpc('has_role', { _user_id: userId, _role: 'admin' })`. Result stored in `isAdminState` via `useEffect` in `Index.tsx`. Admin-only features: Admin Panel tab visibility.
 
 ---
 
@@ -246,7 +246,7 @@ All state is managed via `useState` in `IndexContent` component (~50+ state vari
 2. If no session → redirect to `/auth`
 3. Auth page provides email/password sign-in and sign-up
 4. On success → redirect to `/`
-5. Admin features gated by `isAdminUser()` check
+5. Admin features gated by async `checkIsAdmin(userId)` check
 
 ### RLS Policy Pattern
 
@@ -276,7 +276,7 @@ Exceptions: `published_scenarios` (public read), `profiles` (public read), `art_
 | Provider | File | Provides |
 |----------|------|----------|
 | `ArtStylesProvider` | `src/contexts/ArtStylesContext.tsx` | Art style data from `art_styles` table |
-| `ModelSettingsProvider` | `src/contexts/ModelSettingsContext.tsx` | Selected AI model ID |
+| `ModelSettingsProvider` | `src/contexts/ModelSettingsContext.tsx` | Selected AI model ID — syncs to `profiles.preferred_model` column (DB persistence) with localStorage fallback |
 
 ---
 
@@ -285,6 +285,8 @@ Exceptions: `published_scenarios` (public read), `profiles` (public read), `art_
 - **ACTIVE**: `Index.tsx` is ~2306 lines — a monolithic component that manages all state. This makes it fragile for large changes. (2026-03-01)
 - **ACTIVE**: Auto-collapse sidebar fires on initial load for tablet viewports, which may surprise users who previously expanded it. (2026-03-01)
 - **ACTIVE**: 15-second timeout on data load may cause silent data loss if Supabase is slow — user sees empty state with no error. (2026-03-01)
+- **RESOLVED — 2026-03-04**: Admin check was sync `isAdminUser()` with hardcoded UUID — now async `checkIsAdmin(userId)` via `has_role()` RPC.
+- **RESOLVED — 2026-03-04**: Model preference was localStorage-only — now persisted to `profiles.preferred_model` column with localStorage as cache fallback.
 
 ---
 
@@ -292,4 +294,4 @@ Exceptions: `published_scenarios` (public read), `profiles` (public read), `art_
 
 None documented.
 
-> Last updated: 2026-03-01 — Initial creation.
+> Last updated: 2026-03-04 — Admin security hardened (async role check), model preference DB persistence added.
