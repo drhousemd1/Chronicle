@@ -314,7 +314,7 @@ export const ContentThemesSection: React.FC<ContentThemesSectionProps> = ({
         {/* Content */}
         <div className="p-6 space-y-6">
           {/* Tags error */}
-          {tagsError && <p className="text-xs text-red-400 font-medium">{tagsError}</p>}
+          {tagsError && <p className="text-sm text-red-500 font-medium">{tagsError}</p>}
           
           {/* Character Types */}
           <CategorySelector
@@ -325,7 +325,7 @@ export const ContentThemesSection: React.FC<ContentThemesSectionProps> = ({
           />
           
           {/* Story Type */}
-          {storyTypeError && <p className="text-xs text-red-400 font-medium">{storyTypeError}</p>}
+          {storyTypeError && <p className="text-sm text-red-500 font-medium">{storyTypeError}</p>}
           <StoryTypeSelector
             selected={themes.storyType}
             onChange={v => updateField('storyType', v)}
