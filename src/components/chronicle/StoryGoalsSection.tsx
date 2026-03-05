@@ -288,7 +288,7 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
   };
 
   return (
-    <section>
+    <section data-publish-error={hasError || undefined}>
       {/* Outer shell */}
       <div className={cn("bg-[#2a2a2f] rounded-[24px] border overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]", hasError ? 'border-red-500 ring-2 ring-red-500' : 'border-white/10')}>
         {/* Header */}
@@ -315,13 +315,16 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                   {/* Row 1: Goal Name + Delete + Progress Ring */}
                   <div className="flex items-start gap-4">
                     <div className="flex-1">
-                      <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block mb-2">Story Arc Title</label>
+                      <label className={cn("text-[10px] font-black uppercase tracking-widest block mb-2", hasError && !goal.title.trim() ? 'text-red-500' : 'text-zinc-400')}>Story Arc Title</label>
                       <AutoResizeTextarea
                         value={goal.title}
                         onChange={(v) => updateGoal(goal.id, { title: v })}
                         placeholder="Enter story arc title..."
-                        className="mt-1 px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                        className={cn("mt-1 px-3 py-2 text-sm bg-zinc-900/50 border text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500", hasError && !goal.title.trim() ? 'border-red-500 ring-2 ring-red-500' : 'border-zinc-700')}
                       />
+                      {hasError && !goal.title.trim() && (
+                        <p className="text-sm text-red-500 font-medium mt-1">Story arc title is required</p>
+                      )}
                     </div>
 
                     {/* Delete button */}
@@ -346,7 +349,7 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                   {/* Full width: Desired Outcome */}
                   <div className="mt-4">
                     <div className="flex items-center gap-2 mb-2">
-                      <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Desired Outcome</label>
+                      <label className={cn("text-[10px] font-black uppercase tracking-widest", hasError && !goal.desiredOutcome.trim() ? 'text-red-500' : 'text-zinc-400')}>Desired Outcome</label>
                       <SparkleButton
                         fieldKey={`story_outcome_${goal.id}`}
                         onClick={() => onEnhanceField?.(
@@ -362,8 +365,11 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                       onChange={(v) => updateGoal(goal.id, { desiredOutcome: v })}
                       placeholder="What success looks like..."
                       rows={2}
-                      className="mt-1 px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                      className={cn("mt-1 px-3 py-2 text-sm bg-zinc-900/50 border text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500", hasError && !goal.desiredOutcome.trim() ? 'border-red-500 ring-2 ring-red-500' : 'border-zinc-700')}
                     />
+                    {hasError && !goal.desiredOutcome.trim() && (
+                      <p className="text-sm text-red-500 font-medium mt-1">Desired outcome is required</p>
+                    )}
                   </div>
 
                   {/* Full width: Guidance Strength */}
