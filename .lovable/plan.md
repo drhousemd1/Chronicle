@@ -1,10 +1,15 @@
 
 
-## Plan: Add Drop Shadow to Chat History Thumbnails
+## Plan: Fix Image Library Loading Flash
 
-Add a subtle drop shadow to the conversation thumbnail in `src/components/chronicle/ConversationsTab.tsx`.
+**Problem:** The Image Library tab is the only tab that shows a loading spinner on every visit. Other tabs (My Stories, Chat History, Characters) don't do this -- they render their content immediately and fetch data silently. The Image Library is the outlier because it initializes `isLoading = true` and re-sets it to `true` on every `loadFolders` call, gating the entire UI behind a spinner.
 
-**Change:** Add `shadow-[0_4px_12px_rgba(0,0,0,0.4)]` to the thumbnail button element (the `w-24 h-24` button around line 68).
+**Fix:** Match the behavior of other tabs by not showing a blocking spinner. Two lines in one file:
 
-**1 file, 1 line change.**
+**File: `src/components/chronicle/ImageLibraryTab.tsx`**
+
+1. **Line 47:** Change `useState(true)` → `useState(false)` -- don't start with a spinner
+2. **Line 111:** Remove `setIsLoading(true)` from `loadFolders` -- don't re-trigger the spinner on subsequent loads
+
+The grid will render immediately (empty for a brief moment), then folders appear when the fetch completes (~100ms). This matches how every other tab behaves.
 
