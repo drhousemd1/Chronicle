@@ -3741,9 +3741,9 @@ const updatedChar: SideCharacter = {
       
       {/* Chat Settings Modal */}
       <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-        <DialogContent className="max-w-2xl bg-white border-slate-200 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)]">
-          <DialogHeader className="border-b border-slate-100 pb-4">
-            <DialogTitle className="flex items-center gap-2 text-lg font-black text-slate-900 uppercase tracking-tight">
+        <DialogContent className="max-w-2xl bg-zinc-900 border-white/10 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.5)]">
+          <DialogHeader className="border-b border-white/10 pb-4">
+            <DialogTitle className="flex items-center gap-2 text-lg font-black text-white uppercase tracking-tight">
               <Settings className="w-5 h-5" />
               Chat Settings
             </DialogTitle>
@@ -3752,15 +3752,15 @@ const updatedChar: SideCharacter = {
           <div className="space-y-6 py-4 max-h-[70vh] overflow-y-auto">
             {/* Interface Settings Section */}
             <div className="space-y-4">
-              <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">
+              <h3 className="text-sm font-black text-white uppercase tracking-tight">
                 Interface Settings
               </h3>
               
               {/* 2-column grid for toggles */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {/* Show Backgrounds */}
-                <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 rounded-xl">
-                  <span className="text-sm font-semibold text-slate-700">Show Background</span>
+                <div className="flex items-center justify-between gap-4 p-3 bg-zinc-800/50 rounded-xl">
+                  <span className="text-sm font-semibold text-zinc-200">Show Background</span>
                   <LabeledToggle
                     checked={appData.uiSettings?.showBackgrounds ?? false}
                     onCheckedChange={(v) => handleUpdateUiSettings({ showBackgrounds: v })}
@@ -3768,8 +3768,8 @@ const updatedChar: SideCharacter = {
                 </div>
                 
                 {/* Transparent Bubbles */}
-                <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 rounded-xl">
-                  <span className="text-sm font-semibold text-slate-700">Transparent Bubbles</span>
+                <div className="flex items-center justify-between gap-4 p-3 bg-zinc-800/50 rounded-xl">
+                  <span className="text-sm font-semibold text-zinc-200">Transparent Bubbles</span>
                   <LabeledToggle
                     checked={bubblesTransparent}
                     onCheckedChange={(v) => handleUpdateUiSettings({ transparentBubbles: v })}
@@ -3777,8 +3777,8 @@ const updatedChar: SideCharacter = {
                 </div>
                 
                 {/* Dark Mode */}
-                <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 rounded-xl">
-                  <span className="text-sm font-semibold text-slate-700">Dark Mode</span>
+                <div className="flex items-center justify-between gap-4 p-3 bg-zinc-800/50 rounded-xl">
+                  <span className="text-sm font-semibold text-zinc-200">Dark Mode</span>
                   <LabeledToggle
                     checked={appData.uiSettings?.darkMode ?? false}
                     onCheckedChange={(v) => handleUpdateUiSettings({ darkMode: v })}
@@ -3786,8 +3786,8 @@ const updatedChar: SideCharacter = {
                 </div>
                 
                 {/* Offset Bubbles */}
-                <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 rounded-xl">
-                  <span className="text-sm font-semibold text-slate-700">Offset Bubbles</span>
+                <div className="flex items-center justify-between gap-4 p-3 bg-zinc-800/50 rounded-xl">
+                  <span className="text-sm font-semibold text-zinc-200">Offset Bubbles</span>
                   <LabeledToggle
                     checked={offsetBubbles}
                     onCheckedChange={(v) => handleUpdateUiSettings({ offsetBubbles: v })}
@@ -3795,8 +3795,8 @@ const updatedChar: SideCharacter = {
                 </div>
                 
                 {/* Dynamic Text */}
-                <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 rounded-xl">
-                  <span className="text-sm font-semibold text-slate-700">Dynamic Text</span>
+                <div className="flex items-center justify-between gap-4 p-3 bg-zinc-800/50 rounded-xl">
+                  <span className="text-sm font-semibold text-zinc-200">Dynamic Text</span>
                   <LabeledToggle
                     checked={dynamicText}
                     onCheckedChange={(v) => handleUpdateUiSettings({ dynamicText: v })}
@@ -3806,20 +3806,20 @@ const updatedChar: SideCharacter = {
             </div>
             
             {/* Visual Divider */}
-            <div className="border-t border-slate-200" />
+            <div className="border-t border-white/10" />
             
             {/* AI Behavior Section */}
             <div className="space-y-4">
-              <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">
+              <h3 className="text-sm font-black text-white uppercase tracking-tight">
                 AI Behavior
               </h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {/* Proactive Character Discovery */}
-                <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 rounded-xl">
+                <div className="flex items-center justify-between gap-4 p-3 bg-zinc-800/50 rounded-xl">
                   <div className="flex-1">
-                    <span className="text-sm font-semibold text-slate-700">Character Discovery</span>
-                    <p className="text-xs text-slate-500 mt-0.5">
+                    <span className="text-sm font-semibold text-zinc-200">Character Discovery</span>
+                    <p className="text-xs text-zinc-400 mt-0.5">
                       AI may introduce characters from established media
                     </p>
                   </div>
@@ -3830,10 +3830,10 @@ const updatedChar: SideCharacter = {
                 </div>
                 
                 {/* Proactive AI Mode */}
-                <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 rounded-xl">
+                <div className="flex items-center justify-between gap-4 p-3 bg-zinc-800/50 rounded-xl">
                   <div className="flex-1">
-                    <span className="text-sm font-semibold text-slate-700">Proactive AI Mode</span>
-                    <p className="text-xs text-slate-500 mt-0.5">
+                    <span className="text-sm font-semibold text-zinc-200">Proactive AI Mode</span>
+                    <p className="text-xs text-zinc-400 mt-0.5">
                       AI drives the story forward assertively
                     </p>
                   </div>
@@ -3845,10 +3845,10 @@ const updatedChar: SideCharacter = {
               </div>
               
               {/* POV Selection */}
-              <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 rounded-xl">
+              <div className="flex items-center justify-between gap-4 p-3 bg-zinc-800/50 rounded-xl">
                 <div className="flex-1">
-                  <span className="text-sm font-semibold text-slate-700">Narrative POV</span>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <span className="text-sm font-semibold text-zinc-200">Narrative POV</span>
+                  <p className="text-xs text-zinc-400 mt-0.5">
                     How AI characters narrate their actions and thoughts
                   </p>
                 </div>
@@ -3859,7 +3859,7 @@ const updatedChar: SideCharacter = {
                       "px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors",
                       appData.uiSettings?.narrativePov === 'first'
                         ? "bg-blue-500 text-white"
-                        : "bg-slate-200 text-slate-600 hover:bg-slate-300"
+                        : "bg-zinc-700 text-zinc-300 hover:bg-zinc-600"
                     )}
                   >
                     1st Person
@@ -3870,7 +3870,7 @@ const updatedChar: SideCharacter = {
                       "px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors",
                       (appData.uiSettings?.narrativePov || 'third') === 'third'
                         ? "bg-blue-500 text-white"
-                        : "bg-slate-200 text-slate-600 hover:bg-slate-300"
+                        : "bg-zinc-700 text-zinc-300 hover:bg-zinc-600"
                     )}
                   >
                     3rd Person
@@ -3879,10 +3879,10 @@ const updatedChar: SideCharacter = {
               </div>
               
               {/* NSFW Intensity */}
-              <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 rounded-xl">
+              <div className="flex items-center justify-between gap-4 p-3 bg-zinc-800/50 rounded-xl">
                 <div className="flex-1">
-                  <span className="text-sm font-semibold text-slate-700">NSFW Intensity</span>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <span className="text-sm font-semibold text-zinc-200">NSFW Intensity</span>
+                  <p className="text-xs text-zinc-400 mt-0.5">
                     How proactively AI engages in mature content
                   </p>
                 </div>
@@ -3895,10 +3895,10 @@ const updatedChar: SideCharacter = {
               </div>
               
               {/* Response Verbosity */}
-              <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 rounded-xl">
+              <div className="flex items-center justify-between gap-4 p-3 bg-zinc-800/50 rounded-xl">
                 <div className="flex-1">
-                  <span className="text-sm font-semibold text-slate-700">Response Detail</span>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <span className="text-sm font-semibold text-zinc-200">Response Detail</span>
+                  <p className="text-xs text-zinc-400 mt-0.5">
                     Controls description length and sensory depth
                   </p>
                 </div>
@@ -3911,7 +3911,7 @@ const updatedChar: SideCharacter = {
                         "px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors capitalize",
                         (appData.uiSettings?.responseVerbosity || 'balanced') === level
                           ? "bg-blue-500 text-white"
-                          : "bg-slate-200 text-slate-600 hover:bg-slate-300"
+                          : "bg-zinc-700 text-zinc-300 hover:bg-zinc-600"
                       )}
                     >
                       {level}
@@ -3921,10 +3921,10 @@ const updatedChar: SideCharacter = {
               </div>
               
               {/* Realism Mode */}
-              <div className="flex items-center justify-between gap-4 p-3 bg-slate-50 rounded-xl">
+              <div className="flex items-center justify-between gap-4 p-3 bg-zinc-800/50 rounded-xl">
                 <div className="flex-1">
-                  <span className="text-sm font-semibold text-slate-700">Realism Mode</span>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <span className="text-sm font-semibold text-zinc-200">Realism Mode</span>
+                  <p className="text-xs text-zinc-400 mt-0.5">
                     Physical actions have realistic consequences
                   </p>
                 </div>
@@ -3936,7 +3936,7 @@ const updatedChar: SideCharacter = {
             </div>
             
             {/* Footer Note */}
-            <p className="text-xs text-slate-400 border-t border-slate-100 pt-4">
+            <p className="text-xs text-zinc-500 border-t border-white/10 pt-4">
               Backgrounds will automatically change based on the story context if scene images are tagged in the gallery.
             </p>
           </div>
@@ -3945,10 +3945,10 @@ const updatedChar: SideCharacter = {
       
       {/* Delete Character Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent className="bg-white">
+        <AlertDialogContent className="bg-zinc-900 border-white/10">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-slate-900">Delete Character</AlertDialogTitle>
-            <AlertDialogDescription className="text-slate-600">
+            <AlertDialogTitle className="text-white">Delete Character</AlertDialogTitle>
+            <AlertDialogDescription className="text-zinc-400">
               Are you sure you want to delete this character? This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -3958,7 +3958,7 @@ const updatedChar: SideCharacter = {
                 setIsDeleteDialogOpen(false);
                 setCharacterToDelete(null);
               }}
-              className="bg-slate-100 text-slate-900 hover:bg-slate-200 border-0"
+              className="bg-zinc-800 text-zinc-200 hover:bg-zinc-700 border-white/10"
             >
               Cancel
             </AlertDialogCancel>
