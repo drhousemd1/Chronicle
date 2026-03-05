@@ -45,10 +45,14 @@ export type LocationEntry = {
 };
 
 // Custom world-building section
+export type WorldCustomSectionType = 'structured' | 'freeform';
+
 export type WorldCustomSection = {
   id: string;
   title: string;
   items: WorldCustomItem[];
+  type?: WorldCustomSectionType; // defaults to 'structured'
+  freeformValue?: string;
 };
 
 export type WorldCustomItem = {
