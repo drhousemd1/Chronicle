@@ -546,11 +546,11 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                         isGenerating={isGeneratingCover}
                       />
                       
-                      <div>
+                      <div data-publish-error={!!publishErrors.storyTitle || undefined}>
                         <FieldLabel label="Story Name" fieldName="scenarioName" />
-                        <AutoResizeTextarea value={world.core.scenarioName} onChange={(v) => updateCore({ scenarioName: v })} placeholder="e.g. Chronicles of Eldoria" className={`px-3 py-2 text-sm bg-zinc-900/50 border text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${storyNameError && !world.core.scenarioName?.trim() ? 'border-red-500 ring-2 ring-red-500' : 'border-zinc-700'}`} />
-                        {storyNameError && !world.core.scenarioName?.trim() && (
-                          <p className="text-xs text-red-500 mt-1">Story name is required</p>
+                         <AutoResizeTextarea value={world.core.scenarioName} onChange={(v) => updateCore({ scenarioName: v })} placeholder="e.g. Chronicles of Eldoria" className={`px-3 py-2 text-sm bg-zinc-900/50 border text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${(storyNameError && !world.core.scenarioName?.trim()) || publishErrors.storyTitle ? 'border-red-500 ring-2 ring-red-500' : 'border-zinc-700'}`} />
+                        {((storyNameError && !world.core.scenarioName?.trim()) || publishErrors.storyTitle) && (
+                          <p className="text-xs text-red-500 mt-1">{publishErrors.storyTitle || 'Story name is required'}</p>
                         )}
                       </div>
                       <div>
@@ -603,14 +603,15 @@ export const WorldTab: React.FC<WorldTabProps> = ({
               <div className="p-6">
                 <div className="p-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
                   <div className="grid grid-cols-1 gap-8">
-                    <div>
+                    <div data-publish-error={!!publishErrors.storyPremise || undefined}>
                       <FieldLabel label="Story Premise" fieldName="storyPremise" />
-                      <AutoResizeTextarea value={world.core.storyPremise || ''} onChange={(v) => updateCore({ storyPremise: v })} rows={8} placeholder="What's the central situation or conflict? What's at stake? Describe the overall narrative the AI should understand..." className="px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                      <AutoResizeTextarea value={world.core.storyPremise || ''} onChange={(v) => updateCore({ storyPremise: v })} rows={8} placeholder="What's the central situation or conflict? What's at stake? Describe the overall narrative the AI should understand..." className={`px-3 py-2 text-sm bg-zinc-900/50 border text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${publishErrors.storyPremise ? 'border-red-500' : 'border-zinc-700'}`} />
+                      {publishErrors.storyPremise && <p className="text-xs text-red-400 mt-1">{publishErrors.storyPremise}</p>}
                     </div>
                     
                     {/* Structured Locations */}
-                    <div>
-                      <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-3 block">Primary Locations</label>
+                    <div data-publish-error={!!publishErrors.location || undefined}>
+                      <label className={`text-[10px] font-black uppercase tracking-widest mb-3 block ${publishErrors.location ? 'text-red-400' : 'text-zinc-400'}`}>Primary Locations {publishErrors.location && <span className="normal-case tracking-normal font-medium ml-2">— {publishErrors.location}</span>}</label>
                       <div className="space-y-3">
                         {(world.core.structuredLocations && world.core.structuredLocations.length > 0 
                           ? world.core.structuredLocations 
@@ -818,9 +819,11 @@ export const WorldTab: React.FC<WorldTabProps> = ({
           </section>
 
           {/* Story Goals Section */}
+          {publishErrors.storyArc && <p className="text-xs text-red-400 -mb-4 ml-2">{publishErrors.storyArc}</p>}
           <StoryGoalsSection
             goals={world.core.storyGoals || []}
             onChange={(goals) => updateCore({ storyGoals: goals })}
+            hasError={!!publishErrors.storyArc}
             onEnhanceField={(fieldKey, getCurrentValue, setValue, customLabel) => {
               if (enhancingField) return;
               setEnhancingField(fieldKey as any);
@@ -857,15 +860,16 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                       "Enclose all physical actions or descriptions in * *.",
                       "Enclose all internal thoughts in ( )."
                     ]} />
-                    <div>
+                    <div data-publish-error={!!publishErrors.openingDialog || undefined}>
                       <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1 block">Opening Dialog</label>
                       <AutoResizeTextarea 
                         value={openingDialog.text} 
                         onChange={(v) => onUpdateOpening({ text: v })} 
                         rows={8} 
                         placeholder='James: *James looked up from where he sat on the ground* (What was that?) "Hello? Is anyone there?"'
-                        className="px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                        className={`px-3 py-2 text-sm bg-zinc-900/50 border text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${publishErrors.openingDialog ? 'border-red-500' : 'border-zinc-700'}`}
                       />
+                      {publishErrors.openingDialog && <p className="text-xs text-red-400 mt-1">{publishErrors.openingDialog}</p>}
                     </div>
                     
                     {/* Starting Day & Time Controls */}
@@ -1188,6 +1192,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
           <ContentThemesSection
             themes={contentThemes}
             onUpdate={onUpdateContentThemes}
+            tagsError={publishErrors.tags}
+            storyTypeError={publishErrors.storyType}
           />
 
           {/* Share Section */}
@@ -1211,6 +1217,14 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                     setPublishErrors(errors);
                     if (!hasPublishErrors(errors)) {
                       setShowShareModal(true);
+                    } else {
+                      // Auto-scroll to first errored field
+                      setTimeout(() => {
+                        const firstError = document.querySelector('[data-publish-error="true"]');
+                        if (firstError) {
+                          firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                      }, 50);
                     }
                   }}
                   className="flex h-10 w-full items-center justify-center gap-2 px-4
