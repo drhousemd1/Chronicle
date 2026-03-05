@@ -2080,7 +2080,7 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
                   }
                 }
               }}
-              onCreateCharacter={() => { handleCreateCharacter(); }}
+              onCreateCharacter={() => { handleCreateCharacter(); setTab("characters"); }}
               onOpenLibraryPicker={() => { setIsCharacterPickerOpen(true); }}
               onSelectCharacter={(id) => { setSelectedCharacterId(id); setTab("characters"); }}
               storyNameError={storyNameError}
