@@ -22,15 +22,15 @@
 | Function | Path | Purpose | AI Model Used |
 |----------|------|---------|---------------|
 | `chat` | `supabase/functions/chat/index.ts` | Main LLM chat endpoint — streams roleplay responses | User-selected model |
-| `extract-character-updates` | `supabase/functions/extract-character-updates/index.ts` | Extracts character state changes from conversation | grok-3 (default), grok-3-mini (403 safe-mode retry) |
-| `extract-memory-events` | `supabase/functions/extract-memory-events/index.ts` | Extracts memory-worthy events from messages | AI model |
-| `evaluate-arc-progress` | `supabase/functions/evaluate-arc-progress/index.ts` | Evaluates story arc progress against goals | AI model |
+| `extract-character-updates` | `supabase/functions/extract-character-updates/index.ts` | Extracts character state changes from conversation (throttled: fires every 5th message) | `grok-4-1-fast-reasoning` (default), `grok-3-mini` (403 safe-mode retry) |
+| `extract-memory-events` | `supabase/functions/extract-memory-events/index.ts` | Extracts memory-worthy events from messages | `grok-4-1-fast-reasoning` |
+| `evaluate-arc-progress` | `supabase/functions/evaluate-arc-progress/index.ts` | Evaluates story arc progress against goals | `grok-4-1-fast-reasoning` |
 | `generate-cover-image` | `supabase/functions/generate-cover-image/index.ts` | Generates scenario cover images | Image generation model |
 | `generate-scene-image` | `supabase/functions/generate-scene-image/index.ts` | Generates in-chat scene images | Image generation model |
 | `generate-side-character` | `supabase/functions/generate-side-character/index.ts` | AI-generates side character profiles | AI model |
 | `generate-side-character-avatar` | `supabase/functions/generate-side-character-avatar/index.ts` | Generates avatars for side characters | Image generation model |
 | `check-shared-keys` | `supabase/functions/check-shared-keys/index.ts` | Validates shared API keys | N/A |
-| `compress-day-memories` | `supabase/functions/compress-day-memories/index.ts` | Compresses completed-day bullet memories into a 2-3 sentence synopsis | grok-3-mini |
+| `compress-day-memories` | `supabase/functions/compress-day-memories/index.ts` | Compresses completed-day bullet memories into a 2-3 sentence synopsis | `grok-4-1-fast-reasoning` |
 | `sync-guide-to-github` | `supabase/functions/sync-guide-to-github/index.ts` | Syncs guide documents to GitHub repo | N/A |
 | `migrate-base64-images` | `supabase/functions/migrate-base64-images/index.ts` | Migrates legacy base64 images to storage | N/A |
 
@@ -160,10 +160,14 @@ The system prompt in `getSystemInstruction()` is constructed in this order:
 
 See Section 5 above for comprehensive bug list.
 
+- **RESOLVED — 2026-03-04**: Model migration — all extraction/compression Edge Functions migrated from `grok-3` / `grok-3-mini` to `grok-4-1-fast-reasoning` as the default model.
+- **RESOLVED — 2026-03-04**: Extraction throttling — `extract-character-updates` now only fires every 5th AI response (controlled by `extractionCountRef` in `ChatInterfaceTab.tsx`) to reduce API costs.
+- **RESOLVED — 2026-03-04**: CORS hardening — all 12 Edge Functions now use dynamic origin checking via `getCorsHeaders(req)` against an `ALLOWED_ORIGINS` whitelist instead of wildcard `'*'`.
+
 ---
 
 ## 13. Planned / Future Changes
 
 None documented.
 
-> Last updated: 2026-03-01 — All bugs #1-#11 resolved. Memory compression deployed.
+> Last updated: 2026-03-04 — Model migration to grok-4-1-fast-reasoning, extraction throttling (every 5th message), CORS hardening across all Edge Functions.

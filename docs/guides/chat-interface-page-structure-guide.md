@@ -139,8 +139,9 @@ Primary function: `generateRoleplayResponseStream()` in `src/services/llm.ts` (~
 ### 6b. Character State Tracking
 
 After each AI response, the system can extract character updates:
-- Edge Function: `extract-character-updates`
+- Edge Function: `extract-character-updates` (model: `grok-4-1-fast-reasoning`)
 - Service: `src/services/character-ai.ts`
+- **Throttled**: Extraction only fires every 5th AI response (controlled by `extractionCountRef` in `ChatInterfaceTab.tsx`, reset on conversation switch)
 - Tracks: physical appearance, clothing, mood, location, relationships, personality changes
 - Updates stored in `character_session_states` table
 
@@ -209,6 +210,7 @@ Service: `src/services/side-character-generator.ts`
 | `sessionMessageCountRef` | `useRef<number>` | Increments per exchange; injected as `[SESSION: Message N]` for trait evolution |
 | `previousDayRef` | `useRef<number>` | Tracks previous day value; reset on conversation switch; used by compression effect to detect real day increments |
 | `memoriesLoaded` | `boolean` | Guards compression effect — prevents firing before conversation memories are fetched |
+| `extractionCountRef` | `useRef<number>` | Counts AI responses; extraction fires when `count % 5 === 0`; reset on conversation switch |
 
 ---
 
@@ -268,7 +270,7 @@ Configurable via `onUpdateUiSettings`:
 ## 12. Known Issues & Gotchas
 
 - **RESOLVED — Bug #1**: `buildCharacterStateBlock()` omits empty sections — 13/16 section types invisible to AI when empty. (2026-03-01)
-- **RESOLVED — Bug #4**: Wrong AI model (`grok-3-mini`) used for character extraction instead of `grok-3`. (2026-03-01)
+- **RESOLVED — Bug #4**: Wrong AI model (`grok-3-mini`) used for character extraction instead of `grok-3`. Now uses `grok-4-1-fast-reasoning`. (2026-03-01, updated 2026-03-04)
 - **RESOLVED — Bug #5**: Extraction prompt lacks analytical depth — shallow analysis. (2026-03-01)
 - **RESOLVED — Bug #7**: Response length anchoring — all responses same length. Fixed with adaptive `responseLengthsRef` + `getLengthDirective()`. (2026-03-01)
 - **RESOLVED — Bug #8**: Forward momentum — AI re-narrates user-authored AI character content. Fixed with canon note detection in `handleSend` + system prompt rule. (2026-03-01)
@@ -278,6 +280,7 @@ Configurable via `onUpdateUiSettings`:
 - **RESOLVED — Bug #6**: Memory system incomplete — no long-term accumulation. Fixed with auto-extraction in `handleSend`, `previousDayRef` (reset on conversation switch) + day-compression `useEffect` (guarded by `memoriesLoaded`, dependency array: `[currentDay, memories, memoriesEnabled, conversationId]`), `entryType` field on Memory type, split `memoriesContext` builder in `llm.ts`, and `compress-day-memories` edge function (grok-3-mini). (2026-03-01)
 - **ACTIVE**: `ChatInterfaceTab.tsx` is ~3900 lines — extremely large single component. (2026-03-01)
 - **ACTIVE**: Message parsing regex may miss edge cases with nested formatting markers. (2026-03-01)
+- **RESOLVED — 2026-03-04**: Extraction throttling — `extract-character-updates` now throttled to every 5th AI response via `extractionCountRef` to reduce API costs.
 
 ---
 
@@ -285,4 +288,4 @@ Configurable via `onUpdateUiSettings`:
 
 None documented.
 
-> Last updated: 2026-03-01 — All bugs #1-#11 resolved. Memory compression deployed with conversation-switch safety.
+> Last updated: 2026-03-04 — Extraction throttling added (every 5th message). Model updated to grok-4-1-fast-reasoning.
