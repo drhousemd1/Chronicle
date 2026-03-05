@@ -1,6 +1,6 @@
 
 import React, { useRef, useState, useCallback, useEffect } from 'react';
-import { World, OpeningDialog, CodexEntry, Character, Scene, TimeOfDay, WorldCore, ContentThemes, defaultContentThemes, LocationEntry, WorldCustomSection, WorldCustomItem, StoryGoal } from '@/types';
+import { World, OpeningDialog, CodexEntry, Character, Scene, TimeOfDay, WorldCore, ContentThemes, defaultContentThemes, LocationEntry, WorldCustomSection, WorldCustomItem, WorldCustomSectionType, StoryGoal } from '@/types';
 import { EnhanceableWorldFields } from '@/services/world-ai';
 import { AutoResizeTextarea } from './AutoResizeTextarea';
 import { Button, Card } from './UI';
@@ -27,6 +27,7 @@ import { CharacterCreationModal } from './CharacterCreationModal';
 import { useModelSettings } from '@/contexts/ModelSettingsContext';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 import { getClosestRatio, AspectRatioIcon } from './AspectRatioUtils';
+import { CustomContentTypeModal } from './CustomContentTypeModal';
 
 interface WorldTabProps {
   scenarioId: string;
@@ -131,6 +132,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   const coverContainerRef = useRef<HTMLDivElement>(null);
   const [sceneAspectRatios, setSceneAspectRatios] = useState<Record<string, { label: string; orientation: 'portrait' | 'landscape' | 'square' }>>({});
   const [isCharacterCreationOpen, setIsCharacterCreationOpen] = useState(false);
+  const [showContentTypeModal, setShowContentTypeModal] = useState(false);
 
   // Detect aspect ratios for scene images
   useEffect(() => {
@@ -595,7 +597,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                                 updateCore({ structuredLocations: locs });
                               }}
                               placeholder={idx === 0 ? "e.g. The Lakehouse" : "Location name..."}
-                              className="w-2/5 px-3 py-2 text-xs font-bold bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                              className="w-2/5 px-3 py-2 text-xs font-bold bg-zinc-900/50 border border-zinc-700 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-500 placeholder:normal-case placeholder:tracking-normal rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                             />
                             <AutoResizeTextarea 
                               value={loc.description} 
@@ -641,18 +643,16 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                     {(world.core.customWorldSections || []).map((section, sIdx) => (
                       <div key={section.id} className="space-y-4">
                         <div className="flex items-center gap-3">
-                          <div className="flex-1 bg-[#1e293b] rounded-xl border border-white/5 px-4 py-3">
-                            <AutoResizeTextarea
-                              value={section.title}
-                              onChange={(v) => {
-                                const sections = [...(world.core.customWorldSections || [])];
-                                sections[sIdx] = { ...sections[sIdx], title: v };
-                                updateCore({ customWorldSections: sections });
-                              }}
-                              placeholder="Section Title..."
-                              className="bg-transparent border-none text-[10px] font-black text-zinc-400 uppercase tracking-widest px-0 focus:ring-0 placeholder:text-zinc-500 w-full"
-                            />
-                          </div>
+                          <AutoResizeTextarea
+                            value={section.title}
+                            onChange={(v) => {
+                              const sections = [...(world.core.customWorldSections || [])];
+                              sections[sIdx] = { ...sections[sIdx], title: v };
+                              updateCore({ customWorldSections: sections });
+                            }}
+                            placeholder="Section Title..."
+                            className="flex-1 bg-transparent border-none text-[10px] font-black text-zinc-400 uppercase tracking-widest px-0 focus:ring-0 placeholder:text-zinc-500 placeholder:normal-case placeholder:tracking-normal"
+                          />
                           <button
                             type="button"
                             onClick={() => {
@@ -664,111 +664,120 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                             <Trash2 size={16} />
                           </button>
                         </div>
-                        {section.items.map((item, iIdx) => (
-                          <div key={item.id} className="flex items-start gap-3">
-                            <div className="w-2/5 flex items-center gap-1.5 min-w-0">
-                              <AutoResizeTextarea
-                                value={item.label}
-                                onChange={(v) => {
-                                  const sections = [...(world.core.customWorldSections || [])];
-                                  const items = [...sections[sIdx].items];
-                                  items[iIdx] = { ...items[iIdx], label: v };
-                                  sections[sIdx] = { ...sections[sIdx], items };
-                                  updateCore({ customWorldSections: sections });
-                                }}
-                                placeholder="Label..."
-                                className="flex-1 px-3 py-2 text-xs font-bold bg-zinc-900/50 border border-zinc-700 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-500 placeholder:normal-case placeholder:tracking-normal rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                              />
-                              {(
+                        {(!section.type || section.type === 'structured') ? (
+                          <>
+                            {section.items.map((item, iIdx) => (
+                              <div key={item.id} className="flex items-start gap-3">
+                                <div className="w-2/5 flex items-center gap-1.5 min-w-0">
+                                  <AutoResizeTextarea
+                                    value={item.label}
+                                    onChange={(v) => {
+                                      const sections = [...(world.core.customWorldSections || [])];
+                                      const items = [...sections[sIdx].items];
+                                      items[iIdx] = { ...items[iIdx], label: v };
+                                      sections[sIdx] = { ...sections[sIdx], items };
+                                      updateCore({ customWorldSections: sections });
+                                    }}
+                                    placeholder="Label..."
+                                    className="flex-1 px-3 py-2 text-xs font-bold bg-zinc-900/50 border border-zinc-700 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-500 placeholder:normal-case placeholder:tracking-normal rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                  />
+                                  {(
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const fieldKey = `world_custom_${item.id}`;
+                                        if (enhancingField) return;
+                                        setEnhancingField(fieldKey as any);
+                                        aiEnhanceWorldField(
+                                          'customContent',
+                                          item.value,
+                                          { ...world.core, briefDescription: `Context for "${section.title}" section, field "${item.label}": ${world.core.briefDescription || ''}` },
+                                          modelId
+                                        ).then(enhanced => {
+                                          const sections = [...(world.core.customWorldSections || [])];
+                                          const items = [...sections[sIdx].items];
+                                          items[iIdx] = { ...items[iIdx], value: enhanced };
+                                          sections[sIdx] = { ...sections[sIdx], items };
+                                          updateCore({ customWorldSections: sections });
+                                        }).catch(err => {
+                                          console.error('Enhancement failed:', err);
+                                        }).finally(() => {
+                                          setEnhancingField(null);
+                                        });
+                                      }}
+                                      disabled={enhancingField !== null}
+                                      title="Enhance with AI"
+                                      className={cn(
+                                        "p-1.5 rounded-md transition-all flex-shrink-0",
+                                        enhancingField === `world_custom_${item.id}`
+                                          ? "text-blue-500 animate-pulse cursor-wait"
+                                          : "text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10"
+                                      )}
+                                    >
+                                      <Sparkles size={14} />
+                                    </button>
+                                  )}
+                                </div>
+                                <AutoResizeTextarea
+                                  value={item.value}
+                                  onChange={(v) => {
+                                    const sections = [...(world.core.customWorldSections || [])];
+                                    const items = [...sections[sIdx].items];
+                                    items[iIdx] = { ...items[iIdx], value: v };
+                                    sections[sIdx] = { ...sections[sIdx], items };
+                                    updateCore({ customWorldSections: sections });
+                                  }}
+                                  rows={1}
+                                  placeholder="Description..."
+                                  className="flex-1 px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                />
                                 <button
                                   type="button"
                                   onClick={() => {
-                                    const fieldKey = `world_custom_${item.id}`;
-                                    if (enhancingField) return;
-                                    setEnhancingField(fieldKey as any);
-                                    aiEnhanceWorldField(
-                                      'customContent',
-                                      item.value,
-                                      { ...world.core, briefDescription: `Context for "${section.title}" section, field "${item.label}": ${world.core.briefDescription || ''}` },
-                                      modelId
-                                    ).then(enhanced => {
-                                      const sections = [...(world.core.customWorldSections || [])];
-                                      const items = [...sections[sIdx].items];
-                                      items[iIdx] = { ...items[iIdx], value: enhanced };
-                                      sections[sIdx] = { ...sections[sIdx], items };
-                                      updateCore({ customWorldSections: sections });
-                                    }).catch(err => {
-                                      console.error('Enhancement failed:', err);
-                                    }).finally(() => {
-                                      setEnhancingField(null);
-                                    });
+                                    const sections = [...(world.core.customWorldSections || [])];
+                                    sections[sIdx] = { ...sections[sIdx], items: sections[sIdx].items.filter((_, i) => i !== iIdx) };
+                                    updateCore({ customWorldSections: sections });
                                   }}
-                                  disabled={enhancingField !== null}
-                                  title="Enhance with AI"
-                                  className={cn(
-                                    "p-1.5 rounded-md transition-all flex-shrink-0",
-                                    enhancingField === `world_custom_${item.id}`
-                                      ? "text-blue-500 animate-pulse cursor-wait"
-                                      : "text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10"
-                                  )}
+                                  className="mt-2 text-zinc-500 hover:text-rose-400 transition-colors p-1"
                                 >
-                                  <Sparkles size={14} />
+                                  <X size={16} />
                                 </button>
-                              )}
-                            </div>
-                            <AutoResizeTextarea
-                              value={item.value}
-                              onChange={(v) => {
-                                const sections = [...(world.core.customWorldSections || [])];
-                                const items = [...sections[sIdx].items];
-                                items[iIdx] = { ...items[iIdx], value: v };
-                                sections[sIdx] = { ...sections[sIdx], items };
-                                updateCore({ customWorldSections: sections });
-                              }}
-                              rows={1}
-                              placeholder="Description..."
-                              className="flex-1 px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                            />
+                              </div>
+                            ))}
                             <button
                               type="button"
                               onClick={() => {
                                 const sections = [...(world.core.customWorldSections || [])];
-                                sections[sIdx] = { ...sections[sIdx], items: sections[sIdx].items.filter((_, i) => i !== iIdx) };
+                                sections[sIdx] = { ...sections[sIdx], items: [...sections[sIdx].items, { id: uid('wci'), label: '', value: '' }] };
                                 updateCore({ customWorldSections: sections });
                               }}
-                              className="mt-2 text-zinc-500 hover:text-rose-400 transition-colors p-1"
+                              className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm transition-colors"
                             >
-                              <X size={16} />
+                              <Plus size={16} />
+                              <span>Add Item</span>
                             </button>
-                          </div>
-                        ))}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const sections = [...(world.core.customWorldSections || [])];
-                            sections[sIdx] = { ...sections[sIdx], items: [...sections[sIdx].items, { id: uid('wci'), label: '', value: '' }] };
-                            updateCore({ customWorldSections: sections });
-                          }}
-                          className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm transition-colors"
-                        >
-                          <Plus size={16} />
-                          <span>Add Item</span>
-                        </button>
+                          </>
+                        ) : (
+                          /* Freeform: single large textarea */
+                          <AutoResizeTextarea
+                            value={section.freeformValue || ''}
+                            onChange={(v) => {
+                              const sections = [...(world.core.customWorldSections || [])];
+                              sections[sIdx] = { ...sections[sIdx], freeformValue: v };
+                              updateCore({ customWorldSections: sections });
+                            }}
+                            rows={3}
+                            placeholder="Write freely..."
+                            className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                          />
+                        )}
                       </div>
                     ))}
                     
                     {/* Add Custom Content Button */}
                     <button
                       type="button"
-                      onClick={() => {
-                        const sections = [...(world.core.customWorldSections || [])];
-                        sections.push({
-                          id: uid('wcs'),
-                          title: '',
-                          items: [{ id: uid('wci'), label: '', value: '' }]
-                        });
-                        updateCore({ customWorldSections: sections });
-                      }}
+                      onClick={() => setShowContentTypeModal(true)}
                       className="w-full py-3 bg-transparent border-2 border-dashed border-zinc-500 text-blue-400 hover:border-blue-400 hover:bg-blue-500/5 font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
                     >
                       <Plus size={16} />
@@ -1306,6 +1315,23 @@ export const WorldTab: React.FC<WorldTabProps> = ({
         onClose={() => setIsCharacterCreationOpen(false)}
         onImportFromLibrary={onOpenLibraryPicker}
         onCreateNew={onCreateCharacter}
+      />
+
+      {/* Content Type Picker Modal */}
+      <CustomContentTypeModal
+        open={showContentTypeModal}
+        onClose={() => setShowContentTypeModal(false)}
+        onSelect={(type) => {
+          const sections = [...(world.core.customWorldSections || [])];
+          sections.push({
+            id: uid('wcs'),
+            title: '',
+            type,
+            items: type === 'structured' ? [{ id: uid('wci'), label: '', value: '' }] : [],
+            freeformValue: type === 'freeform' ? '' : undefined,
+          });
+          updateCore({ customWorldSections: sections });
+        }}
       />
     </div>
   );

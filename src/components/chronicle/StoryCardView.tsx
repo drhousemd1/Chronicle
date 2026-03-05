@@ -221,59 +221,74 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
                     <Trash2 size={16} />
                   </button>
                 </div>
-                {section.items.map((item, iIdx) => (
-                  <div key={item.id} className="flex items-start gap-3">
-                    <Input
-                      value={item.label}
-                      onChange={(e) => {
-                        const updated = [...customSections];
-                        const items = [...updated[sIdx].items];
-                        items[iIdx] = { ...items[iIdx], label: e.target.value };
-                        updated[sIdx] = { ...updated[sIdx], items };
-                        updateField('customWorldSections', updated);
-                      }}
-                      placeholder="Label..."
-                      className="w-2/5 bg-zinc-900/50 border-white/10 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-500 placeholder:normal-case placeholder:tracking-normal text-sm"
-                    />
-                    <AutoResizeTextarea
-                      value={item.value}
-                      onChange={(v) => {
-                        const updated = [...customSections];
-                        const items = [...updated[sIdx].items];
-                        items[iIdx] = { ...items[iIdx], value: v };
-                        updated[sIdx] = { ...updated[sIdx], items };
-                        updateField('customWorldSections', updated);
-                      }}
-                      placeholder="Value..."
-                      className="flex-1 px-3 py-2 rounded-lg text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
-                    />
+                {(!section.type || section.type === 'structured') ? (
+                  <>
+                    {section.items.map((item, iIdx) => (
+                      <div key={item.id} className="flex items-start gap-3">
+                        <Input
+                          value={item.label}
+                          onChange={(e) => {
+                            const updated = [...customSections];
+                            const items = [...updated[sIdx].items];
+                            items[iIdx] = { ...items[iIdx], label: e.target.value };
+                            updated[sIdx] = { ...updated[sIdx], items };
+                            updateField('customWorldSections', updated);
+                          }}
+                          placeholder="Label..."
+                          className="w-2/5 bg-zinc-900/50 border-white/10 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-500 placeholder:normal-case placeholder:tracking-normal text-sm"
+                        />
+                        <AutoResizeTextarea
+                          value={item.value}
+                          onChange={(v) => {
+                            const updated = [...customSections];
+                            const items = [...updated[sIdx].items];
+                            items[iIdx] = { ...items[iIdx], value: v };
+                            updated[sIdx] = { ...updated[sIdx], items };
+                            updateField('customWorldSections', updated);
+                          }}
+                          placeholder="Value..."
+                          className="flex-1 px-3 py-2 rounded-lg text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = [...customSections];
+                            const items = updated[sIdx].items.filter((_, i) => i !== iIdx);
+                            updated[sIdx] = { ...updated[sIdx], items };
+                            updateField('customWorldSections', updated);
+                          }}
+                          className="mt-2 text-zinc-500 hover:text-rose-400 transition-colors p-1"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))}
                     <button
                       type="button"
                       onClick={() => {
                         const updated = [...customSections];
-                        const items = updated[sIdx].items.filter((_, i) => i !== iIdx);
+                        const items = [...updated[sIdx].items, { id: uid('cwi'), label: '', value: '' }];
                         updated[sIdx] = { ...updated[sIdx], items };
                         updateField('customWorldSections', updated);
                       }}
-                      className="mt-2 text-zinc-500 hover:text-rose-400 transition-colors p-1"
+                      className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm transition-colors"
                     >
-                      <Trash2 size={16} />
+                      <Plus size={16} />
+                      <span>Add Item</span>
                     </button>
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => {
-                    const updated = [...customSections];
-                    const items = [...updated[sIdx].items, { id: uid('cwi'), label: '', value: '' }];
-                    updated[sIdx] = { ...updated[sIdx], items };
-                    updateField('customWorldSections', updated);
-                  }}
-                  className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm transition-colors"
-                >
-                  <Plus size={16} />
-                  <span>Add Item</span>
-                </button>
+                  </>
+                ) : (
+                  <AutoResizeTextarea
+                    value={section.freeformValue || ''}
+                    onChange={(v) => {
+                      const updated = [...customSections];
+                      updated[sIdx] = { ...updated[sIdx], freeformValue: v };
+                      updateField('customWorldSections', updated);
+                    }}
+                    placeholder="Write freely..."
+                    className="w-full px-3 py-2 rounded-lg text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
+                  />
+                )}
               </div>
             ))}
           </div>

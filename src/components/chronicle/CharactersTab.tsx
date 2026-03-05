@@ -1194,7 +1194,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
           {selected.sections.map(section => (
             <div key={section.id} className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
               {/* Dark blue header with editable title */}
-              <div className="bg-blue-900/40 border-b border-blue-500/20 px-5 py-3 flex items-center justify-between">
+              <div className="bg-[#4a5f7f] border-b border-white/20 px-5 py-3 flex items-center justify-between shadow-lg">
                 <AutoResizeTextarea
                   value={section.title}
                   onChange={(v) => handleUpdateSection(selected.id, section.id, { title: v })}
