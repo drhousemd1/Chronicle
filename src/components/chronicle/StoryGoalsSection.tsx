@@ -18,6 +18,7 @@ interface StoryGoalsSectionProps {
   onChange: (goals: StoryGoal[]) => void;
   onEnhanceField?: (fieldKey: string, getCurrentValue: () => string, setValue: (value: string) => void, customLabel?: string) => void;
   enhancingField?: string | null;
+  hasError?: boolean;
 }
 
 // ── Helpers ──
@@ -85,7 +86,7 @@ function computeActiveFlow(
 
 // ── Component ──
 
-export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onChange, onEnhanceField, enhancingField }) => {
+export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onChange, onEnhanceField, enhancingField, hasError }) => {
   const migratedGoals = React.useMemo(() => goals.map(migrateGoalToBranches), [goals]);
 
   // Auto-populate one blank story arc if none exist
@@ -289,7 +290,7 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
   return (
     <section>
       {/* Outer shell */}
-      <div className="bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
+      <div className={cn("bg-[#2a2a2f] rounded-[24px] border overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]", hasError ? 'border-red-500' : 'border-white/10')}>
         {/* Header */}
         <div className="bg-[#4a5f7f] border-b border-white/20 px-5 py-3 flex items-center gap-3">
           <GitBranch className="w-4 h-4 text-white" />
