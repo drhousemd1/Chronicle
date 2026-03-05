@@ -290,7 +290,7 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
   return (
     <section>
       {/* Outer shell */}
-      <div className={cn("bg-[#2a2a2f] rounded-[24px] border overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]", hasError ? 'border-red-500' : 'border-white/10')}>
+      <div className={cn("bg-[#2a2a2f] rounded-[24px] border overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]", hasError ? 'border-red-500 ring-2 ring-red-500' : 'border-white/10')}>
         {/* Header */}
         <div className="bg-[#4a5f7f] border-b border-white/20 px-5 py-3 flex items-center gap-3">
           <GitBranch className="w-4 h-4 text-white" />

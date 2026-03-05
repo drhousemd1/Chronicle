@@ -96,7 +96,7 @@ const CharacterButton: React.FC<{ char: Character; onSelect: (id: string) => voi
     {errors && errors.length > 0 && (
       <div className="pl-2 space-y-0.5">
         {errors.map((err, i) => (
-          <p key={i} className="text-xs text-red-400 font-medium">{err}</p>
+          <p key={i} className="text-sm text-red-500 font-medium">{err}</p>
         ))}
       </div>
     )}
@@ -433,7 +433,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
         </div>
       </button>
       {noCharactersError && (
-        <p className="text-xs text-red-400 font-medium pl-2">{noCharactersError}</p>
+        <p className="text-sm text-red-500 font-medium pl-2">{noCharactersError}</p>
       )}
     </div>
   );
@@ -550,7 +550,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                         <FieldLabel label="Story Name" fieldName="scenarioName" />
                          <AutoResizeTextarea value={world.core.scenarioName} onChange={(v) => updateCore({ scenarioName: v })} placeholder="e.g. Chronicles of Eldoria" className={`px-3 py-2 text-sm bg-zinc-900/50 border text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${(storyNameError && !world.core.scenarioName?.trim()) || publishErrors.storyTitle ? 'border-red-500 ring-2 ring-red-500' : 'border-zinc-700'}`} />
                         {((storyNameError && !world.core.scenarioName?.trim()) || publishErrors.storyTitle) && (
-                          <p className="text-xs text-red-500 mt-1">{publishErrors.storyTitle || 'Story name is required'}</p>
+                          <p className="text-sm text-red-500 mt-1">{publishErrors.storyTitle || 'Story name is required'}</p>
                         )}
                       </div>
                       <div>
@@ -605,13 +605,13 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                   <div className="grid grid-cols-1 gap-8">
                     <div data-publish-error={!!publishErrors.storyPremise || undefined}>
                       <FieldLabel label="Story Premise" fieldName="storyPremise" />
-                      <AutoResizeTextarea value={world.core.storyPremise || ''} onChange={(v) => updateCore({ storyPremise: v })} rows={8} placeholder="What's the central situation or conflict? What's at stake? Describe the overall narrative the AI should understand..." className={`px-3 py-2 text-sm bg-zinc-900/50 border text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${publishErrors.storyPremise ? 'border-red-500' : 'border-zinc-700'}`} />
-                      {publishErrors.storyPremise && <p className="text-xs text-red-400 mt-1">{publishErrors.storyPremise}</p>}
+                      <AutoResizeTextarea value={world.core.storyPremise || ''} onChange={(v) => updateCore({ storyPremise: v })} rows={8} placeholder="What's the central situation or conflict? What's at stake? Describe the overall narrative the AI should understand..." className={`px-3 py-2 text-sm bg-zinc-900/50 border text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${publishErrors.storyPremise ? 'border-red-500 ring-2 ring-red-500' : 'border-zinc-700'}`} />
+                      {publishErrors.storyPremise && <p className="text-sm text-red-500 mt-1">{publishErrors.storyPremise}</p>}
                     </div>
                     
                     {/* Structured Locations */}
                     <div data-publish-error={!!publishErrors.location || undefined}>
-                      <label className={`text-[10px] font-black uppercase tracking-widest mb-3 block ${publishErrors.location ? 'text-red-400' : 'text-zinc-400'}`}>Primary Locations {publishErrors.location && <span className="normal-case tracking-normal font-medium ml-2">— {publishErrors.location}</span>}</label>
+                      <label className={`text-[10px] font-black uppercase tracking-widest mb-3 block ${publishErrors.location ? 'text-red-500' : 'text-zinc-400'}`}>Primary Locations {publishErrors.location && <span className="normal-case tracking-normal font-medium ml-2">— {publishErrors.location}</span>}</label>
                       <div className="space-y-3">
                         {(world.core.structuredLocations && world.core.structuredLocations.length > 0 
                           ? world.core.structuredLocations 
@@ -819,7 +819,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
           </section>
 
           {/* Story Goals Section */}
-          {publishErrors.storyArc && <p className="text-xs text-red-400 -mb-4 ml-2">{publishErrors.storyArc}</p>}
+          {publishErrors.storyArc && <p className="text-sm text-red-500 -mb-4 ml-2">{publishErrors.storyArc}</p>}
           <StoryGoalsSection
             goals={world.core.storyGoals || []}
             onChange={(goals) => updateCore({ storyGoals: goals })}
@@ -867,9 +867,9 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                         onChange={(v) => onUpdateOpening({ text: v })} 
                         rows={8} 
                         placeholder='James: *James looked up from where he sat on the ground* (What was that?) "Hello? Is anyone there?"'
-                        className={`px-3 py-2 text-sm bg-zinc-900/50 border text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${publishErrors.openingDialog ? 'border-red-500' : 'border-zinc-700'}`}
+                        className={`px-3 py-2 text-sm bg-zinc-900/50 border text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${publishErrors.openingDialog ? 'border-red-500 ring-2 ring-red-500' : 'border-zinc-700'}`}
                       />
-                      {publishErrors.openingDialog && <p className="text-xs text-red-400 mt-1">{publishErrors.openingDialog}</p>}
+                      {publishErrors.openingDialog && <p className="text-sm text-red-500 mt-1">{publishErrors.openingDialog}</p>}
                     </div>
                     
                     {/* Starting Day & Time Controls */}
