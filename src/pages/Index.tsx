@@ -1411,12 +1411,22 @@ const IndexContent = () => {
     });
   }, [library, librarySearchQuery]);
 
-  function handleAddSection() {
+  function handleAddSection(type: 'structured' | 'freeform' = 'structured') {
      if (!selectedCharacterId) return;
      const sourceList = tab === "library" ? library : activeData?.characters;
      const selected = sourceList?.find(c => c.id === selectedCharacterId);
      if (!selected) return;
-     handleUpdateCharacter(selected.id, { sections: [...selected.sections, { id: uid('sec'), title: 'New Section', items: [], createdAt: now(), updatedAt: now() }] });
+     handleUpdateCharacter(selected.id, {
+       sections: [...selected.sections, {
+         id: uid('sec'),
+         title: 'New Section',
+         type,
+         items: type === 'structured' ? [] : [],
+         freeformValue: type === 'freeform' ? '' : undefined,
+         createdAt: now(),
+         updatedAt: now()
+       }]
+     });
   }
 
   // Show loading state
