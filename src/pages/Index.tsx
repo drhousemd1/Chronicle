@@ -2011,29 +2011,28 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
             <GalleryHub onPlay={handleGalleryPlay} onSaveChange={handleGallerySaveChange} sortBy={gallerySortBy} onSortChange={setGallerySortBy} />
           )}
 
-          {tab === "image_library" && (
-            <div 
-              className="relative w-full h-full bg-black"
-              style={selectedImageLibraryBackgroundUrl ? {
-                backgroundImage: `url(${selectedImageLibraryBackgroundUrl})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center'
-              } : undefined}
-            >
-              {selectedImageLibraryBackgroundUrl && (
-                <div className="absolute inset-0 bg-black/10 pointer-events-none" />
-              )}
-              <ImageLibraryTab 
-                onFolderChange={(inFolder, exitFn) => {
-                  setIsInImageFolder(inFolder);
-                  imageLibraryExitFolderRef.current = exitFn || null;
-                  if (!inFolder) setImageLibrarySearchQuery('');
-                }}
-                searchQuery={imageLibrarySearchQuery}
-                uploadRef={imageLibraryUploadRef}
-              />
-            </div>
-          )}
+          <div 
+            className={cn("relative w-full h-full bg-black", tab === "image_library" ? "block" : "hidden")}
+            style={selectedImageLibraryBackgroundUrl ? {
+              backgroundImage: `url(${selectedImageLibraryBackgroundUrl})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center'
+            } : undefined}
+          >
+            {selectedImageLibraryBackgroundUrl && (
+              <div className="absolute inset-0 bg-black/10 pointer-events-none" />
+            )}
+            <ImageLibraryTab 
+              userId={user?.id ?? null}
+              onFolderChange={(inFolder, exitFn) => {
+                setIsInImageFolder(inFolder);
+                imageLibraryExitFolderRef.current = exitFn || null;
+                if (!inFolder) setImageLibrarySearchQuery('');
+              }}
+              searchQuery={imageLibrarySearchQuery}
+              uploadRef={imageLibraryUploadRef}
+            />
+          </div>
 
           {tab === "library" && (
             <div className="p-10 overflow-y-auto h-full bg-black relative z-10">
