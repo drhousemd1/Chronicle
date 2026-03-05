@@ -949,7 +949,7 @@ export async function fetchConversationRegistry(): Promise<ConversationMetadata[
       title,
       created_at,
       updated_at,
-      scenarios!inner(title, cover_image_url)
+      stories!conversations_scenario_id_fkey(title, cover_image_url)
     `)
     .order('updated_at', { ascending: false });
 
@@ -960,8 +960,8 @@ export async function fetchConversationRegistry(): Promise<ConversationMetadata[
   return (data || []).map(conv => ({
     conversationId: conv.id,
     scenarioId: conv.scenario_id,
-    scenarioTitle: (conv.scenarios as any)?.title || 'Unknown',
-    scenarioImageUrl: (conv.scenarios as any)?.cover_image_url || null,
+    scenarioTitle: (conv.stories as any)?.title || 'Unknown',
+    scenarioImageUrl: (conv.stories as any)?.cover_image_url || null,
     conversationTitle: conv.title,
     lastMessage: '',
     messageCount: 0,
