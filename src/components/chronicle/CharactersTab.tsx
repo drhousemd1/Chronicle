@@ -25,7 +25,7 @@ interface CharactersTabProps {
   onSelect: (id: string | null) => void;
   onUpdate: (id: string, patch: Partial<Character>) => void;
   onDelete: (id: string) => void;
-  onAddSection?: () => void;
+  onAddSection?: (type?: CharacterTraitSectionType) => void;
   onAddNew?: () => void;
 }
 
@@ -558,7 +558,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
     if (!selected) return;
     // If external handler is provided, use it (for scenario builder)
     if (externalAddSection) {
-      externalAddSection();
+      externalAddSection(type);
       return;
     }
     // Otherwise use internal logic (for chat interface)

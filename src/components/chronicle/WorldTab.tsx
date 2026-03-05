@@ -651,7 +651,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                               updateCore({ customWorldSections: sections });
                             }}
                             placeholder="Section Title..."
-                            className="flex-1 bg-transparent border-none text-[10px] font-black text-zinc-400 uppercase tracking-widest px-0 focus:ring-0 placeholder:text-zinc-500 placeholder:uppercase placeholder:tracking-widest placeholder:text-sm placeholder:font-black"
+                            className="flex-1 bg-transparent border-none text-[10px] font-black text-zinc-400 uppercase tracking-widest px-0 focus:ring-0 placeholder:text-zinc-500 placeholder:uppercase placeholder:tracking-widest placeholder:font-black"
                           />
                           <button
                             type="button"
