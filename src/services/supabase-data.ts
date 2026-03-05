@@ -720,10 +720,13 @@ export async function trackRemix(
 // =============================================
 
 export async function fetchCharacterLibrary(): Promise<Character[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
   const { data, error } = await supabase
     .from('characters')
     .select('*')
     .eq('is_library', true)
+    .eq('user_id', user.id)
     .order('updated_at', { ascending: false });
 
   if (error) throw error;
@@ -739,10 +742,13 @@ export type CharacterSummary = {
 };
 
 export async function fetchCharacterLibrarySummaries(): Promise<CharacterSummary[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
   const { data, error } = await supabase
     .from('characters')
     .select('id, name, tags, avatar_url, avatar_position')
     .eq('is_library', true)
+    .eq('user_id', user.id)
     .order('updated_at', { ascending: false });
 
   if (error) throw error;

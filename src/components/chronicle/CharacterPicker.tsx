@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Character } from '@/types';
-import { CharacterSummary, fetchCharacterLibrarySummaries, fetchCharacterById } from '@/services/supabase-data';
+import { CharacterSummary, fetchCharacterById } from '@/services/supabase-data';
 import { Button, Input } from './UI';
 import { Loader2 } from 'lucide-react';
 
@@ -106,14 +106,25 @@ interface CharacterPickerWithRefreshProps {
   onClose: () => void;
 }
 
-export function CharacterPickerWithRefresh({ library: _initialLibrary, refreshLibrary: _refreshLibrary, onSelect, onClose }: CharacterPickerWithRefreshProps) {
-  const [summaries, setSummaries] = useState<CharacterSummary[]>([]);
-  const [loading, setLoading] = useState(true);
+export function CharacterPickerWithRefresh({ library: initialLibrary, refreshLibrary, onSelect, onClose }: CharacterPickerWithRefreshProps) {
+  // Build summaries from parent library state (immediate fallback)
+  const buildSummaries = (chars: Character[]): CharacterSummary[] =>
+    chars.map(c => ({
+      id: c.id,
+      name: c.name || '',
+      tags: c.tags || '',
+      avatarUrl: c.avatarDataUrl || '',
+      avatarPosition: c.avatarPosition || { x: 50, y: 50 },
+    }));
+
+  const [summaries, setSummaries] = useState<CharacterSummary[]>(buildSummaries(initialLibrary));
+  const [loading, setLoading] = useState(initialLibrary.length === 0);
 
   useEffect(() => {
-    fetchCharacterLibrarySummaries()
-      .then(data => {
-        setSummaries(data);
+    // Refresh from backend and sync parent state
+    refreshLibrary()
+      .then(updated => {
+        setSummaries(buildSummaries(updated));
         setLoading(false);
       })
       .catch(() => setLoading(false));
