@@ -26,7 +26,7 @@ export const CharacterCreationModal: React.FC<CharacterCreationModalProps> = ({ 
       <DialogContent className="sm:max-w-md bg-zinc-900 border-white/10 p-0 gap-0 [&>button]:hidden">
         <div className="px-6 pt-5 pb-3">
           <h3 className="text-white text-lg font-bold tracking-tight">Character Creation</h3>
-          <p className="text-zinc-400 text-sm mt-1">Select or import a character from Library or Create New.</p>
+          <p className="text-zinc-400 text-sm mt-1">Select an option below to continue.</p>
         </div>
         <div className="px-6 pb-6 grid grid-cols-2 gap-3">
           <button
