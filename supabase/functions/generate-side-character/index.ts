@@ -50,7 +50,7 @@ serve(async (req) => {
       throw new Error("XAI_API_KEY not configured. Please add your Grok API key in settings.");
     }
 
-    const prompt = `Based on this character's first appearance in a roleplay scenario, generate a detailed profile.
+    const prompt = `Based on this character's first appearance in a roleplay story, generate a detailed profile.
 
 CHARACTER NAME: ${name}
 FIRST APPEARANCE DIALOG: ${dialogContext}
@@ -106,7 +106,7 @@ Return ONLY valid JSON, no markdown formatting.`;
         messages: [
           { 
             role: "system", 
-            content: "You are a creative writing assistant specialized in character creation for roleplay scenarios. You generate detailed, consistent character profiles. Return ONLY valid JSON with no markdown code blocks or extra formatting." 
+            content: "You are a creative writing assistant specialized in character creation for roleplay stories. You generate detailed, consistent character profiles. Return ONLY valid JSON with no markdown code blocks or extra formatting." 
           },
           { role: "user", content: prompt }
         ],

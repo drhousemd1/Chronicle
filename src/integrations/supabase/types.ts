@@ -293,7 +293,7 @@ export type Database = {
             foreignKeyName: "characters_scenario_id_fkey"
             columns: ["scenario_id"]
             isOneToOne: false
-            referencedRelation: "scenarios"
+            referencedRelation: "stories"
             referencedColumns: ["id"]
           },
         ]
@@ -328,7 +328,7 @@ export type Database = {
             foreignKeyName: "codex_entries_scenario_id_fkey"
             columns: ["scenario_id"]
             isOneToOne: false
-            referencedRelation: "scenarios"
+            referencedRelation: "stories"
             referencedColumns: ["id"]
           },
         ]
@@ -375,7 +375,7 @@ export type Database = {
             foreignKeyName: "content_themes_scenario_id_fkey"
             columns: ["scenario_id"]
             isOneToOne: true
-            referencedRelation: "scenarios"
+            referencedRelation: "stories"
             referencedColumns: ["id"]
           },
         ]
@@ -416,7 +416,7 @@ export type Database = {
             foreignKeyName: "conversations_scenario_id_fkey"
             columns: ["scenario_id"]
             isOneToOne: false
-            referencedRelation: "scenarios"
+            referencedRelation: "stories"
             referencedColumns: ["id"]
           },
         ]
@@ -739,7 +739,7 @@ export type Database = {
             foreignKeyName: "published_scenarios_scenario_id_fkey"
             columns: ["scenario_id"]
             isOneToOne: true
-            referencedRelation: "scenarios"
+            referencedRelation: "stories"
             referencedColumns: ["id"]
           },
         ]
@@ -778,7 +778,7 @@ export type Database = {
             foreignKeyName: "remixed_scenarios_remixed_scenario_id_fkey"
             columns: ["remixed_scenario_id"]
             isOneToOne: false
-            referencedRelation: "scenarios"
+            referencedRelation: "stories"
             referencedColumns: ["id"]
           },
         ]
@@ -941,60 +941,6 @@ export type Database = {
           },
         ]
       }
-      scenarios: {
-        Row: {
-          cover_image_position: Json | null
-          cover_image_url: string | null
-          created_at: string | null
-          description: string | null
-          id: string
-          opening_dialog: Json | null
-          selected_art_style: string | null
-          selected_model: string | null
-          tags: string[] | null
-          title: string
-          ui_settings: Json | null
-          updated_at: string | null
-          user_id: string
-          version: number | null
-          world_core: Json
-        }
-        Insert: {
-          cover_image_position?: Json | null
-          cover_image_url?: string | null
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          opening_dialog?: Json | null
-          selected_art_style?: string | null
-          selected_model?: string | null
-          tags?: string[] | null
-          title?: string
-          ui_settings?: Json | null
-          updated_at?: string | null
-          user_id: string
-          version?: number | null
-          world_core?: Json
-        }
-        Update: {
-          cover_image_position?: Json | null
-          cover_image_url?: string | null
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          opening_dialog?: Json | null
-          selected_art_style?: string | null
-          selected_model?: string | null
-          tags?: string[] | null
-          title?: string
-          ui_settings?: Json | null
-          updated_at?: string | null
-          user_id?: string
-          version?: number | null
-          world_core?: Json
-        }
-        Relationships: []
-      }
       scenes: {
         Row: {
           created_at: string | null
@@ -1028,7 +974,7 @@ export type Database = {
             foreignKeyName: "scenes_scenario_id_fkey"
             columns: ["scenario_id"]
             isOneToOne: false
-            referencedRelation: "scenarios"
+            referencedRelation: "stories"
             referencedColumns: ["id"]
           },
         ]
@@ -1149,6 +1095,60 @@ export type Database = {
           overlay_color?: string
           overlay_opacity?: number
           user_id?: string
+        }
+        Relationships: []
+      }
+      stories: {
+        Row: {
+          cover_image_position: Json | null
+          cover_image_url: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          opening_dialog: Json | null
+          selected_art_style: string | null
+          selected_model: string | null
+          tags: string[] | null
+          title: string
+          ui_settings: Json | null
+          updated_at: string | null
+          user_id: string
+          version: number | null
+          world_core: Json
+        }
+        Insert: {
+          cover_image_position?: Json | null
+          cover_image_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          opening_dialog?: Json | null
+          selected_art_style?: string | null
+          selected_model?: string | null
+          tags?: string[] | null
+          title?: string
+          ui_settings?: Json | null
+          updated_at?: string | null
+          user_id: string
+          version?: number | null
+          world_core?: Json
+        }
+        Update: {
+          cover_image_position?: Json | null
+          cover_image_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          opening_dialog?: Json | null
+          selected_art_style?: string | null
+          selected_model?: string | null
+          tags?: string[] | null
+          title?: string
+          ui_settings?: Json | null
+          updated_at?: string | null
+          user_id?: string
+          version?: number | null
+          world_core?: Json
         }
         Relationships: []
       }

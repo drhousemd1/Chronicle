@@ -19,7 +19,7 @@ import { CoverImageGenerationModal } from './CoverImageGenerationModal';
 import { SceneImageGenerationModal } from './SceneImageGenerationModal';
 import { CoverImageActionButtons } from './CoverImageActionButtons';
 import { SceneGalleryActionButtons } from './SceneGalleryActionButtons';
-import { ShareScenarioModal } from './ShareScenarioModal';
+import { ShareScenarioModal } from './ShareStoryModal';
 import { ContentThemesSection } from './ContentThemesSection';
 import { aiEnhanceWorldField } from '@/services/world-ai';
 import { EnhanceModeModal, EnhanceMode } from './EnhanceModeModal';
@@ -442,7 +442,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
       <div className="flex-1 overflow-y-auto scrollbar-thin bg-slate-50/30">
         <div className="p-4 lg:p-10 max-w-4xl mx-auto space-y-12 pb-20">
           <div className="mb-2">
-            <h1 className="text-2xl lg:text-4xl font-black text-slate-900 tracking-tight">Scenario Setup</h1>
+            <h1 className="text-2xl lg:text-4xl font-black text-slate-900 tracking-tight">Story Setup</h1>
             <p className="text-sm font-medium text-slate-500 mt-1">Configure the foundation of your interactive narrative.</p>
           </div>
 
@@ -518,7 +518,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                       />
                       
                       <div>
-                        <FieldLabel label="Scenario Name" fieldName="scenarioName" />
+                        <FieldLabel label="Story Name" fieldName="scenarioName" />
                         <AutoResizeTextarea value={world.core.scenarioName} onChange={(v) => updateCore({ scenarioName: v })} placeholder="e.g. Chronicles of Eldoria" className="px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                       </div>
                       <div>
@@ -572,7 +572,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                 <div className="p-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
                   <div className="grid grid-cols-1 gap-8">
                     <div>
-                      <FieldLabel label="Scenario" fieldName="storyPremise" />
+                      <FieldLabel label="Story Premise" fieldName="storyPremise" />
                       <AutoResizeTextarea value={world.core.storyPremise || ''} onChange={(v) => updateCore({ storyPremise: v })} rows={8} placeholder="What's the central situation or conflict? What's at stake? Describe the overall narrative the AI should understand..." className="px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                     </div>
                     

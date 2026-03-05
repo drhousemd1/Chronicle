@@ -28,7 +28,7 @@ import { AvatarActionButtons } from './AvatarActionButtons';
 import { ChangeNameModal } from './ChangeNameModal';
 import { CharacterGoalsSection } from './CharacterGoalsSection';
 import { StoryGoalsSection } from './StoryGoalsSection';
-import { ScenarioCardView } from './ScenarioCardView';
+import { ScenarioCardView } from './StoryCardView';
 import { PersonalitySection } from './PersonalitySection';
 import { defaultPersonality } from './PersonalitySection';
 import { uid, now } from '@/utils';
