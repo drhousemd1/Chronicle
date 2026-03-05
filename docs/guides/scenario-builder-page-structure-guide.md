@@ -82,6 +82,19 @@
 | **Content Themes section** | Main | Tag selectors for: Character Types, Story Type (SFW/NSFW toggle), Genre, Origin, Trigger Warnings, Custom Tags |
 | **Share Your Story section** | Main | "Publish to Gallery" button, opens ShareScenarioModal |
 
+### Publish Validation Error States
+
+When the user clicks "Publish to Gallery", `validateForPublish()` runs and highlights invalid fields. Errors **clear live** as the user fixes them (see Section 6 for mechanism).
+
+| Pattern | Classes | Applied To |
+|---------|---------|------------|
+| Invalid input border | `border-red-500 ring-2 ring-red-500` | Story Name, Story Premise, Brief Description, Opening Dialog, Story Arc Title, Desired Outcome textareas/inputs |
+| Inline error text | `text-sm text-red-500 font-medium mt-1` | `<p>` below each invalid field |
+| Error label color | `text-red-500` (replaces normal label color) | Field labels for invalid inputs |
+| Cover image error | `border-red-500 ring-2 ring-red-500` on preview container + error text | Cover image preview area |
+| Section-level error | `border-red-500` on section card shell | Story Arcs, Locations, Content Themes sections (via `hasError` prop) |
+| Bottom summary panel | `bg-red-500/10 border border-red-500/30 rounded-2xl p-6` | Fixed panel listing all current errors, each wrapped in `data-publish-error` for auto-scroll |
+
 ---
 
 ## 4. Cards / List Items
@@ -157,6 +170,35 @@ Direct `useState` in `Index.tsx`: `activeData`, `activeId`, `activeCoverImage`, 
 ### Art Styles
 Fetched from `art_styles` table via `ArtStylesContext`. Each style has: `id`, `displayName`, `thumbnailUrl`, `backendPrompt`, `backendPromptMasculine`, `backendPromptAndrogynous`.
 
+### Publish Validation System
+
+**Source file**: `src/utils/publish-validation.ts`
+
+**Function**: `validateForPublish({ scenarioTitle, world, characters, openingDialog, contentThemes, coverImage })` → returns `PublishValidationErrors`
+
+**Validation rules**:
+
+| # | Field | Rule | Error key |
+|---|-------|------|-----------|
+| 1 | Story title | Non-empty and not `"Untitled Story"` | `storyTitle` |
+| 2 | Story premise | `world.core.storyPremise` non-empty | `storyPremise` |
+| 3 | Opening dialog | `openingDialog.text` non-empty | `openingDialog` |
+| 4 | Tags | ≥ 5 tags across characterTypes + genres + origin + triggerWarnings + customTags (excludes storyType) | `tags` (includes live count) |
+| 5 | SFW/NSFW | `contentThemes.storyType` must be `"SFW"` or `"NSFW"` | `storyType` |
+| 6 | Characters | ≥ 1 character | `noCharacters` |
+| 7 | Character names | Each character's name non-empty and not `"New Character"` | `characters[id]` |
+| 8 | NSFW age | If NSFW, all characters with numeric age must be ≥ 18 | `characters[id]` |
+| 9 | Location | ≥ 1 `structuredLocation` with both label and description filled | `location` |
+| 10 | Story arc | ≥ 1 `storyGoal` with both title and desired outcome filled | `storyArc` |
+| 11 | Cover image | `coverImage` URL non-empty | `coverImage` |
+| 12 | Brief description | `world.core.briefDescription` non-empty | `briefDescription` |
+
+**`PublishValidationErrors` interface**: All fields are optional strings, except `characters` which is `Record<string, string[]>` (character ID → array of error messages).
+
+**Live re-validation**: A `useEffect` in `WorldTab.tsx` watches `[world, characters, openingDialog, contentThemes, coverImage]`. When `publishErrors` is non-empty, it re-runs `validateForPublish` on every state change, so errors clear/update in real-time (e.g., tag count updates from "currently 0" to "currently 3" as the user selects tags).
+
+**`hasError` prop propagation**: `StoryGoalsSection` and `ContentThemesSection` receive a `hasError: boolean` prop from `WorldTab` to apply section-level `border-red-500` highlighting.
+
 ---
 
 ## 7. Component Tree
@@ -164,7 +206,7 @@ Fetched from `art_styles` table via `ArtStylesContext`. Each style has: `id`, `d
 ```
 Index.tsx
   > header (back arrow + "Scenario Builder" + Save / Save and Close buttons)
-  > WorldTab
+  > WorldTab                          ← uses publish-validation.ts
     > aside (Character Roster sidebar)
       > CharacterButton (per character)
       > AddCharacterPlaceholder
@@ -176,7 +218,7 @@ Index.tsx
         > Scenario (storyPremise) textarea + AI Enhance button
         > Primary Locations (structured rows) + Add Location
         > Custom World Content sections + Add Custom Content
-      > StoryGoalsSection
+      > StoryGoalsSection              ← receives hasError prop
         > per goal: ArcModeToggle, GuidanceStrengthSlider, ArcBranchLane, ArcConnectors, ArcPhaseCard
       > Opening Dialog section
         > HintBox, textarea, Starting Day counter, Time of Day icons
@@ -188,12 +230,13 @@ Index.tsx
       > World Codex section
         > Dialog Formatting (critical rules read-only + additional rules editable)
         > Additional Entries (title/body pairs)
-      > ContentThemesSection
+      > ContentThemesSection           ← receives hasError prop
         > CategorySelector per category
         > StoryTypeSelector
         > CustomTagsSection
       > Share Your Story section
         > "Publish to Gallery" button
+        > Publish error summary panel (conditional)
     > SceneTagEditorModal
     > CoverImageGenerationModal
     > SceneImageGenerationModal
@@ -221,6 +264,8 @@ Index.tsx
 | `handleAddScene` | File input → resize (1024×768, quality 0.7) → upload → create Scene object |
 | `handleDeleteScene` | Opens styled `DeleteConfirmDialog` → on confirm, removes scene from state |
 | `handleDeleteCover` | Opens styled `DeleteConfirmDialog` → on confirm, clears cover image from state |
+| `publishErrors` state | Set by "Publish" click via `validateForPublish()`, then live-updated by `useEffect` on every input change until all errors resolve |
+| `hasError` prop | Boolean passed to `StoryGoalsSection` and `ContentThemesSection` — derived from `publishErrors.storyArc` / `publishErrors.tags` / `publishErrors.storyType` presence |
 
 ---
 
@@ -342,6 +387,12 @@ Tags selected in the Content Themes section are processed through `tag-injection
 - **ACTIVE — Bug #6**: Memory system architecture incomplete — no long-term accumulation or summarization.
 - **RESOLVED — Bug #7**: Previous issue resolved.
 - **RESOLVED — Bug #8**: Previous issue resolved.
+
+### Publish Validation UX Fixes (2026-03-05)
+
+- **RESOLVED**: Publish error messages stayed red/stuck after user fixed the field. Fixed via live re-validation `useEffect` in `WorldTab.tsx`.
+- **RESOLVED**: Tag count in error message showed "currently 0" even after selecting tags. Fixed by same live re-validation.
+- **RESOLVED**: Cover image and brief description had no publish validation. Added as rules #11 and #12 in `validateForPublish()`.
 
 ---
 
