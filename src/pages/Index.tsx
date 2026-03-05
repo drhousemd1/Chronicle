@@ -1480,7 +1480,7 @@ const IndexContent = () => {
             <SidebarItem active={tab === "library"} label="Character Library" icon={<IconsList.Library />} onClick={() => handleNavigateAway("library")} collapsed={sidebarCollapsed} />
             <SidebarItem active={tab === "image_library"} label="Image Library" icon={<IconsList.ImageLibrary />} onClick={() => handleNavigateAway("image_library")} collapsed={sidebarCollapsed} />
             
-            <SidebarItem active={tab === "conversations"} label="Chat History" icon={<IconsList.Chat />} onClick={() => { setTab("conversations"); }} collapsed={sidebarCollapsed} />
+            <SidebarItem active={tab === "conversations"} label="Chat History" icon={<IconsList.Chat />} onClick={() => handleNavigateAway("conversations")} collapsed={sidebarCollapsed} />
             
             <SidebarItem 
               active={tab === "world" || tab === "characters"} 
