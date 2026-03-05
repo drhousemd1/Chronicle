@@ -1,55 +1,41 @@
 
-I found the exact issue and will fix it in two places so Story Arc validation behaves like the other fields.
 
-## What’s wrong now
-1. **Random red text placement**  
-   In `WorldTab.tsx`, the story arc error is rendered as a standalone paragraph **between sections**:
-   - `publishErrors.storyArc && <p ...>{publishErrors.storyArc}</p>`
-   That’s why it appears “floating” in the middle of the page.
+## Plan: Add Cover Image + Brief Description Validation & Live Error Clearing
 
-2. **Story Arc inputs not highlighted**  
-   In `StoryGoalsSection.tsx`, `hasError` currently only adds a red border to the outer section.  
-   The actual inputs:
-   - **Story Arc Title**
-   - **Desired Outcome**
-   still use the default border classes and never get per-field error styles/messages.
+Three problems to fix:
 
-## Implementation plan
+### 1. New validation checks: Cover Image and Brief Description
 
-### 1) `src/components/chronicle/WorldTab.tsx`
-- Remove the standalone/floating story-arc error paragraph above `<StoryGoalsSection />`.
-- Keep passing `hasError={!!publishErrors.storyArc}` to the section.
-- Add `data-publish-error` targeting for Story Arcs container (or pass through to section root) so auto-scroll still lands correctly on Story Arc errors after publish validation.
+**`src/utils/publish-validation.ts`**
+- Add `coverImage?: string` and `briefDescription?: string` to `PublishValidationErrors` interface
+- Add `coverImage: string` and pass `briefDescription` (from `world.core.briefDescription`) to `validateForPublish` input
+- New check: if `coverImage` is empty, set `errors.coverImage = 'Cover image is required'`
+- New check: if `briefDescription` is empty, set `errors.briefDescription = 'Brief description is required'`
 
-### 2) `src/components/chronicle/StoryGoalsSection.tsx`
-For each arc card, add field-level validation styling when publish errors are active:
-- Compute per-card booleans:
-  - `titleMissing = hasError && !goal.title.trim()`
-  - `desiredOutcomeMissing = hasError && !goal.desiredOutcome.trim()`
+**`src/components/chronicle/WorldTab.tsx`**
+- Pass `coverImage` to `validateForPublish` call (line ~1210)
+- Add error display for cover image (red border on the cover preview container + error text)
+- Add error styling to Brief Description field (same `border-red-500 ring-2 ring-red-500` pattern + error text below)
+- Add both errors to the bottom summary panel list
+- Add `data-publish-error` wrappers for auto-scroll
 
-Apply to **Story Arc Title** input:
-- Border style when invalid: `border-red-500 ring-2 ring-red-500`
-- Normal when valid: `border-zinc-700`
-- Add inline error text below input:
-  - class: `text-sm text-red-500 font-medium mt-1`
-  - message: `Story arc title is required`
+### 2. Live error clearing (the main UX problem)
 
-Apply to **Desired Outcome** input:
-- Same conditional border/ring logic
-- Same error text style (`text-sm text-red-500 font-medium mt-1`)
-- message: `Desired outcome is required`
+Currently `publishErrors` is set once on "Publish" click and never updated. When users fix fields, errors stay red.
 
-Also mark Story Arcs section root with `data-publish-error={hasError || undefined}` so first-error auto-scroll remains reliable without the removed floating line.
+**`src/components/chronicle/WorldTab.tsx`**
+- Add a `useEffect` that watches all validated inputs (`world`, `characters`, `openingDialog`, `contentThemes`, `coverImage`). When `publishErrors` is non-empty, re-run `validateForPublish` and update `publishErrors` with the new result. This clears errors as fields are filled.
+- This single effect handles all fields: tags count updates, SFW/NSFW selection, story premise typing, etc.
 
-## Technical details (consistency rules)
-- No error text below `text-sm` (>= 14px).
-- Use the exact same invalid input treatment as Story Name:
-  - `border-red-500 ring-2 ring-red-500`
-- Use the same red text tone everywhere:
-  - `text-red-500` for inline validation text.
+### 3. Pass live tag count to ContentThemesSection error message
 
-## Expected result
-- No more random error text floating between sections.
-- Story Arc Title and Desired Outcome fields are explicitly highlighted in red when invalid.
-- Validation styling is visually consistent with Story Name and other publish-required fields.
-- Publish auto-scroll still jumps to Story Arcs when that requirement fails.
+The tag count in the error message currently only updates on publish click. With the live re-validation effect above, the `publishErrors.tags` string will automatically re-compute with the correct count (e.g., "currently 3" instead of stuck at "currently 0").
+
+### Technical summary
+
+| File | Change |
+|------|--------|
+| `publish-validation.ts` | Add `coverImage` + `briefDescription` fields and checks |
+| `WorldTab.tsx` | Pass new fields to validator, add error UI for cover + description, add `useEffect` for live re-validation |
+| `WorldTab.tsx` bottom summary | Add cover image + brief description error lines |
+
