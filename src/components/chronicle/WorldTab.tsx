@@ -1,6 +1,7 @@
 
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { World, OpeningDialog, CodexEntry, Character, Scene, TimeOfDay, WorldCore, ContentThemes, defaultContentThemes, LocationEntry, WorldCustomSection, WorldCustomItem, WorldCustomSectionType, StoryGoal } from '@/types';
+import { PublishValidationErrors } from '@/utils/publish-validation';
 import { EnhanceableWorldFields } from '@/services/world-ai';
 import { AutoResizeTextarea } from './AutoResizeTextarea';
 import { Button, Card } from './UI';
@@ -65,27 +66,41 @@ const HintBox: React.FC<{ hints: string[] }> = ({ hints }) => (
 
 // AutoResizeTextarea is now imported from ./AutoResizeTextarea
 
-const CharacterButton: React.FC<{ char: Character; onSelect: (id: string) => void }> = ({ char, onSelect }) => (
-  <button 
-    type="button"
-    onClick={() => onSelect(char.id)}
-    className="w-full text-left group flex items-center gap-4 p-2 rounded-2xl bg-black/80 hover:bg-black transition-all duration-200 border border-[#4a5f7f] hover:border-[#6b82a8] cursor-pointer"
-  >
-    <div className="w-14 h-14 shrink-0 rounded-xl overflow-hidden shadow-sm transition-transform duration-300 group-hover:scale-105 bg-zinc-800">
-      {char.avatarDataUrl ? (
-        <img src={char.avatarDataUrl} alt={char.name} className="w-full h-full object-cover" />
-      ) : (
-        <div className="w-full h-full flex items-center justify-center font-black text-slate-400 text-lg italic uppercase">
-          {char.name.charAt(0)}
-        </div>
+const CharacterButton: React.FC<{ char: Character; onSelect: (id: string) => void; errors?: string[] }> = ({ char, onSelect, errors }) => (
+  <div className="space-y-1">
+    <button 
+      type="button"
+      onClick={() => onSelect(char.id)}
+      className={cn(
+        "w-full text-left group flex items-center gap-4 p-2 rounded-2xl bg-black/80 hover:bg-black transition-all duration-200 cursor-pointer",
+        errors && errors.length > 0
+          ? "border-2 border-red-500"
+          : "border border-[#4a5f7f] hover:border-[#6b82a8]"
       )}
-    </div>
-    <div className="min-w-0 flex-1 space-y-0.5">
-      <div className="text-sm font-bold text-white truncate group-hover:text-blue-300 transition-colors">{char.name}</div>
-      <div className="text-xs text-slate-400"><span className="text-slate-500">Age:</span> {char.age || ''}</div>
-      <div className="text-xs text-slate-400"><span className="text-slate-500">Controlled by:</span> <span className="uppercase tracking-wider font-black">{char.controlledBy}</span></div>
-    </div>
-  </button>
+    >
+      <div className="w-14 h-14 shrink-0 rounded-xl overflow-hidden shadow-sm transition-transform duration-300 group-hover:scale-105 bg-zinc-800">
+        {char.avatarDataUrl ? (
+          <img src={char.avatarDataUrl} alt={char.name} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center font-black text-slate-400 text-lg italic uppercase">
+            {char.name.charAt(0)}
+          </div>
+        )}
+      </div>
+      <div className="min-w-0 flex-1 space-y-0.5">
+        <div className="text-sm font-bold text-white truncate group-hover:text-blue-300 transition-colors">{char.name}</div>
+        <div className="text-xs text-slate-400"><span className="text-slate-500">Age:</span> {char.age || ''}</div>
+        <div className="text-xs text-slate-400"><span className="text-slate-500">Controlled by:</span> <span className="uppercase tracking-wider font-black">{char.controlledBy}</span></div>
+      </div>
+    </button>
+    {errors && errors.length > 0 && (
+      <div className="pl-2 space-y-0.5">
+        {errors.map((err, i) => (
+          <p key={i} className="text-xs text-red-400 font-medium">{err}</p>
+        ))}
+      </div>
+    )}
+  </div>
 );
 
 export const WorldTab: React.FC<WorldTabProps> = ({ 
@@ -133,6 +148,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   const [sceneAspectRatios, setSceneAspectRatios] = useState<Record<string, { label: string; orientation: 'portrait' | 'landscape' | 'square' }>>({});
   const [isCharacterCreationOpen, setIsCharacterCreationOpen] = useState(false);
   const [showContentTypeModal, setShowContentTypeModal] = useState(false);
+  const [publishErrors, setPublishErrors] = useState<PublishValidationErrors>({});
 
   // Detect aspect ratios for scene images
   useEffect(() => {
@@ -394,20 +410,32 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   const mainCharacters = characters.filter(c => c.characterRole === 'Main');
   const sideCharacters = characters.filter(c => c.characterRole === 'Side');
 
+  const noCharactersError = publishErrors.noCharacters;
+
   const AddCharacterPlaceholder = () => (
-    <button 
-      type="button"
-      onClick={() => setIsCharacterCreationOpen(true)}
-      className="group/add w-full flex items-center gap-4 p-3 rounded-2xl transition-all duration-300 bg-[#3a3a3f]/30 hover:bg-[#3a3a3f]/50 border-2 border-dashed border-zinc-600 hover:border-zinc-500 cursor-pointer"
-    >
-      <div className="w-14 h-14 shrink-0 rounded-xl bg-[#1a1a1f] border-2 border-dashed border-zinc-600 flex items-center justify-center text-zinc-500 transition-all duration-300 group-hover/add:border-zinc-400 group-hover/add:bg-[#3a3a3f]/70 group-hover/add:text-zinc-300">
-         <span className="text-2xl font-light">+</span>
-      </div>
-      <div className="text-left">
-        <div className="text-xs font-bold text-zinc-400 group-hover/add:text-zinc-200 transition-colors uppercase tracking-tight">Add / Create</div>
-        <div className="text-[9px] font-black text-zinc-500 group-hover/add:text-zinc-400 uppercase tracking-widest mt-0.5">Character Registry</div>
-      </div>
-    </button>
+    <div className="space-y-1">
+      <button 
+        type="button"
+        onClick={() => setIsCharacterCreationOpen(true)}
+        className={cn(
+          "group/add w-full flex items-center gap-4 p-3 rounded-2xl transition-all duration-300 bg-[#3a3a3f]/30 hover:bg-[#3a3a3f]/50 cursor-pointer",
+          noCharactersError
+            ? "border-2 border-dashed border-red-500"
+            : "border-2 border-dashed border-zinc-600 hover:border-zinc-500"
+        )}
+      >
+        <div className="w-14 h-14 shrink-0 rounded-xl bg-[#1a1a1f] border-2 border-dashed border-zinc-600 flex items-center justify-center text-zinc-500 transition-all duration-300 group-hover/add:border-zinc-400 group-hover/add:bg-[#3a3a3f]/70 group-hover/add:text-zinc-300">
+           <span className="text-2xl font-light">+</span>
+        </div>
+        <div className="text-left">
+          <div className="text-xs font-bold text-zinc-400 group-hover/add:text-zinc-200 transition-colors uppercase tracking-tight">Add / Create</div>
+          <div className="text-[9px] font-black text-zinc-500 group-hover/add:text-zinc-400 uppercase tracking-widest mt-0.5">Character Registry</div>
+        </div>
+      </button>
+      {noCharactersError && (
+        <p className="text-xs text-red-400 font-medium pl-2">{noCharactersError}</p>
+      )}
+    </div>
   );
 
   return (
@@ -423,7 +451,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                <div className="text-[10px] font-bold text-white uppercase tracking-wider">Main Characters</div>
             </div>
             <div className="space-y-2">
-              {mainCharacters.map(char => <CharacterButton key={char.id} char={char} onSelect={onSelectCharacter} />)}
+              {mainCharacters.map(char => <CharacterButton key={char.id} char={char} onSelect={onSelectCharacter} errors={publishErrors.characters?.[char.id]} />)}
               <AddCharacterPlaceholder />
             </div>
           </section>
@@ -433,7 +461,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                <div className="text-[10px] font-bold text-white uppercase tracking-wider">Side Characters</div>
             </div>
             <div className="space-y-2">
-              {sideCharacters.map(char => <CharacterButton key={char.id} char={char} onSelect={onSelectCharacter} />)}
+              {sideCharacters.map(char => <CharacterButton key={char.id} char={char} onSelect={onSelectCharacter} errors={publishErrors.characters?.[char.id]} />)}
               <AddCharacterPlaceholder />
             </div>
           </section>
@@ -1279,10 +1307,18 @@ export const WorldTab: React.FC<WorldTabProps> = ({
       {user && (
         <ShareScenarioModal
           isOpen={showShareModal}
-          onClose={() => setShowShareModal(false)}
+          onClose={() => {
+            setShowShareModal(false);
+            setPublishErrors({});
+          }}
           scenarioId={scenarioId}
           scenarioTitle={world.core.scenarioName || 'Untitled Story'}
           userId={user.id}
+          characters={characters}
+          world={world}
+          openingDialog={openingDialog}
+          contentThemes={contentThemes}
+          onPublishValidationErrors={setPublishErrors}
         />
       )}
       
