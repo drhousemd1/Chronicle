@@ -44,7 +44,7 @@ interface ImageLibraryTabProps {
 export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange, searchQuery = '', uploadRef }) => {
   const { user } = useAuth();
   const [folders, setFolders] = useState<ImageFolder[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState<ImageFolder | null>(null);
   const [folderImages, setFolderImages] = useState<LibraryImage[]>([]);
   const [isLoadingImages, setIsLoadingImages] = useState(false);
@@ -108,7 +108,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
 
   const loadFolders = async () => {
     if (!user) return;
-    setIsLoading(true);
+    
     try {
       const { data, error } = await supabase.rpc('get_folders_with_details', {
         p_user_id: user.id,
