@@ -15,7 +15,7 @@ import { AccountSettingsTab } from "@/components/account/AccountSettingsTab";
 import { SubscriptionTab } from "@/components/account/SubscriptionTab";
 import { PublicProfileTab } from "@/components/account/PublicProfileTab";
 
-import { ScenarioHub } from "@/components/chronicle/ScenarioHub";
+import { ScenarioHub } from "@/components/chronicle/StoryHub";
 import { ModelSettingsTab } from "@/components/chronicle/ModelSettingsTab";
 import { ChatInterfaceTab } from "@/components/chronicle/ChatInterfaceTab";
 import { ImageLibraryTab } from "@/components/chronicle/ImageLibraryTab";
@@ -87,7 +87,7 @@ function SidebarItem({
         {!collapsed && <span className="truncate">{label}</span>}
       </div>
       {!collapsed && subtitle && (
-        <div className={`text-[10px] font-black tracking-wide uppercase mt-1 ml-8 text-left transition-colors duration-200 ${active ? "text-blue-200 opacity-100" : "text-slate-600 opacity-70 group-hover:text-slate-400"}`}>
+        <div className={`text-[10px] font-black tracking-wide uppercase mt-1 ml-8 text-left transition-colors duration-200 truncate ${active ? "text-blue-200 opacity-100" : "text-slate-600 opacity-70 group-hover:text-slate-400"}`}>
           {subtitle}
         </div>
       )}
@@ -1446,7 +1446,7 @@ const IndexContent = () => {
           </div>
           <nav className={`flex-1 overflow-y-auto pb-4 mt-4 space-y-1 ${sidebarCollapsed ? 'px-2' : 'px-4'}`}>
             <SidebarItem active={tab === "gallery"} label="Community Gallery" icon={<IconsList.Gallery />} onClick={() => handleNavigateAway("gallery")} collapsed={sidebarCollapsed} />
-            <SidebarItem active={tab === "hub"} label="Your Stories" icon={<IconsList.Hub />} onClick={() => handleNavigateAway("hub")} collapsed={sidebarCollapsed} />
+            <SidebarItem active={tab === "hub"} label="My Stories" icon={<IconsList.Hub />} onClick={() => handleNavigateAway("hub")} collapsed={sidebarCollapsed} />
             <SidebarItem active={tab === "library"} label="Character Library" icon={<IconsList.Library />} onClick={() => handleNavigateAway("library")} collapsed={sidebarCollapsed} />
             <SidebarItem active={tab === "image_library"} label="Image Library" icon={<IconsList.ImageLibrary />} onClick={() => handleNavigateAway("image_library")} collapsed={sidebarCollapsed} />
             
@@ -1454,7 +1454,7 @@ const IndexContent = () => {
             
             <SidebarItem 
               active={tab === "world" || tab === "characters"} 
-              label="Scenario Builder"
+              label="Story Builder"
               subtitle={activeId ? (activeMeta?.title || "Unsaved Draft") : undefined}
               icon={<IconsList.Builder />} 
               onClick={() => {
@@ -1526,7 +1526,7 @@ const IndexContent = () => {
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                   </button>
                   <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
-                    Scenario Builder
+                    Story Builder
                   </h1>
                 </div>
               )}
@@ -1538,7 +1538,7 @@ const IndexContent = () => {
               {tab === "hub" && (
                 <div className="flex items-center gap-6">
                   <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
-                    Your Stories
+                    My Stories
                   </h1>
                   <div className="overflow-x-auto scrollbar-none flex-shrink-0">
                     <div className="flex items-center bg-[#2b2b2e] rounded-full p-1 gap-0.5 border border-[#2b2b2e]">
@@ -2239,7 +2239,7 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
       <BackgroundPickerModal
         isOpen={isBackgroundModalOpen}
         onClose={() => setIsBackgroundModalOpen(false)}
-        title="Your Stories Background"
+        title="My Stories Background"
         selectedBackgroundId={selectedHubBackgroundId}
         backgrounds={hubBackgrounds}
         onSelectBackground={handleSelectBackground}
@@ -2297,7 +2297,7 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
           setRemixConfirmId(null);
         }}
         title="Clone Story for Editing"
-        message="You are about to open another creator's story in the editor. This will clone the details of the story and create a version in 'Your Stories' that you can then edit. This will not affect the original creator's uploaded story."
+        message="You are about to open another creator's story in the editor. This will clone the details of the story and create a version in 'My Stories' that you can then edit. This will not affect the original creator's uploaded story."
       />
 
       {/* AI Prompt Modal */}

@@ -58,7 +58,7 @@ serve(async (req) => {
       fullPrompt += `. Avoid: ${negativePrompt}`;
     }
 
-    console.log(`[generate-cover-image] Generating cover for "${scenarioTitle || 'scenario'}" with prompt (${fullPrompt.length} chars)`);
+    console.log(`[generate-cover-image] Generating cover for "${scenarioTitle || 'story'}" with prompt (${fullPrompt.length} chars)`);
 
     // GROK ONLY -- use xAI API
     const XAI_API_KEY = Deno.env.get("XAI_API_KEY");

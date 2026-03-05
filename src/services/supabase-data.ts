@@ -291,7 +291,7 @@ function dbToConversation(row: any, messages: any[]): Conversation {
 
 export async function fetchMyScenarios(userId: string): Promise<ScenarioMetadata[]> {
   const { data, error } = await supabase
-    .from('scenarios')
+    .from('stories' as any)
     .select('id, title, description, cover_image_url, cover_image_position, tags, created_at, updated_at')
     .eq('user_id', userId)
     .order('updated_at', { ascending: false });
@@ -307,7 +307,7 @@ export async function fetchScenarioById(id: string): Promise<{
 } | null> {
   // Parallel fetch of scenario + all related data
   const [scenarioResult, charactersResult, codexResult, scenesResult, conversationsResult] = await Promise.all([
-    supabase.from('scenarios').select('*').eq('id', id).maybeSingle(),
+    supabase.from('stories' as any).select('*').eq('id', id).maybeSingle(),
     supabase.from('characters').select('*').eq('scenario_id', id),
     supabase.from('codex_entries').select('*').eq('scenario_id', id),
     supabase.from('scenes').select('*').eq('scenario_id', id),
@@ -317,7 +317,7 @@ export async function fetchScenarioById(id: string): Promise<{
   if (scenarioResult.error) throw scenarioResult.error;
   if (!scenarioResult.data) return null;
 
-  const scenario = scenarioResult.data;
+  const scenario = scenarioResult.data as any;
   const conversations = conversationsResult.data || [];
 
   // OPTIMIZATION: Batch fetch ALL messages for ALL conversations in a single query
@@ -408,7 +408,7 @@ export async function fetchScenarioForPlay(id: string): Promise<{
 } | null> {
   // Parallel fetch of scenario + related data (but NOT conversation messages)
   const [scenarioResult, charactersResult, codexResult, scenesResult, convCountResult] = await Promise.all([
-    supabase.from('scenarios').select('*').eq('id', id).maybeSingle(),
+    supabase.from('stories' as any).select('*').eq('id', id).maybeSingle(),
     supabase.from('characters').select('*').eq('scenario_id', id),
     supabase.from('codex_entries').select('*').eq('scenario_id', id),
     supabase.from('scenes').select('*').eq('scenario_id', id),
@@ -418,7 +418,7 @@ export async function fetchScenarioForPlay(id: string): Promise<{
   if (scenarioResult.error) throw scenarioResult.error;
   if (!scenarioResult.data) return null;
 
-  const scenario = scenarioResult.data;
+  const scenario = scenarioResult.data as any;
 
   const worldCore: WorldCore = (scenario.world_core as WorldCore) || {
     scenarioName: '',
@@ -488,7 +488,7 @@ export async function saveScenario(
 
   // Upsert scenario
   const { error: scenarioError } = await supabase
-    .from('scenarios')
+    .from('stories' as any)
     .upsert({
       id,
       user_id: userId,
@@ -608,7 +608,7 @@ async function syncScenes(scenarioId: string, data: ScenarioData): Promise<void>
 
 export async function deleteScenario(id: string): Promise<void> {
   const { error } = await supabase
-    .from('scenarios')
+    .from('stories' as any)
     .delete()
     .eq('id', id);
 
@@ -624,13 +624,13 @@ export async function deleteScenario(id: string): Promise<void> {
  */
 export async function getScenarioOwner(scenarioId: string): Promise<string | null> {
   const { data, error } = await supabase
-    .from('scenarios')
+    .from('stories' as any)
     .select('user_id')
     .eq('id', scenarioId)
     .maybeSingle();
     
   if (error || !data) return null;
-  return data.user_id;
+  return (data as any).user_id;
 }
 
 /**
@@ -1478,7 +1478,7 @@ export async function updateBackgroundOverlay(userId: string, backgroundId: stri
 
 export async function fetchMyScenariosPaginated(userId: string, limit: number, offset: number): Promise<ScenarioMetadata[]> {
   const { data, error } = await supabase
-    .from('scenarios')
+    .from('stories' as any)
     .select('id, title, description, cover_image_url, cover_image_position, tags, created_at, updated_at')
     .eq('user_id', userId)
     .order('updated_at', { ascending: false })

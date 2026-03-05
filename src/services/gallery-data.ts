@@ -100,7 +100,7 @@ export async function fetchPublishedScenarios(
         is_published,
         created_at,
         updated_at,
-        scenarios!inner (
+        stories!inner (
           id,
           title,
           description,
@@ -182,7 +182,7 @@ export async function fetchPublishedScenarios(
       is_published: item.is_published,
       created_at: item.created_at,
       updated_at: item.updated_at,
-      scenario: item.scenarios,
+      scenario: item.stories,
       publisher: profileMap.get(item.publisher_id) || null,
       contentThemes: themesMap.get(item.scenario_id) || null
     }));
@@ -375,7 +375,7 @@ export async function fetchSavedScenarios(userId: string): Promise<SavedScenario
         is_published,
         created_at,
         updated_at,
-        scenarios (
+        stories (
           id,
           title,
           description,
@@ -413,7 +413,7 @@ export async function fetchSavedScenarios(userId: string): Promise<SavedScenario
     created_at: item.created_at,
     published_scenario: item.published_scenarios ? {
       ...item.published_scenarios,
-      scenario: item.published_scenarios.scenarios,
+      scenario: item.published_scenarios.stories,
       publisher: profileMap.get(item.published_scenarios.publisher_id) || null
     } : undefined
   }));

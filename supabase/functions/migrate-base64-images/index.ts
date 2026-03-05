@@ -32,7 +32,7 @@ serve(async (req) => {
 
     // 1. Migrate cover images
     const { data: scenarios } = await supabase
-      .from('scenarios')
+      .from('stories')
       .select('id, user_id, cover_image_url')
       .like('cover_image_url', 'data:%');
 
@@ -45,7 +45,7 @@ serve(async (req) => {
         const { error: upErr } = await supabase.storage.from('covers').upload(filename, bytes, { contentType: 'image/png', upsert: true });
         if (upErr) { results.errors.push(`cover ${row.id}: ${upErr.message}`); continue; }
         const { data: urlData } = supabase.storage.from('covers').getPublicUrl(filename);
-        await supabase.from('scenarios').update({ cover_image_url: urlData.publicUrl }).eq('id', row.id);
+        await supabase.from('stories').update({ cover_image_url: urlData.publicUrl }).eq('id', row.id);
         results.covers++;
       } catch (e) {
         results.errors.push(`cover ${row.id}: ${e.message}`);

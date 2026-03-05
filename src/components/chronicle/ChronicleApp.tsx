@@ -1,6 +1,6 @@
 
 import React from "react";
-import { ScenarioHub } from "./ScenarioHub";
+import { ScenarioHub } from "./StoryHub";
 
 // Placeholder - full app migration in progress
 export default function ChronicleApp() {

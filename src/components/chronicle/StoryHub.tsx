@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { ScenarioMetadata, ContentThemes } from "@/types";
 import { Eye, Heart, Bookmark, Play, Pencil, Loader2 } from "lucide-react";
 import { Button } from "./UI";
-import { ScenarioDetailModal } from "./ScenarioDetailModal";
+import { ScenarioDetailModal } from "./StoryDetailModal";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { fetchContentThemes } from "@/services/supabase-data";
 import { getPublishedScenario, unpublishScenario, PublishedScenario } from "@/services/gallery-data";

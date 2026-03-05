@@ -7,8 +7,8 @@ export type EnhanceableWorldFields = Extract<keyof WorldCore, 'scenarioName' | '
 // Field-specific prompts that enforce structured expansion
 const FIELD_PROMPTS: Record<EnhanceableWorldFields, { label: string; instruction: string; maxSentences: number }> = {
   scenarioName: {
-    label: "Scenario Name",
-    instruction: "Generate a compelling scenario/story name. Be evocative but concise (2-5 words). Examples: 'Echoes of Ashenvale', 'The Crimson Inheritance', 'Neon Shadows'.",
+    label: "Story Name",
+    instruction: "Generate a compelling story name. Be evocative but concise (2-5 words). Examples: 'Echoes of Ashenvale', 'The Crimson Inheritance', 'Neon Shadows'.",
     maxSentences: 1
   },
   briefDescription: {
@@ -17,7 +17,7 @@ const FIELD_PROMPTS: Record<EnhanceableWorldFields, { label: string; instruction
     maxSentences: 2
   },
   storyPremise: {
-    label: "Scenario",
+    label: "Story Premise",
     instruction: "Describe the central conflict and stakes. Format: Situation + Tension + Stakes. What's happening, why it matters, what could go wrong.",
     maxSentences: 4
   },
@@ -67,7 +67,7 @@ function buildPrompt(
   // Build context from other non-empty fields
   const contextParts: string[] = [];
   if (worldContext.scenarioName && fieldName !== 'scenarioName') {
-    contextParts.push(`- Scenario: ${worldContext.scenarioName}`);
+    contextParts.push(`- Story: ${worldContext.scenarioName}`);
   }
   if (worldContext.briefDescription && fieldName !== 'briefDescription') {
     contextParts.push(`- Description: ${worldContext.briefDescription}`);
@@ -85,7 +85,7 @@ function buildPrompt(
     : 'CURRENT VALUE: Empty - generate appropriate content based on context.\n\n';
 
   if (mode === 'precise') {
-    return `You are enhancing a story/scenario field for an interactive roleplay.
+    return `You are enhancing a story field for an interactive roleplay.
 
 Expand the following into 3-6 short key points separated by semicolons.
 Focus on essential facts only. No sentences, no explanations, no narrative rationale.
@@ -96,7 +96,7 @@ Output format: Point1; Point2; Point3; Point4
 Return ONLY the semicolon-separated points. Nothing else.`;
   }
 
-  return `You are enhancing a story/scenario field for an interactive roleplay. Use STRUCTURED EXPANSION:
+  return `You are enhancing a story field for an interactive roleplay. Use STRUCTURED EXPANSION:
 
 RULES:
 1. Be concise and factual (max ${fieldConfig.maxSentences} sentences)
