@@ -314,11 +314,11 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                   {/* Row 1: Goal Name + Delete + Progress Ring */}
                   <div className="flex items-start gap-4">
                     <div className="flex-1">
-                      <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block mb-2">Goal Name</label>
+                      <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block mb-2">Story Arc Title</label>
                       <AutoResizeTextarea
                         value={goal.title}
                         onChange={(v) => updateGoal(goal.id, { title: v })}
-                        placeholder="Enter goal name..."
+                        placeholder="Enter story arc title..."
                         className="mt-1 px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                       />
                     </div>
