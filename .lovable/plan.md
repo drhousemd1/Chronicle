@@ -1,25 +1,23 @@
 
 
-## Plan: Fix Blank Chat History
+## Plan: Fix Persistent "Unsaved Draft" Label
 
-**Root cause:** The `fetchConversationRegistry()` function in `src/services/supabase-data.ts` (line 952) joins on `scenarios!inner(...)`, but the actual table name is `stories`. The `!inner` join means conversations without a matching join are excluded entirely -- which means ALL conversations are excluded because the table alias is wrong.
+**Problem:** The Chat History sidebar item bypasses `handleNavigateAway` and directly calls `setTab("conversations")`. This means `activeId` is never cleared when navigating to Chat History, so the subtitle `activeId ? (activeMeta?.title || "Unsaved Draft") : undefined` continues to show "Unsaved Draft" under the Story Builder button.
 
-Every other query in `supabase-data.ts` uses `.from('stories' as any)` to reference this table, but this one query still uses the old `scenarios` alias in its join.
+All other sidebar items (Community Gallery, My Stories, Character Library, Image Library) correctly use `handleNavigateAway`, which clears `activeId`, `activeData`, etc. Chat History is the odd one out.
 
-### Fix
+**Fix:** One line change in `src/pages/Index.tsx`, line 1483.
 
-**File:** `src/services/supabase-data.ts`, line 952
-
-Change:
-```
-scenarios!inner(title, cover_image_url)
+Change the Chat History onClick from:
+```typescript
+onClick={() => { setTab("conversations"); }}
 ```
 to:
-```
-stories!conversations_scenario_id_fkey(title, cover_image_url)
+```typescript
+onClick={() => handleNavigateAway("conversations")}
 ```
 
-This uses the explicit foreign key name (from the types: `conversations_scenario_id_fkey`) to join to the `stories` table. Also update the two references to `conv.scenarios` on lines 963-964 to `conv.stories`.
+This ensures navigating to Chat History stashes any draft and clears the active story state, just like every other sidebar item already does.
 
-**Files to update:** 1 file (`src/services/supabase-data.ts`)
+**Files to update:** `src/pages/Index.tsx` (1 line)
 
