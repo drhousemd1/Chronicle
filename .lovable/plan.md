@@ -1,33 +1,23 @@
 
 
-## Plan: Three Changes
+## Plan: Fix Character Roster Card Layout
 
-### 1. Character Roster Card — Remove Sex, Restructure to 3 Rows
-**File:** `src/components/chronicle/WorldTab.tsx` lines 81-88
+**File:** `src/components/chronicle/WorldTab.tsx` lines 82-86
 
-Replace the current layout with:
-- Row 1: `Name: {char.name}`
-- Row 2: `Age: {char.age}`
-- Row 3: `Controlled by: {char.controlledBy}`
+Three fixes:
 
-Remove the split header layout and the Sex line entirely.
+1. **Row 1 — Remove "Name:" label**, just show the character name directly with bold white text and truncation
+2. **Row 2 — Age:** Show empty string instead of `—` when no age is set
+3. **Row 3 — Controlled by:** No changes
 
-### 2. Sidebar Subtitle — Use Only Story Name
-**File:** `src/pages/Index.tsx` lines 806-807
-
-Change `derivedTitle` to:
+Replace lines 82-86:
+```tsx
+<div className="min-w-0 flex-1 space-y-0.5">
+  <div className="text-sm font-bold text-white truncate group-hover:text-blue-300 transition-colors">{char.name}</div>
+  <div className="text-xs text-slate-400"><span className="text-slate-500">Age:</span> {char.age || ''}</div>
+  <div className="text-xs text-slate-400"><span className="text-slate-500">Controlled by:</span> <span className="uppercase tracking-wider font-black">{char.controlledBy}</span></div>
+</div>
 ```
-const derivedTitle = dataToSave.world.core.scenarioName || "New Story";
-```
-No more fallback to character names.
 
-### 3. Mandatory Story Name on Save
-**File:** `src/pages/Index.tsx` (save handler, ~line 805)  
-**File:** `src/components/chronicle/WorldTab.tsx` (Story Name input field)
-
-- Before saving, check if `world.core.scenarioName` is empty/whitespace
-- If empty: set a `storyNameError` state flag, switch to the World tab, and skip the save
-- In WorldTab, accept a `storyNameError` prop and apply a red ring (`ring-2 ring-red-500`) to the Story Name input when the flag is true
-- Clear the error when the user types in the field
-- No toasts — inline red text below the field saying "Story name is required"
+Single file, 3-line change.
 
