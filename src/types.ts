@@ -201,10 +201,14 @@ export type CharacterTraitItem = {
   updatedAt: number;
 };
 
+export type CharacterTraitSectionType = 'structured' | 'freeform';
+
 export type CharacterTraitSection = {
   id: string;
   title: string;
   items: CharacterTraitItem[];
+  type?: CharacterTraitSectionType; // defaults to 'structured'
+  freeformValue?: string;
   createdAt: number;
   updatedAt: number;
 };

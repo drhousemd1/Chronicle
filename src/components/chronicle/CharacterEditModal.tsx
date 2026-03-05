@@ -29,6 +29,7 @@ import { ChangeNameModal } from './ChangeNameModal';
 import { CharacterGoalsSection } from './CharacterGoalsSection';
 import { StoryGoalsSection } from './StoryGoalsSection';
 import { ScenarioCardView } from './StoryCardView';
+import { CustomContentTypeModal } from './CustomContentTypeModal';
 import { PersonalitySection } from './PersonalitySection';
 import { defaultPersonality } from './PersonalitySection';
 import { uid, now } from '@/utils';
@@ -1000,11 +1001,14 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
   };
 
   // Add a new custom category/section
-  const addNewSection = () => {
+  const [showCategoryTypeModal, setShowCategoryTypeModal] = useState(false);
+  const addNewSection = (type: 'structured' | 'freeform' = 'structured') => {
     const newSection: CharacterTraitSection = {
       id: `section-${Date.now()}`,
       title: 'New Category',
-      items: [{ id: `item-${Date.now()}`, label: '', value: '', createdAt: Date.now(), updatedAt: Date.now() }],
+      type,
+      items: type === 'structured' ? [{ id: `item-${Date.now()}`, label: '', value: '', createdAt: Date.now(), updatedAt: Date.now() }] : [],
+      freeformValue: type === 'freeform' ? '' : undefined,
       createdAt: Date.now(),
       updatedAt: Date.now()
     };
@@ -1727,7 +1731,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                 {!isSideCharacter && draft.sections?.map((section) => (
                   <div key={section.id} className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
                     {/* Dark blue header with editable title */}
-                    <div className="bg-blue-900/40 border-b border-blue-500/20 px-5 py-3 flex items-center justify-between">
+                    <div className="bg-[#4a5f7f] border-b border-white/20 px-5 py-3 flex items-center justify-between shadow-lg">
                       <AutoResizeTextarea
                         value={section.title}
                         onChange={(v) => updateSectionTitle(section.id, v)}
@@ -1756,6 +1760,21 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                       <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
                         {(expandedCustomSections[section.id] ?? true) ? (
                           <div className="space-y-4">
+                            {section.type === 'freeform' ? (
+                              <AutoResizeTextarea
+                                value={section.freeformValue || ''}
+                                onChange={(v) => {
+                                  setDraft(prev => ({
+                                    ...prev,
+                                    sections: prev.sections?.map(s => s.id === section.id ? { ...s, freeformValue: v } : s)
+                                  }));
+                                }}
+                                placeholder="Write your content here..."
+                                className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                rows={4}
+                              />
+                            ) : (
+                              <>
                             {section.items.map((item) => (
                               <div key={item.id}>
                                 <div className="flex items-start gap-2">
@@ -1793,10 +1812,17 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                             >
                               <Plus className="w-4 h-4 mr-1" /> Add Row
                             </Button>
+                              </>
+                            )}
                           </div>
                         ) : (
-                          // Collapsed view - show label/value summary
+                          // Collapsed view - show summary
                           (() => {
+                            if (section.type === 'freeform') {
+                              return section.freeformValue
+                                ? <p className="text-sm text-zinc-400 whitespace-pre-wrap">{section.freeformValue}</p>
+                                : <p className="text-zinc-500 text-sm italic">No content</p>;
+                            }
                             const hasAnyValue = section.items.some(item => item.label || item.value);
                             if (!hasAnyValue) {
                               return <p className="text-zinc-500 text-sm italic">No items</p>;
@@ -1822,9 +1848,10 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
 
                 {/* Add Category button outside containers */}
                 {!isSideCharacter && (
+                  <>
                   <button
                     type="button"
-                    onClick={addNewSection}
+                    onClick={() => setShowCategoryTypeModal(true)}
                     className="w-full flex h-10 px-6 items-center justify-center gap-2
                       rounded-xl border border-[hsl(var(--ui-border))] 
                       bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
@@ -1835,6 +1862,12 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                   >
                     <Plus className="w-4 h-4" /> Add Category
                   </button>
+                  <CustomContentTypeModal
+                    open={showCategoryTypeModal}
+                    onClose={() => setShowCategoryTypeModal(false)}
+                    onSelect={(type) => addNewSection(type as 'structured' | 'freeform')}
+                  />
+                  </>
                 )}
               </div>
             </div>
