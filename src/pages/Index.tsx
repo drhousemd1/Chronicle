@@ -860,6 +860,13 @@ const IndexContent = () => {
     return handleSaveWithData(null, navigateToHub);
   }, [handleSaveWithData]);
 
+  // Refresh library from backend and update state
+  const refreshCharacterLibrary = useCallback(async () => {
+    const updated = await supabaseData.fetchCharacterLibrary();
+    setLibrary(updated);
+    return updated;
+  }, []);
+
   // Navigation handler - stashes draft to localStorage as safety net, no DB save
   const handleNavigateAway = useCallback(async (targetTab: TabKey | "library") => {
     if (activeId && activeData) {
@@ -875,7 +882,12 @@ const IndexContent = () => {
     setSelectedCharacterId(null);
     setPlayingConversationId(null);
     setTab(targetTab);
-  }, [activeId, activeData]);
+
+    // Auto-refresh library when navigating to library tab
+    if (targetTab === "library") {
+      refreshCharacterLibrary().catch(e => console.warn("Library refresh failed:", e));
+    }
+  }, [activeId, activeData, refreshCharacterLibrary]);
 
   async function handleSaveCharacter() {
     if (!user) return;
@@ -2235,11 +2247,7 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
       {isCharacterPickerOpen && (
         <CharacterPickerWithRefresh
           library={library}
-          refreshLibrary={async () => {
-            const updated = await supabaseData.fetchCharacterLibrary();
-            setLibrary(updated);
-            return updated;
-          }}
+          refreshLibrary={refreshCharacterLibrary}
           onSelect={handleImportCharacter}
           onClose={() => setIsCharacterPickerOpen(false)}
         />
