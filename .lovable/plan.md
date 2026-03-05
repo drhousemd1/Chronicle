@@ -1,42 +1,26 @@
 
 
-## Plan: Convert Chat Settings Modal to Dark Theme
+## Plan: Remove Dark Mode Toggle & Fix LabeledToggle Text Colors
 
-The Chat Settings modal and the Delete Character dialog are the only remaining light-themed components. Every other modal/panel in the app uses the dark theme palette (`bg-zinc-900`, `bg-zinc-800/50`, `border-white/10`, `text-white`).
+Two issues to fix:
 
-### Color Mapping
+### 1. Remove Dark Mode toggle
+**`src/components/chronicle/ChatInterfaceTab.tsx`** (lines 3779-3786) — Delete the entire Dark Mode toggle block from the Interface Settings grid.
 
-| Current (light) | Replace with (dark) |
-|---|---|
-| `bg-white` | `bg-zinc-900` |
-| `bg-slate-50` (setting rows) | `bg-zinc-800/50` |
-| `border-slate-200`, `border-slate-100` | `border-white/10` |
-| `text-slate-900` (headings) | `text-white` |
-| `text-slate-700` (labels) | `text-zinc-200` |
-| `text-slate-500` (descriptions) | `text-zinc-400` |
-| `text-slate-400` (footer) | `text-zinc-500` |
-| `bg-slate-200 text-slate-600 hover:bg-slate-300` (inactive buttons) | `bg-zinc-700 text-zinc-300 hover:bg-zinc-600` |
-| `shadow-[0_12px_32px...]` | `shadow-[0_12px_32px_-2px_rgba(0,0,0,0.5)]` (darker shadow) |
+### 2. Fix LabeledToggle text colors for dark backgrounds
+**`src/components/ui/labeled-toggle.tsx`** — The off label uses `text-slate-900` (near-black) when unchecked, which is invisible on the dark `bg-zinc-800/50` rows. The unchecked track also uses `bg-slate-300` which looks out of place.
 
-### File: `src/components/chronicle/ChatInterfaceTab.tsx`
+| Element | Current | Fix |
+|---------|---------|-----|
+| Off label (when OFF) | `text-slate-900` (black) | `text-zinc-200` (visible white) |
+| Off label (when ON) | `text-slate-400` | `text-zinc-500` (dimmed) |
+| On label (when ON) | `text-blue-500` | Keep as-is |
+| On label (when OFF) | `text-slate-400` | `text-zinc-500` |
+| Track (OFF) | `bg-slate-300` | `bg-zinc-600` |
+| Track (locked) | `bg-slate-400` | `bg-zinc-500` |
+| Lock icon | `text-slate-400` | `text-zinc-500` |
 
-**Chat Settings Modal (lines 3743-3944)**
-- `DialogContent`: `bg-white border-slate-200` → `bg-zinc-900 border-white/10`
-- `DialogHeader`: `border-slate-100` → `border-white/10`
-- `DialogTitle`: `text-slate-900` → `text-white`
-- Section headings (`h3`): `text-slate-900` → `text-white`
-- All setting row containers: `bg-slate-50` → `bg-zinc-800/50`
-- All setting labels: `text-slate-700` → `text-zinc-200`
-- All description text: `text-slate-500` → `text-zinc-400`
-- Divider: `border-slate-200` → `border-white/10`
-- Inactive segmented buttons (POV, Verbosity): `bg-slate-200 text-slate-600 hover:bg-slate-300` → `bg-zinc-700 text-zinc-300 hover:bg-zinc-600`
-- Footer note: `text-slate-400 border-slate-100` → `text-zinc-500 border-white/10`
+This ensures: when a toggle is OFF, the "Off" text is bright/readable and "On" is dimmed. When ON, "On" is blue and "Off" is dimmed. Both states are legible on dark backgrounds.
 
-**Delete Character Dialog (lines 3947-3973)**
-- `AlertDialogContent`: `bg-white` → `bg-zinc-900`
-- Title: `text-slate-900` → `text-white`
-- Description: `text-slate-600` → `text-zinc-400`
-- Cancel button: `bg-slate-100 text-slate-900 hover:bg-slate-200` → `bg-zinc-800 text-zinc-200 hover:bg-zinc-700 border-white/10`
-
-All changes are in one file, purely class string replacements.
+Two files changed, minimal edits.
 
