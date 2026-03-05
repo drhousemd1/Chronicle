@@ -1,6 +1,7 @@
 
 import React, { useRef, useState, useCallback } from 'react';
-import { Character, CharacterTraitSection, ScenarioData, PhysicalAppearance, CurrentlyWearing, PreferredClothing, CharacterGoal, CharacterExtraRow, CharacterBackground, CharacterTone, CharacterKeyLifeEvents, CharacterRelationships, CharacterSecrets, CharacterFears, defaultCharacterBackground } from '@/types';
+import { Character, CharacterTraitSection, CharacterTraitSectionType, ScenarioData, PhysicalAppearance, CurrentlyWearing, PreferredClothing, CharacterGoal, CharacterExtraRow, CharacterBackground, CharacterTone, CharacterKeyLifeEvents, CharacterRelationships, CharacterSecrets, CharacterFears, defaultCharacterBackground } from '@/types';
+import { CustomContentTypeModal } from './CustomContentTypeModal';
 import { Button, TextArea, Card } from './UI';
 import { Icons } from '@/constants';
 import { uid, now, clamp, resizeImage } from '@/utils';
@@ -549,8 +550,11 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
     );
   };
 
+  // State for content type picker modal
+  const [showCategoryTypeModal, setShowCategoryTypeModal] = useState(false);
+
   // Handle adding a new custom section
-  const handleAddSection = () => {
+  const handleAddSection = (type: CharacterTraitSectionType = 'structured') => {
     if (!selected) return;
     // If external handler is provided, use it (for scenario builder)
     if (externalAddSection) {
@@ -561,7 +565,9 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
     const newSection: CharacterTraitSection = {
       id: uid('sec'),
       title: 'New Section',
-      items: [{ id: uid('item'), label: '', value: '', createdAt: now(), updatedAt: now() }],
+      type,
+      items: type === 'structured' ? [{ id: uid('item'), label: '', value: '', createdAt: now(), updatedAt: now() }] : [],
+      freeformValue: type === 'freeform' ? '' : undefined,
       createdAt: now(),
       updatedAt: now()
     };
@@ -1226,6 +1232,18 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                 <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
                   {(expandedCustomSections[section.id] ?? true) ? (
                     <div className="space-y-4">
+                    {section.type === 'freeform' ? (
+                      /* Freeform: single textarea */
+                      <AutoResizeTextarea
+                        value={section.freeformValue || ''}
+                        onChange={(v) => handleUpdateSection(selected.id, section.id, { freeformValue: v })}
+                        placeholder="Write your content here..."
+                        className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                        rows={4}
+                      />
+                    ) : (
+                      /* Structured: label + description rows */
+                      <>
                       {section.items.map(item => (
                         <div key={item.id}>
                           <div className="flex items-start gap-2">
@@ -1262,20 +1280,19 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                                             }
                                           };
                                       openEnhanceModeModal(
-                                        `custom_${item.id}`,
+                                        `custom-${section.id}-${item.id}`,
                                         'custom',
                                         () => item.value,
                                         setValue,
                                         customLabel
                                       );
                                     }}
-                                    disabled={enhancingField !== null}
-                                    title="Enhance with AI"
+                                    disabled={enhancingField === `custom-${section.id}-${item.id}`}
                                     className={cn(
-                                      "p-1.5 rounded-md transition-all flex-shrink-0",
-                                      enhancingField === `custom_${item.id}`
-                                        ? "text-blue-500 animate-pulse cursor-wait"
-                                        : "text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10"
+                                      "shrink-0 w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-200",
+                                      enhancingField === `custom-${section.id}-${item.id}`
+                                        ? "bg-yellow-500/20 text-yellow-400 animate-pulse"
+                                        : "bg-zinc-700/50 text-zinc-500 hover:bg-blue-500/20 hover:text-blue-300"
                                     )}
                                   >
                                     <Sparkles size={14} />
@@ -1311,10 +1328,17 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                       >
                         <Plus className="w-4 h-4 inline mr-1" /> Add Row
                       </button>
+                      </>
+                    )}
                     </div>
                   ) : (
-                    // Collapsed view - show label/value summary
+                    // Collapsed view - show summary
                     (() => {
+                      if (section.type === 'freeform') {
+                        return section.freeformValue
+                          ? <p className="text-sm text-zinc-400 whitespace-pre-wrap">{section.freeformValue}</p>
+                          : <p className="text-zinc-500 text-sm italic">No content</p>;
+                      }
                       const hasAnyValue = section.items.some(item => item.label || item.value);
                       if (!hasAnyValue) {
                         return <p className="text-zinc-500 text-sm italic">No items</p>;
@@ -1341,7 +1365,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
           {/* Add Category Button - positioned below all trait sections */}
           <button
             type="button"
-            onClick={handleAddSection}
+            onClick={() => setShowCategoryTypeModal(true)}
             className="w-full flex h-10 px-6 items-center justify-center gap-2
               rounded-xl border border-[hsl(var(--ui-border))] 
               bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
@@ -1352,6 +1376,12 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
           >
             <Plus className="w-4 h-4" /> Add Category
           </button>
+
+          <CustomContentTypeModal
+            open={showCategoryTypeModal}
+            onClose={() => setShowCategoryTypeModal(false)}
+            onSelect={(type) => handleAddSection(type as CharacterTraitSectionType)}
+          />
         </div>
       </div>
 
