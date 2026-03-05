@@ -1,19 +1,16 @@
 
+## Plan: Change "Goal Name" to "Story Arc Title" in Story Builder
 
-## Plan: Fix World Placeholder Size + Fix Character Builder Add Category
+**Problem:** The Story Arcs section in the Story Builder still uses the legacy "Goal Name" label instead of the standardized "Story Arc Title" terminology.
 
-### Fix 1: World Core section title placeholder size
-In `WorldTab.tsx` line 654, remove `placeholder:text-sm` so the placeholder inherits the same `text-[10px]` as the filled-in text.
+**Location:** `src/components/chronicle/StoryGoalsSection.tsx` line 317
 
-### Fix 2: Character Builder "Add Category" ignores freeform selection
-**Root cause:** Two problems working together:
-1. In `CharactersTab.tsx` line 560-562, when `externalAddSection` exists (which it does — passed from `Index.tsx`), the type parameter is ignored and the external handler is called directly
-2. In `Index.tsx` line 1414-1419, `handleAddSection()` always creates a plain structured section with no `type` field
+**Changes Required:**
+1. Line 317: Change the label text from "Goal Name" to "Story Arc Title"
+2. Line 321: Change the placeholder text from "Enter goal name..." to "Enter story arc title..."
 
-**Fix:**
-- Update `Index.tsx` `handleAddSection` to accept a `type` parameter and pass it through when creating the section (including `freeformValue` for freeform)
-- Update `CharactersTab.tsx` to pass the type through to `externalAddSection` instead of ignoring it
-- Update the `onAddSection` prop type to accept the type parameter
+**Files to Update:**
+- `src/components/chronicle/StoryGoalsSection.tsx`
 
-Two files changed: `src/pages/Index.tsx`, `src/components/chronicle/CharactersTab.tsx`, `src/components/chronicle/WorldTab.tsx`.
-
+**Technical Details:**
+The change is straightforward text replacement on two lines within the Story Arc container that displays when editing story arcs. This aligns with the story terminology standardization where "Scenario" was replaced with "Story" throughout the application.
