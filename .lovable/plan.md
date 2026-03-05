@@ -1,78 +1,65 @@
 
+## Guide Documents Needing Updates After Steps 1-6
 
-# Steps 3-6: Admin Security, Extraction Throttle, DB Model Preferences, CORS Hardening
+We made 6 significant changes across the codebase:
+1. **Model migration** (default changed from `grok-3` to `grok-4-1-fast-reasoning`)
+2. **Admin security** (hardcoded UUID removed, replaced with database-backed role checks)
+3. **Extraction throttling** (added 5-message throttle)
+4. **Model preference persistence** (moved from localStorage to `profiles.preferred_model` column)
+5. **CORS hardening** (replaced `*` wildcard with dynamic origin check)
 
-## Step 3 — Replace Hardcoded Admin UUID (2 files + 1 DB migration)
+After reviewing the 4 core guide files, **3 documents require updates**:
 
-**Database migration:**
-- Insert admin role: `INSERT INTO user_roles (user_id, role) VALUES ('98d690d7-...', 'admin') ON CONFLICT DO NOTHING`
-- Update `app_settings` RLS policies to use `has_role()` instead of hardcoded UUID
+### **1. Edge Functions & AI Services Structure Guide**
+**Outdated content:**
+- Line 25: `extract-character-updates` — lists default as `grok-3`, should be `grok-4-1-fast-reasoning`
+- Line 33: `compress-day-memories` — lists as `grok-3-mini`, should be `grok-4-1-fast-reasoning`
+- Line 26: `extract-memory-events` — lists as "AI model", should explicitly state `grok-4-1-fast-reasoning`
+- Line 34: `evaluate-arc-progress` — lists as "AI model", should explicitly state `grok-4-1-fast-reasoning`
 
-**`src/services/app-settings.ts`:**
-- Remove `ADMIN_USER_ID` constant and `isAdminUser()` function
-- Add async `checkIsAdmin(userId)` that calls `supabase.rpc('has_role', { _user_id: userId, _role: 'admin' })`
+**Updates needed:**
+- Update the AI Model Used column for all 4 functions to reflect the new default and fallback models
+- Add a note in Section 12 Known Issues documenting the model migration from grok-3 family to grok-4-1-fast-reasoning
+- Optionally document extraction throttling in Section 5 or add to Known Issues
 
-**`src/components/chronicle/ModelSettingsTab.tsx`:**
-- Replace sync `isAdminUser(user?.id)` with `useState(false)` + `useEffect` calling `checkIsAdmin`
+### **2. Admin Panel Page Structure Guide**
+**Outdated content:**
+- Line 30: Says "Requires `isAdminUser()` check — queries `user_roles` table for `admin` role" — this is correct but should note it's now async
+- Line 160: Says "Admin panel tab only visible when `isAdminUser()` returns true" — outdated, now uses async `checkIsAdmin()`
+- Lines 179-180: Active issues still list hardcoded UUID as a problem — this is now RESOLVED
 
-**`src/pages/Index.tsx`:**
-- Same pattern: replace sync `isAdminUser(user?.id)` with async state for admin sidebar visibility
+**Updates needed:**
+- Update Section 10 Security & Access Control to clarify the async `checkIsAdmin(userId)` function
+- Update Section 12 Known Issues to mark the hardcoded UUID issue as RESOLVED and document the implementation (database role check via `has_role()` RPC)
+- Update Section 12 to mark the `app_settings` RLS hardcoded check as also RESOLVED (now uses `has_role()`)
+- Add a note about CORS hardening applied to all edge functions
 
----
+### **3. App Overview & Global Systems Structure Guide**
+**Outdated content:**
+- Line 154: Says "`admin` role check via `isAdminUser()` in `src/services/app-settings.ts`" — this is still correct but should note async implementation
+- Line 158: Says "Admin check: `isAdminUser()` queries `user_roles` table for role = 'admin'" — outdated, now async
+- Section 280: ModelSettingsProvider description doesn't mention the new database persistence
 
-## Step 4 — Throttle Character Extraction (1 file)
+**Updates needed:**
+- Update Section 6c User Roles to clarify that `checkIsAdmin(userId)` is now async and uses the `has_role()` RPC function
+- Update Section 8 State Management to note that `ModelSettingsProvider` now syncs model preference to `profiles.preferred_model` column
+- No structural changes needed; mostly clarifications about async/persistence behavior
 
-**`src/components/chronicle/ChatInterfaceTab.tsx`:**
-- Add `extractionCountRef = useRef(0)` at line ~380
-- Add `extractionCountRef.current = 0` to the conversation-reset effect at line 387
-- Wrap extraction call at line 2236: increment counter, only fire when `% 5 === 0`
+### **4. Chat Interface Page Structure Guide**
+**May need update (not yet read, but mentioned in plan):**
+- If this guide documents extraction behavior, should mention the new 5-message throttle
 
----
-
-## Step 5 — Move Model Preference to Database (1 file + 1 DB migration)
-
-**Database migration:**
-```sql
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS preferred_model text;
-```
-
-**`src/contexts/ModelSettingsContext.tsx`:**
-- On mount: fetch from `profiles.preferred_model`, fall back to localStorage, then `LLM_MODELS[0].id`
-- On change: write to both `profiles` table and localStorage (cache)
-
----
-
-## Step 6 — CORS Hardening (12 edge functions)
-
-Replace static `'*'` origin with dynamic check in all 12 functions:
-
-```typescript
-const ALLOWED_ORIGINS = [
-  'https://hello-git-hug.lovable.app',
-  'https://id-preview--a004b824-bad4-4e86-a30f-524c97ca4ddb.lovable.app',
-  'http://localhost:5173',
-];
-function getCorsHeaders(req: Request) {
-  const origin = req.headers.get('Origin') || '';
-  return {
-    'Access-Control-Allow-Origin': ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  };
-}
-```
-
-Functions: `chat`, `check-shared-keys`, `compress-day-memories`, `evaluate-arc-progress`, `extract-character-updates`, `extract-memory-events`, `generate-cover-image`, `generate-scene-image`, `generate-side-character`, `generate-side-character-avatar`, `migrate-base64-images`, `sync-guide-to-github`.
-
-Each function's `corsHeaders` constant becomes a `getCorsHeaders(req)` call, and every `Response` that currently spreads `...corsHeaders` will instead spread `...getCorsHeaders(req)`.
+**Action: Read and verify if extraction is documented**
 
 ---
 
-## Summary
+## Implementation Strategy
 
-| Step | Files | DB Migration |
-|------|-------|-------------|
-| 3 - Admin role | `app-settings.ts`, `ModelSettingsTab.tsx`, `Index.tsx` | Yes (insert role + update RLS) |
-| 4 - Extraction throttle | `ChatInterfaceTab.tsx` | No |
-| 5 - DB model pref | `ModelSettingsContext.tsx` | Yes (add column) |
-| 6 - CORS | 12 edge functions | No |
+**Total: 3 primary updates + 1 verification**
+- Edge Functions guide: 4 model name updates + 1 Known Issues entry
+- Admin Panel guide: 1 Security section update + 1 Known Issues update + 1 CORS note
+- App Overview guide: 2 clarifications (async + persistence)
+- Chat Interface guide: Verify if extraction needs documenting
+
+All updates follow the mandatory GUIDE_STYLE_RULES.md format and must preserve the 13-section structure per guide header instructions.
 
