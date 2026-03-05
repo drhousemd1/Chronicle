@@ -1,16 +1,25 @@
 
-## Plan: Change "Goal Name" to "Story Arc Title" in Story Builder
 
-**Problem:** The Story Arcs section in the Story Builder still uses the legacy "Goal Name" label instead of the standardized "Story Arc Title" terminology.
+## Plan: Fix Blank Chat History
 
-**Location:** `src/components/chronicle/StoryGoalsSection.tsx` line 317
+**Root cause:** The `fetchConversationRegistry()` function in `src/services/supabase-data.ts` (line 952) joins on `scenarios!inner(...)`, but the actual table name is `stories`. The `!inner` join means conversations without a matching join are excluded entirely -- which means ALL conversations are excluded because the table alias is wrong.
 
-**Changes Required:**
-1. Line 317: Change the label text from "Goal Name" to "Story Arc Title"
-2. Line 321: Change the placeholder text from "Enter goal name..." to "Enter story arc title..."
+Every other query in `supabase-data.ts` uses `.from('stories' as any)` to reference this table, but this one query still uses the old `scenarios` alias in its join.
 
-**Files to Update:**
-- `src/components/chronicle/StoryGoalsSection.tsx`
+### Fix
 
-**Technical Details:**
-The change is straightforward text replacement on two lines within the Story Arc container that displays when editing story arcs. This aligns with the story terminology standardization where "Scenario" was replaced with "Story" throughout the application.
+**File:** `src/services/supabase-data.ts`, line 952
+
+Change:
+```
+scenarios!inner(title, cover_image_url)
+```
+to:
+```
+stories!conversations_scenario_id_fkey(title, cover_image_url)
+```
+
+This uses the explicit foreign key name (from the types: `conversations_scenario_id_fkey`) to join to the `stories` table. Also update the two references to `conv.scenarios` on lines 963-964 to `conv.stories`.
+
+**Files to update:** 1 file (`src/services/supabase-data.ts`)
+
