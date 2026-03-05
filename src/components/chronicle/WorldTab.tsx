@@ -1,7 +1,7 @@
 
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { World, OpeningDialog, CodexEntry, Character, Scene, TimeOfDay, WorldCore, ContentThemes, defaultContentThemes, LocationEntry, WorldCustomSection, WorldCustomItem, WorldCustomSectionType, StoryGoal } from '@/types';
-import { PublishValidationErrors } from '@/utils/publish-validation';
+import { validateForPublish, hasPublishErrors, PublishValidationErrors } from '@/utils/publish-validation';
 import { EnhanceableWorldFields } from '@/services/world-ai';
 import { AutoResizeTextarea } from './AutoResizeTextarea';
 import { Button, Card } from './UI';
@@ -1197,10 +1197,22 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                 <Share2 className="w-5 h-5 text-white" />
                 <h2 className="text-white text-xl font-bold tracking-tight">Share Your Story</h2>
               </div>
-              <div className="p-6">
+              <div className="p-6 space-y-4">
                 <button
                   type="button"
-                  onClick={() => setShowShareModal(true)}
+                  onClick={() => {
+                    const errors = validateForPublish({
+                      scenarioTitle: world.core.scenarioName || '',
+                      world,
+                      characters,
+                      openingDialog,
+                      contentThemes,
+                    });
+                    setPublishErrors(errors);
+                    if (!hasPublishErrors(errors)) {
+                      setShowShareModal(true);
+                    }
+                  }}
                   className="flex h-10 w-full items-center justify-center gap-2 px-4
                     rounded-xl border border-[hsl(var(--ui-border))] 
                     bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
@@ -1212,6 +1224,33 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                   <Share2 className="w-3.5 h-3.5 shrink-0" />
                   <span>Publish to Gallery</span>
                 </button>
+
+                {/* Inline publish validation errors */}
+                {hasPublishErrors(publishErrors) && (
+                  <div className="p-4 bg-red-500/10 rounded-xl border border-red-500/20">
+                    <div className="flex items-start gap-3">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-400 flex-shrink-0 mt-0.5"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                      <div className="text-sm space-y-1">
+                        <p className="font-medium text-red-300">Please fix the following before publishing:</p>
+                        <ul className="list-disc list-inside space-y-0.5 text-red-200/70">
+                          {publishErrors.storyTitle && <li>{publishErrors.storyTitle}</li>}
+                          {publishErrors.storyPremise && <li>{publishErrors.storyPremise}</li>}
+                          {publishErrors.openingDialog && <li>{publishErrors.openingDialog}</li>}
+                          {publishErrors.tags && <li>{publishErrors.tags}</li>}
+                          {publishErrors.storyType && <li>{publishErrors.storyType}</li>}
+                          {publishErrors.noCharacters && <li>{publishErrors.noCharacters}</li>}
+                          {publishErrors.characters && Object.entries(publishErrors.characters).map(([cid, msgs]) => {
+                            const char = characters.find(c => c.id === cid);
+                            const charName = char?.name && char.name !== 'New Character' ? char.name : 'Unnamed character';
+                            return msgs.map((msg, i) => <li key={`${cid}-${i}`}>{charName}: {msg}</li>);
+                          })}
+                          {publishErrors.location && <li>{publishErrors.location}</li>}
+                          {publishErrors.storyArc && <li>{publishErrors.storyArc}</li>}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </section>
@@ -1307,18 +1346,10 @@ export const WorldTab: React.FC<WorldTabProps> = ({
       {user && (
         <ShareScenarioModal
           isOpen={showShareModal}
-          onClose={() => {
-            setShowShareModal(false);
-            setPublishErrors({});
-          }}
+          onClose={() => setShowShareModal(false)}
           scenarioId={scenarioId}
           scenarioTitle={world.core.scenarioName || 'Untitled Story'}
           userId={user.id}
-          characters={characters}
-          world={world}
-          openingDialog={openingDialog}
-          contentThemes={contentThemes}
-          onPublishValidationErrors={setPublishErrors}
         />
       )}
       
