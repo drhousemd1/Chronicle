@@ -1,41 +1,57 @@
 
 
-## Plan: Add Cover Image + Brief Description Validation & Live Error Clearing
+## Plan: Update App Guide Documents for Publish Validation System
 
-Three problems to fix:
+The scenario builder guide (`docs/guides/scenario-builder-page-structure-guide.md`) has **no documentation** about the publish validation system — no mention of `validateForPublish`, `publishErrors`, live re-validation, field-level error styling, or the validation rules. This needs a substantial update.
 
-### 1. New validation checks: Cover Image and Brief Description
+---
 
-**`src/utils/publish-validation.ts`**
-- Add `coverImage?: string` and `briefDescription?: string` to `PublishValidationErrors` interface
-- Add `coverImage: string` and pass `briefDescription` (from `world.core.briefDescription`) to `validateForPublish` input
-- New check: if `coverImage` is empty, set `errors.coverImage = 'Cover image is required'`
-- New check: if `briefDescription` is empty, set `errors.briefDescription = 'Brief description is required'`
+### Changes to `docs/guides/scenario-builder-page-structure-guide.md`
 
-**`src/components/chronicle/WorldTab.tsx`**
-- Pass `coverImage` to `validateForPublish` call (line ~1210)
-- Add error display for cover image (red border on the cover preview container + error text)
-- Add error styling to Brief Description field (same `border-red-500 ring-2 ring-red-500` pattern + error text below)
-- Add both errors to the bottom summary panel list
-- Add `data-publish-error` wrappers for auto-scroll
+#### 1. Section 3 (UI Elements) — Add Publish Validation Error States
 
-### 2. Live error clearing (the main UX problem)
+Add a new subsection after the existing UI elements table documenting the validation error styling system:
 
-Currently `publishErrors` is set once on "Publish" click and never updated. When users fix fields, errors stay red.
+- **Error input styling**: `border-red-500 ring-2 ring-red-500` applied to invalid fields (Story Name, Story Premise, Brief Description, Opening Dialog, Story Arc Title, Desired Outcome)
+- **Error text**: `text-sm text-red-500 font-medium mt-1` below each invalid field
+- **Error label styling**: Labels turn `text-red-500` when their field is invalid
+- **Cover image error**: Red border/ring on the cover preview container + error text
+- **Section-level error**: `border-red-500` on section containers (Story Arcs, Locations, Content Themes)
+- **Bottom summary panel**: Lists all current validation errors with `data-publish-error` auto-scroll targeting
 
-**`src/components/chronicle/WorldTab.tsx`**
-- Add a `useEffect` that watches all validated inputs (`world`, `characters`, `openingDialog`, `contentThemes`, `coverImage`). When `publishErrors` is non-empty, re-run `validateForPublish` and update `publishErrors` with the new result. This clears errors as fields are filled.
-- This single effect handles all fields: tags count updates, SFW/NSFW selection, story premise typing, etc.
+#### 2. Section 6 (Data Architecture) — Add Publish Validation Subsection
 
-### 3. Pass live tag count to ContentThemesSection error message
+Document the validation data flow:
 
-The tag count in the error message currently only updates on publish click. With the live re-validation effect above, the `publishErrors.tags` string will automatically re-compute with the correct count (e.g., "currently 3" instead of stuck at "currently 0").
+- **Validation source file**: `src/utils/publish-validation.ts`
+- **Function**: `validateForPublish()` — accepts `{ scenarioTitle, world, characters, openingDialog, contentThemes, coverImage }`, returns `PublishValidationErrors`
+- **Validation rules table**: All 11 checks (story title, story premise, opening dialog, 5+ tags, SFW/NSFW, 1+ character, character names, NSFW age 18+, 1+ location, 1+ story arc, cover image, brief description)
+- **Live re-validation**: `useEffect` in `WorldTab.tsx` watches all validated inputs; when `publishErrors` is non-empty, re-runs `validateForPublish` on every state change so errors clear/update in real-time as the user types or selects
+- **Error state type**: `PublishValidationErrors` interface with all fields
+- **`hasError` prop propagation**: `StoryGoalsSection` and `ContentThemesSection` receive `hasError` boolean prop for field-level highlighting
 
-### Technical summary
+#### 3. Section 8 (Custom Events/Callbacks) — Add validation-related callbacks
 
-| File | Change |
-|------|--------|
-| `publish-validation.ts` | Add `coverImage` + `briefDescription` fields and checks |
-| `WorldTab.tsx` | Pass new fields to validator, add error UI for cover + description, add `useEffect` for live re-validation |
-| `WorldTab.tsx` bottom summary | Add cover image + brief description error lines |
+Add the publish validation trigger and the `hasError` prop pattern passed to child components.
+
+#### 4. Section 12 (Known Issues) — Update
+
+- Mark the "floating error text" and "stuck error states" bugs as **RESOLVED** with today's date
+- Note the live re-validation fix
+
+#### 5. Section 7 (Component Tree) — Minor update
+
+Add `publish-validation.ts` as a utility dependency of `WorldTab.tsx` in the tree.
+
+---
+
+### Changes to `docs/guides/shared-elements-architecture-structure-guide.md`
+
+No changes needed — the validation system is not a shared element (it's specific to WorldTab/publish flow).
+
+---
+
+### Summary
+
+One file changed: `scenario-builder-page-structure-guide.md`. Adds ~60-80 lines documenting the complete publish validation system including all 11+ rules, error styling patterns, live re-validation behavior, and the `PublishValidationErrors` data type.
 
