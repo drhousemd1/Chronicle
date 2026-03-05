@@ -1,32 +1,19 @@
 
 
-## Plan: Standardize Error Message Styling
+## Plan: Fix Inconsistent Error Text Styling
 
-**Problem:** Error text sizes, colors, and border treatments are inconsistent across fields. Story Name uses `text-xs text-red-500` with `ring-2 ring-red-500`, while other fields use `text-xs text-red-400` with no ring. Text is too small.
+**Root cause:** The location error message is embedded *inside* the `text-[10px]` label element, so it inherits 10px font size. It needs to be a standalone `<p>` element like all other error messages.
 
 ### Changes
 
-**All error messages across all files will use this standard (matching Story Name):**
-- **Text:** `text-sm text-red-500` (14px, not 12px `text-xs`)
-- **Border on inputs:** `border-red-500 ring-2 ring-red-500`
-- **Color:** `text-red-500` everywhere, not `text-red-400`
+**`src/components/chronicle/WorldTab.tsx`** — Line 614
 
-**Files to update:**
+**Current:** Location error is a `<span>` inside the 10px label:
+```
+<label className="text-[10px] ...">Primary Locations <span>— {error}</span></label>
+```
 
-1. **`src/components/chronicle/WorldTab.tsx`**
-   - Story Premise error text: `text-xs text-red-400` → `text-sm text-red-500`
-   - Story Premise border: add `ring-2 ring-red-500` to match Story Name
-   - Opening Dialog error text + border: same fix
-   - Location label error: `text-red-400` → `text-red-500`
-   - Story Arc error text: `text-xs text-red-400` → `text-sm text-red-500`
-   - Character card errors (line ~99): `text-xs text-red-400` → `text-sm text-red-500`
-   - No characters error (line ~436): `text-xs text-red-400` → `text-sm text-red-500`
-   - Bottom summary panel error items: keep `text-sm` (already correct size)
+**Fix:** Remove the inline error span from the label. Add a separate `<p className="text-sm text-red-500 mt-1">` below the label, matching Story Premise, Opening Dialog, etc.
 
-2. **`src/components/chronicle/ContentThemesSection.tsx`**
-   - Tags error: `text-xs text-red-400` → `text-sm text-red-500`
-   - Story type error: `text-xs text-red-400` → `text-sm text-red-500`
-
-3. **`src/components/chronicle/StoryGoalsSection.tsx`**
-   - Border when `hasError`: already `border-red-500`, add `ring-2 ring-red-500` to match
+That is the only remaining inconsistency. ContentThemesSection already uses `text-sm text-red-500 font-medium`, and all other WorldTab errors already use `text-sm text-red-500`.
 
