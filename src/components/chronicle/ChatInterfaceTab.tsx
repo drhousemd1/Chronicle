@@ -5,7 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { uid, now, uuid } from '../../services/storage';
 import { generateRoleplayResponseStream } from '../../services/llm';
-import { RefreshCw, MoreVertical, Copy, Pencil, Trash2, ChevronUp, ChevronDown, Sunrise, Sun, Sunset, Moon, Loader2, StepForward, Settings, Image as ImageIcon, Brain, Check, X } from 'lucide-react';
+import { RefreshCw, MoreVertical, Copy, Pencil, Trash2, ChevronUp, ChevronDown, Sunrise, Sun, Sunset, Moon, Loader2, StepForward, Settings, Image as ImageIcon, Brain, Check, X, Info } from 'lucide-react';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -3758,9 +3759,21 @@ const updatedChar: SideCharacter = {
               
               {/* 2-column grid for toggles */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {/* Show Backgrounds */}
+                {/* Dynamic Backgrounds */}
                 <div className="flex items-center justify-between gap-4 p-3 bg-zinc-800/50 rounded-xl">
-                  <span className="text-sm font-semibold text-zinc-200">Show Background</span>
+                  <span className="text-sm font-semibold text-zinc-200 flex items-center gap-1.5">
+                    Dynamic Backgrounds
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-3.5 h-3.5 text-zinc-500 cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-[220px] text-xs">
+                          Backgrounds will automatically change based on the story context if scene images are tagged in the gallery.
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </span>
                   <LabeledToggle
                     checked={appData.uiSettings?.showBackgrounds ?? false}
                     onCheckedChange={(v) => handleUpdateUiSettings({ showBackgrounds: v })}
@@ -3927,10 +3940,6 @@ const updatedChar: SideCharacter = {
               </div>
             </div>
             
-            {/* Footer Note */}
-            <p className="text-xs text-zinc-500 border-t border-white/10 pt-4">
-              Backgrounds will automatically change based on the story context if scene images are tagged in the gallery.
-            </p>
           </div>
         </DialogContent>
       </Dialog>
