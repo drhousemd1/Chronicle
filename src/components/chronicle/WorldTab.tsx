@@ -820,7 +820,6 @@ export const WorldTab: React.FC<WorldTabProps> = ({
           </section>
 
           {/* Story Goals Section */}
-          {publishErrors.storyArc && <p className="text-sm text-red-500 -mb-4 ml-2">{publishErrors.storyArc}</p>}
           <StoryGoalsSection
             goals={world.core.storyGoals || []}
             onChange={(goals) => updateCore({ storyGoals: goals })}
