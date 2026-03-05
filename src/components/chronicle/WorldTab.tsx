@@ -150,6 +150,21 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   const [showContentTypeModal, setShowContentTypeModal] = useState(false);
   const [publishErrors, setPublishErrors] = useState<PublishValidationErrors>({});
 
+  // Live re-validation: when publishErrors is non-empty, re-run validation on every relevant change
+  useEffect(() => {
+    if (Object.keys(publishErrors).length === 0) return;
+    const updated = validateForPublish({
+      scenarioTitle: world.core.scenarioName || '',
+      world,
+      characters,
+      openingDialog,
+      contentThemes,
+      coverImage,
+    });
+    setPublishErrors(updated);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [world, characters, openingDialog, contentThemes, coverImage]);
+
   // Detect aspect ratios for scene images
   useEffect(() => {
     if (!scenes.length) { setSceneAspectRatios({}); return; }
@@ -487,8 +502,9 @@ export const WorldTab: React.FC<WorldTabProps> = ({
               {/* Content */}
               <div className="p-6">
                 <div className="p-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
-                  <div className="flex flex-col md:flex-row gap-8">
+                      <div className="flex flex-col md:flex-row gap-8">
                     {/* Preview Container - Portrait aspect ratio for story cards */}
+                    <div data-publish-error={!!publishErrors.coverImage || undefined}>
                     <div 
                       ref={coverContainerRef}
                       onMouseDown={handleCoverMouseDown}
@@ -499,11 +515,14 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                       onTouchMove={handleCoverTouchMove}
                       onTouchEnd={handleCoverTouchEnd}
                       style={isRepositioningCover ? { touchAction: 'none' } : undefined}
-                      className={`relative w-full md:w-48 aspect-[2/3] rounded-2xl overflow-hidden transition-all duration-200 ${
+                      className={cn(
+                        "relative w-full md:w-48 aspect-[2/3] rounded-2xl overflow-hidden transition-all duration-200",
                         isRepositioningCover 
                           ? 'ring-4 ring-blue-500 cursor-move shadow-xl shadow-blue-500/20' 
-                          : 'border-2 border-white/10 shadow-lg'
-                      }`}
+                          : publishErrors.coverImage
+                            ? 'border-2 border-red-500 ring-2 ring-red-500'
+                            : 'border-2 border-white/10 shadow-lg'
+                      )}
                     >
                       {coverImage ? (
                         <>
@@ -531,6 +550,10 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                         </div>
                       )}
                     </div>
+                    {publishErrors.coverImage && (
+                      <p className="text-sm text-red-500 font-medium mt-2">{publishErrors.coverImage}</p>
+                    )}
+                    </div>
                     
                     {/* Right column: buttons + fields */}
                     <div className="flex flex-col gap-4 flex-1">
@@ -553,9 +576,10 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                           <p className="text-sm text-red-500 mt-1">{publishErrors.storyTitle || 'Story name is required'}</p>
                         )}
                       </div>
-                      <div>
+                      <div data-publish-error={!!publishErrors.briefDescription || undefined}>
                         <FieldLabel label="Brief Description" fieldName="briefDescription" />
-                        <AutoResizeTextarea value={world.core.briefDescription || ''} onChange={(v) => updateCore({ briefDescription: v })} rows={2} placeholder="A short summary that appears on your story card (1-2 sentences)..." className="px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                        <AutoResizeTextarea value={world.core.briefDescription || ''} onChange={(v) => updateCore({ briefDescription: v })} rows={2} placeholder="A short summary that appears on your story card (1-2 sentences)..." className={cn("px-3 py-2 text-sm bg-zinc-900/50 border text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500", publishErrors.briefDescription ? 'border-red-500 ring-2 ring-red-500' : 'border-zinc-700')} />
+                        {publishErrors.briefDescription && <p className="text-sm text-red-500 font-medium mt-1">{publishErrors.briefDescription}</p>}
                       </div>
                       
                       {coverImage && (
@@ -1213,6 +1237,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                       characters,
                       openingDialog,
                       contentThemes,
+                      coverImage,
                     });
                     setPublishErrors(errors);
                     if (!hasPublishErrors(errors)) {
@@ -1260,6 +1285,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                           })}
                           {publishErrors.location && <li>{publishErrors.location}</li>}
                           {publishErrors.storyArc && <li>{publishErrors.storyArc}</li>}
+                          {publishErrors.coverImage && <li>{publishErrors.coverImage}</li>}
+                          {publishErrors.briefDescription && <li>{publishErrors.briefDescription}</li>}
                         </ul>
                       </div>
                     </div>

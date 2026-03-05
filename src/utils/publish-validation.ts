@@ -10,6 +10,8 @@ export interface PublishValidationErrors {
   characters?: Record<string, string[]>; // characterId -> array of error messages
   location?: string;
   storyArc?: string;
+  coverImage?: string;
+  briefDescription?: string;
 }
 
 export function validateForPublish(data: {
@@ -18,6 +20,7 @@ export function validateForPublish(data: {
   characters: Character[];
   openingDialog: OpeningDialog;
   contentThemes: ContentThemes;
+  coverImage: string;
 }): PublishValidationErrors {
   const errors: PublishValidationErrors = {};
   const { scenarioTitle, world, characters, openingDialog, contentThemes } = data;
@@ -99,6 +102,16 @@ export function validateForPublish(data: {
   );
   if (!hasValidArc) {
     errors.storyArc = 'At least 1 story arc with title and desired outcome is required';
+  }
+
+  // 10. Cover image
+  if (!(data.coverImage || '').trim()) {
+    errors.coverImage = 'Cover image is required';
+  }
+
+  // 11. Brief description
+  if (!(world.core.briefDescription || '').trim()) {
+    errors.briefDescription = 'Brief description is required';
   }
 
   return errors;
