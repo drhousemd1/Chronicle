@@ -80,8 +80,8 @@ const CharacterButton: React.FC<{ char: Character; onSelect: (id: string) => voi
       )}
     </div>
     <div className="min-w-0 flex-1 space-y-0.5">
-      <div className="text-xs text-slate-400"><span className="text-slate-500">Name:</span> <span className="text-white font-bold group-hover:text-blue-300 transition-colors">{char.name}</span></div>
-      <div className="text-xs text-slate-400"><span className="text-slate-500">Age:</span> {char.age || '—'}</div>
+      <div className="text-sm font-bold text-white truncate group-hover:text-blue-300 transition-colors">{char.name}</div>
+      <div className="text-xs text-slate-400"><span className="text-slate-500">Age:</span> {char.age || ''}</div>
       <div className="text-xs text-slate-400"><span className="text-slate-500">Controlled by:</span> <span className="uppercase tracking-wider font-black">{char.controlledBy}</span></div>
     </div>
   </button>
