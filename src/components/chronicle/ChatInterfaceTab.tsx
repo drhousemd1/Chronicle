@@ -3776,14 +3776,6 @@ const updatedChar: SideCharacter = {
                   />
                 </div>
                 
-                {/* Dark Mode */}
-                <div className="flex items-center justify-between gap-4 p-3 bg-zinc-800/50 rounded-xl">
-                  <span className="text-sm font-semibold text-zinc-200">Dark Mode</span>
-                  <LabeledToggle
-                    checked={appData.uiSettings?.darkMode ?? false}
-                    onCheckedChange={(v) => handleUpdateUiSettings({ darkMode: v })}
-                  />
-                </div>
                 
                 {/* Offset Bubbles */}
                 <div className="flex items-center justify-between gap-4 p-3 bg-zinc-800/50 rounded-xl">

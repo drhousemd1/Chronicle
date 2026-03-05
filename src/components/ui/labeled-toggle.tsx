@@ -33,7 +33,7 @@ const LabeledToggle = React.forwardRef<HTMLButtonElement, LabeledToggleProps>(
         {/* Off label */}
         <span className={cn(
           "text-xs font-semibold transition-colors",
-          checked ? "text-slate-400" : "text-slate-900"
+          checked ? "text-zinc-500" : "text-zinc-200"
         )}>
           {offLabel}
         </span>
@@ -41,7 +41,7 @@ const LabeledToggle = React.forwardRef<HTMLButtonElement, LabeledToggleProps>(
         {/* Toggle track */}
         <div className={cn(
           "relative h-5 w-9 rounded-full transition-colors",
-          locked ? "bg-slate-400" : (checked ? "bg-blue-500" : "bg-slate-300")
+          locked ? "bg-zinc-500" : (checked ? "bg-blue-500" : "bg-zinc-600")
         )}>
           {/* Toggle thumb */}
           <div className={cn(
@@ -53,14 +53,14 @@ const LabeledToggle = React.forwardRef<HTMLButtonElement, LabeledToggleProps>(
         {/* On label */}
         <span className={cn(
           "text-xs font-semibold transition-colors",
-          checked ? "text-blue-500" : "text-slate-400"
+          checked ? "text-blue-500" : "text-zinc-500"
         )}>
           {onLabel}
         </span>
         
         {/* Lock icon for locked toggles */}
         {locked && (
-          <Lock className="w-3 h-3 text-slate-400" />
+          <Lock className="w-3 h-3 text-zinc-500" />
         )}
       </button>
     );
