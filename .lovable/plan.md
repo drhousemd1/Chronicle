@@ -1,32 +1,32 @@
 
 
-## Plan: Show All Validation Errors at Once with Inline Field Highlighting
+## Plan: Standardize Error Message Styling
 
-**Problem:** The error summary list at the bottom works, but the actual input fields throughout the page don't get red borders/highlights. The user wants every failing field to visually turn red so the end-user can see all issues at a glance without scrolling to the bottom.
+**Problem:** Error text sizes, colors, and border treatments are inconsistent across fields. Story Name uses `text-xs text-red-500` with `ring-2 ring-red-500`, while other fields use `text-xs text-red-400` with no ring. Text is too small.
 
 ### Changes
 
-**`src/components/chronicle/WorldTab.tsx`**
+**All error messages across all files will use this standard (matching Story Name):**
+- **Text:** `text-sm text-red-500` (14px, not 12px `text-xs`)
+- **Border on inputs:** `border-red-500 ring-2 ring-red-500`
+- **Color:** `text-red-500` everywhere, not `text-red-400`
 
-Add red border highlighting to each input field that has a corresponding `publishErrors` entry. The `publishErrors` state is already computed and stored -- we just need to wire it into each field's className:
+**Files to update:**
 
-1. **Story Name** (line ~551) -- already has `storyNameError` pattern; extend to also check `publishErrors.storyTitle`
-2. **Story Premise** textarea (line ~608) -- add conditional `border-red-500` when `publishErrors.storyPremise` is set, plus a `<p>` error message below
-3. **Opening Dialog** textarea -- find and add conditional red border when `publishErrors.openingDialog` is set
-4. **Tags section** -- add a red border around the tags panel when `publishErrors.tags` is set
-5. **SFW/NSFW selector** -- add red indicator when `publishErrors.storyType` is set
-6. **Location section** -- add red border when `publishErrors.location` is set
-7. **Story Arc section** -- add red border when `publishErrors.storyArc` is set
+1. **`src/components/chronicle/WorldTab.tsx`**
+   - Story Premise error text: `text-xs text-red-400` → `text-sm text-red-500`
+   - Story Premise border: add `ring-2 ring-red-500` to match Story Name
+   - Opening Dialog error text + border: same fix
+   - Location label error: `text-red-400` → `text-red-500`
+   - Story Arc error text: `text-xs text-red-400` → `text-sm text-red-500`
+   - Character card errors (line ~99): `text-xs text-red-400` → `text-sm text-red-500`
+   - No characters error (line ~436): `text-xs text-red-400` → `text-sm text-red-500`
+   - Bottom summary panel error items: keep `text-sm` (already correct size)
 
-For each, the pattern is the same:
-- Add `publishErrors.fieldName ? 'border-red-500' : 'border-zinc-700'` to the existing className
-- Add a small `{publishErrors.fieldName && <p className="text-xs text-red-400 mt-1">{publishErrors.fieldName}</p>}` below the field
+2. **`src/components/chronicle/ContentThemesSection.tsx`**
+   - Tags error: `text-xs text-red-400` → `text-sm text-red-500`
+   - Story type error: `text-xs text-red-400` → `text-sm text-red-500`
 
-Character card highlighting is already implemented and will continue to work.
-
-**Auto-scroll:** After setting errors, scroll the first errored field into view so the user immediately sees the red highlights rather than only the summary at the bottom.
-
-### No other files change
-- `publish-validation.ts` already returns all errors simultaneously
-- `ShareStoryModal.tsx` unchanged
+3. **`src/components/chronicle/StoryGoalsSection.tsx`**
+   - Border when `hasError`: already `border-red-500`, add `ring-2 ring-red-500` to match
 
