@@ -3,12 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from './UI';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Share2, Globe, Pencil, Check, Loader2, AlertTriangle } from 'lucide-react';
+import { Share2, Globe, Pencil, Check, Loader2 } from 'lucide-react';
 import { getPublishedScenario, publishScenario, unpublishScenario, PublishedScenario } from '@/services/gallery-data';
-import { validateForPublish, hasPublishErrors, PublishValidationErrors } from '@/utils/publish-validation';
-import type { Character, World, OpeningDialog, ContentThemes } from '@/types';
-
 
 interface ShareScenarioModalProps {
   isOpen: boolean;
@@ -16,11 +12,6 @@ interface ShareScenarioModalProps {
   scenarioId: string;
   scenarioTitle: string;
   userId: string;
-  characters: Character[];
-  world: World;
-  openingDialog: OpeningDialog;
-  contentThemes: ContentThemes;
-  onPublishValidationErrors?: (errors: PublishValidationErrors) => void;
 }
 
 export const ShareScenarioModal: React.FC<ShareScenarioModalProps> = ({
@@ -29,22 +20,15 @@ export const ShareScenarioModal: React.FC<ShareScenarioModalProps> = ({
   scenarioId,
   scenarioTitle,
   userId,
-  characters,
-  world,
-  openingDialog,
-  contentThemes,
-  onPublishValidationErrors
 }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isPublishing, setIsPublishing] = useState(false);
   const [existingPublication, setExistingPublication] = useState<PublishedScenario | null>(null);
   const [allowRemix, setAllowRemix] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<PublishValidationErrors>({});
 
   useEffect(() => {
     if (isOpen) {
       loadExistingPublication();
-      setValidationErrors({});
     }
   }, [isOpen, scenarioId]);
 
@@ -67,22 +51,6 @@ export const ShareScenarioModal: React.FC<ShareScenarioModalProps> = ({
   };
 
   const handlePublish = async () => {
-    // Run validation
-    const errors = validateForPublish({
-      scenarioTitle,
-      world,
-      characters,
-      openingDialog,
-      contentThemes,
-    });
-
-    setValidationErrors(errors);
-    onPublishValidationErrors?.(errors);
-
-    if (hasPublishErrors(errors)) {
-      return; // Block publish
-    }
-
     setIsPublishing(true);
     try {
       await publishScenario(scenarioId, userId, allowRemix, []);
@@ -121,35 +89,8 @@ export const ShareScenarioModal: React.FC<ShareScenarioModalProps> = ({
     }
   };
 
-  const handleClose = () => {
-    setValidationErrors({});
-    onPublishValidationErrors?.({});
-    onClose();
-  };
-
-  // Collect all error messages into a flat list for summary
-  const errorMessages: string[] = [];
-  if (validationErrors.storyTitle) errorMessages.push(validationErrors.storyTitle);
-  if (validationErrors.storyPremise) errorMessages.push(validationErrors.storyPremise);
-  if (validationErrors.openingDialog) errorMessages.push(validationErrors.openingDialog);
-  if (validationErrors.tags) errorMessages.push(validationErrors.tags);
-  if (validationErrors.storyType) errorMessages.push(validationErrors.storyType);
-  if (validationErrors.noCharacters) errorMessages.push(validationErrors.noCharacters);
-  if (validationErrors.characters) {
-    const charIds = Object.keys(validationErrors.characters);
-    for (const cid of charIds) {
-      const char = characters.find(c => c.id === cid);
-      const charName = char?.name && char.name !== 'New Character' ? char.name : 'Unnamed character';
-      for (const msg of validationErrors.characters[cid]) {
-        errorMessages.push(`${charName}: ${msg}`);
-      }
-    }
-  }
-  if (validationErrors.location) errorMessages.push(validationErrors.location);
-  if (validationErrors.storyArc) errorMessages.push(validationErrors.storyArc);
-
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="bg-[#2a2a2f] border-white/10 text-white max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3 text-xl font-bold">
@@ -169,25 +110,6 @@ export const ShareScenarioModal: React.FC<ShareScenarioModalProps> = ({
               <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Publishing</p>
               <p className="text-lg font-bold text-white">{scenarioTitle || 'Untitled Story'}</p>
             </div>
-
-            {/* Validation Error Summary */}
-            {errorMessages.length > 0 && (
-              <div className="p-4 bg-red-500/10 rounded-xl border border-red-500/20">
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm space-y-1">
-                    <p className="font-medium text-red-300">Please fix the following before publishing:</p>
-                    <ScrollArea className="max-h-40">
-                      <ul className="list-disc list-inside space-y-0.5 text-red-200/70">
-                        {errorMessages.map((msg, i) => (
-                          <li key={i}>{msg}</li>
-                        ))}
-                      </ul>
-                    </ScrollArea>
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* Remix Permission */}
             <div className="flex items-center justify-between p-4 bg-zinc-900/30 rounded-xl border border-zinc-700/50">
