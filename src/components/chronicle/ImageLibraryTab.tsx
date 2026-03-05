@@ -1,11 +1,10 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 
 import { STANDARD_RATIOS, getClosestRatio, AspectRatioIcon } from './AspectRatioUtils';
 import { Icons } from '@/constants';
 import { Star, ArrowLeft, Trash2, Pencil, FolderOpen, Plus, Image as ImageIcon, Loader2, X } from 'lucide-react';
 import { FolderEditModal } from './FolderEditModal';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
-import { useAuth } from '@/hooks/use-auth';
 
 import { supabase } from '@/integrations/supabase/client';
 import { resizeImage, uuid } from '@/utils';
@@ -36,13 +35,13 @@ export type LibraryImage = {
 };
 
 interface ImageLibraryTabProps {
+  userId: string | null;
   onFolderChange?: (inFolder: boolean, exitFn?: () => void) => void;
   searchQuery?: string;
   uploadRef?: React.MutableRefObject<(() => void) | null>;
 }
 
-export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange, searchQuery = '', uploadRef }) => {
-  const { user } = useAuth();
+export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFolderChange, searchQuery = '', uploadRef }) => {
   const [folders, setFolders] = useState<ImageFolder[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState<ImageFolder | null>(null);
@@ -51,6 +50,10 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
   const [editingFolder, setEditingFolder] = useState<ImageFolder | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [aspectRatios, setAspectRatios] = useState<Record<string, { label: string; orientation: 'portrait' | 'landscape' | 'square' }>>({});
+
+  // Fetch guards
+  const hasLoadedRef = useRef(false);
+  const fetchInProgressRef = useRef(false);
 
   // Detect aspect ratios when folder images change
   useEffect(() => {
@@ -79,11 +82,12 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'folder' | 'image'; id: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch folders on mount
+  // Fetch folders on mount (once per userId)
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
+    if (hasLoadedRef.current) return;
     loadFolders();
-  }, [user]);
+  }, [userId]);
 
   // Expose upload trigger via ref
   useEffect(() => {
@@ -106,12 +110,14 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [lightboxImage]);
 
-  const loadFolders = async () => {
-    if (!user) return;
+  const loadFolders = useCallback(async () => {
+    if (!userId) return;
+    if (fetchInProgressRef.current) return;
+    fetchInProgressRef.current = true;
     
     try {
       const { data, error } = await supabase.rpc('get_folders_with_details', {
-        p_user_id: user.id,
+        p_user_id: userId,
       });
 
       if (error) throw error;
@@ -129,13 +135,14 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
       } as ImageFolder));
 
       setFolders(foldersWithDetails);
+      hasLoadedRef.current = true;
     } catch (e: any) {
-      console.error('Failed to load folders:', e);
       console.error('Failed to load folders:', e);
     } finally {
       setIsLoading(false);
+      fetchInProgressRef.current = false;
     }
-  };
+  }, [userId]);
 
   const loadFolderImages = async (folderId: string) => {
     setIsLoadingImages(true);
@@ -163,19 +170,18 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
       );
     } catch (e: any) {
       console.error('Failed to load images:', e);
-      console.error('Failed to load images:', e);
     } finally {
       setIsLoadingImages(false);
     }
   };
 
   const handleCreateFolder = async () => {
-    if (!user) return;
+    if (!userId) return;
     try {
       const { data, error } = await supabase
         .from('image_folders')
         .insert({
-          user_id: user.id,
+          user_id: userId,
           name: 'New Folder',
           description: '',
         })
@@ -200,7 +206,6 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
       setEditingFolder(newFolder);
     } catch (e: any) {
       console.error('Failed to create folder:', e);
-      console.error('Failed to create folder:', e);
     }
   };
 
@@ -222,7 +227,6 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
       }
     } catch (e: any) {
       console.error('Failed to update folder:', e);
-      console.error('Failed to update folder:', e);
     }
   };
 
@@ -232,7 +236,6 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
 
   const executeDeleteFolder = async (id: string) => {
     try {
-      // First delete all images in the folder from storage
       const { data: images } = await supabase
         .from('library_images')
         .select('image_url')
@@ -260,7 +263,6 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
         }
       }
 
-      // Delete folder (cascade will handle images in DB)
       const { error } = await supabase
         .from('image_folders')
         .delete()
@@ -273,7 +275,6 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
         setSelectedFolder(null);
       }
     } catch (e: any) {
-      console.error('Failed to delete folder:', e);
       console.error('Failed to delete folder:', e);
     }
   };
@@ -298,7 +299,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
 
   const handleUploadImages = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files || !user || !selectedFolder) return;
+    if (!files || !userId || !selectedFolder) return;
 
     setIsUploading(true);
     try {
@@ -310,12 +311,11 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
               const dataUrl = reader.result as string;
               const optimized = await resizeImage(dataUrl, 1920, 1080, 0.85);
               
-              // Convert to blob
               const response = await fetch(optimized);
               const blob = await response.blob();
               
               const filename = `${uuid()}-${Date.now()}.jpg`;
-              const path = `${user.id}/${selectedFolder.id}/${filename}`;
+              const path = `${userId}/${selectedFolder.id}/${filename}`;
               
               const { error: uploadError } = await supabase.storage
                 .from('image_library')
@@ -330,7 +330,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
               const { data: imgData, error: insertError } = await supabase
                 .from('library_images')
                 .insert({
-                  user_id: user.id,
+                  user_id: userId,
                   folder_id: selectedFolder.id,
                   image_url: publicUrl,
                   filename: file.name,
@@ -355,7 +355,6 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
                 ...prev,
               ]);
 
-              // Update folder image count
               setFolders((prev) =>
                 prev.map((f) =>
                   f.id === selectedFolder.id ? { ...f, imageCount: f.imageCount + 1 } : f
@@ -384,9 +383,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
   };
 
   const executeDeleteImage = async (image: LibraryImage) => {
-
     try {
-      // Delete from storage
       const url = new URL(image.imageUrl);
       const marker = '/object/public/image_library/';
       const idx = url.pathname.indexOf(marker);
@@ -399,7 +396,6 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
         await supabase.storage.from('image_library').remove([filePath]);
       }
 
-      // Delete from DB
       const { error } = await supabase
         .from('library_images')
         .delete()
@@ -409,7 +405,6 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
 
       setFolderImages((prev) => prev.filter((img) => img.id !== image.id));
       
-      // Update folder image count
       if (selectedFolder) {
         setFolders((prev) =>
           prev.map((f) =>
@@ -418,7 +413,6 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ onFolderChange
         );
       }
     } catch (e: any) {
-      console.error('Failed to delete image:', e);
       console.error('Failed to delete image:', e);
     }
   };
