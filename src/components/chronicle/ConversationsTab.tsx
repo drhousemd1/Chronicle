@@ -61,7 +61,7 @@ export function ConversationsTab({
                           {/* Scenario thumbnail - clickable */}
                           <button
                             onClick={() => onResume(entry.scenarioId, entry.conversationId)}
-                            className="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0 bg-zinc-800 border border-[#4a5f7f] hover:ring-2 hover:ring-[#4a5f7f] transition-all"
+                            className="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0 bg-zinc-800 border border-[#4a5f7f] hover:ring-2 hover:ring-[#4a5f7f] transition-all shadow-[0_4px_12px_rgba(0,0,0,0.4)]"
                           >
                             {entry.scenarioImageUrl ? (
                               <img 
