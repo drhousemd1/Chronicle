@@ -48,6 +48,7 @@ interface WorldTabProps {
   onCreateCharacter: () => void;
   onOpenLibraryPicker: () => void;
   onSelectCharacter: (id: string) => void;
+  storyNameError?: boolean;
 }
 
 const HintBox: React.FC<{ hints: string[] }> = ({ hints }) => (
@@ -78,13 +79,10 @@ const CharacterButton: React.FC<{ char: Character; onSelect: (id: string) => voi
         </div>
       )}
     </div>
-    <div className="min-w-0 flex-1">
-      <div className="flex justify-between items-center">
-        <div className="text-sm font-bold text-white truncate leading-tight group-hover:text-blue-300 transition-colors">{char.name}</div>
-        <div className="text-xs font-black text-slate-400 uppercase tracking-wider shrink-0 ml-2">{char.controlledBy}</div>
-      </div>
-      <div className="text-xs text-slate-400 mt-0.5">Sex: {char.sexType || ''}</div>
-      <div className="text-xs text-slate-400 mt-0.5">Age: {char.age || ''}</div>
+    <div className="min-w-0 flex-1 space-y-0.5">
+      <div className="text-xs text-slate-400"><span className="text-slate-500">Name:</span> <span className="text-white font-bold group-hover:text-blue-300 transition-colors">{char.name}</span></div>
+      <div className="text-xs text-slate-400"><span className="text-slate-500">Age:</span> {char.age || '—'}</div>
+      <div className="text-xs text-slate-400"><span className="text-slate-500">Controlled by:</span> <span className="uppercase tracking-wider font-black">{char.controlledBy}</span></div>
     </div>
   </button>
 );
@@ -108,7 +106,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   onUpdateContentThemes,
   onCreateCharacter,
   onOpenLibraryPicker,
-  onSelectCharacter 
+  onSelectCharacter,
+  storyNameError
 }) => {
   const { user } = useAuth();
   const { modelId } = useModelSettings();
@@ -519,7 +518,10 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                       
                       <div>
                         <FieldLabel label="Story Name" fieldName="scenarioName" />
-                        <AutoResizeTextarea value={world.core.scenarioName} onChange={(v) => updateCore({ scenarioName: v })} placeholder="e.g. Chronicles of Eldoria" className="px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                        <AutoResizeTextarea value={world.core.scenarioName} onChange={(v) => updateCore({ scenarioName: v })} placeholder="e.g. Chronicles of Eldoria" className={`px-3 py-2 text-sm bg-zinc-900/50 border text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${storyNameError && !world.core.scenarioName?.trim() ? 'border-red-500 ring-2 ring-red-500' : 'border-zinc-700'}`} />
+                        {storyNameError && !world.core.scenarioName?.trim() && (
+                          <p className="text-xs text-red-500 mt-1">Story name is required</p>
+                        )}
                       </div>
                       <div>
                         <FieldLabel label="Brief Description" fieldName="briefDescription" />

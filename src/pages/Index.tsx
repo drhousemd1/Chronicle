@@ -134,6 +134,7 @@ const IndexContent = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingAndClosing, setIsSavingAndClosing] = useState(false);
+  const [storyNameError, setStoryNameError] = useState(false);
   const [isSavingToLibrary, setIsSavingToLibrary] = useState(false);
   const [isResuming, setIsResuming] = useState(false);
   // Track which conversations have more older messages to load
@@ -802,9 +803,16 @@ const IndexContent = () => {
       console.log("Migrated legacy IDs - saving as new scenario compatible with backend");
     }
     
+    // Validate story name is required
+    if (!dataToSave.world.core.scenarioName?.trim()) {
+      setStoryNameError(true);
+      setTab("world");
+      return false;
+    }
+    setStoryNameError(false);
+
     try {
-      const derivedTitle = dataToSave.world.core.scenarioName || 
-                           (dataToSave.characters[0]?.name ? `${dataToSave.characters[0].name}'s Story` : "New Scenario");
+      const derivedTitle = dataToSave.world.core.scenarioName || "New Story";
 
       const metadata = {
         title: derivedTitle,
@@ -2063,6 +2071,7 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
               onCreateCharacter={() => { handleCreateCharacter(); }}
               onOpenLibraryPicker={() => { setIsCharacterPickerOpen(true); }}
               onSelectCharacter={(id) => { setSelectedCharacterId(id); setTab("characters"); }}
+              storyNameError={storyNameError}
             />
           )}
 
