@@ -3276,7 +3276,7 @@ const updatedChar: SideCharacter = {
           <div className="flex-1 flex flex-col p-4 gap-3 overflow-hidden">
           {/* Day/Time Control Panel - Fixed at top */}
           <section
-            className="flex-shrink-0 rounded-xl p-4 border border-slate-200 shadow-lg transition-all duration-700 relative overflow-hidden min-h-[200px]"
+            className="flex-shrink-0 rounded-xl p-4 border border-slate-200 shadow-lg transition-all duration-700 relative overflow-hidden min-h-[200px] min-h-[200px]"
           >
             {/* Preloaded background images — all mounted, only active one visible */}
             {(['sunrise', 'day', 'sunset', 'night'] as const).map((time) => (
@@ -3284,7 +3284,7 @@ const updatedChar: SideCharacter = {
                 key={time}
                 src={getTimeBackgroundImage(time)}
                 alt=""
-                className={`absolute inset-0 w-full h-full object-cover rounded-xl transition-opacity duration-700 ${
+                className={`absolute inset-0 w-full h-fullobject-center  object-cover rounded-xl transition-opacity duration-700 ${
                   currentTimeOfDay === time ? 'opacity-100' : 'opacity-0'
                 }`}
               />
