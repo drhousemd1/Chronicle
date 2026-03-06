@@ -3275,7 +3275,12 @@ const updatedChar: SideCharacter = {
           </div>
           <div className="flex-1 flex flex-col p-4 gap-3 overflow-hidden">
           {/* Day/Time Control Panel - Fixed at top */}
-          <section className={`flex-shrink-0 rounded-xl p-4 border border-slate-200 shadow-lg transition-all duration-700 animate-sky ${getTimeBackground(currentTimeOfDay)}`}>
+          <section
+            className="flex-shrink-0 rounded-xl p-4 border border-slate-200 shadow-lg transition-all duration-700 relative overflow-hidden bg-cover bg-center"
+            style={{ backgroundImage: `url(${getTimeBackgroundImage(currentTimeOfDay)})` }}
+          >
+            <div className="absolute inset-0 bg-black/20 rounded-xl" />
+            <div className="relative z-10">
             {/* Time Progression Label Row */}
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5">
