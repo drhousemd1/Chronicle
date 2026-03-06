@@ -480,7 +480,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
             </div>
             <div className="space-y-2">
               {sideCharacters.map(char => <CharacterButton key={char.id} char={char} onSelect={onSelectCharacter} errors={publishErrors.characters?.[char.id]} />)}
-              <AddCharacterPlaceholder />
+              <AddCharacterPlaceholder label="Add / Create" sublabel="Side Character" />
             </div>
           </section>
         </div>
