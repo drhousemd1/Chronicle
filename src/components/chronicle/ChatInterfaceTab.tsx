@@ -2263,6 +2263,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   // Save time progression settings to conversation
   const handleTimeProgressionChange = (mode: 'manual' | 'automatic', interval?: number) => {
     setTimeProgressionMode(mode);
+    setIsTimerPaused(false);
     const effectiveInterval = interval ?? timeProgressionInterval;
     if (interval !== undefined) setTimeProgressionInterval(effectiveInterval);
     // Immediately sync refs so timer/cleanup always see latest values
