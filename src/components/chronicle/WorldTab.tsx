@@ -994,8 +994,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                               <ul className="list-disc list-outside pl-4 space-y-1">
                                 <li><strong>Manual:</strong> User will update the day and time counters manually when they want the day/time to advance.</li>
                                 <li><strong>Automatic:</strong> Time/day will progress by set intervals.</li>
+                                <li>Users can adjust these settings during their playthrough in the chat settings tab.</li>
                               </ul>
-                              <p className="mt-1.5">Users can adjust these settings during their playthrough in the chat settings tab.</p>
                             </TooltipContent>
                           </Tooltip>
                         </div>
