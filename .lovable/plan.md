@@ -1,41 +1,45 @@
 
 
-## Plan: Restyle Sidebar Theme Modal to Dark Theme
+## Plan: Adaptive Character Card Theming Based on Sidebar Background Brightness
 
-### What changes
+### Problem
+The character tile cards in the sidebar use a fixed light frosted glass style (`bg-white/30`, dark text, light hover states). This looks great on dark backgrounds but gets lost on light ones, as shown in the screenshots.
 
-**Single file: `src/components/chronicle/SidebarThemeModal.tsx`**
+### Approach
+The `sidebarBgIsLight` state already exists and drives the "Exit Scenario" text color. We'll extend it to the character cards, scroll indicators, and the `SideCharacterCard` component.
 
-Replace the white Card-based layout with the standard dark modal pattern used by Chat Settings and other Chronicle modals.
+### Changes
 
-**1. DialogContent** — Switch from `bg-transparent` + white `Card` wrapper to direct dark styling:
-- `bg-zinc-900 border-white/10 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.5)]`
-- Remove the `Card` wrapper entirely
+**1. `src/components/chronicle/ChatInterfaceTab.tsx` — `renderCharacterCard` (~line 3095)**
 
-**2. Header** — Dark theme colors:
-- Title: `text-white` instead of `text-slate-900`
-- Border: `border-b border-white/10` instead of `border-slate-100`
-- Icon stroke color inherits from white text
+Pass `sidebarBgIsLight` into the card styling:
 
-**3. Upload button** — Replace the ghost text link with a solid dark button matching the BackgroundPickerModal pattern:
-- `bg-zinc-700 text-white hover:bg-zinc-600 font-black text-xs tracking-widest uppercase h-9 gap-1 px-3 rounded-lg`
-- Dropdown menu: `bg-zinc-800 border-white/10` with items using `text-zinc-200 hover:bg-zinc-700`
+- **Card container**: `bg-white/30 hover:bg-white` → when dark bg: `bg-black/30 hover:bg-black/50`
+- **Name text**: `text-slate-800` → when dark bg: `text-white`
+- **Menu dots button**: `hover:bg-slate-200 text-slate-700` → when dark bg: `hover:bg-white/20 text-white/70 hover:text-white`
+- **Dropdown menu**: `bg-white border-slate-200` → when dark bg: `bg-zinc-800 border-white/10` with light text items
+- **Avatar fallback**: `bg-slate-50 border-slate-100 text-slate-300` → when dark bg: `bg-zinc-800 border-white/20 text-zinc-500`
+- **Scroll overflow indicator** (~line 3362): `bg-white/30 text-black/80` → when dark bg: `bg-black/30 text-white/80`
 
-**4. Recommended text** — `text-zinc-500` instead of `text-slate-400`
+**2. `src/components/chronicle/SideCharacterCard.tsx`**
 
-**5. Default tile** — Dark surface:
-- Background: `bg-zinc-800/50` instead of `bg-slate-50`
-- Border: `border-white/10` default, `ring-blue-400` when selected (consistent with brand)
-- Ring offset color: `ring-offset-zinc-900` so offset matches dark bg
-- Icon/text: `text-zinc-500` instead of `text-slate-300/400`
+Add an `isDarkBg` prop to the component and apply the same adaptive styling:
+- Card: `bg-white/30 hover:bg-white` ↔ `bg-black/30 hover:bg-black/50`
+- Name: `text-slate-800` ↔ `text-white`
+- Menu button: dark ↔ light variants
+- Avatar circle: `bg-purple-50 border-purple-100` ↔ `bg-zinc-800 border-white/20`
+- Avatar fallback text: `text-purple-300` ↔ `text-zinc-400`
 
-**6. Background tiles** — Same dark treatment:
-- `bg-zinc-800/50 border-white/10`, selected: `ring-2 ring-blue-400 ring-offset-2 ring-offset-zinc-900`
-- Delete button stays `bg-rose-500`
+**3. Pass prop through to `SideCharacterCard`** (~lines 3346, 3388)
 
-**7. Empty state** — `border-zinc-700 text-zinc-500` instead of slate-100/400
+Add `isDarkBg={!sidebarBgIsLight}` to all `<SideCharacterCard>` usages.
 
-**8. Check badge** — Keep `bg-blue-500` (works on both themes)
+### What stays the same
+- The frosted `backdrop-blur-sm` effect remains on all cards regardless of theme
+- The blue/slate `Badge` for AI/User control stays unchanged (works on both)
+- The `ring-2 ring-blue-400` updating indicator stays the same
+- The section headers (`MAIN CHARACTERS`, `SIDE CHARACTERS`) remain unchanged
 
-No logic changes, no new dependencies. Pure cosmetic update to one file.
+### Result
+Cards will smoothly transition between a light frosted glass (on dark backgrounds) and a dark frosted glass (on light backgrounds), keeping text, icons, and menus legible in both cases — same adaptive behavior already used for the "Exit Scenario" header.
 
