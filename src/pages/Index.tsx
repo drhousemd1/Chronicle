@@ -2450,7 +2450,7 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
       {/* Drafts Modal */}
       <DraftsModal
         open={draftsModalOpen}
-        onOpenChange={setDraftsModalOpen}
+        onOpenChange={(open) => { setDraftsModalOpen(open); if (!open) setDraftCount(getDraftRegistry().length); }}
         onLoadDraft={(draftId) => {
           try {
             const raw = localStorage.getItem(`draft_${draftId}`);
