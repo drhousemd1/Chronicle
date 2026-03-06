@@ -877,7 +877,13 @@ const IndexContent = () => {
   const handleNavigateAway = useCallback(async (targetTab: TabKey | "library") => {
     if (activeId && activeData) {
       try {
-        localStorage.setItem(`draft_${activeId}`, JSON.stringify(activeData));
+        localStorage.setItem(`draft_${activeId}`, JSON.stringify({
+          data: activeData,
+          coverImage: activeCoverImage,
+          coverPosition: activeCoverPosition,
+          contentThemes: activeContentThemes,
+          savedAt: Date.now(),
+        }));
       } catch (e) {
         console.warn("Could not stash draft to localStorage:", e);
       }
