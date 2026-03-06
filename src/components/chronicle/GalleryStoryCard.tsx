@@ -131,10 +131,9 @@ export const GalleryScenarioCard: React.FC<GalleryScenarioCardProps> = ({
           </button>
           <button
             onClick={handlePlay}
-            className="px-4 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-xs shadow-2xl hover:bg-blue-500 transition-colors flex items-center gap-1.5"
+            className="px-4 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-xs shadow-2xl hover:bg-blue-500 transition-colors"
           >
-            <Play className="w-3.5 h-3.5 fill-current" />
-            Play
+            PLAY
           </button>
         </div>
 

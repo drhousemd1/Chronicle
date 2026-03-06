@@ -1,23 +1,11 @@
 
-## Standardize Play Button on Community Gallery
 
-**File:** `src/components/chronicle/GalleryStoryCard.tsx`, lines 132-139
+## Plan: Show Full Image in Sidebar Theme Previews
 
-Update the Play button to match the My Stories page style:
-- Change text from "Play" to "PLAY" (all caps)
-- Remove the Play icon (currently `<Play className="w-3.5 h-3.5 fill-current" />`)
-- Keep the gap-1.5 but remove the icon flex display
-- Keep Like and Save buttons unchanged
+### Problem
+The tiles use `object-cover` which crops tall portrait images to fill the container. Since the source images are ~300×1080 (roughly 1:3.6 ratio) but tiles are `aspect-[2/3]` (1:1.5), a large portion of each image is cropped out.
 
-The Play button should change from:
-```
-<Play className="w-3.5 h-3.5 fill-current" />
-Play
-```
+### Fix (single file: `SidebarThemeModal.tsx`)
 
-To just:
-```
-PLAY
-```
+**Change `object-cover` to `object-contain`** on the background preview `<img>` tag (line ~130). This will scale the entire image to fit within the tile without cropping, showing the full content. The tile's dark `bg-zinc-800/50` background will fill any letterbox space naturally.
 
-Keep the existing button styling: `px-4 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-xs shadow-2xl hover:bg-blue-500 transition-colors`
