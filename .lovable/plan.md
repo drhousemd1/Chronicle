@@ -1,11 +1,11 @@
 
 
-## Plan: Fix Sidebar Theme Grid — 5 Columns, Scrollable, Constrained Height
+## Plan: Show Full Image in Sidebar Theme Previews
 
-### Changes (single file: `SidebarThemeModal.tsx`)
+### Problem
+The tiles use `object-cover` which crops tall portrait images to fill the container. Since the source images are ~300×1080 (roughly 1:3.6 ratio) but tiles are `aspect-[2/3]` (1:1.5), a large portion of each image is cropped out.
 
-1. **Widen the modal** from `sm:max-w-2xl` to `sm:max-w-4xl` to fit 5 columns comfortably.
-2. **Change grid to 5 columns**: `grid-cols-3 md:grid-cols-5` with smaller gap (`gap-3`).
-3. **Make the grid area scrollable** with a fixed max-height (~two rows of portrait tiles). Wrap the grid content area in `overflow-y-auto` with `max-h-[460px]` so it shows roughly 2 rows and scrolls for more.
-4. **Reduce tile aspect ratio slightly** to `aspect-[2/3]` so tiles aren't excessively tall at the narrower column width.
+### Fix (single file: `SidebarThemeModal.tsx`)
+
+**Change `object-cover` to `object-contain`** on the background preview `<img>` tag (line ~130). This will scale the entire image to fit within the tile without cropping, showing the full content. The tile's dark `bg-zinc-800/50` background will fill any letterbox space naturally.
 
