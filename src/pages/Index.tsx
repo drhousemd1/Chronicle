@@ -39,6 +39,7 @@ import {
 import * as supabaseData from "@/services/supabase-data";
 import { DeleteConfirmDialog } from "@/components/chronicle/DeleteConfirmDialog";
 import { ChangeNameModal } from "@/components/chronicle/ChangeNameModal";
+import { DraftsModal, upsertDraftRegistry, removeDraftFromRegistry, getDraftRegistry } from "@/components/chronicle/DraftsModal";
 
 const IconsList = {
   Gallery: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>,
@@ -137,6 +138,8 @@ const IndexContent = () => {
   const [storyNameError, setStoryNameError] = useState(false);
   const [isSavingToLibrary, setIsSavingToLibrary] = useState(false);
   const [isResuming, setIsResuming] = useState(false);
+  const [draftsModalOpen, setDraftsModalOpen] = useState(false);
+  const [draftCount, setDraftCount] = useState(0);
   // Track which conversations have more older messages to load
   const [hasMoreMessagesMap, setHasMoreMessagesMap] = useState<Record<string, boolean>>({});
   const [aiPromptModal, setAiPromptModal] = useState<{ mode: 'fill' | 'generate' } | null>(null);
@@ -230,6 +233,11 @@ const IndexContent = () => {
   useEffect(() => {
     if (user?.id) checkIsAdmin(user.id).then(setIsAdminState);
   }, [user?.id]);
+
+  // Initialize draft count from registry
+  useEffect(() => {
+    setDraftCount(getDraftRegistry().length);
+  }, []);
 
   // Track whether conversation previews have been enriched
   const [conversationsEnriched, setConversationsEnriched] = useState(false);
@@ -754,8 +762,7 @@ const IndexContent = () => {
       const { data, coverImage, coverImagePosition } = result;
       
       const newScenarioId = uuid();
-      
-      
+
       const clonedData = await supabaseData.cloneScenarioForRemix(
         id,
         newScenarioId,
@@ -780,8 +787,8 @@ const IndexContent = () => {
       setActiveCoverImage(coverImage);
       setActiveCoverPosition(coverImagePosition);
       setActiveContentThemes(defaultContentThemes);
-      
-      
+
+
       setTab("world"); 
       setSelectedCharacterId(null);
       setPlayingConversationId(null);
@@ -894,8 +901,10 @@ const IndexContent = () => {
         setSelectedCharacterId(null);
         setTab("hub");
       }
-      // Clear localStorage draft on successful DB save
+      // Clear localStorage draft and registry entry on successful DB save
       try { localStorage.removeItem(`draft_${scenarioIdToSave}`); } catch (_) { /* ignore */ }
+      removeDraftFromRegistry(scenarioIdToSave);
+      setDraftCount(getDraftRegistry().length);
 
       return true;
     } catch (e: any) {
@@ -1803,14 +1812,21 @@ const IndexContent = () => {
                     type="button"
                     onClick={() => {
                       if (!activeId || !activeData) return;
+                      const savedAt = Date.now();
                       try {
                         localStorage.setItem(`draft_${activeId}`, JSON.stringify({
                           data: activeData,
                           coverImage: activeCoverImage,
                           coverPosition: activeCoverPosition,
                           contentThemes: activeContentThemes,
-                          savedAt: Date.now(),
+                          savedAt,
                         }));
+                        upsertDraftRegistry({
+                          id: activeId,
+                          title: activeData.world.core.scenarioName || 'Untitled',
+                          savedAt,
+                        });
+                        setDraftCount(getDraftRegistry().length);
                         setIsSaving(true);
                         setTimeout(() => setIsSaving(false), 1200);
                       } catch (e) {
@@ -1834,22 +1850,36 @@ const IndexContent = () => {
                 </button>
               )}
               {tab === "hub" && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
+                <div className="flex items-center gap-3">
+                  {draftCount > 0 && (
                     <button
                       type="button"
-                      className="inline-flex items-center justify-center rounded-xl px-3 py-2 border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-white/10 transition-all active:scale-95"
+                      onClick={() => setDraftsModalOpen(true)}
+                      className="relative inline-flex items-center justify-center h-10 px-5 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
                     >
-                      <Settings className="w-5 h-5" />
+                      Drafts
+                      <span className="ml-1.5 inline-flex items-center justify-center h-4 min-w-[16px] rounded-full bg-white/15 text-[9px] font-bold px-1">
+                        {draftCount}
+                      </span>
                     </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem onClick={() => setIsBackgroundModalOpen(true)} className="cursor-pointer">
-                      <ImageIcon className="w-4 h-4 mr-2" />
-                      Change Background
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                  )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        className="inline-flex items-center justify-center rounded-xl px-3 py-2 border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-white/10 transition-all active:scale-95"
+                      >
+                        <Settings className="w-5 h-5" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuItem onClick={() => setIsBackgroundModalOpen(true)} className="cursor-pointer">
+                        <ImageIcon className="w-4 h-4 mr-2" />
+                        Change Background
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               )}
               {tab === "admin" && adminActiveTool === "app_guide" && (
                 <div className="flex items-center gap-2">
@@ -2415,6 +2445,30 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
         onSubmit={handleAIPromptSubmit}
         mode={aiPromptModal?.mode || 'fill'}
         isProcessing={isAiFilling || isAiGenerating}
+      />
+
+      {/* Drafts Modal */}
+      <DraftsModal
+        open={draftsModalOpen}
+        onOpenChange={(open) => { setDraftsModalOpen(open); if (!open) setDraftCount(getDraftRegistry().length); }}
+        onLoadDraft={(draftId) => {
+          try {
+            const raw = localStorage.getItem(`draft_${draftId}`);
+            if (!raw) return;
+            const draft = JSON.parse(raw);
+            const data = draft.data || draft;
+            setActiveId(draftId);
+            setActiveData(data);
+            setActiveCoverImage(draft.coverImage ?? null);
+            setActiveCoverPosition(draft.coverPosition ?? null);
+            setActiveContentThemes(draft.contentThemes ?? defaultContentThemes);
+            setTab("world");
+            setSelectedCharacterId(null);
+            setPlayingConversationId(null);
+          } catch (e) {
+            console.warn('Could not load draft:', e);
+          }
+        }}
       />
       </div>
     </TooltipProvider>
