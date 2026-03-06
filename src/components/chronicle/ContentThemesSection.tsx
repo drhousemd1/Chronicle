@@ -72,7 +72,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
   const customOptions = selected.filter(s => !prebuiltOptions.includes(s as any));
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-1">
       <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
         {title}
       </h4>
@@ -165,7 +165,7 @@ const StoryTypeSelector: React.FC<{
   onChange: (value: 'SFW' | 'NSFW' | null) => void;
 }> = ({ selected, onChange }) => {
   return (
-    <div className="space-y-3">
+    <div className="space-y-1">
       <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
         Story Type
       </h4>
@@ -226,7 +226,7 @@ const CustomTagsSection: React.FC<{
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-1">
       <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
         Custom Tags
       </h4>
