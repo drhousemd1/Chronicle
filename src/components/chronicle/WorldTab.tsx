@@ -426,16 +426,17 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   const mainCharacters = characters.filter(c => c.characterRole === 'Main');
   const sideCharacters = characters.filter(c => c.characterRole === 'Side');
 
-  const noCharactersError = publishErrors.noCharacters;
+  const noAICharacterError = publishErrors.noAICharacter;
+  const noUserCharacterError = publishErrors.noUserCharacter;
 
-  const AddCharacterPlaceholder = () => (
+  const AddCharacterPlaceholder: React.FC<{ label: string; sublabel: string; error?: string }> = ({ label, sublabel, error }) => (
     <div className="space-y-1">
       <button 
         type="button"
         onClick={() => setIsCharacterCreationOpen(true)}
         className={cn(
           "group/add w-full flex items-center gap-4 p-3 rounded-2xl transition-all duration-300 bg-[#3a3a3f]/30 hover:bg-[#3a3a3f]/50 cursor-pointer",
-          noCharactersError
+          error
             ? "border-2 border-dashed border-red-500"
             : "border-2 border-dashed border-zinc-600 hover:border-zinc-500"
         )}
@@ -444,12 +445,12 @@ export const WorldTab: React.FC<WorldTabProps> = ({
            <span className="text-2xl font-light">+</span>
         </div>
         <div className="text-left">
-          <div className="text-xs font-bold text-zinc-400 group-hover/add:text-zinc-200 transition-colors uppercase tracking-tight">Add / Create</div>
-          <div className="text-[9px] font-black text-zinc-500 group-hover/add:text-zinc-400 uppercase tracking-widest mt-0.5">Character Registry</div>
+          <div className="text-xs font-bold text-zinc-400 group-hover/add:text-zinc-200 transition-colors uppercase tracking-tight">{label}</div>
+          <div className="text-[9px] font-black text-zinc-500 group-hover/add:text-zinc-400 uppercase tracking-widest mt-0.5">{sublabel}</div>
         </div>
       </button>
-      {noCharactersError && (
-        <p className="text-sm text-red-500 font-medium pl-2">{noCharactersError}</p>
+      {error && (
+        <p className="text-sm text-red-500 font-medium pl-2">{error}</p>
       )}
     </div>
   );
