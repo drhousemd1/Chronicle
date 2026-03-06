@@ -322,6 +322,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const [pausedAt, setPausedAt] = useState<number | null>(null);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const timeRemainingRef = useRef<number>(15 * 60);
+  const timeProgressionIntervalRef = useRef<number>(15);
   const scrollRef = useRef<HTMLDivElement>(null);
   
   // Lazy loading state for scroll-based message loading
@@ -881,8 +882,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     }
   }, [conversation?.id]);
 
-  // Keep ref in sync with state so cleanup captures latest value
+  // Keep refs in sync with state so cleanup/timer captures latest values
   useEffect(() => { timeRemainingRef.current = timeRemaining; }, [timeRemaining]);
+  useEffect(() => { timeProgressionIntervalRef.current = timeProgressionInterval; }, [timeProgressionInterval]);
 
   // Persist timeRemaining on unmount / navigation away
   useEffect(() => {
@@ -920,13 +922,13 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
             setCurrentTimeOfDay(nextTime);
             handleDayTimeChange(currentDay, nextTime);
           }
-          return timeProgressionInterval * 60;
+          return timeProgressionIntervalRef.current * 60;
         }
         return prev - 1;
       });
     }, 1000);
     return () => clearInterval(tick);
-  }, [timeProgressionMode, timeProgressionInterval, currentTimeOfDay, currentDay]);
+  }, [timeProgressionMode, currentTimeOfDay, currentDay]);
 
   // Visibility API — pause/resume timer when tab is hidden
   useEffect(() => {
@@ -2210,6 +2212,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     );
     onUpdate(updatedConvs);
     onSaveScenario(updatedConvs);
+    // Direct DB persist to avoid stale closure overwrites
+    supabaseData.updateConversationMeta(conversationId, { currentDay: newDay, currentTimeOfDay: newTime });
   };
 
   const incrementDay = () => {
@@ -2244,7 +2248,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     setTimeProgressionMode(mode);
     if (interval !== undefined) setTimeProgressionInterval(interval);
     const effectiveInterval = interval ?? timeProgressionInterval;
-    setTimeRemaining(effectiveInterval * 60);
+    const effectiveTimeRemaining = effectiveInterval * 60;
+    setTimeRemaining(effectiveTimeRemaining);
     
     // Update conversation in app state and persist
     const updatedConvs = appData.conversations.map(c =>
@@ -2254,6 +2259,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     );
     onUpdate(updatedConvs);
     onSaveScenario(updatedConvs);
+    // Direct DB persist to bypass message-chained save path
+    supabaseData.updateConversationMeta(conversationId, {
+      timeProgressionMode: mode,
+      timeProgressionInterval: effectiveInterval,
+      timeRemaining: effectiveTimeRemaining
+    });
   };
 
   const getTimeIcon = (time: TimeOfDay) => {
