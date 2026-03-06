@@ -873,12 +873,21 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       setCurrentDay(conversation.currentDay || 1);
       setCurrentTimeOfDay(conversation.currentTimeOfDay || 'day');
       setTimeProgressionMode(conversation.timeProgressionMode || 'manual');
-      setTimeProgressionInterval(conversation.timeProgressionInterval || 15);
-      const restored = conversation.timeRemaining != null
+      const interval = conversation.timeProgressionInterval || 15;
+      setTimeProgressionInterval(interval);
+      timeProgressionIntervalRef.current = interval;
+      const maxSeconds = interval * 60;
+      const raw = conversation.timeRemaining != null
         ? conversation.timeRemaining
-        : (conversation.timeProgressionInterval || 15) * 60;
+        : maxSeconds;
+      // Clamp: if persisted timeRemaining exceeds interval window, reset it
+      const restored = raw > maxSeconds ? maxSeconds : raw;
       setTimeRemaining(restored);
       timeRemainingRef.current = restored;
+      // Persist corrected value if it was clamped
+      if (raw > maxSeconds && conversation.id) {
+        supabaseData.updateConversationMeta(conversation.id, { timeRemaining: maxSeconds });
+      }
     }
   }, [conversation?.id]);
 
@@ -2205,14 +2214,21 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   };
   // Update conversation when day/time changes
   const handleDayTimeChange = (newDay: number, newTime: TimeOfDay) => {
+    // Preserve current timer settings from refs to prevent stale snapshot overwrites
     const updatedConvs = appData.conversations.map(c =>
       c.id === conversationId
-        ? { ...c, currentDay: newDay, currentTimeOfDay: newTime, updatedAt: now() }
+        ? { 
+            ...c, 
+            currentDay: newDay, 
+            currentTimeOfDay: newTime, 
+            timeProgressionMode: timeProgressionMode,
+            timeProgressionInterval: timeProgressionIntervalRef.current,
+            updatedAt: now() 
+          }
         : c
     );
     onUpdate(updatedConvs);
-    onSaveScenario(updatedConvs);
-    // Direct DB persist to avoid stale closure overwrites
+    // Direct DB persist only for day/time — timer settings are NOT written here
     supabaseData.updateConversationMeta(conversationId, { currentDay: newDay, currentTimeOfDay: newTime });
   };
 
@@ -2246,20 +2262,22 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   // Save time progression settings to conversation
   const handleTimeProgressionChange = (mode: 'manual' | 'automatic', interval?: number) => {
     setTimeProgressionMode(mode);
-    if (interval !== undefined) setTimeProgressionInterval(interval);
     const effectiveInterval = interval ?? timeProgressionInterval;
+    if (interval !== undefined) setTimeProgressionInterval(effectiveInterval);
+    // Immediately sync refs so timer/cleanup always see latest values
+    timeProgressionIntervalRef.current = effectiveInterval;
     const effectiveTimeRemaining = effectiveInterval * 60;
     setTimeRemaining(effectiveTimeRemaining);
+    timeRemainingRef.current = effectiveTimeRemaining;
     
-    // Update conversation in app state and persist
+    // Update conversation in app state (local only)
     const updatedConvs = appData.conversations.map(c =>
       c.id === conversationId
-        ? { ...c, timeProgressionMode: mode, timeProgressionInterval: effectiveInterval, updatedAt: now() }
+        ? { ...c, timeProgressionMode: mode, timeProgressionInterval: effectiveInterval, timeRemaining: effectiveTimeRemaining, updatedAt: now() }
         : c
     );
     onUpdate(updatedConvs);
-    onSaveScenario(updatedConvs);
-    // Direct DB persist to bypass message-chained save path
+    // Direct DB persist — single source of truth for timer settings
     supabaseData.updateConversationMeta(conversationId, {
       timeProgressionMode: mode,
       timeProgressionInterval: effectiveInterval,
