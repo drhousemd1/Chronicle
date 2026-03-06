@@ -1,31 +1,44 @@
 
+I re-traced this specifically for the “5 minutes keeps becoming 10” symptom (not the countdown behavior itself), and the likely issue is an interval-state overwrite + invalid countdown restore.
 
-## Plan: Fix Automatic Time Progression Persistence Bugs
+## What is actually wrong
 
-### Root Cause Analysis
+1. `time_progression_interval` and `time_remaining` can become inconsistent (example now in DB: interval=5, remaining=550s), which makes the UI look like a 10-minute timer even when 5 is selected.
+2. `ChatInterfaceTab` still updates conversations from `appData.conversations` snapshots in timer-related paths, so stale values can be reintroduced during day/time transitions.
+3. `Index.tsx` generic chat save path still writes `timeProgressionInterval`/`timeProgressionMode` from whichever conversation snapshot it receives, which can overwrite the latest setting.
 
-I traced through the full data flow and found two interacting bugs:
+## Implementation plan
 
-**Bug 1 — Stale closure in the auto-advance timer.** The timer `useEffect` (line 904) captures `handleDayTimeChange` in its closure. `handleDayTimeChange` reads `appData.conversations` from the render when the effect was created. When the timer fires, it calls `handleDayTimeChange` which spreads `...c` from a potentially stale `appData.conversations` — this can write back an older `timeProgressionInterval` value, overwriting the user's change.
+### 1) Stop generic chat-save from overwriting timer settings (`src/pages/Index.tsx`)
+- In `onSaveScenario` metadata patch, remove:
+  - `timeProgressionMode`
+  - `timeProgressionInterval`
+- Keep that path for message/title/day/time only.
+- Timer settings remain owned by direct conversation-meta updates from chat settings.
 
-**Bug 2 — Indirect save path for settings changes.** `handleTimeProgressionChange` saves settings by going through `onSaveScenario`, which chains: `saveNewMessages().then(updateConversationMeta())`. This indirection means:
-- The save depends on message-saving succeeding first
-- Race conditions between rapid `onSaveScenario` calls can cause earlier calls to overwrite later ones
+### 2) Make timer settings path authoritative and atomic (`src/components/chronicle/ChatInterfaceTab.tsx`)
+- In `handleTimeProgressionChange`:
+  - Immediately sync refs (`timeProgressionIntervalRef`, `timeRemainingRef`) before async work.
+  - Include `timeRemaining` in local conversation patch (`onUpdate`) so in-memory state matches persisted state.
+  - Persist via `updateConversationMeta` only for mode/interval/timeRemaining.
 
-### Changes (single file: `ChatInterfaceTab.tsx`)
+### 3) Prevent stale interval reintroduction on day/time ticks (`ChatInterfaceTab.tsx`)
+- In `handleDayTimeChange`, when updating local conversation array, explicitly preserve current timer config from refs/state (not from stale `...c` snapshot).
+- Keep direct `updateConversationMeta` for day/time.
+- Do not let this path re-save old interval values through stale payloads.
 
-**1. Direct DB persist for time progression settings.**
-In `handleTimeProgressionChange`, add a direct `supabaseData.updateConversationMeta()` call that immediately persists `timeProgressionMode`, `timeProgressionInterval`, and `timeRemaining` to the database — bypassing the message-chained save path entirely.
+### 4) Normalize bad restored countdown values (`ChatInterfaceTab.tsx`)
+- On conversation load/sync, compute `maxSeconds = interval * 60`.
+- If persisted `timeRemaining > maxSeconds`, clamp it to `maxSeconds` and persist corrected value once.
+- This removes “looks like 10-minute countdown” when interval is 5.
 
-**2. Direct DB persist for auto-advance time changes.**
-In `handleDayTimeChange`, add a direct `supabaseData.updateConversationMeta()` call for `currentDay` and `currentTimeOfDay`. This eliminates the stale closure problem because the function only passes the explicit day/time values received as arguments, not values read from a potentially stale `appData`.
+## Why this targets your exact bug
+- It removes the overwrite path that can silently flip interval data.
+- It repairs already-corrupted countdown state (e.g., 09:43 while interval=5).
+- It keeps the countdown behavior itself intact while making the interval value stable.
 
-**3. Use refs for timer-critical values.**
-Add `timeProgressionIntervalRef` and keep it synced with state. Use the ref inside the timer's `setTimeRemaining` callback (line 923: `return timeProgressionIntervalRef.current * 60`) so the reset always uses the latest interval, regardless of when the effect closure was created.
-
-### What stays the same
-- The `onUpdate` + `onSaveScenario` calls remain for local state consistency
-- The visibility API pause/resume logic is unaffected
-- The sync effect on `[conversation?.id]` for initial load stays as-is
-- All existing timer behavior (TIME_SEQUENCE cycling, day advancement) unchanged
-
+## Verification steps after patch
+1. Set Automatic + 5 minutes.
+2. Let it cross multiple phase transitions (sunrise/day/sunset/night).
+3. Leave browser in background/overlapped, return, confirm it still respects 5-minute window.
+4. Refresh and resume from history; confirm both dropdown value and countdown are consistent with 5 minutes.
