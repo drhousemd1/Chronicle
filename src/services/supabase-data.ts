@@ -933,12 +933,14 @@ export async function saveNewMessages(
  */
 export async function updateConversationMeta(
   conversationId: string,
-  patch: { currentDay?: number; currentTimeOfDay?: string; title?: string }
+  patch: { currentDay?: number; currentTimeOfDay?: string; title?: string; timeProgressionMode?: string; timeProgressionInterval?: number }
 ): Promise<void> {
   const updateObj: Record<string, any> = {};
   if (patch.currentDay !== undefined) updateObj.current_day = patch.currentDay;
   if (patch.currentTimeOfDay !== undefined) updateObj.current_time_of_day = patch.currentTimeOfDay;
   if (patch.title !== undefined) updateObj.title = patch.title;
+  if (patch.timeProgressionMode !== undefined) updateObj.time_progression_mode = patch.timeProgressionMode;
+  if (patch.timeProgressionInterval !== undefined) updateObj.time_progression_interval = patch.timeProgressionInterval;
   
   if (Object.keys(updateObj).length === 0) return;
   
