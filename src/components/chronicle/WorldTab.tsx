@@ -469,7 +469,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
             </div>
             <div className="space-y-2">
               {mainCharacters.map(char => <CharacterButton key={char.id} char={char} onSelect={onSelectCharacter} errors={publishErrors.characters?.[char.id]} />)}
-              <AddCharacterPlaceholder />
+              <AddCharacterPlaceholder label="Add / Create" sublabel="AI Character" error={noAICharacterError} />
+              <AddCharacterPlaceholder label="Add / Create" sublabel="User Character" error={noUserCharacterError} />
             </div>
           </section>
 
