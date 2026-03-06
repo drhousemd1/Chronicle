@@ -1,45 +1,49 @@
 
-## Plan: Fix tooltip clipping correctly (root-cause fix, not another side flip)
 
-### What I found (critical-thinking diagnosis)
-- The issue is not the `side` value (`top/right/bottom`) by itself.
-- The shared tooltip component (`src/components/ui/tooltip.tsx`) renders `TooltipPrimitive.Content` **without** a portal.
-- In chat, that means the tooltip stays inside local stacking/overflow contexts:
-  - Global left nav in `src/pages/Index.tsx` has `z-50` and sits above main content.
-  - Chat sidebar in `src/components/chronicle/ChatInterfaceTab.tsx` uses `overflow-hidden`.
-- So repositioning only moves the tooltip to a different clipped/overlapped location.
+## Plan: Persist Chat Settings to Database
 
-### Implementation changes
+### Problem
+`onUpdateUiSettings` in `Index.tsx` only updates in-memory React state (`setActiveData`). It never writes to the database. When the user navigates away from chat and returns, the scenario is re-loaded from DB with the old `ui_settings` values.
 
-1) **Fix the shared tooltip primitive (real solution)**
-- File: `src/components/ui/tooltip.tsx`
-- Wrap `TooltipPrimitive.Content` in `TooltipPrimitive.Portal`.
-- Keep existing animation classes, but raise stacking safety slightly (e.g. `z-[80]`) so tooltips consistently appear above nav/surfaces.
-- Add collision safety defaults (`collisionPadding`) so near-edge tooltips auto-shift cleanly.
+### Root Cause
+`handleUpdateActive` is a generic in-memory state updater. Unlike conversation messages (which have dedicated `saveNewMessages`/`updateConversationMeta` calls), UI settings changes have no DB write path.
 
-2) **Stabilize this specific chat tooltip placement**
-- File: `src/components/chronicle/ChatInterfaceTab.tsx` (mode hint tooltip near line ~3239)
-- Keep `side="bottom"` and add `align="start"` so the bubble grows to the right from the icon instead of centering into crowded left space.
-- Keep constrained width, but align with your tooltip style pattern (`max-w-[300px]`, `text-xs`, `font-semibold`, `leading-relaxed`, `normal-case`, `tracking-normal`) for consistency.
+### Solution
 
-3) **Documentation sync (required by project guide rules)**
-- File: `docs/guides/chat-interface-page-structure-guide.md`
-- Update relevant sections to reflect:
-  - Mode hint now uses robust tooltip behavior via shared portalized tooltip component.
-  - Known issue entry updated/resolved for clipping behind left nav/background layers.
+**1. Add a lightweight `updateStoryUiSettings` function in `src/services/supabase-data.ts`**
 
-### Manual inspection checklist (explicitly requested)
-After implementing, manually verify in preview:
-1. Open **My Stories → Play** to enter chat interface.
-2. Hover mode info icon in day/time panel:
-   - Tooltip is fully visible.
-   - Not clipped by sidebar/background image.
-   - Not hidden behind global left nav.
-3. Repeat with global nav **expanded and collapsed**.
-4. Repeat at two viewport sizes (desktop + narrower desktop).
-5. Spot-check one other tooltip (e.g. chat settings) to confirm no regression from shared tooltip portal change.
+A new exported async function that does a targeted `.update({ ui_settings })` on the `stories` table by scenario ID. This avoids the heavy full `saveScenario` call.
 
-### Why this will work
-- Portal moves tooltip rendering to top-level DOM, escaping local overflow and sibling stacking traps.
-- `align="start"` + collision padding prevents awkward edge placement.
-- This addresses the actual rendering layer problem instead of repeatedly changing direction.
+```ts
+export async function updateStoryUiSettings(
+  scenarioId: string,
+  uiSettings: Record<string, any>
+): Promise<void> {
+  await supabase.from('stories').update({ ui_settings: uiSettings }).eq('id', scenarioId);
+}
+```
+
+**2. Update `onUpdateUiSettings` handler in `src/pages/Index.tsx` (~line 2206)**
+
+After updating in-memory state, fire-and-forget a DB write:
+
+```tsx
+onUpdateUiSettings={(patch) => {
+  const currentSettings = activeData?.uiSettings || createDefaultScenarioData().uiSettings;
+  const merged = { ...currentSettings, ...patch };
+  handleUpdateActive({ uiSettings: merged });
+  // Persist to DB (fire-and-forget)
+  if (activeId) {
+    supabaseData.updateStoryUiSettings(activeId, merged);
+  }
+}}
+```
+
+This is the same fire-and-forget pattern used for model preference persistence and conversation metadata updates elsewhere in the app.
+
+**3. Update documentation**
+- `docs/guides/chat-interface-page-structure-guide.md` — add resolved known issue for settings persistence.
+
+### What this fixes
+All chat settings (NSFW Intensity, Realism Mode, Response Detail, Proactive AI, Dynamic Text, Narrative POV, Time Mode, etc.) will persist across navigation and page reloads since they all flow through the same `onUpdateUiSettings` handler.
+
