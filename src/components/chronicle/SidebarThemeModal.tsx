@@ -51,7 +51,7 @@ export function SidebarThemeModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-2xl p-0 bg-zinc-900 border-white/10 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.5)] [&>button]:hidden">
+      <DialogContent className="sm:max-w-4xl p-0 bg-zinc-900 border-white/10 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.5)] [&>button]:hidden">
         {/* Header */}
         <div className="flex justify-between items-center px-6 pt-6 pb-4 border-b border-white/10">
           <DialogTitle className="text-lg font-black text-white flex items-center gap-2 uppercase tracking-tight">
@@ -91,12 +91,13 @@ export function SidebarThemeModal({
           </p>
 
           {/* Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+          <div className="max-h-[460px] overflow-y-auto pr-1">
+          <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
             {/* Default Tile */}
             <button
               type="button"
               onClick={() => onSelectBackground(null)}
-className={`group relative aspect-[3/5] rounded-xl overflow-hidden border shadow-sm bg-zinc-800/50 transition-all cursor-pointer ${
+className={`group relative aspect-[2/3] rounded-xl overflow-hidden border shadow-sm bg-zinc-800/50 transition-all cursor-pointer ${
                 selectedBackgroundId === null
                   ? 'ring-2 ring-blue-400 ring-offset-2 ring-offset-zinc-900 border-blue-400/30' 
                   : 'border-white/10 hover:border-white/20'
@@ -121,7 +122,7 @@ className={`group relative aspect-[3/5] rounded-xl overflow-hidden border shadow
               <div
                 key={bg.id}
                 onClick={() => onSelectBackground(bg.id)}
-className={`group relative aspect-[3/5] rounded-xl overflow-hidden border shadow-sm bg-zinc-800/50 cursor-pointer transition-all ${
+className={`group relative aspect-[2/3] rounded-xl overflow-hidden border shadow-sm bg-zinc-800/50 cursor-pointer transition-all ${
                   selectedBackgroundId === bg.id
                     ? 'ring-2 ring-blue-400 ring-offset-2 ring-offset-zinc-900 border-blue-400/30' 
                     : 'border-white/10 hover:border-white/20'
@@ -149,6 +150,7 @@ className={`group relative aspect-[3/5] rounded-xl overflow-hidden border shadow
                 )}
               </div>
             ))}
+          </div>
           </div>
 
           {/* Empty state */}
