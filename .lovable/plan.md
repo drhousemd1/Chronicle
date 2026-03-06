@@ -1,45 +1,79 @@
 
 
-## Plan: Adaptive Character Card Theming Based on Sidebar Background Brightness
+## Plan: Update Guide Documents for Recent Changes
 
-### Problem
-The character tile cards in the sidebar use a fixed light frosted glass style (`bg-white/30`, dark text, light hover states). This looks great on dark backgrounds but gets lost on light ones, as shown in the screenshots.
+Based on reviewing the codebase and docs, here are the documents that need updates and what needs to change in each:
 
-### Approach
-The `sidebarBgIsLight` state already exists and drives the "Exit Scenario" text color. We'll extend it to the character cards, scroll indicators, and the `SideCharacterCard` component.
+---
 
-### Changes
+### 1. `docs/guides/ui-styling-theme-reference.md`
 
-**1. `src/components/chronicle/ChatInterfaceTab.tsx` — `renderCharacterCard` (~line 3095)**
+**Add new section: Adaptive / Brightness-Aware Patterns**
+- Document the `sidebarBgIsLight` brightness detection system (luminosity > 128 threshold)
+- Document the adaptive frosted glass card pattern: light bg uses `bg-black/30 hover:bg-black/50 text-white`, dark bg uses `bg-white/30 hover:bg-white text-slate-800`
+- Document `SideCharacterCard` `isDarkBg` prop pattern
 
-Pass `sidebarBgIsLight` into the card styling:
+**Add new section: Info Tooltip Pattern**
+- Document the standardized info tooltip styling: `text-xs font-semibold leading-relaxed normal-case tracking-normal`, icon `text-blue-500`, max-w `300px`, bullet lists use `list-outside pl-4`
+- Document that `TooltipContent` uses `TooltipPrimitive.Portal` with `z-[80]` and `collisionPadding`
 
-- **Card container**: `bg-white/30 hover:bg-white` → when dark bg: `bg-black/30 hover:bg-black/50`
-- **Name text**: `text-slate-800` → when dark bg: `text-white`
-- **Menu dots button**: `hover:bg-slate-200 text-slate-700` → when dark bg: `hover:bg-white/20 text-white/70 hover:text-white`
-- **Dropdown menu**: `bg-white border-slate-200` → when dark bg: `bg-zinc-800 border-white/10` with light text items
-- **Avatar fallback**: `bg-slate-50 border-slate-100 text-slate-300` → when dark bg: `bg-zinc-800 border-white/20 text-zinc-500`
-- **Scroll overflow indicator** (~line 3362): `bg-white/30 text-black/80` → when dark bg: `bg-black/30 text-white/80`
+**Update Section 5 (Component Variants)**
+- Add `SidebarThemeModal` dark theme pattern: `bg-zinc-900 border-white/10`, dark dropdown `bg-zinc-800`
 
-**2. `src/components/chronicle/SideCharacterCard.tsx`**
+**Update "Last updated" line**
 
-Add an `isDarkBg` prop to the component and apply the same adaptive styling:
-- Card: `bg-white/30 hover:bg-white` ↔ `bg-black/30 hover:bg-black/50`
-- Name: `text-slate-800` ↔ `text-white`
-- Menu button: dark ↔ light variants
-- Avatar circle: `bg-purple-50 border-purple-100` ↔ `bg-zinc-800 border-white/20`
-- Avatar fallback text: `text-purple-300` ↔ `text-zinc-400`
+---
 
-**3. Pass prop through to `SideCharacterCard`** (~lines 3346, 3388)
+### 2. `docs/guides/chat-interface-page-structure-guide.md`
 
-Add `isDarkBg={!sidebarBgIsLight}` to all `<SideCharacterCard>` usages.
+**Update Section 9b (Chat Settings)**
+- Add `timeProgressionMode` and `timeProgressionInterval` to the settings table
+- Note the 5-minute interval option (values: 5, 10, 15, 30, 60)
+- Document the dual persistence: UI settings → `stories.ui_settings`, time state → `conversations` table
 
-### What stays the same
-- The frosted `backdrop-blur-sm` effect remains on all cards regardless of theme
-- The blue/slate `Badge` for AI/User control stays unchanged (works on both)
-- The `ring-2 ring-blue-400` updating indicator stays the same
-- The section headers (`MAIN CHARACTERS`, `SIDE CHARACTERS`) remain unchanged
+**Update Section 8 (State Management)**
+- Add `sidebarBgIsLight` state and its purpose (drives adaptive card theming)
 
-### Result
-Cards will smoothly transition between a light frosted glass (on dark backgrounds) and a dark frosted glass (on light backgrounds), keeping text, icons, and menus legible in both cases — same adaptive behavior already used for the "Exit Scenario" header.
+**Update Section 9 (Styling Reference)**
+- Add subsection for adaptive character card theming (frosted glass inversion based on sidebar brightness)
+
+**Update Section 5 (Modals)**
+- Update Sidebar Theme Modal entry to note dark theme styling (`bg-zinc-900 border-white/10`)
+
+**Update "Last updated" line**
+
+---
+
+### 3. `docs/guides/scenario-builder-page-structure-guide.md`
+
+**Update Section 3 (UI Elements)**
+- Update Opening Dialog row to include MODE (Manual/Automatic) dropdown and TIME INTERVAL dropdown (5/10/15/30/60 minutes)
+
+**Update Section 7 (Component Tree)**
+- Add MODE and TIME INTERVAL controls under Opening Dialog section
+
+**Update Bug Report Items (Section 12)**
+- Mark Bugs #1, #4, #5, #6 as RESOLVED (they were already resolved in the chat interface guide but still listed as ACTIVE here)
+
+**Update "Last updated" line**
+
+---
+
+### 4. `docs/guides/shared-elements-architecture-structure-guide.md`
+
+**Add SideCharacterCard to the Quick-Reference Index**
+- Now accepts `isDarkBg` prop, used in ChatInterfaceTab — note this as an imported component with adaptive theming
+
+**Update "Last updated" line if one exists, or add note to Known Issues**
+
+---
+
+### Summary of recent changes to document:
+1. **5-minute time interval** added to both Chat Interface and Story Builder dropdowns
+2. **Sidebar Theme Modal** restyled to dark theme (`bg-zinc-900`)
+3. **Adaptive character card theming** — cards switch between light/dark frosted glass based on sidebar background brightness via `sidebarBgIsLight` / `isDarkBg` prop
+4. **Info tooltip standardization** — portal-based rendering, `z-[80]`, consistent styling
+5. **Chat settings persistence** — UI settings to `stories.ui_settings`, time state to `conversations` table
+6. **Time progression persistence** — mode, interval, and `time_remaining` now persisted to `conversations` table
+7. **Scenario Builder bug items** — several listed as ACTIVE were already resolved
 
