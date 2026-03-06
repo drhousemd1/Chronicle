@@ -17,16 +17,18 @@ interface SideCharacterCardProps {
   onStartEdit?: () => void;
   onDelete?: () => void;
   isUpdating?: boolean;
+  isDarkBg?: boolean;
 }
 
 export const SideCharacterCard: React.FC<SideCharacterCardProps> = ({
   character,
   onStartEdit,
   onDelete,
-  isUpdating = false
+  isUpdating = false,
+  isDarkBg = false
 }) => {
   return (
-    <div className={`rounded-2xl transition-all duration-300 border-2 backdrop-blur-sm relative bg-white/30 border-transparent hover:bg-white ${isUpdating ? 'ring-2 ring-blue-400/60' : ''}`}>
+    <div className={`rounded-2xl transition-all duration-300 border-2 backdrop-blur-sm relative ${isDarkBg ? 'bg-white/30 border-transparent hover:bg-white' : 'bg-black/30 border-transparent hover:bg-black/50'} ${isUpdating ? 'ring-2 ring-blue-400/60' : ''}`}>
       {/* Blue vignette overlay - scoped to this card */}
       {isUpdating && (
         <div 
@@ -53,7 +55,7 @@ export const SideCharacterCard: React.FC<SideCharacterCardProps> = ({
       <div className="relative">
         <div className="w-full flex flex-col items-center gap-2 p-3 text-center">
           <div className="relative">
-            <div className="w-20 h-20 rounded-full border-2 shadow-sm overflow-hidden bg-purple-50 transition-all duration-300 border-purple-100">
+            <div className={`w-20 h-20 rounded-full border-2 shadow-sm overflow-hidden transition-all duration-300 ${isDarkBg ? 'bg-purple-50 border-purple-100' : 'bg-zinc-800 border-white/20'}`}>
               {character.isAvatarGenerating ? (
                 <div className="w-full h-full flex items-center justify-center bg-purple-100">
                   <Loader2 className="w-6 h-6 text-purple-500 animate-spin" />
@@ -61,7 +63,7 @@ export const SideCharacterCard: React.FC<SideCharacterCardProps> = ({
               ) : character.avatarDataUrl ? (
                 <img src={character.avatarDataUrl} alt={character.name} className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center font-black text-purple-300 text-xl italic uppercase">
+                <div className={`w-full h-full flex items-center justify-center font-black text-xl italic uppercase ${isDarkBg ? 'text-purple-300' : 'text-zinc-400'}`}>
                   {character.name.charAt(0)}
                 </div>
               )}
@@ -77,7 +79,7 @@ export const SideCharacterCard: React.FC<SideCharacterCardProps> = ({
               {character.controlledBy}
             </Badge>
           </div>
-          <div className="text-sm font-bold tracking-tight text-slate-800">
+          <div className={`text-sm font-bold tracking-tight ${isDarkBg ? 'text-slate-800' : 'text-white'}`}>
             {character.name}
           </div>
         </div>
@@ -87,11 +89,11 @@ export const SideCharacterCard: React.FC<SideCharacterCardProps> = ({
           <div className="absolute top-2 right-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-700 hover:text-slate-900 transition-colors">
+                <button className={`p-1.5 rounded-lg transition-colors ${isDarkBg ? 'hover:bg-slate-200 text-slate-700 hover:text-slate-900' : 'hover:bg-white/20 text-white/70 hover:text-white'}`}>
                   <MoreVertical className="w-4 h-4" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-white border-slate-200 shadow-lg z-50">
+              <DropdownMenuContent align="end" className={`shadow-lg z-50 ${isDarkBg ? 'bg-white border-slate-200' : 'bg-zinc-800 border-white/10 text-zinc-200'}`}>
                 <DropdownMenuItem onClick={onStartEdit}>
                   <Pencil className="w-4 h-4 mr-2" />
                   Edit character
