@@ -158,7 +158,7 @@ const IndexContent = () => {
   // Conversations tab modal state
   const [convDeleteTarget, setConvDeleteTarget] = useState<{ scenarioId: string; conversationId: string } | null>(null);
   const [convDeleteAllOpen, setConvDeleteAllOpen] = useState(false);
-  const [convRenameTarget, setConvRenameTarget] = useState<{ scenarioId: string; conversationId: string; currentTitle: string } | null>(null);
+  
   
   // Delayed resume overlay
   const resumeTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
