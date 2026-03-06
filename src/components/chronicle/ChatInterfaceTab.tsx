@@ -2298,16 +2298,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   };
 
   // Dynamic background gradient based on time of day
-  const getTimeBackground = (time: TimeOfDay): string => {
+  const getTimeBackgroundImage = (time: TimeOfDay): string => {
     switch (time) {
-      case 'sunrise':
-        return 'bg-gradient-to-b from-amber-200 via-orange-100 to-amber-50';
-      case 'day':
-        return 'bg-gradient-to-b from-sky-200 via-blue-100 to-sky-50';
-      case 'sunset':
-        return 'bg-gradient-to-b from-pink-300 via-orange-200 to-amber-100';
-      case 'night':
-        return 'bg-gradient-to-b from-indigo-900 via-slate-800 to-indigo-950';
+      case 'sunrise': return '/images/time-backgrounds/sunrise.png';
+      case 'day':     return '/images/time-backgrounds/day.png';
+      case 'sunset':  return '/images/time-backgrounds/sunset.png';
+      case 'night':   return '/images/time-backgrounds/night.png';
     }
   };
 
