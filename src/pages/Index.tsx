@@ -234,10 +234,37 @@ const IndexContent = () => {
     if (user?.id) checkIsAdmin(user.id).then(setIsAdminState);
   }, [user?.id]);
 
-  // Initialize draft count from registry
-  useEffect(() => {
-    setDraftCount(getDraftRegistry().length);
+  // Refresh draft count from registry + scan localStorage for orphaned drafts
+  const refreshDraftCount = React.useCallback(() => {
+    let registry = getDraftRegistry();
+    // Scan localStorage for orphaned draft_* keys not in registry
+    const registryIds = new Set(registry.map(d => d.id));
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('draft_') && key !== 'draft_registry') {
+        const id = key.replace('draft_', '');
+        if (!registryIds.has(id)) {
+          try {
+            const raw = localStorage.getItem(key);
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              upsertDraftRegistry({
+                id,
+                title: parsed?.world?.core?.scenarioName || parsed?.title || 'Untitled',
+                savedAt: parsed?.savedAt || Date.now(),
+              });
+            }
+          } catch (_) { /* ignore corrupt entries */ }
+        }
+      }
+    }
+    registry = getDraftRegistry();
+    setDraftCount(registry.length);
   }, []);
+
+  useEffect(() => {
+    refreshDraftCount();
+  }, [refreshDraftCount]);
 
   // Track whether conversation previews have been enriched
   const [conversationsEnriched, setConversationsEnriched] = useState(false);
@@ -904,7 +931,7 @@ const IndexContent = () => {
       // Clear localStorage draft and registry entry on successful DB save
       try { localStorage.removeItem(`draft_${scenarioIdToSave}`); } catch (_) { /* ignore */ }
       removeDraftFromRegistry(scenarioIdToSave);
-      setDraftCount(getDraftRegistry().length);
+      refreshDraftCount();
 
       return true;
     } catch (e: any) {
@@ -1775,18 +1802,18 @@ const IndexContent = () => {
             <div className="flex items-center gap-3">
               {tab === "world" && (
                 <>
-                  {draftCount > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setDraftsModalOpen(true)}
-                      className="relative inline-flex items-center justify-center h-10 px-5 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
-                    >
-                      Drafts
+                  <button
+                    type="button"
+                    onClick={() => setDraftsModalOpen(true)}
+                    className="relative inline-flex items-center justify-center h-10 px-5 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
+                  >
+                    Drafts
+                    {draftCount > 0 && (
                       <span className="ml-1.5 inline-flex items-center justify-center h-4 min-w-[16px] rounded-full bg-white/15 text-[9px] font-bold px-1">
                         {draftCount}
                       </span>
-                    </button>
-                  )}
+                    )}
+                  </button>
                   <button
                     type="button"
                     onClick={async () => {
@@ -1838,7 +1865,7 @@ const IndexContent = () => {
                           title: activeData.world.core.scenarioName || 'Untitled',
                           savedAt,
                         });
-                        setDraftCount(getDraftRegistry().length);
+                        refreshDraftCount();
                         setIsSaving(true);
                         setTimeout(() => setIsSaving(false), 1200);
                       } catch (e) {
@@ -2450,7 +2477,7 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
       {/* Drafts Modal */}
       <DraftsModal
         open={draftsModalOpen}
-        onOpenChange={(open) => { setDraftsModalOpen(open); if (!open) setDraftCount(getDraftRegistry().length); }}
+        onOpenChange={(open) => { setDraftsModalOpen(open); if (!open) refreshDraftCount(); }}
         onLoadDraft={(draftId) => {
           try {
             const raw = localStorage.getItem(`draft_${draftId}`);
