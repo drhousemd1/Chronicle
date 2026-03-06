@@ -3195,7 +3195,7 @@ const updatedChar: SideCharacter = {
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   onClick={() => handleDeleteMainCharacter(char.id)}
-                  className={`text-red-600 focus:text-red-600 ${sidebarBgIsLight ? 'focus:!bg-red-900/30 hover:!bg-zinc-700' : 'focus:bg-red-50'}`}
+                  className={`text-red-600 focus:text-red-600 ${sidebarBgIsLight ? 'focus:!bg-zinc-700 hover:!bg-zinc-700' : 'focus:bg-red-50'}`}
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
                   Delete character

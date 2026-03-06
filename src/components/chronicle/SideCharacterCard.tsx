@@ -101,7 +101,7 @@ export const SideCharacterCard: React.FC<SideCharacterCardProps> = ({
                 {onDelete && (
                   <DropdownMenuItem 
                     onClick={onDelete}
-                    className={`text-red-600 focus:text-red-600 ${!isDarkBg ? 'focus:!bg-red-900/30 hover:!bg-zinc-700' : 'focus:bg-red-50'}`}
+                    className={`text-red-600 focus:text-red-600 ${!isDarkBg ? 'focus:!bg-zinc-700 hover:!bg-zinc-700' : 'focus:bg-red-50'}`}
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
                     Delete character
