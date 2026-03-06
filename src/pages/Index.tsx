@@ -960,11 +960,8 @@ const IndexContent = () => {
         console.error("Error saving character:", e.message);
       }
     } else {
-      const success = await handleSave();
-      if (success) {
-        setSelectedCharacterId(null);
-        setTab("world"); 
-      }
+      setSelectedCharacterId(null);
+      setTab("world");
     }
   }
 
