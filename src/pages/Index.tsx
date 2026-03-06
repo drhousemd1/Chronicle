@@ -897,8 +897,10 @@ const IndexContent = () => {
         setSelectedCharacterId(null);
         setTab("hub");
       }
-      // Clear localStorage draft on successful DB save
+      // Clear localStorage draft and registry entry on successful DB save
       try { localStorage.removeItem(`draft_${scenarioIdToSave}`); } catch (_) { /* ignore */ }
+      removeDraftFromRegistry(scenarioIdToSave);
+      setDraftCount(getDraftRegistry().length);
 
       return true;
     } catch (e: any) {
