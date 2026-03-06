@@ -1,16 +1,11 @@
 
 
-## Fix Delete Character Hover Color
+## Plan: Show Full Image in Sidebar Theme Previews
 
-The delete menu items currently use `focus:!bg-red-900/30` (dark red background) for hover/focus. The user wants the same gray hover as other items, keeping only the red text.
+### Problem
+The tiles use `object-cover` which crops tall portrait images to fill the container. Since the source images are ~300×1080 (roughly 1:3.6 ratio) but tiles are `aspect-[2/3]` (1:1.5), a large portion of each image is cropped out.
 
-### Changes
+### Fix (single file: `SidebarThemeModal.tsx`)
 
-**`src/components/chronicle/ChatInterfaceTab.tsx` (line 3198):**
-- Replace `focus:!bg-red-900/30 hover:!bg-zinc-700` → `focus:!bg-zinc-700 hover:!bg-zinc-700`
-
-**`src/components/chronicle/SideCharacterCard.tsx` (line 104):**
-- Replace `focus:!bg-red-900/30 hover:!bg-zinc-700` → `focus:!bg-zinc-700 hover:!bg-zinc-700`
-
-Both keep `text-red-600 focus:text-red-600` so the text stays red for semantic meaning, but the background hover is neutral gray like every other item.
+**Change `object-cover` to `object-contain`** on the background preview `<img>` tag (line ~130). This will scale the entire image to fit within the tile without cropping, showing the full content. The tile's dark `bg-zinc-800/50` background will fill any letterbox space naturally.
 
