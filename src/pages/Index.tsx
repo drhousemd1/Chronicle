@@ -1288,28 +1288,6 @@ const IndexContent = () => {
     }
   }
   
-  async function handleRenameConversationFromHistory(scenarioId: string, conversationId: string, newTitle: string) {
-    try {
-      await supabaseData.renameConversation(conversationId, newTitle);
-      
-      const updatedConvRegistry = await supabaseData.fetchConversationRegistry();
-      setConversationRegistry(updatedConvRegistry);
-      
-      if (activeId === scenarioId && activeData) {
-        const updatedData = { 
-          ...activeData, 
-          conversations: activeData.conversations.map(c => 
-            c.id === conversationId ? { ...c, title: newTitle, updatedAt: now() } : c
-          ) 
-        };
-        setActiveData(updatedData);
-      }
-      
-      
-    } catch (e: any) {
-      console.error("Failed to rename conversation:", e.message);
-    }
-  }
 
   function handleUpdateActive(patch: Partial<ScenarioData>) {
     setActiveData(prev => prev ? { ...prev, ...patch } : null);
