@@ -3766,7 +3766,7 @@ const updatedChar: SideCharacter = {
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Info className="w-3.5 h-3.5 text-[#4a5f7f] cursor-help" />
+                          <Info className="w-3.5 h-3.5 text-blue-500 cursor-help" />
                         </TooltipTrigger>
                         <TooltipContent side="top" className="max-w-[220px] text-xs">
                           Backgrounds will automatically change based on the story context if scene images are tagged in the gallery.
