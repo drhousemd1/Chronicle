@@ -65,7 +65,7 @@ export function SidebarThemeModal({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className="inline-flex items-center bg-zinc-700 text-white hover:bg-zinc-600 font-bold text-xs tracking-widest uppercase h-9 gap-1 px-3 rounded-lg transition-colors disabled:opacity-50"
+                className="inline-flex items-center bg-zinc-700 text-white hover:bg-zinc-600 font-bold text-[10px]0px]0px] tracking-widest uppercase h-9 gap-1 px-3 rounded-lg transition-colors disabled:opacity-50"
                 disabled={isUploading}
               >
                 {isUploading ? "Uploading..." : "+ Upload Image"} <ChevronDown className="w-3 h-3" />
@@ -91,13 +91,13 @@ export function SidebarThemeModal({
           </p>
 
           {/* Grid */}
-          <div className="max-h-[460px] overflow-y-auto pr-1">
-          <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
+          <div className="max-h-[460px] overflow-y-a pt-2uto  pt-2pr-1">
+          <div className="grid g5 md:grid-cols-7id-cols-5 gap-3">
             {/* Default Tile */}
             <button
               type="button"
               onClick={() => onSelectBackground(null)}
-className={`group relative aspect-[2/3] rounded-xl overflow-hidden border shadow-sm bg-zinc-800/50 transition-all cursor-pointer ${
+className={`group relative aspect-[1/3] rounded-xl overflow-hidden border shadow-sm bg-zinc-800/50 transition-all cursor-pointer ${
                 selectedBackgroundId === null
                   ? 'ring-2 ring-blue-400 ring-offset-2 ring-offset-zinc-900 border-blue-400/30' 
                   : 'border-white/10 hover:border-white/20'
@@ -122,13 +122,13 @@ className={`group relative aspect-[2/3] rounded-xl overflow-hidden border shadow
               <div
                 key={bg.id}
                 onClick={() => onSelectBackground(bg.id)}
-className={`group relative aspect-[2/3] rounded-xl overflow-hidden border shadow-sm bg-zinc-800/50 cursor-pointer transition-all ${
+className={`group relative aspect-[1/3] rounded-xl overflow-hidden border shadow-sm bg-zinc-800/50 cursor-pointer transition-all ${
                   selectedBackgroundId === bg.id
                     ? 'ring-2 ring-blue-400 ring-offset-2 ring-offset-zinc-900 border-blue-400/30' 
                     : 'border-white/10 hover:border-white/20'
                 }`}
               >
-                <img src={bg.imageUrl} alt="Background" className="w-full h-full object-contain" />
+                <img src={bg.imageUrl} alt="Background" className="w-full h-full object-cover" />
                 
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent h-16 opacity-0 group-hover:opacity-100 transition-opacity" />
 

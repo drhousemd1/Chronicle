@@ -1,15 +1,11 @@
 
 
-## Plan: Fix Upload Button Weight, Remove Gray Bars, Fix Top Clipping
+## Plan: Show Full Image in Sidebar Theme Previews
 
-### Changes (single file: `SidebarThemeModal.tsx`)
+### Problem
+The tiles use `object-cover` which crops tall portrait images to fill the container. Since the source images are ~300×1080 (roughly 1:3.6 ratio) but tiles are `aspect-[2/3]` (1:1.5), a large portion of each image is cropped out.
 
-1. **Button text size** (line 68): The reference "Chat Settings" / "Generate Image" buttons use `text-[10px] font-bold`. The upload button uses `text-xs font-bold` — `text-xs` is 12px vs 10px, making it appear bolder/heavier. Change `text-xs` to `text-[10px]` to match.
+### Fix (single file: `SidebarThemeModal.tsx`)
 
-2. **Remove gray bars and show more tiles** (lines 95, 100, 125): The gray bars come from `object-contain` inside `aspect-[2/3]` tiles — the image is much taller than the container. Fix by:
-   - Change tile aspect from `aspect-[2/3]` to `aspect-[1/3]` (closely matching the ~300×1080 image ratio)
-   - Change image back to `object-cover` (tiles now match image proportions, so no cropping occurs)
-   - Increase grid to 7 columns (`md:grid-cols-7`) since tiles are now narrower
-
-3. **Fix top clipping of selection ring** (line 94): Add `pt-2` padding to the scroll container so the `ring-offset-2` on the selected tile's top edge isn't clipped.
+**Change `object-cover` to `object-contain`** on the background preview `<img>` tag (line ~130). This will scale the entire image to fit within the tile without cropping, showing the full content. The tile's dark `bg-zinc-800/50` background will fill any letterbox space naturally.
 
