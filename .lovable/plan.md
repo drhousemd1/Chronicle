@@ -1,15 +1,16 @@
 
 
-## Plan: Fix tooltip positioning for chat interface time mode hint
+## Plan: Fix tooltip overflow on chat interface mode hint
 
-### Problem
-The tooltip on the "Manual/Automatic" label in the chat interface displays off-screen to the left, getting cut off behind the navigation bar. This is because `side="top"` positions it above but it can still overflow horizontally.
+The tooltip with `side="right"` gets clipped by the background image/container. Change to `side="bottom"` so it renders below the icon where there's space, and add `max-w-[250px]` to constrain width.
 
-### Fix in `src/components/chronicle/ChatInterfaceTab.tsx` (line 3239)
-
-Change the `TooltipContent` from `side="top"` to `side="right"` so the tooltip renders to the right of the icon instead of above it, preventing it from being clipped by the left sidebar.
+### Change in `src/components/chronicle/ChatInterfaceTab.tsx` (line 3239)
 
 ```tsx
+// From:
 <TooltipContent side="right" className="text-xs normal-case tracking-normal">
+
+// To:
+<TooltipContent side="bottom" className="text-xs normal-case tracking-normal max-w-[250px]">
 ```
 
