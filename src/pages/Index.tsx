@@ -1865,7 +1865,7 @@ const IndexContent = () => {
                           title: activeData.world.core.scenarioName || 'Untitled',
                           savedAt,
                         });
-                        setDraftCount(getDraftRegistry().length);
+                        refreshDraftCount();
                         setIsSaving(true);
                         setTimeout(() => setIsSaving(false), 1200);
                       } catch (e) {
