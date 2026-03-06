@@ -1,11 +1,22 @@
 
 
-## Plan: Show Full Image in Sidebar Theme Previews
+## Fix: Story Hub hover buttons to match standard button spec
 
-### Problem
-The tiles use `object-cover` which crops tall portrait images to fill the container. Since the source images are ~300×1080 (roughly 1:3.6 ratio) but tiles are `aspect-[2/3]` (1:1.5), a large portion of each image is cropped out.
+**File:** `src/components/chronicle/StoryHub.tsx`, lines 82-99
 
-### Fix (single file: `SidebarThemeModal.tsx`)
+The Edit/Delete/Play hover buttons on story cards use `px-4 py-2 text-xs rounded-xl` which makes them small and pill-shaped. They need the standard button spec so they match the rest of the app.
 
-**Change `object-cover` to `object-contain`** on the background preview `<img>` tag (line ~130). This will scale the entire image to fit within the tile without cropping, showing the full content. The tile's dark `bg-zinc-800/50` background will fill any letterbox space naturally.
+### Changes
+
+Update all three buttons to use the standard button classes:
+
+**Base classes (all three):** `h-10 px-6 rounded-xl text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl transition-colors`
+
+| Button | Color classes |
+|--------|-------------|
+| Edit | `bg-white text-slate-900 hover:bg-slate-50` (unchanged) |
+| Delete | `bg-[hsl(var(--destructive))] text-white hover:bg-[hsl(var(--destructive))]/90` (was `bg-rose-600`) |
+| Play | `bg-blue-600 text-white hover:bg-blue-500` (unchanged) |
+
+This gives them proper height, wider padding, correct typography, and consistent corner radius proportions. The delete button color also aligns with the destructive color token used in DeleteConfirmDialog.
 
