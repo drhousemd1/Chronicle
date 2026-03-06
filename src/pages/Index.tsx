@@ -1775,6 +1775,18 @@ const IndexContent = () => {
             <div className="flex items-center gap-3">
               {tab === "world" && (
                 <>
+                  {draftCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setDraftsModalOpen(true)}
+                      className="relative inline-flex items-center justify-center h-10 px-5 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
+                    >
+                      Drafts
+                      <span className="ml-1.5 inline-flex items-center justify-center h-4 min-w-[16px] rounded-full bg-white/15 text-[9px] font-bold px-1">
+                        {draftCount}
+                      </span>
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={async () => {
@@ -1851,18 +1863,6 @@ const IndexContent = () => {
               )}
               {tab === "hub" && (
                 <div className="flex items-center gap-3">
-                  {draftCount > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setDraftsModalOpen(true)}
-                      className="relative inline-flex items-center justify-center h-10 px-5 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
-                    >
-                      Drafts
-                      <span className="ml-1.5 inline-flex items-center justify-center h-4 min-w-[16px] rounded-full bg-white/15 text-[9px] font-bold px-1">
-                        {draftCount}
-                      </span>
-                    </button>
-                  )}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button
