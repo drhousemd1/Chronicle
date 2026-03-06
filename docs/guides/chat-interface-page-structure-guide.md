@@ -101,6 +101,7 @@ The right sidebar is collapsible and contains multiple scrollable sections.
 | **Trigger** | Settings in chat sidebar |
 | **Component** | `src/components/chronicle/SidebarThemeModal.tsx` |
 | **Purpose** | Customize chat sidebar appearance |
+| **Theme** | Dark-themed modal: `bg-zinc-900 border-white/10`, dropdowns use `bg-zinc-800` |
 
 #### Modal: Character Edit
 
@@ -211,6 +212,7 @@ Service: `src/services/side-character-generator.ts`
 | `previousDayRef` | `useRef<number>` | Tracks previous day value; reset on conversation switch; used by compression effect to detect real day increments |
 | `memoriesLoaded` | `boolean` | Guards compression effect — prevents firing before conversation memories are fetched |
 | `extractionCountRef` | `useRef<number>` | Counts AI responses; extraction fires when `count % 5 === 0`; reset on conversation switch |
+| `sidebarBgIsLight` | `boolean` | Detected via canvas pixel luminosity (threshold > 128). Drives adaptive frosted glass theming on character cards, scroll indicators, and "Exit Scenario" text color |
 
 ---
 
@@ -230,19 +232,35 @@ Service: `src/services/side-character-generator.ts`
 
 Configurable via `onUpdateUiSettings`:
 
-| Setting | Key | Type |
-|---------|-----|------|
-| Show backgrounds | `showBackgrounds` | boolean |
-| Transparent bubbles | `transparentBubbles` | boolean |
-| Dark mode | `darkMode` | boolean |
-| Offset bubbles | `offsetBubbles` | boolean |
-| Character discovery | `proactiveCharacterDiscovery` | boolean |
-| Dynamic text | `dynamicText` | boolean |
-| Proactive narrative | `proactiveNarrative` | boolean |
-| Narrative POV | `narrativePov` | 'first' \| 'third' |
-| NSFW intensity | `nsfwIntensity` | 'normal' \| 'high' |
-| Realism mode | `realismMode` | boolean |
-| Response verbosity | `responseVerbosity` | 'concise' \| 'balanced' \| 'detailed' |
+| Setting | Key | Type | Persistence |
+|---------|-----|------|-------------|
+| Show backgrounds | `showBackgrounds` | boolean | `stories.ui_settings` |
+| Transparent bubbles | `transparentBubbles` | boolean | `stories.ui_settings` |
+| Dark mode | `darkMode` | boolean | `stories.ui_settings` |
+| Offset bubbles | `offsetBubbles` | boolean | `stories.ui_settings` |
+| Character discovery | `proactiveCharacterDiscovery` | boolean | `stories.ui_settings` |
+| Dynamic text | `dynamicText` | boolean | `stories.ui_settings` |
+| Proactive narrative | `proactiveNarrative` | boolean | `stories.ui_settings` |
+| Narrative POV | `narrativePov` | 'first' \| 'third' | `stories.ui_settings` |
+| NSFW intensity | `nsfwIntensity` | 'normal' \| 'high' | `stories.ui_settings` |
+| Realism mode | `realismMode` | boolean | `stories.ui_settings` |
+| Response verbosity | `responseVerbosity` | 'concise' \| 'balanced' \| 'detailed' | `stories.ui_settings` |
+| Time progression mode | `timeProgressionMode` | 'manual' \| 'automatic' | `conversations` table |
+| Time progression interval | `timeProgressionInterval` | 5 \| 10 \| 15 \| 30 \| 60 (minutes) | `conversations` table |
+| Time remaining | `time_remaining` | number (seconds) | `conversations` table |
+
+**Dual Persistence Strategy**: Narrative/behavioral settings persist to `stories.ui_settings` (JSONB), becoming defaults for that scenario. Temporal state (time mode, interval, `time_remaining`) persists to the `conversations` table, tracked per-session.
+
+### 9c. Adaptive Character Card Theming
+
+Character cards in the sidebar use adaptive frosted glass styling based on `sidebarBgIsLight`:
+
+| Background | Card | Text | Menu | Avatar |
+|------------|------|------|------|--------|
+| **Dark** | `bg-white/30 hover:bg-white backdrop-blur-sm` | `text-slate-800` | `hover:bg-slate-200 text-slate-700` | `bg-purple-50 border-purple-100` |
+| **Light** | `bg-black/30 hover:bg-black/50 backdrop-blur-sm` | `text-white` | `hover:bg-white/20 text-white/70` | `bg-zinc-800 border-white/20` |
+
+Applied in both `renderCharacterCard()` (main characters) and `SideCharacterCard` (side characters via `isDarkBg` prop).
 
 ---
 
@@ -292,4 +310,4 @@ Configurable via `onUpdateUiSettings`:
 
 None documented.
 
-> Last updated: 2026-03-06 — Chat settings persistence fix. All UI settings now written to `stories.ui_settings` on change.
+> Last updated: 2026-03-06 — Added time progression settings, dual persistence strategy, adaptive card theming, SidebarThemeModal dark theme.
