@@ -3364,7 +3364,7 @@ const updatedChar: SideCharacter = {
           {/* Main Characters - Scrollable section */}
           <section className="flex flex-col min-h-0 flex-shrink-0">
             <h3
-              className="flex-shrink-0 text-[11px] font-bold text-white bg-[#4a5f7f] px-4 py-1.5 rounded-lg mb-3 tracking-tight uppercase flex items-center justify-between cursor-pointer select-none"
+              className="flex-shrink-0 text-[11px] font-bold text-white bg-[#4a5f7f] px-4 py-1.5 rounded-lg mb-3 tracking-tight uppercase flex items-center justify-between cursor-pointer select-none shadow-lg"
               onClick={() => setMainCharsCollapsed(prev => !prev)}
             >
               Main Characters
