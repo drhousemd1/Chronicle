@@ -975,47 +975,50 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                       {/* Mode group */}
                       <div>
                         <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1 block">Mode</label>
-                        <div className="flex items-center gap-3">
-                          <div className="flex p-1 bg-zinc-900/50 rounded-xl border border-white/10">
-                            <button
-                              type="button"
-                              onClick={() => onUpdateOpening({ timeProgressionMode: 'manual' })}
-                              className={cn(
-                                "px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg border-none cursor-pointer transition-all",
-                                (openingDialog.timeProgressionMode || 'manual') === 'manual'
-                                  ? "bg-zinc-700 text-blue-400 shadow-sm"
-                                  : "bg-transparent text-zinc-500 hover:text-zinc-300"
-                              )}
-                            >
-                              Manual
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => onUpdateOpening({ timeProgressionMode: 'automatic' })}
-                              className={cn(
-                                "px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg border-none cursor-pointer transition-all",
-                                openingDialog.timeProgressionMode === 'automatic'
-                                  ? "bg-zinc-700 text-blue-400 shadow-sm"
-                                  : "bg-transparent text-zinc-500 hover:text-zinc-300"
-                              )}
-                            >
-                              Automatic
-                            </button>
-                          </div>
-
-                          {openingDialog.timeProgressionMode === 'automatic' && (
-                            <select
-                              value={openingDialog.timeProgressionInterval || 15}
-                              onChange={(e) => onUpdateOpening({ timeProgressionInterval: Number(e.target.value) })}
-                              className="bg-zinc-800 border border-zinc-700 rounded-xl text-xs text-white px-2.5 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            >
-                              <option value={10}>10 min</option>
-                              <option value={15}>15 min</option>
-                              <option value={30}>30 min</option>
-                              <option value={60}>60 min</option>
-                            </select>
-                          )}
+                        <div className="flex p-1 bg-zinc-900/50 rounded-xl border border-white/10">
+                          <button
+                            type="button"
+                            onClick={() => onUpdateOpening({ timeProgressionMode: 'manual' })}
+                            className={cn(
+                              "px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg border-none cursor-pointer transition-all",
+                              (openingDialog.timeProgressionMode || 'manual') === 'manual'
+                                ? "bg-zinc-700 text-blue-400 shadow-sm"
+                                : "bg-transparent text-zinc-500 hover:text-zinc-300"
+                            )}
+                          >
+                            Manual
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onUpdateOpening({ timeProgressionMode: 'automatic' })}
+                            className={cn(
+                              "px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg border-none cursor-pointer transition-all",
+                              openingDialog.timeProgressionMode === 'automatic'
+                                ? "bg-zinc-700 text-blue-400 shadow-sm"
+                                : "bg-transparent text-zinc-500 hover:text-zinc-300"
+                            )}
+                          >
+                            Automatic
+                          </button>
                         </div>
+                      </div>
+
+                      {/* Time Interval group */}
+                      <div className={cn(
+                        "transition-opacity",
+                        (openingDialog.timeProgressionMode || 'manual') === 'manual' && "opacity-40 pointer-events-none"
+                      )}>
+                        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1 block">Time Interval</label>
+                        <select
+                          value={openingDialog.timeProgressionInterval || 15}
+                          onChange={(e) => onUpdateOpening({ timeProgressionInterval: Number(e.target.value) })}
+                          className="bg-zinc-800 border border-zinc-700 rounded-xl text-xs text-white px-2.5 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        >
+                          <option value={10}>10 min</option>
+                          <option value={15}>15 min</option>
+                          <option value={30}>30 min</option>
+                          <option value={60}>60 min</option>
+                        </select>
                       </div>
                     </div>
                     <HintBox hints={[
