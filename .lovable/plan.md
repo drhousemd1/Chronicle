@@ -1,25 +1,17 @@
 
 
-## Plan: Fix Scene Gallery Title to Match Standard Label Style
+## Plan: Reduce Gap Between Scene Gallery Label and Content Area
 
 ### Problem
-The Scene Gallery title uses `text-[11px] font-bold uppercase tracking-widest text-[hsl(var(--ui-text))]` which doesn't match the standard used everywhere else on the page: `text-[10px] font-black text-zinc-400 uppercase tracking-widest`.
+The Scene Gallery header row has `mb-4` (16px margin-bottom), placing the label far above the content area. Every other label on the page uses `mb-1` (4px) to sit just slightly above its associated input/content. The user's screenshots clearly show the inconsistency.
 
-### Fix in `src/components/chronicle/WorldTab.tsx` (line 994)
+### Fix in `src/components/chronicle/WorldTab.tsx` (line 992)
 
-Change:
+Change `mb-4` to `mb-1` on the header row:
+
 ```tsx
-<span className="text-[11px] font-bold uppercase tracking-widest text-[hsl(var(--ui-text))]">Scene Gallery Photos</span>
+<div className="flex items-center justify-between gap-4 mb-1">
 ```
 
-To:
-```tsx
-<label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Scene Gallery Photos</label>
-```
-
-Three corrections:
-1. `text-[11px]` → `text-[10px]`
-2. `font-bold` → `font-black`
-3. `text-[hsl(var(--ui-text))]` → `text-zinc-400`
-4. `<span>` → `<label>` (matching other field labels)
+This single change brings the label+buttons row snug above the dashed empty-state box, matching how "Additional Formatting Rules" and "Opening Dialog" labels sit relative to their inputs.
 
