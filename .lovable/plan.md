@@ -1,22 +1,11 @@
 
 
-## Plan: Remove Story Validation from Character Builder Save
+## Plan: Show Full Image in Sidebar Theme Previews
 
 ### Problem
-The character builder "Save" button (line 1974) calls `handleSave(false)` → `handleSaveWithData()`, which validates the story name (lines 854-858) and sets `storyNameError(true)` + switches to the World tab. This is wrong — the character builder save should just persist the character and navigate back to the story builder.
+The tiles use `object-cover` which crops tall portrait images to fill the container. Since the source images are ~300×1080 (roughly 1:3.6 ratio) but tiles are `aspect-[2/3]` (1:1.5), a large portion of each image is cropped out.
 
-### Fix
+### Fix (single file: `SidebarThemeModal.tsx`)
 
-**File: `src/pages/Index.tsx`**
-
-Update the `handleSaveCharacter()` function (lines 948-969) so the non-library branch no longer calls `handleSave()`. Instead, it should simply:
-1. Deselect the character (`setSelectedCharacterId(null)`)
-2. Navigate back to the world tab (`setTab("world")`)
-
-The character data is already in `activeData.characters` (it's edited in-place via state). No DB write is needed — the story gets saved to the DB only when the user clicks "Save and Close" on the story builder page, and the "Save Draft" button handles localStorage persistence.
-
-Also update the **character builder's own Save button** (line 1968-1976) to call `handleSaveCharacter()` instead of `handleSave(false)`, so it follows the same logic — just deselect and navigate back, no validation or DB write.
-
-### Files to Change
-- `src/pages/Index.tsx` — update `handleSaveCharacter` and the character builder Save button onClick
+**Change `object-cover` to `object-contain`** on the background preview `<img>` tag (line ~130). This will scale the entire image to fit within the tile without cropping, showing the full content. The tile's dark `bg-zinc-800/50` background will fill any letterbox space naturally.
 
