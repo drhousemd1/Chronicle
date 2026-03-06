@@ -912,7 +912,17 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                     <div className="flex items-end gap-4 flex-wrap">
                       {/* Starting Day & Time group */}
                       <div>
-                        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1 block">Starting Day & Time</label>
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Starting Day & Time</label>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="w-3.5 h-3.5 text-blue-500 cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-[300px] text-xs font-semibold leading-relaxed normal-case tracking-normal">
+                              Set when your story begins. The AI will use this context for time-appropriate responses.
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
                         <div className="flex items-center gap-3">
                           {/* Day Counter */}
                           <div className="flex items-center gap-1.5 bg-zinc-800 rounded-xl px-3 py-1.5 border border-zinc-700">
@@ -974,7 +984,21 @@ export const WorldTab: React.FC<WorldTabProps> = ({
 
                       {/* Mode group */}
                       <div>
-                        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1 block">Mode</label>
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Mode</label>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="w-3.5 h-3.5 text-blue-500 cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-[300px] text-xs font-semibold leading-relaxed normal-case tracking-normal">
+                              <ul className="list-disc list-outside pl-4 space-y-1">
+                                <li><strong>Manual:</strong> User will update the day and time counters manually when they want the day/time to advance.</li>
+                                <li><strong>Automatic:</strong> Time/day will progress by set intervals.</li>
+                              </ul>
+                              <p className="mt-1.5">Users can adjust these settings during their playthrough in the chat settings tab.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
                         <div className="flex p-1 bg-zinc-900/50 rounded-xl border border-white/10">
                           <button
                             type="button"
@@ -1021,10 +1045,6 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                         </select>
                       </div>
                     </div>
-                    <HintBox hints={[
-                      "Set when your story begins. The AI will use this context for time-appropriate responses.",
-                      "This message will automatically appear at the start of every new session."
-                    ]} />
                   </div>
                 </div>
               </div>
