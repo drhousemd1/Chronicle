@@ -568,30 +568,31 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-      
-      const sampleSize = 50;
-      canvas.width = sampleSize;
-      canvas.height = sampleSize;
-      
-      ctx.drawImage(img, 0, 0, sampleSize, sampleSize);
-      const imageData = ctx.getImageData(0, 0, sampleSize, sampleSize);
-      const data = imageData.data;
-      
-      let totalLuminosity = 0;
-      const pixelCount = data.length / 4;
-      
-      for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-        totalLuminosity += (0.299 * r + 0.587 * g + 0.114 * b);
+      try {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        
+        const sampleSize = 50;
+        canvas.width = sampleSize;
+        canvas.height = sampleSize;
+        
+        ctx.drawImage(img, 0, 0, sampleSize, sampleSize);
+        const imageData = ctx.getImageData(0, 0, sampleSize, sampleSize);
+        const data = imageData.data;
+        
+        let totalLuminosity = 0;
+        const pixelCount = data.length / 4;
+        
+        for (let i = 0; i < data.length; i += 4) {
+          totalLuminosity += (0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2]);
+        }
+        
+        setSidebarBgIsLight((totalLuminosity / pixelCount) > 128);
+      } catch (e) {
+        console.warn('Could not analyze sidebar background brightness (CORS):', e);
+        setSidebarBgIsLight(false);
       }
-      
-      const avgLuminosity = totalLuminosity / pixelCount;
-      setSidebarBgIsLight(avgLuminosity > 128);
     };
     img.src = imageUrl;
   }, []);
