@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { ConversationMetadata } from "@/types";
-import { Pencil, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -13,12 +13,10 @@ const PAGE_SIZE = 30;
 export function ConversationsTab({
   globalRegistry,
   onResume,
-  onRename,
   onDelete,
 }: {
   globalRegistry: ConversationMetadata[];
   onResume: (scenarioId: string, conversationId: string) => void;
-  onRename: (scenarioId: string, conversationId: string) => void;
   onDelete: (scenarioId: string, conversationId: string) => void;
 }) {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -94,25 +92,13 @@ export function ConversationsTab({
                                   <span className="text-sm text-zinc-500">•</span>
                                   <span className="text-sm text-zinc-500">{dateStr}</span>
                                 </div>
+                                <p className="text-xs text-zinc-500 mt-0.5">
+                                  Created by: {entry.creatorName || 'You'}
+                                </p>
                               </button>
 
                               {/* Action buttons */}
                               <div className="flex items-center gap-1.5 flex-shrink-0">
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        onRename(entry.scenarioId, entry.conversationId);
-                                      }}
-                                      className="p-2 rounded-lg bg-white/10 border border-white/10 text-zinc-400 hover:bg-white/15 hover:text-blue-400 hover:border-blue-500/30 transition-colors"
-                                    >
-                                      <Pencil className="w-4 h-4" />
-                                    </button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>Rename</TooltipContent>
-                                </Tooltip>
-
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <button
