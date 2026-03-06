@@ -51,7 +51,7 @@ export function SidebarThemeModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-6xl p-0 bg-zinc-900 border-white/10 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.5)] [&>button]:hidden">
+      <DialogContent className="w-[min(96vw,1280px)] max-w-none p-0 bg-zinc-900 border-white/10 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.5)] [&>button]:hidden">
         {/* Header */}
         <div className="flex justify-between items-center px-6 pt-6 pb-4 border-b border-white/10">
           <DialogTitle className="text-lg font-black text-white flex items-center gap-2 uppercase tracking-tight">
@@ -87,23 +87,23 @@ export function SidebarThemeModal({
         <div className="px-6 pb-6">
           {/* Recommended dimensions */}
           <p className="text-xs text-zinc-500 mb-6 text-center">
-            Recommended: 300px × 1080px-2 pr-4it orientation)
+            Recommended: 300px × 1080px (portrait orientation)
           </p>
 
           {/* Grid */}
-          <div className="max-h-[460px] overflow-y-auto pt-2 pr-1">
-          <div className="grid grid-cols-5 md:grid-cols-7 gap-3">
+          <div className="max-h-[460px] overflow-y-auto [scrollbar-gutter:stable] py-2 pr-5">
+          <div className="grid grid-cols-5 md:grid-cols-7 gap-2.5">
             {/* Default Tile */}
             <button
               type="button"
               onClick={() => onSelectBackground(null)}
-className={`group relative aspect-[1/3] rounded-xl overflow-hidden border shadow-sm bg-zinc-800/50 transition-all cursor-pointer ${
+              className={`group relative aspect-[1/3] rounded-xl border shadow-sm bg-zinc-800/50 transition-all cursor-pointer ${
                 selectedBackgroundId === null
-                  ? 'ring-2 ring-blue-400 ring-offset-2 ring-offset-zinc-900 border-blue-400/30' 
+                  ? 'ring-2 ring-blue-400 ring-inset border-blue-400/30' 
                   : 'border-white/10 hover:border-white/20'
               }`}
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 via-zinc-800/80 to-zinc-800" />
+              <div className="absolute inset-0 rounded-xl overflow-hidden bg-gradient-to-br from-zinc-800 via-zinc-800/80 to-zinc-800" />
               
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
                 <Image className="w-8 h-8 text-zinc-500" />
@@ -122,9 +122,9 @@ className={`group relative aspect-[1/3] rounded-xl overflow-hidden border shadow
               <div
                 key={bg.id}
                 onClick={() => onSelectBackground(bg.id)}
-className={`group relative aspect-[1/3] rounded-xl overflow-hidden border shadow-sm bg-zinc-800/50 cursor-pointer transition-all ${
+                className={`group relative aspect-[1/3] rounded-xl border shadow-sm bg-zinc-800/50 cursor-pointer transition-all ${
                   selectedBackgroundId === bg.id
-                    ? 'ring-2 ring-blue-400 ring-offset-2 ring-offset-zinc-900 border-blue-400/30' 
+                    ? 'ring-2 ring-blue-400 ring-inset border-blue-400/30' 
                     : 'border-white/10 hover:border-white/20'
                 }`}
               >
