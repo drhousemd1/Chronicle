@@ -2205,7 +2205,12 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
               }}
               onUpdateUiSettings={(patch) => {
                 const currentSettings = activeData?.uiSettings || createDefaultScenarioData().uiSettings;
-                handleUpdateActive({ uiSettings: { ...currentSettings, ...patch } });
+                const merged = { ...currentSettings, ...patch };
+                handleUpdateActive({ uiSettings: merged });
+                // Persist to DB (fire-and-forget)
+                if (activeId) {
+                  supabaseData.updateStoryUiSettings(activeId, merged);
+                }
               }}
               onUpdateSideCharacters={(sideCharacters) => handleUpdateActive({ sideCharacters })}
               onLoadOlderMessages={handleLoadOlderMessages}
