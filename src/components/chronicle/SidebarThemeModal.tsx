@@ -122,7 +122,7 @@ className={`group relative aspect-[1/3] rounded-xl overflow-hidden border shadow
               <div
                 key={bg.id}
                 onClick={() => onSelectBackground(bg.id)}
-className={`group relative aspect-[2/3] rounded-xl overflow-hidden border shadow-sm bg-zinc-800/50 cursor-pointer transition-all ${
+className={`group relative aspect-[1/3] rounded-xl overflow-hidden border shadow-sm bg-zinc-800/50 cursor-pointer transition-all ${
                   selectedBackgroundId === bg.id
                     ? 'ring-2 ring-blue-400 ring-offset-2 ring-offset-zinc-900 border-blue-400/30' 
                     : 'border-white/10 hover:border-white/20'
