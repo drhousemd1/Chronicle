@@ -1,49 +1,33 @@
 
+You’re right, and the inconsistency is reproducible from the code.
 
-## Plan: Redesign Art Style Preference Selection Layout
+Root cause:
+- These hint tooltips are embedded under labels/spans with different font weights (`font-semibold`, `font-bold`, `font-black`).
+- Tooltip text style is not explicitly locked for weight, so each tooltip ends up visually different depending on where it’s used.
 
-### What changes
+Implementation plan (make it consistent with the Dynamic Background tooltip look):
+1. Standardize one shared “info hint tooltip” text style and reuse it everywhere these blue info icons are used.
+   - Typography lock: `text-xs`, `font-semibold`, `leading-relaxed`, `normal-case`, `tracking-normal`.
+   - Keep existing per-tooltip max width (e.g., 220/300) so layout doesn’t jump.
+2. Apply that exact style to all 4 affected hint tooltips:
+   - Dynamic Backgrounds (reference tooltip) in `src/components/chronicle/ChatInterfaceTab.tsx`
+   - Opening Dialog tooltip in `src/components/chronicle/WorldTab.tsx`
+   - Scene Gallery Photos tooltip in `src/components/chronicle/WorldTab.tsx`
+   - Art Style Selection tooltip in `src/components/chronicle/WorldTab.tsx`
+3. Normalize bullet tooltip internals so they render with same weight as non-bullet tooltip text.
+   - Add explicit list text style (`font-semibold` + existing bullet spacing classes) for Opening Dialog and Scene Gallery list content.
+4. Do not change spacing/layout in this pass.
+   - No changes to section padding, title alignment, button position, or card/container dimensions.
+   - This pass is strictly text-consistency for hint boxes.
 
-Replace the current HintBox inside the Art Style Preference section with:
-1. A darker inner container (matching input field backgrounds like `bg-zinc-900/50` or `bg-[hsl(var(--ui-surface))]`) that wraps just the style selection grid
-2. A label row above that container with text like "ART STYLE SELECTION" (matching the `FieldLabel` uppercase styling pattern) plus an Info tooltip icon containing the current hint text
-3. Proper padding/overflow handling so the blue selection ring (`ring-2 ring-blue-400`) is never clipped
+Technical files touched:
+- `src/components/chronicle/WorldTab.tsx`
+  - Update 3 tooltip content class strings and 2 list class strings.
+- `src/components/chronicle/ChatInterfaceTab.tsx`
+  - Update Dynamic Background tooltip class string to the same canonical text style.
 
-### File: `src/components/chronicle/WorldTab.tsx` (lines 1118-1160)
-
-**Current structure:**
-```
-<div class="p-6">                          ← outer padding
-  <div class="p-6 bg-[#3a3a3f]/30 ...">   ← medium gray container
-    <HintBox ... />                         ← dark hint text block
-    <div class="mt-6 grid ...">             ← style cards grid
-  </div>
-</div>
-```
-
-**New structure:**
-```
-<div class="p-6 space-y-1">                              ← outer padding
-  <div class="flex items-center gap-2 mb-1">             ← label row
-    <span class="text-xs font-bold uppercase ...">       ← "ART STYLE SELECTION"
-      Art Style Selection
-    </span>
-    <Tooltip>                                             ← info icon with hint
-      <TooltipTrigger><Info .../></TooltipTrigger>
-      <TooltipContent>Select an art style...</TooltipContent>
-    </Tooltip>
-  </div>
-  <div class="p-3 bg-zinc-900/50 rounded-xl border border-zinc-700">  ← darker container
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4"> ← style cards
-      ...                                                               (unchanged)
-    </div>
-  </div>
-</div>
-```
-
-Key details:
-- The darker container uses `p-3` with `overflow-visible` or sufficient internal padding so the `ring-2 ring-blue-400` selection highlight (which adds ~2px outside the button boundary) is not clipped
-- Remove the old `bg-[#3a3a3f]/30` wrapper and HintBox entirely
-- The label + Info icon follows the exact pattern already used for "Dialog Formatting" and "Starting Day & Time" tooltips
-- Need to add `Info` to the lucide-react imports if not already present, and `Tooltip`/`TooltipTrigger`/`TooltipContent` (already imported)
-
+Validation checklist after implementation:
+- All four hint popups have identical visual weight and readability.
+- Opening Dialog and Scene Gallery no longer appear heavier than Dynamic Background.
+- Art Style tooltip matches the same typography standard.
+- No regressions in uppercase/tracking bleed, and no clipping/layout regressions.
