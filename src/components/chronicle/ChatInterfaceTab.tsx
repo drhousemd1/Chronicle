@@ -3360,6 +3360,7 @@ const updatedChar: SideCharacter = {
                 </div>
               </div>
             </div>
+            </div>
           </section>
 
           {/* Main Characters - Scrollable section */}
