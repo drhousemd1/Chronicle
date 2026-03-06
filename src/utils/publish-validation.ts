@@ -6,7 +6,8 @@ export interface PublishValidationErrors {
   openingDialog?: string;
   tags?: string;
   storyType?: string;
-  noCharacters?: string;
+  noAICharacter?: string;
+  noUserCharacter?: string;
   characters?: Record<string, string[]>; // characterId -> array of error messages
   location?: string;
   storyArc?: string;
