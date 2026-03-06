@@ -1808,14 +1808,21 @@ const IndexContent = () => {
                     type="button"
                     onClick={() => {
                       if (!activeId || !activeData) return;
+                      const savedAt = Date.now();
                       try {
                         localStorage.setItem(`draft_${activeId}`, JSON.stringify({
                           data: activeData,
                           coverImage: activeCoverImage,
                           coverPosition: activeCoverPosition,
                           contentThemes: activeContentThemes,
-                          savedAt: Date.now(),
+                          savedAt,
                         }));
+                        upsertDraftRegistry({
+                          id: activeId,
+                          title: activeData.world.core.scenarioName || 'Untitled',
+                          savedAt,
+                        });
+                        setDraftCount(getDraftRegistry().length);
                         setIsSaving(true);
                         setTimeout(() => setIsSaving(false), 1200);
                       } catch (e) {
