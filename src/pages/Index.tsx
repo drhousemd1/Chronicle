@@ -812,17 +812,8 @@ const IndexContent = () => {
     setSelectedCharacterId(null);
     setPlayingConversationId(null);
   }
-    const id = uuid(); // Use proper UUID for Supabase
-    const data = createDefaultScenarioData();
-    setActiveId(id);
-    setActiveData(data);
-    setActiveCoverImage("");
-    setActiveCoverPosition({ x: 50, y: 50 });
-    setActiveContentThemes(defaultContentThemes);
-    setTab("world"); 
-    setSelectedCharacterId(null);
-    setPlayingConversationId(null);
-  }
+
+
 
   const handleSaveWithData = useCallback(async (dataOverride: ScenarioData | null, navigateToHub: boolean = false): Promise<boolean> => {
     const dataToUse = dataOverride || activeData;
