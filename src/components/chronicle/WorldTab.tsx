@@ -886,8 +886,14 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                             <TooltipTrigger asChild>
                               <Info className="w-3.5 h-3.5 text-blue-500 cursor-help" />
                             </TooltipTrigger>
-                            <TooltipContent side="top" className="max-w-[260px] text-xs">
-                              Opening dialog will display at the start of every new session. This should set the scene for where the story begins. Start dialog blocks with the character name followed by ":" (e.g., "James:"). Enclose spoken dialogue in " ", physical actions in * *, and internal thoughts in ( ).
+                            <TooltipContent side="top" className="max-w-[260px] text-xs normal-case tracking-normal">
+                              <ul className="space-y-1 list-disc list-inside">
+                                <li>Opening dialog displays at the start of every new session — set the scene for where the story begins.</li>
+                                <li>Start dialog blocks with the character name followed by ":" (e.g., "James:").</li>
+                                <li>Enclose spoken dialogue in " ".</li>
+                                <li>Enclose physical actions in * *.</li>
+                                <li>Enclose internal thoughts in ( ).</li>
+                              </ul>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
