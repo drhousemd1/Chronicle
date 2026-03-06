@@ -758,11 +758,6 @@ const IndexContent = () => {
       
       const newScenarioId = uuid();
 
-  // Initialize draft count from registry
-  useEffect(() => {
-    setDraftCount(getDraftRegistry().length);
-  }, []);
-
       const clonedData = await supabaseData.cloneScenarioForRemix(
         id,
         newScenarioId,
