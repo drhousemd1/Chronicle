@@ -11,7 +11,8 @@ import { useAuth } from '@/hooks/use-auth';
 import { uploadSceneImage, uploadCoverImage, dataUrlToBlob } from '@/services/supabase-data';
 import { supabase } from '@/integrations/supabase/client';
 
-import { Sunrise, Sun, Sunset, Moon, ChevronUp, ChevronDown, Pencil, Sparkles, Share2, Trash2, Plus, X } from 'lucide-react';
+import { Sunrise, Sun, Sunset, Moon, ChevronUp, ChevronDown, Pencil, Sparkles, Share2, Trash2, Plus, X, Info } from 'lucide-react';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { StoryGoalsSection } from './StoryGoalsSection';
 import { useArtStyles } from '@/contexts/ArtStylesContext';
 import { cn } from '@/lib/utils';
@@ -877,15 +878,20 @@ export const WorldTab: React.FC<WorldTabProps> = ({
               <div className="p-6">
                 <div className="p-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
                   <div className="space-y-6">
-                    <HintBox hints={[
-                      "Opening dialog will display at the start of every new session. This should set the scene for where the story begins.",
-                      'Dialog / blocks of dialog should be started with the name of the character followed by ":" i.e., "James:" This triggers avatars to appear by the appropriate dialog.',
-                      'Enclose all spoken dialogue in " ".',
-                      "Enclose all physical actions or descriptions in * *.",
-                      "Enclose all internal thoughts in ( )."
-                    ]} />
                     <div data-publish-error={!!publishErrors.openingDialog || undefined}>
-                      <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1 block">Opening Dialog</label>
+                      <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1 flex items-center gap-1.5">
+                        Opening Dialog
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="w-3.5 h-3.5 text-blue-500 cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-[260px] text-xs">
+                              Opening dialog will display at the start of every new session. This should set the scene for where the story begins. Start dialog blocks with the character name followed by ":" (e.g., "James:"). Enclose spoken dialogue in " ", physical actions in * *, and internal thoughts in ( ).
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </label>
                       <AutoResizeTextarea 
                         value={openingDialog.text} 
                         onChange={(v) => onUpdateOpening({ text: v })} 
