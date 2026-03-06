@@ -2187,7 +2187,9 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
                         return supabaseData.updateConversationMeta(modifiedConv.id, {
                           currentDay: modifiedConv.currentDay,
                           currentTimeOfDay: modifiedConv.currentTimeOfDay,
-                          title: modifiedConv.title
+                          title: modifiedConv.title,
+                          timeProgressionMode: modifiedConv.timeProgressionMode,
+                          timeProgressionInterval: modifiedConv.timeProgressionInterval
                         });
                       })
                       .catch(err => {
