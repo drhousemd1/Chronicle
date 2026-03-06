@@ -56,6 +56,7 @@
 | Button (UI.tsx) | chronicle/UI.tsx | 5+ | Imported | 🟢 Low |
 | TextArea (UI.tsx) | chronicle/UI.tsx | 3+ | Imported | 🟢 Low |
 | Arc System Components | arc/*.tsx | 4 | Imported | 🟢 Low |
+| SideCharacterCard | SideCharacterCard.tsx | 1 | Imported ×1 | 🟢 Low |
 | character-ai.ts | services/character-ai.ts | 2 flows | Imported | 🟡 Medium |
 | world-ai.ts | services/world-ai.ts | 2 | Imported | 🟢 Low |
 | llm.ts (injection) | services/llm.ts | 1 (canonical) | Imported | 🟡 Medium |
@@ -363,7 +364,21 @@ When modifying **AutoResizeTextarea** behavior:
 
 ---
 
+### 🟢 SideCharacterCard (Imported — Low Risk)
+
+Component for displaying AI-generated side characters with adaptive theming.
+
+| File Path | Page/Context | Usage Kind | Notes |
+|-----------|-------------|------------|-------|
+| `ChatInterfaceTab.tsx` | Chat Interface sidebar | Imported | Receives `isDarkBg={!sidebarBgIsLight}` for adaptive frosted glass styling |
+
+**Propagation rule**: Change once in `SideCharacterCard.tsx`. The `isDarkBg` prop controls all adaptive styling (card bg, text color, avatar fallback, menu buttons, dropdown theme).
+
+---
+
 ## Known Issues from Bug Report (Added 2026-03-01)
 
 - **ACTIVE — Bug #2**: `personality.traits` missing from TRACKABLE FIELDS constant in extraction logic — only `outward` and `inward` personality sub-fields are tracked. The top-level `traits` array is never extracted or updated.
 - **ACTIVE — Bug #3**: `preferredClothing` field name mismatch — the UI and database use `preferred_clothing` (snake_case) but the extraction prompt references `preferredClothing` (camelCase). This inconsistency means extracted clothing preference updates may silently fail to apply.
+
+> Last updated: 2026-03-06 — Added SideCharacterCard with `isDarkBg` adaptive theming prop.

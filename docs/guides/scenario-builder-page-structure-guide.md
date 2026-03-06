@@ -75,7 +75,7 @@
 | Add Custom Content button | World Core | Full-width dashed border button |
 | **Story Arcs section** | Main | Goal name, desired outcome, guidance strength slider, steps with simple/advanced mode toggle |
 | Add New Story Arc button | Story Arcs | Dashed border style (`border-2 border-dashed border-zinc-500 text-blue-400`) |
-| **Opening Dialog section** | Main | Textarea + HintBox + Starting Day counter (increment/decrement) + Time of Day icons (Sunrise/Day/Sunset/Night) |
+| **Opening Dialog section** | Main | Textarea + HintBox + Starting Day counter (increment/decrement) + Time of Day icons (Sunrise/Day/Sunset/Night) + Mode dropdown (Manual/Automatic) + Time Interval dropdown (5/10/15/30/60 minutes, shown when Automatic) |
 | **Scene Gallery section** | Main | HintBox + action buttons (Upload/Library/Generate) + image grid (2–3 columns) + tag editor + starting scene star |
 | **Art Style Preference section** | Main | Grid of style thumbnails (2–5 columns responsive), radio-select with blue ring on active |
 | **World Codex section** | Main | Dialog Formatting (read-only critical rules + editable additional rules textarea) + Additional Entries (title/body pairs) |
@@ -222,6 +222,7 @@ Index.tsx
         > per goal: ArcModeToggle, GuidanceStrengthSlider, ArcBranchLane, ArcConnectors, ArcPhaseCard
       > Opening Dialog section
         > HintBox, textarea, Starting Day counter, Time of Day icons
+        > Mode dropdown (Manual/Automatic), Time Interval dropdown (5/10/15/30/60 min)
       > Scene Gallery section
         > SceneGalleryActionButtons (Upload/Library/Generate)
         > Scene image tile grid
@@ -381,10 +382,10 @@ Tags selected in the Content Themes section are processed through `tag-injection
 
 ### Bug Report Items (Added 2026-03-01)
 
-- **ACTIVE — Bug #1**: `buildCharacterStateBlock()` omits empty sections — affects system prompt construction in `llm.ts`. AI cannot see character section types that have no data.
-- **ACTIVE — Bug #4**: Wrong AI model — `grok-3-mini` used for extraction instead of `grok-3`. Affects extraction quality.
-- **ACTIVE — Bug #5**: Extraction prompt lacks analytical depth — shallow analysis of character changes from conversation text.
-- **ACTIVE — Bug #6**: Memory system architecture incomplete — no long-term accumulation or summarization.
+- **RESOLVED — Bug #1**: `buildCharacterStateBlock()` omits empty sections — fixed, empty sections now included in system prompt. (Resolved 2026-03-01)
+- **RESOLVED — Bug #4**: Wrong AI model — now uses `grok-4-1-fast-reasoning` for extraction. (Resolved 2026-03-04)
+- **RESOLVED — Bug #5**: Extraction prompt lacks analytical depth — prompt rewritten with deeper analysis. (Resolved 2026-03-01)
+- **RESOLVED — Bug #6**: Memory system architecture incomplete — fixed with auto-extraction, day-compression, and synopsis system. (Resolved 2026-03-01)
 - **RESOLVED — Bug #7**: Previous issue resolved.
 - **RESOLVED — Bug #8**: Previous issue resolved.
 

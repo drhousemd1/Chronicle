@@ -116,6 +116,12 @@ Base components from shadcn used alongside Chronicle variants:
 | `Popover` | `src/components/ui/popover.tsx` | Floating panels |
 | `Select` | `src/components/ui/select.tsx` | Select dropdowns |
 
+### Modal Dark Theme Pattern
+
+| Modal | Dark Theme Classes | Notes |
+|-------|-------------------|-------|
+| `SidebarThemeModal` | `bg-zinc-900 border-white/10` | Dark modal with dark dropdowns (`bg-zinc-800`) |
+
 ---
 
 ## 6. Icon Library
@@ -167,6 +173,60 @@ Sidebar auto-collapses at `max-width: 1024px`.
 
 ---
 
+## 9. Adaptive / Brightness-Aware Patterns
+
+### Sidebar Background Brightness Detection
+
+The chat interface detects whether the sidebar background is light or dark using pixel-level luminosity analysis:
+
+| Detail | Value |
+|--------|-------|
+| **State variable** | `sidebarBgIsLight` (`boolean`) in `ChatInterfaceTab.tsx` |
+| **Detection method** | Canvas pixel sampling of the sidebar background image |
+| **Threshold** | Luminosity > 128 → light; ≤ 128 → dark |
+| **Fallback** | Defaults to dark (`false`) when no background image is set |
+
+### Adaptive Frosted Glass Card Pattern
+
+Character tile cards in the sidebar switch between two frosted glass variants based on `sidebarBgIsLight`:
+
+| Background | Card Classes | Text Classes | Menu Button | Avatar Fallback |
+|------------|-------------|-------------|-------------|-----------------|
+| **Dark** (default) | `bg-white/30 hover:bg-white backdrop-blur-sm` | `text-slate-800` | `hover:bg-slate-200 text-slate-700` | `bg-purple-50 border-purple-100 text-purple-300` |
+| **Light** | `bg-black/30 hover:bg-black/50 backdrop-blur-sm` | `text-white` | `hover:bg-white/20 text-white/70 hover:text-white` | `bg-zinc-800 border-white/20 text-zinc-400` |
+
+**Components using this pattern**:
+- `renderCharacterCard()` inline in `ChatInterfaceTab.tsx` — main character cards
+- `SideCharacterCard.tsx` — via `isDarkBg` prop (inverted: `isDarkBg={!sidebarBgIsLight}`)
+- Scroll overflow indicator — `bg-white/30 text-black/80` (dark bg) ↔ `bg-black/30 text-white/80` (light bg)
+
+### Dropdown Menu Adaptive Theming
+
+Dropdown menus on character cards also adapt:
+
+| Background | Dropdown Classes |
+|------------|-----------------|
+| **Dark** | `bg-white border-slate-200` (default light dropdown) |
+| **Light** | `bg-zinc-800 border-white/10 text-zinc-200` (dark dropdown) |
+
+---
+
+## 10. Info Tooltip Pattern
+
+All info hint tooltips follow a standardized style to prevent font-weight inheritance from parent labels:
+
+| Property | Value |
+|----------|-------|
+| **Text styling** | `text-xs font-semibold leading-relaxed normal-case tracking-normal` |
+| **Icon** | `text-blue-500` (Info icon from lucide-react) |
+| **Max width** | `max-w-[300px]` for complex tooltips |
+| **Bullet lists** | `list-outside pl-4` with `font-semibold` to keep wrapped text flush |
+| **Portal rendering** | `TooltipPrimitive.Portal` in `src/components/ui/tooltip.tsx` |
+| **Z-index** | `z-[80]` on `TooltipContent` |
+| **Collision padding** | `collisionPadding={8}` to prevent edge clipping |
+
+---
+
 ## 12. Known Issues & Gotchas
 
 - **ACTIVE**: Chronicle UI components (`UI.tsx`) and shadcn components sometimes conflict in styling — ensure correct import. (2026-03-01)
@@ -179,4 +239,4 @@ Sidebar auto-collapses at `max-width: 1024px`.
 - Consider migrating hardcoded hex values to CSS custom properties
 - Document dark mode token overrides
 
-> Last updated: 2026-03-01 — Initial creation.
+> Last updated: 2026-03-06 — Added adaptive brightness-aware patterns, info tooltip pattern, SidebarThemeModal dark variant.
