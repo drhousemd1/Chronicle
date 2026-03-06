@@ -121,7 +121,7 @@ export const GalleryScenarioCard: React.FC<GalleryScenarioCardProps> = ({
             onClick={handleSave}
             disabled={isSaving}
             className={cn(
-              "p-2.5 rounded-xl shadow-2xl transition-all",
+              "h-8 w-8 flex items-center justify-center rounded-xl shadow-2xl transition-all",
               isSaved 
                 ? "bg-amber-500 text-white" 
                 : "bg-white/90 text-slate-700 hover:bg-amber-100 hover:text-amber-500"
