@@ -1025,7 +1025,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                   />
                 </div>
                   <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAddScene} />
-                  <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+                  <div className="mt-1 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
                     {scenes.map(scene => {
                       const sceneTags = scene.tags ?? ((scene as any).tag ? [(scene as any).tag] : []);
                       
