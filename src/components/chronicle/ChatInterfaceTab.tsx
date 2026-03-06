@@ -914,7 +914,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const TIME_SEQUENCE: TimeOfDay[] = ['sunrise', 'day', 'sunset', 'night'];
   
   useEffect(() => {
-    if (timeProgressionMode !== 'automatic') return;
+    if (timeProgressionMode !== 'automatic' || isTimerPaused) return;
     const tick = setInterval(() => {
       setTimeRemaining(prev => {
         if (prev <= 1) {
