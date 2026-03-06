@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { uid, now, uuid } from '../../services/storage';
 import { generateRoleplayResponseStream } from '../../services/llm';
-import { RefreshCw, MoreVertical, Copy, Pencil, Trash2, ChevronUp, ChevronDown, Sunrise, Sun, Sunset, Moon, Loader2, StepForward, Settings, Image as ImageIcon, Brain, Check, X, Info } from 'lucide-react';
+import { RefreshCw, MoreVertical, Copy, Pencil, Trash2, ChevronUp, ChevronDown, Sunrise, Sun, Sunset, Moon, Loader2, StepForward, Settings, Image as ImageIcon, Brain, Check, X, Info, Play, Pause } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import {
   DropdownMenu,
@@ -319,6 +319,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const [timeProgressionMode, setTimeProgressionMode] = useState<'manual' | 'automatic'>('manual');
   const [timeProgressionInterval, setTimeProgressionInterval] = useState<number>(15);
   const [timeRemaining, setTimeRemaining] = useState<number>(15 * 60); // seconds
+  const [isTimerPaused, setIsTimerPaused] = useState(false);
   const [pausedAt, setPausedAt] = useState<number | null>(null);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const timeRemainingRef = useRef<number>(15 * 60);
@@ -913,7 +914,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const TIME_SEQUENCE: TimeOfDay[] = ['sunrise', 'day', 'sunset', 'night'];
   
   useEffect(() => {
-    if (timeProgressionMode !== 'automatic') return;
+    if (timeProgressionMode !== 'automatic' || isTimerPaused) return;
     const tick = setInterval(() => {
       setTimeRemaining(prev => {
         if (prev <= 1) {
@@ -937,7 +938,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       });
     }, 1000);
     return () => clearInterval(tick);
-  }, [timeProgressionMode, currentTimeOfDay, currentDay]);
+  }, [timeProgressionMode, currentTimeOfDay, currentDay, isTimerPaused]);
 
   // Visibility API — pause/resume timer when tab is hidden
   useEffect(() => {
@@ -2262,6 +2263,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   // Save time progression settings to conversation
   const handleTimeProgressionChange = (mode: 'manual' | 'automatic', interval?: number) => {
     setTimeProgressionMode(mode);
+    setIsTimerPaused(false);
     const effectiveInterval = interval ?? timeProgressionInterval;
     if (interval !== undefined) setTimeProgressionInterval(effectiveInterval);
     // Immediately sync refs so timer/cleanup always see latest values
@@ -3293,9 +3295,20 @@ const updatedChar: SideCharacter = {
                 </Tooltip>
               </div>
               {timeProgressionMode === 'automatic' && (
-                <span className="bg-black/50 rounded-md px-2 py-0.5 text-xs font-mono text-white">
-                  {formatCountdown(timeRemaining)}
-                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setIsTimerPaused(prev => !prev)}
+                    className="p-0.5 rounded hover:bg-black/30 transition-colors"
+                    title={isTimerPaused ? 'Resume timer' : 'Pause timer'}
+                  >
+                    {isTimerPaused
+                      ? <Play className="w-3.5 h-3.5 text-white fill-white" />
+                      : <Pause className="w-3.5 h-3.5 text-white" />}
+                  </button>
+                  <span className="bg-black/50 rounded-md px-2 py-0.5 text-xs font-mono text-white">
+                    {formatCountdown(timeRemaining)}
+                  </span>
+                </div>
               )}
             </div>
             <div className="flex gap-4 items-center">
