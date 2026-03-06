@@ -1,21 +1,66 @@
 
 
-## Plan: Fix time progression mode persistence
+## Plan: Persist Timer Remaining Across Navigation
 
-### Root Cause
-`updateConversationMeta` in `supabase-data.ts` only persists `currentDay`, `currentTimeOfDay`, and `title`. It ignores `timeProgressionMode` and `timeProgressionInterval`. 
+### Problem
+When the user navigates away from chat and returns, `timeRemaining` is reset to the full interval (line 875: `setTimeRemaining((conversation.timeProgressionInterval || 15) * 60)`). The remaining seconds are never saved to the database.
 
-When `handleTimeProgressionChange` calls `onSaveScenario`, the save path at line 2187 in `Index.tsx` calls `updateConversationMeta` with only day/time/title — the mode and interval fields are silently dropped.
+### Solution
 
-### Fix (two small changes)
+**1. Add `time_remaining` column to `conversations` table** (migration)
 
-**1. Expand `updateConversationMeta` patch type and mapping** (`src/services/supabase-data.ts`, lines 934-946)
+```sql
+ALTER TABLE public.conversations ADD COLUMN time_remaining integer DEFAULT NULL;
+```
 
-Add `timeProgressionMode` and `timeProgressionInterval` to the accepted patch fields and map them to their DB columns.
+`NULL` means "use full interval" (backward-compatible with existing conversations).
 
-**2. Include mode/interval in the `onSaveScenario` handler** (`src/pages/Index.tsx`, line 2187-2191)
+**2. Save `timeRemaining` on navigation away** (`ChatInterfaceTab.tsx`)
 
-Pass `timeProgressionMode` and `timeProgressionInterval` from `modifiedConv` into the `updateConversationMeta` call.
+Add a `beforeunload` + cleanup effect that writes the current `timeRemaining` to the DB when the component unmounts or the page is about to close. Use the existing `updateConversationMeta` function.
 
-**3. Documentation** — update known issues in `chat-interface-page-structure-guide.md`.
+```tsx
+// On unmount / navigation away, persist remaining time
+useEffect(() => {
+  return () => {
+    if (timeProgressionMode === 'automatic' && conversationId) {
+      supabaseData.updateConversationMeta(conversationId, { timeRemaining: timeRemainingRef.current });
+    }
+  };
+}, [conversationId, timeProgressionMode]);
+```
+
+A `useRef` mirror of `timeRemaining` is needed since the cleanup function captures stale state. Add `timeRemainingRef` that syncs via a small effect.
+
+Also add a `beforeunload` listener for hard page closes.
+
+**3. Restore `timeRemaining` on load** (`ChatInterfaceTab.tsx`, line 875)
+
+```tsx
+setTimeRemaining(
+  conversation.timeRemaining != null 
+    ? conversation.timeRemaining 
+    : (conversation.timeProgressionInterval || 15) * 60
+);
+```
+
+**4. Expand `updateConversationMeta`** (`supabase-data.ts`)
+
+Add `timeRemaining` to the patch type and map it to `time_remaining`.
+
+**5. Map `time_remaining` in data loading** (`supabase-data.ts`)
+
+Wherever conversations are loaded and mapped to the app's `Conversation` type, include `time_remaining` → `timeRemaining`.
+
+**6. Update types** (`src/types.ts`)
+
+Add `timeRemaining?: number` to the `Conversation` type.
+
+**7. Documentation** — update known issues in chat guide.
+
+### What this achieves
+- Timer pauses on navigate-away, persists remaining seconds to DB
+- On return, timer resumes from where it left off
+- Works for all interval lengths (10, 15, 30, 60 min)
+- Backward-compatible: existing conversations without `time_remaining` default to full interval
 
