@@ -791,6 +791,27 @@ const IndexContent = () => {
   }
 
   function handleCreateNewScenario() {
+    const id = uuid();
+    const data = createDefaultScenarioData();
+    
+    // Check for a local draft
+    try {
+      const draftRaw = localStorage.getItem(`draft_${id}`);
+      if (draftRaw) {
+        // Very unlikely for a brand new UUID, but handle it
+        localStorage.removeItem(`draft_${id}`);
+      }
+    } catch (e) { /* ignore */ }
+    
+    setActiveId(id);
+    setActiveData(data);
+    setActiveCoverImage("");
+    setActiveCoverPosition({ x: 50, y: 50 });
+    setActiveContentThemes(defaultContentThemes);
+    setTab("world"); 
+    setSelectedCharacterId(null);
+    setPlayingConversationId(null);
+  }
     const id = uuid(); // Use proper UUID for Supabase
     const data = createDefaultScenarioData();
     setActiveId(id);
