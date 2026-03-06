@@ -281,6 +281,7 @@ Configurable via `onUpdateUiSettings`:
 - **ACTIVE**: `ChatInterfaceTab.tsx` is ~3900 lines — extremely large single component. (2026-03-01)
 - **ACTIVE**: Message parsing regex may miss edge cases with nested formatting markers. (2026-03-01)
 - **RESOLVED — 2026-03-04**: Extraction throttling — `extract-character-updates` now throttled to every 5th AI response via `extractionCountRef` to reduce API costs.
+- **RESOLVED — 2026-03-06**: Mode hint tooltip clipped behind left nav / background layers. Root-cause: shared `TooltipContent` rendered without a portal, trapping it inside local overflow/stacking contexts. Fix: wrapped `TooltipPrimitive.Content` in `TooltipPrimitive.Portal` in shared tooltip component (`src/components/ui/tooltip.tsx`), raised z-index to `z-[80]`, added `collisionPadding`. Chat tooltip uses `side="bottom" align="start"` with standard info-tooltip styling.
 
 ---
 
@@ -288,4 +289,4 @@ Configurable via `onUpdateUiSettings`:
 
 None documented.
 
-> Last updated: 2026-03-04 — Extraction throttling added (every 5th message). Model updated to grok-4-1-fast-reasoning.
+> Last updated: 2026-03-06 — Tooltip portal fix for mode hint clipping. Shared tooltip now uses Portal + z-[80] + collisionPadding.
