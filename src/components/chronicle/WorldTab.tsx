@@ -886,8 +886,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                             <TooltipTrigger asChild>
                               <Info className="w-3.5 h-3.5 text-blue-500 cursor-help" />
                             </TooltipTrigger>
-                            <TooltipContent side="top" className="max-w-[300px] text-xs normal-case tracking-normal">
-                              <ul className="space-y-1 list-disc list-outside pl-4">
+                            <TooltipContent side="top" className="max-w-[300px] text-xs font-semibold leading-relaxed normal-case tracking-normal">
+                              <ul className="space-y-1 list-disc list-outside pl-4 font-semibold">
                                 <li>Opening dialog displays at the start of every new session — set the scene for where the story begins.</li>
                                 <li>Start dialog blocks with the character name followed by ":" (e.g., "James:").</li>
                                 <li>Enclose spoken dialogue in " ".</li>
@@ -996,8 +996,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                       <TooltipTrigger asChild>
                         <Info className="w-3.5 h-3.5 text-blue-500 cursor-help" />
                       </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-[300px] text-xs normal-case tracking-normal">
-                        <ul className="space-y-1 list-disc list-outside pl-4">
+                      <TooltipContent side="top" className="max-w-[300px] text-xs font-semibold leading-relaxed normal-case tracking-normal">
+                        <ul className="space-y-1 list-disc list-outside pl-4 font-semibold">
                           <li>Upload images to be used for different scenes.</li>
                           <li>Add "tags" for each image.</li>
                           <li>Background adapts based on tags mentioned in dialog.</li>
@@ -1122,7 +1122,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                     <TooltipTrigger asChild>
                       <Info size={14} className="text-blue-500 cursor-help" />
                     </TooltipTrigger>
-                    <TooltipContent side="top" className="text-xs normal-case tracking-normal max-w-[300px]">
+                    <TooltipContent side="top" className="text-xs font-semibold leading-relaxed normal-case tracking-normal max-w-[300px]">
                       Select an art style you would like the AI to use when generating character avatars or images during your playthrough.
                     </TooltipContent>
                   </Tooltip>
