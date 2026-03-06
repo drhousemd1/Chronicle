@@ -3236,7 +3236,7 @@ const updatedChar: SideCharacter = {
                   <TooltipTrigger asChild>
                     <Info className={`w-3 h-3 cursor-help ${getTimeTextColor(currentTimeOfDay)} opacity-60`} />
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" className="text-xs normal-case tracking-normal max-w-[250px]">
+                  <TooltipContent side="bottom" align="start" className="text-xs font-semibold leading-relaxed normal-case tracking-normal max-w-[300px]">
                     Change time settings in Chat Settings
                   </TooltipContent>
                 </Tooltip>
