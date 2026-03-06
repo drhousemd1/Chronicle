@@ -693,7 +693,8 @@ const IndexContent = () => {
         lastMessage: openingText || '',
         messageCount: initialMessages.length,
         createdAt: newConv.createdAt,
-        updatedAt: newConv.updatedAt
+        updatedAt: newConv.updatedAt,
+        creatorName: null
       }, ...prev]);
       
       setActiveData(data);
