@@ -1,20 +1,32 @@
 
 
-## Plan: Fix Tooltip Bullet Text Alignment + Wider Width
+## Plan: Redesign Scene Gallery Section Layout
 
-### Problem
-`list-inside` causes wrapped text to flow under the bullet point. The user wants text to align consistently to the right of the bullet.
+### Changes to `src/components/chronicle/WorldTab.tsx`
 
-### Fix in `src/components/chronicle/WorldTab.tsx` (line 890)
+**1. Replace HintBox + buttons layout (lines 991-1022) with new structure:**
 
-Two changes:
-1. **Widen tooltip**: `max-w-[260px]` → `max-w-[300px]`
-2. **Fix bullet alignment**: Change `list-inside` to `list-outside` and add `pl-4` so bullets sit in the padding and all text lines align flush
+Remove the current side-by-side HintBox + buttons layout. Replace with:
+- A header row containing: left-aligned label "Scene Gallery Photos" with Info icon + tooltip (same pattern as Opening Dialog), and right-aligned Upload Image + AI Generate buttons side by side
+- Remove the outer `bg-[#3a3a3f]/30` wrapper that adds the lighter padding area — the buttons/label row sits directly inside the `p-6` container
 
-```tsx
-<TooltipContent side="top" className="max-w-[300px] text-xs normal-case tracking-normal">
-  <ul className="space-y-1 list-disc list-outside pl-4">
-```
+**2. Make buttons horizontal instead of vertical:**
 
-This makes wrapped lines stay indented to the right of the bullet instead of wrapping underneath it.
+The `SceneGalleryActionButtons` component currently uses `flex-col` layout. We need to change it to `flex-row` (side by side). This requires editing `src/components/chronicle/SceneGalleryActionButtons.tsx` — change `flex-col` to `flex-row` on the wrapper div (line 33).
+
+**3. Darken the empty state area (lines 1089-1094):**
+
+Change the empty state container from `border-2 border-dashed border-zinc-700` to also include a darker background matching text input areas: add `bg-[#1e1e22]` (or similar dark surface matching the input fields on the page). This makes the "No scenes uploaded" text more readable against a darker backdrop rather than blending with the surrounding padding.
+
+**4. Tooltip content for the Info icon:**
+
+Uses the same `list-outside pl-4` bullet pattern with `normal-case tracking-normal`:
+- Upload images to be used for different scenes.
+- Add "tags" for each image.
+- Background adapts based on tags mentioned in dialog.
+- Recommend: 1280x896, 4:3 landscape.
+
+### Files modified:
+- `src/components/chronicle/WorldTab.tsx` — layout restructure + tooltip + darker empty state
+- `src/components/chronicle/SceneGalleryActionButtons.tsx` — `flex-col` → `flex-row`
 
