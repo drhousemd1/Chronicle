@@ -11,7 +11,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { uploadSceneImage, uploadCoverImage, dataUrlToBlob } from '@/services/supabase-data';
 import { supabase } from '@/integrations/supabase/client';
 
-import { Sunrise, Sun, Sunset, Moon, ChevronUp, ChevronDown, Pencil, Sparkles, Share2, Trash2, Plus, X, Info } from 'lucide-react';
+import { Sunrise, Sun, Sunset, Moon, ChevronUp, ChevronDown, Pencil, Sparkles, Share2, Trash2, Plus, X, Info, Lock } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { StoryGoalsSection } from './StoryGoalsSection';
 import { useArtStyles } from '@/contexts/ArtStylesContext';
@@ -1180,17 +1180,22 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                   <div className="space-y-8">
                     
                     <div>
-                      <label className="block text-[10px] font-black uppercase text-zinc-400 tracking-widest mb-1">Dialog Formatting</label>
+                      <label className="flex items-center gap-1.5 text-[10px] font-black uppercase text-zinc-400 tracking-widest mb-1">
+                        Dialog Formatting
+                        <Lock className="w-3 h-3 text-zinc-500" />
+                      </label>
                       
                       {/* Critical rules - always present, read-only */}
-                      <HintBox hints={[
-                        'Enclose all spoken dialogue in " ".',
-                        'Enclose all physical actions or descriptions in * *.',
-                        'Enclose all internal thoughts in ( ).'
-                      ]} />
+                      <div className="bg-zinc-900/50 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-300">
+                        <ul className="list-disc list-inside space-y-1">
+                          <li>Enclose all spoken dialogue in " ".</li>
+                          <li>Enclose all physical actions or descriptions in * *.</li>
+                          <li>Enclose all internal thoughts in ( ).</li>
+                        </ul>
+                      </div>
                       
                       {/* User's additional formatting preferences - editable */}
-                      <div>
+                      <div className="mt-4">
                         <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1 block">Additional Formatting Rules (Optional)</label>
                         <AutoResizeTextarea 
                           value={world.core.dialogFormatting} 
