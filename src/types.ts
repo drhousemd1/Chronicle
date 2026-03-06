@@ -22,7 +22,7 @@ export type Conversation = {
   currentDay: number;
   currentTimeOfDay: TimeOfDay;
   timeProgressionMode?: TimeProgressionMode;
-  timeProgressionInterval?: number; // minutes: 10, 15, 30, or 60
+  timeProgressionInterval?: number; // minutes: 5, 10, 15, 30, or 60
   timeRemaining?: number; // seconds remaining on auto-timer (null = use full interval)
   createdAt: number;
   updatedAt: number;
@@ -34,7 +34,7 @@ export type OpeningDialog = {
   startingDay: number;
   startingTimeOfDay: TimeOfDay;
   timeProgressionMode?: TimeProgressionMode;
-  timeProgressionInterval?: number; // minutes: 10, 15, 30, or 60
+  timeProgressionInterval?: number; // minutes: 5, 10, 15, 30, or 60
 };
 
 // User-added extra row for hardcoded sections (Physical Appearance, Clothing)

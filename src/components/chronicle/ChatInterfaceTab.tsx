@@ -4100,6 +4100,7 @@ const updatedChar: SideCharacter = {
                     onChange={(e) => handleTimeProgressionChange('automatic', Number(e.target.value))}
                     className="bg-zinc-900/50 border border-zinc-700 rounded-lg text-sm text-white px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   >
+                    <option value={5}>5 minutes</option>
                     <option value={10}>10 minutes</option>
                     <option value={15}>15 minutes</option>
                     <option value={30}>30 minutes</option>
