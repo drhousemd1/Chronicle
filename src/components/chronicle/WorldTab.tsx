@@ -444,30 +444,25 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   const noAICharacterError = publishErrors.noAICharacter;
   const noUserCharacterError = publishErrors.noUserCharacter;
 
-  const AddCharacterPlaceholder: React.FC<{ label: string; sublabel: string; error?: string }> = ({ label, sublabel, error }) => (
-    <div className="space-y-1">
-      <button 
-        type="button"
-        onClick={() => setIsCharacterCreationOpen(true)}
-        className={cn(
-          "group/add w-full flex items-center gap-4 p-3 rounded-2xl transition-all duration-300 bg-[#3a3a3f]/30 hover:bg-[#3a3a3f]/50 cursor-pointer",
-          error
-            ? "border-2 border-dashed border-red-500"
-            : "border-2 border-dashed border-zinc-600 hover:border-zinc-500"
-        )}
-      >
-        <div className="w-14 h-14 shrink-0 rounded-xl bg-[#1a1a1f] border-2 border-dashed border-zinc-600 flex items-center justify-center text-zinc-500 transition-all duration-300 group-hover/add:border-zinc-400 group-hover/add:bg-[#3a3a3f]/70 group-hover/add:text-zinc-300">
-           <span className="text-2xl font-light">+</span>
-        </div>
-        <div className="text-left">
-          <div className="text-xs font-bold text-zinc-400 group-hover/add:text-zinc-200 transition-colors uppercase tracking-tight">{label}</div>
-          <div className="text-[9px] font-black text-zinc-500 group-hover/add:text-zinc-400 uppercase tracking-widest mt-0.5">{sublabel}</div>
-        </div>
-      </button>
-      {error && (
-        <p className="text-sm text-red-500 font-medium pl-2">{error}</p>
+  const AddCharacterPlaceholder: React.FC<{ label: string; sublabel: string; hasError?: boolean }> = ({ label, sublabel, hasError }) => (
+    <button 
+      type="button"
+      onClick={() => setIsCharacterCreationOpen(true)}
+      className={cn(
+        "group/add w-full flex items-center gap-4 p-3 rounded-2xl transition-all duration-300 bg-[#3a3a3f]/30 hover:bg-[#3a3a3f]/50 cursor-pointer",
+        hasError
+          ? "border-2 border-dashed border-red-500"
+          : "border-2 border-dashed border-zinc-600 hover:border-zinc-500"
       )}
-    </div>
+    >
+      <div className="w-14 h-14 shrink-0 rounded-xl bg-[#1a1a1f] border-2 border-dashed border-zinc-600 flex items-center justify-center text-zinc-500 transition-all duration-300 group-hover/add:border-zinc-400 group-hover/add:bg-[#3a3a3f]/70 group-hover/add:text-zinc-300">
+         <span className="text-2xl font-light">+</span>
+      </div>
+      <div className="text-left">
+        <div className="text-xs font-bold text-zinc-400 group-hover/add:text-zinc-200 transition-colors uppercase tracking-tight">{label}</div>
+        <div className="text-[9px] font-black text-zinc-500 group-hover/add:text-zinc-400 uppercase tracking-widest mt-0.5">{sublabel}</div>
+      </div>
+    </button>
   );
 
   return (
@@ -484,8 +479,9 @@ export const WorldTab: React.FC<WorldTabProps> = ({
             </div>
             <div className="space-y-2">
               {mainCharacters.map(char => <CharacterButton key={char.id} char={char} onSelect={onSelectCharacter} errors={publishErrors.characters?.[char.id]} />)}
-              <AddCharacterPlaceholder label="Add / Create" sublabel="AI Character" error={noAICharacterError} />
-              <AddCharacterPlaceholder label="Add / Create" sublabel="User Character" error={noUserCharacterError} />
+              <AddCharacterPlaceholder label="Add / Create" sublabel="Main Character" hasError={!!noAICharacterError || !!noUserCharacterError} />
+              {noAICharacterError && <p className="text-sm text-red-500 font-medium pl-2">{noAICharacterError}</p>}
+              {noUserCharacterError && <p className="text-sm text-red-500 font-medium pl-2">{noUserCharacterError}</p>}
             </div>
           </section>
 
