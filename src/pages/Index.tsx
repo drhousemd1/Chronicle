@@ -2442,6 +2442,30 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
         mode={aiPromptModal?.mode || 'fill'}
         isProcessing={isAiFilling || isAiGenerating}
       />
+
+      {/* Drafts Modal */}
+      <DraftsModal
+        open={draftsModalOpen}
+        onOpenChange={setDraftsModalOpen}
+        onLoadDraft={(draftId) => {
+          try {
+            const raw = localStorage.getItem(`draft_${draftId}`);
+            if (!raw) return;
+            const draft = JSON.parse(raw);
+            const data = draft.data || draft;
+            setActiveId(draftId);
+            setActiveData(data);
+            setActiveCoverImage(draft.coverImage ?? null);
+            setActiveCoverPosition(draft.coverPosition ?? null);
+            setActiveContentThemes(draft.contentThemes ?? defaultContentThemes);
+            setTab("world");
+            setSelectedCharacterId(null);
+            setPlayingConversationId(null);
+          } catch (e) {
+            console.warn('Could not load draft:', e);
+          }
+        }}
+      />
       </div>
     </TooltipProvider>
   );
