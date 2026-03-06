@@ -988,38 +988,42 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                 <h2 className="text-white text-xl font-bold tracking-tight">Scene Gallery</h2>
               </div>
               <div className="p-6">
-                <div className="p-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
-                  {/* HintBox + Buttons side by side */}
-                  <div className="flex items-start gap-4">
-                    <div className="flex-1">
-                      <HintBox hints={[
-                        "Upload images to be used for different scenes.",
-                        "Add \"tags\" for each image.",
-                        "Background adapts based on tags mentioned in dialog.",
-                        "Recommend: 1280x896, 4:3 landscape."
-                      ]} />
-                    </div>
-                    <div className="flex flex-col gap-2 shrink-0">
-                      <SceneGalleryActionButtons
-                        onUploadFromDevice={() => fileInputRef.current?.click()}
-                        onSelectFromLibrary={(imageUrl) => {
-                          const newScene: Scene = {
-                            id: uuid(),
-                            url: imageUrl,
-                            tags: [],
-                            createdAt: now()
-                          };
-                          onUpdateScenes([newScene, ...scenes]);
-                          setEditingScene(newScene);
-                          
-                        }}
-                        onGenerateClick={() => setShowSceneGenModal(true)}
-                        disabled={isUploading || isGeneratingScene}
-                        isUploading={isUploading}
-                        isGenerating={isGeneratingScene}
-                      />
-                    </div>
+                {/* Header row: label + tooltip on left, buttons on right */}
+                <div className="flex items-center justify-between gap-4 mb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-bold uppercase tracking-widest text-[hsl(var(--ui-text))]">Scene Gallery Photos</span>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="w-3.5 h-3.5 text-blue-500 cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-[300px] text-xs normal-case tracking-normal">
+                        <ul className="space-y-1 list-disc list-outside pl-4">
+                          <li>Upload images to be used for different scenes.</li>
+                          <li>Add "tags" for each image.</li>
+                          <li>Background adapts based on tags mentioned in dialog.</li>
+                          <li>Recommend: 1280×896, 4:3 landscape.</li>
+                        </ul>
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
+                  <SceneGalleryActionButtons
+                    onUploadFromDevice={() => fileInputRef.current?.click()}
+                    onSelectFromLibrary={(imageUrl) => {
+                      const newScene: Scene = {
+                        id: uuid(),
+                        url: imageUrl,
+                        tags: [],
+                        createdAt: now()
+                      };
+                      onUpdateScenes([newScene, ...scenes]);
+                      setEditingScene(newScene);
+                    }}
+                    onGenerateClick={() => setShowSceneGenModal(true)}
+                    disabled={isUploading || isGeneratingScene}
+                    isUploading={isUploading}
+                    isGenerating={isGeneratingScene}
+                  />
+                </div>
                   <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAddScene} />
                   <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
                     {scenes.map(scene => {
@@ -1087,13 +1091,12 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                       );
                     })}
                     {scenes.length === 0 && (
-                      <div className="col-span-full py-12 text-center text-zinc-500 border-2 border-dashed border-zinc-700 rounded-2xl">
+                      <div className="col-span-full py-12 text-center text-zinc-500 border-2 border-dashed border-zinc-700 rounded-2xl bg-[hsl(var(--ui-surface))]">
                          <p className="text-xs font-bold uppercase tracking-widest">No scenes uploaded</p>
                          <p className="text-sm mt-1 text-zinc-600">Upload images to enable dynamic backgrounds in chat.</p>
                       </div>
                     )}
                   </div>
-                </div>
               </div>
             </div>
           </section>
