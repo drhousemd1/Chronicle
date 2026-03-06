@@ -1,27 +1,20 @@
 
 
-## Plan: Fix Opening Dialog Tooltip Text Styling + Restore Bullet Points
+## Plan: Fix Tooltip Bullet Text Alignment + Wider Width
 
 ### Problem
-The tooltip inherits `uppercase tracking-widest` from its parent `<label>`, causing ALL CAPS with wide letter spacing. The Dynamic Backgrounds tooltip doesn't have this issue because its parent doesn't apply those transforms. Additionally, the content was flattened into one paragraph instead of keeping the original bullet points.
+`list-inside` causes wrapped text to flow under the bullet point. The user wants text to align consistently to the right of the bullet.
 
-### Fix in `src/components/chronicle/WorldTab.tsx` (lines 889-891)
+### Fix in `src/components/chronicle/WorldTab.tsx` (line 890)
 
-Add `normal-case tracking-normal` to `TooltipContent` to reset inherited text transforms, and restructure the content as a `<ul>` list:
+Two changes:
+1. **Widen tooltip**: `max-w-[260px]` → `max-w-[300px]`
+2. **Fix bullet alignment**: Change `list-inside` to `list-outside` and add `pl-4` so bullets sit in the padding and all text lines align flush
 
 ```tsx
-<TooltipContent side="top" className="max-w-[260px] text-xs normal-case tracking-normal">
-  <ul className="space-y-1 list-disc list-inside">
-    <li>Opening dialog displays at the start of every new session — set the scene for where the story begins.</li>
-    <li>Start dialog blocks with the character name followed by ":" (e.g., "James:").</li>
-    <li>Enclose spoken dialogue in " ".</li>
-    <li>Enclose physical actions in * *.</li>
-    <li>Enclose internal thoughts in ( ).</li>
-  </ul>
-</TooltipContent>
+<TooltipContent side="top" className="max-w-[300px] text-xs normal-case tracking-normal">
+  <ul className="space-y-1 list-disc list-outside pl-4">
 ```
 
-Two changes, one location:
-1. **`normal-case tracking-normal`** — resets inherited uppercase/tracking so text renders identically to the Chat Settings tooltip
-2. **`<ul>` with bullet points** — restores the structured format from the original HintBox
+This makes wrapped lines stay indented to the right of the bullet instead of wrapping underneath it.
 
