@@ -1378,7 +1378,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                           {publishErrors.openingDialog && <li>{publishErrors.openingDialog}</li>}
                           {publishErrors.tags && <li>{publishErrors.tags}</li>}
                           {publishErrors.storyType && <li>{publishErrors.storyType}</li>}
-                          {publishErrors.noCharacters && <li>{publishErrors.noCharacters}</li>}
+                          {publishErrors.noAICharacter && <li>{publishErrors.noAICharacter}</li>}
+                          {publishErrors.noUserCharacter && <li>{publishErrors.noUserCharacter}</li>}
                           {publishErrors.characters && Object.entries(publishErrors.characters).map(([cid, msgs]) => {
                             const char = characters.find(c => c.id === cid);
                             const charName = char?.name && char.name !== 'New Character' ? char.name : 'Unnamed character';
