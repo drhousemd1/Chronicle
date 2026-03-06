@@ -1,33 +1,28 @@
 
-You’re right, and the inconsistency is reproducible from the code.
 
-Root cause:
-- These hint tooltips are embedded under labels/spans with different font weights (`font-semibold`, `font-bold`, `font-black`).
-- Tooltip text style is not explicitly locked for weight, so each tooltip ends up visually different depending on where it’s used.
+## Plan: Restyle Dialog Formatting in World Codex
 
-Implementation plan (make it consistent with the Dynamic Background tooltip look):
-1. Standardize one shared “info hint tooltip” text style and reuse it everywhere these blue info icons are used.
-   - Typography lock: `text-xs`, `font-semibold`, `leading-relaxed`, `normal-case`, `tracking-normal`.
-   - Keep existing per-tooltip max width (e.g., 220/300) so layout doesn’t jump.
-2. Apply that exact style to all 4 affected hint tooltips:
-   - Dynamic Backgrounds (reference tooltip) in `src/components/chronicle/ChatInterfaceTab.tsx`
-   - Opening Dialog tooltip in `src/components/chronicle/WorldTab.tsx`
-   - Scene Gallery Photos tooltip in `src/components/chronicle/WorldTab.tsx`
-   - Art Style Selection tooltip in `src/components/chronicle/WorldTab.tsx`
-3. Normalize bullet tooltip internals so they render with same weight as non-bullet tooltip text.
-   - Add explicit list text style (`font-semibold` + existing bullet spacing classes) for Opening Dialog and Scene Gallery list content.
-4. Do not change spacing/layout in this pass.
-   - No changes to section padding, title alignment, button position, or card/container dimensions.
-   - This pass is strictly text-consistency for hint boxes.
+### Changes in `src/components/chronicle/WorldTab.tsx`
 
-Technical files touched:
-- `src/components/chronicle/WorldTab.tsx`
-  - Update 3 tooltip content class strings and 2 list class strings.
-- `src/components/chronicle/ChatInterfaceTab.tsx`
-  - Update Dynamic Background tooltip class string to the same canonical text style.
+**1. Replace HintBox with a styled read-only container matching text input fields**
 
-Validation checklist after implementation:
-- All four hint popups have identical visual weight and readability.
-- Opening Dialog and Scene Gallery no longer appear heavier than Dynamic Background.
-- Art Style tooltip matches the same typography standard.
-- No regressions in uppercase/tracking bleed, and no clipping/layout regressions.
+Lines 1182-1190: Replace the current `<label>` + `<HintBox>` with:
+- A label row containing "Dialog Formatting" text + a `Lock` icon (from lucide-react) to the right, indicating the rules are locked/immutable
+- A read-only container styled like the text input fields below it: `bg-zinc-900/50 border border-zinc-700 rounded-lg px-3 py-2` with normal bullet points (`•`) instead of diamonds (`◆`)
+
+**2. Add spacing between the dialog formatting container and "Additional Formatting Rules"**
+
+The "Additional Formatting Rules" `<div>` (line 1193) currently has no top margin. Add `mt-4` to create breathing room between it and the locked rules container above.
+
+**3. Import `Lock` icon**
+
+Add `Lock` to the lucide-react import statement.
+
+### What stays the same
+- The text content of the three rules
+- The "Additional Formatting Rules" label and textarea
+- The outer World Codex container structure
+
+### Files changed
+- `src/components/chronicle/WorldTab.tsx` — ~15 lines modified
+
