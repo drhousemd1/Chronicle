@@ -1,19 +1,11 @@
 
 
-## Plan: Fix Corrupted CSS Classes + Proper Tile Sizing
+## Plan: Show Full Image in Sidebar Theme Previews
 
-The file has **three corrupted CSS class strings** from previous edits that broke the entire modal. Here are the exact fixes:
+### Problem
+The tiles use `object-cover` which crops tall portrait images to fill the container. Since the source images are ~300×1080 (roughly 1:3.6 ratio) but tiles are `aspect-[2/3]` (1:1.5), a large portion of each image is cropped out.
 
-### File: `src/components/chronicle/SidebarThemeModal.tsx`
+### Fix (single file: `SidebarThemeModal.tsx`)
 
-**1. Fix button class (line 68)**
-`text-[10px]0px]0px]` → `text-[10px]`
-
-**2. Fix scroll container class (line 94)**
-`overflow-y-a pt-2uto  pt-2pr-1` → `overflow-y-auto pt-2 pr-1`
-
-**3. Fix grid class (line 95)**
-`grid g5 md:grid-cols-7id-cols-5 gap-3` → `grid grid-cols-5 md:grid-cols-7 gap-3`
-
-These three corrupted strings explain all visible bugs: no grid layout, no scrolling, oversized button text, and the big gray box.
+**Change `object-cover` to `object-contain`** on the background preview `<img>` tag (line ~130). This will scale the entire image to fit within the tile without cropping, showing the full content. The tile's dark `bg-zinc-800/50` background will fill any letterbox space naturally.
 
