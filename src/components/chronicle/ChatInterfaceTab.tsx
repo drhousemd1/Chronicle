@@ -3295,9 +3295,20 @@ const updatedChar: SideCharacter = {
                 </Tooltip>
               </div>
               {timeProgressionMode === 'automatic' && (
-                <span className="bg-black/50 rounded-md px-2 py-0.5 text-xs font-mono text-white">
-                  {formatCountdown(timeRemaining)}
-                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setIsTimerPaused(prev => !prev)}
+                    className="p-0.5 rounded hover:bg-black/30 transition-colors"
+                    title={isTimerPaused ? 'Resume timer' : 'Pause timer'}
+                  >
+                    {isTimerPaused
+                      ? <Play className="w-3.5 h-3.5 text-white fill-white" />
+                      : <Pause className="w-3.5 h-3.5 text-white" />}
+                  </button>
+                  <span className="bg-black/50 rounded-md px-2 py-0.5 text-xs font-mono text-white">
+                    {formatCountdown(timeRemaining)}
+                  </span>
+                </div>
               )}
             </div>
             <div className="flex gap-4 items-center">
