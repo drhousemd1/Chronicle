@@ -1,21 +1,16 @@
 
+## Plan: Change Info Icon Color to Slate Blue for Consistency Testing
 
-## Plan: Rename "Show Background" → "Dynamic Backgrounds" with Tooltip + Remove Footer
+The user wants to test using the slate blue brand accent color (#4a5f7f) for the Info icon in the Chat Settings modal to see if it creates a more visually consistent appearance across different background colors throughout the app.
 
-### Changes to `src/components/chronicle/ChatInterfaceTab.tsx`
+**File**: `src/components/chronicle/ChatInterfaceTab.tsx` (line 3770)
 
-**1. Update the toggle row (lines 3761-3768)**
-- Rename label from "Show Background" to "Dynamic Backgrounds"
-- Add an `Info` icon (from lucide-react) after the label text
-- Wrap the icon in a `Tooltip` (from `@/components/ui/tooltip`) that shows: "Backgrounds will automatically change based on the story context if scene images are tagged in the gallery."
-- Style the icon as `w-3.5 h-3.5 text-zinc-500` to keep it subtle
+**Change**:
+- Current: `<Info className="w-3.5 h-3.5 text-zinc-500 cursor-help" />`
+- Updated: `<Info className="w-3.5 h-3.5 text-[#4a5f7f] cursor-help" />`
 
-**2. Remove the footer note (lines 3930-3933)**
-- Delete the `<p>` element containing the same helper text, since it's now on the tooltip
+This replaces the neutral gray (`text-zinc-500`) with the application's slate blue brand accent color (`#4a5f7f`), which is currently used for story tile borders and gallery card accents.
 
-**3. Add imports**
-- Add `Info` from `lucide-react` (if not already imported)
-- Add `Tooltip, TooltipTrigger, TooltipContent, TooltipProvider` from `@/components/ui/tooltip` (if not already imported)
+**Outcome**: The icon will display in slate blue, making it stand out more and creating a consistent visual language with other branded elements. If the user likes this approach, the same color can be applied to all other hint icons throughout the application when replacing the hint block text areas.
 
-Two edits in one file.
-
+One line changed. Simple color test.
