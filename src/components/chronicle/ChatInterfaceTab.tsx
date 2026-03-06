@@ -321,6 +321,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const [timeRemaining, setTimeRemaining] = useState<number>(15 * 60); // seconds
   const [pausedAt, setPausedAt] = useState<number | null>(null);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const timeRemainingRef = useRef<number>(15 * 60);
   const scrollRef = useRef<HTMLDivElement>(null);
   
   // Lazy loading state for scroll-based message loading
@@ -872,9 +873,30 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       setCurrentTimeOfDay(conversation.currentTimeOfDay || 'day');
       setTimeProgressionMode(conversation.timeProgressionMode || 'manual');
       setTimeProgressionInterval(conversation.timeProgressionInterval || 15);
-      setTimeRemaining((conversation.timeProgressionInterval || 15) * 60);
+      const restored = conversation.timeRemaining != null
+        ? conversation.timeRemaining
+        : (conversation.timeProgressionInterval || 15) * 60;
+      setTimeRemaining(restored);
+      timeRemainingRef.current = restored;
     }
   }, [conversation?.id]);
+
+  // Keep ref in sync with state so cleanup captures latest value
+  useEffect(() => { timeRemainingRef.current = timeRemaining; }, [timeRemaining]);
+
+  // Persist timeRemaining on unmount / navigation away
+  useEffect(() => {
+    const saveTimeRemaining = () => {
+      if (timeProgressionMode === 'automatic' && conversationId) {
+        supabaseData.updateConversationMeta(conversationId, { timeRemaining: timeRemainingRef.current });
+      }
+    };
+    window.addEventListener('beforeunload', saveTimeRemaining);
+    return () => {
+      window.removeEventListener('beforeunload', saveTimeRemaining);
+      saveTimeRemaining();
+    };
+  }, [conversationId, timeProgressionMode]);
 
   // Auto-advance timer — only runs when mode is 'automatic'
   const TIME_SEQUENCE: TimeOfDay[] = ['sunrise', 'day', 'sunset', 'night'];
