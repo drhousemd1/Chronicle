@@ -1964,12 +1964,8 @@ const IndexContent = () => {
                       {tab !== "library" && (
                       <button
                         type="button"
-                        onClick={async () => {
-                          setIsSaving(true);
-                          const safety = setTimeout(() => { console.warn('CharSave safety timeout'); setIsSaving(false); }, 12000);
-                          try {
-                            await handleSave(false);
-                          } finally { clearTimeout(safety); setIsSaving(false); }
+                        onClick={() => {
+                          handleSaveCharacter();
                         }}
                         disabled={isSaving || isSavingAndClosing}
                         className="flex h-10 px-6 items-center justify-center gap-2
