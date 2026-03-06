@@ -1,11 +1,28 @@
 
 
-## Plan: Show Full Image in Sidebar Theme Previews
+## Fix: Show More of Sky Images Without Letterboxing
 
 ### Problem
-The tiles use `object-cover` which crops tall portrait images to fill the container. Since the source images are ~300×1080 (roughly 1:3.6 ratio) but tiles are `aspect-[2/3]` (1:1.5), a large portion of each image is cropped out.
+`object-cover` on a narrow horizontal panel crops these tall sky images heavily, showing only a tiny zoomed-in portion. `object-contain` would show the full image but leave ugly letterbox bars.
 
-### Fix (single file: `SidebarThemeModal.tsx`)
+### Solution
+Use `object-cover` (keeps full bleed, no bars) but give the panel significantly more height so the crop is much less aggressive. Since these are sky images with no focal point, a taller panel naturally reveals more of each image.
 
-**Change `object-cover` to `object-contain`** on the background preview `<img>` tag (line ~130). This will scale the entire image to fit within the tile without cropping, showing the full content. The tile's dark `bg-zinc-800/50` background will fill any letterbox space naturally.
+**File: `src/components/chronicle/ChatInterfaceTab.tsx`**
+
+**Line 3279** — Add `min-h-[200px]` to the section so the images have more vertical room to breathe, drastically reducing how much gets cropped while keeping `object-cover` for zero letterboxing:
+
+```tsx
+className="flex-shrink-0 rounded-xl p-4 border border-slate-200 shadow-lg transition-all duration-700 relative overflow-hidden min-h-[200px]"
+```
+
+**Line 3287** — Keep `object-cover` (no letterboxing guaranteed) but add `object-center` explicitly to ensure even distribution of any remaining crop:
+
+```tsx
+className={`absolute inset-0 w-full h-full object-cover object-center rounded-xl transition-opacity duration-700 ${
+  currentTimeOfDay === time ? 'opacity-100' : 'opacity-0'
+}`}
+```
+
+This keeps full-bleed coverage (zero bars) while showing substantially more of each sky image.
 
