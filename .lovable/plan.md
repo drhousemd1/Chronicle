@@ -1,18 +1,41 @@
 
 
-## Plan: Add 5-Minute Time Interval Option
+## Plan: Restyle Sidebar Theme Modal to Dark Theme
 
-### Changes
+### What changes
 
-Two files need a single line added to their time interval dropdowns:
+**Single file: `src/components/chronicle/SidebarThemeModal.tsx`**
 
-**1. `src/components/chronicle/ChatInterfaceTab.tsx`** (~line 4103)
-Add `<option value={5}>5 minutes</option>` before the 10 minutes option.
+Replace the white Card-based layout with the standard dark modal pattern used by Chat Settings and other Chronicle modals.
 
-**2. `src/components/chronicle/WorldTab.tsx`** (~line 1041)
-Add `<option value={5}>5 minutes</option>` before the 10 minutes option.
+**1. DialogContent** — Switch from `bg-transparent` + white `Card` wrapper to direct dark styling:
+- `bg-zinc-900 border-white/10 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.5)]`
+- Remove the `Card` wrapper entirely
 
-**3. `src/types.ts`** — Update comments from `// minutes: 10, 15, 30, or 60` to `// minutes: 5, 10, 15, 30, or 60` (lines 25, 37).
+**2. Header** — Dark theme colors:
+- Title: `text-white` instead of `text-slate-900`
+- Border: `border-b border-white/10` instead of `border-slate-100`
+- Icon stroke color inherits from white text
 
-No other changes needed — the timer logic already works with any numeric interval value, and the default of 15 minutes remains unchanged for scenarios without a selection.
+**3. Upload button** — Replace the ghost text link with a solid dark button matching the BackgroundPickerModal pattern:
+- `bg-zinc-700 text-white hover:bg-zinc-600 font-black text-xs tracking-widest uppercase h-9 gap-1 px-3 rounded-lg`
+- Dropdown menu: `bg-zinc-800 border-white/10` with items using `text-zinc-200 hover:bg-zinc-700`
+
+**4. Recommended text** — `text-zinc-500` instead of `text-slate-400`
+
+**5. Default tile** — Dark surface:
+- Background: `bg-zinc-800/50` instead of `bg-slate-50`
+- Border: `border-white/10` default, `ring-blue-400` when selected (consistent with brand)
+- Ring offset color: `ring-offset-zinc-900` so offset matches dark bg
+- Icon/text: `text-zinc-500` instead of `text-slate-300/400`
+
+**6. Background tiles** — Same dark treatment:
+- `bg-zinc-800/50 border-white/10`, selected: `ring-2 ring-blue-400 ring-offset-2 ring-offset-zinc-900`
+- Delete button stays `bg-rose-500`
+
+**7. Empty state** — `border-zinc-700 text-zinc-500` instead of slate-100/400
+
+**8. Check badge** — Keep `bg-blue-500` (works on both themes)
+
+No logic changes, no new dependencies. Pure cosmetic update to one file.
 
