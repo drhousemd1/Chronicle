@@ -991,7 +991,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                 {/* Header row: label + tooltip on left, buttons on right */}
                 <div className="flex items-center justify-between gap-4 mb-4">
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-bold uppercase tracking-widest text-[hsl(var(--ui-text))]">Scene Gallery Photos</span>
+                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Scene Gallery Photos</label>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Info className="w-3.5 h-3.5 text-blue-500 cursor-help" />
