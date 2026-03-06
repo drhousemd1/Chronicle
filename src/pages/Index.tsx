@@ -234,6 +234,11 @@ const IndexContent = () => {
     if (user?.id) checkIsAdmin(user.id).then(setIsAdminState);
   }, [user?.id]);
 
+  // Initialize draft count from registry
+  useEffect(() => {
+    setDraftCount(getDraftRegistry().length);
+  }, []);
+
   // Track whether conversation previews have been enriched
   const [conversationsEnriched, setConversationsEnriched] = useState(false);
 
