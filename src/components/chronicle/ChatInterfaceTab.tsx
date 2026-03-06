@@ -3100,7 +3100,7 @@ const updatedChar: SideCharacter = {
     return (
       <div
         key={char.id}
-        className={`min-h-[140px] rounded-2xl transition-all duration-300 border-2 backdrop-blur-sm relative bg-white/30 border-transparent hover:bg-white ${isUpdating ? 'ring-2 ring-blue-400/60' : ''}`}
+        className={`min-h-[140px] rounded-2xl transition-all duration-300 border-2 backdrop-blur-sm relative ${!sidebarBgIsLight ? 'bg-white/30 border-transparent hover:bg-white' : 'bg-black/30 border-transparent hover:bg-black/50'} ${isUpdating ? 'ring-2 ring-blue-400/60' : ''}`}
       >
         {/* Blue vignette overlay - scoped to this card */}
         {isUpdating && (
@@ -3128,11 +3128,11 @@ const updatedChar: SideCharacter = {
         <div className="relative">
           <div className="w-full flex flex-col items-center gap-2 p-3 text-center">
             <div className="relative">
-              <div className={`w-20 h-20 rounded-full border-2 shadow-sm overflow-hidden bg-slate-50 transition-all duration-300 border-slate-100`}>
+              <div className={`w-20 h-20 rounded-full border-2 shadow-sm overflow-hidden transition-all duration-300 ${!sidebarBgIsLight ? 'bg-slate-50 border-slate-100' : 'bg-zinc-800 border-white/20'}`}>
                 {char.avatarDataUrl ? (
                   <img src={char.avatarDataUrl} alt={char.name} className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center font-black text-slate-300 text-xl italic uppercase">
+                  <div className={`w-full h-full flex items-center justify-center font-black text-xl italic uppercase ${!sidebarBgIsLight ? 'text-slate-300' : 'text-zinc-400'}`}>
                     {char.name.charAt(0)}
                   </div>
                 )}
@@ -3148,18 +3148,18 @@ const updatedChar: SideCharacter = {
                 {char.controlledBy}
               </Badge>
             </div>
-            <div className="text-sm font-bold tracking-tight text-slate-800">{char.name}</div>
+            <div className={`text-sm font-bold tracking-tight ${!sidebarBgIsLight ? 'text-slate-800' : 'text-white'}`}>{char.name}</div>
           </div>
           
           {/* Edit dropdown menu - always visible */}
           <div className="absolute top-2 right-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-700 hover:text-slate-900 transition-colors">
+                <button className={`p-1.5 rounded-lg transition-colors ${!sidebarBgIsLight ? 'hover:bg-slate-200 text-slate-700 hover:text-slate-900' : 'hover:bg-white/20 text-white/70 hover:text-white'}`}>
                   <MoreVertical className="w-4 h-4" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-white border-slate-200 shadow-lg z-50">
+              <DropdownMenuContent align="end" className={`shadow-lg z-50 ${!sidebarBgIsLight ? 'bg-white border-slate-200' : 'bg-zinc-800 border-white/10 text-zinc-200'}`}>
                 <DropdownMenuItem onClick={() => openCharacterEditModal(char)}>
                   <Pencil className="w-4 h-4 mr-2" />
                   Edit character
@@ -3349,6 +3349,7 @@ const updatedChar: SideCharacter = {
                         onStartEdit={() => openCharacterEditModal(char as SideCharacter)}
                         onDelete={() => handleDeleteSideCharacter(char.id)}
                         isUpdating={updatingCharacterIds.has(char.id)}
+                        isDarkBg={!sidebarBgIsLight}
                       />
                     )
                 )}
@@ -3359,11 +3360,11 @@ const updatedChar: SideCharacter = {
               </div>
               {/* Full-width card-like overflow indicator */}
               {mainCharactersForDisplay.length > 3 && canScrollDownMainChars && (
-                <div className="mt-0 w-full rounded-2xl bg-white/30 backdrop-blur-sm border border-white/10 flex items-center justify-center py-1.5">
-                  <ChevronDown className="w-4 h-4 text-black/80" />
-                  <span className="text-xs text-black/80 font-medium ml-1">
-                    {mainCharactersForDisplay.length - 3}
-                  </span>
+                 <div className={`mt-0 w-full rounded-2xl backdrop-blur-sm border border-white/10 flex items-center justify-center py-1.5 ${!sidebarBgIsLight ? 'bg-white/30' : 'bg-black/30'}`}>
+                   <ChevronDown className={`w-4 h-4 ${!sidebarBgIsLight ? 'text-black/80' : 'text-white/80'}`} />
+                   <span className={`text-xs font-medium ml-1 ${!sidebarBgIsLight ? 'text-black/80' : 'text-white/80'}`}>
+                     {mainCharactersForDisplay.length - 3}
+                   </span>
                 </div>
               )}
             </div>
@@ -3391,6 +3392,7 @@ const updatedChar: SideCharacter = {
                         onStartEdit={() => openCharacterEditModal(char as SideCharacter)}
                         onDelete={() => handleDeleteSideCharacter(char.id)}
                         isUpdating={updatingCharacterIds.has(char.id)}
+                        isDarkBg={!sidebarBgIsLight}
                       />
                     )
                 )}
