@@ -1115,13 +1115,20 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                 </svg>
                 <h2 className="text-white text-xl font-bold tracking-tight">Art Style Preference</h2>
               </div>
-              <div className="p-6">
-                <div className="p-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
-                  <HintBox hints={[
-                    "Select an art style you would like the AI to use when generating character avatars or images during your playthrough."
-                  ]} />
-                  
-                  <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+              <div className="p-6 space-y-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">Art Style Selection</span>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info size={14} className="text-blue-500 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="text-xs normal-case tracking-normal max-w-[300px]">
+                      Select an art style you would like the AI to use when generating character avatars or images during your playthrough.
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <div className="p-3 bg-zinc-900/50 rounded-xl border border-zinc-700 overflow-visible">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                     {AVATAR_STYLES.map((style) => (
                       <button
                         key={style.id}
