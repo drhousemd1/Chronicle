@@ -938,7 +938,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       });
     }, 1000);
     return () => clearInterval(tick);
-  }, [timeProgressionMode, currentTimeOfDay, currentDay]);
+  }, [timeProgressionMode, currentTimeOfDay, currentDay, isTimerPaused]);
 
   // Visibility API — pause/resume timer when tab is hidden
   useEffect(() => {
