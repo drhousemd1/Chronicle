@@ -37,7 +37,7 @@ export const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="gap-2 sm:gap-2">
-          <AlertDialogCancel className="rounded-2xl bg-[hsl(240_6%_18%)] border-[hsl(0_0%_100%_/_0.10)] text-[hsl(var(--ui-text))] hover:bg-[hsl(240_6%_22%)] h-10 px-6 text-[10px] font-bold uppercase tracking-wider shadow-[0_10px_30px_hsl(0_0%_0%_/_0.35)]">
+          <AlertDialogCancel className="rounded-xl bg-[hsl(240_6%_18%)] border-[hsl(0_0%_100%_/_0.10)] text-[hsl(var(--ui-text))] hover:bg-[hsl(240_6%_22%)] h-10 px-6 text-[10px] font-bold uppercase tracking-wider shadow-[0_10px_30px_hsl(0_0%_0%_/_0.35)]">
             Cancel
           </AlertDialogCancel>
           <AlertDialogAction
