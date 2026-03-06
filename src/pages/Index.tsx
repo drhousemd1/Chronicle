@@ -1722,6 +1722,25 @@ const IndexContent = () => {
                   <button
                     type="button"
                     onClick={async () => {
+                      if (!activeId || !activeData) return;
+                      // Run validation before saving to DB
+                      const { validateForPublish, hasPublishErrors } = await import('@/utils/publish-validation');
+                      const errors = validateForPublish({
+                        scenarioTitle: activeData.world.core.scenarioName || '',
+                        world: activeData.world,
+                        characters: activeData.characters,
+                        openingDialog: activeData.story.openingDialog,
+                        contentThemes: activeContentThemes,
+                        coverImage: activeCoverImage,
+                      });
+                      if (hasPublishErrors(errors)) {
+                        // Switch to world tab so user sees errors (already on world tab but ensure state)
+                        setTab("world");
+                        // WorldTab will pick up errors via live re-validation when publish button is clicked;
+                        // we trigger it by simulating a publish-error state. We'll dispatch a custom event.
+                        window.dispatchEvent(new CustomEvent('chronicle:save-validation-failed', { detail: errors }));
+                        return;
+                      }
                       setIsSavingAndClosing(true);
                       const safety = setTimeout(() => { console.warn('Save&Close safety timeout'); setIsSavingAndClosing(false); }, 12000);
                       try {
@@ -1735,17 +1754,26 @@ const IndexContent = () => {
                   </button>
                   <button
                     type="button"
-                    onClick={async () => {
-                      setIsSaving(true);
-                      const safety = setTimeout(() => { console.warn('Save safety timeout'); setIsSaving(false); }, 12000);
+                    onClick={() => {
+                      if (!activeId || !activeData) return;
                       try {
-                        await handleSave(false);
-                      } finally { clearTimeout(safety); setIsSaving(false); }
+                        localStorage.setItem(`draft_${activeId}`, JSON.stringify({
+                          data: activeData,
+                          coverImage: activeCoverImage,
+                          coverPosition: activeCoverPosition,
+                          contentThemes: activeContentThemes,
+                          savedAt: Date.now(),
+                        }));
+                        setIsSaving(true);
+                        setTimeout(() => setIsSaving(false), 1200);
+                      } catch (e) {
+                        console.warn('Could not save draft to localStorage:', e);
+                      }
                     }}
                     disabled={isSaving || isSavingAndClosing}
                     className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider disabled:opacity-50 disabled:pointer-events-none"
                   >
-                    {isSaving ? 'Saving...' : 'Save'}
+                    {isSaving ? 'Draft Saved!' : 'Save Draft'}
                   </button>
                 </>
               )}
