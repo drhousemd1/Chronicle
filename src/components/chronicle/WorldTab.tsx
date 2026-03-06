@@ -1025,7 +1025,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                   />
                 </div>
                   <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAddScene} />
-                  <div className="mt-1 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+                  <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
                     {scenes.map(scene => {
                       const sceneTags = scene.tags ?? ((scene as any).tag ? [(scene as any).tag] : []);
                       
@@ -1093,7 +1093,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                     {scenes.length === 0 && (
                       <div className="col-span-full py-12 text-center text-zinc-500 border-2 border-dashed border-zinc-700 rounded-2xl bg-[hsl(var(--ui-surface))]">
                          <p className="text-xs font-bold uppercase tracking-widest">No scenes uploaded</p>
-                         <p className="text-sm mt-1 text-zinc-600">Upload images to enable dynamic backgrounds in chat.</p>
+                         <p className="text-sm mt-1 text-zinc-500">Upload images to enable dynamic backgrounds in chat.</p>
                       </div>
                     )}
                   </div>
