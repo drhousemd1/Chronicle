@@ -1,11 +1,22 @@
 
 
-## Plan: Show Full Image in Sidebar Theme Previews
+## Standardize Gallery PLAY Button to Match My Stories
 
-### Problem
-The tiles use `object-cover` which crops tall portrait images to fill the container. Since the source images are ~300×1080 (roughly 1:3.6 ratio) but tiles are `aspect-[2/3]` (1:1.5), a large portion of each image is cropped out.
+The two PLAY buttons use different styling:
 
-### Fix (single file: `SidebarThemeModal.tsx`)
+| Property | My Stories (`StoryHub`) | Gallery (`GalleryStoryCard`) |
+|----------|------------------------|------------------------------|
+| Height | `h-8` | `py-2.5` |
+| Font size | `text-[10px]` | `text-xs` (12px) |
+| Letter spacing | `tracking-wider` | none |
+| Line height | `leading-none` | default |
+| Text transform | `uppercase` class | hardcoded "PLAY" |
 
-**Change `object-cover` to `object-contain`** on the background preview `<img>` tag (line ~130). This will scale the entire image to fit within the tile without cropping, showing the full content. The tile's dark `bg-zinc-800/50` background will fill any letterbox space naturally.
+**Fix:** Update the Gallery PLAY button in `GalleryStoryCard.tsx` (line 134) to use the same classes as StoryHub:
+
+```
+h-8 px-4 rounded-xl bg-blue-600 text-white hover:bg-blue-500 text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl transition-colors
+```
+
+Single line change in one file.
 
