@@ -3,8 +3,8 @@ import { UserBackground } from "@/types";
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from "@/components/ui/dialog";
-import { Card, Button } from "./UI";
 import { Icons } from "@/constants";
 import { Check, Image, ChevronDown, Upload } from "lucide-react";
 import {
@@ -51,39 +51,42 @@ export function SidebarThemeModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-2xl p-0 border-0 bg-transparent shadow-none [&>button]:hidden">
-        <Card className="p-8 !shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)] border-transparent ring-1 ring-slate-900/5">
-          {/* Header */}
-          <div className="flex justify-between items-center mb-8 pb-4 border-b border-slate-100">
-            <h2 className="text-lg font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
-                <circle cx="9" cy="9" r="2"/>
-                <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
-              </svg>
-              Sidebar Theme
-            </h2>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="text-blue-600 font-black text-xs tracking-widest uppercase h-9 gap-1" disabled={isUploading}>
-                  {isUploading ? "Uploading..." : "+ Upload Image"} <ChevronDown className="w-3 h-3" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44 bg-white z-50">
-                <DropdownMenuItem onClick={() => fileInputRef.current?.click()} className="cursor-pointer">
-                  <Upload className="w-4 h-4 mr-2" /> From Device
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setIsPickerOpen(true)} className="cursor-pointer">
-                  <Image className="w-4 h-4 mr-2" /> From Library
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <input type="file" ref={fileInputRef} className="hidden" accept="image/jpeg,image/png,image/webp" onChange={handleFileChange} />
-            <ImageLibraryPickerModal isOpen={isPickerOpen} onClose={() => setIsPickerOpen(false)} onSelect={(url) => { onSelectBackground(url as any); setIsPickerOpen(false); }} />
-          </div>
+      <DialogContent className="sm:max-w-2xl p-0 bg-zinc-900 border-white/10 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.5)] [&>button]:hidden">
+        {/* Header */}
+        <div className="flex justify-between items-center px-6 pt-6 pb-4 border-b border-white/10">
+          <DialogTitle className="text-lg font-black text-white flex items-center gap-2 uppercase tracking-tight">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+              <circle cx="9" cy="9" r="2"/>
+              <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+            </svg>
+            Sidebar Theme
+          </DialogTitle>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="inline-flex items-center bg-zinc-700 text-white hover:bg-zinc-600 font-black text-xs tracking-widest uppercase h-9 gap-1 px-3 rounded-lg transition-colors disabled:opacity-50"
+                disabled={isUploading}
+              >
+                {isUploading ? "Uploading..." : "+ Upload Image"} <ChevronDown className="w-3 h-3" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44 bg-zinc-800 border-white/10 z-50">
+              <DropdownMenuItem onClick={() => fileInputRef.current?.click()} className="cursor-pointer text-zinc-200 hover:!bg-zinc-700 focus:!bg-zinc-700 focus:!text-white">
+                <Upload className="w-4 h-4 mr-2" /> From Device
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setIsPickerOpen(true)} className="cursor-pointer text-zinc-200 hover:!bg-zinc-700 focus:!bg-zinc-700 focus:!text-white">
+                <Image className="w-4 h-4 mr-2" /> From Library
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <input type="file" ref={fileInputRef} className="hidden" accept="image/jpeg,image/png,image/webp" onChange={handleFileChange} />
+          <ImageLibraryPickerModal isOpen={isPickerOpen} onClose={() => setIsPickerOpen(false)} onSelect={(url) => { onSelectBackground(url as any); setIsPickerOpen(false); }} />
+        </div>
 
+        <div className="px-6 pb-6">
           {/* Recommended dimensions */}
-          <p className="text-xs text-slate-400 mb-6 text-center">
+          <p className="text-xs text-zinc-500 mb-6 text-center">
             Recommended: 300px × 1080px (portrait orientation)
           </p>
 
@@ -93,17 +96,17 @@ export function SidebarThemeModal({
             <button
               type="button"
               onClick={() => onSelectBackground(null)}
-              className={`group relative aspect-video rounded-xl overflow-hidden border shadow-sm bg-slate-50 transition-all cursor-pointer ${
+              className={`group relative aspect-video rounded-xl overflow-hidden border shadow-sm bg-zinc-800/50 transition-all cursor-pointer ${
                 selectedBackgroundId === null 
-                  ? 'ring-2 ring-blue-500 ring-offset-2 border-blue-200' 
-                  : 'border-slate-200 hover:border-slate-300'
+                  ? 'ring-2 ring-blue-400 ring-offset-2 ring-offset-zinc-900 border-blue-400/30' 
+                  : 'border-white/10 hover:border-white/20'
               }`}
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-slate-100/80 to-slate-50" />
+              <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 via-zinc-800/80 to-zinc-800" />
               
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-                <Image className="w-8 h-8 text-slate-300" />
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Default</span>
+                <Image className="w-8 h-8 text-zinc-500" />
+                <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Default</span>
               </div>
 
               {selectedBackgroundId === null && (
@@ -118,10 +121,10 @@ export function SidebarThemeModal({
               <div
                 key={bg.id}
                 onClick={() => onSelectBackground(bg.id)}
-                className={`group relative aspect-video rounded-xl overflow-hidden border shadow-sm bg-slate-50 cursor-pointer transition-all ${
+                className={`group relative aspect-video rounded-xl overflow-hidden border shadow-sm bg-zinc-800/50 cursor-pointer transition-all ${
                   selectedBackgroundId === bg.id 
-                    ? 'ring-2 ring-blue-500 ring-offset-2 border-blue-200' 
-                    : 'border-slate-200 hover:border-slate-300'
+                    ? 'ring-2 ring-blue-400 ring-offset-2 ring-offset-zinc-900 border-blue-400/30' 
+                    : 'border-white/10 hover:border-white/20'
                 }`}
               >
                 <img src={bg.imageUrl} alt="Background" className="w-full h-full object-cover" />
@@ -150,12 +153,12 @@ export function SidebarThemeModal({
 
           {/* Empty state */}
           {backgrounds.length === 0 && (
-            <div className="mt-6 py-12 text-center text-slate-400 border-2 border-dashed border-slate-100 rounded-2xl">
+            <div className="mt-6 py-12 text-center text-zinc-500 border-2 border-dashed border-zinc-700 rounded-2xl">
               <p className="text-xs font-bold uppercase tracking-widest">No themes uploaded</p>
               <p className="text-[10px] mt-1">Upload images to customize your sidebar background.</p>
             </div>
           )}
-        </Card>
+        </div>
       </DialogContent>
     </Dialog>
   );
