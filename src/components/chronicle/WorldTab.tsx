@@ -151,6 +151,21 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   const [showContentTypeModal, setShowContentTypeModal] = useState(false);
   const [publishErrors, setPublishErrors] = useState<PublishValidationErrors>({});
 
+  // Listen for save-validation-failed events from Index.tsx (Save & Close button)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as PublishValidationErrors;
+      setPublishErrors(detail);
+      // Scroll to first error
+      setTimeout(() => {
+        const el = document.querySelector('.border-red-500');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    };
+    window.addEventListener('chronicle:save-validation-failed', handler);
+    return () => window.removeEventListener('chronicle:save-validation-failed', handler);
+  }, []);
+
   // Live re-validation: when publishErrors is non-empty, re-run validation on every relevant change
   useEffect(() => {
     if (Object.keys(publishErrors).length === 0) return;
@@ -426,16 +441,17 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   const mainCharacters = characters.filter(c => c.characterRole === 'Main');
   const sideCharacters = characters.filter(c => c.characterRole === 'Side');
 
-  const noCharactersError = publishErrors.noCharacters;
+  const noAICharacterError = publishErrors.noAICharacter;
+  const noUserCharacterError = publishErrors.noUserCharacter;
 
-  const AddCharacterPlaceholder = () => (
+  const AddCharacterPlaceholder: React.FC<{ label: string; sublabel: string; error?: string }> = ({ label, sublabel, error }) => (
     <div className="space-y-1">
       <button 
         type="button"
         onClick={() => setIsCharacterCreationOpen(true)}
         className={cn(
           "group/add w-full flex items-center gap-4 p-3 rounded-2xl transition-all duration-300 bg-[#3a3a3f]/30 hover:bg-[#3a3a3f]/50 cursor-pointer",
-          noCharactersError
+          error
             ? "border-2 border-dashed border-red-500"
             : "border-2 border-dashed border-zinc-600 hover:border-zinc-500"
         )}
@@ -444,12 +460,12 @@ export const WorldTab: React.FC<WorldTabProps> = ({
            <span className="text-2xl font-light">+</span>
         </div>
         <div className="text-left">
-          <div className="text-xs font-bold text-zinc-400 group-hover/add:text-zinc-200 transition-colors uppercase tracking-tight">Add / Create</div>
-          <div className="text-[9px] font-black text-zinc-500 group-hover/add:text-zinc-400 uppercase tracking-widest mt-0.5">Character Registry</div>
+          <div className="text-xs font-bold text-zinc-400 group-hover/add:text-zinc-200 transition-colors uppercase tracking-tight">{label}</div>
+          <div className="text-[9px] font-black text-zinc-500 group-hover/add:text-zinc-400 uppercase tracking-widest mt-0.5">{sublabel}</div>
         </div>
       </button>
-      {noCharactersError && (
-        <p className="text-sm text-red-500 font-medium pl-2">{noCharactersError}</p>
+      {error && (
+        <p className="text-sm text-red-500 font-medium pl-2">{error}</p>
       )}
     </div>
   );
@@ -468,7 +484,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
             </div>
             <div className="space-y-2">
               {mainCharacters.map(char => <CharacterButton key={char.id} char={char} onSelect={onSelectCharacter} errors={publishErrors.characters?.[char.id]} />)}
-              <AddCharacterPlaceholder />
+              <AddCharacterPlaceholder label="Add / Create" sublabel="AI Character" error={noAICharacterError} />
+              <AddCharacterPlaceholder label="Add / Create" sublabel="User Character" error={noUserCharacterError} />
             </div>
           </section>
 
@@ -478,7 +495,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
             </div>
             <div className="space-y-2">
               {sideCharacters.map(char => <CharacterButton key={char.id} char={char} onSelect={onSelectCharacter} errors={publishErrors.characters?.[char.id]} />)}
-              <AddCharacterPlaceholder />
+              <AddCharacterPlaceholder label="Add / Create" sublabel="Side Character" />
             </div>
           </section>
         </div>
@@ -1376,7 +1393,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                           {publishErrors.openingDialog && <li>{publishErrors.openingDialog}</li>}
                           {publishErrors.tags && <li>{publishErrors.tags}</li>}
                           {publishErrors.storyType && <li>{publishErrors.storyType}</li>}
-                          {publishErrors.noCharacters && <li>{publishErrors.noCharacters}</li>}
+                          {publishErrors.noAICharacter && <li>{publishErrors.noAICharacter}</li>}
+                          {publishErrors.noUserCharacter && <li>{publishErrors.noUserCharacter}</li>}
                           {publishErrors.characters && Object.entries(publishErrors.characters).map(([cid, msgs]) => {
                             const char = characters.find(c => c.id === cid);
                             const charName = char?.name && char.name !== 'New Character' ? char.name : 'Unnamed character';

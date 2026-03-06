@@ -6,7 +6,8 @@ export interface PublishValidationErrors {
   openingDialog?: string;
   tags?: string;
   storyType?: string;
-  noCharacters?: string;
+  noAICharacter?: string;
+  noUserCharacter?: string;
   characters?: Record<string, string[]>; // characterId -> array of error messages
   location?: string;
   storyArc?: string;
@@ -57,9 +58,14 @@ export function validateForPublish(data: {
     errors.storyType = 'SFW or NSFW must be selected';
   }
 
-  // 6. At least 1 character
-  if (characters.length === 0) {
-    errors.noCharacters = 'At least 1 character is required';
+  // 6. At least 1 AI character and 1 User character
+  const hasAICharacter = characters.some(c => c.controlledBy === 'AI');
+  const hasUserCharacter = characters.some(c => c.controlledBy === 'User');
+  if (!hasAICharacter) {
+    errors.noAICharacter = 'At least 1 AI character is required';
+  }
+  if (!hasUserCharacter) {
+    errors.noUserCharacter = 'At least 1 user character is required';
   }
 
   // 7 & 10. Character names + NSFW age check
