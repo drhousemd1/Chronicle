@@ -2298,16 +2298,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   };
 
   // Dynamic background gradient based on time of day
-  const getTimeBackground = (time: TimeOfDay): string => {
+  const getTimeBackgroundImage = (time: TimeOfDay): string => {
     switch (time) {
-      case 'sunrise':
-        return 'bg-gradient-to-b from-amber-200 via-orange-100 to-amber-50';
-      case 'day':
-        return 'bg-gradient-to-b from-sky-200 via-blue-100 to-sky-50';
-      case 'sunset':
-        return 'bg-gradient-to-b from-pink-300 via-orange-200 to-amber-100';
-      case 'night':
-        return 'bg-gradient-to-b from-indigo-900 via-slate-800 to-indigo-950';
+      case 'sunrise': return '/images/time-backgrounds/sunrise.png';
+      case 'day':     return '/images/time-backgrounds/day.png';
+      case 'sunset':  return '/images/time-backgrounds/sunset.png';
+      case 'night':   return '/images/time-backgrounds/night.png';
     }
   };
 
@@ -3279,7 +3275,12 @@ const updatedChar: SideCharacter = {
           </div>
           <div className="flex-1 flex flex-col p-4 gap-3 overflow-hidden">
           {/* Day/Time Control Panel - Fixed at top */}
-          <section className={`flex-shrink-0 rounded-xl p-4 border border-slate-200 shadow-lg transition-all duration-700 animate-sky ${getTimeBackground(currentTimeOfDay)}`}>
+          <section
+            className="flex-shrink-0 rounded-xl p-4 border border-slate-200 shadow-lg transition-all duration-700 relative overflow-hidden bg-cover bg-center"
+            style={{ backgroundImage: `url(${getTimeBackgroundImage(currentTimeOfDay)})` }}
+          >
+            <div className="absolute inset-0 bg-black/20 rounded-xl" />
+            <div className="relative z-10">
             {/* Time Progression Label Row */}
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5">
@@ -3358,6 +3359,7 @@ const updatedChar: SideCharacter = {
                   ))}
                 </div>
               </div>
+            </div>
             </div>
           </section>
 
