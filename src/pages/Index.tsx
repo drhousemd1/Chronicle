@@ -931,7 +931,7 @@ const IndexContent = () => {
       // Clear localStorage draft and registry entry on successful DB save
       try { localStorage.removeItem(`draft_${scenarioIdToSave}`); } catch (_) { /* ignore */ }
       removeDraftFromRegistry(scenarioIdToSave);
-      setDraftCount(getDraftRegistry().length);
+      refreshDraftCount();
 
       return true;
     } catch (e: any) {
