@@ -314,6 +314,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const [regeneratingMessageId, setRegeneratingMessageId] = useState<string | null>(null);
   const [currentDay, setCurrentDay] = useState(1);
   const [currentTimeOfDay, setCurrentTimeOfDay] = useState<TimeOfDay>('day');
+  
+  // Time progression state
+  const [timeProgressionMode, setTimeProgressionMode] = useState<'manual' | 'automatic'>('manual');
+  const [timeProgressionInterval, setTimeProgressionInterval] = useState<number>(15);
+  const [timeRemaining, setTimeRemaining] = useState<number>(15 * 60); // seconds
+  const [pausedAt, setPausedAt] = useState<number | null>(null);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   
@@ -864,9 +870,58 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     if (conversation) {
       setCurrentDay(conversation.currentDay || 1);
       setCurrentTimeOfDay(conversation.currentTimeOfDay || 'day');
+      setTimeProgressionMode(conversation.timeProgressionMode || 'manual');
+      setTimeProgressionInterval(conversation.timeProgressionInterval || 15);
+      setTimeRemaining((conversation.timeProgressionInterval || 15) * 60);
     }
   }, [conversation?.id]);
+
+  // Auto-advance timer — only runs when mode is 'automatic'
+  const TIME_SEQUENCE: TimeOfDay[] = ['sunrise', 'day', 'sunset', 'night'];
   
+  useEffect(() => {
+    if (timeProgressionMode !== 'automatic') return;
+    const tick = setInterval(() => {
+      setTimeRemaining(prev => {
+        if (prev <= 1) {
+          // Advance time
+          const currentIndex = TIME_SEQUENCE.indexOf(currentTimeOfDay);
+          const nextIndex = (currentIndex + 1) % TIME_SEQUENCE.length;
+          const nextTime = TIME_SEQUENCE[nextIndex];
+          if (nextIndex === 0) {
+            // Night → Sunrise = new day
+            const newDay = currentDay + 1;
+            setCurrentDay(newDay);
+            setCurrentTimeOfDay(nextTime);
+            handleDayTimeChange(newDay, nextTime);
+          } else {
+            setCurrentTimeOfDay(nextTime);
+            handleDayTimeChange(currentDay, nextTime);
+          }
+          return timeProgressionInterval * 60;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(tick);
+  }, [timeProgressionMode, timeProgressionInterval, currentTimeOfDay, currentDay]);
+
+  // Visibility API — pause/resume timer when tab is hidden
+  useEffect(() => {
+    if (timeProgressionMode !== 'automatic') return;
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        setPausedAt(Date.now());
+      } else if (pausedAt) {
+        const elapsed = Math.floor((Date.now() - pausedAt) / 1000);
+        setTimeRemaining(prev => Math.max(0, prev - elapsed));
+        setPausedAt(null);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [timeProgressionMode, pausedAt]);
+
   // Scene detection effect - detects which background scene to show based on conversation
   // MUST be defined before early return to maintain hooks order
   useEffect(() => {
@@ -2152,6 +2207,31 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const selectTime = (time: TimeOfDay) => {
     setCurrentTimeOfDay(time);
     handleDayTimeChange(currentDay, time);
+    setTimeRemaining(timeProgressionInterval * 60); // reset auto-advance timer
+  };
+
+  // Helper to format seconds as MM:SS
+  const formatCountdown = (seconds: number): string => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  // Save time progression settings to conversation
+  const handleTimeProgressionChange = (mode: 'manual' | 'automatic', interval?: number) => {
+    setTimeProgressionMode(mode);
+    if (interval !== undefined) setTimeProgressionInterval(interval);
+    const effectiveInterval = interval ?? timeProgressionInterval;
+    setTimeRemaining(effectiveInterval * 60);
+    
+    // Update conversation in app state and persist
+    const updatedConvs = appData.conversations.map(c =>
+      c.id === conversationId
+        ? { ...c, timeProgressionMode: mode, timeProgressionInterval: effectiveInterval, updatedAt: now() }
+        : c
+    );
+    onUpdate(updatedConvs);
+    onSaveScenario(updatedConvs);
   };
 
   const getTimeIcon = (time: TimeOfDay) => {
@@ -3146,6 +3226,27 @@ const updatedChar: SideCharacter = {
           <div className="flex-1 flex flex-col p-4 gap-3 overflow-hidden">
           {/* Day/Time Control Panel - Fixed at top */}
           <section className={`flex-shrink-0 rounded-xl p-4 border border-slate-200 transition-all duration-700 animate-sky ${getTimeBackground(currentTimeOfDay)}`}>
+            {/* Time Progression Label Row */}
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5">
+                <span className={`text-[9px] font-black uppercase tracking-widest ${getTimeTextColor(currentTimeOfDay)}`}>
+                  {timeProgressionMode === 'automatic' ? 'Automatic' : 'Manual'}
+                </span>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className={`w-3 h-3 cursor-help ${getTimeTextColor(currentTimeOfDay)} opacity-60`} />
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs normal-case tracking-normal">
+                    Change time settings in Chat Settings
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+              {timeProgressionMode === 'automatic' && (
+                <span className="bg-black/50 rounded-md px-2 py-0.5 text-xs font-mono text-white">
+                  {formatCountdown(timeRemaining)}
+                </span>
+              )}
+            </div>
             <div className="flex gap-4 items-center">
               {/* Day Counter */}
               <div className="flex flex-col items-center gap-1">
@@ -3938,6 +4039,52 @@ const updatedChar: SideCharacter = {
                   onCheckedChange={(v) => handleUpdateUiSettings({ realismMode: v })}
                 />
               </div>
+            </div>
+            
+            {/* TIME PROGRESSION Section */}
+            <div className="space-y-3 pt-4 border-t border-white/10">
+              <div>
+                <h3 className="text-sm font-black text-white uppercase tracking-tight">Time Progression</h3>
+                <p className="text-xs text-zinc-400 mt-0.5">Automatically advance the time of day while in a chat session</p>
+              </div>
+              
+              {/* Time Mode Toggle */}
+              <div className="flex items-center justify-between gap-4 p-3 bg-zinc-800/50 rounded-xl">
+                <div className="flex-1">
+                  <span className="text-sm font-semibold text-zinc-200">Time Mode</span>
+                  <p className="text-xs text-zinc-400 mt-0.5">
+                    Advance time phases automatically on a timer
+                  </p>
+                </div>
+                <LabeledToggle
+                  checked={timeProgressionMode === 'automatic'}
+                  onCheckedChange={(v) => handleTimeProgressionChange(v ? 'automatic' : 'manual')}
+                  offLabel="Manual"
+                  onLabel="Automatic"
+                />
+              </div>
+              
+              {/* Interval Dropdown (only when Automatic) */}
+              {timeProgressionMode === 'automatic' && (
+                <div className="flex items-center justify-between gap-4 p-3 bg-zinc-800/50 rounded-xl">
+                  <div className="flex-1">
+                    <span className="text-sm font-semibold text-zinc-200">Advance Every</span>
+                    <p className="text-xs text-zinc-400 mt-0.5">
+                      How often the time of day changes
+                    </p>
+                  </div>
+                  <select
+                    value={timeProgressionInterval}
+                    onChange={(e) => handleTimeProgressionChange('automatic', Number(e.target.value))}
+                    className="bg-zinc-900/50 border border-zinc-700 rounded-lg text-sm text-white px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    <option value={10}>10 minutes</option>
+                    <option value={15}>15 minutes</option>
+                    <option value={30}>30 minutes</option>
+                    <option value={60}>60 minutes</option>
+                  </select>
+                </div>
+              )}
             </div>
             
           </div>

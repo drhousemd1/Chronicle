@@ -280,6 +280,8 @@ function dbToConversation(row: any, messages: any[]): Conversation {
     })),
     currentDay: row.current_day || 1,
     currentTimeOfDay: row.current_time_of_day || 'day',
+    timeProgressionMode: row.time_progression_mode || 'manual',
+    timeProgressionInterval: row.time_progression_interval || 15,
     createdAt: new Date(row.created_at).getTime(),
     updatedAt: new Date(row.updated_at).getTime()
   };
@@ -363,7 +365,9 @@ export async function fetchScenarioById(id: string): Promise<{
     enabled: rawOpeningDialog?.enabled ?? true, 
     text: rawOpeningDialog?.text ?? '',
     startingDay: rawOpeningDialog?.startingDay ?? 1,
-    startingTimeOfDay: rawOpeningDialog?.startingTimeOfDay ?? 'day'
+    startingTimeOfDay: rawOpeningDialog?.startingTimeOfDay ?? 'day',
+    timeProgressionMode: rawOpeningDialog?.timeProgressionMode ?? 'manual',
+    timeProgressionInterval: rawOpeningDialog?.timeProgressionInterval ?? 15
   };
   
   const uiSettings = (scenario.ui_settings as { showBackgrounds: boolean; transparentBubbles: boolean; darkMode: boolean }) || { 
@@ -437,7 +441,9 @@ export async function fetchScenarioForPlay(id: string): Promise<{
     enabled: rawOpeningDialog?.enabled ?? true, 
     text: rawOpeningDialog?.text ?? '',
     startingDay: rawOpeningDialog?.startingDay ?? 1,
-    startingTimeOfDay: rawOpeningDialog?.startingTimeOfDay ?? 'day'
+    startingTimeOfDay: rawOpeningDialog?.startingTimeOfDay ?? 'day',
+    timeProgressionMode: rawOpeningDialog?.timeProgressionMode ?? 'manual',
+    timeProgressionInterval: rawOpeningDialog?.timeProgressionInterval ?? 15
   };
   
   const uiSettings = (scenario.ui_settings as { showBackgrounds: boolean; transparentBubbles: boolean; darkMode: boolean }) || { 
@@ -1020,7 +1026,9 @@ export async function saveConversation(
       scenario_id: scenarioId,
       title: conversation.title,
       current_day: conversation.currentDay || 1,
-      current_time_of_day: conversation.currentTimeOfDay || 'day'
+      current_time_of_day: conversation.currentTimeOfDay || 'day',
+      time_progression_mode: conversation.timeProgressionMode || 'manual',
+      time_progression_interval: conversation.timeProgressionInterval || 15
     });
 
   if (convError) throw convError;
