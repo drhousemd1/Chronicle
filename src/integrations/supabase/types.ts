@@ -387,6 +387,8 @@ export type Database = {
           current_time_of_day: string | null
           id: string
           scenario_id: string
+          time_progression_interval: number
+          time_progression_mode: string
           title: string
           updated_at: string | null
           user_id: string
@@ -397,6 +399,8 @@ export type Database = {
           current_time_of_day?: string | null
           id?: string
           scenario_id: string
+          time_progression_interval?: number
+          time_progression_mode?: string
           title?: string
           updated_at?: string | null
           user_id: string
@@ -407,6 +411,8 @@ export type Database = {
           current_time_of_day?: string | null
           id?: string
           scenario_id?: string
+          time_progression_interval?: number
+          time_progression_mode?: string
           title?: string
           updated_at?: string | null
           user_id?: string

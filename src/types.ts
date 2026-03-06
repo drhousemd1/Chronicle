@@ -13,12 +13,16 @@ export type Message = {
   createdAt: number;
 };
 
+export type TimeProgressionMode = 'manual' | 'automatic';
+
 export type Conversation = {
   id: string;
   title: string;
   messages: Message[];
   currentDay: number;
   currentTimeOfDay: TimeOfDay;
+  timeProgressionMode?: TimeProgressionMode;
+  timeProgressionInterval?: number; // minutes: 10, 15, 30, or 60
   createdAt: number;
   updatedAt: number;
 };
@@ -28,6 +32,8 @@ export type OpeningDialog = {
   text: string;
   startingDay: number;
   startingTimeOfDay: TimeOfDay;
+  timeProgressionMode?: TimeProgressionMode;
+  timeProgressionInterval?: number; // minutes: 10, 15, 30, or 60
 };
 
 // User-added extra row for hardcoded sections (Physical Appearance, Clothing)

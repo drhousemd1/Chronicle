@@ -624,12 +624,18 @@ const IndexContent = () => {
         });
       }
 
+      // Get time progression defaults from scenario
+      const timeProgressionMode = data.story?.openingDialog?.timeProgressionMode || 'manual';
+      const timeProgressionInterval = data.story?.openingDialog?.timeProgressionInterval || 15;
+
       const newConv: Conversation = { 
         id: uuid(),
         title: `Story Session ${conversationCount + 1}`, 
         messages: initialMessages, 
         currentDay: startingDay,
         currentTimeOfDay: startingTimeOfDay,
+        timeProgressionMode,
+        timeProgressionInterval,
         createdAt: now(), 
         updatedAt: now() 
       };

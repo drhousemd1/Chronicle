@@ -970,6 +970,54 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                       </div>
                     </div>
                     
+                    {/* Time Progression Mode */}
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Mode:</span>
+                        <div className="flex p-1 bg-zinc-900/50 rounded-lg border border-white/10">
+                          <button
+                            type="button"
+                            onClick={() => onUpdateOpening({ timeProgressionMode: 'manual' })}
+                            className={cn(
+                              "flex-1 px-3.5 py-1.5 text-[10px] font-black uppercase tracking-widest rounded border-none cursor-pointer transition-all",
+                              (openingDialog.timeProgressionMode || 'manual') === 'manual'
+                                ? "bg-zinc-700 text-blue-400 shadow-sm"
+                                : "bg-transparent text-zinc-500 hover:text-zinc-300"
+                            )}
+                          >
+                            Manual
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onUpdateOpening({ timeProgressionMode: 'automatic' })}
+                            className={cn(
+                              "flex-1 px-3.5 py-1.5 text-[10px] font-black uppercase tracking-widest rounded border-none cursor-pointer transition-all",
+                              openingDialog.timeProgressionMode === 'automatic'
+                                ? "bg-zinc-700 text-blue-400 shadow-sm"
+                                : "bg-transparent text-zinc-500 hover:text-zinc-300"
+                            )}
+                          >
+                            Automatic
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {openingDialog.timeProgressionMode === 'automatic' && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Interval:</span>
+                          <select
+                            value={openingDialog.timeProgressionInterval || 15}
+                            onChange={(e) => onUpdateOpening({ timeProgressionInterval: Number(e.target.value) })}
+                            className="bg-zinc-900/50 border border-zinc-700 rounded-lg text-sm text-white px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          >
+                            <option value={10}>10 minutes</option>
+                            <option value={15}>15 minutes</option>
+                            <option value={30}>30 minutes</option>
+                            <option value={60}>60 minutes</option>
+                          </select>
+                        </div>
+                      )}
+                    </div>
                     <HintBox hints={[
                       "Set when your story begins. The AI will use this context for time-appropriate responses.",
                       "This message will automatically appear at the start of every new session."
