@@ -282,6 +282,7 @@ function dbToConversation(row: any, messages: any[]): Conversation {
     currentTimeOfDay: row.current_time_of_day || 'day',
     timeProgressionMode: row.time_progression_mode || 'manual',
     timeProgressionInterval: row.time_progression_interval || 15,
+    timeRemaining: row.time_remaining ?? undefined,
     createdAt: new Date(row.created_at).getTime(),
     updatedAt: new Date(row.updated_at).getTime()
   };
@@ -933,7 +934,7 @@ export async function saveNewMessages(
  */
 export async function updateConversationMeta(
   conversationId: string,
-  patch: { currentDay?: number; currentTimeOfDay?: string; title?: string; timeProgressionMode?: string; timeProgressionInterval?: number }
+  patch: { currentDay?: number; currentTimeOfDay?: string; title?: string; timeProgressionMode?: string; timeProgressionInterval?: number; timeRemaining?: number }
 ): Promise<void> {
   const updateObj: Record<string, any> = {};
   if (patch.currentDay !== undefined) updateObj.current_day = patch.currentDay;
@@ -941,6 +942,7 @@ export async function updateConversationMeta(
   if (patch.title !== undefined) updateObj.title = patch.title;
   if (patch.timeProgressionMode !== undefined) updateObj.time_progression_mode = patch.timeProgressionMode;
   if (patch.timeProgressionInterval !== undefined) updateObj.time_progression_interval = patch.timeProgressionInterval;
+  if (patch.timeRemaining !== undefined) updateObj.time_remaining = patch.timeRemaining;
   
   if (Object.keys(updateObj).length === 0) return;
   

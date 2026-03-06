@@ -23,6 +23,7 @@ export type Conversation = {
   currentTimeOfDay: TimeOfDay;
   timeProgressionMode?: TimeProgressionMode;
   timeProgressionInterval?: number; // minutes: 10, 15, 30, or 60
+  timeRemaining?: number; // seconds remaining on auto-timer (null = use full interval)
   createdAt: number;
   updatedAt: number;
 };

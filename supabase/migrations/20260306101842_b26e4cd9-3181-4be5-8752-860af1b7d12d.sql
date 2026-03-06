@@ -1,0 +1,1 @@
+ALTER TABLE public.conversations ADD COLUMN time_remaining integer DEFAULT NULL;
