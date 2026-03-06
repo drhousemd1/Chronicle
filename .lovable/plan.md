@@ -1,11 +1,22 @@
 
 
-## Plan: Show Full Image in Sidebar Theme Previews
+## Change Day/Time Badge Color to Match Hover Action Icons
 
-### Problem
-The tiles use `object-cover` which crops tall portrait images to fill the container. Since the source images are ~300×1080 (roughly 1:3.6 ratio) but tiles are `aspect-[2/3]` (1:1.5), a large portion of each image is cropped out.
+### Root Issue
+The day/time badge in the bottom left of message bubbles uses hardcoded `text-white`, which is visually harsh and stands out. The hover action icons (regenerate, three-dot menu) use `text-slate-400 hover:text-white`, creating a softer, more integrated appearance.
 
-### Fix (single file: `SidebarThemeModal.tsx`)
+### Fix
+**File: `src/components/chronicle/ChatInterfaceTab.tsx`** (line 3717)
 
-**Change `object-cover` to `object-contain`** on the background preview `<img>` tag (line ~130). This will scale the entire image to fit within the tile without cropping, showing the full content. The tile's dark `bg-zinc-800/50` background will fill any letterbox space naturally.
+Replace the hardcoded `text-white` class on the day/time badge container with `text-slate-400`, matching the hover action icons' default state. This softens the badge visually while keeping it subtle and readable.
+
+```tsx
+// Before
+<div className="absolute bottom-3 left-4 flex items-center gap-2 text-sm text-white">
+
+// After
+<div className="absolute bottom-3 left-4 flex items-center gap-2 text-sm text-slate-400">
+```
+
+The icons (Sunrise, Sun, Sunset, Moon) inherit the text color from the parent `<div>`, so they'll automatically adjust to `text-slate-400` as well.
 
