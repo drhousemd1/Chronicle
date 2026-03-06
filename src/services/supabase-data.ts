@@ -1900,3 +1900,10 @@ export async function fetchUserProfile(userId: string): Promise<{ username: stri
   
   return data;
 }
+
+export async function updateStoryUiSettings(
+  scenarioId: string,
+  uiSettings: Record<string, any>
+): Promise<void> {
+  await supabase.from('stories').update({ ui_settings: uiSettings }).eq('id', scenarioId);
+}
