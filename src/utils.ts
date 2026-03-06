@@ -533,6 +533,7 @@ export function updateConversationRegistry(
       messageCount: c.messages.length,
       createdAt: c.createdAt,
       updatedAt: c.updatedAt,
+      creatorName: null,
     };
   });
   

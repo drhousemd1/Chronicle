@@ -959,7 +959,7 @@ export async function fetchConversationRegistry(): Promise<ConversationMetadata[
       title,
       created_at,
       updated_at,
-      stories!conversations_scenario_id_fkey(title, cover_image_url)
+      stories!conversations_scenario_id_fkey(title, cover_image_url, user_id)
     `)
     .order('updated_at', { ascending: false });
 
