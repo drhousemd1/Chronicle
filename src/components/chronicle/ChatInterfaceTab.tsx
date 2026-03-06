@@ -3276,9 +3276,19 @@ const updatedChar: SideCharacter = {
           <div className="flex-1 flex flex-col p-4 gap-3 overflow-hidden">
           {/* Day/Time Control Panel - Fixed at top */}
           <section
-            className="flex-shrink-0 rounded-xl p-4 border border-slate-200 shadow-lg transition-all duration-700 relative overflow-hidden bg-cover bg-center"
-            style={{ backgroundImage: `url(${getTimeBackgroundImage(currentTimeOfDay)})` }}
+            className="flex-shrink-0 rounded-xl p-4 border border-slate-200 shadow-lg transition-all duration-700 relative overflow-hidden"
           >
+            {/* Preloaded background images — all mounted, only active one visible */}
+            {(['sunrise', 'day', 'sunset', 'night'] as const).map((time) => (
+              <img
+                key={time}
+                src={getTimeBackgroundImage(time)}
+                alt=""
+                className={`absolute inset-0 w-full h-full object-cover rounded-xl transition-opacity duration-700 ${
+                  currentTimeOfDay === time ? 'opacity-100' : 'opacity-0'
+                }`}
+              />
+            ))}
             <div className="absolute inset-0 bg-black/20 rounded-xl" />
             <div className="relative z-10">
             {/* Time Progression Label Row */}
