@@ -138,6 +138,8 @@ const IndexContent = () => {
   const [storyNameError, setStoryNameError] = useState(false);
   const [isSavingToLibrary, setIsSavingToLibrary] = useState(false);
   const [isResuming, setIsResuming] = useState(false);
+  const [draftsModalOpen, setDraftsModalOpen] = useState(false);
+  const [draftCount, setDraftCount] = useState(0);
   // Track which conversations have more older messages to load
   const [hasMoreMessagesMap, setHasMoreMessagesMap] = useState<Record<string, boolean>>({});
   const [aiPromptModal, setAiPromptModal] = useState<{ mode: 'fill' | 'generate' } | null>(null);
