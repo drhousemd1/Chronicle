@@ -91,8 +91,8 @@ export function SidebarThemeModal({
           </p>
 
           {/* Grid */}
-          <div className="max-h-[460px] overflow-y-a pt-2uto  pt-2pr-1">
-          <div className="grid g5 md:grid-cols-7id-cols-5 gap-3">
+          <div className="max-h-[460px] overflow-y-auto pt-2 pr-1">
+          <div className="grid grid-cols-5 md:grid-cols-7 gap-3">
             {/* Default Tile */}
             <button
               type="button"
