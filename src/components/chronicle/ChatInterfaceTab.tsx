@@ -20,16 +20,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 
 import { supabase } from '@/integrations/supabase/client';
 import * as supabaseData from '@/services/supabase-data';
@@ -4172,33 +4163,16 @@ const updatedChar: SideCharacter = {
       </Dialog>
       
       {/* Delete Character Confirmation Dialog */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent className="bg-zinc-900 border-white/10">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">Delete Character</AlertDialogTitle>
-            <AlertDialogDescription className="text-zinc-400">
-              Are you sure you want to delete this character? This cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel 
-              onClick={() => {
-                setIsDeleteDialogOpen(false);
-                setCharacterToDelete(null);
-              }}
-              className="bg-zinc-800 text-zinc-200 hover:bg-zinc-700 border-white/10"
-            >
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={confirmDeleteCharacter}
-              className="bg-rose-600 text-white hover:bg-rose-700"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteConfirmDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={(open) => {
+          setIsDeleteDialogOpen(open);
+          if (!open) setCharacterToDelete(null);
+        }}
+        onConfirm={confirmDeleteCharacter}
+        title="Delete Character"
+        message="Are you sure you want to delete this character? This cannot be undone."
+      />
     </div>
   );
 };
