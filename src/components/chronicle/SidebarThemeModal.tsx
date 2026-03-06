@@ -97,7 +97,7 @@ export function SidebarThemeModal({
             <button
               type="button"
               onClick={() => onSelectBackground(null)}
-className={`group relative aspect-[2/3] rounded-xl overflow-hidden border shadow-sm bg-zinc-800/50 transition-all cursor-pointer ${
+className={`group relative aspect-[1/3] rounded-xl overflow-hidden border shadow-sm bg-zinc-800/50 transition-all cursor-pointer ${
                 selectedBackgroundId === null
                   ? 'ring-2 ring-blue-400 ring-offset-2 ring-offset-zinc-900 border-blue-400/30' 
                   : 'border-white/10 hover:border-white/20'
