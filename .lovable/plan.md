@@ -1,25 +1,11 @@
 
 
-## Add Drop Shadow to Character Section Headers
+## Plan: Show Full Image in Sidebar Theme Previews
 
-### Change
+### Problem
+The tiles use `object-cover` which crops tall portrait images to fill the container. Since the source images are ~300×1080 (roughly 1:3.6 ratio) but tiles are `aspect-[2/3]` (1:1.5), a large portion of each image is cropped out.
 
-**File: `src/components/chronicle/ChatInterfaceTab.tsx`**
+### Fix (single file: `SidebarThemeModal.tsx`)
 
-Add `shadow-lg` to both the "Main Characters" and "Side Characters" `<h3>` banner elements:
-
-**Line 3367** (Main Characters):
-```tsx
-// Before
-className="flex-shrink-0 text-[11px] font-bold text-white bg-[#4a5f7f] px-4 py-1.5 rounded-lg mb-3 tracking-tight uppercase flex items-center justify-between cursor-pointer select-none"
-
-// After — add shadow-lg
-className="flex-shrink-0 text-[11px] font-bold text-white bg-[#4a5f7f] px-4 py-1.5 rounded-lg mb-3 tracking-tight uppercase flex items-center justify-between cursor-pointer select-none shadow-lg"
-```
-
-**Line 3419** (Side Characters):
-```tsx
-// Same change — add shadow-lg
-className="flex-shrink-0 text-[11px] font-bold text-white bg-[#4a5f7f] px-4 py-1.5 rounded-lg mb-3 tracking-tight uppercase flex items-center justify-between cursor-pointer select-none shadow-lg"
-```
+**Change `object-cover` to `object-contain`** on the background preview `<img>` tag (line ~130). This will scale the entire image to fit within the tile without cropping, showing the full content. The tile's dark `bg-zinc-800/50` background will fill any letterbox space naturally.
 
