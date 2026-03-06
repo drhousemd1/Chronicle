@@ -51,7 +51,7 @@ export function SidebarThemeModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="<DialogContent className="sm:max-w-6xl p-0 bg-zinc-900 border-white/10 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.5)] [&>button]:hidden">nt className="sm:max-w-6xl p-0 bg-zinc-900 border-white/10 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.5)] [&>button]:hidden"> p-0 bg-zinc-900 border-white/10 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.5)] [&>button]:hidden">
+      <DialogContent className="sm:max-w-6xl p-0 bg-zinc-900 border-white/10 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.5)] [&>button]:hidden">
         {/* Header */}
         <div className="flex justify-between items-center px-6 pt-6 pb-4 border-b border-white/10">
           <DialogTitle className="text-lg font-black text-white flex items-center gap-2 uppercase tracking-tight">
