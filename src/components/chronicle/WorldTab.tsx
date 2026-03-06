@@ -696,7 +696,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                     
                     {/* Custom World Content Sections */}
                     {(world.core.customWorldSections || []).map((section, sIdx) => (
-                      <div key={section.id} className="space-y-4">
+                      <div key={section.id} className="space-y-1">
                         <div className="flex items-center gap-3">
                           <AutoResizeTextarea
                             value={section.title}
@@ -909,8 +909,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                     </div>
                     
                     {/* Starting Day & Time Controls */}
-                    <div className="space-y-3">
-                      <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Starting Day & Time</label>
+                    <div>
+                      <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1 block">Starting Day & Time</label>
                       <div className="flex items-center gap-6">
                         {/* Day Counter */}
                         <div className="flex items-center gap-2 bg-zinc-800 rounded-xl px-4 py-2 border border-zinc-700">
@@ -989,7 +989,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
               </div>
               <div className="p-6">
                 {/* Header row: label + tooltip on left, buttons on right */}
-                <div className="flex items-center justify-between gap-4 mb-1">
+                <div className="flex items-end justify-between gap-4 mb-1">
                   <div className="flex items-center gap-2">
                     <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Scene Gallery Photos</label>
                     <Tooltip>
@@ -1172,8 +1172,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                 <div className="p-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
                   <div className="space-y-8">
                     
-                    <div className="space-y-4">
-                      <label className="block text-[10px] font-black uppercase text-zinc-400 tracking-widest">Dialog Formatting</label>
+                    <div>
+                      <label className="block text-[10px] font-black uppercase text-zinc-400 tracking-widest mb-1">Dialog Formatting</label>
                       
                       {/* Critical rules - always present, read-only */}
                       <HintBox hints={[
