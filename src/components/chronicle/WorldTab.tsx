@@ -151,6 +151,21 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   const [showContentTypeModal, setShowContentTypeModal] = useState(false);
   const [publishErrors, setPublishErrors] = useState<PublishValidationErrors>({});
 
+  // Listen for save-validation-failed events from Index.tsx (Save & Close button)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as PublishValidationErrors;
+      setPublishErrors(detail);
+      // Scroll to first error
+      setTimeout(() => {
+        const el = document.querySelector('.border-red-500');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    };
+    window.addEventListener('chronicle:save-validation-failed', handler);
+    return () => window.removeEventListener('chronicle:save-validation-failed', handler);
+  }, []);
+
   // Live re-validation: when publishErrors is non-empty, re-run validation on every relevant change
   useEffect(() => {
     if (Object.keys(publishErrors).length === 0) return;
