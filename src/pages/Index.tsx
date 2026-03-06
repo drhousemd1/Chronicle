@@ -690,18 +690,48 @@ const IndexContent = () => {
       }
       
       // Own scenario - edit directly
-      setActiveId(id);
-      setActiveData(data);
-      setActiveCoverImage(coverImage);
-      setActiveCoverPosition(coverImagePosition);
+      // Check for a local draft first
+      let finalData = data;
+      let finalCoverImage = coverImage;
+      let finalCoverPosition = coverImagePosition;
+      let finalContentThemes = defaultContentThemes;
       
-      // Load content themes for this scenario
       try {
-        const themes = await supabaseData.fetchContentThemes(id);
-        setActiveContentThemes(themes);
+        const draftRaw = localStorage.getItem(`draft_${id}`);
+        if (draftRaw) {
+          const draft = JSON.parse(draftRaw);
+          // Support both old format (raw ScenarioData) and new format (with metadata)
+          if (draft.data && draft.savedAt) {
+            finalData = draft.data;
+            finalCoverImage = draft.coverImage ?? coverImage;
+            finalCoverPosition = draft.coverPosition ?? coverImagePosition;
+            finalContentThemes = draft.contentThemes ?? defaultContentThemes;
+          } else {
+            // Legacy format: draft is the ScenarioData directly
+            finalData = draft;
+          }
+          localStorage.removeItem(`draft_${id}`);
+        }
       } catch (e) {
-        console.error('Failed to load content themes:', e);
-        setActiveContentThemes(defaultContentThemes);
+        console.warn('Could not restore draft:', e);
+      }
+      
+      setActiveId(id);
+      setActiveData(finalData);
+      setActiveCoverImage(finalCoverImage);
+      setActiveCoverPosition(finalCoverPosition);
+      
+      // Load content themes for this scenario (use draft if available, otherwise fetch)
+      if (finalContentThemes !== defaultContentThemes) {
+        setActiveContentThemes(finalContentThemes);
+      } else {
+        try {
+          const themes = await supabaseData.fetchContentThemes(id);
+          setActiveContentThemes(themes);
+        } catch (e) {
+          console.error('Failed to load content themes:', e);
+          setActiveContentThemes(defaultContentThemes);
+        }
       }
       
       setTab("world"); 
