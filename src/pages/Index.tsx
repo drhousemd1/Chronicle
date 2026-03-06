@@ -894,6 +894,8 @@ const IndexContent = () => {
         setSelectedCharacterId(null);
         setTab("hub");
       }
+      // Clear localStorage draft on successful DB save
+      try { localStorage.removeItem(`draft_${scenarioIdToSave}`); } catch (_) { /* ignore */ }
 
       return true;
     } catch (e: any) {
