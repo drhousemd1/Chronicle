@@ -319,6 +319,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const [timeProgressionMode, setTimeProgressionMode] = useState<'manual' | 'automatic'>('manual');
   const [timeProgressionInterval, setTimeProgressionInterval] = useState<number>(15);
   const [timeRemaining, setTimeRemaining] = useState<number>(15 * 60); // seconds
+  const [isTimerPaused, setIsTimerPaused] = useState(false);
   const [pausedAt, setPausedAt] = useState<number | null>(null);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const timeRemainingRef = useRef<number>(15 * 60);
