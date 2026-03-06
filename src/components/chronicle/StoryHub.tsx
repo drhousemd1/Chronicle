@@ -81,19 +81,19 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDel
         <div className="absolute inset-0 flex items-center justify-center gap-2 px-4 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 scale-90 group-hover:scale-100 flex-wrap">
           <button 
             onClick={(e) => { e.stopPropagation(); onEdit(scen.id); }}
-            className="h-10 px-6 rounded-xl bg-white text-slate-900 hover:bg-slate-50 text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl transition-colors"
+            className="h-8 px-4 rounded-xl bg-white text-slate-900 hover:bg-slate-50 text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl transition-colors"
           >
             Edit
           </button>
           <button 
             onClick={handleDeleteClick}
-            className="h-10 px-6 rounded-xl bg-[hsl(var(--destructive))] text-white hover:brightness-110 text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl transition-colors"
+            className="h-8 px-4 rounded-xl bg-[hsl(var(--destructive))] text-white hover:brightness-110 text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl transition-colors"
           >
             Delete
           </button>
           <button 
             onClick={(e) => { e.stopPropagation(); onPlay(scen.id); }}
-            className="h-10 px-6 rounded-xl bg-blue-600 text-white hover:bg-blue-500 text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl transition-colors"
+            className="h-8 px-4 rounded-xl bg-blue-600 text-white hover:bg-blue-500 text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl transition-colors"
           >
             Play
           </button>
