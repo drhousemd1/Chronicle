@@ -94,14 +94,14 @@ export const SideCharacterCard: React.FC<SideCharacterCardProps> = ({
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className={`shadow-lg z-50 ${isDarkBg ? 'bg-white border-slate-200' : 'bg-zinc-800 border-white/10 text-zinc-200'}`}>
-                <DropdownMenuItem onClick={onStartEdit}>
+                <DropdownMenuItem onClick={onStartEdit} className={`${!isDarkBg ? 'hover:!bg-zinc-700 focus:!bg-zinc-700 focus:!text-white' : ''}`}>
                   <Pencil className="w-4 h-4 mr-2" />
                   Edit character
                 </DropdownMenuItem>
                 {onDelete && (
                   <DropdownMenuItem 
                     onClick={onDelete}
-                    className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                    className={`text-red-600 focus:text-red-600 ${!isDarkBg ? 'focus:!bg-red-900/30 hover:!bg-zinc-700' : 'focus:bg-red-50'}`}
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
                     Delete character

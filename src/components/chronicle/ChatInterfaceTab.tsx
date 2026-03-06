@@ -3189,13 +3189,13 @@ const updatedChar: SideCharacter = {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className={`shadow-lg z-50 ${!sidebarBgIsLight ? 'bg-white border-slate-200' : 'bg-zinc-800 border-white/10 text-zinc-200'}`}>
-                <DropdownMenuItem onClick={() => openCharacterEditModal(char)}>
+                <DropdownMenuItem onClick={() => openCharacterEditModal(char)} className={`${sidebarBgIsLight ? 'hover:!bg-zinc-700 focus:!bg-zinc-700 focus:!text-white' : ''}`}>
                   <Pencil className="w-4 h-4 mr-2" />
                   Edit character
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   onClick={() => handleDeleteMainCharacter(char.id)}
-                  className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                  className={`text-red-600 focus:text-red-600 ${sidebarBgIsLight ? 'focus:!bg-red-900/30 hover:!bg-zinc-700' : 'focus:bg-red-50'}`}
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
                   Delete character
@@ -3266,8 +3266,8 @@ const updatedChar: SideCharacter = {
                   <Settings className="w-4 h-4" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={() => setIsSidebarThemeOpen(true)} className="cursor-pointer">
+              <DropdownMenuContent align="end" className="w-48 bg-zinc-800 border-white/10 text-zinc-200">
+                <DropdownMenuItem onClick={() => setIsSidebarThemeOpen(true)} className="cursor-pointer hover:!bg-zinc-700 focus:!bg-zinc-700 focus:!text-white">
                   <ImageIcon className="w-4 h-4 mr-2" />
                   Set Theme
                 </DropdownMenuItem>

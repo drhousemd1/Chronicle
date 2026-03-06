@@ -1,28 +1,11 @@
 
 
-## Fix Dropdown Menu Theming Issues
+## Plan: Show Full Image in Sidebar Theme Previews
 
-Two issues identified:
+### Problem
+The tiles use `object-cover` which crops tall portrait images to fill the container. Since the source images are ~300×1080 (roughly 1:3.6 ratio) but tiles are `aspect-[2/3]` (1:1.5), a large portion of each image is cropped out.
 
-### 1. "Set Theme" dropdown uses light theme (default popover)
-**File:** `src/components/chronicle/ChatInterfaceTab.tsx` (line 3269)
+### Fix (single file: `SidebarThemeModal.tsx`)
 
-The `DropdownMenuContent` at line 3269 has no dark theme classes — it falls back to the default `bg-popover` (light). Need to add `bg-zinc-800 border-white/10 text-zinc-200` to match the SidebarThemeModal upload dropdown.
-
-### 2. Character card dropdown hover is white instead of gray
-**File:** `src/components/chronicle/ChatInterfaceTab.tsx` (line 3191) and `src/components/chronicle/SideCharacterCard.tsx` (line 96)
-
-Both character card dropdowns use `bg-zinc-800` for the dark variant, but the `DropdownMenuItem` default `focus:bg-accent` resolves to a light accent color. Need to add `hover:!bg-zinc-700 focus:!bg-zinc-700 focus:!text-white` to each `DropdownMenuItem` in these dark dropdowns — matching the pattern already used in `SidebarThemeModal.tsx`.
-
-### Changes
-
-**`ChatInterfaceTab.tsx`:**
-- Line 3269: Add `bg-zinc-800 border-white/10 text-zinc-200` to the "Set Theme" `DropdownMenuContent`
-- Line 3270: Add `hover:!bg-zinc-700 focus:!bg-zinc-700 focus:!text-white` to the "Set Theme" `DropdownMenuItem`
-- Lines 3192-3202: Add `hover:!bg-zinc-700 focus:!bg-zinc-700 focus:!text-white` to both menu items in the dark variant of the main character card dropdown (the `sidebarBgIsLight` branch)
-- Also fix the delete item's `focus:bg-red-50` to `focus:!bg-red-900/30` for dark theme consistency
-
-**`SideCharacterCard.tsx`:**
-- Lines 97-108: Add same dark hover classes (`hover:!bg-zinc-700 focus:!bg-zinc-700 focus:!text-white`) to both menu items in the dark variant
-- Fix delete item `focus:bg-red-50` → `focus:!bg-red-900/30`
+**Change `object-cover` to `object-contain`** on the background preview `<img>` tag (line ~130). This will scale the entire image to fit within the tile without cropping, showing the full content. The tile's dark `bg-zinc-800/50` background will fill any letterbox space naturally.
 
