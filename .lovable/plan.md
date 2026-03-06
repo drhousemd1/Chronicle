@@ -1,32 +1,25 @@
 
 
-## Plan: Redesign Scene Gallery Section Layout
+## Plan: Fix Scene Gallery Title to Match Standard Label Style
 
-### Changes to `src/components/chronicle/WorldTab.tsx`
+### Problem
+The Scene Gallery title uses `text-[11px] font-bold uppercase tracking-widest text-[hsl(var(--ui-text))]` which doesn't match the standard used everywhere else on the page: `text-[10px] font-black text-zinc-400 uppercase tracking-widest`.
 
-**1. Replace HintBox + buttons layout (lines 991-1022) with new structure:**
+### Fix in `src/components/chronicle/WorldTab.tsx` (line 994)
 
-Remove the current side-by-side HintBox + buttons layout. Replace with:
-- A header row containing: left-aligned label "Scene Gallery Photos" with Info icon + tooltip (same pattern as Opening Dialog), and right-aligned Upload Image + AI Generate buttons side by side
-- Remove the outer `bg-[#3a3a3f]/30` wrapper that adds the lighter padding area — the buttons/label row sits directly inside the `p-6` container
+Change:
+```tsx
+<span className="text-[11px] font-bold uppercase tracking-widest text-[hsl(var(--ui-text))]">Scene Gallery Photos</span>
+```
 
-**2. Make buttons horizontal instead of vertical:**
+To:
+```tsx
+<label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Scene Gallery Photos</label>
+```
 
-The `SceneGalleryActionButtons` component currently uses `flex-col` layout. We need to change it to `flex-row` (side by side). This requires editing `src/components/chronicle/SceneGalleryActionButtons.tsx` — change `flex-col` to `flex-row` on the wrapper div (line 33).
-
-**3. Darken the empty state area (lines 1089-1094):**
-
-Change the empty state container from `border-2 border-dashed border-zinc-700` to also include a darker background matching text input areas: add `bg-[#1e1e22]` (or similar dark surface matching the input fields on the page). This makes the "No scenes uploaded" text more readable against a darker backdrop rather than blending with the surrounding padding.
-
-**4. Tooltip content for the Info icon:**
-
-Uses the same `list-outside pl-4` bullet pattern with `normal-case tracking-normal`:
-- Upload images to be used for different scenes.
-- Add "tags" for each image.
-- Background adapts based on tags mentioned in dialog.
-- Recommend: 1280x896, 4:3 landscape.
-
-### Files modified:
-- `src/components/chronicle/WorldTab.tsx` — layout restructure + tooltip + darker empty state
-- `src/components/chronicle/SceneGalleryActionButtons.tsx` — `flex-col` → `flex-row`
+Three corrections:
+1. `text-[11px]` → `text-[10px]`
+2. `font-bold` → `font-black`
+3. `text-[hsl(var(--ui-text))]` → `text-zinc-400`
+4. `<span>` → `<label>` (matching other field labels)
 
