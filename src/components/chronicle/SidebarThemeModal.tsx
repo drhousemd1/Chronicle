@@ -128,7 +128,9 @@ export function SidebarThemeModal({
                     : 'border-white/10 hover:border-white/20'
                 }`}
               >
-                <img src={bg.imageUrl} alt="Background" className="w-full h-full object-cover" />
+                <div className="absolute inset-0 rounded-xl overflow-hidden">
+                  <img src={bg.imageUrl} alt="Background" className="w-full h-full object-cover" />
+                </div>
                 
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent h-16 opacity-0 group-hover:opacity-100 transition-opacity" />
 
