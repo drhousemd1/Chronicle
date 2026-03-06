@@ -976,7 +976,8 @@ export async function fetchConversationRegistry(): Promise<ConversationMetadata[
     lastMessage: '',
     messageCount: 0,
     createdAt: new Date(conv.created_at).getTime(),
-    updatedAt: new Date(conv.updated_at).getTime()
+    updatedAt: new Date(conv.updated_at).getTime(),
+    creatorName: null
   }));
 }
 
