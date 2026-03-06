@@ -782,8 +782,13 @@ const IndexContent = () => {
       setActiveCoverImage(coverImage);
       setActiveCoverPosition(coverImagePosition);
       setActiveContentThemes(defaultContentThemes);
-      
-      
+
+  // Initialize draft count from registry
+  useEffect(() => {
+    setDraftCount(getDraftRegistry().length);
+  }, []);
+
+
       setTab("world"); 
       setSelectedCharacterId(null);
       setPlayingConversationId(null);
