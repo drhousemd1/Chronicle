@@ -471,6 +471,7 @@ export type ConversationMetadata = {
   messageCount: number;
   createdAt: number;
   updatedAt: number;
+  creatorName: string | null;
 };
 
 // User background for the hub page

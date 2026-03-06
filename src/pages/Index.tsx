@@ -158,7 +158,7 @@ const IndexContent = () => {
   // Conversations tab modal state
   const [convDeleteTarget, setConvDeleteTarget] = useState<{ scenarioId: string; conversationId: string } | null>(null);
   const [convDeleteAllOpen, setConvDeleteAllOpen] = useState(false);
-  const [convRenameTarget, setConvRenameTarget] = useState<{ scenarioId: string; conversationId: string; currentTitle: string } | null>(null);
+  
   
   // Delayed resume overlay
   const resumeTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -693,7 +693,8 @@ const IndexContent = () => {
         lastMessage: openingText || '',
         messageCount: initialMessages.length,
         createdAt: newConv.createdAt,
-        updatedAt: newConv.updatedAt
+        updatedAt: newConv.updatedAt,
+        creatorName: null
       }, ...prev]);
       
       setActiveData(data);
@@ -1287,28 +1288,6 @@ const IndexContent = () => {
     }
   }
   
-  async function handleRenameConversationFromHistory(scenarioId: string, conversationId: string, newTitle: string) {
-    try {
-      await supabaseData.renameConversation(conversationId, newTitle);
-      
-      const updatedConvRegistry = await supabaseData.fetchConversationRegistry();
-      setConversationRegistry(updatedConvRegistry);
-      
-      if (activeId === scenarioId && activeData) {
-        const updatedData = { 
-          ...activeData, 
-          conversations: activeData.conversations.map(c => 
-            c.id === conversationId ? { ...c, title: newTitle, updatedAt: now() } : c
-          ) 
-        };
-        setActiveData(updatedData);
-      }
-      
-      
-    } catch (e: any) {
-      console.error("Failed to rename conversation:", e.message);
-    }
-  }
 
   function handleUpdateActive(patch: Partial<ScenarioData>) {
     setActiveData(prev => prev ? { ...prev, ...patch } : null);
@@ -2241,25 +2220,8 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
               <ConversationsTab
                 globalRegistry={conversationRegistry}
                 onResume={handleResumeFromHistory}
-                onRename={(scenarioId, conversationId) => {
-                  const entry = conversationRegistry.find(e => e.conversationId === conversationId);
-                  setConvRenameTarget({ scenarioId, conversationId, currentTitle: entry?.conversationTitle || entry?.scenarioTitle || "" });
-                }}
                 onDelete={(scenarioId, conversationId) => {
                   setConvDeleteTarget({ scenarioId, conversationId });
-                }}
-              />
-
-              {/* Rename modal */}
-              <ChangeNameModal
-                open={!!convRenameTarget}
-                onOpenChange={(open) => { if (!open) setConvRenameTarget(null); }}
-                currentName={convRenameTarget?.currentTitle || ""}
-                onSave={(newName) => {
-                  if (convRenameTarget) {
-                    handleRenameConversationFromHistory(convRenameTarget.scenarioId, convRenameTarget.conversationId, newName);
-                  }
-                  setConvRenameTarget(null);
                 }}
               />
 
