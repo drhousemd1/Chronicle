@@ -899,7 +899,7 @@ const IndexContent = () => {
     if (targetTab === "library") {
       refreshCharacterLibrary().catch(e => console.warn("Library refresh failed:", e));
     }
-  }, [activeId, activeData, refreshCharacterLibrary]);
+  }, [activeId, activeData, activeCoverImage, activeCoverPosition, activeContentThemes, refreshCharacterLibrary]);
 
   async function handleSaveCharacter() {
     if (!user) return;
