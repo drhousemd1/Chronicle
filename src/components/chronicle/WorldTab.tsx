@@ -908,115 +908,115 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                       {publishErrors.openingDialog && <p className="text-sm text-red-500 mt-1">{publishErrors.openingDialog}</p>}
                     </div>
                     
-                    {/* Starting Day & Time Controls */}
-                    <div>
-                      <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1 block">Starting Day & Time</label>
-                      <div className="flex items-center gap-6">
-                        {/* Day Counter */}
-                        <div className="flex items-center gap-2 bg-zinc-800 rounded-xl px-4 py-2 border border-zinc-700">
-                          <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mr-1">Day</span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const current = openingDialog.startingDay || 1;
-                              if (current > 1) onUpdateOpening({ startingDay: current - 1 });
-                            }}
-                            className="p-1 rounded-md hover:bg-zinc-700 text-zinc-400 transition-colors disabled:opacity-30"
-                            disabled={(openingDialog.startingDay || 1) <= 1}
-                          >
-                            <ChevronDown size={16} />
-                          </button>
-                          <span className="text-lg font-bold text-white min-w-[2ch] text-center">
-                            {openingDialog.startingDay || 1}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const current = openingDialog.startingDay || 1;
-                              onUpdateOpening({ startingDay: current + 1 });
-                            }}
-                            className="p-1 rounded-md hover:bg-zinc-700 text-zinc-400 transition-colors"
-                          >
-                            <ChevronUp size={16} />
-                          </button>
-                        </div>
+                    {/* Starting Day & Time + Mode Controls - Single Row */}
+                    <div className="flex items-end gap-4 flex-wrap">
+                      {/* Starting Day & Time group */}
+                      <div>
+                        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1 block">Starting Day & Time</label>
+                        <div className="flex items-center gap-3">
+                          {/* Day Counter */}
+                          <div className="flex items-center gap-1.5 bg-zinc-800 rounded-xl px-3 py-1.5 border border-zinc-700">
+                            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Day</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const current = openingDialog.startingDay || 1;
+                                if (current > 1) onUpdateOpening({ startingDay: current - 1 });
+                              }}
+                              className="p-0.5 rounded-md hover:bg-zinc-700 text-zinc-400 transition-colors disabled:opacity-30"
+                              disabled={(openingDialog.startingDay || 1) <= 1}
+                            >
+                              <ChevronDown size={14} />
+                            </button>
+                            <span className="text-base font-bold text-white min-w-[2ch] text-center">
+                              {openingDialog.startingDay || 1}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const current = openingDialog.startingDay || 1;
+                                onUpdateOpening({ startingDay: current + 1 });
+                              }}
+                              className="p-0.5 rounded-md hover:bg-zinc-700 text-zinc-400 transition-colors"
+                            >
+                              <ChevronUp size={14} />
+                            </button>
+                          </div>
 
-                        {/* Time of Day Icons */}
-                        <div className="flex items-center gap-1 bg-zinc-800 rounded-xl p-1 border border-zinc-700">
-                          {([
-                            { key: 'sunrise' as TimeOfDay, icon: Sunrise, label: 'Sunrise' },
-                            { key: 'day' as TimeOfDay, icon: Sun, label: 'Day' },
-                            { key: 'sunset' as TimeOfDay, icon: Sunset, label: 'Sunset' },
-                            { key: 'night' as TimeOfDay, icon: Moon, label: 'Night' },
-                          ] as const).map(({ key, icon: Icon, label }) => {
-                            const isActive = (openingDialog.startingTimeOfDay || 'day') === key;
-                            return (
-                              <button
-                                key={key}
-                                type="button"
-                                onClick={() => onUpdateOpening({ startingTimeOfDay: key })}
-                                title={label}
-                                className={`p-2 rounded-lg transition-all ${
-                                  isActive 
-                                    ? 'bg-blue-500 text-white shadow-md' 
-                                    : 'text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200'
-                                }`}
-                              >
-                                <Icon size={18} />
-                              </button>
-                            );
-                          })}
+                          {/* Time of Day Icons */}
+                          <div className="flex items-center gap-1 bg-zinc-800 rounded-xl p-1 border border-zinc-700">
+                            {([
+                              { key: 'sunrise' as TimeOfDay, icon: Sunrise, label: 'Sunrise' },
+                              { key: 'day' as TimeOfDay, icon: Sun, label: 'Day' },
+                              { key: 'sunset' as TimeOfDay, icon: Sunset, label: 'Sunset' },
+                              { key: 'night' as TimeOfDay, icon: Moon, label: 'Night' },
+                            ] as const).map(({ key, icon: Icon, label }) => {
+                              const isActive = (openingDialog.startingTimeOfDay || 'day') === key;
+                              return (
+                                <button
+                                  key={key}
+                                  type="button"
+                                  onClick={() => onUpdateOpening({ startingTimeOfDay: key })}
+                                  title={label}
+                                  className={`p-1.5 rounded-lg transition-all ${
+                                    isActive 
+                                      ? 'bg-blue-500 text-white shadow-md' 
+                                      : 'text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200'
+                                  }`}
+                                >
+                                  <Icon size={16} />
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    
-                    {/* Time Progression Mode */}
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Mode:</span>
-                        <div className="flex p-1 bg-zinc-900/50 rounded-lg border border-white/10">
-                          <button
-                            type="button"
-                            onClick={() => onUpdateOpening({ timeProgressionMode: 'manual' })}
-                            className={cn(
-                              "flex-1 px-3.5 py-1.5 text-[10px] font-black uppercase tracking-widest rounded border-none cursor-pointer transition-all",
-                              (openingDialog.timeProgressionMode || 'manual') === 'manual'
-                                ? "bg-zinc-700 text-blue-400 shadow-sm"
-                                : "bg-transparent text-zinc-500 hover:text-zinc-300"
-                            )}
-                          >
-                            Manual
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => onUpdateOpening({ timeProgressionMode: 'automatic' })}
-                            className={cn(
-                              "flex-1 px-3.5 py-1.5 text-[10px] font-black uppercase tracking-widest rounded border-none cursor-pointer transition-all",
-                              openingDialog.timeProgressionMode === 'automatic'
-                                ? "bg-zinc-700 text-blue-400 shadow-sm"
-                                : "bg-transparent text-zinc-500 hover:text-zinc-300"
-                            )}
-                          >
-                            Automatic
-                          </button>
+
+                      {/* Mode group */}
+                      <div>
+                        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1 block">Mode</label>
+                        <div className="flex items-center gap-3">
+                          <div className="flex p-1 bg-zinc-900/50 rounded-xl border border-white/10">
+                            <button
+                              type="button"
+                              onClick={() => onUpdateOpening({ timeProgressionMode: 'manual' })}
+                              className={cn(
+                                "px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg border-none cursor-pointer transition-all",
+                                (openingDialog.timeProgressionMode || 'manual') === 'manual'
+                                  ? "bg-zinc-700 text-blue-400 shadow-sm"
+                                  : "bg-transparent text-zinc-500 hover:text-zinc-300"
+                              )}
+                            >
+                              Manual
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => onUpdateOpening({ timeProgressionMode: 'automatic' })}
+                              className={cn(
+                                "px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg border-none cursor-pointer transition-all",
+                                openingDialog.timeProgressionMode === 'automatic'
+                                  ? "bg-zinc-700 text-blue-400 shadow-sm"
+                                  : "bg-transparent text-zinc-500 hover:text-zinc-300"
+                              )}
+                            >
+                              Automatic
+                            </button>
+                          </div>
+
+                          {openingDialog.timeProgressionMode === 'automatic' && (
+                            <select
+                              value={openingDialog.timeProgressionInterval || 15}
+                              onChange={(e) => onUpdateOpening({ timeProgressionInterval: Number(e.target.value) })}
+                              className="bg-zinc-800 border border-zinc-700 rounded-xl text-xs text-white px-2.5 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            >
+                              <option value={10}>10 min</option>
+                              <option value={15}>15 min</option>
+                              <option value={30}>30 min</option>
+                              <option value={60}>60 min</option>
+                            </select>
+                          )}
                         </div>
                       </div>
-                      
-                      {openingDialog.timeProgressionMode === 'automatic' && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Interval:</span>
-                          <select
-                            value={openingDialog.timeProgressionInterval || 15}
-                            onChange={(e) => onUpdateOpening({ timeProgressionInterval: Number(e.target.value) })}
-                            className="bg-zinc-900/50 border border-zinc-700 rounded-lg text-sm text-white px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                          >
-                            <option value={10}>10 minutes</option>
-                            <option value={15}>15 minutes</option>
-                            <option value={30}>30 minutes</option>
-                            <option value={60}>60 minutes</option>
-                          </select>
-                        </div>
-                      )}
                     </div>
                     <HintBox hints={[
                       "Set when your story begins. The AI will use this context for time-appropriate responses.",
