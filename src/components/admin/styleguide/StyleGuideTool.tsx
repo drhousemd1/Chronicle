@@ -1459,6 +1459,49 @@ className="!bg-zinc-900/50 !border-zinc-700 !text-white !placeholder:text-zinc-4
                 { file: 'CharacterPicker.tsx', note: 'Uses !important CSS overrides to force dark styling on Chronicle UI Input.' },
               ]} />
             </div>
+
+            <PageSubheading>Character Builder Inline Inputs</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="Builder Form Row Input (Dark)" pageTag="Character Builder"
+                specs='<strong>bg-zinc-900/50 border-white/10 rounded-lg</strong>. Used in collapsible character builder sections for trait values. Label column: <code>w-2/5</code> with same styling. Both label and value share identical input styling. Lock icon (w-3.5 h-3.5 text-zinc-400) marks hardcoded fields.'
+                previewDark previewStyle={{ flexDirection: 'column', gap: 8 }}
+                preview={
+                  <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+                    <div style={{ width: '40%', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ color: '#a1a1aa', fontSize: 10 }}>🔒</span>
+                      <input readOnly className="w-full px-3 py-2 bg-zinc-900/50 border border-white/10 rounded-lg text-white text-sm" value="Physical Appearance" />
+                    </div>
+                    <input readOnly className="flex-1 px-3 py-2 bg-zinc-900/50 border border-white/10 rounded-lg text-white text-sm" placeholder="Describe appearance..." />
+                  </div>
+                }
+                code={`/* Label column: w-2/5 */
+bg-zinc-900/50 border border-white/10 rounded-lg text-sm text-white
+/* Lock icon: w-3.5 h-3.5 text-zinc-400 (hardcoded fields) */
+/* Value column: flex-1, same input styling */`}
+              />
+            </div>
+
+            <PageSubheading>Auth Page Dark Inputs</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="Auth Login Input (Dark Slate)" pageTag="Auth Page"
+                specs='<strong>bg-slate-700/50 border-slate-600 text-white</strong>. Unique dark input variant only used on Auth page. Uses shadcn Input as base with className overrides. Focus ring uses default shadcn ring behavior. Different from both Chronicle UI inputs and standard dark inputs (zinc-*).'
+                previewDark
+                preview={
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
+                    <input readOnly className="h-10 w-full rounded-md bg-slate-700/50 border border-slate-600 text-white px-3 py-2 text-sm placeholder:text-slate-400" placeholder="Email address" />
+                    <input readOnly type="password" className="h-10 w-full rounded-md bg-slate-700/50 border border-slate-600 text-white px-3 py-2 text-sm placeholder:text-slate-400" placeholder="Password" />
+                  </div>
+                }
+                code={`/* Auth-only dark input variant */
+bg-slate-700/50 border-slate-600 text-white rounded-md
+placeholder:text-slate-400
+/* ⚠ Uses slate-* (unique to Auth) vs zinc-* (rest of app) */
+/* ⚠ rounded-md (shadcn) vs rounded-2xl (Chronicle) vs rounded-lg (builder) */`}
+              />
+              <InconsistencyNote items={[
+                { file: 'Auth.tsx', note: 'Uses bg-slate-700/50 border-slate-600 — a third input color system alongside zinc-* (dark) and slate-50 (Chronicle light).' },
+              ]} />
+            </div>
           </Section>
 
           <Divider />
