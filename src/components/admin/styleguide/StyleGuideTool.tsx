@@ -980,6 +980,64 @@ hover:text-rose-500 rounded-full transition-all`}
             <InconsistencyNote items={[
               { file: 'ImageLibraryTab.tsx', note: 'Folder delete uses rounded-full while all other action buttons in the app use rounded-xl.' },
             ]} />
+
+            <div style={fullSpan}><PageSubheading>Story Detail Modal</PageSubheading></div>
+
+            <EntryCard name="Story Detail Action Buttons" pageTag="Story Detail Modal"
+              specs='<strong>h-12 bg-white/5 border-white/10 rounded-xl</strong>. Taller than standard (h-12 vs h-10). Toggle states: liked <code>bg-rose-500/20 border-rose-500/50 text-rose-400</code>, saved <code>bg-amber-500/20 border-amber-500/50 text-amber-400</code>. Play: <code>bg-[#3b82f6]</code>.'
+              previewDark
+              preview={
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button className="h-12 px-6 rounded-xl bg-white/5 border border-white/10 text-white text-xs font-semibold" style={{ cursor: 'default' }}>♡ Like</button>
+                  <button className="h-12 px-6 rounded-xl bg-rose-500/20 border border-rose-500/50 text-rose-400 text-xs font-semibold" style={{ cursor: 'default' }}>♥ Liked</button>
+                  <button className="h-12 px-6 rounded-xl bg-amber-500/20 border border-amber-500/50 text-amber-400 text-xs font-semibold" style={{ cursor: 'default' }}>★ Saved</button>
+                  <button className="h-12 px-6 rounded-xl bg-[#3b82f6] text-white text-xs font-bold" style={{ cursor: 'default' }}>▶ PLAY</button>
+                </div>
+              }
+              code={`/* Base: h-12 bg-white/5 border-white/10 rounded-xl */
+/* Liked: bg-rose-500/20 border-rose-500/50 text-rose-400 */
+/* Saved: bg-amber-500/20 border-amber-500/50 text-amber-400 */
+/* Play: bg-[#3b82f6] text-white */`}
+            />
+
+            <div style={fullSpan}><PageSubheading>Review Modal</PageSubheading></div>
+
+            <EntryCard name="Review Submit / Delete Buttons" pageTag="Review Modal"
+              specs='<strong>h-11</strong> (non-standard — standard is h-10). Submit: <code>bg-[#4a5f7f] rounded-xl font-semibold text-sm</code>. Delete: <code>bg-red-600/20 border-red-500/30 text-red-400 rounded-xl</code>. Both use text-sm instead of standard text-[10px] uppercase.'
+              previewDark
+              preview={
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button className="h-11 px-6 rounded-xl bg-[#4a5f7f] text-white text-sm font-semibold" style={{ cursor: 'default' }}>Submit Review</button>
+                  <button className="h-11 px-6 rounded-xl bg-red-600/20 border border-red-500/30 text-red-400 text-sm font-semibold" style={{ cursor: 'default' }}>Delete Review</button>
+                </div>
+              }
+              code={`/* Submit: h-11 bg-[#4a5f7f] rounded-xl font-semibold text-sm */
+/* Delete: h-11 bg-red-600/20 border-red-500/30 text-red-400 */
+/* ⚠ Non-standard: h-11 + text-sm vs standard h-10 + text-[10px] */`}
+            />
+            <InconsistencyNote items={[
+              { file: 'ReviewModal.tsx', note: 'Uses h-11 + text-sm for buttons instead of standard h-10 + text-[10px] uppercase.' },
+            ]} />
+
+            <div style={fullSpan}><PageSubheading>Share Story Modal</PageSubheading></div>
+
+            <EntryCard name="Share Modal !important Override Buttons" pageTag="Share Story Modal"
+              specs='Uses Chronicle UI Button with <code>!important</code> CSS overrides: <code>!bg-blue-600</code>, <code>!bg-rose-500/20</code>. This bypasses the standard Shadow Surface pattern entirely.'
+              previewDark
+              preview={
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button className="h-10 px-6 rounded-xl bg-blue-600 text-white text-[10px] font-bold uppercase tracking-wider" style={{ cursor: 'default' }}>Publish</button>
+                  <button className="h-10 px-6 rounded-xl bg-rose-500/20 text-rose-400 text-[10px] font-bold uppercase tracking-wider" style={{ cursor: 'default' }}>Unpublish</button>
+                </div>
+              }
+              code={`/* Uses !important overrides on Chronicle UI Button */
+/* !bg-blue-600 — forced blue background */
+/* !bg-rose-500/20 — forced semi-transparent rose */
+/* ⚠ Bypasses Shadow Surface pattern */`}
+            />
+            <InconsistencyNote items={[
+              { file: 'ShareStoryModal.tsx', note: 'Uses !important CSS overrides on buttons instead of proper variant classes.' },
+            ]} />
           </Section>
 
           <Divider />
