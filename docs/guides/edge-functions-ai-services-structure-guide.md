@@ -124,8 +124,10 @@ The system prompt in `getSystemInstruction()` is constructed in this order:
 | #9 | Control rule reliability — AI generates for user-controlled characters | `src/services/llm.ts` | RESOLVED — 2026-03-01 — CAST filtered to AI-only, DO NOT GENERATE FOR quick-reference at top of INSTRUCTIONS |
 | #10 | No in-session trait evolution guidance | `src/services/llm.ts`, `src/types.ts` | RESOLVED — 2026-03-01 — Added IN-SESSION TRAIT DYNAMICS block, personality-driven NSFW pacing, adherenceScore/scoreTrend on PersonalityTrait |
 | #11 | NSFW intensity and verbosity instruction overlap | `src/services/llm.ts` | RESOLVED — 2026-03-01 — Moved sensory detail lines from nsfwRules to verbosityRules detailed block |
-
----
+| #12 | Dialogue loops — AI re-asks confirmed questions, defers action with "later/soon/tomorrow," rehashes prior dialogue | `src/services/llm.ts`, `src/components/chronicle/ChatInterfaceTab.tsx`, `supabase/functions/chat/index.ts` | RESOLVED — 2026-03-07 — Added Confirmation Closure Protocol, No Deferral Loop, No Rehash rules to system prompt. Priority hierarchy updated: forward-momentum rules rank #2, never overridden. Runtime anti-loop micro-directives injected before send/regenerate. |
+| #13 | Regeneration context duplication — user message included twice (in truncated history + as new message) reinforcing repetition | `src/components/chronicle/ChatInterfaceTab.tsx` | RESOLVED — 2026-03-07 — Truncation now excludes the triggering user message from history since generateRoleplayResponseStream re-adds it |
+| #14 | Detailed mode verbosity uncapped — 7-9 paragraph responses | `src/services/llm.ts` | RESOLVED — 2026-03-07 — Hard paragraph caps: concise 1-2, balanced 1-3, detailed 2-3 (max 4 exceptional). Verbosity-based max_tokens: concise=1024, balanced=2048, detailed=3072 |
+| #15 | 403 retry directive encouraged evasive/deferral output | `supabase/functions/chat/index.ts` | RESOLVED — 2026-03-07 — Replaced "deflect/redirect/change subject" with "concrete immediate action pivot," explicitly forbids postponement language |
 
 ## 6. Image Generation Pipeline
 
