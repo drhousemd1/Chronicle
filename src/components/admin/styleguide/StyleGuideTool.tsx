@@ -880,7 +880,7 @@ className="w-full bg-purple-600 hover:bg-purple-700 text-white"
             <EntryCard name="Auth Toggle Link" pageTag="Auth"
               specs='Unstyled button link. <strong>text-purple-400 hover:text-purple-300 text-sm</strong>. "Don\'t have an account? Sign up" / "Already have an account? Sign in".'
               preview={
-                <button className="text-purple-400 hover:text-purple-300 text-sm" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>Don't have an account? Sign up</button>
+                <button className="text-purple-400 hover:text-purple-300 text-sm" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>{"Don't have an account? Sign up"}</button>
               }
               previewDark
               code={`text-purple-400 hover:text-purple-300 text-sm
