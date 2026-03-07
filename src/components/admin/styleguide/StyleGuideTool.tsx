@@ -426,6 +426,43 @@ export const StyleGuideTool: React.FC = () => {
               <SwatchCard color="#4a5f7f" name="Active Sidebar Item" rows={[{ label: 'Hex', value: '#4a5f7f' }, { label: 'Token', value: 'bg-[#4a5f7f]' }, { label: 'Effect', value: 'shadow-lg shadow-black/40' }, { label: 'Location', value: 'Active navigation item background', isLocation: true }]} />
               <SwatchCard color="#94a3b8" name="Inactive Sidebar Text" rows={[{ label: 'Hex', value: '#94a3b8' }, { label: 'Token', value: 'text-slate-400' }, { label: 'Location', value: 'Inactive sidebar item text and icons', isLocation: true }]} />
             </div>
+
+            <Divider />
+
+            {/* ─── Character Builder ─── */}
+            <PageSubheading>Character Builder</PageSubheading>
+            <PageDesc>Colors specific to the Character Builder / CharactersTab editor.</PageDesc>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
+              <SwatchCard color="rgba(58,58,63,0.3)" name="Inner Card Surface" rows={[{ label: 'Value', value: 'rgba(58,58,63,0.3)' }, { label: 'Token', value: 'bg-[#3a3a3f]/30' }, { label: 'Location', value: 'HardcodedSection inner card, character trait row containers', isLocation: true }]} />
+              <SwatchCard color="rgba(24,24,27,0.5)" name="HardcodedRow Label BG" rows={[{ label: 'Value', value: 'rgba(24,24,27,0.5)' }, { label: 'Token', value: 'bg-zinc-900/50' }, { label: 'Location', value: 'Read-only trait labels (Physical Appearance, Personality, etc.)', isLocation: true }]} />
+              <SwatchCard color="rgba(96,165,250,0.1)" name="Enhance Hover BG" rows={[{ label: 'Value', value: 'rgba(96,165,250,0.1)' }, { label: 'Token', value: 'bg-blue-500/10' }, { label: 'Location', value: 'AI Enhance sparkle button hover state', isLocation: true }]} />
+            </div>
+
+            <Divider />
+
+            {/* ─── Model Settings ─── */}
+            <PageSubheading>Model Settings</PageSubheading>
+            <PageDesc>Colors used on the Model Settings page — NOTE: this page uses a LIGHT THEME unlike the rest of the app.</PageDesc>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
+              <SwatchCard color="#ffffff" name="Model Card BG (Inactive)" rows={[{ label: 'Hex', value: '#ffffff' }, { label: 'Token', value: 'bg-white' }, { label: 'Location', value: 'Inactive model selection card background', isLocation: true }]} />
+              <SwatchCard color="#0f172a" name="Model Card BG (Active)" rows={[{ label: 'Hex', value: '#0f172a' }, { label: 'Token', value: 'bg-slate-900' }, { label: 'Location', value: 'Active/selected model card background, scale-[1.02]', isLocation: true }]} />
+              <SwatchCard color="#faf5ff" name="Admin Share Panel" rows={[{ label: 'Hex', value: '#faf5ff' }, { label: 'Token', value: 'bg-purple-50' }, { label: 'Location', value: 'Admin-only share toggle row background, border-purple-200', isLocation: true }]} />
+              <SwatchCard color="#f8fafc" name="Connection Setup BG" rows={[{ label: 'Hex', value: '#f8fafc' }, { label: 'Token', value: 'bg-slate-50' }, { label: 'Location', value: 'Connection setup container within Model Settings', isLocation: true }]} />
+            </div>
+            <InconsistencyNote items={[
+              { file: 'ModelSettingsTab.tsx', note: 'Uses LIGHT THEME (bg-white, text-slate-900, border-slate-200) while every other page in the app uses dark theme. Major design inconsistency.' },
+              { file: 'ModelSettingsTab.tsx', note: 'Card hover uses scale-[1.02] transition — unique to this page, not used elsewhere.' },
+            ]} />
+
+            <Divider />
+
+            {/* ─── World Tab ─── */}
+            <PageSubheading>World Tab</PageSubheading>
+            <PageDesc>Colors specific to the World Tab and its hint/character components.</PageDesc>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
+              <SwatchCard color="rgba(0,0,0,0.8)" name="CharacterButton BG" rows={[{ label: 'Value', value: 'rgba(0,0,0,0.8)' }, { label: 'Token', value: 'bg-black/80' }, { label: 'Location', value: 'World Tab character card button background', isLocation: true }]} />
+              <SwatchCard color="#4a5f7f" name="CharacterButton Border" rows={[{ label: 'Hex', value: '#4a5f7f' }, { label: 'Token', value: 'border-[#4a5f7f]' }, { label: 'Hover', value: 'border-[#6b82a8]' }, { label: 'Location', value: 'Character card border, hover brightens to #6b82a8', isLocation: true }]} />
+            </div>
           </Section>
 
           <Divider />
@@ -577,6 +614,34 @@ export const StyleGuideTool: React.FC = () => {
               exampleContent={<span className="text-[10px] font-black tracking-wide uppercase text-blue-200">ACOTAR</span>}
               specs={['text-[10px]', 'font-black', 'tracking-wide uppercase', 'text-blue-200']}
               locations="Active scenario subtitle below Story Builder nav item."
+            />
+
+            <div style={{ ...fullSpan, margin: '8px 0 4px' }}><Divider style={{ margin: '8px 0 4px' }} /></div>
+            <div style={fullSpan}><PageSubheading>Character Builder</PageSubheading></div>
+
+            <TypeTile name="HardcodedRow Label (Read-only)" exampleBg="rgba(24,24,27,0.5)"
+              exampleContent={<span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">PHYSICAL APPEARANCE</span>}
+              specs={['text-[10px]', 'font-bold', 'uppercase', 'tracking-widest', 'text-zinc-400']}
+              locations="Read-only trait labels in character builder HardcodedRow components. Paired with Lock icon (w-3.5 h-3.5 text-zinc-400)."
+            />
+            <TypeTile name="ExtraRow Editable Label" exampleBg="rgba(24,24,27,0.5)"
+              exampleContent={<span className="text-[10px] font-bold text-zinc-300 uppercase tracking-widest">CUSTOM TRAIT</span>}
+              specs={['text-[10px]', 'font-bold', 'uppercase', 'tracking-widest', 'text-zinc-300']}
+              locations="User-created custom trait labels — editable via input. Same layout as HardcodedRow but without Lock icon, has red X delete."
+            />
+
+            <div style={{ ...fullSpan, margin: '8px 0 4px' }}><Divider style={{ margin: '8px 0 4px' }} /></div>
+            <div style={fullSpan}><PageSubheading>Model Settings</PageSubheading></div>
+
+            <TypeTile name="Model Name (Active Card)" exampleBg="#0f172a"
+              exampleContent={<span className="font-bold text-white">Grok Beta</span>}
+              specs={['default (16px)', 'font-bold', 'text-white (active)', 'text-slate-900 (inactive)']}
+              locations="Model name inside selection cards. White on dark active card, slate-900 on white inactive card."
+            />
+            <TypeTile name="Connection Status Text" exampleBg="#f8fafc"
+              exampleContent={<span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">SYSTEM LINKED</span>}
+              specs={['text-[10px]', 'font-black', 'uppercase', 'tracking-widest', 'text-emerald-600']}
+              locations="Connection status badge text in Model Settings. Error state: text-slate-500."
             />
           </Section>
 
@@ -818,6 +883,103 @@ w-full flex items-center gap-3 rounded-xl px-4 py-3 font-bold text-sm`}
               code={`p-2 rounded-lg text-slate-400
 hover:text-white hover:bg-white/10 transition-colors`}
             />
+
+            <div style={fullSpan}><PageSubheading>Character Builder</PageSubheading></div>
+
+            <EntryCard name="AI Enhance Sparkle Button" pageTag="Character Builder"
+              specs='<strong>p-1.5 rounded-md</strong> · text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10. Uses <code>Sparkles size={14}</code>. Opens EnhanceModeModal.'
+              preview={
+                <button className="p-1.5 rounded-md text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10 transition-colors" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>✨</button>
+              }
+              code={`p-1.5 rounded-md text-zinc-400
+hover:text-blue-400 hover:bg-blue-500/10 transition-colors
+/* Sparkles size={14} */`}
+            />
+            <EntryCard name="EnhanceModeModal Option Cards" pageTag="Character Builder"
+              specs='<strong>p-5 rounded-2xl border border-white/10 bg-zinc-800/50</strong>. Icon container: <strong>w-10 h-10 rounded-xl bg-blue-500/20</strong> (Precise) or <strong>bg-purple-500/20</strong> (Detailed). Hover: border-blue-500/50 bg-blue-500/10.'
+              previewDark
+              preview={<>
+                <button className="flex flex-col items-center gap-2 p-4 rounded-2xl border border-white/10 bg-zinc-800/50 hover:border-blue-500/50" style={{ cursor: 'default', width: 120 }}>
+                  <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400">✨</div>
+                  <span className="text-white font-bold text-xs">Precise</span>
+                </button>
+                <button className="flex flex-col items-center gap-2 p-4 rounded-2xl border border-white/10 bg-zinc-800/50 hover:border-purple-500/50" style={{ cursor: 'default', width: 120 }}>
+                  <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-400">≡</div>
+                  <span className="text-white font-bold text-xs">Detailed</span>
+                </button>
+              </>}
+              code={`p-5 rounded-2xl border border-white/10 bg-zinc-800/50
+hover:border-blue-500/50 hover:bg-blue-500/10
+/* Icon: w-10 h-10 rounded-xl bg-blue-500/20 */
+/* Alt:  w-10 h-10 rounded-xl bg-purple-500/20 */`}
+            />
+            <InconsistencyNote items={[
+              { file: 'EnhanceModeModal.tsx', note: 'Uses rounded-2xl for option cards, but CharacterCreationModal uses rounded-xl for similar option patterns.' },
+            ]} />
+
+            <EntryCard name="ExtraRow Delete Button" pageTag="Character Builder"
+              specs='<strong>p-1 rounded text-red-400 hover:text-red-300 hover:bg-red-900/30</strong>. X icon to remove user-created custom trait rows.'
+              preview={
+                <button className="p-1 rounded text-red-400 hover:text-red-300 hover:bg-red-900/30 transition-colors" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>✕</button>
+              }
+              code={`p-1 rounded text-red-400
+hover:text-red-300 hover:bg-red-900/30 transition-colors`}
+            />
+
+            <div style={fullSpan}><PageSubheading>Model Settings</PageSubheading></div>
+
+            <EntryCard name="Model Selection Card (Active / Inactive)" pageTag="Model Settings"
+              specs='<strong>Active:</strong> bg-slate-900 border-slate-900 shadow-xl scale-[1.02]. <strong>Inactive:</strong> bg-white border-slate-200 hover:border-blue-400 hover:shadow-lg hover:scale-[1.01]. Light theme — unique to this page.'
+              preview={<>
+                <button className="text-left p-3 rounded-xl border bg-slate-900 border-slate-900 shadow-xl" style={{ cursor: 'default', width: 160, transform: 'scale(1.02)' }}>
+                  <div className="text-white font-bold text-xs">Grok Beta</div>
+                  <div className="text-slate-400 text-[9px] mt-0.5">Selected model</div>
+                </button>
+                <button className="text-left p-3 rounded-xl border bg-white border-slate-200" style={{ cursor: 'default', width: 160 }}>
+                  <div className="text-slate-900 font-bold text-xs">Grok 2</div>
+                  <div className="text-slate-500 text-[9px] mt-0.5">Inactive model</div>
+                </button>
+              </>}
+              code={`/* Active */
+bg-slate-900 border-slate-900 shadow-xl scale-[1.02]
+text-white
+/* Inactive */
+bg-white border-slate-200 hover:border-blue-400
+hover:shadow-lg hover:scale-[1.01]
+text-slate-900`}
+            />
+            <InconsistencyNote items={[
+              { file: 'ModelSettingsTab.tsx', note: 'LIGHT THEME page (bg-white, text-slate-900) while every other page uses dark theme. Major inconsistency.' },
+            ]} />
+
+            <div style={fullSpan}><PageSubheading>Image Library</PageSubheading></div>
+
+            <EntryCard name="New Folder Dashed Card" pageTag="Image Library"
+              specs='<strong>border-2 border-dashed border-zinc-600 bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-[2rem]</strong>. Hover: border-blue-400. Same aspect-[2/3] as folder cards.'
+              previewDark
+              preview={
+                <div className="border-2 border-dashed border-zinc-600 bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-[2rem] flex flex-col items-center justify-center gap-2 hover:border-blue-400 transition-colors" style={{ width: 100, aspectRatio: '2/3', cursor: 'default' }}>
+                  <span className="text-zinc-400 text-lg">+</span>
+                  <span className="text-zinc-400 text-[9px] font-bold uppercase tracking-wider">New Folder</span>
+                </div>
+              }
+              code={`border-2 border-dashed border-zinc-600
+bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-[2rem]
+hover:border-blue-400 transition-colors
+aspect-[2/3]`}
+            />
+            <EntryCard name="Folder Delete Button (Circular)" pageTag="Image Library"
+              specs='<strong>p-3 bg-black/40 text-white/50 hover:text-rose-500 rounded-full</strong>. Opacity transition. Positioned absolute top-right on folder cards.'
+              previewDark
+              preview={
+                <button className="p-3 bg-black/40 text-white/50 hover:text-rose-500 rounded-full transition-all" style={{ cursor: 'default', border: 'none' }}>🗑</button>
+              }
+              code={`p-3 bg-black/40 text-white/50
+hover:text-rose-500 rounded-full transition-all`}
+            />
+            <InconsistencyNote items={[
+              { file: 'ImageLibraryTab.tsx', note: 'Folder delete uses rounded-full while all other action buttons in the app use rounded-xl.' },
+            ]} />
           </Section>
 
           <Divider />
@@ -909,6 +1071,56 @@ text-white text-sm focus:ring-2 focus:ring-[#4a5f7f]`}
                 code={`/* Container */ bg-[#2b2b2e] rounded-full p-1
 /* Input */ h-7 w-56 px-3 py-1 text-xs font-bold rounded-full
 bg-transparent text-white placeholder:text-zinc-500`}
+              />
+            </div>
+
+            <div style={{ marginTop: 24 }}>
+              <PageSubheading>Character Builder</PageSubheading>
+              <EntryCard name="HardcodedRow Textarea (Borderless)" pageTag="Character Builder"
+                specs='<strong>bg:</strong> bg-zinc-900/50 · <strong>border:</strong> border-white/10 (very subtle) · <strong>rounded-lg</strong> · <strong>text:</strong> text-zinc-300 text-sm. Used for trait values inside HardcodedRow layout.'
+                previewDark previewStyle={{ flexDirection: 'column', gap: 12 }}
+                preview={
+                  <textarea readOnly className="w-full rounded-lg border border-white/10 bg-zinc-900/50 text-zinc-300 text-sm px-3 py-2 outline-none resize-none" rows={2} placeholder="Athletic build; tall; sharp jawline..." />
+                }
+                code={`bg-zinc-900/50 border border-white/10 rounded-lg
+text-zinc-300 text-sm px-3 py-2 resize-none`}
+              />
+            </div>
+
+            <div style={{ marginTop: 24 }}>
+              <PageSubheading>Chat Settings — LabeledToggle</PageSubheading>
+              <EntryCard name="LabeledToggle Component" pageTag="Chat Settings"
+                specs='Custom toggle with Off/On labels. <strong>Track:</strong> h-5 w-9 rounded-full. <strong>Thumb:</strong> h-4 w-4 rounded-full bg-white. <strong>On:</strong> bg-blue-500, On label text-blue-500. <strong>Off:</strong> bg-zinc-600, Off label text-zinc-200. <strong>Locked:</strong> bg-zinc-500 + Lock icon.'
+                previewDark previewStyle={{ flexDirection: 'column', gap: 16 }}
+                preview={<>
+                  <div className="inline-flex items-center gap-1.5">
+                    <span className="text-xs font-semibold text-zinc-500">Off</span>
+                    <div className="relative h-5 w-9 rounded-full bg-blue-500">
+                      <div className="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-md" style={{ transform: 'translateX(16px)' }} />
+                    </div>
+                    <span className="text-xs font-semibold text-blue-500">On</span>
+                  </div>
+                  <div className="inline-flex items-center gap-1.5">
+                    <span className="text-xs font-semibold text-zinc-200">Off</span>
+                    <div className="relative h-5 w-9 rounded-full bg-zinc-600">
+                      <div className="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-md" style={{ transform: 'translateX(2px)' }} />
+                    </div>
+                    <span className="text-xs font-semibold text-zinc-500">On</span>
+                  </div>
+                  <div className="inline-flex items-center gap-1.5 opacity-70">
+                    <span className="text-xs font-semibold text-zinc-200">Off</span>
+                    <div className="relative h-5 w-9 rounded-full bg-zinc-500">
+                      <div className="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-md" style={{ transform: 'translateX(2px)' }} />
+                    </div>
+                    <span className="text-xs font-semibold text-zinc-500">On</span>
+                    <span className="text-zinc-500 text-xs">🔒</span>
+                  </div>
+                </>}
+                code={`/* Track */ h-5 w-9 rounded-full
+/* On: bg-blue-500 | Off: bg-zinc-600 | Locked: bg-zinc-500 */
+/* Thumb */ h-4 w-4 rounded-full bg-white shadow-md
+/* On label: text-blue-500 | Off label: text-zinc-200 */
+/* Locked: opacity-70 + Lock icon w-3 h-3 text-zinc-500 */`}
               />
             </div>
           </Section>
@@ -1007,6 +1219,46 @@ px-2 py-1 rounded-md uppercase tracking-widest shadow-lg`}
                   <span className="px-3 py-1.5 bg-[#4a5f7f]/20 text-[#7ba3d4] rounded-lg text-sm font-bold">Free</span>
                 }
                 code={`px-3 py-1.5 bg-[#4a5f7f]/20 text-[#7ba3d4] rounded-lg text-sm font-bold`}
+              />
+            </div>
+
+            <div style={{ marginTop: 24 }}>
+              <PageSubheading>Character Builder</PageSubheading>
+              <EntryCard name="Lock Icon Indicator (HardcodedRow)" pageTag="Character Builder"
+                specs='<strong>w-3.5 h-3.5 text-zinc-400</strong>. Lock icon positioned at end of HardcodedRow to indicate read-only status. Only on hardcoded trait sections, not user-added extras.'
+                previewPlain previewStyle={{ gap: 12 }}
+                preview={<>
+                  <div className="flex items-center gap-2 bg-zinc-900/50 px-3 py-1.5 rounded-lg border border-white/10">
+                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">PERSONALITY</span>
+                    <span className="text-zinc-400 text-xs">🔒</span>
+                  </div>
+                </>}
+                code={`/* Lock icon: w-3.5 h-3.5 text-zinc-400 (Lucide Lock) */
+/* Positioned after label in HardcodedRow */
+/* Indicates non-removable, system-defined trait section */`}
+              />
+            </div>
+
+            <div style={{ marginTop: 24 }}>
+              <PageSubheading>Model Settings</PageSubheading>
+              <EntryCard name="Connection Status Badge (Animated)" pageTag="Model Settings"
+                specs='<strong>px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest</strong>. Connected: bg-emerald-50 text-emerald-600 border-emerald-100, dot animate-pulse. Checking: bg-amber-50 text-amber-600 border-amber-100, dot animate-bounce. Unlinked: bg-slate-100 text-slate-500.'
+                previewPlain previewStyle={{ gap: 8, flexWrap: 'wrap' }}
+                preview={<>
+                  <span className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />System Linked
+                  </span>
+                  <span className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-amber-50 text-amber-600 border border-amber-100 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-bounce" />Checking...
+                  </span>
+                  <span className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-slate-100 text-slate-500 border border-slate-200 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-slate-300" />Unlinked
+                  </span>
+                </>}
+                code={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest
+/* Connected: bg-emerald-50 text-emerald-600 border-emerald-100, dot animate-pulse */
+/* Checking:  bg-amber-50 text-amber-600 border-amber-100, dot animate-bounce */
+/* Unlinked:  bg-slate-100 text-slate-500 border-slate-200 */`}
               />
             </div>
           </Section>
@@ -1254,6 +1506,137 @@ max-w-md w-full`}
 /* Logo: w-10 h-10 rounded-xl bg-[#4a5f7f] shadow-xl shadow-[#4a5f7f]/30 */`}
               />
             </div>
+
+            <div style={{ marginTop: 24 }}>
+              <PageSubheading>Character Builder</PageSubheading>
+              <EntryCard name="Chat Message Bubble (AI / User / Transparent)" pageTag="Chat"
+                specs='<strong>AI Solid:</strong> bg-[#1c1f26] rounded-[2rem] border border-white/5. <strong>User:</strong> same + border-2 border-blue-400. <strong>Transparent:</strong> bg-black/50. Padding: p-8 pt-14 pb-12.'
+                previewDark previewStyle={{ flexDirection: 'column', gap: 12 }}
+                preview={<>
+                  <div className="bg-[#1c1f26] rounded-[2rem] border border-white/5 p-4">
+                    <div className="text-xs text-white">AI message (solid mode)</div>
+                  </div>
+                  <div className="bg-[#1c1f26] rounded-[2rem] border-2 border-blue-400 p-4">
+                    <div className="text-xs text-white">User message</div>
+                  </div>
+                  <div className="bg-black/50 rounded-[2rem] border border-white/5 p-4">
+                    <div className="text-xs text-white">AI message (transparent mode)</div>
+                  </div>
+                </>}
+                code={`/* AI Solid */      bg-[#1c1f26] rounded-[2rem] border border-white/5
+/* User */          bg-[#1c1f26] rounded-[2rem] border-2 border-blue-400
+/* AI Transparent */ bg-black/50 rounded-[2rem] border border-white/5
+/* Padding: p-8 pt-14 pb-12 */`}
+              />
+              <InconsistencyNote items={[
+                { file: 'ChatInterfaceTab.tsx', note: 'Chat bubble bg #1c1f26 does not match any panel token (#2a2a2f or bg-zinc-900). Unique surface color only used here.' },
+              ]} />
+            </div>
+
+            <div style={{ marginTop: 24 }}>
+              <PageSubheading>World Tab</PageSubheading>
+              <EntryCard name="HintBox Component" pageTag="World Tab"
+                specs='<strong>bg-zinc-900 rounded-xl p-4 border border-white/5</strong>. Contains ◆ diamond bullet points in text-zinc-400. Used for contextual guidance text.'
+                previewDark
+                preview={
+                  <div className="bg-zinc-900 rounded-xl p-4 border border-white/5">
+                    <div className="text-xs text-zinc-400 leading-relaxed">
+                      <span className="text-zinc-500 mr-1">◆</span> Hint text with diamond bullets<br/>
+                      <span className="text-zinc-500 mr-1">◆</span> Additional guidance line
+                    </div>
+                  </div>
+                }
+                code={`bg-zinc-900 rounded-xl p-4 border border-white/5
+/* Bullets: ◆ text-zinc-500 mr-1 */
+/* Text: text-zinc-400 text-xs leading-relaxed */`}
+              />
+            </div>
+
+            <div style={{ marginTop: 24 }}>
+              <EntryCard name="CharacterButton (World Tab)" pageTag="World Tab"
+                specs='<strong>bg-black/80 rounded-2xl border-[#4a5f7f] hover:border-[#6b82a8]</strong>. Error state: border-2 border-red-500. Contains avatar + name + control badge.'
+                previewDark previewStyle={{ gap: 12 }}
+                preview={<>
+                  <div className="bg-black/80 rounded-2xl border border-[#4a5f7f] p-3 flex items-center gap-2" style={{ cursor: 'default', width: 160 }}>
+                    <div className="w-8 h-8 rounded-lg bg-zinc-700" />
+                    <span className="text-white text-xs font-bold">Ashley</span>
+                  </div>
+                  <div className="bg-black/80 rounded-2xl border-2 border-red-500 p-3 flex items-center gap-2" style={{ cursor: 'default', width: 160 }}>
+                    <div className="w-8 h-8 rounded-lg bg-zinc-700" />
+                    <span className="text-white text-xs font-bold">Error State</span>
+                  </div>
+                </>}
+                code={`bg-black/80 rounded-2xl border border-[#4a5f7f]
+hover:border-[#6b82a8] transition-colors
+/* Error: border-2 border-red-500 */`}
+              />
+            </div>
+
+            <div style={{ marginTop: 24 }}>
+              <PageSubheading>Day/Time Panel</PageSubheading>
+              <EntryCard name="Day/Time Sky Panel" pageTag="Chat"
+                specs='Preloaded stacked &lt;img&gt; elements with crossfade (opacity duration-700). <strong>bg-black/20</strong> overlay for legibility. <strong>shadow-lg</strong> elevation. Timer controls use getTimeTextColor helper.'
+                previewDark
+                preview={
+                  <div className="relative rounded-xl overflow-hidden shadow-lg" style={{ width: '100%', height: 80 }}>
+                    <div className="absolute inset-0 bg-gradient-to-r from-orange-400 via-pink-300 to-blue-400" />
+                    <div className="absolute inset-0 bg-black/20" />
+                    <div className="relative flex items-center justify-center h-full">
+                      <span className="text-white text-xs font-bold">Day 1 · Sunrise</span>
+                    </div>
+                  </div>
+                }
+                previewPlain
+                code={`/* Stacked preloaded images with opacity crossfade */
+/* object-cover object-center */
+/* Overlay: absolute inset-0 bg-black/20 */
+/* Container: shadow-lg rounded-xl overflow-hidden */
+/* Text: getTimeTextColor() → black for Sunrise/Day/Sunset, white for Night */`}
+              />
+            </div>
+
+            <div style={{ marginTop: 24 }}>
+              <PageSubheading>Model Settings</PageSubheading>
+              <EntryCard name="Narrative Core Info Card" pageTag="Model Settings"
+                specs='<strong>bg-slate-900 text-white</strong> Card with watermark text. Watermark: <strong>text-[120px] font-black text-white/5 italic</strong>. Light-theme page, dark info card.'
+                previewDark
+                preview={
+                  <div className="bg-slate-900 text-white rounded-lg p-4 relative overflow-hidden" style={{ width: '100%', minHeight: 80 }}>
+                    <div className="relative z-10">
+                      <div className="font-black text-sm tracking-tight mb-1">Narrative Core</div>
+                      <div className="text-[9px] text-white/60">Powered by xAI Grok</div>
+                    </div>
+                    <div className="absolute -right-2 -bottom-2 text-[60px] font-black text-white/5 italic select-none">AI</div>
+                  </div>
+                }
+                previewPlain
+                code={`bg-slate-900 text-white rounded-lg p-6 relative overflow-hidden
+/* Watermark: absolute -right-4 -bottom-4
+   text-[120px] font-black text-white/5 italic select-none */`}
+              />
+            </div>
+
+            <div style={{ marginTop: 24 }}>
+              <PageSubheading>Dropdown Menus</PageSubheading>
+              <EntryCard name="Dropdown Menu Panel (Standardized)" pageTag="Global"
+                specs='<strong>bg-zinc-800 border-white/10</strong>. Items: hover bg-zinc-700 text-white. Destructive items: text-red-600 hover bg-zinc-700. Used across character cards, theme settings, etc.'
+                previewDark
+                preview={
+                  <div className="bg-zinc-800 border border-white/10 rounded-md p-1 shadow-lg" style={{ width: 180 }}>
+                    <div className="px-2 py-1.5 text-sm text-white rounded-sm hover:bg-zinc-700" style={{ cursor: 'default' }}>Edit character</div>
+                    <div className="px-2 py-1.5 text-sm text-white rounded-sm hover:bg-zinc-700" style={{ cursor: 'default' }}>Duplicate</div>
+                    <div className="h-px bg-white/10 my-1" />
+                    <div className="px-2 py-1.5 text-sm text-red-600 rounded-sm hover:bg-zinc-700" style={{ cursor: 'default' }}>Delete character</div>
+                  </div>
+                }
+                previewPlain
+                code={`bg-zinc-800 border border-white/10 rounded-md p-1 shadow-lg
+/* Items: px-2 py-1.5 text-sm text-white rounded-sm */
+/* Hover: bg-zinc-700 */
+/* Destructive: text-red-600 (keeps bg-zinc-700 on hover) */
+/* Separator: h-px bg-white/10 */`}
+              />
+            </div>
           </Section>
 
           <Divider />
@@ -1383,6 +1766,37 @@ shadow-[0_10px_30px_rgba(0,0,0,0.35)]
    Active: bg-blue-500 text-white
    Inactive: bg-zinc-700 text-zinc-300 */`}
             />
+
+            <div style={{ marginTop: 16 }} />
+
+            <EntryCard name="EnhanceModeModal" pageTag="Character Builder"
+              specs='<strong>sm:max-w-md bg-zinc-900 border-white/10</strong>. Close button hidden. 2-column grid of option cards (Precise / Detailed). Each card: p-5 rounded-2xl bg-zinc-800/50 with icon container w-10 h-10 rounded-xl.'
+              preview={
+                <div className="bg-zinc-900 border border-white/10 rounded-lg p-4" style={{ maxWidth: 300 }}>
+                  <div className="mb-3">
+                    <div className="text-sm font-bold text-white">Enhancement Style</div>
+                    <div className="text-[9px] text-zinc-400 mt-0.5">Choose how the AI should expand this field.</div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex flex-col items-center gap-1.5 p-3 rounded-2xl border border-white/10 bg-zinc-800/50">
+                      <div className="w-8 h-8 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400 text-xs">✨</div>
+                      <span className="text-white font-bold text-[9px]">Precise</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-1.5 p-3 rounded-2xl border border-white/10 bg-zinc-800/50">
+                      <div className="w-8 h-8 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-400 text-xs">≡</div>
+                      <span className="text-white font-bold text-[9px]">Detailed</span>
+                    </div>
+                  </div>
+                </div>
+              }
+              previewPlain
+              code={`sm:max-w-md bg-zinc-900 border-white/10 p-0 gap-0 [&>button]:hidden
+/* Option cards: p-5 rounded-2xl border-white/10 bg-zinc-800/50 */
+/* Precise icon: w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 */
+/* Detailed icon: w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 */
+/* Hover: border-blue-500/50 bg-blue-500/10 (Precise) */
+/* Hover: border-purple-500/50 bg-purple-500/10 (Detailed) */`}
+            />
           </Section>
 
           <Divider />
@@ -1488,6 +1902,28 @@ text-white/40    — Disabled`}
 /* 2. Checkmark: w-5 h-5 bg-blue-500 rounded-full */
 /* 3. Option: w-10 h-10 rounded-xl bg-{color}-500/20 */
 /* 4. Action button: h-8 w-8 rounded-xl */`}
+            />
+
+            <div style={{ marginTop: 16 }} />
+
+            <EntryCard name="Sparkles Enhance Icon" pageTag="Character Builder"
+              specs='<strong>Sparkles size={14}</strong> (w-3.5 h-3.5). Default: text-zinc-400. Hover: text-blue-400. Used as AI enhancement trigger on character trait rows. Paired with p-1.5 rounded-md container.'
+              preview={
+                <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                    <div className="p-1.5 rounded-md text-zinc-400" style={{ background: 'transparent' }}>✨</div>
+                    <span style={{ fontSize: 8, color: '#64748b' }}>Default</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                    <div className="p-1.5 rounded-md text-blue-400 bg-blue-500/10">✨</div>
+                    <span style={{ fontSize: 8, color: '#64748b' }}>Hover</span>
+                  </div>
+                </div>
+              }
+              code={`/* Sparkles size={14} — Lucide React */
+/* Default: text-zinc-400 */
+/* Hover: text-blue-400, container bg-blue-500/10 */
+/* Container: p-1.5 rounded-md */`}
             />
           </Section>
 
