@@ -1038,6 +1038,42 @@ hover:text-rose-500 rounded-full transition-all`}
             <InconsistencyNote items={[
               { file: 'ShareStoryModal.tsx', note: 'Uses !important CSS overrides on buttons instead of proper variant classes.' },
             ]} />
+
+            <div style={fullSpan}><PageSubheading>Arc System</PageSubheading></div>
+
+            <EntryCard name="Arc Phase Delete Button" pageTag="Arc System"
+              specs='<strong>w-[30px] h-[30px] rounded-[10px]</strong> · border border-red-400/50 bg-transparent. Hover: bg-red-500/20. Non-standard sizing — standard buttons use h-10 rounded-xl (12px). This uses 10px radius and 30px dimensions.'
+              previewDark
+              preview={
+                <button className="w-[30px] h-[30px] rounded-[10px] border border-red-400/50 bg-transparent text-red-400 flex items-center justify-center text-xs hover:bg-red-500/20 transition-colors" style={{ cursor: 'default' }}>✕</button>
+              }
+              code={`w-[30px] h-[30px] rounded-[10px] border border-red-400/50
+bg-transparent text-red-400 hover:bg-red-500/20
+/* ⚠ Non-standard: rounded-[10px] vs standard rounded-xl (12px) */`}
+            />
+            <InconsistencyNote items={[
+              { file: 'ArcPhaseCard.tsx', note: 'Phase delete button uses rounded-[10px] (10px) and w-[30px] h-[30px] instead of standard rounded-xl (12px) and h-10.' },
+            ]} />
+
+            <div style={fullSpan}><PageSubheading>Tag Chips</PageSubheading></div>
+
+            <EntryCard name="Tag Chip Remove Button" pageTag="Scene Tag Editor / Tag Input"
+              specs='Blue tag chip with inline X remove. <strong>px-2.5 py-1 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full text-xs</strong>. X icon: opacity-50, hover opacity-100. Hover state transitions entire chip to red variant.'
+              previewDark
+              preview={
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  <button className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full text-xs font-medium" style={{ cursor: 'default' }}>
+                    <span>fantasy</span><span style={{ opacity: 0.5 }}>✕</span>
+                  </button>
+                  <button className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-500/20 text-red-300 border border-red-500/30 rounded-full text-xs font-medium" style={{ cursor: 'default' }}>
+                    <span>romance</span><span>✕</span>
+                  </button>
+                </div>
+              }
+              code={`/* Default: bg-blue-500/20 text-blue-300 border-blue-500/30 rounded-full */
+/* Hover: bg-red-500/20 text-red-300 border-red-500/30 */
+/* X icon: opacity-50 → hover opacity-100 */`}
+            />
           </Section>
 
           <Divider />
