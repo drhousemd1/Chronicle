@@ -300,8 +300,12 @@ export const StyleGuideTool: React.FC = () => {
         {/* Content */}
         <div ref={contentRef} style={{ padding: isNarrow ? '24px 16px 68px' : '36px 42px 84px', maxWidth: 1400 }}>
 
+          {/* ═══════════════════════════════════════════════════════════════ */}
           {/* ═══ 1. COLORS ═══ */}
+          {/* ═══════════════════════════════════════════════════════════════ */}
           <Section id="colors" title="Colors" desc="All colors organized by the page they appear on. Every value verified against live source code and CSS custom properties.">
+            
+            {/* ─── Story Builder ─── */}
             <PageSubheading>Story Builder Page</PageSubheading>
             <PageDesc>Colors used across the Story Builder / Story Setup interface.</PageDesc>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
@@ -330,6 +334,7 @@ export const StyleGuideTool: React.FC = () => {
 
             <Divider />
 
+            {/* ─── My Stories ─── */}
             <PageSubheading>My Stories Page</PageSubheading>
             <PageDesc>Colors used on the My Stories gallery/card grid.</PageDesc>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
@@ -345,111 +350,249 @@ export const StyleGuideTool: React.FC = () => {
               <SwatchCard color="rgba(255,255,255,0.5)" name="White / 50% — Metadata Text" rows={[{ label: 'Value', value: 'rgba(255,255,255,0.5)' }, { label: 'Location', value: '"Created by" text, stat numbers on story cards', isLocation: true }]} extraPreviewStyle={{ border: '1px dashed #999' }} />
               <SwatchCard color="rgba(0,0,0,0.5)" name="Card Shadow" rows={[{ label: 'Value', value: 'rgba(0,0,0,0.5)' }, { label: 'Full', value: '0px 12px 32px -2px' }, { label: 'Location', value: 'Story card and panel box-shadow', isLocation: true }]} />
             </div>
+
+            <Divider />
+
+            {/* ─── Community Gallery ─── */}
+            <PageSubheading>Community Gallery</PageSubheading>
+            <PageDesc>Colors specific to the Community Gallery page and gallery cards.</PageDesc>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
+              <SwatchCard color="#121214" name="Gallery Page Background" rows={[{ label: 'Hex', value: '#121214' }, { label: 'Token', value: 'bg-[#121214]' }, { label: 'Location', value: 'GalleryHub main wrapper, Account page background', isLocation: true }]} />
+              <SwatchCard color="rgba(18,18,20,0.8)" name="Gallery Header Glass" rows={[{ label: 'Value', value: 'rgba(18,18,20,0.8)' }, { label: 'Effect', value: 'backdrop-filter: blur(12px)' }, { label: 'Location', value: 'Gallery sticky header with glassmorphic effect', isLocation: true }]} />
+              <SwatchCard color="rgba(58,58,63,0.5)" name="Gallery Search Input BG" rows={[{ label: 'Value', value: 'rgba(58,58,63,0.5)' }, { label: 'Token', value: 'bg-[#3a3a3f]/50' }, { label: 'Location', value: 'Gallery search input background', isLocation: true }]} />
+              <SwatchCard color="#18181b" name="Category Sidebar BG" rows={[{ label: 'Hex', value: '#18181b' }, { label: 'Token', value: 'bg-[#18181b]' }, { label: 'Location', value: 'Gallery category filter sidebar (280px)', isLocation: true }]} />
+              <SwatchCard color="#facc15" name="Yellow Accent Border" rows={[{ label: 'Hex', value: '#facc15' }, { label: 'Token', value: 'bg-yellow-400' }, { label: 'Location', value: '2px accent bar at top of category sidebar', isLocation: true }]} />
+              <SwatchCard color="rgba(59,130,246,0.2)" name="Blue Filter Tag BG" rows={[{ label: 'Value', value: 'rgba(59,130,246,0.2)' }, { label: 'Token', value: 'bg-blue-500/20' }, { label: 'Location', value: 'Active story type filter chip background', isLocation: true }]} />
+              <SwatchCard color="rgba(168,85,247,0.2)" name="Purple Genre Filter BG" rows={[{ label: 'Value', value: 'rgba(168,85,247,0.2)' }, { label: 'Token', value: 'bg-purple-500/20' }, { label: 'Location', value: 'Active genre filter chip background, purple-400 text', isLocation: true }]} />
+            </div>
+
+            <Divider />
+
+            {/* ─── Chat Interface ─── */}
+            <PageSubheading>Chat Interface</PageSubheading>
+            <PageDesc>Colors unique to the chat/conversation view.</PageDesc>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
+              <SwatchCard color="#1c1f26" name="Chat Bubble (Solid)" rows={[{ label: 'Hex', value: '#1c1f26' }, { label: 'Token', value: 'bg-[#1c1f26]' }, { label: 'Location', value: 'Chat message bubble when transparent mode is OFF', isLocation: true }]} />
+              <SwatchCard color="rgba(0,0,0,0.5)" name="Chat Bubble (Transparent)" rows={[{ label: 'Value', value: 'rgba(0,0,0,0.5)' }, { label: 'Token', value: 'bg-black/50' }, { label: 'Location', value: 'Chat message bubble when transparent mode is ON', isLocation: true }]} />
+              <SwatchCard color="#94a3b8" name="Action Text (Italic)" rows={[{ label: 'Hex', value: '#94a3b8' }, { label: 'Token', value: 'text-slate-400' }, { label: 'Location', value: 'Italic action text in chat (*actions*)', isLocation: true }]} />
+              <SwatchCard color="rgba(199,210,254,0.9)" name="Thought Text (Glowing)" rows={[{ label: 'Value', value: 'rgba(199,210,254,0.9)' }, { label: 'Token', value: 'text-indigo-200/90' }, { label: 'Effect', value: 'textShadow: indigo glow' }, { label: 'Location', value: 'Thought text in chat (parenthetical)', isLocation: true }]} />
+              <SwatchCard color="rgba(59,130,246,1)" name="User Bubble Border" rows={[{ label: 'Value', value: 'border-2 border-blue-400' }, { label: 'Location', value: 'User (non-AI) message bubble gets a blue-400 border to differentiate', isLocation: true }]} />
+              <SwatchCard color="rgba(255,255,255,0.3)" name="Frosted Glass (Light BG)" rows={[{ label: 'Value', value: 'rgba(255,255,255,0.3)' }, { label: 'Token', value: 'bg-white/30' }, { label: 'Location', value: 'SideCharacterCard when sidebar bg is dark (isDarkBg=true)', isLocation: true }]} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCard color="rgba(0,0,0,0.3)" name="Frosted Glass (Dark BG)" rows={[{ label: 'Value', value: 'rgba(0,0,0,0.3)' }, { label: 'Token', value: 'bg-black/30' }, { label: 'Location', value: 'SideCharacterCard when sidebar bg is light (isDarkBg=false)', isLocation: true }]} />
+            </div>
+
+            <Divider />
+
+            {/* ─── Chat History ─── */}
+            <PageSubheading>Chat History</PageSubheading>
+            <PageDesc>Colors for the conversation session cards.</PageDesc>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
+              <SwatchCard color="rgba(58,58,63,0.3)" name="Session Inner Card BG" rows={[{ label: 'Value', value: 'rgba(58,58,63,0.3)' }, { label: 'Token', value: 'bg-[#3a3a3f]/30' }, { label: 'Location', value: 'Inner nested card in session entries', isLocation: true }]} />
+              <SwatchCard color="rgba(255,255,255,0.1)" name="Delete Button BG" rows={[{ label: 'Value', value: 'rgba(255,255,255,0.1)' }, { label: 'Token', value: 'bg-white/10' }, { label: 'Location', value: 'Session delete button background, border-white/10', isLocation: true }]} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCard color="rgba(24,24,27,0.5)" name="Message Preview BG" rows={[{ label: 'Value', value: 'rgba(24,24,27,0.5)' }, { label: 'Token', value: 'bg-zinc-900/50' }, { label: 'Location', value: 'Last message preview box in session cards', isLocation: true }]} />
+            </div>
+
+            <Divider />
+
+            {/* ─── Account Page ─── */}
+            <PageSubheading>Account Page</PageSubheading>
+            <PageDesc>Colors for the dark-themed Account settings page.</PageDesc>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
+              <SwatchCard color="#121214" name="Account Page BG" rows={[{ label: 'Hex', value: '#121214' }, { label: 'Token', value: 'bg-[#121214]' }, { label: 'Location', value: 'Full page background for Account section', isLocation: true }]} />
+              <SwatchCard color="#1e1e22" name="Settings Card BG" rows={[{ label: 'Hex', value: '#1e1e22' }, { label: 'Token', value: 'bg-[#1e1e22]' }, { label: 'Location', value: 'Email, Plan, Password setting cards', isLocation: true }]} />
+              <SwatchCard color="#2b2b2e" name="Tab Container BG" rows={[{ label: 'Hex', value: '#2b2b2e' }, { label: 'Token', value: 'bg-[#2b2b2e]' }, { label: 'Location', value: 'Pill tab container on Account and Gallery pages', isLocation: true }]} />
+              <SwatchCard color="rgba(74,95,127,0.2)" name="Plan Badge BG" rows={[{ label: 'Value', value: 'rgba(74,95,127,0.2)' }, { label: 'Token', value: 'bg-[#4a5f7f]/20' }, { label: 'Location', value: 'Subscription plan badge background, text: #7ba3d4', isLocation: true }]} />
+            </div>
+
+            <Divider />
+
+            {/* ─── Auth Page ─── */}
+            <PageSubheading>Auth Page</PageSubheading>
+            <PageDesc>The light-themed authentication page gradient and card colors.</PageDesc>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
+              <SwatchCard color="linear-gradient(to bottom right, #0f172a, #581c87, #0f172a)" name="Auth Page Gradient" rows={[{ label: 'Value', value: 'from-slate-900 via-purple-900 to-slate-900' }, { label: 'Location', value: 'Auth page full-screen background', isLocation: true }]} extraPreviewStyle={{ background: 'linear-gradient(135deg, #0f172a, #581c87, #0f172a)' }} />
+              <SwatchCard color="rgba(30,41,59,0.5)" name="Auth Card BG" rows={[{ label: 'Value', value: 'rgba(30,41,59,0.5)' }, { label: 'Token', value: 'bg-slate-800/50' }, { label: 'Location', value: 'Login/signup Card component background', isLocation: true }]} />
+              <SwatchCard color="rgba(51,65,85,0.5)" name="Auth Input BG" rows={[{ label: 'Value', value: 'rgba(51,65,85,0.5)' }, { label: 'Token', value: 'bg-slate-700/50' }, { label: 'Location', value: 'Email and password input fields on auth page', isLocation: true }]} />
+              <SwatchCard color="#7c3aed" name="Purple 600 / Auth Submit" rows={[{ label: 'Hex', value: '#7c3aed' }, { label: 'Token', value: 'bg-purple-600' }, { label: 'Location', value: 'Sign In / Create Account button', isLocation: true }]} />
+            </div>
+
+            <Divider />
+
+            {/* ─── Global Sidebar ─── */}
+            <PageSubheading>Global Sidebar</PageSubheading>
+            <PageDesc>Colors for the main application navigation sidebar.</PageDesc>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
+              <SwatchCard color="#1a1a1a" name="Sidebar Background" rows={[{ label: 'Hex', value: '#1a1a1a' }, { label: 'Token', value: 'bg-[#1a1a1a]' }, { label: 'Location', value: 'Global left sidebar (280px expanded, 72px collapsed)', isLocation: true }]} />
+              <SwatchCard color="#4a5f7f" name="Active Sidebar Item" rows={[{ label: 'Hex', value: '#4a5f7f' }, { label: 'Token', value: 'bg-[#4a5f7f]' }, { label: 'Effect', value: 'shadow-lg shadow-black/40' }, { label: 'Location', value: 'Active navigation item background', isLocation: true }]} />
+              <SwatchCard color="#94a3b8" name="Inactive Sidebar Text" rows={[{ label: 'Hex', value: '#94a3b8' }, { label: 'Token', value: 'text-slate-400' }, { label: 'Location', value: 'Inactive sidebar item text and icons', isLocation: true }]} />
+            </div>
           </Section>
 
           <Divider />
 
+          {/* ═══════════════════════════════════════════════════════════════ */}
           {/* ═══ 2. TYPOGRAPHY ═══ */}
-          <Section id="typography" title="Typography" desc="Font sizes, weights, and letter-spacing values extracted from source code. Each tile shows a rendered example, exact specs, and where the style is used." style={twoCol}>
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          <Section id="typography" title="Typography" desc="Font sizes, weights, and letter-spacing values extracted from source code." style={twoCol}>
             <div style={fullSpan}><PageSubheading>Story Builder Page</PageSubheading></div>
 
             <TypeTile name="Page Title (White header bar)" exampleBg="#fff"
-              exampleContent={<span style={{ fontSize: 18, fontWeight: 900, color: '#0f172a', letterSpacing: '-0.45px', textTransform: 'uppercase' }}>STORY BUILDER</span>}
-              specs={['18px', 'weight 900', '-0.45px tracking', '#0f172a (slate-900)', 'uppercase']}
-              locations='Top-left of the white header bar on every page — "STORY BUILDER", "ACCOUNT", "MY STORIES". Always uppercase, always next to the back arrow. Sits on white bg-white header bar.'
+              exampleContent={<span className="text-lg font-black text-slate-900 uppercase tracking-tight">STORY BUILDER</span>}
+              specs={['18px', 'weight 900', 'tracking-tight', '#0f172a (slate-900)', 'uppercase']}
+              locations='Top-left of the white header bar on every page — "STORY BUILDER", "ACCOUNT", "MY STORIES". Always uppercase, always next to the back arrow.'
             />
             <TypeTile name="Section Title (Content area)" exampleBg="#fff"
               exampleContent={<span style={{ fontSize: 36, fontWeight: 900, color: '#0f172a', letterSpacing: '-0.9px' }}>Story Setup</span>}
               specs={['36px', 'weight 900', '-0.9px tracking', '#0f172a (slate-900)']}
-              locations="Large heading at top of the content area on Story Builder page. Dark text on the light bg-slate-50/30 background."
-            />
-            <TypeTile name="Section Subtitle (Content area)" exampleBg="#fff"
-              exampleContent={<span style={{ fontSize: 14, fontWeight: 500, color: '#64748b' }}>Configure the foundation of your interactive narrative.</span>}
-              specs={['14px', 'weight 500', 'normal tracking', '#64748b (slate-500)']}
-              locations='"Below the "Story Setup" heading. Muted descriptive text.'
+              locations="Large heading at top of the content area on Story Builder page."
             />
             <TypeTile name="Panel Header Title (Blue bar)" exampleBg="#4a5f7f"
-              exampleContent={<span style={{ fontSize: 20, fontWeight: 700, color: '#fff', letterSpacing: '-0.5px' }}>Story Card</span>}
+              exampleContent={<span className="text-xl font-bold tracking-tight text-white">Story Card</span>}
               specs={['text-xl (20px)', 'font-bold (700)', 'tracking-tight (-0.5px)', 'text-white']}
-              locations='Inside the bg-[#4a5f7f] panel header bars — "Story Card", "World Core", "Story Arcs", "Opening Dialog", "Art Style Preference", "World Codex", "Content Themes", "Share Your Story".'
+              locations='Inside the bg-[#4a5f7f] panel header bars — "Story Card", "World Core", "Story Arcs", "Opening Dialog".'
             />
             <TypeTile name="Field Labels (Inside panels)" exampleBg="#2a2a2f"
               exampleContent={<>
-                <span style={{ fontSize: 10, fontWeight: 700, color: '#fff', letterSpacing: '0.05em', textTransform: 'uppercase' }}>STORY NAME</span>
-                <span style={{ marginLeft: 24, fontSize: 10, fontWeight: 700, color: '#fff', letterSpacing: '0.05em', textTransform: 'uppercase' }}>BRIEF DESCRIPTION</span>
-                <span style={{ marginLeft: 24, fontSize: 10, fontWeight: 700, color: '#fff', letterSpacing: '0.05em', textTransform: 'uppercase' }}>GENRE</span>
+                <span className="text-[10px] font-bold text-white uppercase tracking-wider">STORY NAME</span>
+                <span className="text-[10px] font-bold text-white uppercase tracking-wider ml-6">BRIEF DESCRIPTION</span>
               </>}
               specs={['text-[10px]', 'font-bold (700)', 'tracking-wider (0.05em)', 'uppercase', 'text-white']}
-              locations="All form field labels inside dark panels — STORY NAME, BRIEF DESCRIPTION, STORY PREMISE, PRIMARY LOCATIONS, STORY ARC TITLE, DESIRED OUTCOME, GUIDANCE STRENGTH, OPENING DIALOG, CHARACTER TYPES, GENRE, ORIGIN, etc."
+              locations="All form field labels inside dark panels."
             />
             <TypeTile name="Button Text (Shadow Surface)" exampleBg="hsl(228, 7%, 20%)"
-              exampleContent={<span style={{ fontSize: 10, fontWeight: 700, color: 'hsl(210, 20%, 93%)', letterSpacing: '0.05em', textTransform: 'uppercase', lineHeight: 1 }}>SAVE AND CLOSE</span>}
-              specs={['text-[10px]', 'font-bold (700)', 'tracking-wider (0.05em)', 'uppercase', 'leading-none', 'text-[hsl(var(--ui-text))]']}
-              locations='All Shadow Surface action buttons — DRAFTS, SAVE AND CLOSE, SAVE DRAFT, Upload Image, Publish to Gallery. Uses --ui-text token.'
+              exampleContent={<span className="text-[10px] font-bold uppercase tracking-wider leading-none" style={{ color: 'hsl(210, 20%, 93%)' }}>SAVE AND CLOSE</span>}
+              specs={['text-[10px]', 'font-bold (700)', 'tracking-wider', 'uppercase', 'leading-none']}
+              locations='All Shadow Surface action buttons — DRAFTS, SAVE AND CLOSE, SAVE DRAFT, Upload Image.'
             />
             <TypeTile name="Character Name (Roster sidebar)" exampleBg="#2a2a2f"
-              exampleContent={<span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>ASHLEY</span>}
+              exampleContent={<span className="text-sm font-bold text-white">ASHLEY</span>}
               specs={['14px', 'font-bold (700)', 'normal tracking', 'text-white']}
-              locations="Character names in the left Character Roster sidebar panel on Story Builder."
-            />
-            <TypeTile name="Add Link Text (Blue interactive)" exampleBg="#2a2a2f"
-              exampleContent={<span style={{ fontSize: 14, fontWeight: 400, color: '#60a5fa' }}>+ Add Location</span>}
-              specs={['14px', 'weight 400', 'normal tracking', '#60a5fa (blue-400)']}
-              locations='"+ Add Location" links in World Core panel. Blue interactive text elements.'
+              locations="Character names in the Character Roster sidebar panel."
             />
 
             <div style={{ ...fullSpan, margin: '8px 0 4px' }}><Divider style={{ margin: '8px 0 4px' }} /></div>
             <div style={fullSpan}><PageSubheading>My Stories Page</PageSubheading></div>
 
-            <TypeTile name="Page Title (White header bar)" exampleBg="#fff"
-              exampleContent={<span style={{ fontSize: 18, fontWeight: 900, color: '#0f172a', letterSpacing: '-0.45px', textTransform: 'uppercase' }}>MY STORIES</span>}
-              specs={['18px', 'weight 900', '-0.45px tracking', '#0f172a (slate-900)', 'uppercase']}
-              locations='Top-left of the white header bar. Same style as "STORY BUILDER" — shared across all pages.'
+            <TypeTile name="Story Card Title" exampleBg="linear-gradient(to top, #020617, rgba(15,23,42,0.6))"
+              exampleContent={<span className="text-lg font-black text-white tracking-tight">Acotar</span>}
+              specs={['text-lg (18px)', 'font-black (900)', 'tracking-tight', 'text-white']}
+              locations="Story name on the card overlay gradient."
             />
-            <TypeTile name="Story Card Title (On card overlay)" exampleBg="linear-gradient(to top, #020617, rgba(15,23,42,0.6))"
-              exampleContent={<span style={{ fontSize: 18, fontWeight: 900, color: '#fff', letterSpacing: '-0.45px' }}>Acotar</span>}
-              specs={['18px', 'weight 900', '-0.45px tracking', 'text-white']}
-              locations="Story name on the card overlay gradient. H3 element. White text on the dark gradient bottom of each card."
-            />
-            <TypeTile name="Story Card Description" exampleBg="#2a2a2f"
-              exampleContent={<span style={{ fontSize: 12, fontWeight: 400, color: 'rgba(255,255,255,0.6)' }}>A romantic fantasy adventure in the fae lands...</span>}
-              specs={['12px', 'weight 400', 'normal tracking', 'rgba(255,255,255,0.6)']}
-              locations="Story description text below the title on each card."
-            />
-            <TypeTile name='Card Metadata ("Created by" / Stats)' exampleBg="#2a2a2f"
-              exampleContent={<>
-                <span style={{ fontSize: 11, fontWeight: 500, color: 'rgba(255,255,255,0.5)' }}>Created by: ThomasH</span>
-                <span style={{ marginLeft: 16, fontSize: 10, fontWeight: 400, color: 'rgba(255,255,255,0.5)' }}>12 chapters · 3.2k words</span>
-              </>}
-              specs={['"Created by": 11px / 500', 'Stats: 10px / 400', 'rgba(255,255,255,0.5)']}
-              locations='"Created by" line and stat numbers at the bottom of each story card.'
-            />
-            <TypeTile name="Tab Pill Text (Active / Inactive)" exampleBg="#fff"
+            <TypeTile name="Tab Pill Text" exampleBg="#fff"
               exampleContent={
                 <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: '#fff', background: '#4a5f7f', borderRadius: 9999, padding: '6px 16px' }}>My Stories</span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: '#a1a1aa' }}>Community</span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: '#a1a1aa' }}>Favorites</span>
+                  <span className="text-xs font-bold text-white bg-[#4a5f7f] rounded-full px-4 py-1.5">My Stories</span>
+                  <span className="text-xs font-bold text-zinc-400">Community</span>
                 </div>
               }
               specs={['12px', 'font-bold (700)', 'Active: #fff on #4a5f7f', 'Inactive: #a1a1aa']}
-              locations="Navigation tabs below the header bar on My Stories page. Active pill has rounded-full bg, inactive is text only."
+              locations="Navigation tabs below the header bar on My Stories page."
+            />
+
+            <div style={{ ...fullSpan, margin: '8px 0 4px' }}><Divider style={{ margin: '8px 0 4px' }} /></div>
+            <div style={fullSpan}><PageSubheading>Community Gallery</PageSubheading></div>
+
+            <TypeTile name="Gallery Card Title" exampleBg="linear-gradient(to top, #020617, rgba(15,23,42,0.6))"
+              exampleContent={<span className="text-lg font-black text-white leading-tight tracking-tight">The Dark Forest</span>}
+              specs={['text-lg', 'font-black', 'leading-tight tracking-tight', 'text-white']}
+              locations="Story title on Gallery card overlay. Truncated. Hover: text-blue-300."
+            />
+            <TypeTile name="Gallery Card Description" exampleBg="#2a2a2f"
+              exampleContent={<span className="text-xs text-white/60 italic leading-relaxed">A romantic fantasy adventure in the fae lands...</span>}
+              specs={['text-xs (12px)', 'weight 400', 'italic', 'text-white/60', 'line-clamp-2']}
+              locations="Story description below title on gallery cards."
+            />
+            <TypeTile name="Gallery Card Stats" exampleBg="#2a2a2f"
+              exampleContent={<span className="text-[10px] text-white/50">👁 123 ❤ 45 🔖 12 ▶ 67</span>}
+              specs={['text-[10px]', 'weight 400', 'text-white/50', 'flex gap-3']}
+              locations="View/like/save/play counts at bottom of gallery cards."
+            />
+            <TypeTile name="Gallery Search Placeholder" exampleBg="#3a3a3f"
+              exampleContent={<span className="text-sm text-zinc-500">Search titles, descriptions, or #tags...</span>}
+              specs={['text-sm (14px)', 'weight 400', 'text-zinc-500 placeholder']}
+              locations="Gallery search input placeholder text."
+            />
+
+            <div style={{ ...fullSpan, margin: '8px 0 4px' }}><Divider style={{ margin: '8px 0 4px' }} /></div>
+            <div style={fullSpan}><PageSubheading>Chat Interface</PageSubheading></div>
+
+            <TypeTile name="Chat Message Text (Speech)" exampleBg="#1c1f26"
+              exampleContent={<span className="text-[15px] font-medium text-white leading-relaxed">"Hello there, how are you?"</span>}
+              specs={['15px', 'font-medium (500)', 'text-white', 'leading-relaxed']}
+              locations="Speech/dialogue text in chat messages. Quoted content."
+            />
+            <TypeTile name="Chat Action Text (Italic)" exampleBg="#1c1f26"
+              exampleContent={<span className="text-[15px] italic text-slate-400 leading-relaxed">*walks slowly toward the door*</span>}
+              specs={['15px', 'italic', 'text-slate-400', 'leading-relaxed']}
+              locations="Action text in chat messages wrapped in asterisks."
+            />
+            <TypeTile name="Character Label (Chat)" exampleBg="#1c1f26"
+              exampleContent={<span className="text-[9px] font-black uppercase tracking-widest text-slate-500">NARRATOR</span>}
+              specs={['text-[9px]', 'font-black', 'uppercase', 'tracking-widest', 'text-slate-500']}
+              locations="Character name below avatar in chat bubbles. AI: text-slate-500, User: text-blue-300."
+            />
+
+            <div style={{ ...fullSpan, margin: '8px 0 4px' }}><Divider style={{ margin: '8px 0 4px' }} /></div>
+            <div style={fullSpan}><PageSubheading>Chat History</PageSubheading></div>
+
+            <TypeTile name="Session Title" exampleBg="#2a2a2f"
+              exampleContent={<span className="font-bold text-white">The Dark Forest Adventure</span>}
+              specs={['default (16px)', 'font-bold', 'text-white', 'truncate']}
+              locations="Scenario title in chat history session cards."
+            />
+            <TypeTile name="Message Preview" exampleBg="rgba(24,24,27,0.5)"
+              exampleContent={<span className="text-sm text-zinc-400 leading-relaxed">The wind howled through the trees as she approached...</span>}
+              specs={['text-sm (14px)', 'weight 400', 'text-zinc-400', 'line-clamp-2']}
+              locations="Last message preview in session cards."
+            />
+
+            <div style={{ ...fullSpan, margin: '8px 0 4px' }}><Divider style={{ margin: '8px 0 4px' }} /></div>
+            <div style={fullSpan}><PageSubheading>Account Page</PageSubheading></div>
+
+            <TypeTile name="Settings Section Title" exampleBg="#1e1e22"
+              exampleContent={<span className="text-lg font-bold text-white">Email Address</span>}
+              specs={['text-lg (18px)', 'font-bold', 'text-white']}
+              locations="Section headings in Account settings cards (Email, Plan, Password)."
+            />
+            <TypeTile name="Account Field Label" exampleBg="#1e1e22"
+              exampleContent={<span className="text-xs font-bold text-white/40 uppercase tracking-wider">NEW PASSWORD</span>}
+              specs={['text-xs', 'font-bold', 'text-white/40', 'uppercase tracking-wider']}
+              locations="Form field labels in Account settings (New Password, Confirm)."
+            />
+
+            <div style={{ ...fullSpan, margin: '8px 0 4px' }}><Divider style={{ margin: '8px 0 4px' }} /></div>
+            <div style={fullSpan}><PageSubheading>Global Sidebar</PageSubheading></div>
+
+            <TypeTile name="Sidebar Nav Item" exampleBg="#1a1a1a"
+              exampleContent={
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                  <span className="text-sm font-bold text-white">My Stories</span>
+                  <span className="text-sm font-bold text-slate-400 ml-4">Chat History</span>
+                </div>
+              }
+              specs={['text-sm (14px)', 'font-bold', 'Active: text-white', 'Inactive: text-slate-400']}
+              locations="Global sidebar navigation items (expanded mode)."
+            />
+            <TypeTile name="Sidebar Subtitle" exampleBg="#4a5f7f"
+              exampleContent={<span className="text-[10px] font-black tracking-wide uppercase text-blue-200">ACOTAR</span>}
+              specs={['text-[10px]', 'font-black', 'tracking-wide uppercase', 'text-blue-200']}
+              locations="Active scenario subtitle below Story Builder nav item."
             />
           </Section>
 
           <Divider />
 
+          {/* ═══════════════════════════════════════════════════════════════ */}
           {/* ═══ 3. BUTTONS ═══ */}
-          <Section id="buttons" title="Buttons" desc="All button styles found across Story Builder and My Stories pages. Verified against source code." style={twoCol}>
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          <Section id="buttons" title="Buttons" desc="All button styles found across the application. Verified against source code." style={twoCol}>
             <div style={fullSpan}><PageSubheading>Story Builder Page</PageSubheading></div>
-            <div style={fullSpan}><PageDesc>Button styles used in the Story Builder workflow.</PageDesc></div>
 
             <EntryCard name="Shadow Surface Button (Header Actions)" pageTag="Story Builder"
               specs='<strong>bg:</strong> hsl(var(--ui-surface-2)) · <strong>color:</strong> hsl(var(--ui-text)) · <strong>text-[10px] / font-bold / uppercase / tracking-wider / leading-none</strong> · <strong>border:</strong> 1px solid hsl(var(--ui-border)) · <strong>border-radius:</strong> rounded-xl (12px) · <strong>height:</strong> h-10 (40px) · <strong>padding:</strong> px-6 · <strong>shadow:</strong> 0 10px 30px rgba(0,0,0,0.35)'
               preview={<>
                 <button className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] text-[10px] font-bold leading-none uppercase tracking-wider" style={{ cursor: 'default' }}>DRAFTS</button>
                 <button className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] text-[10px] font-bold leading-none uppercase tracking-wider" style={{ cursor: 'default' }}>SAVE AND CLOSE</button>
-                <button className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] text-[10px] font-bold leading-none uppercase tracking-wider" style={{ cursor: 'default' }}>SAVE DRAFT</button>
               </>}
               code={`/* Shadow Surface — canonical header action button */
 className="inline-flex items-center justify-center
@@ -458,14 +601,7 @@ className="inline-flex items-center justify-center
   bg-[hsl(var(--ui-surface-2))]
   text-[hsl(var(--ui-text))]
   shadow-[0_10px_30px_rgba(0,0,0,0.35)]
-  text-[10px] font-bold leading-none uppercase tracking-wider
-  hover:brightness-125 active:brightness-150
-  transition-all active:scale-95"
-
-/* CSS custom properties (from index.css): */
---ui-surface-2: 228 7% 20%;        /* ≈ #2a2b30 */
---ui-border: 0 0% 100% / 0.10;     /* white at 10% */
---ui-text: 210 20% 93%;            /* ≈ #e5eaf0 */`}
+  text-[10px] font-bold leading-none uppercase tracking-wider"`}
             />
             <EntryCard name="AI Generate Button" pageTag="Story Builder"
               specs="<strong>bg:</strong> gradient (purple) · <strong>color:</strong> white · <strong>text-[10px] / font-bold / uppercase</strong> · <strong>border-radius:</strong> rounded-xl (12px) · <strong>height:</strong> h-10 (40px)"
@@ -473,28 +609,21 @@ className="inline-flex items-center justify-center
                 <button style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7)', color: '#fff', height: 40, padding: '0 22px', borderRadius: 12, border: 'none', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', lineHeight: 1, cursor: 'default', fontFamily: 'inherit' }}>AI GENERATE</button>
               }
               code={`background: linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7);
-color: #fff;
-font-size: 10px; font-weight: 700;
-text-transform: uppercase; letter-spacing: 0.05em;
-border-radius: 12px; height: 40px; line-height: 1;`}
+height: 40px; border-radius: 12px;
+text-[10px] font-bold uppercase tracking-wider`}
             />
             <EntryCard name='Dashed "Add" Buttons' pageTag="Story Builder"
               specs='<strong>border:</strong> 2px dashed #71717a · <strong>color:</strong> #60a5fa · <strong>14px / 500</strong> · <strong>border-radius:</strong> 12px · <strong>bg:</strong> transparent · Full-width'
-              previewPlain
-              previewStyle={{ flexDirection: 'column' }}
+              previewPlain previewStyle={{ flexDirection: 'column' }}
               preview={
                 <button style={{ width: '100%', minHeight: 64, padding: '12px 18px', borderRadius: 12, border: '2px dashed #71717a', background: 'transparent', color: '#60a5fa', fontSize: 14, fontWeight: 500, cursor: 'default', fontFamily: 'inherit' }}>+ Add Custom Content</button>
               }
-              code={`background: transparent; color: #60a5fa;  /* blue-400 */
-font-size: 14px; font-weight: 500;
-border: 2px dashed #71717a;  /* zinc-500 */
+              code={`border: 2px dashed #71717a; color: #60a5fa;
 border-radius: 12px; width: 100%;
-/* Hover: */
-border-color: #60a5fa; background: rgba(96,165,250,0.12);`}
+hover: border-color: #60a5fa; bg: rgba(96,165,250,0.12);`}
             />
 
             <div style={fullSpan}><PageSubheading>My Stories Page</PageSubheading></div>
-            <div style={fullSpan}><PageDesc>Button styles used on the My Stories gallery and card interactions.</PageDesc></div>
 
             <EntryCard name="Card Hover Buttons — Edit / Delete / Play" pageTag="My Stories"
               specs='Compact card variant: <strong>h-8 px-4 rounded-xl</strong> · <strong>text-[10px] font-bold leading-none uppercase tracking-wider</strong>. Edit: bg-white text-slate-900. Delete: bg-[hsl(var(--destructive))]. Play: bg-blue-600.'
@@ -504,128 +633,402 @@ border-color: #60a5fa; background: rgba(96,165,250,0.12);`}
                 <button className="h-8 px-4 rounded-xl bg-blue-600 text-white text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl" style={{ cursor: 'default' }}>PLAY</button>
               </>}
               code={`/* Card hover buttons (compact h-8 variant) */
-/* Edit */   className="h-8 px-4 rounded-xl bg-white text-slate-900
-               text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl"
-/* Delete */ className="h-8 px-4 rounded-xl bg-[hsl(var(--destructive))] text-white
-               text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl"
-/* Play */   className="h-8 px-4 rounded-xl bg-blue-600 text-white
-               text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl"
-
-/* Source: StoryHub.tsx lines 82-97 */`}
+h-8 px-4 rounded-xl text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl
+/* Edit: bg-white text-slate-900 */
+/* Delete: bg-[hsl(var(--destructive))] text-white */
+/* Play: bg-blue-600 text-white */`}
             />
             <EntryCard name="Tab Pills — Active / Inactive" pageTag="My Stories"
               specs="<strong>Active:</strong> bg #4a5f7f, white text, rounded-full · <strong>Inactive:</strong> transparent, #a1a1aa text · Both 12px / 700"
               preview={<>
-                <button style={{ background: '#4a5f7f', color: '#fff', fontSize: 12, fontWeight: 700, padding: '6px 16px', borderRadius: 999, border: 'none', cursor: 'default', fontFamily: 'inherit' }}>My Stories</button>
-                <button style={{ background: 'transparent', color: '#a1a1aa', fontSize: 12, fontWeight: 700, padding: '6px 16px', borderRadius: 999, border: 'none', cursor: 'default', fontFamily: 'inherit' }}>Community</button>
-                <button style={{ background: 'transparent', color: '#a1a1aa', fontSize: 12, fontWeight: 700, padding: '6px 16px', borderRadius: 999, border: 'none', cursor: 'default', fontFamily: 'inherit' }}>Favorites</button>
+                <button className="bg-[#4a5f7f] text-white text-xs font-bold px-4 py-1.5 rounded-full" style={{ cursor: 'default' }}>My Stories</button>
+                <button className="text-zinc-400 text-xs font-bold px-4 py-1.5 rounded-full" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>Community</button>
               </>}
-              code={`/* Active */   bg: #4a5f7f; color: #fff; border-radius: 9999px; padding: 6px 16px;
-/* Inactive */ bg: transparent; color: #a1a1aa;  /* zinc-400 */
-/* Both */     font-size: 12px; font-weight: 700;`}
+              code={`/* Active */  bg-[#4a5f7f] text-white rounded-full px-4 py-1.5
+/* Inactive */ bg-transparent text-[#a1a1aa]
+/* Both */ text-xs font-bold`}
+            />
+
+            <div style={fullSpan}><PageSubheading>Community Gallery</PageSubheading></div>
+
+            <EntryCard name="Gallery Icon Buttons — Like / Save" pageTag="Gallery"
+              specs='<strong>h-8 w-8 rounded-xl</strong> · Icon buttons. Default: bg-white/90 text-slate-700. Active Like: bg-rose-500 text-white. Active Save: bg-amber-500 text-white.'
+              preview={<>
+                <button className="h-8 w-8 flex items-center justify-center rounded-xl bg-white/90 text-slate-700 shadow-2xl" style={{ cursor: 'default' }}>♡</button>
+                <button className="h-8 w-8 flex items-center justify-center rounded-xl bg-rose-500 text-white shadow-2xl" style={{ cursor: 'default' }}>♥</button>
+                <button className="h-8 w-8 flex items-center justify-center rounded-xl bg-amber-500 text-white shadow-2xl" style={{ cursor: 'default' }}>🔖</button>
+              </>}
+              code={`/* Default */ h-8 w-8 rounded-xl bg-white/90 text-slate-700 shadow-2xl
+/* Liked */  bg-rose-500 text-white
+/* Saved */  bg-amber-500 text-white
+/* Source: GalleryStoryCard.tsx lines 108-137 */`}
+            />
+            <EntryCard name="Gallery PLAY Button" pageTag="Gallery"
+              specs='<strong>h-8 px-4 rounded-xl bg-blue-600</strong> · text-[10px] font-bold uppercase tracking-wider shadow-2xl. Same compact card variant as My Stories.'
+              preview={
+                <button className="h-8 px-4 rounded-xl bg-blue-600 text-white text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl" style={{ cursor: 'default' }}>PLAY</button>
+              }
+              code={`h-8 px-4 rounded-xl bg-blue-600 text-white
+text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl`}
+            />
+            <EntryCard name="Gallery Search Button" pageTag="Gallery"
+              specs='<strong>bg:</strong> #4a5f7f · <strong>text:</strong> white · <strong>text-sm font-semibold</strong> · <strong>rounded-lg</strong> · Positioned absolute inside search input.'
+              preview={
+                <button className="px-4 py-1.5 bg-[#4a5f7f] text-white rounded-lg font-semibold text-sm" style={{ cursor: 'default' }}>Search</button>
+              }
+              code={`px-4 py-1.5 bg-[#4a5f7f] text-white rounded-lg font-semibold text-sm
+hover:bg-[#5a6f8f]`}
+            />
+            <EntryCard name="Browse Categories Button" pageTag="Gallery"
+              specs='<strong>bg:</strong> #4a5f7f · <strong>text:</strong> white · <strong>text-sm font-semibold</strong> · <strong>rounded-lg</strong> · Shows filter count badge (bg-white/20).'
+              preview={
+                <button className="flex items-center gap-2 px-4 py-3 rounded-lg bg-[#4a5f7f] text-white font-semibold text-sm" style={{ cursor: 'default' }}>
+                  ▦ Browse Categories
+                  <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded-full text-xs">3</span>
+                </button>
+              }
+              code={`flex items-center gap-2 px-4 py-3 rounded-lg font-semibold text-sm
+bg-[#4a5f7f] text-white hover:bg-[#5a6f8f]
+/* Filter count badge: px-1.5 py-0.5 bg-white/20 rounded-full text-xs */`}
+            />
+
+            <div style={fullSpan}><PageSubheading>Chat Interface</PageSubheading></div>
+
+            <EntryCard name="Chat Settings / Generate Image Buttons" pageTag="Chat"
+              specs='Shadow Surface variant with icon. <strong>rounded-xl px-4 py-2</strong> · text-[10px] font-bold uppercase tracking-widest. Uses --ui-surface-2 and --ui-border tokens.'
+              preview={<>
+                <button className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest border bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default' }}>⚙ Chat Settings</button>
+                <button className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest border bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default' }}>🖼 Generate Image</button>
+              </>}
+              code={`inline-flex items-center gap-2 rounded-xl px-4 py-2
+text-[10px] font-bold uppercase tracking-widest border
+bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))]
+text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]`}
+            />
+            <EntryCard name="Chat Send Button (Active / Inactive)" pageTag="Chat"
+              specs='<strong>Active:</strong> bg-[#4a5f7f] text-white border-[#4a5f7f]. <strong>Inactive:</strong> bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text-muted))] opacity-50.'
+              preview={<>
+                <button className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest bg-[#4a5f7f] text-white border border-[#4a5f7f] shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default' }}>Send</button>
+                <button className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))] text-zinc-500 opacity-50 shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default' }}>Send</button>
+              </>}
+              code={`/* Active (has input) */
+bg-[#4a5f7f] text-white border-[#4a5f7f] hover:bg-[#5a6f8f]
+/* Inactive (empty input) */
+bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text-muted))] opacity-50`}
+            />
+            <EntryCard name="Chat Message Action Icons" pageTag="Chat"
+              specs='Icon-only buttons visible on hover. <strong>p-2 rounded-lg</strong> · text-slate-400 hover:text-white · hover:bg-white/10.'
+              preview={<>
+                <button className="p-2 rounded-lg text-slate-400 hover:bg-white/10 hover:text-white" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>↻</button>
+                <button className="p-2 rounded-lg text-slate-400 hover:bg-white/10 hover:text-white" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>⋮</button>
+                <button className="p-2 rounded-lg text-green-400 hover:bg-white/10" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>✓</button>
+                <button className="p-2 rounded-lg text-red-400 hover:bg-white/10" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>✕</button>
+              </>}
+              code={`p-2 rounded-lg hover:bg-white/10 transition-colors
+/* Default: text-slate-400 hover:text-white */
+/* Save (inline edit): text-green-400 */
+/* Cancel: text-red-400 */`}
+            />
+
+            <div style={fullSpan}><PageSubheading>Chat History</PageSubheading></div>
+
+            <EntryCard name="Session Delete Button" pageTag="Chat History"
+              specs='<strong>p-2 rounded-lg bg-white/10 border border-white/10</strong> · text-zinc-400. Hover: text-red-400, border-red-500/30.'
+              preview={
+                <button className="p-2 rounded-lg bg-white/10 border border-white/10 text-zinc-400" style={{ cursor: 'default' }}>🗑</button>
+              }
+              code={`p-2 rounded-lg bg-white/10 border border-white/10
+text-zinc-400 hover:bg-white/15 hover:text-red-400 hover:border-red-500/30`}
+            />
+            <EntryCard name="Load More Button" pageTag="Chat History"
+              specs='Shadow Surface variant. <strong>px-6 py-2 rounded-xl</strong> · text-sm font-bold. Uses --ui-surface-2 and --ui-border tokens.'
+              preview={
+                <button className="px-6 py-2 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] text-sm font-bold" style={{ cursor: 'default' }}>Load More (15 remaining)</button>
+              }
+              code={`px-6 py-2 rounded-xl
+border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))]
+text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
+text-sm font-bold`}
+            />
+
+            <div style={fullSpan}><PageSubheading>Image Library</PageSubheading></div>
+
+            <EntryCard name="Folder Hover Buttons — Edit / Open" pageTag="Image Library"
+              specs='<strong>px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-wider</strong>. Edit: bg-white text-slate-900. Open: bg-blue-600 text-white.'
+              preview={<>
+                <button className="px-4 py-2 bg-white text-slate-900 font-bold text-xs uppercase tracking-wider rounded-xl shadow-xl" style={{ cursor: 'default' }}>Edit</button>
+                <button className="px-4 py-2 bg-blue-600 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-xl" style={{ cursor: 'default' }}>Open</button>
+              </>}
+              code={`px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-wider shadow-xl
+/* Edit: bg-white text-slate-900 */
+/* Open: bg-blue-600 text-white */`}
+            />
+
+            <div style={fullSpan}><PageSubheading>Account Page</PageSubheading></div>
+
+            <EntryCard name="Account Tab Pills (Dark Variant)" pageTag="Account"
+              specs='<strong>Active:</strong> bg-[#4a5f7f] text-white shadow-sm. <strong>Inactive:</strong> text-[#a1a1aa] hover:text-[#e4e4e7]. <strong>Container:</strong> bg-[#2b2b2e] rounded-full p-1. Same pattern used on Gallery page sort pills.'
+              preview={
+                <div className="flex items-center bg-[#2b2b2e] rounded-full p-1 gap-0.5">
+                  <button className="px-4 py-1.5 rounded-full text-xs font-bold bg-[#4a5f7f] text-white shadow-sm" style={{ cursor: 'default' }}>Settings</button>
+                  <button className="px-4 py-1.5 rounded-full text-xs font-bold text-[#a1a1aa]" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>Subscription</button>
+                  <button className="px-4 py-1.5 rounded-full text-xs font-bold text-[#a1a1aa]" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>Profile</button>
+                </div>
+              }
+              code={`/* Container */ bg-[#2b2b2e] rounded-full p-1 gap-0.5 border border-[#2b2b2e]
+/* Active */   px-4 py-1.5 rounded-full text-xs font-bold bg-[#4a5f7f] text-white shadow-sm
+/* Inactive */ px-4 py-1.5 rounded-full text-xs font-bold text-[#a1a1aa] hover:text-[#e4e4e7]`}
+            />
+
+            <div style={fullSpan}><PageSubheading>Auth Page</PageSubheading></div>
+
+            <EntryCard name="Auth Submit Button" pageTag="Auth"
+              specs='<strong>bg-purple-600 hover:bg-purple-700</strong> · text-white · Full-width. Uses shadcn Button component with override classes.'
+              preview={
+                <button className="w-full py-2.5 px-4 bg-purple-600 text-white rounded-md text-sm font-medium" style={{ cursor: 'default' }}>Sign In</button>
+              }
+              code={`/* Uses shadcn <Button> with overrides */
+className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+/* Source: Auth.tsx line 158 */`}
+            />
+
+            <div style={fullSpan}><PageSubheading>Global Sidebar</PageSubheading></div>
+
+            <EntryCard name="Sidebar Navigation Item" pageTag="Global"
+              specs='<strong>Active:</strong> bg-[#4a5f7f] shadow-lg shadow-black/40 text-white. <strong>Inactive:</strong> text-slate-400 hover:bg-white/10 hover:text-white. <strong>rounded-xl</strong> · font-bold text-sm. Collapsed: px-3 py-3 centered. Expanded: px-4 py-3.'
+              preview={
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, width: '100%' }}>
+                  <button className="w-full flex items-center gap-3 rounded-xl px-4 py-3 font-bold text-sm text-white bg-[#4a5f7f] shadow-lg" style={{ cursor: 'default', border: 'none' }}>📚 My Stories</button>
+                  <button className="w-full flex items-center gap-3 rounded-xl px-4 py-3 font-bold text-sm text-slate-400" style={{ cursor: 'default', border: 'none', background: 'transparent' }}>💬 Chat History</button>
+                </div>
+              }
+              previewPlain previewStyle={{ flexDirection: 'column' }}
+              code={`/* Active */
+bg-[#4a5f7f] shadow-lg shadow-black/40 text-white
+/* Inactive */
+text-slate-400 hover:bg-white/10 hover:text-white hover:shadow-md hover:shadow-black/20
+/* Shared */
+w-full flex items-center gap-3 rounded-xl px-4 py-3 font-bold text-sm`}
+            />
+            <EntryCard name="Sidebar Collapse Toggle" pageTag="Global"
+              specs='<strong>p-2 rounded-lg</strong> · text-slate-400 hover:text-white hover:bg-white/10. Uses PanelLeft / PanelLeftClose icons.'
+              preview={
+                <button className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>◀</button>
+              }
+              code={`p-2 rounded-lg text-slate-400
+hover:text-white hover:bg-white/10 transition-colors`}
             />
           </Section>
 
           <Divider />
 
+          {/* ═══════════════════════════════════════════════════════════════ */}
           {/* ═══ 4. FORM INPUTS ═══ */}
-          <Section id="inputs" title="Form Inputs" desc="Input fields and textareas used throughout Story Builder panels.">
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          <Section id="inputs" title="Form Inputs" desc="Input fields and textareas used throughout the application.">
             <PageSubheading>Story Builder Page</PageSubheading>
-            <PageDesc>Form controls used within Story Builder panels.</PageDesc>
-            <EntryCard name="Text Input / Textarea" pageTag="Story Builder"
+            <EntryCard name="Text Input / Textarea (Dark Theme)" pageTag="Story Builder"
               specs="<strong>bg:</strong> rgba(24,24,27,0.5) · <strong>color:</strong> white · <strong>border:</strong> 1px solid #3f3f46 · <strong>border-radius:</strong> rounded-lg (8px) · <strong>padding:</strong> 8px 12px · <strong>font-size:</strong> 14px"
-              previewDark
-              previewStyle={{ flexDirection: 'column', gap: 12 }}
+              previewDark previewStyle={{ flexDirection: 'column', gap: 12 }}
               preview={<>
                 <input readOnly className="w-full rounded-lg border border-zinc-700 bg-zinc-900/50 text-white text-sm px-3 py-2 outline-none" placeholder="Enter story arc title..." />
                 <input readOnly className="w-full rounded-lg border border-zinc-700 bg-zinc-900/50 text-white text-sm px-3 py-2 outline-none" placeholder="e.g. The Lakehouse" />
               </>}
-              code={`className="w-full rounded-lg border border-zinc-700
-  bg-zinc-900/50 text-white text-sm px-3 py-2"
-
-/* Resolved values: */
-background: rgba(24, 24, 27, 0.5);  /* bg-zinc-900/50 */
-color: #fff;
-font-size: 14px;  /* text-sm = 0.875rem but rendered ~14px */
-border: 1px solid #3f3f46;  /* border-zinc-700 */
-border-radius: 8px;  /* rounded-lg */
-padding: 8px 12px;  /* py-2 px-3 */`}
-            />
-          </Section>
-
-          <Divider />
-
-          {/* ═══ 5. BADGES & TAGS ═══ */}
-          <Section id="badges" title="Badges & Tags" desc="Badges on story cards and tag chips in Content Themes.">
-            <PageSubheading>Story Builder Page</PageSubheading>
-            <PageDesc>Tag and chip styles used in Story Builder content setup.</PageDesc>
-            <EntryCard name="Content Theme Tag Chips" pageTag="Story Builder"
-              specs='<strong>bg:</strong> #27272a · <strong>color:</strong> #a1a1aa · <strong>border:</strong> 1px solid #3f3f46 · <strong>12px / 500</strong> · <strong>border-radius:</strong> 8px · <strong>padding:</strong> 6px 12px'
-              previewPlain
-              previewStyle={{ gap: 8 }}
-              preview={<>
-                <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 border border-zinc-700 text-zinc-400">Fantasy</span>
-                <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 border border-zinc-700 text-zinc-400">Romance</span>
-                <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 border border-zinc-700 text-zinc-400">Dark Romance</span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', padding: '5px 10px', borderRadius: 8, fontSize: 12, lineHeight: 1, background: 'transparent', border: '2px dashed #71717a', color: '#60a5fa', fontWeight: 500 }}>+ Add custom</span>
-              </>}
-              code={`/* Tag chip */
-className="inline-flex items-center px-3 py-1.5
-  rounded-lg text-xs font-medium
-  bg-zinc-800 border border-zinc-700 text-zinc-400"
-
-/* "+ Add custom" chip */
-background: transparent; color: #60a5fa;
-border: 2px dashed #71717a;  /* zinc-500 */`}
+              code={`bg-zinc-900/50 border-zinc-700 text-white text-sm px-3 py-2 rounded-lg`}
             />
 
             <div style={{ marginTop: 24 }}>
-              <PageSubheading>My Stories Page</PageSubheading>
-              <PageDesc>Badge styles used on My Stories cards.</PageDesc>
-              <EntryCard name="SFW / NSFW Badges" pageTag="My Stories"
-                specs='<strong>bg:</strong> #2a2a2f · <strong>12px / 700</strong> · <strong>border-radius:</strong> rounded-lg (8px) · <strong>padding:</strong> px-2.5 py-1 · SFW = <strong>blue-400</strong>, NSFW = <strong>red-400</strong>'
-                previewPlain
+              <PageSubheading>Community Gallery</PageSubheading>
+              <EntryCard name="Gallery Search Input" pageTag="Gallery"
+                specs='<strong>bg:</strong> bg-[#3a3a3f]/50 · <strong>border:</strong> border-white/10 · <strong>rounded-xl</strong> · <strong>text:</strong> white · <strong>placeholder:</strong> text-zinc-500 · <strong>focus:</strong> ring-2 ring-[#4a5f7f]'
+                previewDark previewStyle={{ flexDirection: 'column', gap: 12 }}
+                preview={
+                  <input readOnly className="w-full pl-12 pr-24 py-3 bg-[#3a3a3f]/50 border border-white/10 rounded-xl text-white placeholder:text-zinc-500 outline-none" placeholder="Search titles, descriptions, or #tags..." />
+                }
+                code={`w-full pl-12 pr-24 py-3
+bg-[#3a3a3f]/50 border border-white/10 rounded-xl
+text-white placeholder:text-zinc-500
+focus:ring-2 focus:ring-[#4a5f7f] focus:border-transparent`}
+              />
+            </div>
+
+            <div style={{ marginTop: 24 }}>
+              <PageSubheading>Chat Interface</PageSubheading>
+              <EntryCard name="Chat Input Textarea (White BG)" pageTag="Chat"
+                specs='<strong>bg:</strong> white · <strong>text:</strong> black · <strong>border:</strong> none (wrapper has border) · <strong>rounded-xl</strong> · <strong>focus:</strong> ring-1 ring-[hsl(var(--accent-teal))]/30. Inside a bg-[hsl(var(--ui-surface-2))] wrapper.'
+                previewStyle={{ flexDirection: 'column', gap: 8 }}
+                preview={
+                  <div className="bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] rounded-2xl p-2 w-full">
+                    <textarea readOnly className="block w-full bg-white text-black placeholder-gray-400 rounded-xl px-4 py-3 text-sm outline-none border-0 resize-none" placeholder="Describe your action or dialogue..." rows={2} />
+                  </div>
+                }
+                code={`/* Outer wrapper */
+bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] rounded-2xl p-2
+/* Inner textarea */
+bg-white text-black placeholder-gray-400 rounded-xl px-4 py-3 text-sm
+border-0 resize-none focus:ring-1 focus:ring-[hsl(var(--accent-teal))]/30`}
+              />
+            </div>
+
+            <div style={{ marginTop: 24 }}>
+              <PageSubheading>Account Page</PageSubheading>
+              <EntryCard name="Account Password Input (Dark Theme)" pageTag="Account"
+                specs='<strong>bg:</strong> #2a2a2f · <strong>border:</strong> border-white/10 · <strong>rounded-xl</strong> · <strong>text:</strong> white text-sm · <strong>focus:</strong> ring-2 ring-[#4a5f7f]. Includes visibility toggle button.'
+                previewDark previewStyle={{ flexDirection: 'column', gap: 12 }}
+                preview={
+                  <input readOnly type="password" className="w-full bg-[#2a2a2f] border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none" placeholder="••••••••" />
+                }
+                code={`w-full bg-[#2a2a2f] border border-white/10 rounded-xl px-4 py-3
+text-white text-sm focus:ring-2 focus:ring-[#4a5f7f]`}
+              />
+            </div>
+
+            <div style={{ marginTop: 24 }}>
+              <PageSubheading>Auth Page</PageSubheading>
+              <EntryCard name="Auth Input (Semi-transparent)" pageTag="Auth"
+                specs='<strong>bg:</strong> bg-slate-700/50 · <strong>border:</strong> border-slate-600 · <strong>text:</strong> white · <strong>placeholder:</strong> text-slate-500. Uses shadcn Input component with overrides.'
+                previewDark previewStyle={{ flexDirection: 'column', gap: 12 }}
                 preview={<>
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-[#2a2a2f] text-blue-400">SFW</span>
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-[#2a2a2f] text-red-400">NSFW</span>
+                  <input readOnly className="w-full rounded-md border border-slate-600 bg-slate-700/50 text-white text-sm px-3 py-2 outline-none placeholder:text-slate-500" placeholder="you@example.com" />
+                  <input readOnly type="password" className="w-full rounded-md border border-slate-600 bg-slate-700/50 text-white text-sm px-3 py-2 outline-none placeholder:text-slate-500" placeholder="••••••••" />
                 </>}
-                code={`className="inline-flex items-center px-2.5 py-1
-  rounded-lg text-xs font-bold bg-[#2a2a2f]"
+                code={`bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-500
+/* Uses shadcn Input with className overrides */`}
+              />
+            </div>
 
-/* SFW */  text-blue-400   /* #60a5fa */
-/* NSFW */ text-red-400    /* #f87171 */
-
-/* Source: GalleryStoryCard.tsx, StoryHub.tsx */`}
+            <div style={{ marginTop: 24 }}>
+              <PageSubheading>Character Library Search</PageSubheading>
+              <EntryCard name="Header Search (Dark Pill)" pageTag="Character Library"
+                specs='<strong>bg:</strong> bg-[#2b2b2e] rounded-full · <strong>h-7 w-56 px-3 py-1</strong> · <strong>text-xs font-bold</strong> · text-white placeholder:text-zinc-500. Sits inside dark pill container in white header.'
+                preview={
+                  <div className="bg-[#2b2b2e] rounded-full p-1">
+                    <input readOnly className="h-7 w-56 px-3 py-1 text-xs font-bold rounded-full bg-transparent text-white placeholder:text-zinc-500 outline-none" placeholder="Search characters..." />
+                  </div>
+                }
+                code={`/* Container */ bg-[#2b2b2e] rounded-full p-1
+/* Input */ h-7 w-56 px-3 py-1 text-xs font-bold rounded-full
+bg-transparent text-white placeholder:text-zinc-500`}
               />
             </div>
           </Section>
 
           <Divider />
 
-          {/* ═══ 6. PANELS ═══ */}
-          <Section id="panels" title="Panels" desc="The dark rounded panel containers used in Story Builder for each section (Story Card, World Core, Story Arcs, etc.).">
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {/* ═══ 5. BADGES & TAGS ═══ */}
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          <Section id="badges" title="Badges & Tags" desc="Badges on story cards, tag chips, and status indicators.">
             <PageSubheading>Story Builder Page</PageSubheading>
-            <PageDesc>Panel shell and structure patterns used across Story Builder.</PageDesc>
+            <EntryCard name="Content Theme Tag Chips" pageTag="Story Builder"
+              specs='<strong>bg:</strong> #27272a · <strong>color:</strong> #a1a1aa · <strong>border:</strong> 1px solid #3f3f46 · <strong>12px / 500</strong> · <strong>border-radius:</strong> 8px'
+              previewPlain previewStyle={{ gap: 8 }}
+              preview={<>
+                <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 border border-zinc-700 text-zinc-400">Fantasy</span>
+                <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 border border-zinc-700 text-zinc-400">Romance</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', padding: '5px 10px', borderRadius: 8, fontSize: 12, background: 'transparent', border: '2px dashed #71717a', color: '#60a5fa', fontWeight: 500 }}>+ Add custom</span>
+              </>}
+              code={`bg-zinc-800 border border-zinc-700 text-zinc-400
+px-3 py-1.5 rounded-lg text-xs font-medium`}
+            />
+
+            <div style={{ marginTop: 24 }}>
+              <PageSubheading>My Stories + Gallery Cards</PageSubheading>
+              <EntryCard name="SFW / NSFW Badges" pageTag="Cards"
+                specs='<strong>bg:</strong> #2a2a2f · <strong>12px / 700</strong> · <strong>rounded-lg</strong> · SFW = <strong>blue-400</strong>, NSFW = <strong>red-400</strong>. Positioned absolute top-right on card.'
+                previewPlain
+                preview={<>
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-[#2a2a2f] text-blue-400">SFW</span>
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-[#2a2a2f] text-red-400">NSFW</span>
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-[#2a2a2f] text-emerald-400 uppercase tracking-wide">Published</span>
+                </>}
+                code={`px-2.5 py-1 rounded-lg text-xs font-bold bg-[#2a2a2f]
+/* SFW */       text-blue-400
+/* NSFW */      text-red-400
+/* Published */ text-emerald-400 uppercase tracking-wide`}
+              />
+            </div>
+
+            <div style={{ marginTop: 24 }}>
+              <PageSubheading>Community Gallery Filters</PageSubheading>
+              <EntryCard name="Active Filter Chips" pageTag="Gallery"
+                specs='Color-coded by category. <strong>px-2 py-1 rounded-full text-xs font-medium</strong>. Each category uses a different color-500/20 bg with matching color-400 text.'
+                previewPlain previewStyle={{ gap: 8 }}
+                preview={<>
+                  <span className="px-2 py-1 bg-white/20 text-white rounded-full text-xs font-medium">"search text"</span>
+                  <span className="px-2 py-1 bg-blue-500/20 text-blue-400 rounded-full text-xs font-medium">SFW</span>
+                  <span className="px-2 py-1 bg-purple-500/20 text-purple-400 rounded-full text-xs font-medium">Romance</span>
+                  <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-medium">Original</span>
+                  <span className="px-2 py-1 bg-amber-500/20 text-amber-400 rounded-full text-xs font-medium">Violence</span>
+                </>}
+                code={`/* Pattern: px-2 py-1 bg-{color}-500/20 text-{color}-400 rounded-full text-xs font-medium */
+/* Search text: bg-white/20 text-white */
+/* Story Type:  bg-blue-500/20 text-blue-400 */
+/* Genre:       bg-purple-500/20 text-purple-400 */
+/* Origin:      bg-green-500/20 text-green-400 */
+/* Warnings:    bg-amber-500/20 text-amber-400 */`}
+              />
+            </div>
+
+            <div style={{ marginTop: 24 }}>
+              <PageSubheading>Chat Interface</PageSubheading>
+              <EntryCard name="Character Control Badge" pageTag="Chat"
+                specs='<strong>text-[8px] px-1.5 py-0.5 rounded</strong>. User-controlled: bg-blue-500 text-white. AI-controlled: bg-slate-500 text-white. Positioned absolute bottom-right of avatar.'
+                previewPlain previewStyle={{ gap: 8 }}
+                preview={<>
+                  <span className="text-[8px] px-1.5 py-0.5 bg-blue-500 text-white rounded shadow-sm font-bold">User</span>
+                  <span className="text-[8px] px-1.5 py-0.5 bg-slate-500 text-white rounded shadow-sm font-bold">AI</span>
+                </>}
+                code={`text-[8px] px-1.5 py-0.5 shadow-sm border-0
+/* User: bg-blue-500 text-white */
+/* AI: bg-slate-500 text-white */`}
+              />
+            </div>
+
+            <div style={{ marginTop: 24 }}>
+              <PageSubheading>Image Library</PageSubheading>
+              <EntryCard name="Image Count Badge" pageTag="Image Library"
+                specs='<strong>bg-blue-600 text-[9px] font-black text-white px-2 py-1 rounded-md uppercase tracking-widest shadow-lg</strong>. Shows image count in folder cards.'
+                previewPlain
+                preview={
+                  <span className="bg-blue-600 text-[9px] font-black text-white px-2 py-1 rounded-md uppercase tracking-widest shadow-lg">12 IMAGES</span>
+                }
+                code={`bg-blue-600 text-[9px] font-black text-white
+px-2 py-1 rounded-md uppercase tracking-widest shadow-lg`}
+              />
+            </div>
+
+            <div style={{ marginTop: 24 }}>
+              <PageSubheading>Account Page</PageSubheading>
+              <EntryCard name="Subscription Plan Badge" pageTag="Account"
+                specs='<strong>bg-[#4a5f7f]/20 text-[#7ba3d4]</strong> · <strong>px-3 py-1.5 rounded-lg text-sm font-bold</strong>.'
+                previewPlain
+                preview={
+                  <span className="px-3 py-1.5 bg-[#4a5f7f]/20 text-[#7ba3d4] rounded-lg text-sm font-bold">Free</span>
+                }
+                code={`px-3 py-1.5 bg-[#4a5f7f]/20 text-[#7ba3d4] rounded-lg text-sm font-bold`}
+              />
+            </div>
+          </Section>
+
+          <Divider />
+
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {/* ═══ 6. PANELS ═══ */}
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          <Section id="panels" title="Panels" desc="Container patterns: dark rounded panels, card layouts, sidebars, and special containers.">
+            <PageSubheading>Story Builder Page</PageSubheading>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <EntryCard name="Panel Container" pageTag="Story Builder"
                 specs="<strong>bg:</strong> #2a2a2f · <strong>border-radius:</strong> rounded-[24px] · <strong>border:</strong> border-white/10 · <strong>box-shadow:</strong> 0 12px 32px -2px rgba(0,0,0,0.5)"
                 preview={<div className="w-full h-20 bg-[#2a2a2f] rounded-[24px] border border-white/10" style={{ boxShadow: 'rgba(0,0,0,0.5) 0px 12px 32px -2px' }} />}
                 previewPlain
-                code={`className="bg-[#2a2a2f] rounded-[24px] border border-white/10"
-style={{ boxShadow: 'rgba(0,0,0,0.5) 0px 12px 32px -2px' }}
-
-/* Resolved: */
-background: #2a2a2f;
-border-radius: 24px;
-border: 1px solid rgba(255,255,255,0.1);
-box-shadow: rgba(0,0,0,0.5) 0px 12px 32px -2px;
-
-/* Source: StoryCardView.tsx line 22 */`}
+                code={`bg-[#2a2a2f] rounded-[24px] border border-white/10
+shadow: rgba(0,0,0,0.5) 0px 12px 32px -2px`}
               />
-
               <EntryCard name="Panel Header Bar" pageTag="Story Builder"
-                specs="<strong>bg:</strong> #4a5f7f · <strong>padding:</strong> px-5 py-3 · <strong>border-bottom:</strong> border-white/20 · <strong>shadow-lg</strong> · Contains H2 title (text-xl font-bold tracking-tight text-white) and icon"
+                specs="<strong>bg:</strong> #4a5f7f · <strong>padding:</strong> px-5 py-3 · <strong>border-bottom:</strong> border-white/20 · <strong>shadow-lg</strong>"
                 preview={
                   <div className="w-full bg-[#4a5f7f] rounded-xl px-5 py-3 flex items-center gap-3 border-b border-white/20 shadow-lg">
                     <div className="w-7 h-7 rounded-md bg-white/20 flex items-center justify-center text-white text-sm">⚙</div>
@@ -633,33 +1036,11 @@ box-shadow: rgba(0,0,0,0.5) 0px 12px 32px -2px;
                   </div>
                 }
                 previewPlain
-                code={`className="bg-[#4a5f7f] px-5 py-3 flex items-center gap-3
-  border-b border-white/20 shadow-lg"
-
-/* Title: */
-className="text-white text-xl font-bold tracking-tight"
-
-/* Source: StoryCardView.tsx panel headers */`}
+                code={`bg-[#4a5f7f] px-5 py-3 border-b border-white/20 shadow-lg
+/* Title: text-white text-xl font-bold tracking-tight */`}
               />
-
-              <EntryCard name="Character Roster Sidebar" pageTag="Story Builder"
-                specs='<strong>bg:</strong> #2a2a2f · <strong>width:</strong> 260px · <strong>border-right:</strong> border-white/10 · Contains section pills (<code>bg-[#4a5f7f]</code>) and character cards'
-                preview={null}
-                previewPlain
-                code={`width: 260px;
-background: #2a2a2f;  /* bg-[#2a2a2f] */
-border-right: 1px solid rgba(255,255,255,0.1);
-/* "MAIN CHARACTERS" pill inside: */
-background: #4a5f7f; border-radius: 8px; padding: 8px 16px;
-color: white; font-size: 12px; font-weight: 700; text-transform: uppercase;`}
-              />
-            </div>
-
-            <div style={{ marginTop: 24 }}>
-              <PageSubheading>My Stories Page</PageSubheading>
-              <PageDesc>Card container styling used in the My Stories gallery grid.</PageDesc>
-              <EntryCard name="Story Card (My Stories Grid)" pageTag="My Stories"
-                specs='<strong>aspect-ratio:</strong> 2/3 · <strong>border-radius:</strong> rounded-[2rem] (32px) · <strong>border:</strong> 1px solid #4a5f7f · <strong>shadow:</strong> 0 12px 32px -2px rgba(0,0,0,0.5) · <strong>gradient overlay:</strong> linear-gradient(to top, #020617, slate-900/60, transparent)'
+              <EntryCard name="Story Card (My Stories + Gallery)" pageTag="Cards"
+                specs='<strong>aspect-ratio:</strong> 2/3 · <strong>border-radius:</strong> rounded-[2rem] (32px) · <strong>border:</strong> 1px solid #4a5f7f · <strong>shadow:</strong> 0 12px 32px -2px rgba(0,0,0,0.5) · <strong>gradient overlay:</strong> from-slate-950 via-slate-900/60 to-transparent'
                 preview={
                   <div className="relative overflow-hidden rounded-[2rem] border border-[#4a5f7f]" style={{ width: 120, aspectRatio: '2/3', boxShadow: '0 12px 32px -2px rgba(0,0,0,0.5)' }}>
                     <div className="absolute inset-0 bg-slate-700" />
@@ -671,25 +1052,219 @@ color: white; font-size: 12px; font-weight: 700; text-transform: uppercase;`}
                   </div>
                 }
                 previewPlain
-                code={`className="aspect-[2/3] w-full overflow-hidden rounded-[2rem]
-  bg-slate-200 border border-[#4a5f7f]
-  !shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]"
+                code={`aspect-[2/3] rounded-[2rem] border border-[#4a5f7f]
+shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]
+/* Gradient: bg-gradient-to-t from-slate-950 via-slate-900/60 to-transparent */`}
+              />
+            </div>
 
-/* Gradient overlay: */
-className="bg-gradient-to-t from-slate-950 via-slate-900/60 to-transparent"
+            <div style={{ marginTop: 24 }}>
+              <PageSubheading>Chat Interface</PageSubheading>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <EntryCard name="Chat Message Bubble" pageTag="Chat"
+                  specs='<strong>Solid:</strong> bg-[#1c1f26]. <strong>Transparent:</strong> bg-black/50. <strong>border-radius:</strong> rounded-[2rem]. <strong>padding:</strong> p-8 pt-14 pb-12. User: border-2 border-blue-400. AI: border border-white/5.'
+                  preview={
+                    <div style={{ display: 'flex', gap: 12, width: '100%' }}>
+                      <div className="flex-1 bg-[#1c1f26] rounded-[2rem] border border-white/5 p-4" style={{ minHeight: 60 }}>
+                        <div className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">AI</div>
+                        <div className="text-xs text-white">Message content...</div>
+                      </div>
+                      <div className="flex-1 bg-[#1c1f26] rounded-[2rem] border-2 border-blue-400 p-4" style={{ minHeight: 60 }}>
+                        <div className="text-[9px] font-black uppercase tracking-widest text-blue-300 mb-1">USER</div>
+                        <div className="text-xs text-white">User message...</div>
+                      </div>
+                    </div>
+                  }
+                  previewPlain
+                  code={`/* AI bubble */
+bg-[#1c1f26] rounded-[2rem] border border-white/5 p-8 pt-14 pb-12
+/* User bubble */
+bg-[#1c1f26] rounded-[2rem] border-2 border-blue-400 p-8 pt-14 pb-12
+/* Transparent variant: bg-black/50 instead of bg-[#1c1f26] */`}
+                />
+                <EntryCard name="Frosted Glass Character Card" pageTag="Chat"
+                  specs='Adaptive frosted glass. <strong>Dark BG (isDarkBg):</strong> bg-white/30 text-slate-800. <strong>Light BG:</strong> bg-black/30 text-white. <strong>rounded-2xl backdrop-blur-sm</strong>. Brightness threshold: 128.'
+                  preview={
+                    <div style={{ display: 'flex', gap: 12, width: '100%' }}>
+                      <div className="flex-1 rounded-2xl p-3 text-center bg-white/30 backdrop-blur-sm border-2 border-transparent" style={{ background: 'rgba(255,255,255,0.3)', minHeight: 60 }}>
+                        <div className="text-xs font-bold text-slate-800">Light mode</div>
+                        <div className="text-[9px] text-slate-600">Dark sidebar bg</div>
+                      </div>
+                      <div className="flex-1 rounded-2xl p-3 text-center bg-black/30 backdrop-blur-sm border-2 border-transparent" style={{ background: 'rgba(0,0,0,0.3)', minHeight: 60 }}>
+                        <div className="text-xs font-bold text-white">Dark mode</div>
+                        <div className="text-[9px] text-white/70">Light sidebar bg</div>
+                      </div>
+                    </div>
+                  }
+                  previewPlain
+                  code={`/* isDarkBg=true (dark sidebar) → light card */
+bg-white/30 text-slate-800 border-transparent backdrop-blur-sm rounded-2xl
+/* isDarkBg=false (light sidebar) → dark card */
+bg-black/30 text-white border-transparent backdrop-blur-sm rounded-2xl`}
+                />
+                <EntryCard name="Chat Input Bar Container" pageTag="Chat"
+                  specs='<strong>bg:</strong> bg-[hsl(var(--ui-surface))] · <strong>border-top:</strong> border-[hsl(var(--ui-border))] · <strong>shadow:</strong> 0 -4px 12px rgba(0,0,0,0.15). Contains quick actions row + textarea wrapper.'
+                  preview={
+                    <div className="w-full bg-[hsl(var(--ui-surface))] border-t border-[hsl(var(--ui-border))] shadow-[0_-4px_12px_rgba(0,0,0,0.15)] rounded-b-lg p-3" style={{ minHeight: 50 }}>
+                      <div className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">Input Bar Container</div>
+                    </div>
+                  }
+                  previewPlain
+                  code={`bg-[hsl(var(--ui-surface))] border-t border-[hsl(var(--ui-border))]
+shadow-[0_-4px_12px_rgba(0,0,0,0.15)] pt-3 pb-3 px-8`}
+                />
+              </div>
+            </div>
 
-/* Source: StoryHub.tsx line 35, GalleryStoryCard.tsx line 65 */`}
+            <div style={{ marginTop: 24 }}>
+              <PageSubheading>Chat History</PageSubheading>
+              <EntryCard name="Session Card (Double-nested)" pageTag="Chat History"
+                specs='<strong>Outer:</strong> bg-[#2a2a2f] rounded-2xl border border-[#4a5f7f] p-4. <strong>Inner:</strong> bg-[#3a3a3f]/30 rounded-2xl border border-white/5 p-4. Contains thumbnail, title, actions, preview.'
+                preview={
+                  <div className="w-full bg-[#2a2a2f] rounded-2xl border border-[#4a5f7f] p-3">
+                    <div className="bg-[#3a3a3f]/30 rounded-2xl border border-white/5 p-3">
+                      <div className="flex gap-3">
+                        <div className="w-12 h-12 rounded-lg bg-zinc-800 border border-[#4a5f7f] flex-shrink-0" />
+                        <div className="flex-1">
+                          <div className="text-xs font-bold text-white">Story Title</div>
+                          <div className="text-[9px] text-zinc-500 mt-1">💬 24 • Mar 5, 2026</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                }
+                previewPlain
+                code={`/* Outer card */
+bg-[#2a2a2f] rounded-2xl border border-[#4a5f7f] overflow-hidden p-4
+/* Inner card */
+bg-[#3a3a3f]/30 rounded-2xl border border-white/5 p-4
+/* Thumbnail */
+w-24 h-24 rounded-lg bg-zinc-800 border border-[#4a5f7f] shadow-[0_4px_12px_rgba(0,0,0,0.4)]`}
+              />
+            </div>
+
+            <div style={{ marginTop: 24 }}>
+              <PageSubheading>Community Gallery</PageSubheading>
+              <EntryCard name="Category Sidebar" pageTag="Gallery"
+                specs='<strong>bg:</strong> #18181b · <strong>width:</strong> 288px (w-72) · <strong>border-right:</strong> border-white/10. Yellow accent bar (h-0.5 bg-yellow-400) at top. Collapsible sections.'
+                preview={
+                  <div className="rounded-lg overflow-hidden" style={{ width: 180 }}>
+                    <div className="h-0.5 bg-yellow-400" />
+                    <div className="bg-[#18181b] p-3">
+                      <div className="text-xs font-bold text-white mb-2">Browse Categories</div>
+                      <div className="text-[9px] text-white/70 py-1">▸ Story Type</div>
+                      <div className="text-[9px] text-white/70 py-1">▸ Genre</div>
+                      <div className="text-[9px] text-white/70 py-1">▸ Origin</div>
+                    </div>
+                  </div>
+                }
+                previewPlain
+                code={`w-72 bg-[#18181b] border-r border-white/10
+/* Yellow accent: h-0.5 bg-yellow-400 */
+/* Section item: px-3 py-2 rounded-lg text-sm
+   Selected: bg-blue-500/20 text-blue-400
+   Default: text-white/70 hover:bg-white/5 */`}
+              />
+            </div>
+
+            <div style={{ marginTop: 24 }}>
+              <PageSubheading>Image Library</PageSubheading>
+              <EntryCard name="Folder Grid Card" pageTag="Image Library"
+                specs='Shared card pattern with My Stories. <strong>aspect-[2/3] rounded-[2rem] border border-[#4a5f7f]</strong>. Shadow, gradient overlay, hover actions identical to story cards.'
+                preview={
+                  <div className="relative overflow-hidden rounded-[2rem] border border-[#4a5f7f]" style={{ width: 100, aspectRatio: '2/3', boxShadow: '0 12px 32px -2px rgba(0,0,0,0.5)' }}>
+                    <div className="absolute inset-0 bg-slate-900 flex items-center justify-center">
+                      <span className="text-white/10 text-2xl">📁</span>
+                    </div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/20 to-transparent" />
+                    <div className="absolute bottom-2 left-2 right-2">
+                      <div className="text-[9px] text-white font-bold">Folder Name</div>
+                    </div>
+                  </div>
+                }
+                previewPlain
+                code={`/* Same card pattern as My Stories */
+aspect-[2/3] rounded-[2rem] border border-[#4a5f7f]
+shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]
+/* Gradient: from-slate-950 via-slate-900/20 to-transparent */`}
+              />
+            </div>
+
+            <div style={{ marginTop: 24 }}>
+              <PageSubheading>Account Page</PageSubheading>
+              <EntryCard name="Settings Card" pageTag="Account"
+                specs='<strong>bg:</strong> #1e1e22 · <strong>rounded-2xl</strong> · <strong>border:</strong> border-white/10 · <strong>padding:</strong> p-6. Contains icon, title, and content section.'
+                preview={
+                  <div className="w-full bg-[#1e1e22] rounded-2xl border border-white/10 p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[#4a5f7f]">✉</span>
+                      <span className="text-sm font-bold text-white">Email Address</span>
+                    </div>
+                    <div className="text-xs text-white/70 bg-[#2a2a2f] rounded-xl px-3 py-2 border border-white/5">user@example.com</div>
+                  </div>
+                }
+                previewPlain
+                code={`bg-[#1e1e22] rounded-2xl border border-white/10 p-6
+/* Inner display: bg-[#2a2a2f] rounded-xl px-4 py-3 border border-white/5 */`}
+              />
+            </div>
+
+            <div style={{ marginTop: 24 }}>
+              <PageSubheading>Auth Page</PageSubheading>
+              <EntryCard name="Auth Card (Light Theme)" pageTag="Auth"
+                specs='Uses shadcn Card component. <strong>bg-slate-800/50 border-slate-700 backdrop-blur-sm</strong>. Max-width: max-w-md. Semi-transparent with blur effect on gradient background.'
+                preview={
+                  <div className="rounded-lg border border-slate-700 p-4" style={{ background: 'rgba(30,41,59,0.5)', backdropFilter: 'blur(4px)', width: 200 }}>
+                    <div className="text-sm font-bold text-white text-center mb-1">Chronicle Studio</div>
+                    <div className="text-[9px] text-slate-400 text-center">Sign in to continue</div>
+                  </div>
+                }
+                previewPlain
+                code={`/* shadcn Card with overrides */
+bg-slate-800/50 border-slate-700 backdrop-blur-sm
+max-w-md w-full`}
+              />
+            </div>
+
+            <div style={{ marginTop: 24 }}>
+              <PageSubheading>Global Sidebar</PageSubheading>
+              <EntryCard name="Sidebar (Expanded + Collapsed)" pageTag="Global"
+                specs='<strong>bg:</strong> #1a1a1a · <strong>Expanded:</strong> w-[280px]. <strong>Collapsed:</strong> w-[72px]. <strong>border-right:</strong> border-black · <strong>shadow:</strong> shadow-2xl. Smooth transition: transition-all duration-300.'
+                preview={
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <div className="bg-[#1a1a1a] rounded-lg border-r border-black shadow-2xl p-3" style={{ width: 120, minHeight: 80 }}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-6 h-6 rounded-lg bg-[#4a5f7f] flex items-center justify-center text-white text-[9px] font-black italic">C</div>
+                        <span className="text-[9px] font-black text-white uppercase tracking-tighter">Chronicle</span>
+                      </div>
+                      <div className="text-[8px] font-bold text-white bg-[#4a5f7f] rounded-lg px-2 py-1 mb-1">My Stories</div>
+                      <div className="text-[8px] font-bold text-slate-400 px-2 py-1">Chat</div>
+                    </div>
+                    <div className="bg-[#1a1a1a] rounded-lg border-r border-black shadow-2xl p-2 flex flex-col items-center gap-2" style={{ width: 40, minHeight: 80 }}>
+                      <div className="w-6 h-6 rounded-lg bg-[#4a5f7f] flex items-center justify-center text-white text-[9px] font-black italic">C</div>
+                      <div className="w-6 h-6 rounded bg-[#4a5f7f] opacity-70" />
+                      <div className="w-6 h-6 rounded bg-transparent" />
+                    </div>
+                  </div>
+                }
+                previewPlain
+                code={`/* Expanded */ w-[280px] bg-[#1a1a1a] border-r border-black shadow-2xl
+/* Collapsed */ w-[72px]
+/* transition-all duration-300 */
+/* Logo: w-10 h-10 rounded-xl bg-[#4a5f7f] shadow-xl shadow-[#4a5f7f]/30 */`}
               />
             </div>
           </Section>
 
           <Divider />
 
+          {/* ═══════════════════════════════════════════════════════════════ */}
           {/* ═══ 7. MODALS ═══ */}
-          <Section id="modals" title="Modals" desc="Pop-up modal and dialog container styling extracted from source code. Canonical patterns and inconsistencies documented.">
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          <Section id="modals" title="Modals" desc="Pop-up modal and dialog container styling. Canonical patterns and inconsistencies documented.">
 
             <EntryCard name="Modal Backdrop" pageTag="Global"
-              specs='<strong>Standard:</strong> Radix DialogOverlay default — <code>bg-black/80</code> (fixed inset-0, z-50). Fade animation via Radix data-state.'
+              specs='<strong>Standard:</strong> Radix DialogOverlay default — <code>bg-black/80</code> (fixed inset-0, z-50).'
               preview={
                 <div style={{ position: 'relative', width: '100%', height: 120, borderRadius: 8, overflow: 'hidden' }}>
                   <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #334155 0%, #475569 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#94a3b8' }}>App Content Behind</div>
@@ -698,11 +1273,8 @@ className="bg-gradient-to-t from-slate-950 via-slate-900/60 to-transparent"
                 </div>
               }
               previewDark
-              code={`/* Radix DialogOverlay (default) */
-background: rgba(0, 0, 0, 0.80);  /* bg-black/80 */
-position: fixed;
-inset: 0;
-z-index: 50;`}
+              code={`background: rgba(0, 0, 0, 0.80);  /* bg-black/80 */
+position: fixed; inset: 0; z-index: 50;`}
             />
             <InconsistencyNote items={[
               { file: 'ReviewModal.tsx', note: 'Uses bg-black/90 backdrop-blur-sm instead of standard bg-black/80' },
@@ -712,7 +1284,7 @@ z-index: 50;`}
             <div style={{ marginTop: 16 }} />
 
             <EntryCard name="Modal Container" pageTag="Global"
-              specs='<strong>Canonical:</strong> bg-zinc-900 · border: 1px solid rgba(255,255,255,0.1) · border-radius: rounded-lg (8px via Radix) · shadow: 0 10px 30px rgba(0,0,0,0.5) · padding: 0 (content manages own padding) · Close button: Radix default X (top-right) or hidden via [&>button]:hidden'
+              specs='<strong>Canonical:</strong> bg-zinc-900 · border: 1px solid rgba(255,255,255,0.1) · border-radius: rounded-lg · shadow: 0 10px 30px rgba(0,0,0,0.5)'
               preview={
                 <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', width: '100%' }}>
                   <div className="flex-1 bg-zinc-900 border border-white/10 rounded-lg p-4" style={{ minWidth: 180, boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
@@ -725,37 +1297,26 @@ z-index: 50;`}
                   </div>
                 </div>
               }
-              code={`/* Canonical container */
-className="bg-zinc-900 border border-white/10 rounded-lg"
-style={{ boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}
-
-/* DeleteConfirmDialog canonical (HSL tokens): */
-className="bg-[hsl(240_6%_10%)] border border-[hsl(0_0%_100%_/_0.10)]
-  shadow-[0_10px_30px_hsl(0_0%_0%_/_0.5)]"
-
-/* Close button: Radix default or hidden with [&>button]:hidden */`}
+              code={`/* Canonical */ bg-zinc-900 border border-white/10 rounded-lg
+/* Edit variant */ bg-[#2a2a2f] border border-white/10`}
             />
             <InconsistencyNote items={[
               { file: 'ShareStoryModal, CharacterEditModal', note: 'bg-[#2a2a2f] instead of bg-zinc-900' },
               { file: 'ReviewModal', note: 'bg-[#121214] (darker variant)' },
-              { file: 'MemoriesModal', note: 'bg-slate-900 + border-slate-700 instead of zinc-900 + white/10' },
-              { file: 'AIPromptModal', note: 'bg-[hsl(var(--ui-surface))] + border-[hsl(var(--ui-border))] (CSS variable tokens)' },
-              { file: 'BackgroundPickerModal', note: 'bg-transparent wrapper around Card component' },
-              { file: 'FolderEditModal', note: 'border-[#4a5f7f] instead of border-white/10' },
-              { file: 'ChangeNameModal + generation modals', note: 'No explicit bg/border — uses Dialog default (light theme)' },
-              { file: 'SceneTagEditorModal', note: 'Raw div instead of Dialog component; border-[#4a5f7f]' },
+              { file: 'MemoriesModal', note: 'bg-slate-900 + border-slate-700' },
+              { file: 'AIPromptModal', note: 'bg-[hsl(var(--ui-surface))] (CSS variable tokens)' },
             ]} />
 
             <div style={{ marginTop: 16 }} />
 
             <EntryCard name="Modal Header" pageTag="Global"
-              specs='<strong>Pattern A — Simple:</strong> DialogHeader with text-lg font-bold text-white, optional DialogDescription text-sm text-zinc-400. Padding: px-5 pt-5 pb-3.<br/><strong>Pattern B — Banner:</strong> Slate blue bg-[#4a5f7f] full-width header bar for AI/generation modals.'
+              specs='<strong>Pattern A — Simple:</strong> text-lg font-bold text-white. <strong>Pattern B — Banner:</strong> bg-[#4a5f7f] full-width header bar.'
               preview={
                 <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', width: '100%' }}>
                   <div className="flex-1 bg-zinc-900 rounded-lg overflow-hidden" style={{ minWidth: 180 }}>
                     <div className="px-4 pt-3 pb-2">
                       <div className="text-sm font-bold text-white">Simple Header</div>
-                      <div className="text-xs text-zinc-500 mt-0.5">Optional description text</div>
+                      <div className="text-xs text-zinc-500 mt-0.5">Optional description</div>
                     </div>
                   </div>
                   <div className="flex-1 bg-zinc-900 rounded-lg overflow-hidden" style={{ minWidth: 180 }}>
@@ -766,27 +1327,15 @@ className="bg-[hsl(240_6%_10%)] border border-[hsl(0_0%_100%_/_0.10)]
                 </div>
               }
               code={`/* Pattern A — Simple header */
-className="px-5 pt-5 pb-3"
-/* Title: */ className="text-lg font-bold text-white"
-/* Desc:  */ className="text-sm text-zinc-400"
-
+text-lg font-bold text-white
 /* Pattern B — Slate blue banner */
-className="bg-[#4a5f7f] -mx-6 -mt-6 px-6 py-4 rounded-t-lg
-  border-b border-white/20"
-/* Title: */ className="text-white text-lg font-bold"
-
-/* Source: AIPromptModal.tsx line 51 */`}
+bg-[#4a5f7f] px-6 py-4 border-b border-white/20`}
             />
-            <InconsistencyNote items={[
-              { file: 'ReviewModal, SidebarThemeModal', note: 'Custom div header with border-b divider instead of DialogHeader' },
-              { file: 'CharacterCreation, EnhanceMode, CustomContentType', note: 'Raw <h3> instead of DialogHeader component' },
-              { file: 'ChangeNameModal', note: 'Uses DialogTitle text-lg font-bold (no text-white — inherits default)' },
-            ]} />
 
             <div style={{ marginTop: 16 }} />
 
             <EntryCard name="Modal Footer / Button Row" pageTag="Global"
-              specs='<strong>Canonical — Shadow Surface:</strong> h-10 (40px) · px-6 · rounded-xl (12px) · text-[10px] font-bold uppercase tracking-wider · leading-none.<br/><strong>Standard action:</strong> bg-[hsl(var(--ui-surface-2))].<br/><strong>Cancel:</strong> bg-[hsl(240_6%_18%)].<br/><strong>Destructive:</strong> bg-[hsl(var(--destructive))].<br/><strong>Layout:</strong> flex justify-end gap-2 sm:gap-2.'
+              specs='Shadow Surface buttons: <strong>h-10 px-6 rounded-xl text-[10px] font-bold uppercase tracking-wider leading-none</strong>. Standard: bg-[hsl(var(--ui-surface-2))]. Cancel: bg-[hsl(240_6%_18%)]. Destructive: bg-[hsl(var(--destructive))].'
               preview={
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                   <button className="h-10 px-6 rounded-xl bg-[hsl(240_6%_18%)] border border-[hsl(var(--ui-border))] text-zinc-300 text-[10px] font-bold uppercase tracking-wider leading-none shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default' }}>Cancel</button>
@@ -794,86 +1343,101 @@ className="bg-[#4a5f7f] -mx-6 -mt-6 px-6 py-4 rounded-t-lg
                   <button className="h-10 px-6 rounded-xl bg-[hsl(var(--destructive))] text-white text-[10px] font-bold uppercase tracking-wider leading-none shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default' }}>Delete</button>
                 </div>
               }
-              code={`/* Shadow Surface standard button (modal footer) */
-className="h-10 px-6 rounded-xl
-  bg-[hsl(var(--ui-surface-2))]
-  border border-[hsl(var(--ui-border))]
-  text-[hsl(var(--ui-text))]
-  shadow-[0_10px_30px_rgba(0,0,0,0.35)]
-  text-[10px] font-bold uppercase tracking-wider leading-none"
-
-/* Cancel variant: */
-className="... bg-[hsl(240_6%_18%)] text-zinc-300"
-
-/* Destructive variant: */
-className="... bg-[hsl(var(--destructive))] text-white border-0"
-
-/* Source: DeleteConfirmDialog.tsx, FolderEditModal.tsx */`}
+              code={`h-10 px-6 rounded-xl text-[10px] font-bold uppercase tracking-wider leading-none
+shadow-[0_10px_30px_rgba(0,0,0,0.35)]
+/* Standard: bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] */
+/* Cancel: bg-[hsl(240_6%_18%)] text-zinc-300 */
+/* Destructive: bg-[hsl(var(--destructive))] text-white */`}
             />
             <InconsistencyNote items={[
-              { file: 'ReviewModal', note: 'h-11 with text-sm font-semibold instead of h-10 text-[10px] uppercase' },
-              { file: 'AIPromptModal', note: 'Iridescent layered gradient button — unique one-off design' },
-              { file: 'ShareStoryModal, generation modals', note: '<Button> component with variant overrides instead of raw Shadow Surface' },
-              { file: 'SceneTagEditorModal', note: 'Raw px-4 py-2 text-sm — completely non-standard' },
-              { file: 'DraftsModal inline buttons', note: 'Compact h-8 px-3 text-[10px] (card variant, correct for inline use)' },
-              { file: 'ChangeNameModal', note: 'Uses <Button> with hardcoded bg-slate-900/bg-slate-100 — not using design tokens' },
+              { file: 'ReviewModal', note: 'h-11 text-sm font-semibold instead of h-10 text-[10px] uppercase' },
+              { file: 'SceneTagEditorModal', note: 'Raw px-4 py-2 text-sm — non-standard' },
+              { file: 'ChangeNameModal', note: 'Uses <Button> with hardcoded bg-slate-900/bg-slate-100' },
             ]} />
+
+            <div style={{ marginTop: 16 }} />
+
+            <EntryCard name="Chat Settings Modal" pageTag="Chat"
+              specs='<strong>max-w-2xl bg-zinc-900 border-white/10</strong>. Contains toggle grid: 2-col layout. Each toggle row: <strong>p-3 bg-zinc-800/50 rounded-xl</strong> with text-sm font-semibold text-zinc-200.'
+              preview={
+                <div className="bg-zinc-900 border border-white/10 rounded-lg p-4" style={{ maxWidth: 300 }}>
+                  <div className="flex items-center gap-2 border-b border-white/10 pb-2 mb-3">
+                    <span className="text-xs font-black text-white uppercase tracking-tight">⚙ Chat Settings</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="p-2 bg-zinc-800/50 rounded-xl">
+                      <span className="text-[9px] font-semibold text-zinc-200">Dynamic BG</span>
+                    </div>
+                    <div className="p-2 bg-zinc-800/50 rounded-xl">
+                      <span className="text-[9px] font-semibold text-zinc-200">Transparent</span>
+                    </div>
+                  </div>
+                </div>
+              }
+              previewPlain
+              code={`max-w-2xl bg-zinc-900 border-white/10
+/* Toggle rows: p-3 bg-zinc-800/50 rounded-xl */
+/* Grid: grid-cols-1 md:grid-cols-2 gap-3 */
+/* Labels: text-sm font-semibold text-zinc-200 */
+/* POV buttons: px-3 py-1.5 text-xs font-semibold rounded-lg
+   Active: bg-blue-500 text-white
+   Inactive: bg-zinc-700 text-zinc-300 */`}
+            />
           </Section>
 
           <Divider />
 
+          {/* ═══════════════════════════════════════════════════════════════ */}
           {/* ═══ 8. ICONS ═══ */}
-          <Section id="icons" title="Icons" desc="Icon sizing, color conventions, and container patterns extracted from source code. All icons use Lucide React.">
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          <Section id="icons" title="Icons" desc="Icon sizing, color conventions, and container patterns. All icons use Lucide React.">
 
             <EntryCard name="Icon Size Scale" pageTag="Global"
-              specs='<strong>6 sizes in use.</strong> Default for inline/button icons: w-4 h-4 (16px). Default for modal/panel title icons: w-5 h-5 (20px). Larger sizes reserved for empty states and loading.'
+              specs='<strong>6 sizes in use.</strong> Default inline/button: w-4 h-4 (16px). Modal/panel title: w-5 h-5 (20px). Larger sizes for empty states and loading.'
               preview={
                 <div style={{ display: 'flex', gap: 16, alignItems: 'end', flexWrap: 'wrap' }}>
                   {[
-                    { size: 12, label: 'w-3', usage: 'Chevrons, compact btns' },
+                    { size: 12, label: 'w-3', usage: 'Chevrons, compact' },
                     { size: 14, label: 'w-3.5', usage: 'Rare (sparkle)' },
-                    { size: 16, label: 'w-4', usage: 'Default — buttons, forms' },
-                    { size: 20, label: 'w-5', usage: 'Title icons, panels' },
-                    { size: 24, label: 'w-6', usage: 'Spinners, close btns' },
+                    { size: 16, label: 'w-4', usage: 'Default — buttons' },
+                    { size: 20, label: 'w-5', usage: 'Title icons' },
+                    { size: 24, label: 'w-6', usage: 'Spinners' },
                     { size: 32, label: 'w-8', usage: 'Empty states' },
                   ].map(s => (
                     <div key={s.label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                      <div style={{ width: s.size, height: s.size, borderRadius: 3, background: '#6b7280', flexShrink: 0 }} />
+                      <div style={{ width: s.size, height: s.size, borderRadius: 3, background: '#6b7280' }} />
                       <span style={{ fontSize: 10, fontWeight: 700, color: '#334155', fontFamily: "'SF Mono','Fira Code',monospace" }}>{s.label}</span>
                       <span style={{ fontSize: 9, color: '#64748b', textAlign: 'center', maxWidth: 80 }}>{s.usage}</span>
                     </div>
                   ))}
                 </div>
               }
-              code={`/* Icon size scale (Lucide className) */
-w-3 h-3    →  12px  — Inline indicators, chevrons, compact button icons
-w-3.5 h-3.5 → 14px  — Rare usage (AIPromptModal sparkle)
-w-4 h-4    →  16px  — DEFAULT: form icons, button icons, dropdown items, action buttons
-w-5 h-5    →  20px  — Modal title icons, panel header icons, card action icons
-w-6 h-6    →  24px  — Loading spinners, ShareStory title icon, large modal close buttons
-w-8 h-8    →  32px  — Empty state placeholder icons (BackgroundPicker)`}
+              code={`w-3 h-3  → 12px  — Chevrons, compact button icons
+w-3.5    → 14px  — Rare
+w-4 h-4  → 16px  — DEFAULT: buttons, forms, dropdowns
+w-5 h-5  → 20px  — Modal titles, panel headers
+w-6 h-6  → 24px  — Loading spinners
+w-8 h-8  → 32px  — Empty state placeholders`}
             />
 
             <div style={{ marginTop: 16 }} />
 
             <EntryCard name="Icon Colors" pageTag="Global"
-              specs='<strong>Default:</strong> text-white, text-zinc-400. <strong>Accent:</strong> text-blue-400, text-purple-400, text-cyan-200. <strong>Destructive:</strong> text-red-400. <strong>Hover:</strong> hover:text-white, hover:text-red-400. <strong>Disabled:</strong> text-white/40, text-white/20.'
+              specs='<strong>Default:</strong> text-white, text-zinc-400. <strong>Accent:</strong> text-blue-400, text-purple-400, text-cyan-200. <strong>Destructive:</strong> text-red-400.'
               preview={
                 <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                   {[
-                    { color: '#ffffff', label: 'text-white', role: 'Default', needsDarkBg: true },
-                    { color: '#a1a1aa', label: 'text-zinc-400', role: 'Muted', needsDarkBg: false },
-                    { color: '#60a5fa', label: 'text-blue-400', role: 'Accent', needsDarkBg: false },
-                    { color: '#c084fc', label: 'text-purple-400', role: 'Accent', needsDarkBg: false },
-                    { color: '#a5f3fc', label: 'text-cyan-200', role: 'Accent', needsDarkBg: false },
-                    { color: '#f87171', label: 'text-red-400', role: 'Destructive', needsDarkBg: false },
-                    { color: 'rgba(255,255,255,0.4)', label: 'text-white/40', role: 'Disabled', needsDarkBg: true },
+                    { color: '#ffffff', label: 'text-white', role: 'Default', needsBorder: true },
+                    { color: '#a1a1aa', label: 'text-zinc-400', role: 'Muted', needsBorder: false },
+                    { color: '#60a5fa', label: 'text-blue-400', role: 'Accent', needsBorder: false },
+                    { color: '#c084fc', label: 'text-purple-400', role: 'Accent', needsBorder: false },
+                    { color: '#f87171', label: 'text-red-400', role: 'Destructive', needsBorder: false },
+                    { color: 'rgba(255,255,255,0.4)', label: 'text-white/40', role: 'Disabled', needsBorder: true },
                   ].map(c => (
                     <div key={c.label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
                       <div style={{
                         width: 24, height: 24, borderRadius: 6, background: c.color,
-                        border: c.needsDarkBg ? '1px solid #e2e8f0' : '1px solid rgba(0,0,0,0.1)',
-                        ...(c.needsDarkBg ? { boxShadow: 'inset 0 0 0 1px #cbd5e1' } : {}),
+                        border: c.needsBorder ? '1px solid #e2e8f0' : '1px solid rgba(0,0,0,0.1)',
                       }} />
                       <span style={{ fontSize: 9, fontWeight: 600, color: '#334155', fontFamily: "'SF Mono','Fira Code',monospace" }}>{c.label}</span>
                       <span style={{ fontSize: 8, color: '#64748b' }}>{c.role}</span>
@@ -881,48 +1445,37 @@ w-8 h-8    →  32px  — Empty state placeholder icons (BackgroundPicker)`}
                   ))}
                 </div>
               }
-              code={`/* Icon color tokens */
-/* Default: */     color: #fff;           /* text-white */
-/* Muted: */       color: #a1a1aa;        /* text-zinc-400 */
-/* Accent: */      color: #60a5fa;        /* text-blue-400 */
-                   color: #c084fc;        /* text-purple-400 */
-                   color: #a5f3fc;        /* text-cyan-200 */
-/* Destructive: */ color: #f87171;        /* text-red-400 */
-/* Hover: */       hover: color #fff;     /* hover:text-white */
-                   hover: color #f87171;  /* hover:text-red-400 */
-/* Disabled: */    color: rgba(255,255,255,0.4);  /* text-white/40 */`}
+              code={`text-white       — Default
+text-zinc-400    — Muted
+text-blue-400    — Accent
+text-purple-400  — Accent
+text-red-400     — Destructive
+hover:text-white — Hover state
+text-white/40    — Disabled`}
             />
-            <InconsistencyNote items={[
-              { file: 'MemoriesModal, ChangeNameModal', note: 'Uses text-slate-400/text-slate-500 instead of text-zinc-400/text-zinc-500 for muted icons' },
-              { file: 'Various modals', note: 'Inconsistent use of text-zinc-400 vs text-zinc-500 for same semantic role (secondary/muted)' },
-            ]} />
 
             <div style={{ marginTop: 16 }} />
 
             <EntryCard name="Icon Containers" pageTag="Global"
-              specs='<strong>4 container patterns:</strong> (1) No container — icon sits directly in header bar. (2) Selection checkmark — w-5 h-5 bg-blue-500 rounded-full with w-3 h-3 check. (3) Option icon — w-10 h-10 rounded-xl bg-{color}-500/20 with w-5 h-5 icon. (4) Action button — h-8 w-8 rounded-xl with centered w-4 h-4 icon.'
+              specs='<strong>4 patterns:</strong> (1) No container. (2) Checkmark: w-5 h-5 bg-blue-500 rounded-full. (3) Option: w-10 h-10 rounded-xl bg-{color}-500/20. (4) Action button: h-8 w-8 rounded-xl.'
               preview={
                 <div style={{ display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' }}>
-                  {/* No container */}
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
                     <div className="w-5 h-5 rounded bg-zinc-400" />
                     <span style={{ fontSize: 8, color: '#64748b' }}>No container</span>
                   </div>
-                  {/* Selection checkmark */}
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
                     <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
                       <div className="w-3 h-3 rounded-sm bg-white" />
                     </div>
                     <span style={{ fontSize: 8, color: '#64748b' }}>Checkmark</span>
                   </div>
-                  {/* Option icon */}
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
                     <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
                       <div className="w-5 h-5 rounded bg-blue-400" />
                     </div>
                     <span style={{ fontSize: 8, color: '#64748b' }}>Option</span>
                   </div>
-                  {/* Action button */}
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
                     <div className="h-8 w-8 rounded-xl bg-zinc-200 flex items-center justify-center">
                       <div className="w-4 h-4 rounded bg-zinc-500" />
@@ -931,24 +1484,10 @@ w-8 h-8    →  32px  — Empty state placeholder icons (BackgroundPicker)`}
                   </div>
                 </div>
               }
-              code={`/* 1. No container — icon in header bar */
-/* Just the icon, no wrapping element */
-
-/* 2. Selection checkmark */
-className="w-5 h-5 rounded-full bg-blue-500
-  flex items-center justify-center"
-/* Inner check: w-3 h-3 */
-
-/* 3. Option icon (CharacterCreation) */
-className="w-10 h-10 rounded-xl bg-blue-500/20
-  flex items-center justify-center"
-/* Inner icon: w-5 h-5 */
-
-/* 4. Action button (gallery cards) */
-className="h-8 w-8 rounded-xl"
-/* Inner icon: w-4 h-4 */
-
-/* Source: StoryHub.tsx, GalleryStoryCard.tsx, CharacterCreationModal.tsx */`}
+              code={`/* 1. No container */
+/* 2. Checkmark: w-5 h-5 bg-blue-500 rounded-full */
+/* 3. Option: w-10 h-10 rounded-xl bg-{color}-500/20 */
+/* 4. Action button: h-8 w-8 rounded-xl */`}
             />
           </Section>
 
