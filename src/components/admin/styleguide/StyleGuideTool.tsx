@@ -2015,6 +2015,78 @@ hover:border-[#6b82a8] transition-colors
 /* Unique info callout pattern */`}
               />
             </div>
+
+            <PageSubheading>Arc System</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="Arc Phase Card Container" pageTag="Arc System"
+                specs='Phase container within the Story Arc. Contains progress ring (CircularProgress), phase title, branch lanes (success/fail), and sparkle enhance buttons. Uses <code>rounded-2xl</code> container where linked phases appear as inline sections separated by <code>border-t</code>.'
+                previewDark
+                preview={
+                  <div className="bg-[#2a2a2f] rounded-2xl border border-white/10 p-4" style={{ width: '100%' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                      <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <svg width={32} height={32} style={{ transform: 'rotate(-90deg)' }}>
+                          <circle cx={16} cy={16} r={13} stroke="#334155" strokeWidth={3} fill="none" />
+                          <circle cx={16} cy={16} r={13} stroke="#3b82f6" strokeWidth={3} fill="none" strokeDasharray={81.7} strokeDashoffset={40.8} />
+                        </svg>
+                        <span style={{ position: 'absolute', fontSize: 8, fontWeight: 700, color: '#60a5fa' }}>50%</span>
+                      </div>
+                      <span className="text-white font-bold text-sm">Phase 1: Discovery</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <div className="flex-1 rounded-lg p-2" style={{ background: 'rgba(34,197,127,0.28)' }}>
+                        <span className="text-[9px] font-bold text-emerald-300 uppercase">Succeed</span>
+                      </div>
+                      <div className="flex-1 rounded-lg p-2" style={{ background: 'rgba(240,74,95,0.28)' }}>
+                        <span className="text-[9px] font-bold text-red-300 uppercase">Fail</span>
+                      </div>
+                    </div>
+                  </div>
+                }
+                previewPlain
+                code={`/* Container: rounded-2xl border-t (inline sections) */
+/* Progress: CircularProgress component */
+/* Branch lanes: success rgba(34,197,127,0.28), fail rgba(240,74,95,0.28) */
+/* Phase title: text-white font-bold text-sm */`}
+              />
+
+              <EntryCard name="Arc Branch Lane (Success / Fail)" pageTag="Arc System"
+                specs='Color-coded branch lanes. <strong>Success:</strong> strip bg <code>rgba(34,197,127,0.28)</code>, step cards <code>rgba(51,75,66,0.78)</code>. <strong>Fail:</strong> strip bg <code>rgba(240,74,95,0.28)</code>, step cards <code>rgba(78,58,68,0.78)</code>. Step card borders are status-based: Red (Failed), Blue (Succeeded), Orange (Deviated). Uses inline <code>rgba()</code> instead of Tailwind tokens.'
+                previewDark
+                preview={
+                  <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+                    <div className="flex-1 rounded-lg p-3" style={{ background: 'rgba(34,197,127,0.28)' }}>
+                      <div className="text-[9px] font-bold text-emerald-300 uppercase tracking-wider mb-2">Succeed</div>
+                      <div className="rounded-lg p-2 border-l-2 border-blue-500 mb-1.5" style={{ background: 'rgba(51,75,66,0.78)' }}>
+                        <span className="text-[9px] text-white">Step 1 — Resolved</span>
+                      </div>
+                      <div className="rounded-lg p-2 border-l-2 border-orange-400" style={{ background: 'rgba(51,75,66,0.78)' }}>
+                        <span className="text-[9px] text-white">Step 2 — Deviated</span>
+                      </div>
+                    </div>
+                    <div className="flex-1 rounded-lg p-3" style={{ background: 'rgba(240,74,95,0.28)' }}>
+                      <div className="text-[9px] font-bold text-red-300 uppercase tracking-wider mb-2">Fail</div>
+                      <div className="rounded-lg p-2 border-l-2 border-red-500 mb-1.5" style={{ background: 'rgba(78,58,68,0.78)' }}>
+                        <span className="text-[9px] text-white">Step 1 — Failed</span>
+                      </div>
+                      <div className="rounded-lg p-2 border-l-2 border-zinc-600 opacity-50" style={{ background: 'rgba(78,58,68,0.78)' }}>
+                        <span className="text-[9px] text-zinc-400">🔒 DYNAMIC RECOVERY</span>
+                      </div>
+                    </div>
+                  </div>
+                }
+                previewPlain
+                code={`/* Success lane: rgba(34,197,127,0.28) */
+/* Success step: rgba(51,75,66,0.78) */
+/* Fail lane: rgba(240,74,95,0.28) */
+/* Fail step: rgba(78,58,68,0.78) */
+/* Step borders: Red (failed), Blue (succeeded), Orange (deviated) */
+/* ⚠ Uses inline rgba() instead of Tailwind tokens */`}
+              />
+              <InconsistencyNote items={[
+                { file: 'ArcBranchLane.tsx', note: 'Uses inline rgba() colors instead of Tailwind tokens. Unique to the Arc system — no other component does this.' },
+              ]} />
+            </div>
           </Section>
 
           <Divider />
