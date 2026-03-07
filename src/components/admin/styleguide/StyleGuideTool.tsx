@@ -2353,11 +2353,121 @@ shadow-[0_10px_30px_rgba(0,0,0,0.35)]
 
             <div style={{ marginTop: 16 }} />
 
+            <EntryCard name="ChangeNameModal (Light Theme)" pageTag="Character Builder"
+              specs='<strong>Uses default DialogContent</strong> — no dark overrides. Buttons: <code>bg-slate-100 text-slate-700</code> (Cancel), <code>bg-slate-900 text-white</code> (Save). Current name display: <code>bg-slate-100 text-slate-600</code>. Same light-theme issue as Image Generation modals.'
+              preview={
+                <div style={{ position: 'relative', width: '100%', height: 100, borderRadius: 8, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
+                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 8, padding: '12px 24px', color: '#111827', fontSize: 11, fontWeight: 600, boxShadow: '0 10px 40px rgba(0,0,0,0.3)' }}>
+                    Change Name — light theme
+                  </div>
+                </div>
+              }
+              previewDark
+              code={`/* Default DialogContent (light theme, no overrides) */
+/* Cancel: bg-slate-100 hover:bg-slate-200 text-slate-700 */
+/* Save: bg-slate-900 hover:bg-slate-800 text-white */
+/* ⚠ Light theme — same issue as Image Gen modals */`}
+            />
+            <InconsistencyNote items={[
+              { file: 'ChangeNameModal.tsx', note: 'Uses default light-theme DialogContent while every other modal uses dark overrides. Uses slate-100/slate-700 buttons.' },
+            ]} />
+
+            <div style={{ marginTop: 16 }} />
+
+            <EntryCard name="AIPromptModal (Colored Header)" pageTag="Chat Interface"
+              specs='<strong>bg-[hsl(var(--ui-surface))]</strong> with unique colored header bar: <code>bg-[#4a5f7f] -mx-6 -mt-6 px-6 py-4 rounded-t-lg</code>. Only modal with a full-width colored header banner that uses negative margins to bleed edge-to-edge.'
+              previewDark
+              preview={
+                <div style={{ position: 'relative', width: '100%', height: 110, borderRadius: 8, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
+                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#2a2a2f', borderRadius: 8, overflow: 'hidden', width: 220, boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }}>
+                    <div style={{ background: '#4a5f7f', padding: '8px 16px' }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.5px' }}>AI Prompt</span>
+                    </div>
+                    <div style={{ padding: '8px 16px', fontSize: 10, color: '#94a3b8' }}>Modal content...</div>
+                  </div>
+                </div>
+              }
+              code={`bg-[hsl(var(--ui-surface))]
+/* Header: bg-[#4a5f7f] -mx-6 -mt-6 px-6 py-4 rounded-t-lg */
+/* ⚠ Only modal with a colored header bar using negative margins */`}
+            />
+            <InconsistencyNote items={[
+              { file: 'AIPromptModal.tsx', note: 'Only modal with a colored header bar pattern (bg-[#4a5f7f] -mx-6 -mt-6). Not used anywhere else.' },
+            ]} />
+
+            <div style={{ marginTop: 16 }} />
+
+            <EntryCard name="DeleteConfirmDialog (AlertDialog)" pageTag="Global"
+              specs='Uses <strong>AlertDialog</strong> instead of Dialog. <strong>bg-[hsl(240_6%_10%)] rounded-2xl border-white/10</strong>. Cancel: <code>bg-[hsl(240_6%_18%)]</code>. Delete: <code>bg-[hsl(var(--destructive))]</code>. Standardized across all destructive actions. Shadow: <code>0 10px 30px rgba(0,0,0,0.5)</code>.'
+              previewDark
+              preview={
+                <div style={{ position: 'relative', width: '100%', height: 110, borderRadius: 8, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
+                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: 'hsl(240, 6%, 10%)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: '12px 24px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#e8eef8', marginBottom: 4 }}>Delete this? <span style={{ color: '#ef4444' }}>Delete</span></div>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                      <button style={{ padding: '4px 12px', borderRadius: 12, background: 'hsl(240, 6%, 18%)', border: '1px solid rgba(255,255,255,0.1)', color: '#e8eef8', fontSize: 9, fontWeight: 700, textTransform: 'uppercase', cursor: 'default' }}>Cancel</button>
+                      <button style={{ padding: '4px 12px', borderRadius: 12, background: '#ef4444', border: 'none', color: '#fff', fontSize: 9, fontWeight: 700, textTransform: 'uppercase', cursor: 'default' }}>Delete</button>
+                    </div>
+                  </div>
+                </div>
+              }
+              code={`/* AlertDialog (not Dialog) */
+bg-[hsl(240_6%_10%)] rounded-2xl border-white/10
+shadow-[0_10px_30px_rgba(0,0,0,0.5)]
+/* Cancel: bg-[hsl(240_6%_18%)] border-white/10 */
+/* Delete: bg-[hsl(var(--destructive))] */
+/* Buttons: h-10 px-6 text-[10px] font-bold uppercase tracking-wider */`}
+            />
+
+            <div style={{ marginTop: 16 }} />
+
+            <EntryCard name="SceneTagEditorModal (Custom Overlay)" pageTag="Image Library"
+              specs='Uses <strong>custom <code>fixed inset-0</code> overlay</strong> instead of Radix Dialog. Backdrop: <code>bg-black/85</code>. Container: <code>bg-zinc-900 rounded-xl border-[#4a5f7f]</code>. Contains image preview, title input, and tag editor. Uses accent border <code>border-[#4a5f7f]</code> instead of standard <code>border-white/10</code>.'
+              previewDark
+              preview={
+                <div style={{ position: 'relative', width: '100%', height: 100, borderRadius: 8, overflow: 'hidden', background: 'rgba(0,0,0,0.85)' }}>
+                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#18181b', border: '1px solid #4a5f7f', borderRadius: 12, padding: '12px 24px', color: '#fff', fontSize: 11, fontWeight: 600 }}>
+                    Scene Tags — custom overlay
+                  </div>
+                </div>
+              }
+              code={`/* Custom overlay: fixed inset-0 bg-black/85 (NOT Radix Dialog) */
+bg-zinc-900 rounded-xl border-[#4a5f7f]
+/* ⚠ Uses fixed inset-0 instead of Dialog component */
+/* ⚠ Uses border-[#4a5f7f] instead of border-white/10 */`}
+            />
+            <InconsistencyNote items={[
+              { file: 'SceneTagEditorModal.tsx', note: 'Uses custom fixed inset-0 overlay instead of Radix Dialog component. Also uses border-[#4a5f7f] instead of standard border-white/10.' },
+            ]} />
+
+            <div style={{ marginTop: 16 }} />
+
+            <EntryCard name="FolderEditModal (Accent Border)" pageTag="Image Library"
+              specs='<strong>bg-zinc-900 border-[#4a5f7f]</strong>. Uses accent border <code>border-[#4a5f7f]</code> matching the Story Builder panel system instead of standard modal <code>border-white/10</code>. Close button hidden via <code>[&>button]:hidden</code>.'
+              previewDark
+              preview={
+                <div style={{ position: 'relative', width: '100%', height: 100, borderRadius: 8, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
+                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#18181b', border: '1px solid #4a5f7f', borderRadius: 8, padding: '12px 24px', color: '#fff', fontSize: 11, fontWeight: 600 }}>
+                    Folder Edit — border-[#4a5f7f]
+                  </div>
+                </div>
+              }
+              code={`bg-zinc-900 border-[#4a5f7f] [&>button]:hidden
+/* ⚠ Uses border-[#4a5f7f] instead of standard border-white/10 */`}
+            />
+            <InconsistencyNote items={[
+              { file: 'FolderEditModal.tsx', note: 'Uses accent border-[#4a5f7f] instead of standard modal border-white/10.' },
+            ]} />
+
+            <div style={{ marginTop: 16 }} />
+
             {/* Master Modal Inconsistency Summary */}
             <InconsistencyNote items={[
               { file: 'Global', note: '5 different modal background colors: bg-zinc-900, bg-[#2a2a2f], bg-[#121214], bg-slate-900, and default light (shadcn).' },
-              { file: 'Global', note: '3 different modal border-radius values: rounded-lg (standard), rounded-2xl (Review), rounded-[32px] (Story Detail).' },
+              { file: 'Global', note: '3 different modal border-radius values: rounded-lg (standard), rounded-2xl (Review/Delete), rounded-[32px] (Story Detail).' },
               { file: 'Global', note: 'Button sizing varies: h-10 (standard), h-11 (Review), h-12 (Story Detail actions).' },
+              { file: 'Global', note: '3 different modal border styles: border-white/10 (standard), border-[#4a5f7f] (accent), border-slate-700 (Memories).' },
+              { file: 'Global', note: '2 different dialog systems: Radix Dialog (standard) vs custom fixed inset-0 overlay (SceneTagEditor).' },
             ]} />
           </Section>
 
