@@ -1686,6 +1686,20 @@ px-2 py-1 rounded-md uppercase tracking-widest shadow-lg`}
 border border-blue-500/30 rounded-full text-xs font-medium
 /* ≠ Content theme chips which use category-specific colors */`}
               />
+
+              <EntryCard name="Side Character Control Badge" pageTag="Chat Interface"
+                specs='Micro badge showing character control. <strong>User-controlled:</strong> bg-blue-500 text-white text-[8px]. <strong>AI-controlled:</strong> bg-slate-500 text-white text-[8px]. <strong>rounded-md px-1.5 py-0.5</strong>. Smallest text in the app.'
+                previewDark
+                preview={
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <span className="px-1.5 py-0.5 rounded-md bg-blue-500 text-white font-bold" style={{ fontSize: 8 }}>USER</span>
+                    <span className="px-1.5 py-0.5 rounded-md bg-slate-500 text-white font-bold" style={{ fontSize: 8 }}>AI</span>
+                  </div>
+                }
+                code={`/* User: bg-blue-500 text-white text-[8px] font-bold */
+/* AI: bg-slate-500 text-white text-[8px] font-bold */
+/* rounded-md px-1.5 py-0.5 */`}
+              />
             </div>
           </Section>
 
