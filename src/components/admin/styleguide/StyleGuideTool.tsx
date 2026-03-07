@@ -626,20 +626,267 @@ background: linear-gradient(to top, rgb(2,6,23), rgba(15,23,42,0.6), transparent
 
           <Divider />
 
-          {/* ═══ 7. MODALS (placeholder) ═══ */}
-          <Section id="modals" title="Modals" desc="Pop-up modal and dialog container styling. Specs to be extracted from live source code.">
-            <div style={{ padding: '40px 24px', textAlign: 'center', color: '#94a3b8', fontSize: 14, fontStyle: 'italic', background: '#f8fafc', borderRadius: 10, border: '2px dashed #d9dee6' }}>
-              To be built — Modal specs will be extracted from the source code (backdrop, container, header, footer patterns).
-            </div>
+          {/* ═══ 7. MODALS ═══ */}
+          <Section id="modals" title="Modals" desc="Pop-up modal and dialog container styling extracted from source code. Canonical patterns and inconsistencies documented.">
+
+            <EntryCard name="Modal Backdrop" pageTag="Global"
+              specs='<strong>Standard:</strong> Radix DialogOverlay default — <code>bg-black/80</code> (fixed inset-0, z-50). Fade animation via Radix data-state.'
+              preview={
+                <div style={{ position: 'relative', width: '100%', height: 120, borderRadius: 8, overflow: 'hidden' }}>
+                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #334155 0%, #475569 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#94a3b8' }}>App Content Behind</div>
+                  <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.8)' }} />
+                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#18181b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '12px 24px', color: '#fff', fontSize: 11, fontWeight: 600 }}>Modal Content</div>
+                </div>
+              }
+              previewDark
+              code={`/* Radix DialogOverlay (default) */
+background: rgba(0, 0, 0, 0.80);  /* bg-black/80 */
+position: fixed;
+inset: 0;
+z-index: 50;`}
+            />
+            <InconsistencyNote items={[
+              { file: 'ReviewModal.tsx', note: 'Uses bg-black/90 backdrop-blur-sm instead of standard bg-black/80' },
+              { file: 'SceneTagEditorModal.tsx', note: 'Uses raw div with bg-black/85 instead of Radix DialogOverlay' },
+            ]} />
+
+            <div style={{ marginTop: 16 }} />
+
+            <EntryCard name="Modal Container" pageTag="Global"
+              specs='<strong>Canonical:</strong> bg-zinc-900 · border: 1px solid rgba(255,255,255,0.1) · border-radius: rounded-lg (8px via Radix) · shadow: 0 10px 30px rgba(0,0,0,0.5) · padding: 0 (content manages own padding) · Close button: Radix default X (top-right) or hidden via [&>button]:hidden'
+              preview={
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', width: '100%' }}>
+                  <div style={{ flex: '1 1 180px', background: '#18181b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: 16, boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#fff', marginBottom: 4 }}>Standard Modal</div>
+                    <div style={{ fontSize: 10, color: '#a1a1aa' }}>bg-zinc-900 · border-white/10</div>
+                  </div>
+                  <div style={{ flex: '1 1 180px', background: '#2a2a2f', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: 16, boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#fff', marginBottom: 4 }}>Variant (Edit Modals)</div>
+                    <div style={{ fontSize: 10, color: '#a1a1aa' }}>bg-[#2a2a2f] · border-white/10</div>
+                  </div>
+                </div>
+              }
+              previewDark
+              code={`/* Canonical container */
+background: rgb(24, 24, 27);     /* bg-zinc-900 / #18181b */
+border: 1px solid rgba(255,255,255,0.1);  /* border-white/10 */
+border-radius: 8px;              /* rounded-lg (Radix default) */
+box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+/* Close button: Radix default or hidden with [&>button]:hidden */`}
+            />
+            <InconsistencyNote items={[
+              { file: 'ShareStoryModal, CharacterEditModal', note: 'bg-[#2a2a2f] instead of bg-zinc-900' },
+              { file: 'ReviewModal', note: 'bg-[#121214] (darker variant)' },
+              { file: 'MemoriesModal', note: 'bg-slate-900 + border-slate-700 instead of zinc-900 + white/10' },
+              { file: 'AIPromptModal', note: 'bg-[hsl(var(--ui-surface))] + border-[hsl(var(--ui-border))] (CSS variable tokens)' },
+              { file: 'BackgroundPickerModal', note: 'bg-transparent wrapper around Card component' },
+              { file: 'FolderEditModal', note: 'border-[#4a5f7f] instead of border-white/10' },
+              { file: 'ChangeNameModal + generation modals', note: 'No explicit bg/border — uses Dialog default (light theme)' },
+              { file: 'SceneTagEditorModal', note: 'Raw div instead of Dialog component; border-[#4a5f7f]' },
+            ]} />
+
+            <div style={{ marginTop: 16 }} />
+
+            <EntryCard name="Modal Header" pageTag="Global"
+              specs='<strong>Pattern A — Simple:</strong> DialogHeader with text-lg font-bold text-white, optional DialogDescription text-sm text-zinc-400. Padding: px-5 pt-5 pb-3 or px-6 pt-5 pb-3.<br/><strong>Pattern B — Banner:</strong> Slate blue bg-[#4a5f7f] full-width header bar for AI/generation modals.'
+              preview={
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', width: '100%' }}>
+                  <div style={{ flex: '1 1 180px', background: '#18181b', borderRadius: 8, overflow: 'hidden' }}>
+                    <div style={{ padding: '14px 16px 8px' }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>Simple Header</div>
+                      <div style={{ fontSize: 11, color: '#71717a', marginTop: 2 }}>Optional description text</div>
+                    </div>
+                  </div>
+                  <div style={{ flex: '1 1 180px', background: '#18181b', borderRadius: 8, overflow: 'hidden' }}>
+                    <div style={{ background: '#4a5f7f', padding: '10px 16px' }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Banner Header</div>
+                    </div>
+                  </div>
+                </div>
+              }
+              previewDark
+              code={`/* Pattern A — Simple header */
+padding: 20px 20px 12px;  /* px-5 pt-5 pb-3 */
+/* Title: */ font-size: 18px; font-weight: 700; color: #fff;
+/* Desc:  */ font-size: 14px; color: #a1a1aa;  /* text-zinc-400 */
+
+/* Pattern B — Slate blue banner */
+background: #4a5f7f;  /* bg-[#4a5f7f] */
+padding: 10px 16px;
+/* Title: */ font-size: 12px; font-weight: 700; text-transform: uppercase;`}
+            />
+            <InconsistencyNote items={[
+              { file: 'ReviewModal, SidebarThemeModal', note: 'Custom div header with border-b divider instead of DialogHeader' },
+              { file: 'CharacterCreation, EnhanceMode, CustomContentType', note: 'Raw <h3> instead of DialogHeader component' },
+              { file: 'ChangeNameModal', note: 'Uses DialogTitle text-lg font-bold (no text-white — inherits default)' },
+            ]} />
+
+            <div style={{ marginTop: 16 }} />
+
+            <EntryCard name="Modal Footer / Button Row" pageTag="Global"
+              specs='<strong>Canonical — Shadow Surface:</strong> h-10 (40px) · px-6 · rounded-xl (12px) · text-[10px] font-bold uppercase tracking-wider · leading-none.<br/><strong>Standard action:</strong> bg-zinc-700 text-white.<br/><strong>Cancel:</strong> bg-[hsl(240 6% 18%)] text-zinc-300.<br/><strong>Destructive:</strong> bg-[hsl(var(--destructive))] text-white.<br/><strong>Layout:</strong> flex justify-end gap-2, border-t border-zinc-800 pt-3.'
+              preview={
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <button style={{ height: 40, padding: '0 24px', borderRadius: 12, background: 'hsl(240 6% 18%)', color: '#d4d4d8', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', lineHeight: 1, border: 'none', cursor: 'pointer' }}>Cancel</button>
+                  <button style={{ height: 40, padding: '0 24px', borderRadius: 12, background: '#3f3f46', color: '#fff', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', lineHeight: 1, border: 'none', cursor: 'pointer' }}>Save</button>
+                  <button style={{ height: 40, padding: '0 24px', borderRadius: 12, background: '#dc2626', color: '#fff', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', lineHeight: 1, border: 'none', cursor: 'pointer' }}>Delete</button>
+                </div>
+              }
+              previewDark
+              code={`/* Shadow Surface standard button */
+height: 40px;              /* h-10 */
+padding: 0 24px;           /* px-6 */
+border-radius: 12px;       /* rounded-xl */
+font-size: 10px;           /* text-[10px] */
+font-weight: 700;          /* font-bold */
+text-transform: uppercase;
+letter-spacing: 0.05em;    /* tracking-wider */
+line-height: 1;            /* leading-none */
+
+/* Standard action: */ background: #3f3f46;  /* bg-zinc-700 */
+/* Cancel: */          background: hsl(240 6% 18%);
+/* Destructive: */     background: hsl(var(--destructive));`}
+            />
+            <InconsistencyNote items={[
+              { file: 'ReviewModal', note: 'h-11 with text-sm font-semibold instead of h-10 text-[10px] uppercase' },
+              { file: 'AIPromptModal', note: 'Iridescent layered gradient button — unique one-off design' },
+              { file: 'ShareStoryModal, generation modals', note: '<Button> component with variant overrides instead of raw Shadow Surface' },
+              { file: 'SceneTagEditorModal', note: 'Raw px-4 py-2 text-sm — completely non-standard' },
+              { file: 'DraftsModal inline buttons', note: 'Compact h-8 px-3 text-[10px] (card variant, correct for inline use)' },
+              { file: 'ChangeNameModal', note: 'Uses <Button> with hardcoded bg-slate-900/bg-slate-100 — not using design tokens' },
+            ]} />
           </Section>
 
           <Divider />
 
-          {/* ═══ 8. ICONS (placeholder) ═══ */}
-          <Section id="icons" title="Icons" desc="Icon sizing and color conventions used across the app. Specs to be extracted from live source code.">
-            <div style={{ padding: '40px 24px', textAlign: 'center', color: '#94a3b8', fontSize: 14, fontStyle: 'italic', background: '#f8fafc', borderRadius: 10, border: '2px dashed #d9dee6' }}>
-              To be built — Icon sizes, colors, stroke weights, and containers will be extracted from the source code.
-            </div>
+          {/* ═══ 8. ICONS ═══ */}
+          <Section id="icons" title="Icons" desc="Icon sizing, color conventions, and container patterns extracted from source code. All icons use Lucide React.">
+
+            <EntryCard name="Icon Size Scale" pageTag="Global"
+              specs='<strong>6 sizes in use.</strong> Default for inline/button icons: w-4 h-4 (16px). Default for modal/panel title icons: w-5 h-5 (20px). Larger sizes reserved for empty states and loading.'
+              preview={
+                <div style={{ display: 'flex', gap: 16, alignItems: 'end', flexWrap: 'wrap' }}>
+                  {[
+                    { size: 12, label: 'w-3', usage: 'Chevrons, compact btns' },
+                    { size: 14, label: 'w-3.5', usage: 'Rare (sparkle)' },
+                    { size: 16, label: 'w-4', usage: 'Default — buttons, forms' },
+                    { size: 20, label: 'w-5', usage: 'Title icons, panels' },
+                    { size: 24, label: 'w-6', usage: 'Spinners, close btns' },
+                    { size: 32, label: 'w-8', usage: 'Empty states' },
+                  ].map(s => (
+                    <div key={s.label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                      <div style={{ width: s.size, height: s.size, borderRadius: 3, background: '#a1a1aa', flexShrink: 0 }} />
+                      <span style={{ fontSize: 10, fontWeight: 700, color: '#fff', fontFamily: "'SF Mono','Fira Code',monospace" }}>{s.label}</span>
+                      <span style={{ fontSize: 9, color: '#71717a', textAlign: 'center', maxWidth: 80 }}>{s.usage}</span>
+                    </div>
+                  ))}
+                </div>
+              }
+              previewDark
+              code={`/* Icon size scale (Lucide className) */
+w-3 h-3    →  12px  — Inline indicators, chevrons, compact button icons
+w-3.5 h-3.5 → 14px  — Rare usage (AIPromptModal sparkle)
+w-4 h-4    →  16px  — DEFAULT: form icons, button icons, dropdown items, action buttons
+w-5 h-5    →  20px  — Modal title icons, panel header icons, card action icons
+w-6 h-6    →  24px  — Loading spinners, ShareStory title icon, large modal close buttons
+w-8 h-8    →  32px  — Empty state placeholder icons (BackgroundPicker)`}
+            />
+
+            <div style={{ marginTop: 16 }} />
+
+            <EntryCard name="Icon Colors" pageTag="Global"
+              specs='<strong>Default:</strong> text-white, text-zinc-400. <strong>Accent:</strong> text-blue-400, text-purple-400, text-cyan-200. <strong>Destructive:</strong> text-red-400. <strong>Hover:</strong> hover:text-white, hover:text-red-400. <strong>Disabled:</strong> text-white/40, text-white/20.'
+              preview={
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                  {[
+                    { color: '#ffffff', label: 'text-white', role: 'Default' },
+                    { color: '#a1a1aa', label: 'text-zinc-400', role: 'Muted' },
+                    { color: '#60a5fa', label: 'text-blue-400', role: 'Accent' },
+                    { color: '#c084fc', label: 'text-purple-400', role: 'Accent' },
+                    { color: '#a5f3fc', label: 'text-cyan-200', role: 'Accent' },
+                    { color: '#f87171', label: 'text-red-400', role: 'Destructive' },
+                    { color: 'rgba(255,255,255,0.4)', label: 'text-white/40', role: 'Disabled' },
+                  ].map(c => (
+                    <div key={c.label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                      <div style={{ width: 20, height: 20, borderRadius: 4, background: c.color, border: '1px solid rgba(255,255,255,0.1)' }} />
+                      <span style={{ fontSize: 9, fontWeight: 600, color: '#d4d4d8', fontFamily: "'SF Mono','Fira Code',monospace" }}>{c.label}</span>
+                      <span style={{ fontSize: 8, color: '#71717a' }}>{c.role}</span>
+                    </div>
+                  ))}
+                </div>
+              }
+              previewDark
+              code={`/* Icon color tokens */
+/* Default: */     color: #fff;           /* text-white */
+/* Muted: */       color: #a1a1aa;        /* text-zinc-400 */
+/* Accent: */      color: #60a5fa;        /* text-blue-400 */
+                   color: #c084fc;        /* text-purple-400 */
+                   color: #a5f3fc;        /* text-cyan-200 */
+/* Destructive: */ color: #f87171;        /* text-red-400 */
+/* Hover: */       hover: color #fff;     /* hover:text-white */
+                   hover: color #f87171;  /* hover:text-red-400 */
+/* Disabled: */    color: rgba(255,255,255,0.4);  /* text-white/40 */`}
+            />
+            <InconsistencyNote items={[
+              { file: 'MemoriesModal, ChangeNameModal', note: 'Uses text-slate-400/text-slate-500 instead of text-zinc-400/text-zinc-500 for muted icons' },
+              { file: 'Various modals', note: 'Inconsistent use of text-zinc-400 vs text-zinc-500 for same semantic role (secondary/muted)' },
+            ]} />
+
+            <div style={{ marginTop: 16 }} />
+
+            <EntryCard name="Icon Containers" pageTag="Global"
+              specs='<strong>4 container patterns:</strong> (1) No container — icon sits directly in header bar. (2) Selection checkmark — w-5 h-5 bg-blue-500 rounded-full with w-3 h-3 check. (3) Option icon — w-10 h-10 rounded-xl bg-{color}-500/20 with w-5 h-5 icon. (4) Action button — h-8 w-8 rounded-xl with centered w-4 h-4 icon.'
+              preview={
+                <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+                  {/* No container */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                    <div style={{ width: 20, height: 20, borderRadius: 3, background: '#a1a1aa' }} />
+                    <span style={{ fontSize: 8, color: '#71717a' }}>No container</span>
+                  </div>
+                  {/* Selection checkmark */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                    <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <div style={{ width: 12, height: 12, borderRadius: 2, background: '#fff' }} />
+                    </div>
+                    <span style={{ fontSize: 8, color: '#71717a' }}>Checkmark</span>
+                  </div>
+                  {/* Option icon */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(59,130,246,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <div style={{ width: 20, height: 20, borderRadius: 3, background: '#60a5fa' }} />
+                    </div>
+                    <span style={{ fontSize: 8, color: '#71717a' }}>Option</span>
+                  </div>
+                  {/* Action button */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                    <div style={{ width: 32, height: 32, borderRadius: 12, background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <div style={{ width: 16, height: 16, borderRadius: 3, background: '#a1a1aa' }} />
+                    </div>
+                    <span style={{ fontSize: 8, color: '#71717a' }}>Action btn</span>
+                  </div>
+                </div>
+              }
+              previewDark
+              code={`/* 1. No container — icon in header bar */
+/* Just the icon, no wrapping element */
+
+/* 2. Selection checkmark */
+width: 20px; height: 20px;       /* w-5 h-5 */
+background: #3b82f6;             /* bg-blue-500 */
+border-radius: 50%;              /* rounded-full */
+/* Inner check: w-3 h-3 */
+
+/* 3. Option icon (CharacterCreation) */
+width: 40px; height: 40px;       /* w-10 h-10 */
+border-radius: 12px;             /* rounded-xl */
+background: rgba(59,130,246,0.2);/* bg-blue-500/20 */
+/* Inner icon: w-5 h-5 */
+
+/* 4. Action button (gallery cards) */
+width: 32px; height: 32px;       /* h-8 w-8 */
+border-radius: 12px;             /* rounded-xl */
+/* Inner icon: w-4 h-4 */`}
+            />
           </Section>
 
         </div>
