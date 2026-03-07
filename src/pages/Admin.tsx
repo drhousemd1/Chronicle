@@ -10,6 +10,9 @@ const LazyImageGen = React.lazy(() =>
 const LazyAppGuide = React.lazy(() =>
   import('@/components/admin/guide/AppGuideTool').then(m => ({ default: m.AppGuideTool }))
 );
+const LazyStyleGuide = React.lazy(() =>
+  import('@/components/admin/styleguide/StyleGuideTool')
+);
 
 const DEFAULT_TOOLS: ToolMeta[] = [
   {
@@ -27,6 +30,11 @@ const DEFAULT_TOOLS: ToolMeta[] = [
     id: 'app_guide',
     title: 'App Guide',
     description: 'Complete documentation for every page and system',
+  },
+  {
+    id: 'style_guide',
+    title: 'Style Guide',
+    description: 'Visual reference for every design token and component pattern',
   },
 ];
 
@@ -108,6 +116,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
     return (
       <React.Suspense fallback={<div className="flex items-center justify-center h-full text-slate-400">Loading…</div>}>
         <LazyAppGuide onRegisterSave={onRegisterGuideSave} onRegisterSyncAll={onRegisterGuideSyncAll} theme={guideTheme} />
+      </React.Suspense>
+    );
+  }
+
+  if (activeTool === 'style_guide') {
+    return (
+      <React.Suspense fallback={<div className="flex items-center justify-center h-full text-slate-400">Loading…</div>}>
+        <LazyStyleGuide />
       </React.Suspense>
     );
   }
