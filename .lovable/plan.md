@@ -1,8 +1,8 @@
 
 
-## Plan: Visual Style Guide — Completed Phases 1–6
+## Plan: Visual Style Guide — All Phases Complete ✅
 
-### Status: ✅ Phases 1–6 Complete
+### Status: ✅ Phases 1–7 Complete
 
 Built the full Visual Style Guide as an admin tool (`style_guide`) in `src/components/admin/styleguide/StyleGuideTool.tsx`.
 
@@ -15,10 +15,8 @@ Built the full Visual Style Guide as an admin tool (`style_guide`) in `src/compo
 - **Form Inputs**: Text input/textarea spec with dark preview
 - **Badges & Tags**: Content theme chips + SFW/NSFW badges
 - **Panels**: 4 entries (Panel Container, Header Bar, Roster Sidebar, Story Card)
-- **Modals**: Placeholder (Phase 7)
-- **Icons**: Placeholder (Phase 7)
+- **Modals**: 4 entries (Backdrop, Container, Header, Footer/Button Row) with inconsistency flags
+- **Icons**: 3 entries (Size Scale, Colors, Containers) with inconsistency flags
 - Responsive breakpoints at 1024px and 1100px
 - Registered in Admin.tsx with lazy loading
-
-### Remaining:
-- Phase 7: Extract modal and icon specs from source code
+- **InconsistencyNote** component: amber-tinted warning blocks flagging deviations from canonical patterns
