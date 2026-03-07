@@ -3132,7 +3132,7 @@ text-white/40    — Disabled`}
               Master Inconsistency Report
             </h2>
             <p style={{ fontSize: 13, color: sg.muted, maxWidth: 900, marginBottom: 22 }}>
-              Complete catalog of design system inconsistencies across all 5 documentation passes.
+              Complete catalog of design system inconsistencies across all 6 documentation passes.
             </p>
 
             <PageSubheading>Dual Component Systems</PageSubheading>
