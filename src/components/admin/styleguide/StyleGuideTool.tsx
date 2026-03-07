@@ -1264,6 +1264,68 @@ placeholder:text-white/30 rounded-lg text-sm`}
                 { file: 'MemoriesModal.tsx', note: 'Uses slate-* palette throughout while every other dark component uses zinc-*.' },
               ]} />
             </div>
+
+            <PageSubheading>GuidanceStrengthSlider</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="GuidanceStrengthSlider (Custom 3-Point)" pageTag="Story Builder"
+                specs='Custom 3-point slider (Rigid / Normal / Flexible). <strong>Track:</strong> 12px height, bg <code>rgba(21,25,34,0.95)</code>. <strong>Fill:</strong> <code>linear-gradient(90deg, #2b4e8d, #4b79d8 60%, #7dadf5)</code>. <strong>Knob:</strong> w-6 h-6 rounded-full bg-white border-[3px] border-blue-500. Labels: <code>text-[10px] font-black uppercase tracking-widest</code>. Active label: text-blue-400, inactive: text-zinc-500.'
+                previewDark previewStyle={{ flexDirection: 'column', gap: 8 }}
+                preview={
+                  <div style={{ width: '100%' }}>
+                    <div style={{ position: 'relative', height: 12, borderRadius: 999, background: 'rgba(21,25,34,0.95)' }}>
+                      <div style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: '50%', borderRadius: 999, background: 'linear-gradient(90deg, #2b4e8d, #4b79d8 60%, #7dadf5)' }} />
+                      <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 24, height: 24, borderRadius: '50%', background: '#fff', border: '3px solid #3b82f6', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }} />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Rigid</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">Normal</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Flexible</span>
+                    </div>
+                  </div>
+                }
+                code={`/* Track: h-[12px] rounded-full bg-[rgba(21,25,34,0.95)] */
+/* Fill: linear-gradient(90deg, #2b4e8d, #4b79d8 60%, #7dadf5) */
+/* Knob: w-6 h-6 rounded-full bg-white border-[3px] border-blue-500 */
+/* Labels: text-[10px] font-black uppercase tracking-widest */
+/* Active: text-blue-400 | Inactive: text-zinc-500 */
+/* Description box: bg-zinc-900 rounded-xl p-4 border-white/5 */`}
+              />
+            </div>
+
+            <PageSubheading>TagInput Component</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="TagInput (Enter-to-Add)" pageTag="Story Builder / Scene Tag Editor"
+                specs='Input field with enter-to-add pattern. <strong>Input:</strong> <code>bg-zinc-800 border-zinc-700 rounded-lg text-sm</code>. Tags appear as blue chips above (<code>bg-blue-500/20 text-blue-300 rounded-full</code>). Counter: <code>text-[10px] text-zinc-500</code>. Max 10 tags.'
+                previewDark previewStyle={{ flexDirection: 'column', gap: 8 }}
+                preview={
+                  <div style={{ width: '100%' }}>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+                      <span className="px-2.5 py-1 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full text-xs font-medium inline-flex items-center gap-1">tag1 <span style={{ opacity: 0.5 }}>✕</span></span>
+                      <span className="px-2.5 py-1 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full text-xs font-medium inline-flex items-center gap-1">tag2 <span style={{ opacity: 0.5 }}>✕</span></span>
+                    </div>
+                    <input readOnly className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm placeholder:text-zinc-500 outline-none" placeholder="Add tag and press Enter..." />
+                    <p className="text-[10px] text-zinc-500 mt-1.5">2/10 tags — Press Enter to add</p>
+                  </div>
+                }
+                code={`/* Input: bg-zinc-800 border-zinc-700 rounded-lg text-sm */
+/* Tags: bg-blue-500/20 text-blue-300 border-blue-500/30 rounded-full */
+/* Counter: text-[10px] text-zinc-500 */
+/* Max: 10 tags */`}
+              />
+            </div>
+
+            <PageSubheading>Scene Tag Editor Input</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="Scene Tag Editor Input (Dark)" pageTag="Scene Tag Editor"
+                specs='<strong>bg-zinc-800 border-zinc-700 rounded-lg</strong>. Focus: <code>border-[#4a5f7f]</code>. Text: white, placeholder text-zinc-500. Used in the custom overlay SceneTagEditorModal.'
+                previewDark
+                preview={
+                  <input readOnly className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm placeholder:text-zinc-500 outline-none" placeholder="Untitled scene" />
+                }
+                code={`bg-zinc-800 border-zinc-700 rounded-lg text-sm text-white
+placeholder:text-zinc-500 focus:border-[#4a5f7f]`}
+              />
+            </div>
           </Section>
 
           <Divider />
