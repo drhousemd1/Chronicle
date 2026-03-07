@@ -1,0 +1,1877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chronicle — Visual Style Guide Reference Mockup</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+  :root {
+    --sg-primary: #4a5f7f;
+    --sg-bg: #f3f4f6;
+    --sg-surface: #ffffff;
+    --sg-text: #0f172a;
+    --sg-muted: #64748b;
+    --sg-border: #d9dee6;
+    --sg-border-strong: #c6ced9;
+    --sg-dark: #2a2a2f;
+    --sg-dark-soft: #2f3137;
+    --sg-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+    --sg-shadow-hover: 0 12px 32px rgba(15, 23, 42, 0.12);
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    color: var(--sg-text);
+    background: var(--sg-bg);
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  .nav-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 260px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 108px 14px 24px;
+    background: var(--sg-surface);
+    border-right: 1px solid var(--sg-border);
+    box-shadow: 2px 0 10px rgba(15, 23, 42, 0.05);
+    overflow-y: auto;
+    z-index: 70;
+  }
+
+  .nav-bar::before {
+    content: 'Chronicle\A Style Guide';
+    position: absolute;
+    top: 24px;
+    left: 18px;
+    right: 18px;
+    white-space: pre-line;
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 1.2;
+    color: #111827;
+    padding: 12px;
+    border: 1px solid var(--sg-border);
+    border-radius: 10px;
+    background: #f8fafc;
+  }
+
+  .nav-bar::after {
+    content: 'Design System v1.0';
+    position: absolute;
+    left: 18px;
+    right: 18px;
+    bottom: 16px;
+    font-size: 10px;
+    color: #94a3b8;
+    font-weight: 600;
+  }
+
+  .nav-bar a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: #475569;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 12px;
+    border-radius: 10px;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+
+  .nav-bar a::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: #cbd5e1;
+    flex-shrink: 0;
+    transition: inherit;
+  }
+
+  .nav-bar a:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+  }
+
+  .nav-bar a:hover::before {
+    background: #94a3b8;
+  }
+
+  .nav-bar a.active {
+    background: rgba(74, 95, 127, 0.12);
+    color: var(--sg-primary);
+    box-shadow: inset 0 0 0 1px rgba(74, 95, 127, 0.18);
+  }
+
+  .nav-bar a.active::before {
+    background: var(--sg-primary);
+  }
+
+  .page-header {
+    margin-left: 260px;
+    position: sticky;
+    top: 0;
+    z-index: 60;
+    background: var(--sg-surface);
+    border-bottom: 1px solid var(--sg-border);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    padding: 28px 42px 24px;
+  }
+
+  .page-header .badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #1e293b;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #e2e8f0;
+    margin-bottom: 12px;
+  }
+
+  .page-header h1 {
+    font-size: clamp(30px, 4vw, 42px);
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    color: #111827;
+    line-height: 1.1;
+    margin-bottom: 8px;
+  }
+
+  .page-header p {
+    font-size: 14px;
+    color: #475569;
+    max-width: 980px;
+    line-height: 1.65;
+  }
+
+  .content {
+    margin-left: 260px;
+    padding: 36px 42px 84px;
+    max-width: 1400px;
+  }
+
+  .section {
+    margin-bottom: 64px;
+    scroll-margin-top: 96px;
+  }
+
+  .section-header {
+    margin-bottom: 10px;
+  }
+
+  .section-header h2 {
+    display: inline-block;
+    font-size: clamp(34px, 5vw, 46px);
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    color: #111827;
+    border-bottom: 4px solid #111827;
+    padding-bottom: 4px;
+  }
+
+  .section-desc {
+    font-size: 13px;
+    color: var(--sg-muted);
+    max-width: 900px;
+    margin-bottom: 22px;
+  }
+
+  code {
+    font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: #334155;
+    background: #e9eef5;
+    border-radius: 6px;
+    padding: 2px 6px;
+  }
+
+  hr.divider {
+    border: none;
+    height: 1px;
+    background: var(--sg-border);
+    margin: 52px 0;
+  }
+
+  .color-page-header,
+  .type-page-heading {
+    display: block;
+    margin: 22px 0 10px;
+    padding: 8px 14px;
+    border-radius: 6px;
+    background: linear-gradient(90deg, #2d2d2d 0%, #646973 65%, rgba(100, 105, 115, 0) 100%);
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+  }
+
+  .color-page-desc {
+    font-size: 12px;
+    color: var(--sg-muted);
+    margin-bottom: 16px;
+  }
+
+  .swatch-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+  }
+
+  .swatch-card {
+    background: var(--sg-surface);
+    border: 2px solid #000000;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: var(--sg-shadow);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .swatch-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--sg-shadow-hover);
+  }
+
+  .swatch-preview {
+    height: 78px;
+  }
+
+  .swatch-info {
+    padding: 12px;
+  }
+
+  .swatch-info .name {
+    font-size: 13px;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 8px;
+  }
+
+  .swatch-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .swatch-detail-row {
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    gap: 8px;
+    align-items: start;
+    font-size: 11px;
+  }
+
+  .swatch-detail-label {
+    text-transform: uppercase;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    color: #94a3b8;
+    white-space: nowrap;
+  }
+
+  .swatch-detail-value {
+    font-size: 11px;
+    color: #334155;
+    font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
+  }
+
+  .swatch-location {
+    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    color: #475569;
+  }
+
+  .type-tile,
+  .entry {
+    background: var(--sg-surface);
+    border: 2px solid #000000;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: var(--sg-shadow);
+    margin-bottom: 16px;
+  }
+
+  #typography {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    align-items: stretch;
+  }
+
+  #typography > .section-header,
+  #typography > .section-desc,
+  #typography > .type-page-heading,
+  #typography > .divider {
+    grid-column: 1 / -1;
+  }
+
+  #typography > .type-tile {
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  #typography > .type-tile .type-tile-name {
+    display: flex;
+    align-items: center;
+  }
+
+  #typography > .type-tile .type-tile-body {
+    display: grid;
+    grid-template-rows: auto auto minmax(86px, 1fr);
+    gap: 10px;
+    flex: 1;
+    min-height: 0;
+  }
+
+  #typography > .type-tile .type-tile-row {
+    margin-bottom: 0;
+  }
+
+  #typography > .type-tile .type-tile-row:last-child {
+    align-items: start;
+    min-height: 0;
+  }
+
+  #typography > .type-tile .type-tile-row:last-child .type-tile-locations {
+    max-height: 100%;
+    overflow: auto;
+    scrollbar-width: thin;
+  }
+
+  #typography > .divider {
+    margin: 8px 0 4px !important;
+  }
+
+  #buttons {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    align-items: stretch;
+  }
+
+  #buttons > .section-header,
+  #buttons > .section-desc,
+  #buttons > .color-page-header,
+  #buttons > .color-page-desc {
+    grid-column: 1 / -1;
+  }
+
+  #buttons > .entry {
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  #buttons > .entry .entry-body {
+    display: grid;
+    grid-template-rows: auto auto minmax(112px, 1fr);
+    gap: 10px;
+    flex: 1;
+    min-height: 0;
+  }
+
+  #buttons > .entry .inst,
+  #buttons > .entry .preview,
+  #buttons > .entry .dark-preview {
+    margin-bottom: 0;
+  }
+
+  #buttons > .entry .preview,
+  #buttons > .entry .dark-preview {
+    min-height: 72px;
+    align-items: flex-start;
+  }
+
+  #buttons > .entry .code {
+    min-height: 112px;
+    overflow: auto;
+    scrollbar-width: thin;
+  }
+
+  .type-tile-name,
+  .entry-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 14px;
+    border-bottom: none;
+    background: #f8fafc;
+  }
+
+  .type-tile-name,
+  .name {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: #111827;
+  }
+
+  .page-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: #334155;
+    background: #e2e8f0;
+    border: none;
+  }
+
+  .type-tile-body,
+  .entry-body {
+    padding: 14px;
+  }
+
+  .type-tile-row {
+    display: grid;
+    grid-template-columns: 110px minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  .type-tile-row:last-child {
+    margin-bottom: 0;
+  }
+
+  .type-tile-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: #94a3b8;
+  }
+
+  .type-tile-example {
+    border: none;
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 12px 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 48px;
+  }
+
+  .type-tile-example-dark {
+    border: none;
+    background: #2a2a2f;
+    border-radius: 8px;
+    padding: 12px 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 48px;
+  }
+
+  .type-tile-specs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    font-size: 12px;
+    color: #334155;
+    font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
+  }
+
+  .type-tile-locations {
+    font-size: 12px;
+    color: var(--sg-muted);
+    line-height: 1.6;
+  }
+
+  .inst {
+    color: #475569;
+    font-size: 12px;
+    margin-bottom: 12px;
+    line-height: 1.6;
+  }
+
+  .preview,
+  .dark-preview {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    padding: 14px;
+    border-radius: 8px;
+    border: none;
+    background: #f8fafc;
+    margin-bottom: 12px;
+  }
+
+  .preview-plain {
+    background: transparent;
+    padding: 0;
+  }
+
+  .dark-preview {
+    background: #25272d;
+  }
+
+  .code {
+    font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
+    font-size: 11px;
+    line-height: 1.6;
+    color: #334155;
+    white-space: pre-wrap;
+    background: #f1f5f9;
+    border: none;
+    border-radius: 8px;
+    padding: 12px;
+  }
+
+  .preview button,
+  .dark-preview button {
+    border: none;
+    outline: none;
+    cursor: default;
+    font-family: inherit;
+  }
+
+  .chr-btn-header {
+    background: var(--sg-dark-soft);
+    color: #eaedf1;
+    height: 40px;
+    padding: 0 24px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .chr-btn-ai {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+    color: #ffffff;
+    height: 40px;
+    padding: 0 22px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .chr-btn-edit,
+  .chr-btn-destructive,
+  .chr-btn-play {
+    height: 36px;
+    padding: 0 18px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .chr-btn-edit {
+    background: #ffffff;
+    color: #0f172a;
+    border: 1px solid #dbe2ea;
+  }
+
+  .chr-btn-destructive {
+    background: #ef4444;
+    color: #ffffff;
+  }
+
+  .chr-btn-play {
+    background: #2563eb;
+    color: #ffffff;
+  }
+
+  .chr-btn-dashed {
+    width: 100%;
+    min-height: 64px;
+    padding: 12px 18px;
+    border-radius: 12px;
+    border: 2px dashed #71717a;
+    background: transparent;
+    color: #60a5fa;
+    font-size: 14px;
+    font-weight: 500;
+    transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+    cursor: pointer;
+  }
+
+  .chr-btn-dashed:hover,
+  .chr-btn-dashed.is-hover {
+    border-color: #60a5fa;
+    background: rgba(96, 165, 250, 0.12);
+    color: #60a5fa;
+  }
+
+  .chr-tab-active,
+  .chr-tab-inactive {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 16px;
+    border-radius: 999px;
+  }
+
+  .chr-tab-active {
+    background: var(--sg-primary);
+    color: #ffffff;
+  }
+
+  .chr-tab-inactive {
+    background: transparent;
+    color: #a1a1aa;
+  }
+
+  .chr-input {
+    width: 100%;
+    min-height: 40px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #3f3f46;
+    background: rgba(24, 24, 27, 0.5);
+    color: #ffffff;
+    font-size: 14px;
+  }
+
+  .chr-input::placeholder {
+    color: #94a3b8;
+  }
+
+  .chr-badge-sfw,
+  .chr-badge-nsfw,
+  .chr-tag,
+  .chr-tag-add {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    line-height: 1;
+  }
+
+  .chr-badge-sfw,
+  .chr-badge-nsfw {
+    background: #2a2a2f;
+    font-weight: 700;
+  }
+
+  .chr-badge-sfw {
+    color: #60a5fa;
+  }
+
+  .chr-badge-nsfw {
+    color: #f87171;
+  }
+
+  .chr-tag {
+    background: #27272a;
+    border: 1px solid #3f3f46;
+    color: #a1a1aa;
+    font-weight: 500;
+  }
+
+  .chr-tag-add {
+    background: transparent;
+    border: 2px dashed #71717a;
+    color: #60a5fa;
+    font-weight: 500;
+  }
+
+  @media (max-width: 1024px) {
+    .nav-bar {
+      position: sticky;
+      top: 0;
+      left: auto;
+      right: auto;
+      bottom: auto;
+      width: auto;
+      flex-direction: row;
+      align-items: center;
+      padding: 12px 14px;
+      border-right: none;
+      border-bottom: 1px solid var(--sg-border);
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+      overflow-x: auto;
+      overflow-y: hidden;
+      z-index: 90;
+    }
+
+    .nav-bar::before,
+    .nav-bar::after {
+      display: none;
+    }
+
+    .nav-bar a {
+      padding: 8px 12px;
+      font-size: 12px;
+    }
+
+    .page-header,
+    .content {
+      margin-left: 0;
+    }
+
+    .page-header {
+      position: static;
+      padding: 24px 16px 18px;
+    }
+
+    .content {
+      padding: 24px 16px 68px;
+    }
+
+    .type-tile-row {
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+  }
+
+  @media (max-width: 1100px) {
+    #typography {
+      grid-template-columns: 1fr;
+    }
+
+    #typography > .type-tile {
+      height: auto;
+    }
+
+    #typography > .type-tile .type-tile-row:last-child .type-tile-locations {
+      overflow: visible;
+    }
+
+    #buttons {
+      grid-template-columns: 1fr;
+    }
+
+    #buttons > .entry {
+      height: auto;
+    }
+
+    #buttons > .entry .code {
+      max-height: none;
+      overflow: visible;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .section-header h2 {
+      font-size: 32px;
+    }
+
+    .swatch-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .preview,
+    .dark-preview {
+      padding: 12px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════
+     HERO HEADER
+     ═══════════════════════════════════════════════════════════ -->
+<div class="page-header">
+  <div class="badge">Visual Reference</div>
+  <h1>Chronicle Style Guide</h1>
+  <p>Every color, font size, border radius, and spacing value below was extracted from the live Chronicle app using <code style="color:#a5b4fc; background:rgba(165,180,252,0.15); padding:2px 8px; border-radius:4px;">getComputedStyle()</code>. Use this as a reference when building the <code style="color:#a5b4fc; background:rgba(165,180,252,0.15); padding:2px 8px; border-radius:4px;">/styleguide</code> page.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     NAVIGATION
+     ═══════════════════════════════════════════════════════════ -->
+<nav class="nav-bar">
+  <a href="#colors" class="active">Colors</a>
+  <a href="#typography">Typography</a>
+  <a href="#buttons">Buttons</a>
+  <a href="#inputs">Form Inputs</a>
+  <a href="#badges">Badges &amp; Tags</a>
+  <a href="#panels">Panels</a>
+</nav>
+
+<div class="content">
+
+<!-- ═══════════════════════════════════════════════════════════
+     1. COLORS
+     ═══════════════════════════════════════════════════════════ -->
+<section id="colors" class="section">
+  <div class="section-header"><h2>Colors</h2></div>
+  <p class="section-desc">All colors organized by the page they appear on. Every hex value verified via <code>getComputedStyle()</code> on live DOM elements.</p>
+
+  <!-- ── STORY BUILDER PAGE ── -->
+  <div class="color-page-header">Story Builder Page</div>
+  <p class="color-page-desc">Colors used across the Story Builder / Story Setup interface.</p>
+
+  <div class="swatch-grid">
+    <div class="swatch-card">
+      <div class="swatch-preview" style="background:#4a5f7f;"></div>
+      <div class="swatch-info">
+        <div class="name">Chronicle Blue</div>
+        <div class="swatch-detail">
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Hex</span><span class="swatch-detail-value">#4a5f7f</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Token</span><span class="swatch-detail-value">bg-[#4a5f7f]</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Location</span><span class="swatch-detail-value swatch-location">Panel header bars, MAIN CHARACTERS pill</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="swatch-card">
+      <div class="swatch-preview" style="background:#2a2a2f;"></div>
+      <div class="swatch-info">
+        <div class="name">Panel Body / Dark Surface</div>
+        <div class="swatch-detail">
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Hex</span><span class="swatch-detail-value">#2a2a2f</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Token</span><span class="swatch-detail-value">bg-[#2a2a2f]</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Location</span><span class="swatch-detail-value swatch-location">Panel containers, Character Roster sidebar, character cards</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="swatch-card">
+      <div class="swatch-preview" style="background:#1a1a1a;"></div>
+      <div class="swatch-info">
+        <div class="name">Icon Sidebar</div>
+        <div class="swatch-detail">
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Hex</span><span class="swatch-detail-value">#1a1a1a</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Token</span><span class="swatch-detail-value">bg-[#1a1a1a]</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Location</span><span class="swatch-detail-value swatch-location">Left icon navigation sidebar (72px wide)</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="swatch-card">
+      <div class="swatch-preview" style="background:#2F3137;"></div>
+      <div class="swatch-info">
+        <div class="name">Button Background</div>
+        <div class="swatch-detail">
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Hex</span><span class="swatch-detail-value">#2F3137</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Computed</span><span class="swatch-detail-value">rgb(47, 49, 55)</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Location</span><span class="swatch-detail-value swatch-location">DRAFTS, SAVE AND CLOSE, SAVE DRAFT, Upload Image, Publish to Gallery</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="swatch-card">
+      <div class="swatch-preview" style="background:#ffffff;"></div>
+      <div class="swatch-info">
+        <div class="name">Header Bar</div>
+        <div class="swatch-detail">
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Hex</span><span class="swatch-detail-value">#ffffff</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Token</span><span class="swatch-detail-value">bg-white</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Location</span><span class="swatch-detail-value swatch-location">Top header bar background (64px height)</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="swatch-card">
+      <div class="swatch-preview" style="background:rgba(248,250,252,0.3); border: 1px dashed #ccc;"></div>
+      <div class="swatch-info">
+        <div class="name">Content Area Background</div>
+        <div class="swatch-detail">
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Value</span><span class="swatch-detail-value">rgba(248,250,252,0.3)</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Token</span><span class="swatch-detail-value">bg-slate-50/30</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Location</span><span class="swatch-detail-value swatch-location">Main content area behind panels</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="swatch-card">
+      <div class="swatch-preview" style="background:#0f172a;"></div>
+      <div class="swatch-info">
+        <div class="name">Slate 900 / Title Text</div>
+        <div class="swatch-detail">
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Hex</span><span class="swatch-detail-value">#0f172a</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Computed</span><span class="swatch-detail-value">rgb(15, 23, 42)</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Location</span><span class="swatch-detail-value swatch-location">"Story Setup" H1, "STORY BUILDER" header title</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="swatch-card">
+      <div class="swatch-preview" style="background:#64748b;"></div>
+      <div class="swatch-info">
+        <div class="name">Slate 500 / Subtitle</div>
+        <div class="swatch-detail">
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Hex</span><span class="swatch-detail-value">#64748b</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Computed</span><span class="swatch-detail-value">rgb(100, 116, 139)</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Location</span><span class="swatch-detail-value swatch-location">"Configure the foundation of your interactive narrative" subtitle</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="swatch-card">
+      <div class="swatch-preview" style="background:rgba(24,24,27,0.5);"></div>
+      <div class="swatch-info">
+        <div class="name">Input Background</div>
+        <div class="swatch-detail">
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Value</span><span class="swatch-detail-value">rgba(24,24,27,0.5)</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Token</span><span class="swatch-detail-value">bg-zinc-900/50</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Location</span><span class="swatch-detail-value swatch-location">All text inputs, textareas, bullet-list containers</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="swatch-card">
+      <div class="swatch-preview" style="background:#3f3f46;"></div>
+      <div class="swatch-info">
+        <div class="name">Zinc 700 / Input Border</div>
+        <div class="swatch-detail">
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Hex</span><span class="swatch-detail-value">#3f3f46</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Computed</span><span class="swatch-detail-value">rgb(63, 63, 70)</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Location</span><span class="swatch-detail-value swatch-location">Input/textarea borders, tag chip borders</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="swatch-card">
+      <div class="swatch-preview" style="background:#60a5fa;"></div>
+      <div class="swatch-info">
+        <div class="name">Blue 400 / Link Blue</div>
+        <div class="swatch-detail">
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Hex</span><span class="swatch-detail-value">#60a5fa</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Computed</span><span class="swatch-detail-value">rgb(96, 165, 250)</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Location</span><span class="swatch-detail-value swatch-location">"+ Add Location" links, "+ Add custom" text, active slider labels, SFW badge text</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="swatch-card">
+      <div class="swatch-preview" style="background:#3b82f6;"></div>
+      <div class="swatch-info">
+        <div class="name">Blue 500 / Checkmark</div>
+        <div class="swatch-detail">
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Hex</span><span class="swatch-detail-value">#3b82f6</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Computed</span><span class="swatch-detail-value">rgb(59, 130, 246)</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Location</span><span class="swatch-detail-value swatch-location">Art Style selection checkmark badge, guidance box border (at 20% opacity)</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="swatch-card">
+      <div class="swatch-preview" style="background:#a1a1aa;"></div>
+      <div class="swatch-info">
+        <div class="name">Zinc 400 / Muted Text</div>
+        <div class="swatch-detail">
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Hex</span><span class="swatch-detail-value">#a1a1aa</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Computed</span><span class="swatch-detail-value">rgb(161, 161, 170)</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Location</span><span class="swatch-detail-value swatch-location">Trash icons, tag chip text, inactive tab text</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="swatch-card">
+      <div class="swatch-preview" style="background:#71717a;"></div>
+      <div class="swatch-info">
+        <div class="name">Zinc 500 / Dashed Borders</div>
+        <div class="swatch-detail">
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Hex</span><span class="swatch-detail-value">#71717a</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Computed</span><span class="swatch-detail-value">rgb(113, 113, 122)</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Location</span><span class="swatch-detail-value swatch-location">Dashed "add" button borders, inactive slider labels</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="swatch-card">
+      <div class="swatch-preview" style="background:#27272a;"></div>
+      <div class="swatch-info">
+        <div class="name">Zinc 800 / Tag Chip BG</div>
+        <div class="swatch-detail">
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Hex</span><span class="swatch-detail-value">#27272a</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Computed</span><span class="swatch-detail-value">rgb(39, 39, 42)</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Location</span><span class="swatch-detail-value swatch-location">Genre/Origin/Type tag chips, art style card backgrounds, character avatar</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="swatch-card">
+      <div class="swatch-preview" style="background:#eaedf1;"></div>
+      <div class="swatch-info">
+        <div class="name">Button Text Color</div>
+        <div class="swatch-detail">
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Hex</span><span class="swatch-detail-value">#eaedf1</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Computed</span><span class="swatch-detail-value">rgb(234, 237, 241)</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Location</span><span class="swatch-detail-value swatch-location">Text on all dark action buttons</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="swatch-card">
+      <div class="swatch-preview" style="background:#e2e8f0;"></div>
+      <div class="swatch-info">
+        <div class="name">Slate 200 / Header Border</div>
+        <div class="swatch-detail">
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Hex</span><span class="swatch-detail-value">#e2e8f0</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Computed</span><span class="swatch-detail-value">rgb(226, 232, 240)</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Location</span><span class="swatch-detail-value swatch-location">Header bar bottom border</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="swatch-card">
+      <div class="swatch-preview" style="background:rgba(58,58,63,0.3); border: 1px solid rgba(59,130,246,0.2);"></div>
+      <div class="swatch-info">
+        <div class="name">Guidance Box Surface</div>
+        <div class="swatch-detail">
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Value</span><span class="swatch-detail-value">rgba(58,58,63,0.3)</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Token</span><span class="swatch-detail-value">bg-[#3a3a3f]/30</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Location</span><span class="swatch-detail-value swatch-location">Story Arc guidance description box, border: blue-500/20</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="swatch-card">
+      <div class="swatch-preview" style="background:#d4d4d8;"></div>
+      <div class="swatch-info">
+        <div class="name">Zinc 300 / Body Text</div>
+        <div class="swatch-detail">
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Hex</span><span class="swatch-detail-value">#d4d4d8</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Computed</span><span class="swatch-detail-value">rgb(212, 212, 216)</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Location</span><span class="swatch-detail-value swatch-location">Bullet list text in World Codex Dialog Formatting</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="swatch-card">
+      <div class="swatch-preview" style="background:rgba(255,255,255,0.1); border: 1px dashed #999;"></div>
+      <div class="swatch-info">
+        <div class="name">White / 10% — Subtle Border</div>
+        <div class="swatch-detail">
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Value</span><span class="swatch-detail-value">rgba(255,255,255,0.1)</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Token</span><span class="swatch-detail-value">border-white/10</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Location</span><span class="swatch-detail-value swatch-location">Button borders, panel outer borders, character card borders</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="swatch-card">
+      <div class="swatch-preview" style="background:rgba(255,255,255,0.2); border: 1px dashed #999;"></div>
+      <div class="swatch-info">
+        <div class="name">White / 20% — Panel Header Border</div>
+        <div class="swatch-detail">
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Value</span><span class="swatch-detail-value">rgba(255,255,255,0.2)</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Token</span><span class="swatch-detail-value">border-white/20</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Location</span><span class="swatch-detail-value swatch-location">Panel header bar bottom border (below #4a5f7f bar)</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ── MY STORIES PAGE ── -->
+  <div class="color-page-header">My Stories Page</div>
+  <p class="color-page-desc">Colors used on the My Stories gallery/card grid.</p>
+
+  <div class="swatch-grid">
+    <div class="swatch-card">
+      <div class="swatch-preview" style="background:rgba(248,250,252,0.5); border: 1px dashed #ccc;"></div>
+      <div class="swatch-info">
+        <div class="name">Page Background</div>
+        <div class="swatch-detail">
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Value</span><span class="swatch-detail-value">rgba(248,250,252,0.5)</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Token</span><span class="swatch-detail-value">bg-slate-50/50</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Location</span><span class="swatch-detail-value swatch-location">Full page background</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="swatch-card">
+      <div class="swatch-preview" style="background:#4a5f7f;"></div>
+      <div class="swatch-info">
+        <div class="name">Active Tab Pill / Card Border</div>
+        <div class="swatch-detail">
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Hex</span><span class="swatch-detail-value">#4a5f7f</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Computed</span><span class="swatch-detail-value">rgb(74, 95, 127)</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Location</span><span class="swatch-detail-value swatch-location">Active tab pill bg, story card border (1px solid)</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="swatch-card">
+      <div class="swatch-preview" style="background:#020617;"></div>
+      <div class="swatch-info">
+        <div class="name">Slate 950 / Card Gradient Bottom</div>
+        <div class="swatch-detail">
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Hex</span><span class="swatch-detail-value">#020617</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Computed</span><span class="swatch-detail-value">rgb(2, 6, 23)</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Location</span><span class="swatch-detail-value swatch-location">Story card gradient bottom: linear-gradient(to top, #020617, slate-900/60, transparent)</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="swatch-card">
+      <div class="swatch-preview" style="background:#2a2a2f;"></div>
+      <div class="swatch-info">
+        <div class="name">Badge Background</div>
+        <div class="swatch-detail">
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Hex</span><span class="swatch-detail-value">#2a2a2f</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Computed</span><span class="swatch-detail-value">rgb(42, 42, 47)</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Location</span><span class="swatch-detail-value swatch-location">SFW/NSFW badge backgrounds on story cards</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="swatch-card">
+      <div class="swatch-preview" style="background:#f87171;"></div>
+      <div class="swatch-info">
+        <div class="name">Red 400 / NSFW Badge</div>
+        <div class="swatch-detail">
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Hex</span><span class="swatch-detail-value">#f87171</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Computed</span><span class="swatch-detail-value">rgb(248, 113, 113)</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Location</span><span class="swatch-detail-value swatch-location">NSFW badge text color</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="swatch-card">
+      <div class="swatch-preview" style="background:#ef4444;"></div>
+      <div class="swatch-info">
+        <div class="name">Red 500 / Delete Button</div>
+        <div class="swatch-detail">
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Hex</span><span class="swatch-detail-value">#ef4444</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Computed</span><span class="swatch-detail-value">rgb(239, 68, 68)</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Location</span><span class="swatch-detail-value swatch-location">Delete button background on card hover</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="swatch-card">
+      <div class="swatch-preview" style="background:#2563eb;"></div>
+      <div class="swatch-info">
+        <div class="name">Blue 600 / Play Button</div>
+        <div class="swatch-detail">
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Hex</span><span class="swatch-detail-value">#2563eb</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Computed</span><span class="swatch-detail-value">rgb(37, 99, 235)</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Location</span><span class="swatch-detail-value swatch-location">Play button background on card hover</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="swatch-card">
+      <div class="swatch-preview" style="background:#52525b;"></div>
+      <div class="swatch-info">
+        <div class="name">Zinc 600 / Create Card Border</div>
+        <div class="swatch-detail">
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Hex</span><span class="swatch-detail-value">#52525b</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Computed</span><span class="swatch-detail-value">rgb(82, 82, 91)</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Location</span><span class="swatch-detail-value swatch-location">"Create New Story" dashed card border (2px dashed)</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="swatch-card">
+      <div class="swatch-preview" style="background:rgba(255,255,255,0.6); border: 1px dashed #999;"></div>
+      <div class="swatch-info">
+        <div class="name">White / 60% — Description Text</div>
+        <div class="swatch-detail">
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Value</span><span class="swatch-detail-value">rgba(255,255,255,0.6)</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Location</span><span class="swatch-detail-value swatch-location">Story card description text</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="swatch-card">
+      <div class="swatch-preview" style="background:rgba(255,255,255,0.5); border: 1px dashed #999;"></div>
+      <div class="swatch-info">
+        <div class="name">White / 50% — Metadata Text</div>
+        <div class="swatch-detail">
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Value</span><span class="swatch-detail-value">rgba(255,255,255,0.5)</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Location</span><span class="swatch-detail-value swatch-location">"Created by" text, stat numbers on story cards</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="swatch-card">
+      <div class="swatch-preview" style="background:rgba(0,0,0,0.5);"></div>
+      <div class="swatch-info">
+        <div class="name">Card Shadow</div>
+        <div class="swatch-detail">
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Value</span><span class="swatch-detail-value">rgba(0,0,0,0.5)</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Full</span><span class="swatch-detail-value">0px 12px 32px -2px</span></div>
+          <div class="swatch-detail-row"><span class="swatch-detail-label">Location</span><span class="swatch-detail-value swatch-location">Story card and panel box-shadow</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════════════════════
+     2. TYPOGRAPHY
+     ═══════════════════════════════════════════════════════════ -->
+<section id="typography" class="section">
+  <div class="section-header"><h2>Typography</h2></div>
+  <p class="section-desc">Font sizes, weights, and letter-spacing values extracted from both pages. Each tile shows a rendered example, exact specs, and where the style is used.</p>
+
+  <!-- ── Story Builder Page ── -->
+  <div class="type-page-heading">Story Builder Page</div>
+
+  <!-- Page Title (White header bar) -->
+  <div class="type-tile">
+    <div class="type-tile-name">Page Title (White header bar)</div>
+    <div class="type-tile-body">
+      <div class="type-tile-row">
+        <span class="type-tile-label">Example:</span>
+        <div class="type-tile-example">
+          <span style="font-size:18px; font-weight:900; color:#0f172a; letter-spacing:-0.45px; text-transform:uppercase;">STORY BUILDER</span>
+        </div>
+      </div>
+      <div class="type-tile-row">
+        <span class="type-tile-label">Specs:</span>
+        <div class="type-tile-specs">
+          <span>18px</span>
+          <span>weight 900</span>
+          <span>-0.45px tracking</span>
+          <span>#0f172a (slate-900)</span>
+        </div>
+      </div>
+      <div class="type-tile-row">
+        <span class="type-tile-label">Locations used:</span>
+        <div class="type-tile-locations">Top-left of the white header bar on every page — "STORY BUILDER", "ACCOUNT", "MY STORIES". Always uppercase, always next to the back arrow. Sits on white bg-white header bar.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section Title (Story Setup) -->
+  <div class="type-tile">
+    <div class="type-tile-name">Section Title (Content area)</div>
+    <div class="type-tile-body">
+      <div class="type-tile-row">
+        <span class="type-tile-label">Example:</span>
+        <div class="type-tile-example">
+          <span style="font-size:36px; font-weight:900; color:#0f172a; letter-spacing:-0.9px;">Story Setup</span>
+        </div>
+      </div>
+      <div class="type-tile-row">
+        <span class="type-tile-label">Specs:</span>
+        <div class="type-tile-specs">
+          <span>36px</span>
+          <span>weight 900</span>
+          <span>-0.9px tracking</span>
+          <span>#0f172a (slate-900)</span>
+        </div>
+      </div>
+      <div class="type-tile-row">
+        <span class="type-tile-label">Locations used:</span>
+        <div class="type-tile-locations">Large heading at top of the content area on Story Builder page. Dark text on the light bg-slate-50/30 background.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section Subtitle -->
+  <div class="type-tile">
+    <div class="type-tile-name">Section Subtitle (Content area)</div>
+    <div class="type-tile-body">
+      <div class="type-tile-row">
+        <span class="type-tile-label">Example:</span>
+        <div class="type-tile-example">
+          <span style="font-size:14px; font-weight:500; color:#64748b;">Configure the foundation of your interactive narrative.</span>
+        </div>
+      </div>
+      <div class="type-tile-row">
+        <span class="type-tile-label">Specs:</span>
+        <div class="type-tile-specs">
+          <span>14px</span>
+          <span>weight 500</span>
+          <span>normal tracking</span>
+          <span>#64748b (slate-500)</span>
+        </div>
+      </div>
+      <div class="type-tile-row">
+        <span class="type-tile-label">Locations used:</span>
+        <div class="type-tile-locations">Directly below the "Story Setup" heading. Muted descriptive text.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel Header Title -->
+  <div class="type-tile">
+    <div class="type-tile-name">Panel Header Title (Blue bar)</div>
+    <div class="type-tile-body">
+      <div class="type-tile-row">
+        <span class="type-tile-label">Example:</span>
+        <div class="type-tile-example-dark" style="background:#4a5f7f;">
+          <span style="font-size:20px; font-weight:700; color:#fff; letter-spacing:-0.5px;">Story Card</span>
+        </div>
+      </div>
+      <div class="type-tile-row">
+        <span class="type-tile-label">Specs:</span>
+        <div class="type-tile-specs">
+          <span>20px</span>
+          <span>weight 700</span>
+          <span>-0.5px tracking</span>
+          <span>#ffffff (white)</span>
+        </div>
+      </div>
+      <div class="type-tile-row">
+        <span class="type-tile-label">Locations used:</span>
+        <div class="type-tile-locations">Inside the bg-[#4a5f7f] panel header bars — "Story Card", "World Core", "Story Arcs", "Opening Dialog", "Art Style Preference", "World Codex", "Content Themes", "Share Your Story".</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Field Labels -->
+  <div class="type-tile">
+    <div class="type-tile-name">Field Labels (Inside panels)</div>
+    <div class="type-tile-body">
+      <div class="type-tile-row">
+        <span class="type-tile-label">Example:</span>
+        <div class="type-tile-example-dark">
+          <span style="font-size:10px; font-weight:700; color:#fff; letter-spacing:0.5px; text-transform:uppercase;">STORY NAME</span>
+          <span style="margin-left:24px; font-size:10px; font-weight:700; color:#fff; letter-spacing:0.5px; text-transform:uppercase;">BRIEF DESCRIPTION</span>
+          <span style="margin-left:24px; font-size:10px; font-weight:700; color:#fff; letter-spacing:0.5px; text-transform:uppercase;">GENRE</span>
+        </div>
+      </div>
+      <div class="type-tile-row">
+        <span class="type-tile-label">Specs:</span>
+        <div class="type-tile-specs">
+          <span>10px</span>
+          <span>weight 700</span>
+          <span>0.5px tracking</span>
+          <span>uppercase</span>
+          <span>#ffffff</span>
+        </div>
+      </div>
+      <div class="type-tile-row">
+        <span class="type-tile-label">Locations used:</span>
+        <div class="type-tile-locations">All form field labels inside dark panels — STORY NAME, BRIEF DESCRIPTION, STORY PREMISE, PRIMARY LOCATIONS, STORY ARC TITLE, DESIRED OUTCOME, GUIDANCE STRENGTH, OPENING DIALOG, CHARACTER TYPES, GENRE, ORIGIN, etc.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Button Text -->
+  <div class="type-tile">
+    <div class="type-tile-name">Button Text (Header actions)</div>
+    <div class="type-tile-body">
+      <div class="type-tile-row">
+        <span class="type-tile-label">Example:</span>
+        <div class="type-tile-example-dark" style="background:#2F3137; border-color:rgba(255,255,255,0.1);">
+          <span style="font-size:10px; font-weight:700; color:#eaedf1; letter-spacing:0.5px; text-transform:uppercase;">SAVE AND CLOSE</span>
+        </div>
+      </div>
+      <div class="type-tile-row">
+        <span class="type-tile-label">Specs:</span>
+        <div class="type-tile-specs">
+          <span>10px</span>
+          <span>weight 700</span>
+          <span>0.5px tracking</span>
+          <span>uppercase</span>
+          <span>#eaedf1</span>
+        </div>
+      </div>
+      <div class="type-tile-row">
+        <span class="type-tile-label">Locations used:</span>
+        <div class="type-tile-locations">All dark action buttons — DRAFTS, SAVE AND CLOSE, SAVE DRAFT, Upload Image, Publish to Gallery. Sits on bg-[#2F3137] buttons.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Character Name -->
+  <div class="type-tile">
+    <div class="type-tile-name">Character Name (Roster sidebar)</div>
+    <div class="type-tile-body">
+      <div class="type-tile-row">
+        <span class="type-tile-label">Example:</span>
+        <div class="type-tile-example-dark">
+          <span style="font-size:14px; font-weight:700; color:#fff;">ASHLEY</span>
+        </div>
+      </div>
+      <div class="type-tile-row">
+        <span class="type-tile-label">Specs:</span>
+        <div class="type-tile-specs">
+          <span>14px</span>
+          <span>weight 700</span>
+          <span>normal tracking</span>
+          <span>#ffffff</span>
+        </div>
+      </div>
+      <div class="type-tile-row">
+        <span class="type-tile-label">Locations used:</span>
+        <div class="type-tile-locations">Character names in the left Character Roster sidebar panel on Story Builder.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Link Text -->
+  <div class="type-tile">
+    <div class="type-tile-name">Add Link Text (Blue interactive)</div>
+    <div class="type-tile-body">
+      <div class="type-tile-row">
+        <span class="type-tile-label">Example:</span>
+        <div class="type-tile-example-dark">
+          <span style="font-size:14px; font-weight:400; color:#60a5fa;">+ Add Location</span>
+        </div>
+      </div>
+      <div class="type-tile-row">
+        <span class="type-tile-label">Specs:</span>
+        <div class="type-tile-specs">
+          <span>14px</span>
+          <span>weight 400</span>
+          <span>normal tracking</span>
+          <span>#60a5fa (blue-400)</span>
+        </div>
+      </div>
+      <div class="type-tile-row">
+        <span class="type-tile-label">Locations used:</span>
+        <div class="type-tile-locations">"+ Add Location" links in World Core panel. Blue interactive text elements.</div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider" style="margin: 48px 0;">
+
+  <!-- ── My Stories Page ── -->
+  <div class="type-page-heading">My Stories Page</div>
+
+  <!-- Page Title -->
+  <div class="type-tile">
+    <div class="type-tile-name">Page Title (White header bar)</div>
+    <div class="type-tile-body">
+      <div class="type-tile-row">
+        <span class="type-tile-label">Example:</span>
+        <div class="type-tile-example">
+          <span style="font-size:18px; font-weight:900; color:#0f172a; letter-spacing:-0.45px; text-transform:uppercase;">MY STORIES</span>
+        </div>
+      </div>
+      <div class="type-tile-row">
+        <span class="type-tile-label">Specs:</span>
+        <div class="type-tile-specs">
+          <span>18px</span>
+          <span>weight 900</span>
+          <span>-0.45px tracking</span>
+          <span>#0f172a (slate-900)</span>
+          <span>uppercase</span>
+        </div>
+      </div>
+      <div class="type-tile-row">
+        <span class="type-tile-label">Locations used:</span>
+        <div class="type-tile-locations">Top-left of the white header bar. Same style as "STORY BUILDER" — shared across all pages.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Story Card Title -->
+  <div class="type-tile">
+    <div class="type-tile-name">Story Card Title (On card overlay)</div>
+    <div class="type-tile-body">
+      <div class="type-tile-row">
+        <span class="type-tile-label">Example:</span>
+        <div class="type-tile-example-dark" style="background: linear-gradient(to top, #020617, rgba(15,23,42,0.6));">
+          <span style="font-size:18px; font-weight:900; color:#fff; letter-spacing:-0.45px;">Acotar</span>
+        </div>
+      </div>
+      <div class="type-tile-row">
+        <span class="type-tile-label">Specs:</span>
+        <div class="type-tile-specs">
+          <span>18px</span>
+          <span>weight 900</span>
+          <span>-0.45px tracking</span>
+          <span>#ffffff (white)</span>
+        </div>
+      </div>
+      <div class="type-tile-row">
+        <span class="type-tile-label">Locations used:</span>
+        <div class="type-tile-locations">Story name on the card overlay gradient. H3 element. White text on the dark gradient bottom of each card.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Story Card Description -->
+  <div class="type-tile">
+    <div class="type-tile-name">Story Card Description</div>
+    <div class="type-tile-body">
+      <div class="type-tile-row">
+        <span class="type-tile-label">Example:</span>
+        <div class="type-tile-example-dark">
+          <span style="font-size:12px; font-weight:400; color:rgba(255,255,255,0.6);">A romantic fantasy adventure in the fae lands...</span>
+        </div>
+      </div>
+      <div class="type-tile-row">
+        <span class="type-tile-label">Specs:</span>
+        <div class="type-tile-specs">
+          <span>12px</span>
+          <span>weight 400</span>
+          <span>normal tracking</span>
+          <span>rgba(255,255,255,0.6)</span>
+        </div>
+      </div>
+      <div class="type-tile-row">
+        <span class="type-tile-label">Locations used:</span>
+        <div class="type-tile-locations">Story description text below the title on each card.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card Metadata -->
+  <div class="type-tile">
+    <div class="type-tile-name">Card Metadata ("Created by" / Stats)</div>
+    <div class="type-tile-body">
+      <div class="type-tile-row">
+        <span class="type-tile-label">Example:</span>
+        <div class="type-tile-example-dark">
+          <span style="font-size:11px; font-weight:500; color:rgba(255,255,255,0.5);">Created by: ThomasH</span>
+          <span style="margin-left:16px; font-size:10px; font-weight:400; color:rgba(255,255,255,0.5);">12 chapters · 3.2k words</span>
+        </div>
+      </div>
+      <div class="type-tile-row">
+        <span class="type-tile-label">Specs:</span>
+        <div class="type-tile-specs">
+          <span>"Created by": 11px / 500</span>
+          <span>Stats: 10px / 400</span>
+          <span>rgba(255,255,255,0.5)</span>
+        </div>
+      </div>
+      <div class="type-tile-row">
+        <span class="type-tile-label">Locations used:</span>
+        <div class="type-tile-locations">"Created by" line and stat numbers at the bottom of each story card.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab Pill Text -->
+  <div class="type-tile">
+    <div class="type-tile-name">Tab Pill Text (Active / Inactive)</div>
+    <div class="type-tile-body">
+      <div class="type-tile-row">
+        <span class="type-tile-label">Example:</span>
+        <div class="type-tile-example-dark" style="display:flex; gap:12px; align-items:center;">
+          <span style="font-size:12px; font-weight:700; color:#fff; background:#4a5f7f; border-radius:9999px; padding:6px 16px;">My Stories</span>
+          <span style="font-size:12px; font-weight:700; color:#a1a1aa;">Community</span>
+          <span style="font-size:12px; font-weight:700; color:#a1a1aa;">Favorites</span>
+        </div>
+      </div>
+      <div class="type-tile-row">
+        <span class="type-tile-label">Specs:</span>
+        <div class="type-tile-specs">
+          <span>12px</span>
+          <span>weight 700</span>
+          <span>Active: #fff on #4a5f7f</span>
+          <span>Inactive: #a1a1aa</span>
+        </div>
+      </div>
+      <div class="type-tile-row">
+        <span class="type-tile-label">Locations used:</span>
+        <div class="type-tile-locations">Navigation tabs below the header bar on My Stories page. Active pill has rounded-full bg, inactive is text only.</div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════════════════════
+     3. BUTTONS
+     ═══════════════════════════════════════════════════════════ -->
+<section id="buttons" class="section">
+  <div class="section-header"><h2>Buttons</h2></div>
+  <p class="section-desc">All button styles found across Story Builder and My Stories pages.</p>
+
+  <div class="color-page-header">Story Builder Page</div>
+  <p class="color-page-desc">Button styles used in the Story Builder workflow.</p>
+
+  <div class="entry">
+    <div class="entry-top">
+      <span class="name">Header Action Button</span>
+      <span class="page-tag">Story Builder</span>
+    </div>
+    <div class="entry-body">
+      <p class="inst"><strong>bg:</strong> #2F3137 · <strong>color:</strong> #eaedf1 · <strong>10px / 700 / uppercase</strong> · <strong>border:</strong> 1px solid white/10 · <strong>border-radius:</strong> 12px · <strong>height:</strong> 40px · <strong>padding:</strong> 10px 24px · <strong>letter-spacing:</strong> 0.5px</p>
+      <div class="preview">
+        <button class="chr-btn-header">DRAFTS</button>
+        <button class="chr-btn-header">SAVE AND CLOSE</button>
+        <button class="chr-btn-header">SAVE DRAFT</button>
+      </div>
+      <div class="code">background: #2F3137;  /* rgb(47, 49, 55) */
+color: #eaedf1;  /* rgb(234, 237, 241) */
+font-size: 10px; font-weight: 700;
+text-transform: uppercase; letter-spacing: 0.5px;
+border: 1px solid rgba(255,255,255,0.1);
+border-radius: 12px; height: 40px;</div>
+    </div>
+  </div>
+
+  <div class="entry">
+    <div class="entry-top">
+      <span class="name">AI Generate Button</span>
+      <span class="page-tag">Story Builder</span>
+    </div>
+    <div class="entry-body">
+      <p class="inst"><strong>bg:</strong> gradient (purple) · <strong>color:</strong> white · <strong>10px / 700 / uppercase</strong> · <strong>border-radius:</strong> 12px · <strong>height:</strong> 40px</p>
+      <div class="preview">
+        <button class="chr-btn-ai">AI GENERATE</button>
+      </div>
+      <div class="code">background: linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7);
+color: #fff; font-size: 10px; font-weight: 700;
+text-transform: uppercase; border-radius: 12px; height: 40px;</div>
+    </div>
+  </div>
+
+  <div class="entry">
+    <div class="entry-top">
+      <span class="name">Dashed "Add" Buttons</span>
+      <span class="page-tag">Story Builder</span>
+    </div>
+    <div class="entry-body">
+      <p class="inst"><strong>border:</strong> 2px dashed #71717a · <strong>color:</strong> #60a5fa · <strong>14px / 500</strong> · <strong>border-radius:</strong> 12px · <strong>bg:</strong> transparent · Full-width</p>
+      <div class="preview preview-plain" style="flex-direction: column;">
+        <button class="chr-btn-dashed">+ Add Custom Content</button>
+      </div>
+      <div class="code">background: transparent; color: #60a5fa;  /* blue-400 */
+font-size: 14px; font-weight: 500;
+border: 2px dashed #71717a;  /* zinc-500 */
+border-radius: 12px; width: 100%;
+/* Hover: */
+border-color: #60a5fa; background: rgba(96,165,250,0.12);</div>
+    </div>
+  </div>
+
+  <div class="color-page-header">My Stories Page</div>
+  <p class="color-page-desc">Button styles used on the My Stories gallery and card interactions.</p>
+
+  <div class="entry">
+    <div class="entry-top">
+      <span class="name">Card Hover Buttons — Edit / Delete / Play</span>
+      <span class="page-tag">My Stories</span>
+    </div>
+    <div class="entry-body">
+      <p class="inst">Appear on story card hover. All use <strong>10px / 700 / border-radius: 12px</strong>.</p>
+      <div class="preview">
+        <button class="chr-btn-edit">EDIT</button>
+        <button class="chr-btn-destructive">DELETE</button>
+        <button class="chr-btn-play">PLAY</button>
+      </div>
+      <div class="code">/* Edit */  bg: #ffffff; color: #0f172a;
+/* Delete */ bg: #ef4444; color: #fff;
+/* Play */   bg: #2563eb; color: #fff;
+/* All share: */ font-size: 10px; font-weight: 700; border-radius: 12px;</div>
+    </div>
+  </div>
+
+  <div class="entry">
+    <div class="entry-top">
+      <span class="name">Tab Pills — Active / Inactive</span>
+      <span class="page-tag">My Stories</span>
+    </div>
+    <div class="entry-body">
+      <p class="inst"><strong>Active:</strong> bg #4a5f7f, white text, rounded-full · <strong>Inactive:</strong> transparent, #a1a1aa text · Both 12px / 700</p>
+      <div class="dark-preview">
+        <button class="chr-tab-active">My Stories</button>
+        <button class="chr-tab-inactive">Community</button>
+        <button class="chr-tab-inactive">Favorites</button>
+      </div>
+      <div class="code">/* Active */   bg: #4a5f7f; color: #fff; border-radius: 9999px; padding: 6px 16px;
+/* Inactive */ bg: transparent; color: #a1a1aa;  /* zinc-400 */
+/* Both */     font-size: 12px; font-weight: 700;</div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════════════════════
+     4. FORM INPUTS
+     ═══════════════════════════════════════════════════════════ -->
+<section id="inputs" class="section">
+  <div class="section-header"><h2>Form Inputs</h2></div>
+  <p class="section-desc">Input fields and textareas used throughout Story Builder panels.</p>
+
+  <div class="color-page-header">Story Builder Page</div>
+  <p class="color-page-desc">Form controls used within Story Builder panels.</p>
+
+  <div class="entry">
+    <div class="entry-top">
+      <span class="name">Text Input / Textarea</span>
+      <span class="page-tag">Story Builder</span>
+    </div>
+    <div class="entry-body">
+      <p class="inst"><strong>bg:</strong> rgba(24,24,27,0.5) · <strong>color:</strong> white · <strong>border:</strong> 1px solid #3f3f46 · <strong>border-radius:</strong> 8px · <strong>padding:</strong> 8px 12px · <strong>font-size:</strong> 14px</p>
+      <div class="dark-preview" style="flex-direction: column; gap: 12px;">
+        <input class="chr-input" type="text" placeholder="Enter story arc title..." />
+        <input class="chr-input" type="text" placeholder="e.g. The Lakehouse" />
+      </div>
+      <div class="code">background: rgba(24, 24, 27, 0.5);  /* zinc-900/50 */
+color: #fff; font-size: 14px;
+border: 1px solid #3f3f46;  /* zinc-700 */
+border-radius: 8px; padding: 8px 12px;</div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════════════════════
+     5. BADGES & TAGS
+     ═══════════════════════════════════════════════════════════ -->
+<section id="badges" class="section">
+  <div class="section-header"><h2>Badges &amp; Tags</h2></div>
+  <p class="section-desc">Badges on story cards and tag chips in Content Themes.</p>
+
+  <div class="color-page-header">Story Builder Page</div>
+  <p class="color-page-desc">Tag and chip styles used in Story Builder content setup.</p>
+
+  <div class="entry">
+    <div class="entry-top">
+      <span class="name">Content Theme Tag Chips</span>
+      <span class="page-tag">Story Builder</span>
+    </div>
+    <div class="entry-body">
+      <p class="inst"><strong>bg:</strong> #27272a · <strong>color:</strong> #a1a1aa · <strong>border:</strong> 1px solid #3f3f46 · <strong>12px / 500</strong> · <strong>border-radius:</strong> 8px · <strong>padding:</strong> 6px 12px</p>
+      <div class="preview preview-plain" style="gap: 8px;">
+        <span class="chr-tag">Fantasy</span>
+        <span class="chr-tag">Romance</span>
+        <span class="chr-tag">Dark Romance</span>
+        <span class="chr-tag-add">+ Add custom</span>
+      </div>
+      <div class="code">/* Tag chip */
+background: #27272a;  /* zinc-800 */
+color: #a1a1aa;  /* zinc-400 */
+border: 1px solid #3f3f46;  /* zinc-700 */
+font-size: 12px; font-weight: 500;
+border-radius: 8px; padding: 6px 12px;
+
+/* "+ Add custom" chip */
+background: transparent; color: #60a5fa;
+border: 2px dashed #71717a;  /* zinc-500 */</div>
+    </div>
+  </div>
+
+  <div class="color-page-header">My Stories Page</div>
+  <p class="color-page-desc">Badge styles used on My Stories cards.</p>
+
+  <div class="entry">
+    <div class="entry-top">
+      <span class="name">SFW / NSFW Badges</span>
+      <span class="page-tag">My Stories</span>
+    </div>
+    <div class="entry-body">
+      <p class="inst"><strong>bg:</strong> #2a2a2f · <strong>12px / 700</strong> · <strong>border-radius:</strong> 8px · <strong>padding:</strong> 4px 10px · SFW = <strong>blue-400</strong>, NSFW = <strong>red-400</strong></p>
+      <div class="preview preview-plain">
+        <span class="chr-badge-sfw">SFW</span>
+        <span class="chr-badge-nsfw">NSFW</span>
+      </div>
+      <div class="code">background: #2a2a2f; border-radius: 8px; padding: 4px 10px;
+font-size: 12px; font-weight: 700;
+/* SFW */  color: #60a5fa;  /* blue-400 */
+/* NSFW */ color: #f87171;  /* red-400 */</div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════════════════════
+     6. PANELS
+     ═══════════════════════════════════════════════════════════ -->
+<section id="panels" class="section">
+  <div class="section-header"><h2>Panels</h2></div>
+  <p class="section-desc">The dark rounded panel containers used in Story Builder for each section (Story Card, World Core, Story Arcs, etc.).</p>
+
+  <div class="color-page-header">Story Builder Page</div>
+  <p class="color-page-desc">Panel shell and structure patterns used across Story Builder.</p>
+
+  <div class="entry">
+    <div class="entry-top">
+      <span class="name">Panel Container</span>
+      <span class="page-tag">Story Builder</span>
+    </div>
+    <div class="entry-body">
+      <p class="inst"><strong>bg:</strong> #2a2a2f · <strong>border-radius:</strong> 24px · <strong>border:</strong> white/10 · <strong>box-shadow:</strong> rgba(0,0,0,0.5) 0px 12px 32px -2px</p>
+      <div class="code">background: #2a2a2f;  /* rgb(42, 42, 47) */
+border-radius: 24px;  /* rounded-[24px] */
+border: 1px solid rgba(255,255,255,0.1);  /* border-white/10 */
+box-shadow: rgba(0,0,0,0.5) 0px 12px 32px -2px;</div>
+    </div>
+  </div>
+
+  <div class="entry">
+    <div class="entry-top">
+      <span class="name">Panel Header Bar</span>
+      <span class="page-tag">Story Builder</span>
+    </div>
+    <div class="entry-body">
+      <p class="inst"><strong>bg:</strong> #4a5f7f · <strong>padding:</strong> 16px 24px · <strong>border-bottom:</strong> white/20 · <strong>shadow-lg</strong> · Contains H2 title (20px/700/white) and icon</p>
+      <div style="background: #4a5f7f; border-radius: 12px; padding: 16px 24px; display: flex; align-items: center; gap: 12px; margin: 16px 0;">
+        <div style="width: 28px; height: 28px; background: rgba(255,255,255,0.2); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px;">&#9881;</div>
+        <span style="color: white; font-size: 20px; font-weight: 700; letter-spacing: -0.5px;">Story Card</span>
+      </div>
+      <div class="code">background: #4a5f7f;  /* bg-[#4a5f7f] */
+padding: 16px 24px;  /* px-6 py-4 */
+border-bottom: 1px solid rgba(255,255,255,0.2);  /* border-white/20 */
+box-shadow: shadow-lg;
+display: flex; align-items: center; gap: 12px;</div>
+    </div>
+  </div>
+
+  <div class="entry">
+    <div class="entry-top">
+      <span class="name">Character Roster Sidebar</span>
+      <span class="page-tag">Story Builder</span>
+    </div>
+    <div class="entry-body">
+      <p class="inst"><strong>bg:</strong> #2a2a2f · <strong>width:</strong> 260px · <strong>border-right:</strong> white/10 · Contains section pills (<code>bg-[#4a5f7f]</code>) and character cards</p>
+      <div class="code">width: 260px;
+background: #2a2a2f;  /* bg-[#2a2a2f] */
+border-right: 1px solid rgba(255,255,255,0.1);
+/* "MAIN CHARACTERS" pill inside: */
+background: #4a5f7f; border-radius: 8px; padding: 8px 16px;
+color: white; font-size: 12px; font-weight: 700; text-transform: uppercase;</div>
+    </div>
+  </div>
+
+  <div class="color-page-header">My Stories Page</div>
+  <p class="color-page-desc">Card container styling used in the My Stories gallery grid.</p>
+
+  <div class="entry">
+    <div class="entry-top">
+      <span class="name">Story Card (My Stories Grid)</span>
+      <span class="page-tag">My Stories</span>
+    </div>
+    <div class="entry-body">
+      <p class="inst"><strong>aspect-ratio:</strong> 2/3 · <strong>border-radius:</strong> 32px (rounded-[2rem]) · <strong>border:</strong> 1px solid #4a5f7f · <strong>gradient overlay:</strong> linear-gradient(to top, #020617, slate-900/60, transparent)</p>
+      <div class="code">aspect-ratio: 2/3;
+border-radius: 32px;  /* rounded-[2rem] */
+border: 1px solid rgb(74, 95, 127);  /* #4a5f7f */
+box-shadow: rgba(0,0,0,0.5) 0px 12px 32px -2px;
+/* Gradient overlay on card image: */
+background: linear-gradient(to top, rgb(2,6,23), rgba(15,23,42,0.6), transparent);</div>
+    </div>
+  </div>
+</section>
+
+</div><!-- /.content -->
+</body>
+</html>
