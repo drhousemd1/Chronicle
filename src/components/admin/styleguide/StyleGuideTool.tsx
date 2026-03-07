@@ -1073,6 +1073,56 @@ text-white text-sm focus:ring-2 focus:ring-[#4a5f7f]`}
 bg-transparent text-white placeholder:text-zinc-500`}
               />
             </div>
+
+            <div style={{ marginTop: 24 }}>
+              <PageSubheading>Character Builder</PageSubheading>
+              <EntryCard name="HardcodedRow Textarea (Borderless)" pageTag="Character Builder"
+                specs='<strong>bg:</strong> bg-zinc-900/50 · <strong>border:</strong> border-white/10 (very subtle) · <strong>rounded-lg</strong> · <strong>text:</strong> text-zinc-300 text-sm. Used for trait values inside HardcodedRow layout.'
+                previewDark previewStyle={{ flexDirection: 'column', gap: 12 }}
+                preview={
+                  <textarea readOnly className="w-full rounded-lg border border-white/10 bg-zinc-900/50 text-zinc-300 text-sm px-3 py-2 outline-none resize-none" rows={2} placeholder="Athletic build; tall; sharp jawline..." />
+                }
+                code={`bg-zinc-900/50 border border-white/10 rounded-lg
+text-zinc-300 text-sm px-3 py-2 resize-none`}
+              />
+            </div>
+
+            <div style={{ marginTop: 24 }}>
+              <PageSubheading>Chat Settings — LabeledToggle</PageSubheading>
+              <EntryCard name="LabeledToggle Component" pageTag="Chat Settings"
+                specs='Custom toggle with Off/On labels. <strong>Track:</strong> h-5 w-9 rounded-full. <strong>Thumb:</strong> h-4 w-4 rounded-full bg-white. <strong>On:</strong> bg-blue-500, On label text-blue-500. <strong>Off:</strong> bg-zinc-600, Off label text-zinc-200. <strong>Locked:</strong> bg-zinc-500 + Lock icon.'
+                previewDark previewStyle={{ flexDirection: 'column', gap: 16 }}
+                preview={<>
+                  <div className="inline-flex items-center gap-1.5">
+                    <span className="text-xs font-semibold text-zinc-500">Off</span>
+                    <div className="relative h-5 w-9 rounded-full bg-blue-500">
+                      <div className="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-md" style={{ transform: 'translateX(16px)' }} />
+                    </div>
+                    <span className="text-xs font-semibold text-blue-500">On</span>
+                  </div>
+                  <div className="inline-flex items-center gap-1.5">
+                    <span className="text-xs font-semibold text-zinc-200">Off</span>
+                    <div className="relative h-5 w-9 rounded-full bg-zinc-600">
+                      <div className="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-md" style={{ transform: 'translateX(2px)' }} />
+                    </div>
+                    <span className="text-xs font-semibold text-zinc-500">On</span>
+                  </div>
+                  <div className="inline-flex items-center gap-1.5 opacity-70">
+                    <span className="text-xs font-semibold text-zinc-200">Off</span>
+                    <div className="relative h-5 w-9 rounded-full bg-zinc-500">
+                      <div className="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-md" style={{ transform: 'translateX(2px)' }} />
+                    </div>
+                    <span className="text-xs font-semibold text-zinc-500">On</span>
+                    <span className="text-zinc-500 text-xs">🔒</span>
+                  </div>
+                </>}
+                code={`/* Track */ h-5 w-9 rounded-full
+/* On: bg-blue-500 | Off: bg-zinc-600 | Locked: bg-zinc-500 */
+/* Thumb */ h-4 w-4 rounded-full bg-white shadow-md
+/* On label: text-blue-500 | Off label: text-zinc-200 */
+/* Locked: opacity-70 + Lock icon w-3 h-3 text-zinc-500 */`}
+              />
+            </div>
           </Section>
 
           <Divider />
