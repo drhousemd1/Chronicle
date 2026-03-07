@@ -698,26 +698,28 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
   const verbosityRules = responseVerbosity === 'detailed' ? `
     --- RESPONSE DETAIL LEVEL (DETAILED) ---
     * Write rich, immersive responses with layered sensory detail.
+    * HARD CAP: 2-3 paragraphs per response. Maximum 4 ONLY for multi-character turning points with high emotional stakes.
     * Draw out moments with physical sensations, sounds, textures, and atmosphere.
     * Describe physical sensations in detail (e.g., warmth spreading, muscles tensing, breath catching).
     * Incorporate vocal and emotional reactions (e.g., breathy moans, desperate whispers, gasps).
     * During intimate scenes, prolong acts with step-by-step progression.
     * Layer multiple senses (sight, sound, taste, smell, touch) in descriptions.
     * Extended internal monologue is encouraged — show depth of thought.
-    * Atmospheric descriptions help set the scene.
     * During intimate scenes, layer physical sensations: heat, pressure, friction, texture.
     * Include environmental sounds and character sounds naturally as the scene builds.
     * Show arousal states through physical description: colour, breath, trembling.
+    * VIOLATION CHECK: Count your paragraphs. If more than 4, cut the weakest ones.
 ` : responseVerbosity === 'concise' ? `
     --- RESPONSE DETAIL LEVEL (CONCISE) ---
     * Keep responses tight and punchy. Brevity is king.
-    * 1-3 paragraphs maximum unless a dramatic moment demands more.
+    * HARD CAP: 1-2 paragraphs maximum. No exceptions.
     * Cut filler narration — lead with dialogue and action.
     * Internal thoughts should be 1 sentence max, only when essential.
     * Minimize atmospheric descriptions — focus on what characters DO and SAY.
     * Get to the point. Every sentence must earn its place.
 ` : `
     --- RESPONSE DETAIL LEVEL (BALANCED) ---
+    * HARD CAP: 1-3 paragraphs per response.
     * Match response length to the scene's energy and emotional weight.
     * Quick exchanges and casual moments: short, punchy responses.
     * Emotionally charged or intimate scenes: more detail and sensory depth.
