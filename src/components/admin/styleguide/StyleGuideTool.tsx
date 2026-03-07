@@ -2935,6 +2935,55 @@ bg-zinc-900 rounded-xl border-[#4a5f7f]
 
             <div style={{ marginTop: 16 }} />
 
+            <PageSubheading>Two-Option Selection Modal (Shared Pattern)</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="Two-Option Selection Modal" pageTag="CharacterCreation / EnhanceMode / CustomContentType"
+                specs='<strong>Shared reusable pattern</strong> used by 3 modals (CharacterCreationModal, EnhanceModeModal, CustomContentTypeModal). Container: <code>bg-zinc-900 border-white/10 p-0 gap-0 [&>button]:hidden</code>. Header: <code>px-6 pt-5 pb-3</code> with <code>text-white text-lg font-bold tracking-tight</code>. Grid: <code>px-6 pb-6 grid grid-cols-2 gap-3</code>. Option cards: <code>p-5 rounded-2xl border border-white/10 bg-zinc-800/50</code>. Left hover: <code>hover:border-blue-500/50 hover:bg-blue-500/10</code>. Right hover: <code>hover:border-purple-500/50 hover:bg-purple-500/10</code>. Icon: <code>w-10 h-10 rounded-xl</code> with <code>bg-blue-500/20</code> (left) / <code>bg-purple-500/20</code> (right).'
+                previewDark previewStyle={{ flexDirection: 'column', gap: 0, padding: 0 }}
+                preview={
+                  <div className="rounded-lg overflow-hidden" style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.1)', width: '100%' }}>
+                    <div style={{ padding: '12px 16px 8px' }}>
+                      <div className="text-white text-sm font-bold" style={{ letterSpacing: '-0.01em' }}>Selection Title</div>
+                      <div className="text-zinc-400 text-[10px] mt-0.5">Choose an option below.</div>
+                    </div>
+                    <div style={{ padding: '0 16px 16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                      <div className="p-3 rounded-xl border border-white/10 text-center" style={{ background: 'rgba(39,39,42,0.5)' }}>
+                        <div className="w-8 h-8 rounded-lg mx-auto mb-2 flex items-center justify-center" style={{ background: 'rgba(59,130,246,0.2)' }}>
+                          <span className="text-blue-400 text-xs">★</span>
+                        </div>
+                        <div className="text-white text-[10px] font-bold">Option A</div>
+                        <div className="text-zinc-400 text-[8px] mt-0.5">Blue hover accent</div>
+                      </div>
+                      <div className="p-3 rounded-xl border border-white/10 text-center" style={{ background: 'rgba(39,39,42,0.5)' }}>
+                        <div className="w-8 h-8 rounded-lg mx-auto mb-2 flex items-center justify-center" style={{ background: 'rgba(168,85,247,0.2)' }}>
+                          <span className="text-purple-400 text-xs">◆</span>
+                        </div>
+                        <div className="text-white text-[10px] font-bold">Option B</div>
+                        <div className="text-zinc-400 text-[8px] mt-0.5">Purple hover accent</div>
+                      </div>
+                    </div>
+                  </div>
+                }
+                previewPlain
+                code={`/* Container: bg-zinc-900 border-white/10 p-0 gap-0 [&>button]:hidden */
+/* Header: px-6 pt-5 pb-3 */
+/* Title: text-white text-lg font-bold tracking-tight */
+/* Subtitle: text-zinc-400 text-sm mt-1 */
+/* Grid: px-6 pb-6 grid grid-cols-2 gap-3 */
+/* Option card: p-5 rounded-2xl border border-white/10 bg-zinc-800/50 */
+/* Left hover: hover:border-blue-500/50 hover:bg-blue-500/10 */
+/* Right hover: hover:border-purple-500/50 hover:bg-purple-500/10 */
+/* Icon: w-10 h-10 rounded-xl bg-{color}-500/20 */
+/* Used by: CharacterCreationModal, EnhanceModeModal, CustomContentTypeModal */
+/* ⚠ 3 identical layouts implemented separately — should be shared component */`}
+              />
+              <InconsistencyNote items={[
+                { file: 'CharacterCreationModal / EnhanceModeModal / CustomContentTypeModal', note: 'Three modals share identical layout (bg-zinc-900, grid cols-2, blue/purple option cards) but are implemented as separate components with duplicated markup.' },
+              ]} />
+            </div>
+
+            <div style={{ marginTop: 16 }} />
+
             {/* Master Modal Inconsistency Summary */}
             <InconsistencyNote items={[
               { file: 'Global', note: '5 different modal background colors: bg-zinc-900, bg-[#2a2a2f], bg-[#121214], bg-slate-900, and default light (shadcn).' },
