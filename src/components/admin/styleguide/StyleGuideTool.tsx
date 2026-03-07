@@ -414,7 +414,28 @@ export const StyleGuideTool: React.FC = () => {
               <SwatchCard color="rgba(30,41,59,0.5)" name="Auth Card BG" rows={[{ label: 'Value', value: 'rgba(30,41,59,0.5)' }, { label: 'Token', value: 'bg-slate-800/50' }, { label: 'Location', value: 'Login/signup Card component background', isLocation: true }]} />
               <SwatchCard color="rgba(51,65,85,0.5)" name="Auth Input BG" rows={[{ label: 'Value', value: 'rgba(51,65,85,0.5)' }, { label: 'Token', value: 'bg-slate-700/50' }, { label: 'Location', value: 'Email and password input fields on auth page', isLocation: true }]} />
               <SwatchCard color="#7c3aed" name="Purple 600 / Auth Submit" rows={[{ label: 'Hex', value: '#7c3aed' }, { label: 'Token', value: 'bg-purple-600' }, { label: 'Location', value: 'Sign In / Create Account button', isLocation: true }]} />
+              <SwatchCard color="#a78bfa" name="Purple 400 / Auth Toggle Link" rows={[{ label: 'Hex', value: '#a78bfa' }, { label: 'Token', value: 'text-purple-400' }, { label: 'Location', value: '"Don\'t have an account? Sign up" toggle text', isLocation: true }]} />
             </div>
+            <InconsistencyNote items={[
+              { file: 'Auth.tsx', note: 'Uses purple accent (purple-600 button, purple-400 link) while rest of app uses blue #4a5f7f accent.' },
+            ]} />
+
+            <Divider />
+
+            {/* ─── Creator Profile ─── */}
+            <PageSubheading>Creator Profile</PageSubheading>
+            <PageDesc>Colors for the public Creator Profile page.</PageDesc>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
+              <SwatchCard color="#121214" name="Profile Page BG" rows={[{ label: 'Hex', value: '#121214' }, { label: 'Token', value: 'bg-[#121214]' }, { label: 'Location', value: 'Full page background (same as Gallery/Account)', isLocation: true }]} />
+              <SwatchCard color="#1e1e22" name="Profile Card BG" rows={[{ label: 'Hex', value: '#1e1e22' }, { label: 'Token', value: 'bg-[#1e1e22]' }, { label: 'Location', value: 'Profile info card, bio section', isLocation: true }]} />
+              <SwatchCard color="#ffffff" name="Profile Header Bar" rows={[{ label: 'Hex', value: '#ffffff' }, { label: 'Token', value: 'bg-white' }, { label: 'Location', value: 'Top header bar on Creator Profile — light on dark page', isLocation: true }]} />
+              <SwatchCard color="rgba(255,255,255,0.05)" name="Stats Pill BG" rows={[{ label: 'Value', value: 'rgba(255,255,255,0.05)' }, { label: 'Token', value: 'bg-white/5' }, { label: 'Location', value: 'Stat pills (followers, plays, etc.) on Creator Profile', isLocation: true }]} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCard color="rgba(255,255,255,0.1)" name="Unfollow Button BG" rows={[{ label: 'Value', value: 'rgba(255,255,255,0.1)' }, { label: 'Token', value: 'bg-white/10' }, { label: 'Location', value: 'Unfollow button (toggle state)', isLocation: true }]} extraPreviewStyle={{ border: '1px dashed #999' }} />
+            </div>
+            <InconsistencyNote items={[
+              { file: 'CreatorProfile.tsx', note: 'Uses bg-white header bar on bg-[#121214] dark page — jarring light/dark contrast.' },
+              { file: 'CreatorProfile.tsx', note: 'Uses bg-[#1e1e22] surface which doesn\'t match bg-[#2a2a2f] or bg-zinc-900 used elsewhere.' },
+            ]} />
 
             <Divider />
 
@@ -856,6 +877,76 @@ text-sm font-bold`}
 className="w-full bg-purple-600 hover:bg-purple-700 text-white"
 /* Source: Auth.tsx line 158 */`}
             />
+            <EntryCard name="Auth Toggle Link" pageTag="Auth"
+              specs={'Unstyled button link. <strong>text-purple-400 hover:text-purple-300 text-sm</strong>. "Don\'t have an account? Sign up" / "Already have an account? Sign in".'}
+              preview={
+                <button className="text-purple-400 hover:text-purple-300 text-sm" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>{"Don't have an account? Sign up"}</button>
+              }
+              previewDark
+              code={`text-purple-400 hover:text-purple-300 text-sm
+/* Unstyled button — no bg, no border */`}
+            />
+
+            <div style={fullSpan}><PageSubheading>Chronicle UI.tsx — Parallel Button System</PageSubheading></div>
+            <div style={fullSpan}>
+              <InconsistencyNote items={[
+                { file: 'UI.tsx', note: 'Defines a completely separate Button component with 7 variants (primary, secondary, danger, ghost, brand, outlineDark, gradient). Uses rounded-xl px-4 py-2 text-sm font-semibold + active:scale-95 — different from both shadcn Button and Shadow Surface standard.' },
+                { file: 'Global', note: 'Two parallel button systems coexist: shadcn Button (Auth, some modals) vs Chronicle UI.tsx Button (StoryHub, Chat, WorldTab, ModelSettings, ~50% of app).' },
+              ]} />
+            </div>
+
+            <EntryCard name="Chronicle UI.tsx — Primary" pageTag="Chronicle UI System"
+              specs='<strong>bg-slate-900 text-white border-slate-900</strong> · rounded-xl px-4 py-2 text-sm font-semibold · active:scale-95. Used across StoryHub, CharactersTab, WorldTab, ModelSettings.'
+              preview={
+                <button className="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold border bg-slate-900 text-white border-slate-900 shadow-md" style={{ cursor: 'default' }}>Primary</button>
+              }
+              code={`/* Chronicle UI.tsx Button — primary */
+bg-slate-900 text-white border-slate-900 hover:bg-slate-800
+rounded-xl px-4 py-2 text-sm font-semibold active:scale-95 shadow-md`}
+            />
+            <EntryCard name="Chronicle UI.tsx — Brand / Gradient / OutlineDark" pageTag="Chronicle UI System"
+              specs='<strong>Brand:</strong> bg-[#4a5f7f] text-white. <strong>Gradient:</strong> bg-gradient-to-r from-purple-600 via-violet-500 to-blue-500 text-white. <strong>OutlineDark:</strong> bg-zinc-900/80 text-white border-zinc-600.'
+              preview={<>
+                <button className="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold border bg-[#4a5f7f] text-white border-[#4a5f7f] shadow-md" style={{ cursor: 'default' }}>Brand</button>
+                <button className="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold border-0 bg-gradient-to-r from-purple-600 via-violet-500 to-blue-500 text-white shadow-lg" style={{ cursor: 'default' }}>Gradient</button>
+                <button className="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold border bg-zinc-900/80 text-white border-zinc-600" style={{ cursor: 'default' }}>Outline Dark</button>
+              </>}
+              previewDark
+              code={`/* Brand */ bg-[#4a5f7f] text-white border-[#4a5f7f] shadow-md
+/* Gradient */ bg-gradient-to-r from-purple-600 via-violet-500 to-blue-500 border-0 shadow-lg
+/* OutlineDark */ bg-zinc-900/80 text-white border-zinc-600`}
+            />
+
+            <div style={fullSpan}><PageSubheading>Creator Profile</PageSubheading></div>
+
+            <EntryCard name="Follow / Unfollow Toggle" pageTag="Creator Profile"
+              specs='<strong>Follow:</strong> bg-[#4a5f7f] text-white shadow-lg. <strong>Following:</strong> bg-white/10 text-white. Rounded-xl px-6 py-2.5 text-sm font-bold. Brand accent toggle pattern.'
+              preview={<>
+                <button className="inline-flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold bg-[#4a5f7f] text-white shadow-lg" style={{ cursor: 'default' }}>Follow</button>
+                <button className="inline-flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold bg-white/10 text-white" style={{ cursor: 'default' }}>Following ✓</button>
+              </>}
+              previewDark
+              code={`/* Follow */ bg-[#4a5f7f] text-white shadow-lg rounded-xl px-6 py-2.5
+/* Following */ bg-white/10 text-white rounded-xl px-6 py-2.5`}
+            />
+
+            <div style={fullSpan}><PageSubheading>Upload Source Menu</PageSubheading></div>
+
+            <EntryCard name="UploadSourceMenu Dropdown (Light Theme)" pageTag="Modals"
+              specs='Uses Chronicle UI.tsx Button as trigger. Dropdown content: <strong>bg-white border-slate-200 shadow-lg</strong>. Items: standard Radix DropdownMenuItem. Light-theme dropdown appearing over dark-themed modals.'
+              preview={
+                <div className="bg-white border border-slate-200 rounded-md shadow-lg p-1" style={{ width: 180 }}>
+                  <div className="px-2 py-1.5 text-sm text-slate-900 rounded-sm" style={{ cursor: 'default' }}>📤 From Device</div>
+                  <div className="px-2 py-1.5 text-sm text-slate-900 rounded-sm" style={{ cursor: 'default' }}>🖼 From Library</div>
+                </div>
+              }
+              code={`/* Trigger: Chronicle UI.tsx Button */
+/* Dropdown: bg-white border-slate-200 shadow-lg */
+/* ⚠ Light-theme dropdown on dark-themed modals */`}
+            />
+            <InconsistencyNote items={[
+              { file: 'UploadSourceMenu.tsx', note: 'Uses bg-white border-slate-200 dropdown appearing over dark-themed modal content. Should match dark dropdown standard (bg-zinc-800 border-white/10).' },
+            ]} />
 
             <div style={fullSpan}><PageSubheading>Global Sidebar</PageSubheading></div>
 
@@ -1326,6 +1417,48 @@ placeholder:text-white/30 rounded-lg text-sm`}
 placeholder:text-zinc-500 focus:border-[#4a5f7f]`}
               />
             </div>
+
+            <PageSubheading>Chronicle UI.tsx — Parallel Input System</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="Chronicle UI.tsx Input (Light Theme)" pageTag="Chronicle UI System"
+                specs='<strong>bg-slate-50 border-slate-200 rounded-2xl</strong>. Light-theme input used across StoryHub, CharactersTab, WorldTab, ModelSettings, PublicProfileTab. Different from shadcn Input and all dark-themed inputs. Label: <code>text-xs font-bold uppercase</code>.'
+                preview={
+                  <div style={{ width: '100%' }}>
+                    <label className="block text-xs font-bold uppercase mb-1 text-slate-500">Label</label>
+                    <input readOnly className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none" placeholder="Chronicle UI Input..." />
+                  </div>
+                }
+                code={`/* Chronicle UI.tsx Input */
+rounded-2xl border-slate-200 bg-slate-50 px-4 py-3 text-sm
+focus:ring-2 focus:ring-blue-100 focus:border-blue-400
+/* Label: text-xs font-bold uppercase text-slate-500 */
+/* ⚠ Light theme — used across ~50% of the app */`}
+              />
+              <EntryCard name="Chronicle UI.tsx TextArea (Light Theme)" pageTag="Chronicle UI System"
+                specs='Same styling as Chronicle Input. <strong>bg-slate-50 border-slate-200 rounded-2xl</strong>. Supports autoResize prop. Used in CharacterEditForm, WorldTab, ShareStoryModal.'
+                preview={
+                  <textarea readOnly className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none resize-none" rows={2} placeholder="Chronicle UI TextArea..." />
+                }
+                code={`/* Chronicle UI.tsx TextArea */
+rounded-2xl border-slate-200 bg-slate-50 px-4 py-3 text-sm resize-none
+focus:ring-2 focus:ring-blue-100 focus:border-blue-400
+/* ⚠ Light theme — same issue as Chronicle Input */`}
+              />
+              <EntryCard name="CharacterPicker Search (Dark Override)" pageTag="Character Picker"
+                specs='Chronicle UI.tsx Input with <strong>!important overrides</strong> to force dark theme: <code>!bg-zinc-900/50 !border-zinc-700 !text-white</code>. Demonstrates the friction of using light-theme primitives in a dark context.'
+                previewDark
+                preview={
+                  <input readOnly className="w-full rounded-2xl bg-zinc-900/50 border border-zinc-700 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500" placeholder="Search characters..." />
+                }
+                code={`/* Chronicle UI.tsx Input with !important dark overrides */
+className="!bg-zinc-900/50 !border-zinc-700 !text-white !placeholder:text-zinc-400"
+/* ⚠ Demonstrates friction of using light primitives in dark context */`}
+              />
+              <InconsistencyNote items={[
+                { file: 'UI.tsx', note: 'Defines light-theme Input/TextArea (bg-slate-50 border-slate-200) while app is dark-themed. Components using it in dark contexts need !important overrides.' },
+                { file: 'CharacterPicker.tsx', note: 'Uses !important CSS overrides to force dark styling on Chronicle UI Input.' },
+              ]} />
+            </div>
           </Section>
 
           <Divider />
@@ -1552,6 +1685,20 @@ px-2 py-1 rounded-md uppercase tracking-widest shadow-lg`}
                 code={`px-2.5 py-1 bg-blue-500/20 text-blue-300
 border border-blue-500/30 rounded-full text-xs font-medium
 /* ≠ Content theme chips which use category-specific colors */`}
+              />
+
+              <EntryCard name="Side Character Control Badge" pageTag="Chat Interface"
+                specs='Micro badge showing character control. <strong>User-controlled:</strong> bg-blue-500 text-white text-[8px]. <strong>AI-controlled:</strong> bg-slate-500 text-white text-[8px]. <strong>rounded-md px-1.5 py-0.5</strong>. Smallest text in the app.'
+                previewDark
+                preview={
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <span className="px-1.5 py-0.5 rounded-md bg-blue-500 text-white font-bold" style={{ fontSize: 8 }}>USER</span>
+                    <span className="px-1.5 py-0.5 rounded-md bg-slate-500 text-white font-bold" style={{ fontSize: 8 }}>AI</span>
+                  </div>
+                }
+                code={`/* User: bg-blue-500 text-white text-[8px] font-bold */
+/* AI: bg-slate-500 text-white text-[8px] font-bold */
+/* rounded-md px-1.5 py-0.5 */`}
               />
             </div>
           </Section>
@@ -2014,6 +2161,126 @@ hover:border-[#6b82a8] transition-colors
 /* Text: text-blue-300 text-xs */
 /* Unique info callout pattern */`}
               />
+            </div>
+
+            <PageSubheading>Side Character Card</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="Side Character Card (Dual Mode)" pageTag="Chat Interface"
+                specs='Frosted glass card with <strong>isDarkBg</strong> prop. Dark BG → bg-white/30 text-slate-800. Light BG → bg-black/30 text-white. <strong>Avatar: w-20 h-20 rounded-full</strong> — only circular avatar in the app. Updating state: blue vignette with animate-vignette-pulse.'
+                previewDark
+                preview={
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    <div className="rounded-2xl p-3 backdrop-blur-sm" style={{ background: 'rgba(255,255,255,0.3)', width: 120 }}>
+                      <div className="w-12 h-12 rounded-full bg-slate-600 mx-auto mb-2" />
+                      <div className="text-xs font-bold text-slate-800 text-center">Dark BG</div>
+                    </div>
+                    <div className="rounded-2xl p-3 backdrop-blur-sm" style={{ background: 'rgba(0,0,0,0.3)', width: 120 }}>
+                      <div className="w-12 h-12 rounded-full bg-zinc-700 mx-auto mb-2" />
+                      <div className="text-xs font-bold text-white text-center">Light BG</div>
+                    </div>
+                  </div>
+                }
+                previewPlain
+                code={`/* isDarkBg=true → bg-white/30 text-slate-800 */
+/* isDarkBg=false → bg-black/30 text-white */
+/* Avatar: w-20 h-20 rounded-full (⚠ only circular avatar) */
+/* Updating: blue vignette overlay + animate-vignette-pulse */`}
+              />
+              <InconsistencyNote items={[
+                { file: 'SideCharacterCard.tsx', note: 'Uses rounded-full avatar (w-20 h-20) — every other avatar in the app uses rounded-2xl.' },
+              ]} />
+            </div>
+
+            <PageSubheading>Creator Profile</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="Creator Profile Card" pageTag="Creator Profile"
+                specs='<strong>bg-[#1e1e22] rounded-2xl border-white/10 p-6</strong>. Contains avatar, display name, bio, stats pills (bg-white/5 rounded-xl). Follow button: bg-[#4a5f7f]. Yet another dark surface color (#1e1e22 vs #2a2a2f vs zinc-900).'
+                previewDark
+                preview={
+                  <div className="bg-[#1e1e22] rounded-2xl border border-white/10 p-4" style={{ width: '100%' }}>
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                      <div className="w-16 h-16 rounded-2xl bg-zinc-700" />
+                      <div>
+                        <div className="text-white font-bold text-sm">Creator Name</div>
+                        <div className="text-white/60 text-xs">@username</div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                      <div className="bg-white/5 rounded-xl px-3 py-1.5 text-xs text-white/70">👁 1.2k</div>
+                      <div className="bg-white/5 rounded-xl px-3 py-1.5 text-xs text-white/70">❤ 340</div>
+                    </div>
+                  </div>
+                }
+                previewPlain
+                code={`bg-[#1e1e22] rounded-2xl border border-white/10 p-6
+/* Stats: bg-white/5 rounded-xl px-3 py-2 */
+/* ⚠ #1e1e22 — yet another dark surface, not matching #2a2a2f or zinc-900 */`}
+              />
+            </div>
+
+            <PageSubheading>Character Picker (Full-Screen Overlay)</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="CharacterPicker Overlay" pageTag="Chat Interface"
+                specs='Third overlay implementation: <strong>fixed inset-0 bg-slate-900/50 backdrop-blur-sm</strong>. Inner container: <strong>bg-zinc-900 rounded-3xl border-white/10</strong>. Character cards: <code>bg-black/30 rounded-2xl border-transparent hover:bg-black/50</code>. Uses rounded-3xl — unique container radius.'
+                previewDark
+                preview={
+                  <div style={{ position: 'relative', width: '100%', height: 100, borderRadius: 8, overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.5)', backdropFilter: 'blur(4px)' }} />
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#18181b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 24, padding: '12px 24px', color: '#fff', fontSize: 11, fontWeight: 600 }}>
+                      CharacterPicker — rounded-3xl
+                    </div>
+                  </div>
+                }
+                code={`/* Backdrop: fixed inset-0 bg-slate-900/50 backdrop-blur-sm */
+/* Container: bg-zinc-900 rounded-3xl border-white/10 */
+/* Character cards: bg-black/30 rounded-2xl hover:bg-black/50 */
+/* ⚠ Third overlay implementation (not Dialog, not AlertDialog) */
+/* ⚠ rounded-3xl — unique, standard containers use rounded-2xl */`}
+              />
+              <InconsistencyNote items={[
+                { file: 'CharacterPicker.tsx', note: 'Uses rounded-3xl container — unique in the app. Standard is rounded-2xl. Also uses custom overlay (bg-slate-900/50) instead of Radix Dialog.' },
+              ]} />
+            </div>
+
+            <PageSubheading>ScrollableSection Fade Indicators</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="ScrollableSection (White Fade)" pageTag="Global"
+                specs='Fade indicators for overflow scrolling. <strong>Top:</strong> <code>bg-gradient-to-b from-white via-white/80 to-transparent</code>. <strong>Bottom:</strong> <code>bg-gradient-to-t from-white via-white/80 to-transparent</code>. Height: h-8. Uses white gradients that assume light-theme containers.'
+                preview={
+                  <div style={{ position: 'relative', height: 60, width: '100%', background: '#2a2a2f', borderRadius: 8, overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 20, background: 'linear-gradient(to bottom, white, rgba(255,255,255,0.8), transparent)', zIndex: 1 }} />
+                    <div style={{ padding: '24px 12px', fontSize: 10, color: '#94a3b8' }}>Content underneath</div>
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 20, background: 'linear-gradient(to top, white, rgba(255,255,255,0.8), transparent)', zIndex: 1 }} />
+                  </div>
+                }
+                previewPlain
+                code={`/* Top: from-white via-white/80 to-transparent h-8 */
+/* Bottom: from-white via-white/80 to-transparent h-8 */
+/* ⚠ White gradients on dark backgrounds — visually jarring */`}
+              />
+              <InconsistencyNote items={[
+                { file: 'ScrollableSection.tsx', note: 'Uses from-white fade gradients that assume light-theme containers. Appears broken on dark backgrounds.' },
+              ]} />
+            </div>
+
+            <PageSubheading>Chronicle UI.tsx Card (Light Theme)</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="Chronicle UI.tsx Card" pageTag="Chronicle UI System"
+                specs='<strong>rounded-3xl border-slate-200 bg-white p-4 shadow-sm</strong>. Light-theme card used in BackgroundPickerModal, some settings views. Part of the parallel Chronicle UI component system.'
+                preview={
+                  <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm" style={{ width: '100%' }}>
+                    <div className="text-sm font-bold text-slate-900">Chronicle Card</div>
+                    <div className="text-xs text-slate-500 mt-1">Light-theme card from UI.tsx</div>
+                  </div>
+                }
+                previewPlain
+                code={`/* Chronicle UI.tsx Card */
+rounded-3xl border-slate-200 bg-white p-4 shadow-sm
+/* ⚠ Light theme — parallel to dark app panels (bg-[#2a2a2f]) */`}
+              />
+              <InconsistencyNote items={[
+                { file: 'UI.tsx', note: 'Defines light-theme Card (bg-white rounded-3xl border-slate-200). Conflicts with app-wide dark panel standard (bg-[#2a2a2f] border-white/10).' },
+              ]} />
             </div>
 
             <PageSubheading>Arc System</PageSubheading>
@@ -2598,6 +2865,63 @@ text-white/40    — Disabled`}
 /* Container: p-1.5 rounded-md */`}
             />
           </Section>
+
+          <Divider />
+
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {/* ═══ MASTER INCONSISTENCY SUMMARY ═══ */}
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          <div style={{ marginBottom: 64 }}>
+            <h2 style={{ fontSize: 'clamp(28px,4vw,38px)', fontWeight: 900, letterSpacing: '-0.04em', color: '#111827', marginBottom: 8 }}>
+              Master Inconsistency Report
+            </h2>
+            <p style={{ fontSize: 13, color: sg.muted, maxWidth: 900, marginBottom: 22 }}>
+              Complete catalog of design system inconsistencies across all 5 documentation passes.
+            </p>
+
+            <PageSubheading>Dual Component Systems</PageSubheading>
+            <InconsistencyNote items={[
+              { file: 'UI.tsx vs ui/*', note: 'Two parallel component systems: shadcn/Radix (Auth, some modals) vs Chronicle UI.tsx (StoryHub, Chat, WorldTab, ~50% of app). Different styling, different APIs.' },
+              { file: 'Buttons', note: 'shadcn Button (rounded-md, CVA variants) vs Chronicle Button (rounded-xl, 7 custom variants, active:scale-95).' },
+              { file: 'Cards', note: 'shadcn Card (rounded-lg bg-card) vs Chronicle Card (rounded-3xl bg-white border-slate-200).' },
+              { file: 'Inputs', note: 'shadcn Input (rounded-md bg-background) vs Chronicle Input (rounded-2xl bg-slate-50 border-slate-200).' },
+            ]} />
+
+            <PageSubheading>Theme Inconsistencies</PageSubheading>
+            <InconsistencyNote items={[
+              { file: 'Auth.tsx', note: 'Purple accent (purple-600 buttons, purple-400 links) while rest of app uses blue #4a5f7f.' },
+              { file: 'ChangeNameModal, Image Gen modals', note: 'Light-theme modals (default DialogContent) in a dark-themed app.' },
+              { file: 'UploadSourceMenu.tsx', note: 'Light-theme dropdown (bg-white border-slate-200) over dark modal content.' },
+              { file: 'ScrollableSection.tsx', note: 'White fade gradients (from-white) that assume light-theme containers.' },
+              { file: 'CreatorProfile.tsx', note: 'bg-white header bar on bg-[#121214] dark page — jarring contrast.' },
+            ]} />
+
+            <PageSubheading>Surface Color Proliferation</PageSubheading>
+            <InconsistencyNote items={[
+              { file: 'Modals', note: '5 different modal backgrounds: bg-zinc-900, bg-[#2a2a2f], bg-[#121214], bg-slate-900, default light (shadcn).' },
+              { file: 'Dark surfaces', note: '4+ dark surface colors: #2a2a2f, #1e1e22, #18181b, zinc-900, slate-900 — no unified token.' },
+              { file: 'Borders', note: '3 modal border styles: border-white/10 (standard), border-[#4a5f7f] (accent), border-slate-700 (Memories).' },
+            ]} />
+
+            <PageSubheading>Overlay & Dialog Systems</PageSubheading>
+            <InconsistencyNote items={[
+              { file: 'Global', note: '3 different overlay systems: Radix Dialog (standard), AlertDialog (delete confirms), custom fixed inset-0 (SceneTagEditor, CharacterPicker).' },
+              { file: 'Backdrop opacity', note: 'bg-black/80 (standard), bg-black/85 (SceneTagEditor), bg-black/90 (ReviewModal), bg-slate-900/50 (CharacterPicker).' },
+            ]} />
+
+            <PageSubheading>Border Radius Variance</PageSubheading>
+            <InconsistencyNote items={[
+              { file: 'Containers', note: 'rounded-lg (modals), rounded-xl (buttons/cards), rounded-2xl (panels/account), rounded-3xl (CharacterPicker), rounded-[2rem] (story cards), rounded-[32px] (StoryDetail).' },
+              { file: 'Avatars', note: 'rounded-2xl (standard) vs rounded-full (SideCharacterCard only).' },
+              { file: 'Arc system', note: 'rounded-[10px] delete button vs standard rounded-xl (12px).' },
+            ]} />
+
+            <PageSubheading>Button Sizing Variance</PageSubheading>
+            <InconsistencyNote items={[
+              { file: 'Height', note: 'h-8 (card compact), h-10 (standard), h-11 (Review modal), h-12 (StoryDetail actions).' },
+              { file: 'Typography', note: 'text-[10px] uppercase (Shadow Surface standard) vs text-sm (Chronicle UI.tsx) vs text-xs (card actions).' },
+            ]} />
+          </div>
 
         </div>
       </div>
