@@ -1038,6 +1038,42 @@ hover:text-rose-500 rounded-full transition-all`}
             <InconsistencyNote items={[
               { file: 'ShareStoryModal.tsx', note: 'Uses !important CSS overrides on buttons instead of proper variant classes.' },
             ]} />
+
+            <div style={fullSpan}><PageSubheading>Arc System</PageSubheading></div>
+
+            <EntryCard name="Arc Phase Delete Button" pageTag="Arc System"
+              specs='<strong>w-[30px] h-[30px] rounded-[10px]</strong> · border border-red-400/50 bg-transparent. Hover: bg-red-500/20. Non-standard sizing — standard buttons use h-10 rounded-xl (12px). This uses 10px radius and 30px dimensions.'
+              previewDark
+              preview={
+                <button className="w-[30px] h-[30px] rounded-[10px] border border-red-400/50 bg-transparent text-red-400 flex items-center justify-center text-xs hover:bg-red-500/20 transition-colors" style={{ cursor: 'default' }}>✕</button>
+              }
+              code={`w-[30px] h-[30px] rounded-[10px] border border-red-400/50
+bg-transparent text-red-400 hover:bg-red-500/20
+/* ⚠ Non-standard: rounded-[10px] vs standard rounded-xl (12px) */`}
+            />
+            <InconsistencyNote items={[
+              { file: 'ArcPhaseCard.tsx', note: 'Phase delete button uses rounded-[10px] (10px) and w-[30px] h-[30px] instead of standard rounded-xl (12px) and h-10.' },
+            ]} />
+
+            <div style={fullSpan}><PageSubheading>Tag Chips</PageSubheading></div>
+
+            <EntryCard name="Tag Chip Remove Button" pageTag="Scene Tag Editor / Tag Input"
+              specs='Blue tag chip with inline X remove. <strong>px-2.5 py-1 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full text-xs</strong>. X icon: opacity-50, hover opacity-100. Hover state transitions entire chip to red variant.'
+              previewDark
+              preview={
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  <button className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full text-xs font-medium" style={{ cursor: 'default' }}>
+                    <span>fantasy</span><span style={{ opacity: 0.5 }}>✕</span>
+                  </button>
+                  <button className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-500/20 text-red-300 border border-red-500/30 rounded-full text-xs font-medium" style={{ cursor: 'default' }}>
+                    <span>romance</span><span>✕</span>
+                  </button>
+                </div>
+              }
+              code={`/* Default: bg-blue-500/20 text-blue-300 border-blue-500/30 rounded-full */
+/* Hover: bg-red-500/20 text-red-300 border-red-500/30 */
+/* X icon: opacity-50 → hover opacity-100 */`}
+            />
           </Section>
 
           <Divider />
@@ -1228,6 +1264,68 @@ placeholder:text-white/30 rounded-lg text-sm`}
                 { file: 'MemoriesModal.tsx', note: 'Uses slate-* palette throughout while every other dark component uses zinc-*.' },
               ]} />
             </div>
+
+            <PageSubheading>GuidanceStrengthSlider</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="GuidanceStrengthSlider (Custom 3-Point)" pageTag="Story Builder"
+                specs='Custom 3-point slider (Rigid / Normal / Flexible). <strong>Track:</strong> 12px height, bg <code>rgba(21,25,34,0.95)</code>. <strong>Fill:</strong> <code>linear-gradient(90deg, #2b4e8d, #4b79d8 60%, #7dadf5)</code>. <strong>Knob:</strong> w-6 h-6 rounded-full bg-white border-[3px] border-blue-500. Labels: <code>text-[10px] font-black uppercase tracking-widest</code>. Active label: text-blue-400, inactive: text-zinc-500.'
+                previewDark previewStyle={{ flexDirection: 'column', gap: 8 }}
+                preview={
+                  <div style={{ width: '100%' }}>
+                    <div style={{ position: 'relative', height: 12, borderRadius: 999, background: 'rgba(21,25,34,0.95)' }}>
+                      <div style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: '50%', borderRadius: 999, background: 'linear-gradient(90deg, #2b4e8d, #4b79d8 60%, #7dadf5)' }} />
+                      <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 24, height: 24, borderRadius: '50%', background: '#fff', border: '3px solid #3b82f6', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }} />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Rigid</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">Normal</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Flexible</span>
+                    </div>
+                  </div>
+                }
+                code={`/* Track: h-[12px] rounded-full bg-[rgba(21,25,34,0.95)] */
+/* Fill: linear-gradient(90deg, #2b4e8d, #4b79d8 60%, #7dadf5) */
+/* Knob: w-6 h-6 rounded-full bg-white border-[3px] border-blue-500 */
+/* Labels: text-[10px] font-black uppercase tracking-widest */
+/* Active: text-blue-400 | Inactive: text-zinc-500 */
+/* Description box: bg-zinc-900 rounded-xl p-4 border-white/5 */`}
+              />
+            </div>
+
+            <PageSubheading>TagInput Component</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="TagInput (Enter-to-Add)" pageTag="Story Builder / Scene Tag Editor"
+                specs='Input field with enter-to-add pattern. <strong>Input:</strong> <code>bg-zinc-800 border-zinc-700 rounded-lg text-sm</code>. Tags appear as blue chips above (<code>bg-blue-500/20 text-blue-300 rounded-full</code>). Counter: <code>text-[10px] text-zinc-500</code>. Max 10 tags.'
+                previewDark previewStyle={{ flexDirection: 'column', gap: 8 }}
+                preview={
+                  <div style={{ width: '100%' }}>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+                      <span className="px-2.5 py-1 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full text-xs font-medium inline-flex items-center gap-1">tag1 <span style={{ opacity: 0.5 }}>✕</span></span>
+                      <span className="px-2.5 py-1 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full text-xs font-medium inline-flex items-center gap-1">tag2 <span style={{ opacity: 0.5 }}>✕</span></span>
+                    </div>
+                    <input readOnly className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm placeholder:text-zinc-500 outline-none" placeholder="Add tag and press Enter..." />
+                    <p className="text-[10px] text-zinc-500 mt-1.5">2/10 tags — Press Enter to add</p>
+                  </div>
+                }
+                code={`/* Input: bg-zinc-800 border-zinc-700 rounded-lg text-sm */
+/* Tags: bg-blue-500/20 text-blue-300 border-blue-500/30 rounded-full */
+/* Counter: text-[10px] text-zinc-500 */
+/* Max: 10 tags */`}
+              />
+            </div>
+
+            <PageSubheading>Scene Tag Editor Input</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="Scene Tag Editor Input (Dark)" pageTag="Scene Tag Editor"
+                specs='<strong>bg-zinc-800 border-zinc-700 rounded-lg</strong>. Focus: <code>border-[#4a5f7f]</code>. Text: white, placeholder text-zinc-500. Used in the custom overlay SceneTagEditorModal.'
+                previewDark
+                preview={
+                  <input readOnly className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm placeholder:text-zinc-500 outline-none" placeholder="Untitled scene" />
+                }
+                code={`bg-zinc-800 border-zinc-700 rounded-lg text-sm text-white
+placeholder:text-zinc-500 focus:border-[#4a5f7f]`}
+              />
+            </div>
           </Section>
 
           <Divider />
@@ -1405,6 +1503,55 @@ px-2 py-1 rounded-md uppercase tracking-widest shadow-lg`}
 /* Empty: text-white/20 */
 /* Interactive: cursor-pointer hover:scale-110 transition-transform */
 /* Uses Lucide Flame icon, maxLevel default: 5 */`}
+              />
+
+              <EntryCard name="CircularProgress (SVG Ring)" pageTag="Story Builder / Arc System"
+                specs='SVG circle progress ring. <strong>Light variant:</strong> bg stroke #e2e8f0, progress stroke varies by state. <strong>Dark variant:</strong> bg stroke #334155. <strong>States:</strong> 0% → slate (empty), 1-99% → #3b82f6 (blue), 100% → #22c55e (green). Center text: <code>font-bold text-[10px]</code> (or text-lg for size≥80).'
+                previewDark
+                preview={
+                  <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                    <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <svg width={40} height={40} style={{ transform: 'rotate(-90deg)' }}>
+                        <circle cx={20} cy={20} r={17} stroke="#334155" strokeWidth={3} fill="none" />
+                        <circle cx={20} cy={20} r={17} stroke="#3b82f6" strokeWidth={3} fill="none" strokeLinecap="round" strokeDasharray={106.8} strokeDashoffset={53.4} />
+                      </svg>
+                      <span style={{ position: 'absolute', fontSize: 10, fontWeight: 700, color: '#60a5fa' }}>50%</span>
+                    </div>
+                    <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <svg width={40} height={40} style={{ transform: 'rotate(-90deg)' }}>
+                        <circle cx={20} cy={20} r={17} stroke="#334155" strokeWidth={3} fill="none" />
+                        <circle cx={20} cy={20} r={17} stroke="#22c55e" strokeWidth={3} fill="none" strokeLinecap="round" strokeDasharray={106.8} strokeDashoffset={0} />
+                      </svg>
+                      <span style={{ position: 'absolute', fontSize: 10, fontWeight: 700, color: '#4ade80' }}>100%</span>
+                    </div>
+                    <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <svg width={40} height={40} style={{ transform: 'rotate(-90deg)' }}>
+                        <circle cx={20} cy={20} r={17} stroke="#334155" strokeWidth={3} fill="none" />
+                      </svg>
+                      <span style={{ position: 'absolute', fontSize: 10, fontWeight: 700, color: '#94a3b8' }}>0%</span>
+                    </div>
+                  </div>
+                }
+                code={`/* SVG circle: radius = (size - strokeWidth) / 2 */
+/* Background stroke: #e2e8f0 (light) or #334155 (dark) */
+/* Progress: #3b82f6 (in-progress), #22c55e (complete) */
+/* Empty: #475569 (dark) or #94a3b8 (light) */
+/* Center: font-bold text-[10px] (size<80) or text-lg */`}
+              />
+
+              <EntryCard name="Tag Chips (Blue Rounded-Full)" pageTag="Scene Tag Editor / Tag Input"
+                specs='<strong>px-2.5 py-1 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full text-xs font-medium</strong>. Used in TagInput and SceneTagEditorModal for scene/image tags. Different from content theme chips which use category-specific colors.'
+                previewDark
+                preview={
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    <span className="px-2.5 py-1 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full text-xs font-medium">landscape</span>
+                    <span className="px-2.5 py-1 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full text-xs font-medium">battle</span>
+                    <span className="px-2.5 py-1 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full text-xs font-medium">night</span>
+                  </div>
+                }
+                code={`px-2.5 py-1 bg-blue-500/20 text-blue-300
+border border-blue-500/30 rounded-full text-xs font-medium
+/* ≠ Content theme chips which use category-specific colors */`}
               />
             </div>
           </Section>
@@ -1868,6 +2015,78 @@ hover:border-[#6b82a8] transition-colors
 /* Unique info callout pattern */`}
               />
             </div>
+
+            <PageSubheading>Arc System</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="Arc Phase Card Container" pageTag="Arc System"
+                specs='Phase container within the Story Arc. Contains progress ring (CircularProgress), phase title, branch lanes (success/fail), and sparkle enhance buttons. Uses <code>rounded-2xl</code> container where linked phases appear as inline sections separated by <code>border-t</code>.'
+                previewDark
+                preview={
+                  <div className="bg-[#2a2a2f] rounded-2xl border border-white/10 p-4" style={{ width: '100%' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                      <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <svg width={32} height={32} style={{ transform: 'rotate(-90deg)' }}>
+                          <circle cx={16} cy={16} r={13} stroke="#334155" strokeWidth={3} fill="none" />
+                          <circle cx={16} cy={16} r={13} stroke="#3b82f6" strokeWidth={3} fill="none" strokeDasharray={81.7} strokeDashoffset={40.8} />
+                        </svg>
+                        <span style={{ position: 'absolute', fontSize: 8, fontWeight: 700, color: '#60a5fa' }}>50%</span>
+                      </div>
+                      <span className="text-white font-bold text-sm">Phase 1: Discovery</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <div className="flex-1 rounded-lg p-2" style={{ background: 'rgba(34,197,127,0.28)' }}>
+                        <span className="text-[9px] font-bold text-emerald-300 uppercase">Succeed</span>
+                      </div>
+                      <div className="flex-1 rounded-lg p-2" style={{ background: 'rgba(240,74,95,0.28)' }}>
+                        <span className="text-[9px] font-bold text-red-300 uppercase">Fail</span>
+                      </div>
+                    </div>
+                  </div>
+                }
+                previewPlain
+                code={`/* Container: rounded-2xl border-t (inline sections) */
+/* Progress: CircularProgress component */
+/* Branch lanes: success rgba(34,197,127,0.28), fail rgba(240,74,95,0.28) */
+/* Phase title: text-white font-bold text-sm */`}
+              />
+
+              <EntryCard name="Arc Branch Lane (Success / Fail)" pageTag="Arc System"
+                specs='Color-coded branch lanes. <strong>Success:</strong> strip bg <code>rgba(34,197,127,0.28)</code>, step cards <code>rgba(51,75,66,0.78)</code>. <strong>Fail:</strong> strip bg <code>rgba(240,74,95,0.28)</code>, step cards <code>rgba(78,58,68,0.78)</code>. Step card borders are status-based: Red (Failed), Blue (Succeeded), Orange (Deviated). Uses inline <code>rgba()</code> instead of Tailwind tokens.'
+                previewDark
+                preview={
+                  <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+                    <div className="flex-1 rounded-lg p-3" style={{ background: 'rgba(34,197,127,0.28)' }}>
+                      <div className="text-[9px] font-bold text-emerald-300 uppercase tracking-wider mb-2">Succeed</div>
+                      <div className="rounded-lg p-2 border-l-2 border-blue-500 mb-1.5" style={{ background: 'rgba(51,75,66,0.78)' }}>
+                        <span className="text-[9px] text-white">Step 1 — Resolved</span>
+                      </div>
+                      <div className="rounded-lg p-2 border-l-2 border-orange-400" style={{ background: 'rgba(51,75,66,0.78)' }}>
+                        <span className="text-[9px] text-white">Step 2 — Deviated</span>
+                      </div>
+                    </div>
+                    <div className="flex-1 rounded-lg p-3" style={{ background: 'rgba(240,74,95,0.28)' }}>
+                      <div className="text-[9px] font-bold text-red-300 uppercase tracking-wider mb-2">Fail</div>
+                      <div className="rounded-lg p-2 border-l-2 border-red-500 mb-1.5" style={{ background: 'rgba(78,58,68,0.78)' }}>
+                        <span className="text-[9px] text-white">Step 1 — Failed</span>
+                      </div>
+                      <div className="rounded-lg p-2 border-l-2 border-zinc-600 opacity-50" style={{ background: 'rgba(78,58,68,0.78)' }}>
+                        <span className="text-[9px] text-zinc-400">🔒 DYNAMIC RECOVERY</span>
+                      </div>
+                    </div>
+                  </div>
+                }
+                previewPlain
+                code={`/* Success lane: rgba(34,197,127,0.28) */
+/* Success step: rgba(51,75,66,0.78) */
+/* Fail lane: rgba(240,74,95,0.28) */
+/* Fail step: rgba(78,58,68,0.78) */
+/* Step borders: Red (failed), Blue (succeeded), Orange (deviated) */
+/* ⚠ Uses inline rgba() instead of Tailwind tokens */`}
+              />
+              <InconsistencyNote items={[
+                { file: 'ArcBranchLane.tsx', note: 'Uses inline rgba() colors instead of Tailwind tokens. Unique to the Arc system — no other component does this.' },
+              ]} />
+            </div>
           </Section>
 
           <Divider />
@@ -2134,11 +2353,121 @@ shadow-[0_10px_30px_rgba(0,0,0,0.35)]
 
             <div style={{ marginTop: 16 }} />
 
+            <EntryCard name="ChangeNameModal (Light Theme)" pageTag="Character Builder"
+              specs='<strong>Uses default DialogContent</strong> — no dark overrides. Buttons: <code>bg-slate-100 text-slate-700</code> (Cancel), <code>bg-slate-900 text-white</code> (Save). Current name display: <code>bg-slate-100 text-slate-600</code>. Same light-theme issue as Image Generation modals.'
+              preview={
+                <div style={{ position: 'relative', width: '100%', height: 100, borderRadius: 8, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
+                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 8, padding: '12px 24px', color: '#111827', fontSize: 11, fontWeight: 600, boxShadow: '0 10px 40px rgba(0,0,0,0.3)' }}>
+                    Change Name — light theme
+                  </div>
+                </div>
+              }
+              previewDark
+              code={`/* Default DialogContent (light theme, no overrides) */
+/* Cancel: bg-slate-100 hover:bg-slate-200 text-slate-700 */
+/* Save: bg-slate-900 hover:bg-slate-800 text-white */
+/* ⚠ Light theme — same issue as Image Gen modals */`}
+            />
+            <InconsistencyNote items={[
+              { file: 'ChangeNameModal.tsx', note: 'Uses default light-theme DialogContent while every other modal uses dark overrides. Uses slate-100/slate-700 buttons.' },
+            ]} />
+
+            <div style={{ marginTop: 16 }} />
+
+            <EntryCard name="AIPromptModal (Colored Header)" pageTag="Chat Interface"
+              specs='<strong>bg-[hsl(var(--ui-surface))]</strong> with unique colored header bar: <code>bg-[#4a5f7f] -mx-6 -mt-6 px-6 py-4 rounded-t-lg</code>. Only modal with a full-width colored header banner that uses negative margins to bleed edge-to-edge.'
+              previewDark
+              preview={
+                <div style={{ position: 'relative', width: '100%', height: 110, borderRadius: 8, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
+                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#2a2a2f', borderRadius: 8, overflow: 'hidden', width: 220, boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }}>
+                    <div style={{ background: '#4a5f7f', padding: '8px 16px' }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.5px' }}>AI Prompt</span>
+                    </div>
+                    <div style={{ padding: '8px 16px', fontSize: 10, color: '#94a3b8' }}>Modal content...</div>
+                  </div>
+                </div>
+              }
+              code={`bg-[hsl(var(--ui-surface))]
+/* Header: bg-[#4a5f7f] -mx-6 -mt-6 px-6 py-4 rounded-t-lg */
+/* ⚠ Only modal with a colored header bar using negative margins */`}
+            />
+            <InconsistencyNote items={[
+              { file: 'AIPromptModal.tsx', note: 'Only modal with a colored header bar pattern (bg-[#4a5f7f] -mx-6 -mt-6). Not used anywhere else.' },
+            ]} />
+
+            <div style={{ marginTop: 16 }} />
+
+            <EntryCard name="DeleteConfirmDialog (AlertDialog)" pageTag="Global"
+              specs='Uses <strong>AlertDialog</strong> instead of Dialog. <strong>bg-[hsl(240_6%_10%)] rounded-2xl border-white/10</strong>. Cancel: <code>bg-[hsl(240_6%_18%)]</code>. Delete: <code>bg-[hsl(var(--destructive))]</code>. Standardized across all destructive actions. Shadow: <code>0 10px 30px rgba(0,0,0,0.5)</code>.'
+              previewDark
+              preview={
+                <div style={{ position: 'relative', width: '100%', height: 110, borderRadius: 8, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
+                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: 'hsl(240, 6%, 10%)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: '12px 24px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#e8eef8', marginBottom: 4 }}>Delete this? <span style={{ color: '#ef4444' }}>Delete</span></div>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                      <button style={{ padding: '4px 12px', borderRadius: 12, background: 'hsl(240, 6%, 18%)', border: '1px solid rgba(255,255,255,0.1)', color: '#e8eef8', fontSize: 9, fontWeight: 700, textTransform: 'uppercase', cursor: 'default' }}>Cancel</button>
+                      <button style={{ padding: '4px 12px', borderRadius: 12, background: '#ef4444', border: 'none', color: '#fff', fontSize: 9, fontWeight: 700, textTransform: 'uppercase', cursor: 'default' }}>Delete</button>
+                    </div>
+                  </div>
+                </div>
+              }
+              code={`/* AlertDialog (not Dialog) */
+bg-[hsl(240_6%_10%)] rounded-2xl border-white/10
+shadow-[0_10px_30px_rgba(0,0,0,0.5)]
+/* Cancel: bg-[hsl(240_6%_18%)] border-white/10 */
+/* Delete: bg-[hsl(var(--destructive))] */
+/* Buttons: h-10 px-6 text-[10px] font-bold uppercase tracking-wider */`}
+            />
+
+            <div style={{ marginTop: 16 }} />
+
+            <EntryCard name="SceneTagEditorModal (Custom Overlay)" pageTag="Image Library"
+              specs='Uses <strong>custom <code>fixed inset-0</code> overlay</strong> instead of Radix Dialog. Backdrop: <code>bg-black/85</code>. Container: <code>bg-zinc-900 rounded-xl border-[#4a5f7f]</code>. Contains image preview, title input, and tag editor. Uses accent border <code>border-[#4a5f7f]</code> instead of standard <code>border-white/10</code>.'
+              previewDark
+              preview={
+                <div style={{ position: 'relative', width: '100%', height: 100, borderRadius: 8, overflow: 'hidden', background: 'rgba(0,0,0,0.85)' }}>
+                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#18181b', border: '1px solid #4a5f7f', borderRadius: 12, padding: '12px 24px', color: '#fff', fontSize: 11, fontWeight: 600 }}>
+                    Scene Tags — custom overlay
+                  </div>
+                </div>
+              }
+              code={`/* Custom overlay: fixed inset-0 bg-black/85 (NOT Radix Dialog) */
+bg-zinc-900 rounded-xl border-[#4a5f7f]
+/* ⚠ Uses fixed inset-0 instead of Dialog component */
+/* ⚠ Uses border-[#4a5f7f] instead of border-white/10 */`}
+            />
+            <InconsistencyNote items={[
+              { file: 'SceneTagEditorModal.tsx', note: 'Uses custom fixed inset-0 overlay instead of Radix Dialog component. Also uses border-[#4a5f7f] instead of standard border-white/10.' },
+            ]} />
+
+            <div style={{ marginTop: 16 }} />
+
+            <EntryCard name="FolderEditModal (Accent Border)" pageTag="Image Library"
+              specs='<strong>bg-zinc-900 border-[#4a5f7f]</strong>. Uses accent border <code>border-[#4a5f7f]</code> matching the Story Builder panel system instead of standard modal <code>border-white/10</code>. Close button hidden via <code>[&>button]:hidden</code>.'
+              previewDark
+              preview={
+                <div style={{ position: 'relative', width: '100%', height: 100, borderRadius: 8, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
+                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#18181b', border: '1px solid #4a5f7f', borderRadius: 8, padding: '12px 24px', color: '#fff', fontSize: 11, fontWeight: 600 }}>
+                    Folder Edit — border-[#4a5f7f]
+                  </div>
+                </div>
+              }
+              code={`bg-zinc-900 border-[#4a5f7f] [&>button]:hidden
+/* ⚠ Uses border-[#4a5f7f] instead of standard border-white/10 */`}
+            />
+            <InconsistencyNote items={[
+              { file: 'FolderEditModal.tsx', note: 'Uses accent border-[#4a5f7f] instead of standard modal border-white/10.' },
+            ]} />
+
+            <div style={{ marginTop: 16 }} />
+
             {/* Master Modal Inconsistency Summary */}
             <InconsistencyNote items={[
               { file: 'Global', note: '5 different modal background colors: bg-zinc-900, bg-[#2a2a2f], bg-[#121214], bg-slate-900, and default light (shadcn).' },
-              { file: 'Global', note: '3 different modal border-radius values: rounded-lg (standard), rounded-2xl (Review), rounded-[32px] (Story Detail).' },
+              { file: 'Global', note: '3 different modal border-radius values: rounded-lg (standard), rounded-2xl (Review/Delete), rounded-[32px] (Story Detail).' },
               { file: 'Global', note: 'Button sizing varies: h-10 (standard), h-11 (Review), h-12 (Story Detail actions).' },
+              { file: 'Global', note: '3 different modal border styles: border-white/10 (standard), border-[#4a5f7f] (accent), border-slate-700 (Memories).' },
+              { file: 'Global', note: '2 different dialog systems: Radix Dialog (standard) vs custom fixed inset-0 overlay (SceneTagEditor).' },
             ]} />
           </Section>
 
