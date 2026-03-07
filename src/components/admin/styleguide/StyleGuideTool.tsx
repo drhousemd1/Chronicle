@@ -615,6 +615,34 @@ export const StyleGuideTool: React.FC = () => {
               specs={['text-[10px]', 'font-black', 'tracking-wide uppercase', 'text-blue-200']}
               locations="Active scenario subtitle below Story Builder nav item."
             />
+
+            <div style={{ ...fullSpan, margin: '8px 0 4px' }}><Divider style={{ margin: '8px 0 4px' }} /></div>
+            <div style={fullSpan}><PageSubheading>Character Builder</PageSubheading></div>
+
+            <TypeTile name="HardcodedRow Label (Read-only)" exampleBg="rgba(24,24,27,0.5)"
+              exampleContent={<span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">PHYSICAL APPEARANCE</span>}
+              specs={['text-[10px]', 'font-bold', 'uppercase', 'tracking-widest', 'text-zinc-400']}
+              locations="Read-only trait labels in character builder HardcodedRow components. Paired with Lock icon (w-3.5 h-3.5 text-zinc-400)."
+            />
+            <TypeTile name="ExtraRow Editable Label" exampleBg="rgba(24,24,27,0.5)"
+              exampleContent={<span className="text-[10px] font-bold text-zinc-300 uppercase tracking-widest">CUSTOM TRAIT</span>}
+              specs={['text-[10px]', 'font-bold', 'uppercase', 'tracking-widest', 'text-zinc-300']}
+              locations="User-created custom trait labels — editable via input. Same layout as HardcodedRow but without Lock icon, has red X delete."
+            />
+
+            <div style={{ ...fullSpan, margin: '8px 0 4px' }}><Divider style={{ margin: '8px 0 4px' }} /></div>
+            <div style={fullSpan}><PageSubheading>Model Settings</PageSubheading></div>
+
+            <TypeTile name="Model Name (Active Card)" exampleBg="#0f172a"
+              exampleContent={<span className="font-bold text-white">Grok Beta</span>}
+              specs={['default (16px)', 'font-bold', 'text-white (active)', 'text-slate-900 (inactive)']}
+              locations="Model name inside selection cards. White on dark active card, slate-900 on white inactive card."
+            />
+            <TypeTile name="Connection Status Text" exampleBg="#f8fafc"
+              exampleContent={<span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">SYSTEM LINKED</span>}
+              specs={['text-[10px]', 'font-black', 'uppercase', 'tracking-widest', 'text-emerald-600']}
+              locations="Connection status badge text in Model Settings. Error state: text-slate-500."
+            />
           </Section>
 
           <Divider />
