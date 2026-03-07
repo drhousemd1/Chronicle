@@ -1366,6 +1366,47 @@ px-2 py-1 rounded-md uppercase tracking-widest shadow-lg`}
 /* Unlinked:  bg-slate-100 text-slate-500 border-slate-200 */`}
               />
             </div>
+
+            <PageSubheading>Interactive Rating Components</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="StarRating Component" pageTag="Review Modal / Story Detail"
+                specs='<strong>Amber stars:</strong> filled <code>text-amber-400 fill-amber-400</code>, empty <code>text-white/20</code>. Interactive: <code>hover:scale-110</code> transition. Sizes: 16px (default), 20px (review display). Used in review forms and story detail review cards.'
+                previewDark
+                preview={
+                  <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: 2 }}>
+                      {'★★★★☆'.split('').map((s, i) => (
+                        <span key={i} style={{ fontSize: 16, color: s === '★' ? '#fbbf24' : 'rgba(255,255,255,0.2)' }}>{s === '★' ? '★' : '☆'}</span>
+                      ))}
+                    </div>
+                    <span style={{ fontSize: 10, color: '#94a3b8' }}>4/5</span>
+                  </div>
+                }
+                code={`/* Filled: text-amber-400 fill-amber-400 */
+/* Empty: text-white/20 */
+/* Interactive: cursor-pointer hover:scale-110 transition-transform */
+/* Non-interactive: cursor-default */`}
+              />
+
+              <EntryCard name="SpiceRating Component" pageTag="Review Modal / Story Detail"
+                specs='<strong>Red flames:</strong> filled <code>text-red-500 fill-red-500</code>, empty <code>text-white/20</code>. Same interactive pattern as StarRating. Uses Lucide <code>Flame</code> icon. 5-level scale.'
+                previewDark
+                preview={
+                  <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: 2 }}>
+                      {[1,2,3,4,5].map(i => (
+                        <span key={i} style={{ fontSize: 16, color: i <= 3 ? '#ef4444' : 'rgba(255,255,255,0.2)' }}>🔥</span>
+                      ))}
+                    </div>
+                    <span style={{ fontSize: 10, color: '#94a3b8' }}>3/5</span>
+                  </div>
+                }
+                code={`/* Filled: text-red-500 fill-red-500 */
+/* Empty: text-white/20 */
+/* Interactive: cursor-pointer hover:scale-110 transition-transform */
+/* Uses Lucide Flame icon, maxLevel default: 5 */`}
+              />
+            </div>
           </Section>
 
           <Divider />
