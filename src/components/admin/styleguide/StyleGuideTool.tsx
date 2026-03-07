@@ -1783,6 +1783,91 @@ hover:border-[#6b82a8] transition-colors
 /* Separator: h-px bg-white/10 */`}
               />
             </div>
+
+            <PageSubheading>Art Style Selection Grid (Shared)</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="Art Style Selection Card" pageTag="AI Generation Modals"
+                specs='<strong>Card:</strong> <code>rounded-xl bg-card ring-1 ring-border p-2</code>. Selected: <code>ring-2 ring-blue-400 shadow-md</code>. <strong>Checkmark:</strong> <code>w-5 h-5 bg-primary rounded-full</code> absolute top-right. <strong>Label:</strong> <code>text-xs font-semibold text-foreground</code>. Shared across Avatar, Cover Image, and Scene Image generation modals.'
+                preview={
+                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                    <div style={{ width: 100, padding: 8, borderRadius: 12, background: '#fff', boxShadow: '0 0 0 1px #e2e8f0', position: 'relative' }}>
+                      <div style={{ width: '100%', aspectRatio: '1/1', borderRadius: 8, background: '#e2e8f0' }} />
+                      <p style={{ fontSize: 11, fontWeight: 600, textAlign: 'center', marginTop: 8, color: '#111827' }}>Style A</p>
+                    </div>
+                    <div style={{ width: 100, padding: 8, borderRadius: 12, background: '#fff', boxShadow: '0 0 0 2px #60a5fa', position: 'relative' }}>
+                      <div style={{ width: '100%', aspectRatio: '1/1', borderRadius: 8, background: '#e2e8f0' }} />
+                      <p style={{ fontSize: 11, fontWeight: 600, textAlign: 'center', marginTop: 8, color: '#111827' }}>Style B</p>
+                      <div style={{ position: 'absolute', top: 4, right: 4, width: 20, height: 20, borderRadius: '50%', background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 12, fontWeight: 700 }}>✓</div>
+                    </div>
+                  </div>
+                }
+                code={`/* Card: rounded-xl bg-card ring-1 ring-border p-2 */
+/* Selected: ring-2 ring-blue-400 shadow-md */
+/* Checkmark: w-5 h-5 bg-primary rounded-full (absolute top-1 right-1) */
+/* Label: text-xs font-semibold text-center text-foreground */
+/* ⚠ Uses light-theme (bg-card) while app is dark */`}
+              />
+            </div>
+
+            <PageSubheading>Story Detail Modal</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="Story Detail Character Card" pageTag="Story Detail Modal"
+                specs='<strong>bg-white/5 rounded-xl p-3</strong>. Contains avatar (w-12 h-12 rounded-xl), character name (font-semibold text-white), role description (text-xs text-white/60). Used in character listing within Story Detail.'
+                previewDark
+                preview={
+                  <div className="bg-white/5 rounded-xl p-3 flex items-center gap-3" style={{ maxWidth: 280 }}>
+                    <div className="w-12 h-12 rounded-xl bg-zinc-700 flex items-center justify-center text-zinc-400 text-lg">👤</div>
+                    <div>
+                      <div className="text-white font-semibold text-sm">Elena Blackwood</div>
+                      <div className="text-white/60 text-xs">Protagonist</div>
+                    </div>
+                  </div>
+                }
+                code={`bg-white/5 rounded-xl p-3
+/* Avatar: w-12 h-12 rounded-xl */
+/* Name: font-semibold text-white text-sm */
+/* Role: text-xs text-white/60 */`}
+              />
+
+              <EntryCard name="Review Card" pageTag="Story Detail Modal"
+                specs='<strong>bg-white/5 rounded-xl p-4</strong>. Contains StarRating + SpiceRating inline, reviewer name (text-sm font-semibold text-white), comment (text-sm text-white/70), date (text-xs text-white/40).'
+                previewDark
+                preview={
+                  <div className="bg-white/5 rounded-xl p-4" style={{ maxWidth: 320 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <span className="text-sm font-semibold text-white">Reviewer</span>
+                      <span className="text-xs text-white/40">2 days ago</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                      <span style={{ fontSize: 12 }}>⭐⭐⭐⭐☆</span>
+                      <span style={{ fontSize: 12 }}>🔥🔥🔥</span>
+                    </div>
+                    <p className="text-sm text-white/70">Great story, well-crafted characters.</p>
+                  </div>
+                }
+                code={`bg-white/5 rounded-xl p-4
+/* StarRating + SpiceRating inline row */
+/* Reviewer: text-sm font-semibold text-white */
+/* Comment: text-sm text-white/70 */
+/* Date: text-xs text-white/40 */`}
+              />
+            </div>
+
+            <PageSubheading>Share Story Modal</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="Blue Info Callout" pageTag="Share Story Modal"
+                specs='<strong>bg-blue-500/10 border-blue-500/20 rounded-xl p-4</strong>. Used for permission/info callouts. Text: <code>text-blue-300 text-xs</code>. Unique pattern — not used anywhere else in the app.'
+                previewDark
+                preview={
+                  <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4" style={{ maxWidth: 320 }}>
+                    <p className="text-blue-300 text-xs">ℹ️ Published stories are visible to all users in the Community Gallery.</p>
+                  </div>
+                }
+                code={`bg-blue-500/10 border border-blue-500/20 rounded-xl p-4
+/* Text: text-blue-300 text-xs */
+/* Unique info callout pattern */`}
+              />
+            </div>
           </Section>
 
           <Divider />
