@@ -1504,6 +1504,55 @@ px-2 py-1 rounded-md uppercase tracking-widest shadow-lg`}
 /* Interactive: cursor-pointer hover:scale-110 transition-transform */
 /* Uses Lucide Flame icon, maxLevel default: 5 */`}
               />
+
+              <EntryCard name="CircularProgress (SVG Ring)" pageTag="Story Builder / Arc System"
+                specs='SVG circle progress ring. <strong>Light variant:</strong> bg stroke #e2e8f0, progress stroke varies by state. <strong>Dark variant:</strong> bg stroke #334155. <strong>States:</strong> 0% → slate (empty), 1-99% → #3b82f6 (blue), 100% → #22c55e (green). Center text: <code>font-bold text-[10px]</code> (or text-lg for size≥80).'
+                previewDark
+                preview={
+                  <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                    <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <svg width={40} height={40} style={{ transform: 'rotate(-90deg)' }}>
+                        <circle cx={20} cy={20} r={17} stroke="#334155" strokeWidth={3} fill="none" />
+                        <circle cx={20} cy={20} r={17} stroke="#3b82f6" strokeWidth={3} fill="none" strokeLinecap="round" strokeDasharray={106.8} strokeDashoffset={53.4} />
+                      </svg>
+                      <span style={{ position: 'absolute', fontSize: 10, fontWeight: 700, color: '#60a5fa' }}>50%</span>
+                    </div>
+                    <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <svg width={40} height={40} style={{ transform: 'rotate(-90deg)' }}>
+                        <circle cx={20} cy={20} r={17} stroke="#334155" strokeWidth={3} fill="none" />
+                        <circle cx={20} cy={20} r={17} stroke="#22c55e" strokeWidth={3} fill="none" strokeLinecap="round" strokeDasharray={106.8} strokeDashoffset={0} />
+                      </svg>
+                      <span style={{ position: 'absolute', fontSize: 10, fontWeight: 700, color: '#4ade80' }}>100%</span>
+                    </div>
+                    <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <svg width={40} height={40} style={{ transform: 'rotate(-90deg)' }}>
+                        <circle cx={20} cy={20} r={17} stroke="#334155" strokeWidth={3} fill="none" />
+                      </svg>
+                      <span style={{ position: 'absolute', fontSize: 10, fontWeight: 700, color: '#94a3b8' }}>0%</span>
+                    </div>
+                  </div>
+                }
+                code={`/* SVG circle: radius = (size - strokeWidth) / 2 */
+/* Background stroke: #e2e8f0 (light) or #334155 (dark) */
+/* Progress: #3b82f6 (in-progress), #22c55e (complete) */
+/* Empty: #475569 (dark) or #94a3b8 (light) */
+/* Center: font-bold text-[10px] (size<80) or text-lg */`}
+              />
+
+              <EntryCard name="Tag Chips (Blue Rounded-Full)" pageTag="Scene Tag Editor / Tag Input"
+                specs='<strong>px-2.5 py-1 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full text-xs font-medium</strong>. Used in TagInput and SceneTagEditorModal for scene/image tags. Different from content theme chips which use category-specific colors.'
+                previewDark
+                preview={
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    <span className="px-2.5 py-1 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full text-xs font-medium">landscape</span>
+                    <span className="px-2.5 py-1 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full text-xs font-medium">battle</span>
+                    <span className="px-2.5 py-1 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full text-xs font-medium">night</span>
+                  </div>
+                }
+                code={`px-2.5 py-1 bg-blue-500/20 text-blue-300
+border border-blue-500/30 rounded-full text-xs font-medium
+/* ≠ Content theme chips which use category-specific colors */`}
+              />
             </div>
           </Section>
 
