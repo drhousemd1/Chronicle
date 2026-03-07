@@ -2866,6 +2866,63 @@ text-white/40    — Disabled`}
             />
           </Section>
 
+          <Divider />
+
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {/* ═══ MASTER INCONSISTENCY SUMMARY ═══ */}
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          <div style={{ marginBottom: 64 }}>
+            <h2 style={{ fontSize: 'clamp(28px,4vw,38px)', fontWeight: 900, letterSpacing: '-0.04em', color: '#111827', marginBottom: 8 }}>
+              Master Inconsistency Report
+            </h2>
+            <p style={{ fontSize: 13, color: sg.muted, maxWidth: 900, marginBottom: 22 }}>
+              Complete catalog of design system inconsistencies across all 5 documentation passes.
+            </p>
+
+            <PageSubheading>Dual Component Systems</PageSubheading>
+            <InconsistencyNote items={[
+              { file: 'UI.tsx vs ui/*', note: 'Two parallel component systems: shadcn/Radix (Auth, some modals) vs Chronicle UI.tsx (StoryHub, Chat, WorldTab, ~50% of app). Different styling, different APIs.' },
+              { file: 'Buttons', note: 'shadcn Button (rounded-md, CVA variants) vs Chronicle Button (rounded-xl, 7 custom variants, active:scale-95).' },
+              { file: 'Cards', note: 'shadcn Card (rounded-lg bg-card) vs Chronicle Card (rounded-3xl bg-white border-slate-200).' },
+              { file: 'Inputs', note: 'shadcn Input (rounded-md bg-background) vs Chronicle Input (rounded-2xl bg-slate-50 border-slate-200).' },
+            ]} />
+
+            <PageSubheading>Theme Inconsistencies</PageSubheading>
+            <InconsistencyNote items={[
+              { file: 'Auth.tsx', note: 'Purple accent (purple-600 buttons, purple-400 links) while rest of app uses blue #4a5f7f.' },
+              { file: 'ChangeNameModal, Image Gen modals', note: 'Light-theme modals (default DialogContent) in a dark-themed app.' },
+              { file: 'UploadSourceMenu.tsx', note: 'Light-theme dropdown (bg-white border-slate-200) over dark modal content.' },
+              { file: 'ScrollableSection.tsx', note: 'White fade gradients (from-white) that assume light-theme containers.' },
+              { file: 'CreatorProfile.tsx', note: 'bg-white header bar on bg-[#121214] dark page — jarring contrast.' },
+            ]} />
+
+            <PageSubheading>Surface Color Proliferation</PageSubheading>
+            <InconsistencyNote items={[
+              { file: 'Modals', note: '5 different modal backgrounds: bg-zinc-900, bg-[#2a2a2f], bg-[#121214], bg-slate-900, default light (shadcn).' },
+              { file: 'Dark surfaces', note: '4+ dark surface colors: #2a2a2f, #1e1e22, #18181b, zinc-900, slate-900 — no unified token.' },
+              { file: 'Borders', note: '3 modal border styles: border-white/10 (standard), border-[#4a5f7f] (accent), border-slate-700 (Memories).' },
+            ]} />
+
+            <PageSubheading>Overlay & Dialog Systems</PageSubheading>
+            <InconsistencyNote items={[
+              { file: 'Global', note: '3 different overlay systems: Radix Dialog (standard), AlertDialog (delete confirms), custom fixed inset-0 (SceneTagEditor, CharacterPicker).' },
+              { file: 'Backdrop opacity', note: 'bg-black/80 (standard), bg-black/85 (SceneTagEditor), bg-black/90 (ReviewModal), bg-slate-900/50 (CharacterPicker).' },
+            ]} />
+
+            <PageSubheading>Border Radius Variance</PageSubheading>
+            <InconsistencyNote items={[
+              { file: 'Containers', note: 'rounded-lg (modals), rounded-xl (buttons/cards), rounded-2xl (panels/account), rounded-3xl (CharacterPicker), rounded-[2rem] (story cards), rounded-[32px] (StoryDetail).' },
+              { file: 'Avatars', note: 'rounded-2xl (standard) vs rounded-full (SideCharacterCard only).' },
+              { file: 'Arc system', note: 'rounded-[10px] delete button vs standard rounded-xl (12px).' },
+            ]} />
+
+            <PageSubheading>Button Sizing Variance</PageSubheading>
+            <InconsistencyNote items={[
+              { file: 'Height', note: 'h-8 (card compact), h-10 (standard), h-11 (Review modal), h-12 (StoryDetail actions).' },
+              { file: 'Typography', note: 'text-[10px] uppercase (Shadow Surface standard) vs text-sm (Chronicle UI.tsx) vs text-xs (card actions).' },
+            ]} />
+          </div>
+
         </div>
       </div>
     </div>
