@@ -1221,6 +1221,46 @@ px-2 py-1 rounded-md uppercase tracking-widest shadow-lg`}
                 code={`px-3 py-1.5 bg-[#4a5f7f]/20 text-[#7ba3d4] rounded-lg text-sm font-bold`}
               />
             </div>
+
+            <div style={{ marginTop: 24 }}>
+              <PageSubheading>Character Builder</PageSubheading>
+              <EntryCard name="Lock Icon Indicator (HardcodedRow)" pageTag="Character Builder"
+                specs='<strong>w-3.5 h-3.5 text-zinc-400</strong>. Lock icon positioned at end of HardcodedRow to indicate read-only status. Only on hardcoded trait sections, not user-added extras.'
+                previewPlain previewStyle={{ gap: 12 }}
+                preview={<>
+                  <div className="flex items-center gap-2 bg-zinc-900/50 px-3 py-1.5 rounded-lg border border-white/10">
+                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">PERSONALITY</span>
+                    <span className="text-zinc-400 text-xs">🔒</span>
+                  </div>
+                </>}
+                code={`/* Lock icon: w-3.5 h-3.5 text-zinc-400 (Lucide Lock) */
+/* Positioned after label in HardcodedRow */
+/* Indicates non-removable, system-defined trait section */`}
+              />
+            </div>
+
+            <div style={{ marginTop: 24 }}>
+              <PageSubheading>Model Settings</PageSubheading>
+              <EntryCard name="Connection Status Badge (Animated)" pageTag="Model Settings"
+                specs='<strong>px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest</strong>. Connected: bg-emerald-50 text-emerald-600 border-emerald-100, dot animate-pulse. Checking: bg-amber-50 text-amber-600 border-amber-100, dot animate-bounce. Unlinked: bg-slate-100 text-slate-500.'
+                previewPlain previewStyle={{ gap: 8, flexWrap: 'wrap' }}
+                preview={<>
+                  <span className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />System Linked
+                  </span>
+                  <span className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-amber-50 text-amber-600 border border-amber-100 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-bounce" />Checking...
+                  </span>
+                  <span className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-slate-100 text-slate-500 border border-slate-200 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-slate-300" />Unlinked
+                  </span>
+                </>}
+                code={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest
+/* Connected: bg-emerald-50 text-emerald-600 border-emerald-100, dot animate-pulse */
+/* Checking:  bg-amber-50 text-amber-600 border-amber-100, dot animate-bounce */
+/* Unlinked:  bg-slate-100 text-slate-500 border-slate-200 */`}
+              />
+            </div>
           </Section>
 
           <Divider />
