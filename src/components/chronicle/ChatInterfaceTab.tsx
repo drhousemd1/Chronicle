@@ -2387,9 +2387,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       
       // Issue #7: Compute length directive and increment session counter
       const lengthDirective = getLengthDirective();
+      const antiLoopDirective = getAntiLoopDirective();
       sessionMessageCountRef.current += 1;
       
-      const llmInput = canonNote + input;
+      const llmInput = antiLoopDirective + (antiLoopDirective ? ' ' : '') + canonNote + input;
       const stream = generateRoleplayResponseStream(llmAppData, conversationId, llmInput, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled, undefined, lengthDirective || undefined, sessionMessageCountRef.current);
 
       for await (const chunk of stream) {
