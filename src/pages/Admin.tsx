@@ -10,6 +10,9 @@ const LazyImageGen = React.lazy(() =>
 const LazyAppGuide = React.lazy(() =>
   import('@/components/admin/guide/AppGuideTool').then(m => ({ default: m.AppGuideTool }))
 );
+const LazyStyleGuide = React.lazy(() =>
+  import('@/components/admin/styleguide/StyleGuideTool')
+);
 
 const DEFAULT_TOOLS: ToolMeta[] = [
   {
