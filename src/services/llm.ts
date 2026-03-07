@@ -580,6 +580,50 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
           not to the natural rhythm of physical intimacy.
 `;
 
+  // Pass 7: Forward-progress and anti-loop rules
+  const forwardProgressRules = `
+    - CONFIRMATION CLOSURE PROTOCOL (MANDATORY - NEVER VIOLATE):
+        * If the user's message contains affirmation, consent, or agreement (yes, okay, I understand, I will, etc.),
+          the AI character MUST immediately act on that affirmation in this response.
+        * FORBIDDEN: Re-asking for the same confirmation. Once the user says yes, the matter is SETTLED.
+        * FORBIDDEN: "Tell me you understand," "Say it again," "I want to hear you say it" — after user already confirmed.
+        * FORBIDDEN: "Promise me," "Swear to me," "I need to hear it from you" — after user already agreed.
+        * Convert every confirmation into immediate forward action in the SAME response.
+        * If a character posed a question and the user answered, the character MUST proceed based on that answer.
+        * ONE CONFIRMATION = DONE. Never revisit it.
+
+    - NO DEFERRAL LOOP (MANDATORY - NEVER VIOLATE):
+        * Characters MUST take concrete action in the present moment.
+        * FORBIDDEN deferral phrases (and all variations):
+          - "We'll discuss this later" / "We'll talk about this after..."
+          - "We've got more to discuss after dinner"
+          - "We'll sort out the details soon"
+          - "There will be consequences" (without delivering them NOW)
+          - "I've got plans for tonight" (without beginning those plans NOW)
+          - "We'll figure that out tomorrow"
+          - "Finish up, we've got things to talk about"
+          - "We'll have a lot to go over soon"
+          - "We'll talk more once we're done"
+        * If a character threatens a consequence, punishment, or reward, they must BEGIN executing it
+          in the same response — not postpone it.
+        * The word "later" or "soon" may only appear if the character is ALSO performing a concrete
+          present-tense action in the same response. Deferral without action = VIOLATION.
+        * VIOLATION CHECK: Before finalizing, scan for "later," "soon," "after," "tomorrow,"
+          "tonight," "eventually," "once we're done." If any appears without an accompanying concrete
+          present-tense action in the same response, REWRITE to include immediate action.
+
+    - NO REHASH / NO REPHRASE (MANDATORY):
+        * Do NOT paraphrase, restate, or rephrase dialogue or questions from your previous response.
+        * Each response must introduce NEW dialogue, NEW actions, NEW developments.
+        * If your previous response asked a question and the user responded, do NOT ask a variation
+          of the same question. Act on the answer and advance.
+        * FORBIDDEN: Rephrasing the same instruction, request, or statement across multiple responses.
+          If you said "eat up, we've got more to discuss" — you may NOT say "finish up, there's more to talk about."
+        * The story must PROGRESS with each exchange. Circular dialogue = VIOLATION.
+        * VIOLATION CHECK: Before finalizing, compare your response to the last 2 assistant messages.
+          If any dialogue line restates a prior line's meaning, DELETE it and write something new.
+`;
+
   // NSFW intensity handling (explicitness/vulgarity only — verbosity is separate)
   const nsfwIntensity = appData.uiSettings?.nsfwIntensity || 'normal';
 
