@@ -883,6 +883,103 @@ w-full flex items-center gap-3 rounded-xl px-4 py-3 font-bold text-sm`}
               code={`p-2 rounded-lg text-slate-400
 hover:text-white hover:bg-white/10 transition-colors`}
             />
+
+            <div style={fullSpan}><PageSubheading>Character Builder</PageSubheading></div>
+
+            <EntryCard name="AI Enhance Sparkle Button" pageTag="Character Builder"
+              specs='<strong>p-1.5 rounded-md</strong> · text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10. Uses <code>Sparkles size={14}</code>. Opens EnhanceModeModal.'
+              preview={
+                <button className="p-1.5 rounded-md text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10 transition-colors" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>✨</button>
+              }
+              code={`p-1.5 rounded-md text-zinc-400
+hover:text-blue-400 hover:bg-blue-500/10 transition-colors
+/* Sparkles size={14} */`}
+            />
+            <EntryCard name="EnhanceModeModal Option Cards" pageTag="Character Builder"
+              specs='<strong>p-5 rounded-2xl border border-white/10 bg-zinc-800/50</strong>. Icon container: <strong>w-10 h-10 rounded-xl bg-blue-500/20</strong> (Precise) or <strong>bg-purple-500/20</strong> (Detailed). Hover: border-blue-500/50 bg-blue-500/10.'
+              previewDark
+              preview={<>
+                <button className="flex flex-col items-center gap-2 p-4 rounded-2xl border border-white/10 bg-zinc-800/50 hover:border-blue-500/50" style={{ cursor: 'default', width: 120 }}>
+                  <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400">✨</div>
+                  <span className="text-white font-bold text-xs">Precise</span>
+                </button>
+                <button className="flex flex-col items-center gap-2 p-4 rounded-2xl border border-white/10 bg-zinc-800/50 hover:border-purple-500/50" style={{ cursor: 'default', width: 120 }}>
+                  <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-400">≡</div>
+                  <span className="text-white font-bold text-xs">Detailed</span>
+                </button>
+              </>}
+              code={`p-5 rounded-2xl border border-white/10 bg-zinc-800/50
+hover:border-blue-500/50 hover:bg-blue-500/10
+/* Icon: w-10 h-10 rounded-xl bg-blue-500/20 */
+/* Alt:  w-10 h-10 rounded-xl bg-purple-500/20 */`}
+            />
+            <InconsistencyNote items={[
+              { file: 'EnhanceModeModal.tsx', note: 'Uses rounded-2xl for option cards, but CharacterCreationModal uses rounded-xl for similar option patterns.' },
+            ]} />
+
+            <EntryCard name="ExtraRow Delete Button" pageTag="Character Builder"
+              specs='<strong>p-1 rounded text-red-400 hover:text-red-300 hover:bg-red-900/30</strong>. X icon to remove user-created custom trait rows.'
+              preview={
+                <button className="p-1 rounded text-red-400 hover:text-red-300 hover:bg-red-900/30 transition-colors" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>✕</button>
+              }
+              code={`p-1 rounded text-red-400
+hover:text-red-300 hover:bg-red-900/30 transition-colors`}
+            />
+
+            <div style={fullSpan}><PageSubheading>Model Settings</PageSubheading></div>
+
+            <EntryCard name="Model Selection Card (Active / Inactive)" pageTag="Model Settings"
+              specs='<strong>Active:</strong> bg-slate-900 border-slate-900 shadow-xl scale-[1.02]. <strong>Inactive:</strong> bg-white border-slate-200 hover:border-blue-400 hover:shadow-lg hover:scale-[1.01]. Light theme — unique to this page.'
+              preview={<>
+                <button className="text-left p-3 rounded-xl border bg-slate-900 border-slate-900 shadow-xl" style={{ cursor: 'default', width: 160, transform: 'scale(1.02)' }}>
+                  <div className="text-white font-bold text-xs">Grok Beta</div>
+                  <div className="text-slate-400 text-[9px] mt-0.5">Selected model</div>
+                </button>
+                <button className="text-left p-3 rounded-xl border bg-white border-slate-200" style={{ cursor: 'default', width: 160 }}>
+                  <div className="text-slate-900 font-bold text-xs">Grok 2</div>
+                  <div className="text-slate-500 text-[9px] mt-0.5">Inactive model</div>
+                </button>
+              </>}
+              code={`/* Active */
+bg-slate-900 border-slate-900 shadow-xl scale-[1.02]
+text-white
+/* Inactive */
+bg-white border-slate-200 hover:border-blue-400
+hover:shadow-lg hover:scale-[1.01]
+text-slate-900`}
+            />
+            <InconsistencyNote items={[
+              { file: 'ModelSettingsTab.tsx', note: 'LIGHT THEME page (bg-white, text-slate-900) while every other page uses dark theme. Major inconsistency.' },
+            ]} />
+
+            <div style={fullSpan}><PageSubheading>Image Library</PageSubheading></div>
+
+            <EntryCard name="New Folder Dashed Card" pageTag="Image Library"
+              specs='<strong>border-2 border-dashed border-zinc-600 bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-[2rem]</strong>. Hover: border-blue-400. Same aspect-[2/3] as folder cards.'
+              previewDark
+              preview={
+                <div className="border-2 border-dashed border-zinc-600 bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-[2rem] flex flex-col items-center justify-center gap-2 hover:border-blue-400 transition-colors" style={{ width: 100, aspectRatio: '2/3', cursor: 'default' }}>
+                  <span className="text-zinc-400 text-lg">+</span>
+                  <span className="text-zinc-400 text-[9px] font-bold uppercase tracking-wider">New Folder</span>
+                </div>
+              }
+              code={`border-2 border-dashed border-zinc-600
+bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-[2rem]
+hover:border-blue-400 transition-colors
+aspect-[2/3]`}
+            />
+            <EntryCard name="Folder Delete Button (Circular)" pageTag="Image Library"
+              specs='<strong>p-3 bg-black/40 text-white/50 hover:text-rose-500 rounded-full</strong>. Opacity transition. Positioned absolute top-right on folder cards.'
+              previewDark
+              preview={
+                <button className="p-3 bg-black/40 text-white/50 hover:text-rose-500 rounded-full transition-all" style={{ cursor: 'default', border: 'none' }}>🗑</button>
+              }
+              code={`p-3 bg-black/40 text-white/50
+hover:text-rose-500 rounded-full transition-all`}
+            />
+            <InconsistencyNote items={[
+              { file: 'ImageLibraryTab.tsx', note: 'Folder delete uses rounded-full while all other action buttons in the app use rounded-xl.' },
+            ]} />
           </Section>
 
           <Divider />
