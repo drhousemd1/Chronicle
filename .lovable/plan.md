@@ -1,11 +1,24 @@
 
 
-## Plan: Show Full Image in Sidebar Theme Previews
+## Plan: Visual Style Guide — Completed Phases 1–6
 
-### Problem
-The tiles use `object-cover` which crops tall portrait images to fill the container. Since the source images are ~300×1080 (roughly 1:3.6 ratio) but tiles are `aspect-[2/3]` (1:1.5), a large portion of each image is cropped out.
+### Status: ✅ Phases 1–6 Complete
 
-### Fix (single file: `SidebarThemeModal.tsx`)
+Built the full Visual Style Guide as an admin tool (`style_guide`) in `src/components/admin/styleguide/StyleGuideTool.tsx`.
 
-**Change `object-cover` to `object-contain`** on the background preview `<img>` tag (line ~130). This will scale the entire image to fit within the tile without cropping, showing the full content. The tile's dark `bg-zinc-800/50` background will fill any letterbox space naturally.
+### What was built:
+- Fixed 260px sidebar with scroll-spy navigation and 8 section links
+- Sticky header with badge, title, and description
+- **Colors**: 31 swatch cards (20 Story Builder + 11 My Stories) with exact hex/token/location data
+- **Typography**: 13 tiles in 2-col grid (8 Story Builder + 5 My Stories) with rendered examples
+- **Buttons**: 5 entries with live previews and CSS code blocks
+- **Form Inputs**: Text input/textarea spec with dark preview
+- **Badges & Tags**: Content theme chips + SFW/NSFW badges
+- **Panels**: 4 entries (Panel Container, Header Bar, Roster Sidebar, Story Card)
+- **Modals**: Placeholder (Phase 7)
+- **Icons**: Placeholder (Phase 7)
+- Responsive breakpoints at 1024px and 1100px
+- Registered in Admin.tsx with lazy loading
 
+### Remaining:
+- Phase 7: Extract modal and icon specs from source code
