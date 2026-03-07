@@ -414,7 +414,28 @@ export const StyleGuideTool: React.FC = () => {
               <SwatchCard color="rgba(30,41,59,0.5)" name="Auth Card BG" rows={[{ label: 'Value', value: 'rgba(30,41,59,0.5)' }, { label: 'Token', value: 'bg-slate-800/50' }, { label: 'Location', value: 'Login/signup Card component background', isLocation: true }]} />
               <SwatchCard color="rgba(51,65,85,0.5)" name="Auth Input BG" rows={[{ label: 'Value', value: 'rgba(51,65,85,0.5)' }, { label: 'Token', value: 'bg-slate-700/50' }, { label: 'Location', value: 'Email and password input fields on auth page', isLocation: true }]} />
               <SwatchCard color="#7c3aed" name="Purple 600 / Auth Submit" rows={[{ label: 'Hex', value: '#7c3aed' }, { label: 'Token', value: 'bg-purple-600' }, { label: 'Location', value: 'Sign In / Create Account button', isLocation: true }]} />
+              <SwatchCard color="#a78bfa" name="Purple 400 / Auth Toggle Link" rows={[{ label: 'Hex', value: '#a78bfa' }, { label: 'Token', value: 'text-purple-400' }, { label: 'Location', value: '"Don\'t have an account? Sign up" toggle text', isLocation: true }]} />
             </div>
+            <InconsistencyNote items={[
+              { file: 'Auth.tsx', note: 'Uses purple accent (purple-600 button, purple-400 link) while rest of app uses blue #4a5f7f accent.' },
+            ]} />
+
+            <Divider />
+
+            {/* ─── Creator Profile ─── */}
+            <PageSubheading>Creator Profile</PageSubheading>
+            <PageDesc>Colors for the public Creator Profile page.</PageDesc>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
+              <SwatchCard color="#121214" name="Profile Page BG" rows={[{ label: 'Hex', value: '#121214' }, { label: 'Token', value: 'bg-[#121214]' }, { label: 'Location', value: 'Full page background (same as Gallery/Account)', isLocation: true }]} />
+              <SwatchCard color="#1e1e22" name="Profile Card BG" rows={[{ label: 'Hex', value: '#1e1e22' }, { label: 'Token', value: 'bg-[#1e1e22]' }, { label: 'Location', value: 'Profile info card, bio section', isLocation: true }]} />
+              <SwatchCard color="#ffffff" name="Profile Header Bar" rows={[{ label: 'Hex', value: '#ffffff' }, { label: 'Token', value: 'bg-white' }, { label: 'Location', value: 'Top header bar on Creator Profile — light on dark page', isLocation: true }]} />
+              <SwatchCard color="rgba(255,255,255,0.05)" name="Stats Pill BG" rows={[{ label: 'Value', value: 'rgba(255,255,255,0.05)' }, { label: 'Token', value: 'bg-white/5' }, { label: 'Location', value: 'Stat pills (followers, plays, etc.) on Creator Profile', isLocation: true }]} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCard color="rgba(255,255,255,0.1)" name="Unfollow Button BG" rows={[{ label: 'Value', value: 'rgba(255,255,255,0.1)' }, { label: 'Token', value: 'bg-white/10' }, { label: 'Location', value: 'Unfollow button (toggle state)', isLocation: true }]} extraPreviewStyle={{ border: '1px dashed #999' }} />
+            </div>
+            <InconsistencyNote items={[
+              { file: 'CreatorProfile.tsx', note: 'Uses bg-white header bar on bg-[#121214] dark page — jarring light/dark contrast.' },
+              { file: 'CreatorProfile.tsx', note: 'Uses bg-[#1e1e22] surface which doesn\'t match bg-[#2a2a2f] or bg-zinc-900 used elsewhere.' },
+            ]} />
 
             <Divider />
 
