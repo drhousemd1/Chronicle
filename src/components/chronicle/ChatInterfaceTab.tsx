@@ -435,7 +435,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       const hasRepeat = q1.some(a => q2.some(b => {
         const words1 = new Set(a.split(/\s+/));
         const words2 = new Set(b.split(/\s+/));
-        const overlap = [...words1].filter(w => words2.has(w) && w.length > 3).length;
+        const overlap = ([...words1] as string[]).filter(w => words2.has(w) && w.length > 3).length;
         return overlap >= 3;
       }));
       if (hasRepeat) {
