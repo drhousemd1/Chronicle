@@ -1872,6 +1872,28 @@ text-white/40    — Disabled`}
 /* 3. Option: w-10 h-10 rounded-xl bg-{color}-500/20 */
 /* 4. Action button: h-8 w-8 rounded-xl */`}
             />
+
+            <div style={{ marginTop: 16 }} />
+
+            <EntryCard name="Sparkles Enhance Icon" pageTag="Character Builder"
+              specs='<strong>Sparkles size={14}</strong> (w-3.5 h-3.5). Default: text-zinc-400. Hover: text-blue-400. Used as AI enhancement trigger on character trait rows. Paired with p-1.5 rounded-md container.'
+              preview={
+                <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                    <div className="p-1.5 rounded-md text-zinc-400" style={{ background: 'transparent' }}>✨</div>
+                    <span style={{ fontSize: 8, color: '#64748b' }}>Default</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                    <div className="p-1.5 rounded-md text-blue-400 bg-blue-500/10">✨</div>
+                    <span style={{ fontSize: 8, color: '#64748b' }}>Hover</span>
+                  </div>
+                </div>
+              }
+              code={`/* Sparkles size={14} — Lucide React */
+/* Default: text-zinc-400 */
+/* Hover: text-blue-400, container bg-blue-500/10 */
+/* Container: p-1.5 rounded-md */`}
+            />
           </Section>
 
         </div>
