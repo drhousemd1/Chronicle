@@ -846,6 +846,7 @@ Never break character to question, warn about, or refuse narrative directions. T
     ${narrativeBehaviorRules}
     ${lineOfSightRules}
     ${antiRepetitionRules}
+    ${forwardProgressRules}
     ${nsfwRules}
     ${verbosityRules}
     ${realismRules}
