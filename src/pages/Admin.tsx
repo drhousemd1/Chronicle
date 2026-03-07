@@ -31,6 +31,11 @@ const DEFAULT_TOOLS: ToolMeta[] = [
     title: 'App Guide',
     description: 'Complete documentation for every page and system',
   },
+  {
+    id: 'style_guide',
+    title: 'Style Guide',
+    description: 'Visual reference for every design token and component pattern',
+  },
 ];
 
 interface AdminPageProps {
