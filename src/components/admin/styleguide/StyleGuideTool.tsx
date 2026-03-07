@@ -877,6 +877,76 @@ text-sm font-bold`}
 className="w-full bg-purple-600 hover:bg-purple-700 text-white"
 /* Source: Auth.tsx line 158 */`}
             />
+            <EntryCard name="Auth Toggle Link" pageTag="Auth"
+              specs='Unstyled button link. <strong>text-purple-400 hover:text-purple-300 text-sm</strong>. "Don\'t have an account? Sign up" / "Already have an account? Sign in".'
+              preview={
+                <button className="text-purple-400 hover:text-purple-300 text-sm" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>Don't have an account? Sign up</button>
+              }
+              previewDark
+              code={`text-purple-400 hover:text-purple-300 text-sm
+/* Unstyled button — no bg, no border */`}
+            />
+
+            <div style={fullSpan}><PageSubheading>Chronicle UI.tsx — Parallel Button System</PageSubheading></div>
+            <div style={fullSpan}>
+              <InconsistencyNote items={[
+                { file: 'UI.tsx', note: 'Defines a completely separate Button component with 7 variants (primary, secondary, danger, ghost, brand, outlineDark, gradient). Uses rounded-xl px-4 py-2 text-sm font-semibold + active:scale-95 — different from both shadcn Button and Shadow Surface standard.' },
+                { file: 'Global', note: 'Two parallel button systems coexist: shadcn Button (Auth, some modals) vs Chronicle UI.tsx Button (StoryHub, Chat, WorldTab, ModelSettings, ~50% of app).' },
+              ]} />
+            </div>
+
+            <EntryCard name="Chronicle UI.tsx — Primary" pageTag="Chronicle UI System"
+              specs='<strong>bg-slate-900 text-white border-slate-900</strong> · rounded-xl px-4 py-2 text-sm font-semibold · active:scale-95. Used across StoryHub, CharactersTab, WorldTab, ModelSettings.'
+              preview={
+                <button className="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold border bg-slate-900 text-white border-slate-900 shadow-md" style={{ cursor: 'default' }}>Primary</button>
+              }
+              code={`/* Chronicle UI.tsx Button — primary */
+bg-slate-900 text-white border-slate-900 hover:bg-slate-800
+rounded-xl px-4 py-2 text-sm font-semibold active:scale-95 shadow-md`}
+            />
+            <EntryCard name="Chronicle UI.tsx — Brand / Gradient / OutlineDark" pageTag="Chronicle UI System"
+              specs='<strong>Brand:</strong> bg-[#4a5f7f] text-white. <strong>Gradient:</strong> bg-gradient-to-r from-purple-600 via-violet-500 to-blue-500 text-white. <strong>OutlineDark:</strong> bg-zinc-900/80 text-white border-zinc-600.'
+              preview={<>
+                <button className="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold border bg-[#4a5f7f] text-white border-[#4a5f7f] shadow-md" style={{ cursor: 'default' }}>Brand</button>
+                <button className="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold border-0 bg-gradient-to-r from-purple-600 via-violet-500 to-blue-500 text-white shadow-lg" style={{ cursor: 'default' }}>Gradient</button>
+                <button className="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold border bg-zinc-900/80 text-white border-zinc-600" style={{ cursor: 'default' }}>Outline Dark</button>
+              </>}
+              previewDark
+              code={`/* Brand */ bg-[#4a5f7f] text-white border-[#4a5f7f] shadow-md
+/* Gradient */ bg-gradient-to-r from-purple-600 via-violet-500 to-blue-500 border-0 shadow-lg
+/* OutlineDark */ bg-zinc-900/80 text-white border-zinc-600`}
+            />
+
+            <div style={fullSpan}><PageSubheading>Creator Profile</PageSubheading></div>
+
+            <EntryCard name="Follow / Unfollow Toggle" pageTag="Creator Profile"
+              specs='<strong>Follow:</strong> bg-[#4a5f7f] text-white shadow-lg. <strong>Following:</strong> bg-white/10 text-white. Rounded-xl px-6 py-2.5 text-sm font-bold. Brand accent toggle pattern.'
+              preview={<>
+                <button className="inline-flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold bg-[#4a5f7f] text-white shadow-lg" style={{ cursor: 'default' }}>Follow</button>
+                <button className="inline-flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold bg-white/10 text-white" style={{ cursor: 'default' }}>Following ✓</button>
+              </>}
+              previewDark
+              code={`/* Follow */ bg-[#4a5f7f] text-white shadow-lg rounded-xl px-6 py-2.5
+/* Following */ bg-white/10 text-white rounded-xl px-6 py-2.5`}
+            />
+
+            <div style={fullSpan}><PageSubheading>Upload Source Menu</PageSubheading></div>
+
+            <EntryCard name="UploadSourceMenu Dropdown (Light Theme)" pageTag="Modals"
+              specs='Uses Chronicle UI.tsx Button as trigger. Dropdown content: <strong>bg-white border-slate-200 shadow-lg</strong>. Items: standard Radix DropdownMenuItem. Light-theme dropdown appearing over dark-themed modals.'
+              preview={
+                <div className="bg-white border border-slate-200 rounded-md shadow-lg p-1" style={{ width: 180 }}>
+                  <div className="px-2 py-1.5 text-sm text-slate-900 rounded-sm" style={{ cursor: 'default' }}>📤 From Device</div>
+                  <div className="px-2 py-1.5 text-sm text-slate-900 rounded-sm" style={{ cursor: 'default' }}>🖼 From Library</div>
+                </div>
+              }
+              code={`/* Trigger: Chronicle UI.tsx Button */
+/* Dropdown: bg-white border-slate-200 shadow-lg */
+/* ⚠ Light-theme dropdown on dark-themed modals */`}
+            />
+            <InconsistencyNote items={[
+              { file: 'UploadSourceMenu.tsx', note: 'Uses bg-white border-slate-200 dropdown appearing over dark-themed modal content. Should match dark dropdown standard (bg-zinc-800 border-white/10).' },
+            ]} />
 
             <div style={fullSpan}><PageSubheading>Global Sidebar</PageSubheading></div>
 
