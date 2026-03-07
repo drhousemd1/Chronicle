@@ -980,6 +980,64 @@ hover:text-rose-500 rounded-full transition-all`}
             <InconsistencyNote items={[
               { file: 'ImageLibraryTab.tsx', note: 'Folder delete uses rounded-full while all other action buttons in the app use rounded-xl.' },
             ]} />
+
+            <div style={fullSpan}><PageSubheading>Story Detail Modal</PageSubheading></div>
+
+            <EntryCard name="Story Detail Action Buttons" pageTag="Story Detail Modal"
+              specs='<strong>h-12 bg-white/5 border-white/10 rounded-xl</strong>. Taller than standard (h-12 vs h-10). Toggle states: liked <code>bg-rose-500/20 border-rose-500/50 text-rose-400</code>, saved <code>bg-amber-500/20 border-amber-500/50 text-amber-400</code>. Play: <code>bg-[#3b82f6]</code>.'
+              previewDark
+              preview={
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button className="h-12 px-6 rounded-xl bg-white/5 border border-white/10 text-white text-xs font-semibold" style={{ cursor: 'default' }}>♡ Like</button>
+                  <button className="h-12 px-6 rounded-xl bg-rose-500/20 border border-rose-500/50 text-rose-400 text-xs font-semibold" style={{ cursor: 'default' }}>♥ Liked</button>
+                  <button className="h-12 px-6 rounded-xl bg-amber-500/20 border border-amber-500/50 text-amber-400 text-xs font-semibold" style={{ cursor: 'default' }}>★ Saved</button>
+                  <button className="h-12 px-6 rounded-xl bg-[#3b82f6] text-white text-xs font-bold" style={{ cursor: 'default' }}>▶ PLAY</button>
+                </div>
+              }
+              code={`/* Base: h-12 bg-white/5 border-white/10 rounded-xl */
+/* Liked: bg-rose-500/20 border-rose-500/50 text-rose-400 */
+/* Saved: bg-amber-500/20 border-amber-500/50 text-amber-400 */
+/* Play: bg-[#3b82f6] text-white */`}
+            />
+
+            <div style={fullSpan}><PageSubheading>Review Modal</PageSubheading></div>
+
+            <EntryCard name="Review Submit / Delete Buttons" pageTag="Review Modal"
+              specs='<strong>h-11</strong> (non-standard — standard is h-10). Submit: <code>bg-[#4a5f7f] rounded-xl font-semibold text-sm</code>. Delete: <code>bg-red-600/20 border-red-500/30 text-red-400 rounded-xl</code>. Both use text-sm instead of standard text-[10px] uppercase.'
+              previewDark
+              preview={
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button className="h-11 px-6 rounded-xl bg-[#4a5f7f] text-white text-sm font-semibold" style={{ cursor: 'default' }}>Submit Review</button>
+                  <button className="h-11 px-6 rounded-xl bg-red-600/20 border border-red-500/30 text-red-400 text-sm font-semibold" style={{ cursor: 'default' }}>Delete Review</button>
+                </div>
+              }
+              code={`/* Submit: h-11 bg-[#4a5f7f] rounded-xl font-semibold text-sm */
+/* Delete: h-11 bg-red-600/20 border-red-500/30 text-red-400 */
+/* ⚠ Non-standard: h-11 + text-sm vs standard h-10 + text-[10px] */`}
+            />
+            <InconsistencyNote items={[
+              { file: 'ReviewModal.tsx', note: 'Uses h-11 + text-sm for buttons instead of standard h-10 + text-[10px] uppercase.' },
+            ]} />
+
+            <div style={fullSpan}><PageSubheading>Share Story Modal</PageSubheading></div>
+
+            <EntryCard name="Share Modal !important Override Buttons" pageTag="Share Story Modal"
+              specs='Uses Chronicle UI Button with <code>!important</code> CSS overrides: <code>!bg-blue-600</code>, <code>!bg-rose-500/20</code>. This bypasses the standard Shadow Surface pattern entirely.'
+              previewDark
+              preview={
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button className="h-10 px-6 rounded-xl bg-blue-600 text-white text-[10px] font-bold uppercase tracking-wider" style={{ cursor: 'default' }}>Publish</button>
+                  <button className="h-10 px-6 rounded-xl bg-rose-500/20 text-rose-400 text-[10px] font-bold uppercase tracking-wider" style={{ cursor: 'default' }}>Unpublish</button>
+                </div>
+              }
+              code={`/* Uses !important overrides on Chronicle UI Button */
+/* !bg-blue-600 — forced blue background */
+/* !bg-rose-500/20 — forced semi-transparent rose */
+/* ⚠ Bypasses Shadow Surface pattern */`}
+            />
+            <InconsistencyNote items={[
+              { file: 'ShareStoryModal.tsx', note: 'Uses !important CSS overrides on buttons instead of proper variant classes.' },
+            ]} />
           </Section>
 
           <Divider />
@@ -1123,6 +1181,53 @@ text-zinc-300 text-sm px-3 py-2 resize-none`}
 /* Locked: opacity-70 + Lock icon w-3 h-3 text-zinc-500 */`}
               />
             </div>
+
+            <PageSubheading>Image Generation Modals (Light Theme)</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="Light-Theme Generation Textarea" pageTag="AI Generation Modals"
+                specs='<strong>bg-slate-50 border-slate-200</strong>. Focus: <code>ring-2 ring-blue-100 border-blue-400</code>. Uses shadcn light-theme defaults — unique to Avatar, Cover Image, and Scene Image generation modals. Every other textarea in the app uses dark theme.'
+                preview={
+                  <textarea readOnly className="w-full min-h-[60px] rounded-md border bg-slate-50 border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400" placeholder="Describe your character's appearance..." />
+                }
+                code={`bg-slate-50 border-slate-200 text-sm
+focus:ring-2 focus:ring-blue-100 focus:border-blue-400
+/* ⚠ Light theme — only used in generation modals */`}
+              />
+            </div>
+
+            <PageSubheading>Review Modal</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="Review Textarea (Frosted)" pageTag="Review Modal"
+                specs='<strong>bg-white/5 border-white/10</strong>. Text: white. Placeholder: <code>text-white/30</code>. Yet another dark textarea variant distinct from Story Builder (bg-zinc-900/50 border-zinc-700).'
+                previewDark
+                preview={
+                  <textarea readOnly className="w-full min-h-[60px] rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/30 px-3 py-2 text-sm" placeholder="Share your thoughts..." />
+                }
+                code={`bg-white/5 border-white/10 text-white
+placeholder:text-white/30 rounded-lg text-sm`}
+              />
+            </div>
+
+            <PageSubheading>Memories Modal</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="Memories Select / Textarea (Slate)" pageTag="Memories Modal"
+                specs='<strong>bg-slate-900 border-slate-600</strong> (trigger), <strong>bg-slate-800 border-slate-600</strong> (content). Uses slate-* palette throughout while the app standard is zinc-*.'
+                previewDark
+                preview={
+                  <div style={{ display: 'flex', gap: 8, flexDirection: 'column' }}>
+                    <div className="h-10 px-3 rounded-md bg-slate-900 border border-slate-600 text-white text-sm flex items-center">Day 1</div>
+                    <textarea readOnly className="w-full min-h-[40px] rounded-md bg-slate-800/70 border border-purple-500/30 text-white placeholder:text-slate-400 px-3 py-2 text-sm" placeholder="Add a memory..." />
+                  </div>
+                }
+                code={`/* Select trigger: bg-slate-900 border-slate-600 */
+/* Select content: bg-slate-800 border-slate-600 */
+/* Add form: bg-slate-800/70 border-purple-500/30 */
+/* ⚠ Uses slate-* instead of app-standard zinc-* */`}
+              />
+              <InconsistencyNote items={[
+                { file: 'MemoriesModal.tsx', note: 'Uses slate-* palette throughout while every other dark component uses zinc-*.' },
+              ]} />
+            </div>
           </Section>
 
           <Divider />
@@ -1259,6 +1364,47 @@ px-2 py-1 rounded-md uppercase tracking-widest shadow-lg`}
 /* Connected: bg-emerald-50 text-emerald-600 border-emerald-100, dot animate-pulse */
 /* Checking:  bg-amber-50 text-amber-600 border-amber-100, dot animate-bounce */
 /* Unlinked:  bg-slate-100 text-slate-500 border-slate-200 */`}
+              />
+            </div>
+
+            <PageSubheading>Interactive Rating Components</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="StarRating Component" pageTag="Review Modal / Story Detail"
+                specs='<strong>Amber stars:</strong> filled <code>text-amber-400 fill-amber-400</code>, empty <code>text-white/20</code>. Interactive: <code>hover:scale-110</code> transition. Sizes: 16px (default), 20px (review display). Used in review forms and story detail review cards.'
+                previewDark
+                preview={
+                  <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: 2 }}>
+                      {'★★★★☆'.split('').map((s, i) => (
+                        <span key={i} style={{ fontSize: 16, color: s === '★' ? '#fbbf24' : 'rgba(255,255,255,0.2)' }}>{s === '★' ? '★' : '☆'}</span>
+                      ))}
+                    </div>
+                    <span style={{ fontSize: 10, color: '#94a3b8' }}>4/5</span>
+                  </div>
+                }
+                code={`/* Filled: text-amber-400 fill-amber-400 */
+/* Empty: text-white/20 */
+/* Interactive: cursor-pointer hover:scale-110 transition-transform */
+/* Non-interactive: cursor-default */`}
+              />
+
+              <EntryCard name="SpiceRating Component" pageTag="Review Modal / Story Detail"
+                specs='<strong>Red flames:</strong> filled <code>text-red-500 fill-red-500</code>, empty <code>text-white/20</code>. Same interactive pattern as StarRating. Uses Lucide <code>Flame</code> icon. 5-level scale.'
+                previewDark
+                preview={
+                  <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: 2 }}>
+                      {[1,2,3,4,5].map(i => (
+                        <span key={i} style={{ fontSize: 16, color: i <= 3 ? '#ef4444' : 'rgba(255,255,255,0.2)' }}>🔥</span>
+                      ))}
+                    </div>
+                    <span style={{ fontSize: 10, color: '#94a3b8' }}>3/5</span>
+                  </div>
+                }
+                code={`/* Filled: text-red-500 fill-red-500 */
+/* Empty: text-white/20 */
+/* Interactive: cursor-pointer hover:scale-110 transition-transform */
+/* Uses Lucide Flame icon, maxLevel default: 5 */`}
               />
             </div>
           </Section>
@@ -1637,6 +1783,91 @@ hover:border-[#6b82a8] transition-colors
 /* Separator: h-px bg-white/10 */`}
               />
             </div>
+
+            <PageSubheading>Art Style Selection Grid (Shared)</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="Art Style Selection Card" pageTag="AI Generation Modals"
+                specs='<strong>Card:</strong> <code>rounded-xl bg-card ring-1 ring-border p-2</code>. Selected: <code>ring-2 ring-blue-400 shadow-md</code>. <strong>Checkmark:</strong> <code>w-5 h-5 bg-primary rounded-full</code> absolute top-right. <strong>Label:</strong> <code>text-xs font-semibold text-foreground</code>. Shared across Avatar, Cover Image, and Scene Image generation modals.'
+                preview={
+                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                    <div style={{ width: 100, padding: 8, borderRadius: 12, background: '#fff', boxShadow: '0 0 0 1px #e2e8f0', position: 'relative' }}>
+                      <div style={{ width: '100%', aspectRatio: '1/1', borderRadius: 8, background: '#e2e8f0' }} />
+                      <p style={{ fontSize: 11, fontWeight: 600, textAlign: 'center', marginTop: 8, color: '#111827' }}>Style A</p>
+                    </div>
+                    <div style={{ width: 100, padding: 8, borderRadius: 12, background: '#fff', boxShadow: '0 0 0 2px #60a5fa', position: 'relative' }}>
+                      <div style={{ width: '100%', aspectRatio: '1/1', borderRadius: 8, background: '#e2e8f0' }} />
+                      <p style={{ fontSize: 11, fontWeight: 600, textAlign: 'center', marginTop: 8, color: '#111827' }}>Style B</p>
+                      <div style={{ position: 'absolute', top: 4, right: 4, width: 20, height: 20, borderRadius: '50%', background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 12, fontWeight: 700 }}>✓</div>
+                    </div>
+                  </div>
+                }
+                code={`/* Card: rounded-xl bg-card ring-1 ring-border p-2 */
+/* Selected: ring-2 ring-blue-400 shadow-md */
+/* Checkmark: w-5 h-5 bg-primary rounded-full (absolute top-1 right-1) */
+/* Label: text-xs font-semibold text-center text-foreground */
+/* ⚠ Uses light-theme (bg-card) while app is dark */`}
+              />
+            </div>
+
+            <PageSubheading>Story Detail Modal</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="Story Detail Character Card" pageTag="Story Detail Modal"
+                specs='<strong>bg-white/5 rounded-xl p-3</strong>. Contains avatar (w-12 h-12 rounded-xl), character name (font-semibold text-white), role description (text-xs text-white/60). Used in character listing within Story Detail.'
+                previewDark
+                preview={
+                  <div className="bg-white/5 rounded-xl p-3 flex items-center gap-3" style={{ maxWidth: 280 }}>
+                    <div className="w-12 h-12 rounded-xl bg-zinc-700 flex items-center justify-center text-zinc-400 text-lg">👤</div>
+                    <div>
+                      <div className="text-white font-semibold text-sm">Elena Blackwood</div>
+                      <div className="text-white/60 text-xs">Protagonist</div>
+                    </div>
+                  </div>
+                }
+                code={`bg-white/5 rounded-xl p-3
+/* Avatar: w-12 h-12 rounded-xl */
+/* Name: font-semibold text-white text-sm */
+/* Role: text-xs text-white/60 */`}
+              />
+
+              <EntryCard name="Review Card" pageTag="Story Detail Modal"
+                specs='<strong>bg-white/5 rounded-xl p-4</strong>. Contains StarRating + SpiceRating inline, reviewer name (text-sm font-semibold text-white), comment (text-sm text-white/70), date (text-xs text-white/40).'
+                previewDark
+                preview={
+                  <div className="bg-white/5 rounded-xl p-4" style={{ maxWidth: 320 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <span className="text-sm font-semibold text-white">Reviewer</span>
+                      <span className="text-xs text-white/40">2 days ago</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                      <span style={{ fontSize: 12 }}>⭐⭐⭐⭐☆</span>
+                      <span style={{ fontSize: 12 }}>🔥🔥🔥</span>
+                    </div>
+                    <p className="text-sm text-white/70">Great story, well-crafted characters.</p>
+                  </div>
+                }
+                code={`bg-white/5 rounded-xl p-4
+/* StarRating + SpiceRating inline row */
+/* Reviewer: text-sm font-semibold text-white */
+/* Comment: text-sm text-white/70 */
+/* Date: text-xs text-white/40 */`}
+              />
+            </div>
+
+            <PageSubheading>Share Story Modal</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="Blue Info Callout" pageTag="Share Story Modal"
+                specs='<strong>bg-blue-500/10 border-blue-500/20 rounded-xl p-4</strong>. Used for permission/info callouts. Text: <code>text-blue-300 text-xs</code>. Unique pattern — not used anywhere else in the app.'
+                previewDark
+                preview={
+                  <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4" style={{ maxWidth: 320 }}>
+                    <p className="text-blue-300 text-xs">ℹ️ Published stories are visible to all users in the Community Gallery.</p>
+                  </div>
+                }
+                code={`bg-blue-500/10 border border-blue-500/20 rounded-xl p-4
+/* Text: text-blue-300 text-xs */
+/* Unique info callout pattern */`}
+              />
+            </div>
           </Section>
 
           <Divider />
@@ -1797,6 +2028,118 @@ shadow-[0_10px_30px_rgba(0,0,0,0.35)]
 /* Hover: border-blue-500/50 bg-blue-500/10 (Precise) */
 /* Hover: border-purple-500/50 bg-purple-500/10 (Detailed) */`}
             />
+            <div style={{ marginTop: 16 }} />
+
+            <EntryCard name="Image Generation Modal (Light Theme)" pageTag="AI Generation Modals"
+              specs='<strong>Uses shadcn DialogContent defaults</strong> — light background, no dark overrides. Inputs: <code>bg-slate-50 border-slate-200</code>. Buttons: shadcn Button default variant. These are the <strong>only modals</strong> in the entire app using light-theme defaults.'
+              preview={
+                <div style={{ position: 'relative', width: '100%', height: 120, borderRadius: 8, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
+                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 12, padding: '12px 24px', color: '#111827', fontSize: 11, fontWeight: 600, boxShadow: '0 10px 40px rgba(0,0,0,0.3)' }}>
+                    <div style={{ marginBottom: 6 }}>✨ Generate Avatar</div>
+                    <div style={{ padding: '6px 8px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 6, fontSize: 10, color: '#94a3b8' }}>Describe your character...</div>
+                  </div>
+                </div>
+              }
+              previewDark
+              code={`/* Container: shadcn DialogContent (default light bg) */
+/* Inputs: bg-slate-50 border-slate-200 */
+/* Focus: ring-2 ring-blue-100 border-blue-400 */
+/* Buttons: shadcn <Button> default variant */
+/* ⚠ ONLY light-theme modals in the entire app */`}
+            />
+
+            <InconsistencyNote items={[
+              { file: 'AvatarGenerationModal.tsx', note: 'Uses shadcn light-theme DialogContent defaults while every other modal uses bg-zinc-900 border-white/10.' },
+              { file: 'CoverImageGenerationModal.tsx', note: 'Same light-theme inconsistency as AvatarGenerationModal.' },
+              { file: 'SceneImageGenerationModal.tsx', note: 'Same light-theme inconsistency as AvatarGenerationModal.' },
+            ]} />
+
+            <div style={{ marginTop: 16 }} />
+
+            <EntryCard name="Story Detail Modal" pageTag="Story Detail / Gallery"
+              specs='<strong>bg-[#121214] rounded-[32px]</strong>. Unique 32px radius — the only modal using this value. Standard modals use rounded-lg. Contains custom action bar, character cards, review section, and content theme tags.'
+              previewDark
+              preview={
+                <div style={{ position: 'relative', width: '100%', height: 120, borderRadius: 8, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
+                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#121214', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 32, padding: '16px 28px', color: '#fff', fontSize: 11, fontWeight: 600, boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
+                    Story Detail — rounded-[32px]
+                  </div>
+                </div>
+              }
+              code={`bg-[#121214] rounded-[32px] border-white/10
+/* ⚠ Unique 32px radius — standard modals use rounded-lg */
+/* Contains: action bar, character cards, review section */`}
+            />
+
+            <InconsistencyNote items={[
+              { file: 'StoryDetailModal.tsx', note: 'Uses rounded-[32px] while standard modals use rounded-lg. Also uses bg-[#121214] vs standard bg-zinc-900.' },
+            ]} />
+
+            <div style={{ marginTop: 16 }} />
+
+            <EntryCard name="Review Modal" pageTag="Gallery / Story Detail"
+              specs='<strong>bg-[#121214] rounded-2xl</strong>. Third different dark modal bg variant. Buttons use non-standard h-11 + text-sm (standard is h-10 + text-[10px]). Submit: <code>bg-[#4a5f7f]</code>. Delete: <code>bg-red-600/20</code>.'
+              previewDark
+              preview={
+                <div style={{ position: 'relative', width: '100%', height: 100, borderRadius: 8, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
+                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#121214', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: '12px 24px', color: '#fff', fontSize: 11, fontWeight: 600 }}>
+                    Review Modal — rounded-2xl
+                  </div>
+                </div>
+              }
+              code={`bg-[#121214] rounded-2xl
+/* Buttons: h-11 text-sm (non-standard) */
+/* Submit: bg-[#4a5f7f] */
+/* Delete: bg-red-600/20 border-red-500/30 text-red-400 */`}
+            />
+
+            <div style={{ marginTop: 16 }} />
+
+            <EntryCard name="Memories Modal (Slate Theme)" pageTag="Chat Interface"
+              specs='<strong>bg-slate-900 border-slate-700</strong>. Uses slate-* palette throughout instead of app-standard zinc-*. Toggle rows: <code>bg-slate-800/50 border-slate-700</code>. Add form: <code>bg-slate-800/70 border-purple-500/30</code> with <code>animate-in slide-in-from-top-2</code>.'
+              previewDark
+              preview={
+                <div style={{ position: 'relative', width: '100%', height: 100, borderRadius: 8, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
+                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#0f172a', border: '1px solid #334155', borderRadius: 8, padding: '12px 24px', color: '#fff', fontSize: 11, fontWeight: 600 }}>
+                    Memories — slate palette
+                  </div>
+                </div>
+              }
+              code={`bg-slate-900 border-slate-700
+/* Toggle: bg-slate-800/50 border-slate-700 rounded-lg */
+/* Add form: bg-slate-800/70 border-purple-500/30 */
+/* ⚠ Uses slate-* instead of app-standard zinc-* */`}
+            />
+
+            <InconsistencyNote items={[
+              { file: 'MemoriesModal.tsx', note: 'Uses slate-* palette throughout while every other modal uses zinc-*. Also uses bg-slate-900 vs standard bg-zinc-900.' },
+            ]} />
+
+            <div style={{ marginTop: 16 }} />
+
+            <EntryCard name="Share Story Modal" pageTag="Story Builder"
+              specs='<strong>bg-[#2a2a2f] border-white/10</strong>. Uses !important CSS overrides on buttons (<code>!bg-blue-600</code>, <code>!bg-rose-500/20</code>). Info card: <code>bg-zinc-900/50 rounded-xl border-zinc-700</code>.'
+              previewDark
+              preview={
+                <div style={{ position: 'relative', width: '100%', height: 100, borderRadius: 8, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
+                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#2a2a2f', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '12px 24px', color: '#fff', fontSize: 11, fontWeight: 600 }}>
+                    Share Story — bg-[#2a2a2f]
+                  </div>
+                </div>
+              }
+              code={`bg-[#2a2a2f] border-white/10
+/* Buttons: !important overrides (!bg-blue-600, !bg-rose-500/20) */
+/* Info card: bg-zinc-900/50 rounded-xl border-zinc-700 */`}
+            />
+
+            <div style={{ marginTop: 16 }} />
+
+            {/* Master Modal Inconsistency Summary */}
+            <InconsistencyNote items={[
+              { file: 'Global', note: '5 different modal background colors: bg-zinc-900, bg-[#2a2a2f], bg-[#121214], bg-slate-900, and default light (shadcn).' },
+              { file: 'Global', note: '3 different modal border-radius values: rounded-lg (standard), rounded-2xl (Review), rounded-[32px] (Story Detail).' },
+              { file: 'Global', note: 'Button sizing varies: h-10 (standard), h-11 (Review), h-12 (Story Detail actions).' },
+            ]} />
           </Section>
 
           <Divider />
