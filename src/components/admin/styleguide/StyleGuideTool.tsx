@@ -1766,6 +1766,37 @@ shadow-[0_10px_30px_rgba(0,0,0,0.35)]
    Active: bg-blue-500 text-white
    Inactive: bg-zinc-700 text-zinc-300 */`}
             />
+
+            <div style={{ marginTop: 16 }} />
+
+            <EntryCard name="EnhanceModeModal" pageTag="Character Builder"
+              specs='<strong>sm:max-w-md bg-zinc-900 border-white/10</strong>. Close button hidden. 2-column grid of option cards (Precise / Detailed). Each card: p-5 rounded-2xl bg-zinc-800/50 with icon container w-10 h-10 rounded-xl.'
+              preview={
+                <div className="bg-zinc-900 border border-white/10 rounded-lg p-4" style={{ maxWidth: 300 }}>
+                  <div className="mb-3">
+                    <div className="text-sm font-bold text-white">Enhancement Style</div>
+                    <div className="text-[9px] text-zinc-400 mt-0.5">Choose how the AI should expand this field.</div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex flex-col items-center gap-1.5 p-3 rounded-2xl border border-white/10 bg-zinc-800/50">
+                      <div className="w-8 h-8 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400 text-xs">✨</div>
+                      <span className="text-white font-bold text-[9px]">Precise</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-1.5 p-3 rounded-2xl border border-white/10 bg-zinc-800/50">
+                      <div className="w-8 h-8 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-400 text-xs">≡</div>
+                      <span className="text-white font-bold text-[9px]">Detailed</span>
+                    </div>
+                  </div>
+                </div>
+              }
+              previewPlain
+              code={`sm:max-w-md bg-zinc-900 border-white/10 p-0 gap-0 [&>button]:hidden
+/* Option cards: p-5 rounded-2xl border-white/10 bg-zinc-800/50 */
+/* Precise icon: w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 */
+/* Detailed icon: w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 */
+/* Hover: border-blue-500/50 bg-blue-500/10 (Precise) */
+/* Hover: border-purple-500/50 bg-purple-500/10 (Detailed) */`}
+            />
           </Section>
 
           <Divider />
