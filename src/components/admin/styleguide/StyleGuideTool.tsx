@@ -426,6 +426,43 @@ export const StyleGuideTool: React.FC = () => {
               <SwatchCard color="#4a5f7f" name="Active Sidebar Item" rows={[{ label: 'Hex', value: '#4a5f7f' }, { label: 'Token', value: 'bg-[#4a5f7f]' }, { label: 'Effect', value: 'shadow-lg shadow-black/40' }, { label: 'Location', value: 'Active navigation item background', isLocation: true }]} />
               <SwatchCard color="#94a3b8" name="Inactive Sidebar Text" rows={[{ label: 'Hex', value: '#94a3b8' }, { label: 'Token', value: 'text-slate-400' }, { label: 'Location', value: 'Inactive sidebar item text and icons', isLocation: true }]} />
             </div>
+
+            <Divider />
+
+            {/* ─── Character Builder ─── */}
+            <PageSubheading>Character Builder</PageSubheading>
+            <PageDesc>Colors specific to the Character Builder / CharactersTab editor.</PageDesc>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
+              <SwatchCard color="rgba(58,58,63,0.3)" name="Inner Card Surface" rows={[{ label: 'Value', value: 'rgba(58,58,63,0.3)' }, { label: 'Token', value: 'bg-[#3a3a3f]/30' }, { label: 'Location', value: 'HardcodedSection inner card, character trait row containers', isLocation: true }]} />
+              <SwatchCard color="rgba(24,24,27,0.5)" name="HardcodedRow Label BG" rows={[{ label: 'Value', value: 'rgba(24,24,27,0.5)' }, { label: 'Token', value: 'bg-zinc-900/50' }, { label: 'Location', value: 'Read-only trait labels (Physical Appearance, Personality, etc.)', isLocation: true }]} />
+              <SwatchCard color="rgba(96,165,250,0.1)" name="Enhance Hover BG" rows={[{ label: 'Value', value: 'rgba(96,165,250,0.1)' }, { label: 'Token', value: 'bg-blue-500/10' }, { label: 'Location', value: 'AI Enhance sparkle button hover state', isLocation: true }]} />
+            </div>
+
+            <Divider />
+
+            {/* ─── Model Settings ─── */}
+            <PageSubheading>Model Settings</PageSubheading>
+            <PageDesc>Colors used on the Model Settings page — NOTE: this page uses a LIGHT THEME unlike the rest of the app.</PageDesc>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
+              <SwatchCard color="#ffffff" name="Model Card BG (Inactive)" rows={[{ label: 'Hex', value: '#ffffff' }, { label: 'Token', value: 'bg-white' }, { label: 'Location', value: 'Inactive model selection card background', isLocation: true }]} />
+              <SwatchCard color="#0f172a" name="Model Card BG (Active)" rows={[{ label: 'Hex', value: '#0f172a' }, { label: 'Token', value: 'bg-slate-900' }, { label: 'Location', value: 'Active/selected model card background, scale-[1.02]', isLocation: true }]} />
+              <SwatchCard color="#faf5ff" name="Admin Share Panel" rows={[{ label: 'Hex', value: '#faf5ff' }, { label: 'Token', value: 'bg-purple-50' }, { label: 'Location', value: 'Admin-only share toggle row background, border-purple-200', isLocation: true }]} />
+              <SwatchCard color="#f8fafc" name="Connection Setup BG" rows={[{ label: 'Hex', value: '#f8fafc' }, { label: 'Token', value: 'bg-slate-50' }, { label: 'Location', value: 'Connection setup container within Model Settings', isLocation: true }]} />
+            </div>
+            <InconsistencyNote items={[
+              { file: 'ModelSettingsTab.tsx', note: 'Uses LIGHT THEME (bg-white, text-slate-900, border-slate-200) while every other page in the app uses dark theme. Major design inconsistency.' },
+              { file: 'ModelSettingsTab.tsx', note: 'Card hover uses scale-[1.02] transition — unique to this page, not used elsewhere.' },
+            ]} />
+
+            <Divider />
+
+            {/* ─── World Tab ─── */}
+            <PageSubheading>World Tab</PageSubheading>
+            <PageDesc>Colors specific to the World Tab and its hint/character components.</PageDesc>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
+              <SwatchCard color="rgba(0,0,0,0.8)" name="CharacterButton BG" rows={[{ label: 'Value', value: 'rgba(0,0,0,0.8)' }, { label: 'Token', value: 'bg-black/80' }, { label: 'Location', value: 'World Tab character card button background', isLocation: true }]} />
+              <SwatchCard color="#4a5f7f" name="CharacterButton Border" rows={[{ label: 'Hex', value: '#4a5f7f' }, { label: 'Token', value: 'border-[#4a5f7f]' }, { label: 'Hover', value: 'border-[#6b82a8]' }, { label: 'Location', value: 'Character card border, hover brightens to #6b82a8', isLocation: true }]} />
+            </div>
           </Section>
 
           <Divider />
