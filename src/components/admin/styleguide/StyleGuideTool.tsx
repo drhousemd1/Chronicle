@@ -161,6 +161,25 @@ const Divider: React.FC<{ style?: React.CSSProperties }> = ({ style }) => (
   <hr style={{ border: 'none', height: 1, background: sg.border, margin: '52px 0', ...style }} />
 );
 
+/* ═══════════════════════ INCONSISTENCY NOTE ═══════════════════════ */
+const InconsistencyNote: React.FC<{ items: { file: string; note: string }[] }> = ({ items }) => (
+  <div style={{
+    marginTop: 10, padding: '12px 14px', borderRadius: 8,
+    background: '#fffbeb', border: '1px solid #fcd34d',
+    fontSize: 11, lineHeight: 1.7, color: '#92400e',
+  }}>
+    <div style={{ fontWeight: 800, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 6, color: '#b45309' }}>
+      ⚠ Inconsistencies Found
+    </div>
+    {items.map((item, i) => (
+      <div key={i} style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '4px 10px', marginBottom: 2 }}>
+        <span style={{ fontFamily: "'SF Mono','Fira Code',monospace", fontWeight: 700, fontSize: 10, color: '#b45309', whiteSpace: 'nowrap' }}>{item.file}</span>
+        <span>{item.note}</span>
+      </div>
+    ))}
+  </div>
+);
+
 /* ═══════════════════════ SECTION WRAPPER ═══════════════════════ */
 const Section: React.FC<{ id: string; title: string; desc: string; children: React.ReactNode; style?: React.CSSProperties }> = ({ id, title, desc, children, style }) => (
   <section id={`sg-${id}`} style={{ marginBottom: 64, scrollMarginTop: 96, ...style }}>
