@@ -2397,6 +2397,170 @@ rounded-3xl border-slate-200 bg-white p-4 shadow-sm
                 { file: 'ArcBranchLane.tsx', note: 'Uses inline rgba() colors instead of Tailwind tokens. Unique to the Arc system — no other component does this.' },
               ]} />
             </div>
+
+            <PageSubheading>Chat Interface — White Sidebar</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="Chat Sidebar (Light Theme)" pageTag="Chat Interface"
+                specs='<strong>bg-white</strong> with <code>shadow-[inset_-4px_0_12px_rgba(0,0,0,0.02)]</code>. Optional background image overlay adds <code>bg-white/90 backdrop-blur-md</code>. Section headers: <code>#4a5f7f rounded-lg</code> pills with uppercase labels (MAIN CHARACTERS, SIDE CHARACTERS). Collapsible sections with chevron toggles.'
+                preview={
+                  <div style={{ display: 'flex', gap: 0, width: '100%', height: 140, borderRadius: 8, overflow: 'hidden' }}>
+                    <div style={{ width: '40%', background: '#fff', padding: 10, borderRight: '1px solid #e2e8f0', boxShadow: 'inset -4px 0 12px rgba(0,0,0,0.02)' }}>
+                      <div className="px-2 py-1 rounded-lg text-white text-[8px] font-black uppercase tracking-widest mb-2" style={{ background: '#4a5f7f', display: 'inline-block' }}>Main Characters</div>
+                      <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] mb-1">Location</div>
+                      <div className="text-[11px] font-bold text-slate-700 mb-2">Castle Grounds</div>
+                      <div className="px-2 py-1 rounded-lg text-white text-[8px] font-black uppercase tracking-widest" style={{ background: '#4a5f7f', display: 'inline-block' }}>Side Characters</div>
+                    </div>
+                    <div style={{ flex: 1, background: '#1a1a1f', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span style={{ fontSize: 10, color: '#64748b' }}>Chat Area (dark)</span>
+                    </div>
+                  </div>
+                }
+                previewPlain
+                code={`/* Sidebar: bg-white shadow-[inset_-4px_0_12px_rgba(0,0,0,0.02)] */
+/* With BG image: bg-white/90 backdrop-blur-md */
+/* Section headers: bg-[#4a5f7f] rounded-lg px-2 py-1 */
+/* Labels: text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 */
+/* Values: text-[11px] font-bold text-slate-700 */
+/* ⚠ White sidebar in otherwise dark-themed app */`}
+              />
+              <InconsistencyNote items={[
+                { file: 'ChatInterfaceTab.tsx', note: 'Uses bg-white sidebar with text-slate-700 values inside a dark-themed application. Jarring contrast with surrounding dark content.' },
+              ]} />
+            </div>
+
+            <PageSubheading>World Tab — Two-Pane Layout</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="World Tab Sidebar + Content" pageTag="World Tab"
+                specs='<strong>Left sidebar:</strong> <code>w-[260px] bg-[#2a2a2f] border-r border-white/10</code> with <code>#4a5f7f</code> header. <strong>Right content:</strong> uses Chronicle UI.tsx components (light-theme Cards/Inputs on dark background). "Add Character" button: <code>border-2 border-dashed border-zinc-600</code> with <code>bg-[#1a1a1f]</code> icon container.'
+                previewDark
+                preview={
+                  <div style={{ display: 'flex', width: '100%', height: 130, borderRadius: 8, overflow: 'hidden' }}>
+                    <div style={{ width: 120, background: '#2a2a2f', borderRight: '1px solid rgba(255,255,255,0.1)', padding: 8 }}>
+                      <div className="text-[8px] font-black uppercase tracking-widest text-white/70 px-2 py-1 rounded-lg mb-2" style={{ background: '#4a5f7f' }}>Characters</div>
+                      <div className="rounded-lg p-2 mb-2" style={{ background: 'rgba(58,58,63,0.3)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        <div className="text-[9px] text-white font-semibold">Hero</div>
+                      </div>
+                      <div className="flex items-center justify-center rounded-xl p-2" style={{ background: 'rgba(58,58,63,0.3)' }}>
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: '#1a1a1f', border: '2px dashed #52525b' }}>
+                          <span className="text-zinc-500 text-xs">+</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ flex: 1, background: '#2a2a2f', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <div className="rounded-2xl bg-white border border-slate-200 p-3 text-[9px] text-slate-500" style={{ width: '80%' }}>Chronicle UI Card (light)</div>
+                    </div>
+                  </div>
+                }
+                previewPlain
+                code={`/* Sidebar: w-[260px] bg-[#2a2a2f] border-r border-white/10 */
+/* Header: bg-[#4a5f7f] rounded-lg */
+/* Character item: bg-[#3a3a3f]/30 rounded-xl border-white/5 */
+/* Add button: border-2 border-dashed border-zinc-600 */
+/* Icon container: w-14 h-14 rounded-xl bg-[#1a1a1f] */
+/* ⚠ Right pane uses Chronicle UI light-theme Cards on dark bg */`}
+              />
+              <InconsistencyNote items={[
+                { file: 'WorldTab.tsx', note: 'Right content area uses Chronicle UI.tsx light-theme components (bg-white Cards, bg-slate-50 Inputs) on a bg-[#2a2a2f] dark background.' },
+              ]} />
+            </div>
+
+            <PageSubheading>Character Builder — Collapsible Sections</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="Builder Collapsible Section" pageTag="Character Builder"
+                specs='<strong>Container:</strong> <code>bg-[#2a2a2f] rounded-[24px] border border-white/10 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]</code>. <strong>Header bar:</strong> <code>bg-[#4a5f7f] border-b border-white/20 px-5 py-3 shadow-lg</code>. <strong>Inner card:</strong> <code>bg-[#3a3a3f]/30 rounded-2xl border border-white/5</code>. Form rows: label (w-2/5) + value input, both <code>bg-zinc-900/50 border-white/10 rounded-lg</code>.'
+                previewDark previewStyle={{ flexDirection: 'column', gap: 0, padding: 0 }}
+                preview={
+                  <div className="rounded-[16px] border border-white/10 overflow-hidden" style={{ background: '#2a2a2f', width: '100%', boxShadow: '0 12px 32px -2px rgba(0,0,0,0.50)' }}>
+                    <div className="px-4 py-2 border-b border-white/20 flex items-center justify-between" style={{ background: '#4a5f7f' }}>
+                      <span className="text-white text-[10px] font-bold uppercase tracking-wider">Physical Appearance</span>
+                      <span className="text-white/60 text-xs">▾</span>
+                    </div>
+                    <div className="p-3">
+                      <div className="rounded-xl p-2" style={{ background: 'rgba(58,58,63,0.3)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <input readOnly className="w-2/5 px-2 py-1.5 bg-zinc-900/50 border border-white/10 rounded-lg text-white text-[10px]" value="Hair" />
+                          <input readOnly className="flex-1 px-2 py-1.5 bg-zinc-900/50 border border-white/10 rounded-lg text-white text-[10px]" value="Long silver strands" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                }
+                previewPlain
+                code={`/* Container: bg-[#2a2a2f] rounded-[24px] border-white/10 */
+/* shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)] */
+/* Header: bg-[#4a5f7f] border-b border-white/20 px-5 py-3 */
+/* Inner card: bg-[#3a3a3f]/30 rounded-2xl border-white/5 */
+/* Form inputs: bg-zinc-900/50 border-white/10 rounded-lg */
+/* ⚠ Uses rounded-[24px] — yet another radius variant */`}
+              />
+              <InconsistencyNote items={[
+                { file: 'CharactersTab.tsx', note: 'Uses rounded-[24px] for section containers — different from rounded-2xl (16px), rounded-3xl (24px Tailwind), and rounded-[2rem] (story cards).' },
+              ]} />
+            </div>
+
+            <PageSubheading>Chat Sidebar — Info Sections</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="Chat Sidebar Collapsible Info" pageTag="Chat Interface"
+                specs='Light-themed collapsible info sections inside the white sidebar. <strong>Labels:</strong> <code>text-[9px] font-bold text-slate-400 uppercase tracking-wider</code>. <strong>Values:</strong> <code>text-[11px] font-bold text-slate-700</code>. <strong>Section header:</strong> <code>text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]</code> with rotate-180 chevron toggle.'
+                preview={
+                  <div style={{ background: '#fff', padding: 12, borderRadius: 8, width: '100%' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                      <span className="text-[10px] font-black text-slate-400 uppercase" style={{ letterSpacing: '0.15em' }}>World Info</span>
+                      <span style={{ color: '#94a3b8', fontSize: 10 }}>▾</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <div>
+                        <span className="text-[9px] font-bold text-slate-400 uppercase" style={{ letterSpacing: '0.05em' }}>Location</span>
+                        <div className="text-[11px] font-bold text-slate-700">Castle Grounds</div>
+                      </div>
+                      <div>
+                        <span className="text-[9px] font-bold text-slate-400 uppercase" style={{ letterSpacing: '0.05em' }}>Time</span>
+                        <div className="text-[11px] font-bold text-slate-700">Day 3, Sunset</div>
+                      </div>
+                    </div>
+                  </div>
+                }
+                previewPlain
+                code={`/* Section header: text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] */
+/* Label: text-[9px] font-bold text-slate-400 uppercase tracking-wider */
+/* Value: text-[11px] font-bold text-slate-700 */
+/* ⚠ Uses text-slate-700 (light theme) — consistent within white sidebar */`}
+              />
+            </div>
+
+            <PageSubheading>Subscription Tab</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="Subscription Tier Card" pageTag="Account Page"
+                specs='Pricing tier cards with <strong>bg-white/5 rounded-2xl border-white/10</strong> (Free), <strong>bg-[#4a5f7f]/10 border-[#4a5f7f]/30</strong> (Pro), <strong>bg-amber-500/10 border-amber-500/20</strong> (Premium). "Coming Soon" badge: <code>bg-[#4a5f7f] text-white rounded-full text-[10px]</code>. "Current Plan" badge: <code>bg-emerald-500/20 text-emerald-400 border-emerald-500/30</code>.'
+                previewDark previewStyle={{ gap: 8 }}
+                preview={
+                  <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+                    <div className="flex-1 rounded-xl border border-white/10 p-3" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                      <div className="text-slate-400 text-[9px] font-bold">Free</div>
+                      <div className="text-white text-sm font-black mt-1">$0</div>
+                      <div className="mt-2 px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full text-[8px] font-bold uppercase inline-block">Current</div>
+                    </div>
+                    <div className="flex-1 rounded-xl p-3" style={{ background: 'rgba(74,95,127,0.1)', border: '1px solid rgba(74,95,127,0.3)' }}>
+                      <div style={{ color: '#7ba3d4' }} className="text-[9px] font-bold">Pro</div>
+                      <div className="text-white text-sm font-black mt-1">$9.99</div>
+                      <div className="mt-2 px-2 py-0.5 bg-[#4a5f7f] text-white rounded-full text-[8px] font-bold uppercase inline-block">Soon</div>
+                    </div>
+                    <div className="flex-1 rounded-xl p-3" style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)' }}>
+                      <div className="text-amber-400 text-[9px] font-bold">Premium</div>
+                      <div className="text-white text-sm font-black mt-1">$19.99</div>
+                      <div className="mt-2 px-2 py-0.5 bg-[#4a5f7f] text-white rounded-full text-[8px] font-bold uppercase inline-block">Soon</div>
+                    </div>
+                  </div>
+                }
+                previewPlain
+                code={`/* Free: bg-white/5 border-white/10 */
+/* Pro: bg-[#4a5f7f]/10 border-[#4a5f7f]/30, color: #7ba3d4 */
+/* Premium: bg-amber-500/10 border-amber-500/20, color: text-amber-400 */
+/* Current badge: bg-emerald-500/20 text-emerald-400 border-emerald-500/30 */
+/* Coming Soon badge: bg-[#4a5f7f] text-white rounded-full */
+/* CTA button: bg-[#4a5f7f] hover:bg-[#5a6f8f] (brand accent) */`}
+              />
+            </div>
           </Section>
 
           <Divider />
