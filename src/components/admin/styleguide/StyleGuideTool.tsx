@@ -1417,6 +1417,48 @@ placeholder:text-white/30 rounded-lg text-sm`}
 placeholder:text-zinc-500 focus:border-[#4a5f7f]`}
               />
             </div>
+
+            <PageSubheading>Chronicle UI.tsx — Parallel Input System</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="Chronicle UI.tsx Input (Light Theme)" pageTag="Chronicle UI System"
+                specs='<strong>bg-slate-50 border-slate-200 rounded-2xl</strong>. Light-theme input used across StoryHub, CharactersTab, WorldTab, ModelSettings, PublicProfileTab. Different from shadcn Input and all dark-themed inputs. Label: <code>text-xs font-bold uppercase</code>.'
+                preview={
+                  <div style={{ width: '100%' }}>
+                    <label className="block text-xs font-bold uppercase mb-1 text-slate-500">Label</label>
+                    <input readOnly className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none" placeholder="Chronicle UI Input..." />
+                  </div>
+                }
+                code={`/* Chronicle UI.tsx Input */
+rounded-2xl border-slate-200 bg-slate-50 px-4 py-3 text-sm
+focus:ring-2 focus:ring-blue-100 focus:border-blue-400
+/* Label: text-xs font-bold uppercase text-slate-500 */
+/* ⚠ Light theme — used across ~50% of the app */`}
+              />
+              <EntryCard name="Chronicle UI.tsx TextArea (Light Theme)" pageTag="Chronicle UI System"
+                specs='Same styling as Chronicle Input. <strong>bg-slate-50 border-slate-200 rounded-2xl</strong>. Supports autoResize prop. Used in CharacterEditForm, WorldTab, ShareStoryModal.'
+                preview={
+                  <textarea readOnly className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none resize-none" rows={2} placeholder="Chronicle UI TextArea..." />
+                }
+                code={`/* Chronicle UI.tsx TextArea */
+rounded-2xl border-slate-200 bg-slate-50 px-4 py-3 text-sm resize-none
+focus:ring-2 focus:ring-blue-100 focus:border-blue-400
+/* ⚠ Light theme — same issue as Chronicle Input */`}
+              />
+              <EntryCard name="CharacterPicker Search (Dark Override)" pageTag="Character Picker"
+                specs='Chronicle UI.tsx Input with <strong>!important overrides</strong> to force dark theme: <code>!bg-zinc-900/50 !border-zinc-700 !text-white</code>. Demonstrates the friction of using light-theme primitives in a dark context.'
+                previewDark
+                preview={
+                  <input readOnly className="w-full rounded-2xl bg-zinc-900/50 border border-zinc-700 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500" placeholder="Search characters..." />
+                }
+                code={`/* Chronicle UI.tsx Input with !important dark overrides */
+className="!bg-zinc-900/50 !border-zinc-700 !text-white !placeholder:text-zinc-400"
+/* ⚠ Demonstrates friction of using light primitives in dark context */`}
+              />
+              <InconsistencyNote items={[
+                { file: 'UI.tsx', note: 'Defines light-theme Input/TextArea (bg-slate-50 border-slate-200) while app is dark-themed. Components using it in dark contexts need !important overrides.' },
+                { file: 'CharacterPicker.tsx', note: 'Uses !important CSS overrides to force dark styling on Chronicle UI Input.' },
+              ]} />
+            </div>
           </Section>
 
           <Divider />
