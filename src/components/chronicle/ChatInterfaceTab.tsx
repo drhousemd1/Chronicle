@@ -407,6 +407,54 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     }
   };
 
+  // Pass 7: Anti-loop micro-directive — detects confirmation loops and injects guards
+  const getAntiLoopDirective = (): string => {
+    const msgs = conversation?.messages || [];
+    if (msgs.length < 2) return '';
+    
+    const directives: string[] = [];
+    
+    // Check if user's last message is an affirmation
+    const lastUserMsg = [...msgs].reverse().find(m => m.role === 'user');
+    if (lastUserMsg) {
+      const affirmPatterns = /\b(yes|yeah|okay|ok|sure|i understand|i will|i promise|i agree|alright|fine|got it|of course|absolutely|definitely|right|mhm|uh huh|yep|yup)\b/i;
+      if (affirmPatterns.test(lastUserMsg.text)) {
+        directives.push('[ANTI-LOOP: User has ALREADY confirmed/agreed. Do NOT re-ask for confirmation. Do NOT say "tell me again" or "promise me." Take IMMEDIATE ACTION now.]');
+      }
+    }
+    
+    // Check if last 2 assistant messages repeat similar question stems
+    const lastAiMsgs = msgs.filter(m => m.role === 'assistant').slice(-2);
+    if (lastAiMsgs.length === 2) {
+      const extractQuestions = (text: string) => {
+        const matches = text.match(/"[^"]*\?"/g) || [];
+        return matches.map(q => q.toLowerCase().replace(/[^a-z\s]/g, '').trim()).filter(Boolean);
+      };
+      const q1 = extractQuestions(lastAiMsgs[0].text);
+      const q2 = extractQuestions(lastAiMsgs[1].text);
+      const hasRepeat = q1.some(a => q2.some(b => {
+        const words1 = new Set(a.split(/\s+/));
+        const words2 = new Set(b.split(/\s+/));
+        const overlap = ([...words1] as string[]).filter(w => words2.has(w) && w.length > 3).length;
+        return overlap >= 3;
+      }));
+      if (hasRepeat) {
+        directives.push('[ANTI-LOOP: Prior responses contained similar questions. Do NOT rephrase the same question. Advance to a NEW narrative beat with concrete action.]');
+      }
+    }
+    
+    // Check for deferral pattern in last assistant message
+    const lastAiMsg = [...msgs].reverse().find(m => m.role === 'assistant');
+    if (lastAiMsg) {
+      const deferralPatterns = /\b(we'll talk|we'll discuss|we'll figure|we'll sort|later tonight|after dinner|after we're done|soon enough|tomorrow|eventually)\b/i;
+      if (deferralPatterns.test(lastAiMsg.text)) {
+        directives.push('[ANTI-LOOP: Previous response deferred action. This response MUST deliver on what was deferred — no more postponing.]');
+      }
+    }
+    
+    return directives.join(' ');
+  };
+
   // Ref to always hold current sideCharacters - avoids stale closure in async callbacks
   const sideCharactersRef = useRef<SideCharacter[]>(appData.sideCharacters || []);
   useEffect(() => {
@@ -2339,9 +2387,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       
       // Issue #7: Compute length directive and increment session counter
       const lengthDirective = getLengthDirective();
+      const antiLoopDirective = getAntiLoopDirective();
       sessionMessageCountRef.current += 1;
       
-      const llmInput = canonNote + input;
+      const llmInput = antiLoopDirective + (antiLoopDirective ? ' ' : '') + canonNote + input;
       const stream = generateRoleplayResponseStream(llmAppData, conversationId, llmInput, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled, undefined, lengthDirective || undefined, sessionMessageCountRef.current);
 
       for await (const chunk of stream) {
@@ -2513,18 +2562,24 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     setFormattedStreamingContent('');
     
     try {
-      // Strip the old AI response from the conversation context so the AI generates fresh
-      // without being influenced by (and swinging opposite to) the rejected response
+      // Strip the old AI response AND the triggering user message from context
+      // (generateRoleplayResponseStream will re-add the user message as the final turn,
+      //  so including it in history would duplicate it and reinforce confirmation loops)
       const llmAppData = buildLLMAppData();
+      const conv = llmAppData.conversations.find(c => c.id === conversationId);
+      const userMsgIdx = conv?.messages.findIndex(m => m.id === userMessage.id) ?? msgIndex;
+      const truncateAt = userMsgIdx >= 0 ? userMsgIdx : msgIndex;
       const truncatedConvs = llmAppData.conversations.map(c =>
         c.id === conversationId
-          ? { ...c, messages: c.messages.slice(0, msgIndex) }
+          ? { ...c, messages: c.messages.slice(0, truncateAt) }
           : c
       );
       const truncatedAppData = { ...llmAppData, conversations: truncatedConvs };
       
       let fullText = '';
-      const stream = generateRoleplayResponseStream(truncatedAppData, conversationId, userMessage.text, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled, true);
+      const antiLoopDirective = getAntiLoopDirective();
+      const regenInput = antiLoopDirective + (antiLoopDirective ? ' ' : '') + userMessage.text;
+      const stream = generateRoleplayResponseStream(truncatedAppData, conversationId, regenInput, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled, true);
       
       for await (const chunk of stream) {
         fullText += chunk;

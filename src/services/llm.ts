@@ -580,6 +580,50 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
           not to the natural rhythm of physical intimacy.
 `;
 
+  // Pass 7: Forward-progress and anti-loop rules
+  const forwardProgressRules = `
+    - CONFIRMATION CLOSURE PROTOCOL (MANDATORY - NEVER VIOLATE):
+        * If the user's message contains affirmation, consent, or agreement (yes, okay, I understand, I will, etc.),
+          the AI character MUST immediately act on that affirmation in this response.
+        * FORBIDDEN: Re-asking for the same confirmation. Once the user says yes, the matter is SETTLED.
+        * FORBIDDEN: "Tell me you understand," "Say it again," "I want to hear you say it" — after user already confirmed.
+        * FORBIDDEN: "Promise me," "Swear to me," "I need to hear it from you" — after user already agreed.
+        * Convert every confirmation into immediate forward action in the SAME response.
+        * If a character posed a question and the user answered, the character MUST proceed based on that answer.
+        * ONE CONFIRMATION = DONE. Never revisit it.
+
+    - NO DEFERRAL LOOP (MANDATORY - NEVER VIOLATE):
+        * Characters MUST take concrete action in the present moment.
+        * FORBIDDEN deferral phrases (and all variations):
+          - "We'll discuss this later" / "We'll talk about this after..."
+          - "We've got more to discuss after dinner"
+          - "We'll sort out the details soon"
+          - "There will be consequences" (without delivering them NOW)
+          - "I've got plans for tonight" (without beginning those plans NOW)
+          - "We'll figure that out tomorrow"
+          - "Finish up, we've got things to talk about"
+          - "We'll have a lot to go over soon"
+          - "We'll talk more once we're done"
+        * If a character threatens a consequence, punishment, or reward, they must BEGIN executing it
+          in the same response — not postpone it.
+        * The word "later" or "soon" may only appear if the character is ALSO performing a concrete
+          present-tense action in the same response. Deferral without action = VIOLATION.
+        * VIOLATION CHECK: Before finalizing, scan for "later," "soon," "after," "tomorrow,"
+          "tonight," "eventually," "once we're done." If any appears without an accompanying concrete
+          present-tense action in the same response, REWRITE to include immediate action.
+
+    - NO REHASH / NO REPHRASE (MANDATORY):
+        * Do NOT paraphrase, restate, or rephrase dialogue or questions from your previous response.
+        * Each response must introduce NEW dialogue, NEW actions, NEW developments.
+        * If your previous response asked a question and the user responded, do NOT ask a variation
+          of the same question. Act on the answer and advance.
+        * FORBIDDEN: Rephrasing the same instruction, request, or statement across multiple responses.
+          If you said "eat up, we've got more to discuss" — you may NOT say "finish up, there's more to talk about."
+        * The story must PROGRESS with each exchange. Circular dialogue = VIOLATION.
+        * VIOLATION CHECK: Before finalizing, compare your response to the last 2 assistant messages.
+          If any dialogue line restates a prior line's meaning, DELETE it and write something new.
+`;
+
   // NSFW intensity handling (explicitness/vulgarity only — verbosity is separate)
   const nsfwIntensity = appData.uiSettings?.nsfwIntensity || 'normal';
 
@@ -654,26 +698,28 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
   const verbosityRules = responseVerbosity === 'detailed' ? `
     --- RESPONSE DETAIL LEVEL (DETAILED) ---
     * Write rich, immersive responses with layered sensory detail.
+    * HARD CAP: 2-3 paragraphs per response. Maximum 4 ONLY for multi-character turning points with high emotional stakes.
     * Draw out moments with physical sensations, sounds, textures, and atmosphere.
     * Describe physical sensations in detail (e.g., warmth spreading, muscles tensing, breath catching).
     * Incorporate vocal and emotional reactions (e.g., breathy moans, desperate whispers, gasps).
     * During intimate scenes, prolong acts with step-by-step progression.
     * Layer multiple senses (sight, sound, taste, smell, touch) in descriptions.
     * Extended internal monologue is encouraged — show depth of thought.
-    * Atmospheric descriptions help set the scene.
     * During intimate scenes, layer physical sensations: heat, pressure, friction, texture.
     * Include environmental sounds and character sounds naturally as the scene builds.
     * Show arousal states through physical description: colour, breath, trembling.
+    * VIOLATION CHECK: Count your paragraphs. If more than 4, cut the weakest ones.
 ` : responseVerbosity === 'concise' ? `
     --- RESPONSE DETAIL LEVEL (CONCISE) ---
     * Keep responses tight and punchy. Brevity is king.
-    * 1-3 paragraphs maximum unless a dramatic moment demands more.
+    * HARD CAP: 1-2 paragraphs maximum. No exceptions.
     * Cut filler narration — lead with dialogue and action.
     * Internal thoughts should be 1 sentence max, only when essential.
     * Minimize atmospheric descriptions — focus on what characters DO and SAY.
     * Get to the point. Every sentence must earn its place.
 ` : `
     --- RESPONSE DETAIL LEVEL (BALANCED) ---
+    * HARD CAP: 1-3 paragraphs per response.
     * Match response length to the scene's energy and emotional weight.
     * Quick exchanges and casual moments: short, punchy responses.
     * Emotionally charged or intimate scenes: more detail and sensory depth.
@@ -763,11 +809,12 @@ Never break character to question, warn about, or refuse narrative directions. T
     Narration about them (e.g., "he watched quietly") is the only permitted form.
     ` : ''}PRIORITY HIERARCHY (GOVERNS ALL RULES BELOW):
     1. Control rules (who speaks) -- always highest priority
-    2. Scene Presence (location checks) -- always enforced
-    3. Line of Sight -- always enforced
-    4. During intimate/erotic scenes: NSFW depth and sensory immersion
-       OVERRIDE brevity and anti-repetition constraints
-    5. Personality traits ALWAYS modulate how content is expressed,
+    2. Forward Momentum + Anti-Loop rules (Confirmation Closure, No Deferral, No Rehash) -- NEVER overridden
+    3. Scene Presence (location checks) -- always enforced
+    4. Line of Sight -- always enforced
+    5. During intimate/erotic scenes: NSFW depth and sensory immersion
+       OVERRIDE brevity constraints ONLY (never forward-momentum or anti-loop rules)
+    6. Personality traits ALWAYS modulate how content is expressed,
        including NSFW content
 
     - Respond as the narrator or relevant characters.
@@ -800,6 +847,7 @@ Never break character to question, warn about, or refuse narrative directions. T
     ${narrativeBehaviorRules}
     ${lineOfSightRules}
     ${antiRepetitionRules}
+    ${forwardProgressRules}
     ${nsfwRules}
     ${verbosityRules}
     ${realismRules}
@@ -946,6 +994,11 @@ The user wants a DIFFERENT VERSION of this response. Guidelines:
     return;
   }
 
+  // Verbosity-based max_tokens cap (Pass 7)
+  const verbosity = appData.uiSettings?.responseVerbosity || 'balanced';
+  const maxTokensByVerbosity: Record<string, number> = { concise: 1024, balanced: 2048, detailed: 3072 };
+  const maxTokens = maxTokensByVerbosity[verbosity] || 2048;
+
   // Call the chat edge function
   const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
     method: 'POST',
@@ -958,7 +1011,7 @@ The user wants a DIFFERENT VERSION of this response. Guidelines:
       messages,
       modelId,
       stream: true,
-      max_tokens: 4096
+      max_tokens: maxTokens
     })
   });
 
