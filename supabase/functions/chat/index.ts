@@ -35,10 +35,12 @@ type ChatRequest = {
 type XAIResult = { ok: true; response: Response } | { ok: false; status: number; errorText: string };
 
 const CONTENT_REDIRECT_DIRECTIVE = `[CONTENT REDIRECT] The previous user message touched on content the model cannot engage with directly. Continue the roleplay naturally by:
-1. Having the character(s) gracefully deflect, redirect, or change the subject
+1. Having the character(s) take a CONCRETE, IMMEDIATE action that pivots the scene — NOT a deflection or subject change
 2. Maintain the current scene's tone and momentum
-3. Do NOT reference the filter or moderation -- stay fully in-character
-4. Move the story forward in a way that feels organic`;
+3. Do NOT reference the filter or moderation — stay fully in-character
+4. Move the story forward with a specific present-tense event (e.g., a character does something physical, makes a decision, initiates a new activity)
+5. FORBIDDEN: Postponement language ("we'll talk later," "let's discuss this soon," "another time"). Act NOW.
+6. FORBIDDEN: Vague redirects ("let's change the subject," "how about we..."). Be specific and decisive.`;
 
 // GROK ONLY -- All models route to xAI
 async function callXAI(messages: Message[], modelId: string, stream: boolean, maxTokens: number = 4096): Promise<XAIResult> {

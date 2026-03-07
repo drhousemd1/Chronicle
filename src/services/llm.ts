@@ -993,6 +993,11 @@ The user wants a DIFFERENT VERSION of this response. Guidelines:
     return;
   }
 
+  // Verbosity-based max_tokens cap (Pass 7)
+  const verbosity = appData.uiSettings?.responseVerbosity || 'balanced';
+  const maxTokensByVerbosity: Record<string, number> = { concise: 1024, balanced: 2048, detailed: 3072 };
+  const maxTokens = maxTokensByVerbosity[verbosity] || 2048;
+
   // Call the chat edge function
   const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
     method: 'POST',
@@ -1005,7 +1010,7 @@ The user wants a DIFFERENT VERSION of this response. Guidelines:
       messages,
       modelId,
       stream: true,
-      max_tokens: 4096
+      max_tokens: maxTokens
     })
   });
 

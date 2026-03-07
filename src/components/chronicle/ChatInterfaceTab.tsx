@@ -2562,18 +2562,24 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     setFormattedStreamingContent('');
     
     try {
-      // Strip the old AI response from the conversation context so the AI generates fresh
-      // without being influenced by (and swinging opposite to) the rejected response
+      // Strip the old AI response AND the triggering user message from context
+      // (generateRoleplayResponseStream will re-add the user message as the final turn,
+      //  so including it in history would duplicate it and reinforce confirmation loops)
       const llmAppData = buildLLMAppData();
+      const conv = llmAppData.conversations.find(c => c.id === conversationId);
+      const userMsgIdx = conv?.messages.findIndex(m => m.id === userMessage.id) ?? msgIndex;
+      const truncateAt = userMsgIdx >= 0 ? userMsgIdx : msgIndex;
       const truncatedConvs = llmAppData.conversations.map(c =>
         c.id === conversationId
-          ? { ...c, messages: c.messages.slice(0, msgIndex) }
+          ? { ...c, messages: c.messages.slice(0, truncateAt) }
           : c
       );
       const truncatedAppData = { ...llmAppData, conversations: truncatedConvs };
       
       let fullText = '';
-      const stream = generateRoleplayResponseStream(truncatedAppData, conversationId, userMessage.text, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled, true);
+      const antiLoopDirective = getAntiLoopDirective();
+      const regenInput = antiLoopDirective + (antiLoopDirective ? ' ' : '') + userMessage.text;
+      const stream = generateRoleplayResponseStream(truncatedAppData, conversationId, regenInput, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled, true);
       
       for await (const chunk of stream) {
         fullText += chunk;
