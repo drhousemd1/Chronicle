@@ -1506,6 +1506,137 @@ max-w-md w-full`}
 /* Logo: w-10 h-10 rounded-xl bg-[#4a5f7f] shadow-xl shadow-[#4a5f7f]/30 */`}
               />
             </div>
+
+            <div style={{ marginTop: 24 }}>
+              <PageSubheading>Character Builder</PageSubheading>
+              <EntryCard name="Chat Message Bubble (AI / User / Transparent)" pageTag="Chat"
+                specs='<strong>AI Solid:</strong> bg-[#1c1f26] rounded-[2rem] border border-white/5. <strong>User:</strong> same + border-2 border-blue-400. <strong>Transparent:</strong> bg-black/50. Padding: p-8 pt-14 pb-12.'
+                previewDark previewStyle={{ flexDirection: 'column', gap: 12 }}
+                preview={<>
+                  <div className="bg-[#1c1f26] rounded-[2rem] border border-white/5 p-4">
+                    <div className="text-xs text-white">AI message (solid mode)</div>
+                  </div>
+                  <div className="bg-[#1c1f26] rounded-[2rem] border-2 border-blue-400 p-4">
+                    <div className="text-xs text-white">User message</div>
+                  </div>
+                  <div className="bg-black/50 rounded-[2rem] border border-white/5 p-4">
+                    <div className="text-xs text-white">AI message (transparent mode)</div>
+                  </div>
+                </>}
+                code={`/* AI Solid */      bg-[#1c1f26] rounded-[2rem] border border-white/5
+/* User */          bg-[#1c1f26] rounded-[2rem] border-2 border-blue-400
+/* AI Transparent */ bg-black/50 rounded-[2rem] border border-white/5
+/* Padding: p-8 pt-14 pb-12 */`}
+              />
+              <InconsistencyNote items={[
+                { file: 'ChatInterfaceTab.tsx', note: 'Chat bubble bg #1c1f26 does not match any panel token (#2a2a2f or bg-zinc-900). Unique surface color only used here.' },
+              ]} />
+            </div>
+
+            <div style={{ marginTop: 24 }}>
+              <PageSubheading>World Tab</PageSubheading>
+              <EntryCard name="HintBox Component" pageTag="World Tab"
+                specs='<strong>bg-zinc-900 rounded-xl p-4 border border-white/5</strong>. Contains ◆ diamond bullet points in text-zinc-400. Used for contextual guidance text.'
+                previewDark
+                preview={
+                  <div className="bg-zinc-900 rounded-xl p-4 border border-white/5">
+                    <div className="text-xs text-zinc-400 leading-relaxed">
+                      <span className="text-zinc-500 mr-1">◆</span> Hint text with diamond bullets<br/>
+                      <span className="text-zinc-500 mr-1">◆</span> Additional guidance line
+                    </div>
+                  </div>
+                }
+                code={`bg-zinc-900 rounded-xl p-4 border border-white/5
+/* Bullets: ◆ text-zinc-500 mr-1 */
+/* Text: text-zinc-400 text-xs leading-relaxed */`}
+              />
+            </div>
+
+            <div style={{ marginTop: 24 }}>
+              <EntryCard name="CharacterButton (World Tab)" pageTag="World Tab"
+                specs='<strong>bg-black/80 rounded-2xl border-[#4a5f7f] hover:border-[#6b82a8]</strong>. Error state: border-2 border-red-500. Contains avatar + name + control badge.'
+                previewDark previewStyle={{ gap: 12 }}
+                preview={<>
+                  <div className="bg-black/80 rounded-2xl border border-[#4a5f7f] p-3 flex items-center gap-2" style={{ cursor: 'default', width: 160 }}>
+                    <div className="w-8 h-8 rounded-lg bg-zinc-700" />
+                    <span className="text-white text-xs font-bold">Ashley</span>
+                  </div>
+                  <div className="bg-black/80 rounded-2xl border-2 border-red-500 p-3 flex items-center gap-2" style={{ cursor: 'default', width: 160 }}>
+                    <div className="w-8 h-8 rounded-lg bg-zinc-700" />
+                    <span className="text-white text-xs font-bold">Error State</span>
+                  </div>
+                </>}
+                code={`bg-black/80 rounded-2xl border border-[#4a5f7f]
+hover:border-[#6b82a8] transition-colors
+/* Error: border-2 border-red-500 */`}
+              />
+            </div>
+
+            <div style={{ marginTop: 24 }}>
+              <PageSubheading>Day/Time Panel</PageSubheading>
+              <EntryCard name="Day/Time Sky Panel" pageTag="Chat"
+                specs='Preloaded stacked &lt;img&gt; elements with crossfade (opacity duration-700). <strong>bg-black/20</strong> overlay for legibility. <strong>shadow-lg</strong> elevation. Timer controls use getTimeTextColor helper.'
+                previewDark
+                preview={
+                  <div className="relative rounded-xl overflow-hidden shadow-lg" style={{ width: '100%', height: 80 }}>
+                    <div className="absolute inset-0 bg-gradient-to-r from-orange-400 via-pink-300 to-blue-400" />
+                    <div className="absolute inset-0 bg-black/20" />
+                    <div className="relative flex items-center justify-center h-full">
+                      <span className="text-white text-xs font-bold">Day 1 · Sunrise</span>
+                    </div>
+                  </div>
+                }
+                previewPlain
+                code={`/* Stacked preloaded images with opacity crossfade */
+/* object-cover object-center */
+/* Overlay: absolute inset-0 bg-black/20 */
+/* Container: shadow-lg rounded-xl overflow-hidden */
+/* Text: getTimeTextColor() → black for Sunrise/Day/Sunset, white for Night */`}
+              />
+            </div>
+
+            <div style={{ marginTop: 24 }}>
+              <PageSubheading>Model Settings</PageSubheading>
+              <EntryCard name="Narrative Core Info Card" pageTag="Model Settings"
+                specs='<strong>bg-slate-900 text-white</strong> Card with watermark text. Watermark: <strong>text-[120px] font-black text-white/5 italic</strong>. Light-theme page, dark info card.'
+                previewDark
+                preview={
+                  <div className="bg-slate-900 text-white rounded-lg p-4 relative overflow-hidden" style={{ width: '100%', minHeight: 80 }}>
+                    <div className="relative z-10">
+                      <div className="font-black text-sm tracking-tight mb-1">Narrative Core</div>
+                      <div className="text-[9px] text-white/60">Powered by xAI Grok</div>
+                    </div>
+                    <div className="absolute -right-2 -bottom-2 text-[60px] font-black text-white/5 italic select-none">AI</div>
+                  </div>
+                }
+                previewPlain
+                code={`bg-slate-900 text-white rounded-lg p-6 relative overflow-hidden
+/* Watermark: absolute -right-4 -bottom-4
+   text-[120px] font-black text-white/5 italic select-none */`}
+              />
+            </div>
+
+            <div style={{ marginTop: 24 }}>
+              <PageSubheading>Dropdown Menus</PageSubheading>
+              <EntryCard name="Dropdown Menu Panel (Standardized)" pageTag="Global"
+                specs='<strong>bg-zinc-800 border-white/10</strong>. Items: hover bg-zinc-700 text-white. Destructive items: text-red-600 hover bg-zinc-700. Used across character cards, theme settings, etc.'
+                previewDark
+                preview={
+                  <div className="bg-zinc-800 border border-white/10 rounded-md p-1 shadow-lg" style={{ width: 180 }}>
+                    <div className="px-2 py-1.5 text-sm text-white rounded-sm hover:bg-zinc-700" style={{ cursor: 'default' }}>Edit character</div>
+                    <div className="px-2 py-1.5 text-sm text-white rounded-sm hover:bg-zinc-700" style={{ cursor: 'default' }}>Duplicate</div>
+                    <div className="h-px bg-white/10 my-1" />
+                    <div className="px-2 py-1.5 text-sm text-red-600 rounded-sm hover:bg-zinc-700" style={{ cursor: 'default' }}>Delete character</div>
+                  </div>
+                }
+                previewPlain
+                code={`bg-zinc-800 border border-white/10 rounded-md p-1 shadow-lg
+/* Items: px-2 py-1.5 text-sm text-white rounded-sm */
+/* Hover: bg-zinc-700 */
+/* Destructive: text-red-600 (keeps bg-zinc-700 on hover) */
+/* Separator: h-px bg-white/10 */`}
+              />
+            </div>
           </Section>
 
           <Divider />
