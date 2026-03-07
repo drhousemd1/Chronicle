@@ -3177,6 +3177,15 @@ text-white/40    — Disabled`}
               { file: 'Height', note: 'h-8 (card compact), h-10 (standard), h-11 (Review modal), h-12 (StoryDetail actions).' },
               { file: 'Typography', note: 'text-[10px] uppercase (Shadow Surface standard) vs text-sm (Chronicle UI.tsx) vs text-xs (card actions).' },
             ]} />
+
+            <PageSubheading>Pass 6 — Layout & Modal Patterns</PageSubheading>
+            <InconsistencyNote items={[
+              { file: 'CharacterCreation / EnhanceMode / CustomContentType', note: 'Three modals share identical layout but are implemented as separate components with duplicated markup. Should be a shared TwoOptionModal component.' },
+              { file: 'ChatInterfaceTab.tsx', note: 'White sidebar (bg-white) with light-theme typography (text-slate-700) inside a dark-themed application.' },
+              { file: 'CharactersTab.tsx', note: 'Uses rounded-[24px] for builder sections — adding to the existing radius variance (rounded-2xl/rounded-3xl/rounded-[2rem]/rounded-[32px]).' },
+              { file: 'WorldTab.tsx', note: 'Right content pane uses Chronicle UI.tsx light-theme components (bg-white Cards, bg-slate-50 Inputs) on a bg-[#2a2a2f] dark background.' },
+              { file: 'Auth.tsx inputs', note: 'Third input color system: bg-slate-700/50 border-slate-600 (Auth) vs bg-zinc-900/50 border-white/10 (builder) vs bg-slate-50 border-slate-200 (Chronicle).' },
+            ]} />
           </div>
 
         </div>
