@@ -2163,6 +2163,126 @@ hover:border-[#6b82a8] transition-colors
               />
             </div>
 
+            <PageSubheading>Side Character Card</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="Side Character Card (Dual Mode)" pageTag="Chat Interface"
+                specs='Frosted glass card with <strong>isDarkBg</strong> prop. Dark BG → bg-white/30 text-slate-800. Light BG → bg-black/30 text-white. <strong>Avatar: w-20 h-20 rounded-full</strong> — only circular avatar in the app. Updating state: blue vignette with animate-vignette-pulse.'
+                previewDark
+                preview={
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    <div className="rounded-2xl p-3 backdrop-blur-sm" style={{ background: 'rgba(255,255,255,0.3)', width: 120 }}>
+                      <div className="w-12 h-12 rounded-full bg-slate-600 mx-auto mb-2" />
+                      <div className="text-xs font-bold text-slate-800 text-center">Dark BG</div>
+                    </div>
+                    <div className="rounded-2xl p-3 backdrop-blur-sm" style={{ background: 'rgba(0,0,0,0.3)', width: 120 }}>
+                      <div className="w-12 h-12 rounded-full bg-zinc-700 mx-auto mb-2" />
+                      <div className="text-xs font-bold text-white text-center">Light BG</div>
+                    </div>
+                  </div>
+                }
+                previewPlain
+                code={`/* isDarkBg=true → bg-white/30 text-slate-800 */
+/* isDarkBg=false → bg-black/30 text-white */
+/* Avatar: w-20 h-20 rounded-full (⚠ only circular avatar) */
+/* Updating: blue vignette overlay + animate-vignette-pulse */`}
+              />
+              <InconsistencyNote items={[
+                { file: 'SideCharacterCard.tsx', note: 'Uses rounded-full avatar (w-20 h-20) — every other avatar in the app uses rounded-2xl.' },
+              ]} />
+            </div>
+
+            <PageSubheading>Creator Profile</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="Creator Profile Card" pageTag="Creator Profile"
+                specs='<strong>bg-[#1e1e22] rounded-2xl border-white/10 p-6</strong>. Contains avatar, display name, bio, stats pills (bg-white/5 rounded-xl). Follow button: bg-[#4a5f7f]. Yet another dark surface color (#1e1e22 vs #2a2a2f vs zinc-900).'
+                previewDark
+                preview={
+                  <div className="bg-[#1e1e22] rounded-2xl border border-white/10 p-4" style={{ width: '100%' }}>
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                      <div className="w-16 h-16 rounded-2xl bg-zinc-700" />
+                      <div>
+                        <div className="text-white font-bold text-sm">Creator Name</div>
+                        <div className="text-white/60 text-xs">@username</div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                      <div className="bg-white/5 rounded-xl px-3 py-1.5 text-xs text-white/70">👁 1.2k</div>
+                      <div className="bg-white/5 rounded-xl px-3 py-1.5 text-xs text-white/70">❤ 340</div>
+                    </div>
+                  </div>
+                }
+                previewPlain
+                code={`bg-[#1e1e22] rounded-2xl border border-white/10 p-6
+/* Stats: bg-white/5 rounded-xl px-3 py-2 */
+/* ⚠ #1e1e22 — yet another dark surface, not matching #2a2a2f or zinc-900 */`}
+              />
+            </div>
+
+            <PageSubheading>Character Picker (Full-Screen Overlay)</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="CharacterPicker Overlay" pageTag="Chat Interface"
+                specs='Third overlay implementation: <strong>fixed inset-0 bg-slate-900/50 backdrop-blur-sm</strong>. Inner container: <strong>bg-zinc-900 rounded-3xl border-white/10</strong>. Character cards: <code>bg-black/30 rounded-2xl border-transparent hover:bg-black/50</code>. Uses rounded-3xl — unique container radius.'
+                previewDark
+                preview={
+                  <div style={{ position: 'relative', width: '100%', height: 100, borderRadius: 8, overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.5)', backdropFilter: 'blur(4px)' }} />
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#18181b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 24, padding: '12px 24px', color: '#fff', fontSize: 11, fontWeight: 600 }}>
+                      CharacterPicker — rounded-3xl
+                    </div>
+                  </div>
+                }
+                code={`/* Backdrop: fixed inset-0 bg-slate-900/50 backdrop-blur-sm */
+/* Container: bg-zinc-900 rounded-3xl border-white/10 */
+/* Character cards: bg-black/30 rounded-2xl hover:bg-black/50 */
+/* ⚠ Third overlay implementation (not Dialog, not AlertDialog) */
+/* ⚠ rounded-3xl — unique, standard containers use rounded-2xl */`}
+              />
+              <InconsistencyNote items={[
+                { file: 'CharacterPicker.tsx', note: 'Uses rounded-3xl container — unique in the app. Standard is rounded-2xl. Also uses custom overlay (bg-slate-900/50) instead of Radix Dialog.' },
+              ]} />
+            </div>
+
+            <PageSubheading>ScrollableSection Fade Indicators</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="ScrollableSection (White Fade)" pageTag="Global"
+                specs='Fade indicators for overflow scrolling. <strong>Top:</strong> <code>bg-gradient-to-b from-white via-white/80 to-transparent</code>. <strong>Bottom:</strong> <code>bg-gradient-to-t from-white via-white/80 to-transparent</code>. Height: h-8. Uses white gradients that assume light-theme containers.'
+                preview={
+                  <div style={{ position: 'relative', height: 60, width: '100%', background: '#2a2a2f', borderRadius: 8, overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 20, background: 'linear-gradient(to bottom, white, rgba(255,255,255,0.8), transparent)', zIndex: 1 }} />
+                    <div style={{ padding: '24px 12px', fontSize: 10, color: '#94a3b8' }}>Content underneath</div>
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 20, background: 'linear-gradient(to top, white, rgba(255,255,255,0.8), transparent)', zIndex: 1 }} />
+                  </div>
+                }
+                previewPlain
+                code={`/* Top: from-white via-white/80 to-transparent h-8 */
+/* Bottom: from-white via-white/80 to-transparent h-8 */
+/* ⚠ White gradients on dark backgrounds — visually jarring */`}
+              />
+              <InconsistencyNote items={[
+                { file: 'ScrollableSection.tsx', note: 'Uses from-white fade gradients that assume light-theme containers. Appears broken on dark backgrounds.' },
+              ]} />
+            </div>
+
+            <PageSubheading>Chronicle UI.tsx Card (Light Theme)</PageSubheading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <EntryCard name="Chronicle UI.tsx Card" pageTag="Chronicle UI System"
+                specs='<strong>rounded-3xl border-slate-200 bg-white p-4 shadow-sm</strong>. Light-theme card used in BackgroundPickerModal, some settings views. Part of the parallel Chronicle UI component system.'
+                preview={
+                  <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm" style={{ width: '100%' }}>
+                    <div className="text-sm font-bold text-slate-900">Chronicle Card</div>
+                    <div className="text-xs text-slate-500 mt-1">Light-theme card from UI.tsx</div>
+                  </div>
+                }
+                previewPlain
+                code={`/* Chronicle UI.tsx Card */
+rounded-3xl border-slate-200 bg-white p-4 shadow-sm
+/* ⚠ Light theme — parallel to dark app panels (bg-[#2a2a2f]) */`}
+              />
+              <InconsistencyNote items={[
+                { file: 'UI.tsx', note: 'Defines light-theme Card (bg-white rounded-3xl border-slate-200). Conflicts with app-wide dark panel standard (bg-[#2a2a2f] border-white/10).' },
+              ]} />
+            </div>
+
             <PageSubheading>Arc System</PageSubheading>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <EntryCard name="Arc Phase Card Container" pageTag="Arc System"
