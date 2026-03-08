@@ -36,11 +36,6 @@ const DEFAULT_TOOLS: ToolMeta[] = [
     title: 'Style Guide',
     description: 'Visual reference for every design token and component pattern',
   },
-  {
-    id: 'style_restructuring',
-    title: 'App Style Restructuring Project',
-    description: 'Style restructuring workspace',
-  },
 ];
 
 interface AdminPageProps {
@@ -134,9 +129,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
     );
   }
 
-  if (activeTool === 'style_restructuring') {
-    return <div className="w-full h-full bg-white" />;
-  }
 
   return (
     <div className="w-full h-full p-4 lg:p-10 flex flex-col overflow-y-auto bg-black">
