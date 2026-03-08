@@ -231,6 +231,26 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
   const [showRestructuring, setShowRestructuring] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
+  // ─── Confirmed checkmark state (persisted in localStorage) ───
+  const CONFIRMED_STORAGE_KEY = 'sg_confirmed_items';
+  const [confirmedSet, setConfirmedSet] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem(CONFIRMED_STORAGE_KEY);
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch { return new Set(); }
+  });
+
+  const toggleConfirmed = useCallback((id: string) => {
+    setConfirmedSet(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      localStorage.setItem(CONFIRMED_STORAGE_KEY, JSON.stringify([...next]));
+      return next;
+    });
+  }, []);
+
+  const isConfirmed = useCallback((id: string) => confirmedSet.has(id), [confirmedSet]);
+
   useEffect(() => {
     onRegisterDownload?.(() => setShowDownloadModal(true));
     return () => onRegisterDownload?.(null);
