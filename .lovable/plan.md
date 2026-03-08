@@ -1,30 +1,37 @@
 
 
-# Plan: Move Download Button to Admin Panel Header
+## Plan: Style Guide Audit & Correction — Complete ✅
 
-## Problem
-The download button was placed inside the Style Guide's own white content header with custom `sg.primary` styling. It should be in the **top admin panel header bar** (the dark bar with "< ADMIN PANEL") — the same location where App Guide has its Save/Sync All buttons. It should use the **Shadow Surface button standard** (HSL token styling), not custom inline styles.
+### Status: ✅ All 3 Passes Complete
 
-## Changes
+Audited and corrected all 8 sections of the Visual Style Guide against live source code.
 
-### 1. `src/pages/Index.tsx` (~line 1915)
-Add a new conditional block for `tab === "admin" && adminActiveTool === "style_guide"`, right after the existing `app_guide` block. Include:
-- A Download button using the exact same Shadow Surface className as the App Guide Save/Sync buttons: `inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider`
-- Download icon from lucide-react (size 14)
-- Text: "Download"
-- onClick triggers a ref callback (like guideSaveRef pattern) that opens the download modal inside StyleGuideTool
+### What was fixed:
 
-### 2. `src/pages/Index.tsx` — Add ref + prop wiring
-- Add `styleGuideDownloadRef` (same pattern as `guideSaveRef`)
-- Pass an `onRegisterDownload` callback prop to `AdminPage`
+**Pass 1 — Colors & Typography:**
+- "Button Background" swatch: `#2F3137` (screenshot approximation) → `hsl(228 7% 20%)` / `bg-[hsl(var(--ui-surface-2))]` (actual CSS variable)
+- "Button Text Color" swatch: `#eaedf1` → `hsl(210 20% 93%)` / `text-[hsl(var(--ui-text))]` (actual CSS variable)
+- Typography specs updated to use Tailwind class names (e.g., `text-xl font-bold tracking-tight`) instead of raw pixel values
+- Field label tracking corrected from `0.5px` to `tracking-wider (0.05em)`
+- Button text tile renamed from "Header actions" to "Shadow Surface" with `leading-none` added
 
-### 3. `src/pages/Admin.tsx`
-- Accept `onRegisterDownload` prop, forward it to `LazyStyleGuide`
+**Pass 2 — Buttons, Forms & Badges:**
+- Header Action Button completely rewritten to Shadow Surface pattern with real Tailwind `className` strings
+- Button previews now render using actual `className` attributes instead of inline `style` objects
+- Card Hover Buttons updated to correct `h-8 px-4` compact variant from source (StoryHub.tsx)
+- Delete button corrected from `bg-#ef4444` to `bg-[hsl(var(--destructive))]`
+- Form inputs and badges converted to `className`-based rendering
+- Code blocks now show actual `className` strings from source
 
-### 4. `src/components/admin/styleguide/StyleGuideTool.tsx`
-- Accept `onRegisterDownload` prop
-- Register `() => setShowDownloadModal(true)` via the callback on mount
-- **Remove** the download button from the white content header (lines 304-319)
+**Pass 3 — Panels, Modals & Icons:**
+- Panel Container: `previewDark` removed, rendered with actual `className`
+- Panel Header Bar: uses actual `className` with `px-5 py-3` (was `16px 24px`)
+- Story Card: added live rendered preview with gradient overlay and `rounded-[2rem]`
+- Modal Container/Header/Footer: `previewDark` removed, rendered with real Tailwind classes
+- Modal Footer buttons now use actual HSL token classes from DeleteConfirmDialog.tsx
+- Icon Size Scale/Containers: `previewDark` removed, previews render on white background
+- Icon Colors: white swatch gets border treatment instead of dark background
 
-This keeps the modal and all generation logic in StyleGuideTool unchanged — only the trigger button moves to the correct header location with correct styling.
-
+**Dark Background Cleanup:**
+- Removed `previewDark` from: buttons (all 5), panel container, modal container/header/footer, icon size scale, icon containers
+- Kept `previewDark` only for: form inputs (dark on dark), modal backdrop (transparency demo)
