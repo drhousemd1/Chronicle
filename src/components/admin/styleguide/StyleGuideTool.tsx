@@ -309,6 +309,9 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
       )}
 
       {/* ─── MAIN AREA ─── */}
+      {showRestructuring ? (
+        <div style={{ flex: 1, background: '#ffffff' }} />
+      ) : (
       <div style={{ flex: 1, overflow: 'auto' }}>
         {/* Header */}
         <div style={{
