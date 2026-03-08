@@ -148,10 +148,13 @@ interface EntryCardProps {
   previewDark?: boolean;
   previewPlain?: boolean;
   previewStyle?: React.CSSProperties;
+  confirmed?: boolean;
+  onToggleConfirm?: () => void;
 }
 
-const EntryCard: React.FC<EntryCardProps> = ({ name, pageTag, specs, preview, code, previewDark, previewPlain, previewStyle }) => (
+const EntryCard: React.FC<EntryCardProps> = ({ name, pageTag, specs, preview, code, previewDark, previewPlain, previewStyle, confirmed, onToggleConfirm }) => (
   <div style={{
+    position: 'relative',
     background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
     boxShadow: sg.shadow, display: 'flex', flexDirection: 'column', height: '100%',
   }}>
@@ -175,6 +178,7 @@ const EntryCard: React.FC<EntryCardProps> = ({ name, pageTag, specs, preview, co
         minHeight: 112, overflow: 'auto',
       }}>{code}</div>
     </div>
+    {onToggleConfirm && <ConfirmedBadge confirmed={!!confirmed} onToggle={onToggleConfirm} />}
   </div>
 );
 
