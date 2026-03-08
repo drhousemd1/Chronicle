@@ -363,7 +363,28 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
       {/* ─── MAIN AREA ─── */}
       {showRestructuring ? (
-        <div style={{ flex: 1, background: '#ffffff' }} />
+        <div style={{ flex: 1, background: '#ffffff', padding: '48px 42px' }}>
+          <div style={{ maxWidth: 600 }}>
+            <h2 style={{ fontSize: 28, fontWeight: 900, letterSpacing: '-0.03em', color: '#111827', marginBottom: 16 }}>
+              App Style Restructuring
+            </h2>
+            <div style={{
+              display: 'flex', alignItems: 'flex-start', gap: 14, padding: '16px 18px', borderRadius: 10,
+              background: '#f8fafc', border: '1px solid #e2e8f0',
+            }}>
+              <img src="/images/confirmed-check.svg" alt="" style={{ width: 28, height: 28, flexShrink: 0, marginTop: 2 }} />
+              <div style={{ fontSize: 13, color: '#475569', lineHeight: 1.7 }}>
+                <span style={{ fontWeight: 700, color: '#111827' }}>Purple checkmark</span> = confirmed &amp; finalized styling.
+                <br />
+                Click the checkmark area in the bottom-right corner of any card in the Style Guide to toggle its confirmation status.
+                Confirmed items persist across sessions.
+                <div style={{ marginTop: 10, fontSize: 12, color: '#94a3b8' }}>
+                  {confirmedSet.size} item{confirmedSet.size !== 1 ? 's' : ''} confirmed so far.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       ) : (
       <div style={{ flex: 1, overflow: 'auto' }}>
         {/* Header */}
