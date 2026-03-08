@@ -172,6 +172,7 @@ const IndexContent = () => {
   const [guideTheme, setGuideTheme] = useState<'dark' | 'light'>('dark');
   const guideSaveRef = React.useRef<(() => Promise<void>) | null>(null);
   const guideSyncAllRef = React.useRef<(() => Promise<void>) | null>(null);
+  const styleGuideDownloadRef = React.useRef<(() => void) | null>(null);
   const imageLibraryUploadRef = React.useRef<(() => void) | null>(null);
   
   // Pagination state
