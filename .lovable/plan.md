@@ -1,37 +1,36 @@
 
+Goal: fix the Style Guide navigation lock so clicking **App Style Restructuring** never traps you in a blank view.
 
-## Plan: Style Guide Audit & Correction — Complete ✅
+What’s broken now:
+- In `src/components/admin/styleguide/StyleGuideTool.tsx`, `showRestructuring` swaps the main content to a blank white panel.
+- Left-nav section buttons still only call `scrollTo(id)`.
+- When restructuring mode is active, section DOM nodes aren’t rendered, so `scrollTo` has no target and appears “dead.”
 
-### Status: ✅ All 3 Passes Complete
+Plan to implement:
+1. Update view state handling in `StyleGuideTool.tsx`.
+   - Replace loose toggle behavior with explicit mode state (guide vs restructuring) to avoid ambiguous transitions.
+   - Keep the button name exactly **App Style Restructuring**.
 
-Audited and corrected all 8 sections of the Visual Style Guide against live source code.
+2. Fix left-nav section click behavior (desktop + mobile nav variants).
+   - Add a `handleSectionClick(id)` helper:
+     - If restructuring is active: switch back to guide mode first, then scroll on next frame (`requestAnimationFrame`) so target sections exist.
+     - If guide mode is already active: scroll immediately.
 
-### What was fixed:
+3. Keep restructuring workspace behavior exactly as requested.
+   - Main panel remains a plain white blank workspace.
+   - Sidebar stays visible and usable.
 
-**Pass 1 — Colors & Typography:**
-- "Button Background" swatch: `#2F3137` (screenshot approximation) → `hsl(228 7% 20%)` / `bg-[hsl(var(--ui-surface-2))]` (actual CSS variable)
-- "Button Text Color" swatch: `#eaedf1` → `hsl(210 20% 93%)` / `text-[hsl(var(--ui-text))]` (actual CSS variable)
-- Typography specs updated to use Tailwind class names (e.g., `text-xl font-bold tracking-tight`) instead of raw pixel values
-- Field label tracking corrected from `0.5px` to `tracking-wider (0.05em)`
-- Button text tile renamed from "Header actions" to "Shadow Surface" with `leading-none` added
+4. Add clear return affordance.
+   - While restructuring is active, show a visible “return to guide” control in sidebar (without renaming/removing the App Style Restructuring button).
+   - This prevents “stuck” UX even if users don’t click a section.
 
-**Pass 2 — Buttons, Forms & Badges:**
-- Header Action Button completely rewritten to Shadow Surface pattern with real Tailwind `className` strings
-- Button previews now render using actual `className` attributes instead of inline `style` objects
-- Card Hover Buttons updated to correct `h-8 px-4` compact variant from source (StoryHub.tsx)
-- Delete button corrected from `bg-#ef4444` to `bg-[hsl(var(--destructive))]`
-- Form inputs and badges converted to `className`-based rendering
-- Code blocks now show actual `className` strings from source
+5. Validate interaction flow end-to-end.
+   - Open Style Guide → click App Style Restructuring → white workspace appears.
+   - Click any left-nav section → guide content returns and scroll lands correctly.
+   - Re-enter restructuring mode and repeat.
+   - Confirm no regressions to scroll-spy highlighting and download modal wiring.
 
-**Pass 3 — Panels, Modals & Icons:**
-- Panel Container: `previewDark` removed, rendered with actual `className`
-- Panel Header Bar: uses actual `className` with `px-5 py-3` (was `16px 24px`)
-- Story Card: added live rendered preview with gradient overlay and `rounded-[2rem]`
-- Modal Container/Header/Footer: `previewDark` removed, rendered with real Tailwind classes
-- Modal Footer buttons now use actual HSL token classes from DeleteConfirmDialog.tsx
-- Icon Size Scale/Containers: `previewDark` removed, previews render on white background
-- Icon Colors: white swatch gets border treatment instead of dark background
-
-**Dark Background Cleanup:**
-- Removed `previewDark` from: buttons (all 5), panel container, modal container/header/footer, icon size scale, icon containers
-- Kept `previewDark` only for: form inputs (dark on dark), modal backdrop (transparency demo)
+Technical scope:
+- File: `src/components/admin/styleguide/StyleGuideTool.tsx` only.
+- No backend/database/auth changes.
+- No Admin hub tool-list changes in `src/pages/Admin.tsx`.
