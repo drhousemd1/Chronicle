@@ -196,10 +196,19 @@ const Section: React.FC<{ id: string; title: string; desc: string; children: Rea
 );
 
 /* ═══════════════════════ MAIN COMPONENT ═══════════════════════ */
-export const StyleGuideTool: React.FC = () => {
+interface StyleGuideToolProps {
+  onRegisterDownload?: (fn: (() => void) | null) => void;
+}
+
+export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownload }) => {
   const [activeSection, setActiveSection] = useState('colors');
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    onRegisterDownload?.(() => setShowDownloadModal(true));
+    return () => onRegisterDownload?.(null);
+  }, [onRegisterDownload]);
   const isNarrow = useMediaQuery('(max-width: 1024px)');
   const isMedium = useMediaQuery('(max-width: 1100px)');
 
