@@ -284,7 +284,25 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               {s.label}
             </button>
           ))}
-          <div style={{ position: 'absolute', left: 18, right: 18, bottom: 16, fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>
+          {/* Restructuring button */}
+          <div style={{ marginTop: 'auto', paddingTop: 16 }}>
+            <button onClick={() => setShowRestructuring(!showRestructuring)} style={{
+              display: 'flex', alignItems: 'center', gap: 10, width: '100%', textDecoration: 'none', whiteSpace: 'nowrap',
+              fontSize: 13, fontWeight: 600, padding: '10px 12px', borderRadius: 10, border: 'none', cursor: 'pointer',
+              background: showRestructuring ? 'rgba(74,95,127,0.12)' : 'transparent',
+              color: showRestructuring ? sg.primary : '#475569',
+              boxShadow: showRestructuring ? 'inset 0 0 0 1px rgba(74,95,127,0.18)' : 'none',
+              transition: 'all 0.2s ease',
+            }}>
+              <span style={{
+                width: 7, height: 7, borderRadius: 999, flexShrink: 0,
+                background: showRestructuring ? sg.primary : '#cbd5e1',
+                transition: 'background 0.2s ease',
+              }} />
+              App Style Restructuring
+            </button>
+          </div>
+          <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, marginTop: 8 }}>
             Design System v1.0
           </div>
         </nav>
