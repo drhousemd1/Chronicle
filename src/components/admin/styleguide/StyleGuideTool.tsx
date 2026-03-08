@@ -39,16 +39,37 @@ const PageDesc: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <p style={{ fontSize: 12, color: sg.muted, marginBottom: 16 }}>{children}</p>
 );
 
+/* ═══════════════════════ CONFIRMED CHECK BADGE ═══════════════════════ */
+const ConfirmedBadge: React.FC<{ confirmed: boolean; onToggle: () => void }> = ({ confirmed, onToggle }) => (
+  <button
+    onClick={(e) => { e.stopPropagation(); onToggle(); }}
+    title={confirmed ? 'Confirmed – click to unconfirm' : 'Click to mark as confirmed'}
+    style={{
+      position: 'absolute', bottom: 8, right: 8, width: 28, height: 28,
+      padding: 0, border: 'none', borderRadius: 6, cursor: 'pointer',
+      background: confirmed ? 'transparent' : 'rgba(148,163,184,0.15)',
+      opacity: confirmed ? 1 : 0.35,
+      transition: 'opacity 0.2s ease, background 0.2s ease',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}
+  >
+    <img src="/images/confirmed-check.svg" alt="confirmed" style={{ width: 24, height: 24 }} />
+  </button>
+);
+
 /* ═══════════════════════ SWATCH CARD ═══════════════════════ */
 interface SwatchProps {
   color: string;
   name: string;
   rows: { label: string; value: string; isLocation?: boolean }[];
   extraPreviewStyle?: React.CSSProperties;
+  confirmed?: boolean;
+  onToggleConfirm?: () => void;
 }
 
-const SwatchCard: React.FC<SwatchProps> = ({ color, name, rows, extraPreviewStyle }) => (
+const SwatchCard: React.FC<SwatchProps> = ({ color, name, rows, extraPreviewStyle, confirmed, onToggleConfirm }) => (
   <div style={{
+    position: 'relative',
     background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
     boxShadow: sg.shadow, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
   }}
@@ -70,6 +91,7 @@ const SwatchCard: React.FC<SwatchProps> = ({ color, name, rows, extraPreviewStyl
         ))}
       </div>
     </div>
+    {onToggleConfirm && <ConfirmedBadge confirmed={!!confirmed} onToggle={onToggleConfirm} />}
   </div>
 );
 
