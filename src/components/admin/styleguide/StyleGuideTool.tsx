@@ -1,5 +1,11 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useContext, createContext } from 'react';
 import { StyleGuideDownloadModal } from './StyleGuideDownloadModal';
+
+/* ═══════════════════════ CONFIRMATION CONTEXT ═══════════════════════ */
+const ConfirmContext = createContext<{
+  isConfirmed: (id: string) => boolean;
+  toggle: (id: string) => void;
+}>({ isConfirmed: () => false, toggle: () => {} });
 
 const SECTIONS = [
   { id: 'colors', label: 'Colors' },
