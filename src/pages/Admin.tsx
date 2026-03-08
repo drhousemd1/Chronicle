@@ -49,7 +49,7 @@ interface AdminPageProps {
   guideTheme?: 'dark' | 'light';
 }
 
-export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveTool, selectedModelId, onSelectModel, onRegisterGuideSave, onRegisterGuideSyncAll, guideTheme }) => {
+export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveTool, selectedModelId, onSelectModel, onRegisterGuideSave, onRegisterGuideSyncAll, onRegisterStyleGuideDownload, guideTheme }) => {
   const [tools, setTools] = useState<ToolMeta[]>(DEFAULT_TOOLS);
   const [editingTool, setEditingTool] = useState<ToolMeta | null>(null);
 
