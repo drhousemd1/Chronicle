@@ -198,6 +198,7 @@ const Section: React.FC<{ id: string; title: string; desc: string; children: Rea
 /* ═══════════════════════ MAIN COMPONENT ═══════════════════════ */
 export const StyleGuideTool: React.FC = () => {
   const [activeSection, setActiveSection] = useState('colors');
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const isNarrow = useMediaQuery('(max-width: 1024px)');
   const isMedium = useMediaQuery('(max-width: 1100px)');
