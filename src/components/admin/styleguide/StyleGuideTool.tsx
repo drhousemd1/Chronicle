@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { Download } from 'lucide-react';
+import { StyleGuideDownloadModal } from './StyleGuideDownloadModal';
 
 const SECTIONS = [
   { id: 'colors', label: 'Colors' },
@@ -196,6 +198,7 @@ const Section: React.FC<{ id: string; title: string; desc: string; children: Rea
 /* ═══════════════════════ MAIN COMPONENT ═══════════════════════ */
 export const StyleGuideTool: React.FC = () => {
   const [activeSection, setActiveSection] = useState('colors');
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const isNarrow = useMediaQuery('(max-width: 1024px)');
   const isMedium = useMediaQuery('(max-width: 1100px)');
@@ -285,16 +288,36 @@ export const StyleGuideTool: React.FC = () => {
           position: 'sticky', top: 0, zIndex: 60, background: sg.surface, borderBottom: `1px solid ${sg.border}`,
           boxShadow: '0 2px 8px rgba(15,23,42,0.04)', padding: isNarrow ? '24px 16px 18px' : '28px 42px 24px',
         }}>
-          <div style={{
-            display: 'inline-block', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px',
-            color: '#1e293b', padding: '4px 10px', borderRadius: 999, background: '#e2e8f0', marginBottom: 12,
-          }}>Visual Reference</div>
-          <h1 style={{ fontSize: 'clamp(30px,4vw,42px)', fontWeight: 900, letterSpacing: '-0.03em', color: '#111827', lineHeight: 1.1, marginBottom: 8 }}>
-            Chronicle Style Guide
-          </h1>
-          <p style={{ fontSize: 14, color: '#475569', maxWidth: 980, lineHeight: 1.65 }}>
-            Every color, font size, border radius, and spacing value below was extracted from the live Chronicle source code. Use this as the single source of truth for all styling decisions.
-          </p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <div style={{
+                display: 'inline-block', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px',
+                color: '#1e293b', padding: '4px 10px', borderRadius: 999, background: '#e2e8f0', marginBottom: 12,
+              }}>Visual Reference</div>
+              <h1 style={{ fontSize: 'clamp(30px,4vw,42px)', fontWeight: 900, letterSpacing: '-0.03em', color: '#111827', lineHeight: 1.1, marginBottom: 8 }}>
+                Chronicle Style Guide
+              </h1>
+              <p style={{ fontSize: 14, color: '#475569', maxWidth: 980, lineHeight: 1.65 }}>
+                Every color, font size, border radius, and spacing value below was extracted from the live Chronicle source code. Use this as the single source of truth for all styling decisions.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowDownloadModal(true)}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8, height: 40, padding: '0 20px',
+                borderRadius: 12, border: 'none', cursor: 'pointer', flexShrink: 0, marginTop: 4,
+                background: sg.primary, color: '#fff',
+                fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px',
+                boxShadow: '0 4px 12px rgba(74,95,127,0.3)',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 18px rgba(74,95,127,0.4)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 12px rgba(74,95,127,0.3)'; }}
+            >
+              <Download size={14} />
+              Download
+            </button>
+          </div>
         </div>
 
         {/* Content */}
@@ -3190,6 +3213,7 @@ text-white/40    — Disabled`}
 
         </div>
       </div>
+      <StyleGuideDownloadModal open={showDownloadModal} onClose={() => setShowDownloadModal(false)} contentRef={contentRef} />
     </div>
   );
 };

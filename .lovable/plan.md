@@ -1,46 +1,37 @@
 
 
-# Plan: Add Download Button to Style Guide Tool
+## Plan: Style Guide Audit & Correction — Complete ✅
 
-## What
+### Status: ✅ All 3 Passes Complete
 
-Add a download button to the Style Guide's white sticky header (top-right). Clicking it opens a modal with format selection (HTML, Markdown, JSON), then generates and downloads the full style guide content in the chosen format.
+Audited and corrected all 8 sections of the Visual Style Guide against live source code.
 
-## Why These Formats
+### What was fixed:
 
-- **HTML** — Preserves all visual styling (colors, swatches, layout). Best for visual review by humans or multimodal LLMs.
-- **Markdown** — Clean text-based format. Best for pasting into LLM chat contexts (Claude, GPT). Lightweight, token-efficient.
-- **JSON** — Structured machine-readable format. Best for programmatic consumption or feeding into automated tooling.
+**Pass 1 — Colors & Typography:**
+- "Button Background" swatch: `#2F3137` (screenshot approximation) → `hsl(228 7% 20%)` / `bg-[hsl(var(--ui-surface-2))]` (actual CSS variable)
+- "Button Text Color" swatch: `#eaedf1` → `hsl(210 20% 93%)` / `text-[hsl(var(--ui-text))]` (actual CSS variable)
+- Typography specs updated to use Tailwind class names (e.g., `text-xl font-bold tracking-tight`) instead of raw pixel values
+- Field label tracking corrected from `0.5px` to `tracking-wider (0.05em)`
+- Button text tile renamed from "Header actions" to "Shadow Surface" with `leading-none` added
 
-PDF is excluded — it requires a heavy library (jsPDF/html2pdf) and offers no advantage over HTML for LLM consumption.
+**Pass 2 — Buttons, Forms & Badges:**
+- Header Action Button completely rewritten to Shadow Surface pattern with real Tailwind `className` strings
+- Button previews now render using actual `className` attributes instead of inline `style` objects
+- Card Hover Buttons updated to correct `h-8 px-4` compact variant from source (StoryHub.tsx)
+- Delete button corrected from `bg-#ef4444` to `bg-[hsl(var(--destructive))]`
+- Form inputs and badges converted to `className`-based rendering
+- Code blocks now show actual `className` strings from source
 
-## UI Design
+**Pass 3 — Panels, Modals & Icons:**
+- Panel Container: `previewDark` removed, rendered with actual `className`
+- Panel Header Bar: uses actual `className` with `px-5 py-3` (was `16px 24px`)
+- Story Card: added live rendered preview with gradient overlay and `rounded-[2rem]`
+- Modal Container/Header/Footer: `previewDark` removed, rendered with real Tailwind classes
+- Modal Footer buttons now use actual HSL token classes from DeleteConfirmDialog.tsx
+- Icon Size Scale/Containers: `previewDark` removed, previews render on white background
+- Icon Colors: white swatch gets border treatment instead of dark background
 
-- **Button**: Placed in the sticky header, right-aligned. Uses the Shadow Surface button standard (`h-10 px-6 rounded-xl`, `bg-[hsl(var(--ui-surface-2))]` tokens — but since this header is white/light, use the `sg.primary` (#4a5f7f) with white text to match the guide's own visual language).
-- **Icon**: `Download` from lucide-react.
-- **Modal**: Dark-themed (`bg-zinc-900 border-white/10`) matching the app's modal standard. Three format cards in a row, click one to generate + download immediately.
-
-## Implementation
-
-### 1. Add download modal + generator (~150 lines in StyleGuideTool.tsx)
-
-- Import `Download` from lucide-react
-- Add `showDownloadModal` state
-- Add button to header div (flex row, justify-between)
-- Add modal overlay with 3 format option cards (HTML / Markdown / JSON)
-- Each card click triggers a generator function → creates a Blob → triggers `URL.createObjectURL` download
-
-### 2. Generator functions
-
-**HTML**: Clone the content div's innerHTML, wrap in a standalone HTML document with inlined styles (the guide already uses inline styles, so this works naturally). Include a `<style>` block for any missing base styles.
-
-**Markdown**: Walk through the data structures (SECTIONS, swatches, tiles, entries) and serialize to structured markdown with headers, tables, and code blocks. This produces a clean, LLM-friendly document.
-
-**JSON**: Serialize the same data into a structured JSON object with sections → entries → specs/tokens/locations.
-
-### File Changes
-
-| File | Change |
-|------|--------|
-| `src/components/admin/styleguide/StyleGuideTool.tsx` | Add download button to header, download modal, 3 generator functions |
-
+**Dark Background Cleanup:**
+- Removed `previewDark` from: buttons (all 5), panel container, modal container/header/footer, icon size scale, icon containers
+- Kept `previewDark` only for: form inputs (dark on dark), modal backdrop (transparency demo)
