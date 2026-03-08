@@ -3313,6 +3313,7 @@ text-white/40    — Disabled`}
       )}
       <StyleGuideDownloadModal open={showDownloadModal} onClose={() => setShowDownloadModal(false)} contentRef={contentRef} />
     </div>
+    </ConfirmContext.Provider>
   );
 };
 
