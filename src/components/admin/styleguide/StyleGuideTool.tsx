@@ -69,37 +69,39 @@ interface SwatchProps {
   name: string;
   rows: { label: string; value: string; isLocation?: boolean }[];
   extraPreviewStyle?: React.CSSProperties;
-  confirmed?: boolean;
-  onToggleConfirm?: () => void;
 }
 
-const SwatchCard: React.FC<SwatchProps> = ({ color, name, rows, extraPreviewStyle, confirmed, onToggleConfirm }) => (
-  <div style={{
-    position: 'relative',
-    background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
-    boxShadow: sg.shadow, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-  }}
-    onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadowHover; }}
-    onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadow; }}
-  >
-    <div style={{ height: 78, background: color, ...extraPreviewStyle }} />
-    <div style={{ padding: 12 }}>
-      <div style={{ fontSize: 13, fontWeight: 700, color: '#111827', marginBottom: 8 }}>{name}</div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        {rows.map((r, i) => (
-          <div key={i} style={{ display: 'grid', gridTemplateColumns: '56px 1fr', gap: 8, alignItems: 'start', fontSize: 11 }}>
-            <span style={{ textTransform: 'uppercase', fontSize: 9, fontWeight: 700, letterSpacing: '0.6px', color: '#94a3b8', whiteSpace: 'nowrap' }}>{r.label}</span>
-            <span style={{
-              fontSize: 11, color: r.isLocation ? '#475569' : '#334155',
-              fontFamily: r.isLocation ? 'Inter, system-ui, sans-serif' : "'SF Mono','Fira Code','JetBrains Mono',monospace",
-            }}>{r.value}</span>
-          </div>
-        ))}
+const SwatchCard: React.FC<SwatchProps> = ({ color, name, rows, extraPreviewStyle }) => {
+  const { isConfirmed, toggle } = useContext(ConfirmContext);
+  const id = `swatch::${name}`;
+  return (
+    <div style={{
+      position: 'relative',
+      background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
+      boxShadow: sg.shadow, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+    }}
+      onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadowHover; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadow; }}
+    >
+      <div style={{ height: 78, background: color, ...extraPreviewStyle }} />
+      <div style={{ padding: 12 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#111827', marginBottom: 8 }}>{name}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {rows.map((r, i) => (
+            <div key={i} style={{ display: 'grid', gridTemplateColumns: '56px 1fr', gap: 8, alignItems: 'start', fontSize: 11 }}>
+              <span style={{ textTransform: 'uppercase', fontSize: 9, fontWeight: 700, letterSpacing: '0.6px', color: '#94a3b8', whiteSpace: 'nowrap' }}>{r.label}</span>
+              <span style={{
+                fontSize: 11, color: r.isLocation ? '#475569' : '#334155',
+                fontFamily: r.isLocation ? 'Inter, system-ui, sans-serif' : "'SF Mono','Fira Code','JetBrains Mono',monospace",
+              }}>{r.value}</span>
+            </div>
+          ))}
+        </div>
       </div>
+      <ConfirmedBadge confirmed={isConfirmed(id)} onToggle={() => toggle(id)} />
     </div>
-    {onToggleConfirm && <ConfirmedBadge confirmed={!!confirmed} onToggle={onToggleConfirm} />}
-  </div>
-);
+  );
+};
 
 /* ═══════════════════════ TYPOGRAPHY TILE ═══════════════════════ */
 interface TypeTileProps {
