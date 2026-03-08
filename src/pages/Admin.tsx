@@ -36,6 +36,11 @@ const DEFAULT_TOOLS: ToolMeta[] = [
     title: 'Style Guide',
     description: 'Visual reference for every design token and component pattern',
   },
+  {
+    id: 'style_restructuring',
+    title: 'App Style Restructuring Project',
+    description: 'Style restructuring workspace',
+  },
 ];
 
 interface AdminPageProps {
@@ -127,6 +132,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
         <LazyStyleGuide onRegisterDownload={onRegisterStyleGuideDownload} />
       </React.Suspense>
     );
+  }
+
+  if (activeTool === 'style_restructuring') {
+    return <div className="w-full h-full bg-white" />;
   }
 
   return (
