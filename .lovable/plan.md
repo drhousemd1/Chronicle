@@ -1,35 +1,37 @@
 
 
-# Plan: Add "Confirmed" Checkmark Badge to Style Guide Components
+## Plan: Style Guide Audit & Correction — Complete ✅
 
-## Concept
-Add a checkmark confirmation system to the Style Guide's `EntryCard` and `SwatchCard` components. When a component/color has been audited and confirmed as the official styling, a purple checkmark badge (the uploaded SVG) appears in the bottom-right corner of its card. Confirmation state is persisted in localStorage so it survives refreshes.
+### Status: ✅ All 3 Passes Complete
 
-## Changes
+Audited and corrected all 8 sections of the Visual Style Guide against live source code.
 
-### 1. Copy the SVG asset
-Copy `user-uploads://download.svg` → `public/images/confirmed-check.svg`
+### What was fixed:
 
-### 2. `src/components/admin/styleguide/StyleGuideTool.tsx`
+**Pass 1 — Colors & Typography:**
+- "Button Background" swatch: `#2F3137` (screenshot approximation) → `hsl(228 7% 20%)` / `bg-[hsl(var(--ui-surface-2))]` (actual CSS variable)
+- "Button Text Color" swatch: `#eaedf1` → `hsl(210 20% 93%)` / `text-[hsl(var(--ui-text))]` (actual CSS variable)
+- Typography specs updated to use Tailwind class names (e.g., `text-xl font-bold tracking-tight`) instead of raw pixel values
+- Field label tracking corrected from `0.5px` to `tracking-wider (0.05em)`
+- Button text tile renamed from "Header actions" to "Shadow Surface" with `leading-none` added
 
-**A. Add confirmation state management** (near top of main component):
-- `useState<Set<string>>` for confirmed IDs, initialized from `localStorage`
-- `toggleConfirmed(id)` function that updates state + persists to localStorage
-- Key format: `"swatch::{name}"` or `"entry::{name}"` to uniquely identify each card
+**Pass 2 — Buttons, Forms & Badges:**
+- Header Action Button completely rewritten to Shadow Surface pattern with real Tailwind `className` strings
+- Button previews now render using actual `className` attributes instead of inline `style` objects
+- Card Hover Buttons updated to correct `h-8 px-4` compact variant from source (StoryHub.tsx)
+- Delete button corrected from `bg-#ef4444` to `bg-[hsl(var(--destructive))]`
+- Form inputs and badges converted to `className`-based rendering
+- Code blocks now show actual `className` strings from source
 
-**B. Update `EntryCard`** — add optional `confirmed` boolean + `onToggleConfirm` callback props:
-- When `confirmed` is true, render the purple checkmark SVG (as an `<img>`) positioned `absolute` bottom-right of the card container (the outer div needs `position: relative`)
-- Add a small click target (e.g. a subtle button) to toggle confirmation on/off
+**Pass 3 — Panels, Modals & Icons:**
+- Panel Container: `previewDark` removed, rendered with actual `className`
+- Panel Header Bar: uses actual `className` with `px-5 py-3` (was `16px 24px`)
+- Story Card: added live rendered preview with gradient overlay and `rounded-[2rem]`
+- Modal Container/Header/Footer: `previewDark` removed, rendered with real Tailwind classes
+- Modal Footer buttons now use actual HSL token classes from DeleteConfirmDialog.tsx
+- Icon Size Scale/Containers: `previewDark` removed, previews render on white background
+- Icon Colors: white swatch gets border treatment instead of dark background
 
-**C. Update `SwatchCard`** — same pattern: `confirmed` + `onToggleConfirm` props, absolute-positioned checkmark bottom-right
-
-**D. Pass props from parent** — wherever `EntryCard` and `SwatchCard` are used, pass `confirmed={confirmedSet.has(id)}` and `onToggleConfirm={() => toggleConfirmed(id)}`
-
-### 3. Add note on the App Style Restructuring page
-On the blank white workspace, add a brief legend/note explaining the checkmark system: "Purple checkmark = confirmed & finalized styling. Click any card's checkmark area to toggle."
-
-## Visual Details
-- Checkmark SVG rendered at ~28×28px, positioned `absolute bottom-2 right-2`
-- Slight opacity treatment on unconfirmed cards (the check only appears when confirmed)
-- Click the bottom-right corner area to toggle
-
+**Dark Background Cleanup:**
+- Removed `previewDark` from: buttons (all 5), panel container, modal container/header/footer, icon size scale, icon containers
+- Kept `previewDark` only for: form inputs (dark on dark), modal backdrop (transparency demo)
