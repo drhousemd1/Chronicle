@@ -298,7 +298,10 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
   const twoCol: React.CSSProperties = { display: 'grid', gridTemplateColumns: isMedium ? '1fr' : 'repeat(2,minmax(0,1fr))', gap: 16, alignItems: 'stretch' };
   const fullSpan: React.CSSProperties = isMedium ? {} : { gridColumn: '1 / -1' };
 
+  const confirmCtx = React.useMemo(() => ({ isConfirmed, toggle: toggleConfirmed }), [isConfirmed, toggleConfirmed]);
+
   return (
+    <ConfirmContext.Provider value={confirmCtx}>
     <div style={{ display: 'flex', flexDirection: isNarrow ? 'column' : 'row', height: '100%', background: sg.bg, fontFamily: "'Inter','Segoe UI',system-ui,-apple-system,sans-serif", color: sg.text, lineHeight: 1.5, overflow: 'hidden' }}>
       {/* ─── SIDEBAR / NAV ─── */}
       {isNarrow ? (
