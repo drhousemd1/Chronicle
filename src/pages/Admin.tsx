@@ -36,6 +36,11 @@ const DEFAULT_TOOLS: ToolMeta[] = [
     title: 'Style Guide',
     description: 'Visual reference for every design token and component pattern',
   },
+  {
+    id: 'style_restructuring',
+    title: 'App Style Restructuring Project',
+    description: 'Style restructuring workspace',
+  },
 ];
 
 interface AdminPageProps {
