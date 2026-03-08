@@ -245,15 +245,24 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
           boxShadow: '0 2px 8px rgba(15,23,42,0.05)', overflowX: 'auto', overflowY: 'hidden',
         }}>
           {SECTIONS.map(s => (
-            <button key={s.id} onClick={() => scrollTo(s.id)} style={{
+            <button key={s.id} onClick={() => { setActivePage('guide'); scrollTo(s.id); }} style={{
               display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', whiteSpace: 'nowrap',
               fontSize: 12, fontWeight: 600, padding: '8px 12px', borderRadius: 10, border: 'none', cursor: 'pointer',
-              background: activeSection === s.id ? 'rgba(74,95,127,0.12)' : 'transparent',
-              color: activeSection === s.id ? sg.primary : '#475569',
-              boxShadow: activeSection === s.id ? 'inset 0 0 0 1px rgba(74,95,127,0.18)' : 'none',
+              background: activePage === 'guide' && activeSection === s.id ? 'rgba(74,95,127,0.12)' : 'transparent',
+              color: activePage === 'guide' && activeSection === s.id ? sg.primary : '#475569',
+              boxShadow: activePage === 'guide' && activeSection === s.id ? 'inset 0 0 0 1px rgba(74,95,127,0.18)' : 'none',
               transition: 'all 0.2s ease',
             }}>{s.label}</button>
           ))}
+          <div style={{ width: 1, height: 20, background: sg.border, flexShrink: 0 }} />
+          <button onClick={() => setActivePage('restructuring')} style={{
+            display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', whiteSpace: 'nowrap',
+            fontSize: 12, fontWeight: 600, padding: '8px 12px', borderRadius: 10, border: 'none', cursor: 'pointer',
+            background: activePage === 'restructuring' ? 'rgba(245,158,11,0.15)' : 'transparent',
+            color: activePage === 'restructuring' ? '#d97706' : '#475569',
+            boxShadow: activePage === 'restructuring' ? 'inset 0 0 0 1px rgba(245,158,11,0.3)' : 'none',
+            transition: 'all 0.2s ease',
+          }}>App Style Restructuring</button>
         </nav>
       ) : (
         <nav style={{
