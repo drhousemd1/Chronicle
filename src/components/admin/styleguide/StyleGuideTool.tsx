@@ -229,8 +229,15 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
   }, []);
 
   const scrollTo = useCallback((id: string) => {
-    document.getElementById(`sg-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, []);
+    if (showRestructuring) {
+      setShowRestructuring(false);
+      requestAnimationFrame(() => {
+        document.getElementById(`sg-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    } else {
+      document.getElementById(`sg-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [showRestructuring]);
 
   const twoCol: React.CSSProperties = { display: 'grid', gridTemplateColumns: isMedium ? '1fr' : 'repeat(2,minmax(0,1fr))', gap: 16, alignItems: 'stretch' };
   const fullSpan: React.CSSProperties = isMedium ? {} : { gridColumn: '1 / -1' };
