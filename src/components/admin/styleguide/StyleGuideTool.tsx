@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { Download } from 'lucide-react';
+import { StyleGuideDownloadModal } from './StyleGuideDownloadModal';
 
 const SECTIONS = [
   { id: 'colors', label: 'Colors' },
