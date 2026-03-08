@@ -45,6 +45,7 @@ interface AdminPageProps {
   onSelectModel: (id: string) => void;
   onRegisterGuideSave?: (saveFn: (() => Promise<void>) | null) => void;
   onRegisterGuideSyncAll?: (syncFn: (() => Promise<void>) | null) => void;
+  onRegisterStyleGuideDownload?: (fn: (() => void) | null) => void;
   guideTheme?: 'dark' | 'light';
 }
 
