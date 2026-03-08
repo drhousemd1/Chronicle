@@ -310,22 +310,6 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 Every color, font size, border radius, and spacing value below was extracted from the live Chronicle source code. Use this as the single source of truth for all styling decisions.
               </p>
             </div>
-            <button
-              onClick={() => setShowDownloadModal(true)}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 8, height: 40, padding: '0 20px',
-                borderRadius: 12, border: 'none', cursor: 'pointer', flexShrink: 0, marginTop: 4,
-                background: sg.primary, color: '#fff',
-                fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px',
-                boxShadow: '0 4px 12px rgba(74,95,127,0.3)',
-                transition: 'all 0.15s ease',
-              }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 18px rgba(74,95,127,0.4)'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 12px rgba(74,95,127,0.3)'; }}
-            >
-              <Download size={14} />
-              Download
-            </button>
           </div>
         </div>
 
