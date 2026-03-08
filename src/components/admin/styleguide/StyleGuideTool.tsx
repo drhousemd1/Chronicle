@@ -156,39 +156,41 @@ interface EntryCardProps {
   previewDark?: boolean;
   previewPlain?: boolean;
   previewStyle?: React.CSSProperties;
-  confirmed?: boolean;
-  onToggleConfirm?: () => void;
 }
 
-const EntryCard: React.FC<EntryCardProps> = ({ name, pageTag, specs, preview, code, previewDark, previewPlain, previewStyle, confirmed, onToggleConfirm }) => (
-  <div style={{
-    position: 'relative',
-    background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
-    boxShadow: sg.shadow, display: 'flex', flexDirection: 'column', height: '100%',
-  }}>
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '10px 14px', background: '#f8fafc' }}>
-      <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.4px', textTransform: 'uppercase', color: '#111827' }}>{name}</span>
-      <span style={{
-        display: 'inline-flex', alignItems: 'center', padding: '3px 8px', borderRadius: 999, fontSize: 9,
-        fontWeight: 700, letterSpacing: '0.6px', textTransform: 'uppercase', color: '#334155', background: '#e2e8f0',
-      }}>{pageTag}</span>
+const EntryCard: React.FC<EntryCardProps> = ({ name, pageTag, specs, preview, code, previewDark, previewPlain, previewStyle }) => {
+  const { isConfirmed, toggle } = useContext(ConfirmContext);
+  const id = `entry::${pageTag}::${name}`;
+  return (
+    <div style={{
+      position: 'relative',
+      background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
+      boxShadow: sg.shadow, display: 'flex', flexDirection: 'column', height: '100%',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '10px 14px', background: '#f8fafc' }}>
+        <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.4px', textTransform: 'uppercase', color: '#111827' }}>{name}</span>
+        <span style={{
+          display: 'inline-flex', alignItems: 'center', padding: '3px 8px', borderRadius: 999, fontSize: 9,
+          fontWeight: 700, letterSpacing: '0.6px', textTransform: 'uppercase', color: '#334155', background: '#e2e8f0',
+        }}>{pageTag}</span>
+      </div>
+      <div style={{ padding: 14, display: 'grid', gridTemplateRows: 'auto auto minmax(112px,1fr)', gap: 10, flex: 1, minHeight: 0 }}>
+        <p style={{ color: '#475569', fontSize: 12, lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: specs }} />
+        <div style={{
+          display: 'flex', flexWrap: 'wrap', alignItems: previewPlain ? undefined : 'center', gap: 10, padding: previewPlain ? 0 : 14,
+          borderRadius: 8, background: previewPlain ? 'transparent' : previewDark ? '#25272d' : '#f8fafc',
+          minHeight: 72, ...previewStyle,
+        }}>{preview}</div>
+        <div style={{
+          fontFamily: "'SF Mono','Fira Code','JetBrains Mono',monospace", fontSize: 11, lineHeight: 1.6,
+          color: '#334155', whiteSpace: 'pre-wrap', background: '#f1f5f9', borderRadius: 8, padding: 12,
+          minHeight: 112, overflow: 'auto',
+        }}>{code}</div>
+      </div>
+      <ConfirmedBadge confirmed={isConfirmed(id)} onToggle={() => toggle(id)} />
     </div>
-    <div style={{ padding: 14, display: 'grid', gridTemplateRows: 'auto auto minmax(112px,1fr)', gap: 10, flex: 1, minHeight: 0 }}>
-      <p style={{ color: '#475569', fontSize: 12, lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: specs }} />
-      <div style={{
-        display: 'flex', flexWrap: 'wrap', alignItems: previewPlain ? undefined : 'center', gap: 10, padding: previewPlain ? 0 : 14,
-        borderRadius: 8, background: previewPlain ? 'transparent' : previewDark ? '#25272d' : '#f8fafc',
-        minHeight: 72, ...previewStyle,
-      }}>{preview}</div>
-      <div style={{
-        fontFamily: "'SF Mono','Fira Code','JetBrains Mono',monospace", fontSize: 11, lineHeight: 1.6,
-        color: '#334155', whiteSpace: 'pre-wrap', background: '#f1f5f9', borderRadius: 8, padding: 12,
-        minHeight: 112, overflow: 'auto',
-      }}>{code}</div>
-    </div>
-    {onToggleConfirm && <ConfirmedBadge confirmed={!!confirmed} onToggle={onToggleConfirm} />}
-  </div>
-);
+  );
+};
 
 /* ═══════════════════════ DIVIDER ═══════════════════════ */
 const Divider: React.FC<{ style?: React.CSSProperties }> = ({ style }) => (
