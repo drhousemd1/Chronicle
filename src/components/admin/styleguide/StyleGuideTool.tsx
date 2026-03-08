@@ -293,7 +293,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
       <div style={{ flex: 1, overflow: 'auto' }}>
         {/* Header */}
         <div style={{
-           position: 'sticky', top: 0, zIndex: 60, background: '#4a5f7f', borderBottom: '1px solid rgba(255,255,255,0.1)',
+           background: '#4a5f7f', borderBottom: '1px solid rgba(255,255,255,0.1)',
           boxShadow: '0 2px 8px rgba(15,23,42,0.04)', padding: isNarrow ? '24px 16px 18px' : '28px 42px 24px',
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
