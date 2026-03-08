@@ -3213,6 +3213,7 @@ text-white/40    — Disabled`}
 
         </div>
       </div>
+      <StyleGuideDownloadModal open={showDownloadModal} onClose={() => setShowDownloadModal(false)} contentRef={contentRef} />
     </div>
   );
 };
