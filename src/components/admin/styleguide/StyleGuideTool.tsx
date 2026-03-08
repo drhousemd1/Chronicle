@@ -202,6 +202,7 @@ interface StyleGuideToolProps {
 export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownload }) => {
   const [activeSection, setActiveSection] = useState('colors');
   const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [showRestructuring, setShowRestructuring] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

@@ -129,9 +129,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
     );
   }
 
-  if (activeTool === 'style_restructuring') {
-    return <div className="w-full h-full bg-white" />;
-  }
 
   return (
     <div className="w-full h-full p-4 lg:p-10 flex flex-col overflow-y-auto bg-black">
