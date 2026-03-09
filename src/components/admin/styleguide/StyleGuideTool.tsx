@@ -1034,21 +1034,20 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
           {/* ═══════════════════════════════════════════════════════════════ */}
           {/* ═══ 3. BUTTONS ═══ */}
           {/* ═══════════════════════════════════════════════════════════════ */}
-          <Section id="buttons" title="Buttons" desc="All button styles found across the application. Verified against source code." style={twoCol}>
+          <Section id="buttons" title="Button Styles" desc="All button styles found across the application. Verified against source code." style={twoCol}>
             <div style={fullSpan}><PageSubheading>Story Builder Page</PageSubheading></div>
 
             <ButtonCardV2
-              buttonName="Shadow Surface"
-              preview={<>
-                <button className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] text-[10px] font-bold leading-none uppercase tracking-wider" style={{ cursor: 'default' }}>DRAFTS</button>
-                <button className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] text-[10px] font-bold leading-none uppercase tracking-wider" style={{ cursor: 'default' }}>SAVE AND CLOSE</button>
-              </>}
+              buttonName="Default Button"
+              preview={
+                <button className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] text-[10px] font-bold leading-none uppercase tracking-wider" style={{ cursor: 'default' }}>DEFAULT BUTTON</button>
+              }
               buttonColor="hsl(228 7% 20%) — bg-[hsl(var(--ui-surface-2))]"
               textColor="hsl(210 20% 93%) — text-[hsl(var(--ui-text))]"
               size="h-10 (40px) × px-6 — rounded-xl (12px)"
-              purpose="Header action buttons — save, drafts, close actions"
+              purpose="Standard action button used across the app"
               visualEffects="shadow: 0 10px 30px rgba(0,0,0,0.35) · border: 1px solid hsl(var(--ui-border))"
-              locations="Story Builder header bar (DRAFTS, SAVE AND CLOSE). Also used in modal footers and confirmation dialogs app-wide."
+              locations="DRAFTS, SAVE AND CLOSE, SAVE DRAFT, Upload Image — Story Builder header bar, modal footers, confirmation dialogs"
               pageSpecific={false} appWide={true}
             />
             <ButtonCardV2
