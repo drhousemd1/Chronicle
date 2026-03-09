@@ -282,13 +282,13 @@ interface ButtonV2Props {
   buttonName: string;
   preview: React.ReactNode;
   buttonColor: string;
-  textColor: string;
+  textColor?: string;
   size: string;
   purpose: string;
-  visualEffects: string;
+  visualEffects?: string;
   locations: string;
-  pageSpecific: boolean;
-  appWide: boolean;
+  pageSpecific?: boolean;
+  appWide?: boolean;
 }
 
 const ButtonCardV2: React.FC<ButtonV2Props> = ({ buttonName, preview, buttonColor, textColor, size, purpose, visualEffects, locations, pageSpecific, appWide }) => (
