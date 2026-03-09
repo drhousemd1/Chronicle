@@ -1037,39 +1037,45 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
           <Section id="buttons" title="Buttons" desc="All button styles found across the application. Verified against source code." style={twoCol}>
             <div style={fullSpan}><PageSubheading>Story Builder Page</PageSubheading></div>
 
-            <EntryCard name="Shadow Surface Button (Header Actions)" pageTag="Story Builder"
-              specs='<strong>bg:</strong> hsl(var(--ui-surface-2)) · <strong>color:</strong> hsl(var(--ui-text)) · <strong>text-[10px] / font-bold / uppercase / tracking-wider / leading-none</strong> · <strong>border:</strong> 1px solid hsl(var(--ui-border)) · <strong>border-radius:</strong> rounded-xl (12px) · <strong>height:</strong> h-10 (40px) · <strong>padding:</strong> px-6 · <strong>shadow:</strong> 0 10px 30px rgba(0,0,0,0.35)'
+            <ButtonCardV2
+              buttonName="Shadow Surface"
               preview={<>
                 <button className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] text-[10px] font-bold leading-none uppercase tracking-wider" style={{ cursor: 'default' }}>DRAFTS</button>
                 <button className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] text-[10px] font-bold leading-none uppercase tracking-wider" style={{ cursor: 'default' }}>SAVE AND CLOSE</button>
               </>}
-              code={`/* Shadow Surface — canonical header action button */
-className="inline-flex items-center justify-center
-  h-10 px-6 rounded-xl
-  border border-[hsl(var(--ui-border))]
-  bg-[hsl(var(--ui-surface-2))]
-  text-[hsl(var(--ui-text))]
-  shadow-[0_10px_30px_rgba(0,0,0,0.35)]
-  text-[10px] font-bold leading-none uppercase tracking-wider"`}
+              buttonColor="hsl(228 7% 20%) — bg-[hsl(var(--ui-surface-2))]"
+              textColor="hsl(210 20% 93%) — text-[hsl(var(--ui-text))]"
+              size="h-10 (40px) × px-6 — rounded-xl (12px)"
+              purpose="Header action buttons — save, drafts, close actions"
+              visualEffects="shadow: 0 10px 30px rgba(0,0,0,0.35) · border: 1px solid hsl(var(--ui-border))"
+              locations="Story Builder header bar (DRAFTS, SAVE AND CLOSE). Also used in modal footers and confirmation dialogs app-wide."
+              pageSpecific={false} appWide={true}
             />
-            <EntryCard name="AI Generate Button" pageTag="Story Builder"
-              specs="<strong>bg:</strong> gradient (purple) · <strong>color:</strong> white · <strong>text-[10px] / font-bold / uppercase</strong> · <strong>border-radius:</strong> rounded-xl (12px) · <strong>height:</strong> h-10 (40px)"
+            <ButtonCardV2
+              buttonName="AI Generate Gradient"
               preview={
                 <button style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7)', color: '#fff', height: 40, padding: '0 22px', borderRadius: 12, border: 'none', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', lineHeight: 1, cursor: 'default', fontFamily: 'inherit' }}>AI GENERATE</button>
               }
-              code={`background: linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7);
-height: 40px; border-radius: 12px;
-text-[10px] font-bold uppercase tracking-wider`}
+              buttonColor="linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7)"
+              textColor="#ffffff — text-white"
+              size="h-10 (40px) × px-[22px] — rounded-xl (12px)"
+              purpose="AI-powered generation actions — triggers AI content creation"
+              visualEffects="Gradient background (indigo → violet → purple). No border. No box-shadow."
+              locations="Story Builder — AI Generate button in character, world, and arc sections."
+              pageSpecific={true} appWide={false}
             />
-            <EntryCard name='Dashed "Add" Buttons' pageTag="Story Builder"
-              specs='<strong>border:</strong> 2px dashed #71717a · <strong>color:</strong> #60a5fa · <strong>14px / 500</strong> · <strong>border-radius:</strong> 12px · <strong>bg:</strong> transparent · Full-width'
-              previewPlain previewStyle={{ flexDirection: 'column' }}
+            <ButtonCardV2
+              buttonName="Dashed Add"
               preview={
                 <button style={{ width: '100%', minHeight: 64, padding: '12px 18px', borderRadius: 12, border: '2px dashed #71717a', background: 'transparent', color: '#60a5fa', fontSize: 14, fontWeight: 500, cursor: 'default', fontFamily: 'inherit' }}>+ Add Custom Content</button>
               }
-              code={`border: 2px dashed #71717a; color: #60a5fa;
-border-radius: 12px; width: 100%;
-hover: border-color: #60a5fa; bg: rgba(96,165,250,0.12);`}
+              buttonColor="transparent — bg-transparent"
+              textColor="#60a5fa — text-blue-400"
+              size="full-width × min-h-[64px] × px-[18px] py-[12px] — rounded-[12px]"
+              purpose="Add new items — story arcs, characters, custom content sections"
+              visualEffects="border: 2px dashed #71717a (zinc-500). Hover: border-color #60a5fa, bg rgba(96,165,250,0.12)."
+              locations="Story Builder — Add New Story Arc, Add Character, Add Custom Content, Add Next Phase."
+              pageSpecific={true} appWide={false}
             />
 
             <div style={fullSpan}><PageSubheading>My Stories Page</PageSubheading></div>
