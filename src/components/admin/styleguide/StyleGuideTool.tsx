@@ -542,11 +542,11 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <PageSubheading>Creator Profile</PageSubheading>
             <PageDesc>Colors for the public Creator Profile page.</PageDesc>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
-              <SwatchCard color="#121214" name="Profile Page BG" rows={[{ label: 'Hex', value: '#121214' }, { label: 'Token', value: 'bg-[#121214]' }, { label: 'Location', value: 'Full page background (same as Gallery/Account)', isLocation: true }]} />
-              <SwatchCard color="#1e1e22" name="Profile Card BG" rows={[{ label: 'Hex', value: '#1e1e22' }, { label: 'Token', value: 'bg-[#1e1e22]' }, { label: 'Location', value: 'Profile info card, bio section', isLocation: true }]} />
-              <SwatchCard color="#ffffff" name="Profile Header Bar" rows={[{ label: 'Hex', value: '#ffffff' }, { label: 'Token', value: 'bg-white' }, { label: 'Location', value: 'Top header bar on Creator Profile — light on dark page', isLocation: true }]} />
-              <SwatchCard color="rgba(255,255,255,0.05)" name="Stats Pill BG" rows={[{ label: 'Value', value: 'rgba(255,255,255,0.05)' }, { label: 'Token', value: 'bg-white/5' }, { label: 'Location', value: 'Stat pills (followers, plays, etc.) on Creator Profile', isLocation: true }]} extraPreviewStyle={{ border: '1px dashed #999' }} />
-              <SwatchCard color="rgba(255,255,255,0.1)" name="Unfollow Button BG" rows={[{ label: 'Value', value: 'rgba(255,255,255,0.1)' }, { label: 'Token', value: 'bg-white/10' }, { label: 'Location', value: 'Unfollow button (toggle state)', isLocation: true }]} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="#121214" name="Near Black" locations="Full page background (same as Gallery/Account)" value="#121214" token="bg-[#121214]" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="#1e1e22" name="Charcoal" locations="Profile info card, bio section" value="#1e1e22" token="bg-[#1e1e22]" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="#ffffff" name="White" locations="Top header bar on Creator Profile — light on dark page" value="#ffffff" token="bg-white" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="rgba(255,255,255,0.05)" name="Ghost White" locations="Stat pills (followers, plays, etc.) on Creator Profile" value="rgba(255,255,255,0.05)" token="bg-white/5" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="rgba(255,255,255,0.1)" name="Faint White" locations="Unfollow button (toggle state)" value="rgba(255,255,255,0.1)" token="bg-white/10" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
             </div>
             <InconsistencyNote items={[
               { file: 'CreatorProfile.tsx', note: 'Uses bg-white header bar on bg-[#121214] dark page — jarring light/dark contrast.' },
