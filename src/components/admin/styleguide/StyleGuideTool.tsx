@@ -2530,7 +2530,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 purpose="Light-theme textarea matching Chronicle Input styling"
                 locations="CharacterEditForm, WorldTab, ShareStoryModal"
                 appWide
-                notes="⚠ Light theme — same issue as Chronicle Input. Supports autoResize prop."
+                notes="Same styling as Chronicle Input. Supports autoResize prop."
                 preview={
                   <textarea readOnly className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none resize-none" rows={2} placeholder="Chronicle UI TextArea..." />
                 }
