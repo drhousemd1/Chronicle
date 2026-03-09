@@ -194,7 +194,7 @@ export const EditDetailModal: React.FC<EditDetailModalProps> = ({
             type="button"
             onClick={handleSave}
             disabled={!comment.trim()}
-            className="w-full h-10 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold uppercase tracking-wider hover:brightness-125 active:brightness-150 transition-all disabled:opacity-40 disabled:pointer-events-none"
+            className="w-full h-10 rounded-xl bg-[hsl(240_6%_18%)] border-[hsl(0_0%_100%_/_0.10)] text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider shadow-[0_10px_30px_hsl(0_0%_0%_/_0.35)] hover:brightness-125 active:brightness-150 transition-all disabled:opacity-40 disabled:pointer-events-none"
           >
             Save Edit
           </button>
