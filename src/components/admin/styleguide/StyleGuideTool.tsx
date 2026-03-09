@@ -1051,15 +1051,15 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               pageSpecific={false} appWide={true}
             />
             <ButtonCardV2
-              buttonName="AI Generate Gradient"
+              buttonName="AI Generate"
               preview={
-                <button style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7)', color: '#fff', height: 40, padding: '0 22px', borderRadius: 12, border: 'none', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', lineHeight: 1, cursor: 'default', fontFamily: 'inherit' }}>AI GENERATE</button>
+                <button className="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold bg-gradient-to-r from-purple-600 via-violet-500 to-blue-500 text-white border-0 shadow-lg cursor-default">AI GENERATE</button>
               }
-              buttonColor="linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7)"
+              buttonColor="bg-gradient-to-r from-purple-600 via-violet-500 to-blue-500"
               textColor="#ffffff — text-white"
-              size="h-10 (40px) × px-[22px] — rounded-xl (12px)"
+              size="h-auto × px-4 py-2 — rounded-xl (12px)"
               purpose="AI-powered generation actions — triggers AI content creation"
-              visualEffects="Gradient background (indigo → violet → purple). No border. No box-shadow."
+              visualEffects="Gradient background (purple-600 → violet-500 → blue-500, left-to-right). No border. Drop shadow: shadow-lg."
               locations="Story Builder — AI Generate button in character, world, and arc sections."
               pageSpecific={true} appWide={false}
             />
