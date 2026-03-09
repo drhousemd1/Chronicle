@@ -569,11 +569,17 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
     refreshEditsState();
   }, [refreshEditsState]);
 
+  const handleRemoveKeep = useCallback((cardName: string) => {
+    removeKeep(cardName);
+    refreshEditsState();
+  }, [refreshEditsState]);
+
   const editsContextValue = React.useMemo<EditsContextValue>(() => ({
     keeps,
     editIds: editNames,
     onCardAction: handleCardAction,
-  }), [keeps, editNames, handleCardAction]);
+    onRemoveKeep: handleRemoveKeep,
+  }), [keeps, editNames, handleCardAction, handleRemoveKeep]);
 
   useEffect(() => {
     onRegisterDownload?.(() => setShowDownloadModal(true));
