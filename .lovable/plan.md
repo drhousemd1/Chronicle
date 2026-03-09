@@ -1,37 +1,38 @@
 
 
-## Plan: Style Guide Audit & Correction — Complete ✅
+## Fix Form Inputs Section: Remove Memories Modal + Drop "Light Theme" Labels
 
-### Status: ✅ All 3 Passes Complete
+### Problems
 
-Audited and corrected all 8 sections of the Visual Style Guide against live source code.
+1. **Memories Modal entries exist twice** — once as `InputCardV2` (lines 2436-2461) and once as legacy `EntryCard` (lines 3893-3913). The Memories system is now backend-handled, so these entries should be removed entirely from the style guide.
 
-### What was fixed:
+2. **"Light Theme" labeling is wrong** — The app has ONE theme, not two. Several entries are misleadingly labeled with "(Light Theme)" as if there's a theme toggle. The entries themselves are accurate (UI.tsx genuinely uses `bg-slate-50`/`border-slate-200`), but the naming implies a dual-theme system that doesn't exist.
 
-**Pass 1 — Colors & Typography:**
-- "Button Background" swatch: `#2F3137` (screenshot approximation) → `hsl(228 7% 20%)` / `bg-[hsl(var(--ui-surface-2))]` (actual CSS variable)
-- "Button Text Color" swatch: `#eaedf1` → `hsl(210 20% 93%)` / `text-[hsl(var(--ui-text))]` (actual CSS variable)
-- Typography specs updated to use Tailwind class names (e.g., `text-xl font-bold tracking-tight`) instead of raw pixel values
-- Field label tracking corrected from `0.5px` to `tracking-wider (0.05em)`
-- Button text tile renamed from "Header actions" to "Shadow Surface" with `leading-none` added
+3. **"Image Generation Modals (Light Theme)" subheading** (line 2392) — The generation modals (`AvatarGenerationModal`, `CoverImageGenerationModal`, `SceneImageGenerationModal`) don't actually use `bg-slate-50`/`border-slate-200`. A search confirms zero matches. This entry is fabricated.
 
-**Pass 2 — Buttons, Forms & Badges:**
-- Header Action Button completely rewritten to Shadow Surface pattern with real Tailwind `className` strings
-- Button previews now render using actual `className` attributes instead of inline `style` objects
-- Card Hover Buttons updated to correct `h-8 px-4` compact variant from source (StoryHub.tsx)
-- Delete button corrected from `bg-#ef4444` to `bg-[hsl(var(--destructive))]`
-- Form inputs and badges converted to `className`-based rendering
-- Code blocks now show actual `className` strings from source
+### Changes
 
-**Pass 3 — Panels, Modals & Icons:**
-- Panel Container: `previewDark` removed, rendered with actual `className`
-- Panel Header Bar: uses actual `className` with `px-5 py-3` (was `16px 24px`)
-- Story Card: added live rendered preview with gradient overlay and `rounded-[2rem]`
-- Modal Container/Header/Footer: `previewDark` removed, rendered with real Tailwind classes
-- Modal Footer buttons now use actual HSL token classes from DeleteConfirmDialog.tsx
-- Icon Size Scale/Containers: `previewDark` removed, previews render on white background
-- Icon Colors: white swatch gets border treatment instead of dark background
+**File: `src/components/admin/styleguide/StyleGuideTool.tsx`**
 
-**Dark Background Cleanup:**
-- Removed `previewDark` from: buttons (all 5), panel container, modal container/header/footer, icon size scale, icon containers
-- Kept `previewDark` only for: form inputs (dark on dark), modal backdrop (transparency demo)
+#### 1. Remove Memories Modal — InputCardV2 section (lines 2436-2461)
+Delete the entire `PageSubheading>Memories Modal` block and its `InconsistencyNote`.
+
+#### 2. Remove Memories Modal — Legacy EntryCard (lines 3893-3913)
+Delete the `EntryCard name="Memories Modal (Slate Theme)"` and its `InconsistencyNote`.
+
+#### 3. Remove fabricated "Image Generation Modals (Light Theme)" section (lines 2392-2413)
+Delete the entire `PageSubheading>Image Generation Modals (Light Theme)` block. The generation modals don't use these styles.
+
+#### 4. Rename Chronicle UI entries — drop "(Light Theme)" label
+- Line 2546: `"Chronicle UI Input (Light Theme)"` → `"Chronicle UI Input"`
+- Line 2568: `"Chronicle UI TextArea (Light Theme)"` → `"Chronicle UI TextArea"`
+- Line 2559 notes: Remove "⚠ Light theme —" prefix, keep the rest describing the actual styling difference
+- Line 2581 notes: Same treatment
+
+#### 5. Clean up InconsistencyNote referencing light theme (lines 2604-2607)
+- Update the `UI.tsx` note from "Defines light-theme Input/TextArea" to just "Defines Input/TextArea with bg-slate-50 border-slate-200 styling. Components in dark contexts need !important overrides."
+- Remove "Uses !important CSS overrides to force dark styling on Chronicle UI Input." — it's redundant with the CharacterPicker card's own notes field.
+
+#### 6. Update Auth InconsistencyNote (line 2281)
+Remove reference to "slate-50 (Chronicle light)" — replace with just "slate-50 (Chronicle UI)".
+
