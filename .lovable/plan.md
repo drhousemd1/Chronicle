@@ -1,26 +1,37 @@
 
 
-## Fix KeepOrEditModal — Use Two-Option Card Pattern
+## Plan: Style Guide Audit & Correction — Complete ✅
 
-The KeepOrEditModal currently uses small action buttons. It should use the **Two-Option Selection Modal** pattern from `CharacterCreationModal.tsx` — borderless container, 2-column grid of large `rounded-2xl` option cards with `w-10 h-10` icon containers, titles, and short descriptions.
+### Status: ✅ All 3 Passes Complete
 
-### Reference (CharacterCreationModal)
-- Container: `bg-zinc-900 border-white/10 p-0 gap-0 [&>button]:hidden`
-- Title: `text-white text-lg font-bold tracking-tight`
-- Subtitle: `text-zinc-400 text-sm`
-- Cards: `rounded-2xl border border-white/10 bg-zinc-800/50` with hover: `hover:border-blue-500/50 hover:bg-blue-500/10`
-- Icon containers: `w-10 h-10 rounded-xl` with colored backgrounds (`bg-blue-500/20`, `bg-purple-500/20`)
-- Card text: `text-white font-bold text-sm` title, `text-zinc-400 text-xs` description
+Audited and corrected all 8 sections of the Visual Style Guide against live source code.
 
-### Changes to `StyleGuideEditsModal.tsx` — KeepOrEditModal
+### What was fixed:
 
-Replace the current two-button layout with:
+**Pass 1 — Colors & Typography:**
+- "Button Background" swatch: `#2F3137` (screenshot approximation) → `hsl(228 7% 20%)` / `bg-[hsl(var(--ui-surface-2))]` (actual CSS variable)
+- "Button Text Color" swatch: `#eaedf1` → `hsl(210 20% 93%)` / `text-[hsl(var(--ui-text))]` (actual CSS variable)
+- Typography specs updated to use Tailwind class names (e.g., `text-xl font-bold tracking-tight`) instead of raw pixel values
+- Field label tracking corrected from `0.5px` to `tracking-wider (0.05em)`
+- Button text tile renamed from "Header actions" to "Shadow Surface" with `leading-none` added
 
-- **Container**: `sm:max-w-md bg-zinc-900 border-white/10 p-0 gap-0 [&>button]:hidden`
-- **Header**: `px-6 pt-5 pb-3` with card name as `text-white text-lg font-bold` and subtitle "Select an option below to continue." as `text-zinc-400 text-sm`
-- **Grid**: `px-6 pb-6 grid grid-cols-2 gap-3`
-- **Keep card**: `rounded-2xl border border-white/10 bg-zinc-800/50` with `hover:border-blue-500/50 hover:bg-blue-500/10`. Blue icon container (`bg-blue-500/20`) with `Check` icon (`text-blue-400`). Title "Keep As-Is", description "Mark this element as verified and correct"
-- **Edit card**: Same base with `hover:border-purple-500/50 hover:bg-purple-500/10`. Purple icon container (`bg-purple-500/20`) with `Pencil` icon (`text-purple-400`). Title "Flag for Edit", description "Add notes on what needs to change"
+**Pass 2 — Buttons, Forms & Badges:**
+- Header Action Button completely rewritten to Shadow Surface pattern with real Tailwind `className` strings
+- Button previews now render using actual `className` attributes instead of inline `style` objects
+- Card Hover Buttons updated to correct `h-8 px-4` compact variant from source (StoryHub.tsx)
+- Delete button corrected from `bg-#ef4444` to `bg-[hsl(var(--destructive))]`
+- Form inputs and badges converted to `className`-based rendering
+- Code blocks now show actual `className` strings from source
 
-This matches the exact pattern shown in Image 2 (CharacterCreationModal).
+**Pass 3 — Panels, Modals & Icons:**
+- Panel Container: `previewDark` removed, rendered with actual `className`
+- Panel Header Bar: uses actual `className` with `px-5 py-3` (was `16px 24px`)
+- Story Card: added live rendered preview with gradient overlay and `rounded-[2rem]`
+- Modal Container/Header/Footer: `previewDark` removed, rendered with real Tailwind classes
+- Modal Footer buttons now use actual HSL token classes from DeleteConfirmDialog.tsx
+- Icon Size Scale/Containers: `previewDark` removed, previews render on white background
+- Icon Colors: white swatch gets border treatment instead of dark background
 
+**Dark Background Cleanup:**
+- Removed `previewDark` from: buttons (all 5), panel container, modal container/header/footer, icon size scale, icon containers
+- Kept `previewDark` only for: form inputs (dark on dark), modal backdrop (transparency demo)

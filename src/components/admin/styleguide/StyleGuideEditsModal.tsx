@@ -90,26 +90,37 @@ export const KeepOrEditModal: React.FC<KeepOrEditModalProps> = ({
 }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="rounded-xl bg-[hsl(240_6%_10%)] border border-[hsl(0_0%_100%_/_0.10)] shadow-[0_10px_30px_hsl(0_0%_0%_/_0.5)] max-w-sm p-0 gap-0">
-        <DialogHeader className="px-5 pt-5 pb-3">
-          <DialogTitle className="text-[hsl(var(--ui-text))] text-base font-bold truncate">{cardName}</DialogTitle>
-        </DialogHeader>
-        <div className="px-5 pb-5 flex gap-3">
+      <DialogContent className="sm:max-w-md bg-zinc-900 border-white/10 p-0 gap-0 [&>button]:hidden">
+        <div className="px-6 pt-5 pb-3">
+          <h3 className="text-white text-lg font-bold tracking-tight truncate">{cardName}</h3>
+          <p className="text-zinc-400 text-sm mt-1">Select an option below to continue.</p>
+        </div>
+        <div className="px-6 pb-6 grid grid-cols-2 gap-3">
           <button
             type="button"
             onClick={() => { onKeep(); onOpenChange(false); }}
-            className="flex-1 inline-flex items-center justify-center gap-2 h-10 rounded-xl bg-[hsl(240_6%_18%)] border-[hsl(0_0%_100%_/_0.10)] text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider shadow-[0_10px_30px_hsl(0_0%_0%_/_0.35)] hover:brightness-125 active:brightness-150 transition-all"
+            className="group flex flex-col items-center gap-3 p-5 rounded-2xl border border-white/10 bg-zinc-800/50 hover:border-blue-500/50 hover:bg-blue-500/10 transition-all cursor-pointer text-center"
           >
-            <Check className="w-3.5 h-3.5" />
-            Keep
+            <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center group-hover:bg-blue-500/30 transition-colors">
+              <Check className="w-5 h-5 text-blue-400" />
+            </div>
+            <div>
+              <div className="text-white font-bold text-sm">Keep As-Is</div>
+              <p className="text-zinc-400 text-xs mt-1 leading-relaxed">Mark this element as verified and correct</p>
+            </div>
           </button>
           <button
             type="button"
             onClick={() => { onEdit(); onOpenChange(false); }}
-            className="flex-1 inline-flex items-center justify-center gap-2 h-10 rounded-xl bg-[hsl(240_6%_18%)] border-[hsl(0_0%_100%_/_0.10)] text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider shadow-[0_10px_30px_hsl(0_0%_0%_/_0.35)] hover:brightness-125 active:brightness-150 transition-all"
+            className="group flex flex-col items-center gap-3 p-5 rounded-2xl border border-white/10 bg-zinc-800/50 hover:border-purple-500/50 hover:bg-purple-500/10 transition-all cursor-pointer text-center"
           >
-            <Pencil className="w-3.5 h-3.5" />
-            Edit
+            <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center group-hover:bg-purple-500/30 transition-colors">
+              <Pencil className="w-5 h-5 text-purple-400" />
+            </div>
+            <div>
+              <div className="text-white font-bold text-sm">Flag for Edit</div>
+              <p className="text-zinc-400 text-xs mt-1 leading-relaxed">Add notes on what needs to change</p>
+            </div>
           </button>
         </div>
       </DialogContent>
