@@ -456,14 +456,14 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             {/* ─── Community Gallery ─── */}
             <PageSubheading>Community Gallery</PageSubheading>
             <PageDesc>Colors specific to the Community Gallery page and gallery cards.</PageDesc>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
-              <SwatchCard color="#121214" name="Gallery Page Background" rows={[{ label: 'Hex', value: '#121214' }, { label: 'Token', value: 'bg-[#121214]' }, { label: 'Location', value: 'GalleryHub main wrapper, Account page background', isLocation: true }]} />
-              <SwatchCard color="rgba(18,18,20,0.8)" name="Gallery Header Glass" rows={[{ label: 'Value', value: 'rgba(18,18,20,0.8)' }, { label: 'Effect', value: 'backdrop-filter: blur(12px)' }, { label: 'Location', value: 'Gallery sticky header with glassmorphic effect', isLocation: true }]} />
-              <SwatchCard color="rgba(58,58,63,0.5)" name="Gallery Search Input BG" rows={[{ label: 'Value', value: 'rgba(58,58,63,0.5)' }, { label: 'Token', value: 'bg-[#3a3a3f]/50' }, { label: 'Location', value: 'Gallery search input background', isLocation: true }]} />
-              <SwatchCard color="#18181b" name="Category Sidebar BG" rows={[{ label: 'Hex', value: '#18181b' }, { label: 'Token', value: 'bg-[#18181b]' }, { label: 'Location', value: 'Gallery category filter sidebar (280px)', isLocation: true }]} />
-              <SwatchCard color="#facc15" name="Yellow Accent Border" rows={[{ label: 'Hex', value: '#facc15' }, { label: 'Token', value: 'bg-yellow-400' }, { label: 'Location', value: '2px accent bar at top of category sidebar', isLocation: true }]} />
-              <SwatchCard color="rgba(59,130,246,0.2)" name="Blue Filter Tag BG" rows={[{ label: 'Value', value: 'rgba(59,130,246,0.2)' }, { label: 'Token', value: 'bg-blue-500/20' }, { label: 'Location', value: 'Active story type filter chip background', isLocation: true }]} />
-              <SwatchCard color="rgba(168,85,247,0.2)" name="Purple Genre Filter BG" rows={[{ label: 'Value', value: 'rgba(168,85,247,0.2)' }, { label: 'Token', value: 'bg-purple-500/20' }, { label: 'Location', value: 'Active genre filter chip background, purple-400 text', isLocation: true }]} />
+             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
+              <SwatchCardV2 color="#121214" name="Gallery Background" locations="GalleryHub main wrapper, Account page background" value="#121214" token="bg-[#121214]" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="rgba(18,18,20,0.8)" name="Header Glass" locations="Gallery sticky header" value="rgba(18,18,20,0.8)" token="bg-[#121214]/80" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="rgba(58,58,63,0.5)" name="Search Input BG" locations="Gallery search input background" value="rgba(58,58,63,0.5)" token="bg-[#3a3a3f]/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="#18181b" name="Sidebar BG" locations="Gallery category filter sidebar" value="#18181b" token="bg-[#18181b]" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="#facc15" name="Yellow 400" locations="Category sidebar accent bar" value="#facc15" token="bg-yellow-400" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="rgba(59,130,246,0.2)" name="Blue 500/20" locations="Active story type filter chip background" value="rgba(59,130,246,0.2)" token="bg-blue-500/20" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="rgba(168,85,247,0.2)" name="Purple 500/20" locations="Active genre filter chip background" value="rgba(168,85,247,0.2)" token="bg-purple-500/20" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
             </div>
 
             <Divider />
