@@ -514,10 +514,10 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <PageSubheading>Account Page</PageSubheading>
             <PageDesc>Colors for the dark-themed Account settings page.</PageDesc>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
-              <SwatchCard color="#121214" name="Account Page BG" rows={[{ label: 'Hex', value: '#121214' }, { label: 'Token', value: 'bg-[#121214]' }, { label: 'Location', value: 'Full page background for Account section', isLocation: true }]} />
-              <SwatchCard color="#1e1e22" name="Settings Card BG" rows={[{ label: 'Hex', value: '#1e1e22' }, { label: 'Token', value: 'bg-[#1e1e22]' }, { label: 'Location', value: 'Email, Plan, Password setting cards', isLocation: true }]} />
-              <SwatchCard color="#2b2b2e" name="Tab Container BG" rows={[{ label: 'Hex', value: '#2b2b2e' }, { label: 'Token', value: 'bg-[#2b2b2e]' }, { label: 'Location', value: 'Pill tab container on Account and Gallery pages', isLocation: true }]} />
-              <SwatchCard color="rgba(74,95,127,0.2)" name="Plan Badge BG" rows={[{ label: 'Value', value: 'rgba(74,95,127,0.2)' }, { label: 'Token', value: 'bg-[#4a5f7f]/20' }, { label: 'Location', value: 'Subscription plan badge background, text: #7ba3d4', isLocation: true }]} />
+              <SwatchCardV2 color="#121214" name="Near Black" locations="Full page background for Account section" value="#121214" token="bg-[#121214]" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="#1e1e22" name="Charcoal" locations="Email, Plan, Password setting cards" value="#1e1e22" token="bg-[#1e1e22]" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="#2b2b2e" name="Warm Charcoal" locations="Pill tab container on Account and Gallery pages" value="#2b2b2e" token="bg-[#2b2b2e]" pageSpecific={false} appWide={true} />
+              <SwatchCardV2 color="rgba(74,95,127,0.2)" name="Frosted Slate" locations="Subscription plan badge background" value="rgba(74,95,127,0.2)" token="bg-[#4a5f7f]/20" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
             </div>
 
             <Divider />
@@ -526,11 +526,11 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <PageSubheading>Auth Page</PageSubheading>
             <PageDesc>The light-themed authentication page gradient and card colors.</PageDesc>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
-              <SwatchCard color="linear-gradient(to bottom right, #0f172a, #581c87, #0f172a)" name="Auth Page Gradient" rows={[{ label: 'Value', value: 'from-slate-900 via-purple-900 to-slate-900' }, { label: 'Location', value: 'Auth page full-screen background', isLocation: true }]} extraPreviewStyle={{ background: 'linear-gradient(135deg, #0f172a, #581c87, #0f172a)' }} />
-              <SwatchCard color="rgba(30,41,59,0.5)" name="Auth Card BG" rows={[{ label: 'Value', value: 'rgba(30,41,59,0.5)' }, { label: 'Token', value: 'bg-slate-800/50' }, { label: 'Location', value: 'Login/signup Card component background', isLocation: true }]} />
-              <SwatchCard color="rgba(51,65,85,0.5)" name="Auth Input BG" rows={[{ label: 'Value', value: 'rgba(51,65,85,0.5)' }, { label: 'Token', value: 'bg-slate-700/50' }, { label: 'Location', value: 'Email and password input fields on auth page', isLocation: true }]} />
-              <SwatchCard color="#7c3aed" name="Purple 600 / Auth Submit" rows={[{ label: 'Hex', value: '#7c3aed' }, { label: 'Token', value: 'bg-purple-600' }, { label: 'Location', value: 'Sign In / Create Account button', isLocation: true }]} />
-              <SwatchCard color="#a78bfa" name="Purple 400 / Auth Toggle Link" rows={[{ label: 'Hex', value: '#a78bfa' }, { label: 'Token', value: 'text-purple-400' }, { label: 'Location', value: '"Don\'t have an account? Sign up" toggle text', isLocation: true }]} />
+              <SwatchCardV2 color="linear-gradient(to bottom right, #0f172a, #581c87, #0f172a)" name="Navy-to-Purple Gradient" locations="Auth page full-screen background" value="from-slate-900 via-purple-900 to-slate-900" token="—" pageSpecific={true} appWide={false} extraPreviewStyle={{ background: 'linear-gradient(135deg, #0f172a, #581c87, #0f172a)' }} />
+              <SwatchCardV2 color="rgba(30,41,59,0.5)" name="Dark Slate Glass" locations="Login/signup Card component background" value="rgba(30,41,59,0.5)" token="bg-slate-800/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="rgba(51,65,85,0.5)" name="Slate Glass" locations="Email and password input fields on auth page" value="rgba(51,65,85,0.5)" token="bg-slate-700/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="#7c3aed" name="Vivid Purple" locations="Sign In / Create Account button" value="#7c3aed" token="bg-purple-600" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="#a78bfa" name="Soft Purple" locations="'Don't have an account? Sign up' toggle text" value="#a78bfa" token="text-purple-400" pageSpecific={true} appWide={false} />
             </div>
             <InconsistencyNote items={[
               { file: 'Auth.tsx', note: 'Uses purple accent (purple-600 button, purple-400 link) while rest of app uses blue #4a5f7f accent.' },
@@ -542,11 +542,11 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <PageSubheading>Creator Profile</PageSubheading>
             <PageDesc>Colors for the public Creator Profile page.</PageDesc>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
-              <SwatchCard color="#121214" name="Profile Page BG" rows={[{ label: 'Hex', value: '#121214' }, { label: 'Token', value: 'bg-[#121214]' }, { label: 'Location', value: 'Full page background (same as Gallery/Account)', isLocation: true }]} />
-              <SwatchCard color="#1e1e22" name="Profile Card BG" rows={[{ label: 'Hex', value: '#1e1e22' }, { label: 'Token', value: 'bg-[#1e1e22]' }, { label: 'Location', value: 'Profile info card, bio section', isLocation: true }]} />
-              <SwatchCard color="#ffffff" name="Profile Header Bar" rows={[{ label: 'Hex', value: '#ffffff' }, { label: 'Token', value: 'bg-white' }, { label: 'Location', value: 'Top header bar on Creator Profile — light on dark page', isLocation: true }]} />
-              <SwatchCard color="rgba(255,255,255,0.05)" name="Stats Pill BG" rows={[{ label: 'Value', value: 'rgba(255,255,255,0.05)' }, { label: 'Token', value: 'bg-white/5' }, { label: 'Location', value: 'Stat pills (followers, plays, etc.) on Creator Profile', isLocation: true }]} extraPreviewStyle={{ border: '1px dashed #999' }} />
-              <SwatchCard color="rgba(255,255,255,0.1)" name="Unfollow Button BG" rows={[{ label: 'Value', value: 'rgba(255,255,255,0.1)' }, { label: 'Token', value: 'bg-white/10' }, { label: 'Location', value: 'Unfollow button (toggle state)', isLocation: true }]} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="#121214" name="Near Black" locations="Full page background (same as Gallery/Account)" value="#121214" token="bg-[#121214]" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="#1e1e22" name="Charcoal" locations="Profile info card, bio section" value="#1e1e22" token="bg-[#1e1e22]" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="#ffffff" name="White" locations="Top header bar on Creator Profile — light on dark page" value="#ffffff" token="bg-white" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="rgba(255,255,255,0.05)" name="Ghost White" locations="Stat pills (followers, plays, etc.) on Creator Profile" value="rgba(255,255,255,0.05)" token="bg-white/5" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="rgba(255,255,255,0.1)" name="Faint White" locations="Unfollow button (toggle state)" value="rgba(255,255,255,0.1)" token="bg-white/10" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
             </div>
             <InconsistencyNote items={[
               { file: 'CreatorProfile.tsx', note: 'Uses bg-white header bar on bg-[#121214] dark page — jarring light/dark contrast.' },
@@ -559,9 +559,9 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <PageSubheading>Global Sidebar</PageSubheading>
             <PageDesc>Colors for the main application navigation sidebar.</PageDesc>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
-              <SwatchCard color="#1a1a1a" name="Sidebar Background" rows={[{ label: 'Hex', value: '#1a1a1a' }, { label: 'Token', value: 'bg-[#1a1a1a]' }, { label: 'Location', value: 'Global left sidebar (280px expanded, 72px collapsed)', isLocation: true }]} />
-              <SwatchCard color="#4a5f7f" name="Active Sidebar Item" rows={[{ label: 'Hex', value: '#4a5f7f' }, { label: 'Token', value: 'bg-[#4a5f7f]' }, { label: 'Effect', value: 'shadow-lg shadow-black/40' }, { label: 'Location', value: 'Active navigation item background', isLocation: true }]} />
-              <SwatchCard color="#94a3b8" name="Inactive Sidebar Text" rows={[{ label: 'Hex', value: '#94a3b8' }, { label: 'Token', value: 'text-slate-400' }, { label: 'Location', value: 'Inactive sidebar item text and icons', isLocation: true }]} />
+              <SwatchCardV2 color="#1a1a1a" name="Soft Black" locations="Global left sidebar (280px expanded, 72px collapsed)" value="#1a1a1a" token="bg-[#1a1a1a]" pageSpecific={false} appWide={true} />
+              <SwatchCardV2 color="#4a5f7f" name="Slate Blue" locations="Active navigation item background" value="#4a5f7f" token="bg-[#4a5f7f]" pageSpecific={false} appWide={true} effect="shadow-lg shadow-black/40" />
+              <SwatchCardV2 color="#94a3b8" name="Muted Slate" locations="Inactive sidebar item text and icons" value="#94a3b8" token="text-slate-400" pageSpecific={false} appWide={true} />
             </div>
 
             <Divider />
@@ -570,9 +570,9 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <PageSubheading>Character Builder</PageSubheading>
             <PageDesc>Colors specific to the Character Builder / CharactersTab editor.</PageDesc>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
-              <SwatchCard color="rgba(58,58,63,0.3)" name="Inner Card Surface" rows={[{ label: 'Value', value: 'rgba(58,58,63,0.3)' }, { label: 'Token', value: 'bg-[#3a3a3f]/30' }, { label: 'Location', value: 'HardcodedSection inner card, character trait row containers', isLocation: true }]} />
-              <SwatchCard color="rgba(24,24,27,0.5)" name="HardcodedRow Label BG" rows={[{ label: 'Value', value: 'rgba(24,24,27,0.5)' }, { label: 'Token', value: 'bg-zinc-900/50' }, { label: 'Location', value: 'Read-only trait labels (Physical Appearance, Personality, etc.)', isLocation: true }]} />
-              <SwatchCard color="rgba(96,165,250,0.1)" name="Enhance Hover BG" rows={[{ label: 'Value', value: 'rgba(96,165,250,0.1)' }, { label: 'Token', value: 'bg-blue-500/10' }, { label: 'Location', value: 'AI Enhance sparkle button hover state', isLocation: true }]} />
+              <SwatchCardV2 color="rgba(58,58,63,0.3)" name="Muted Charcoal" locations="HardcodedSection inner card, character trait row containers" value="rgba(58,58,63,0.3)" token="bg-[#3a3a3f]/30" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="rgba(24,24,27,0.5)" name="Smoke Black" locations="Read-only trait labels (Physical Appearance, Personality, etc.)" value="rgba(24,24,27,0.5)" token="bg-zinc-900/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="rgba(96,165,250,0.1)" name="Faint Blue" locations="AI Enhance sparkle button hover state" value="rgba(96,165,250,0.1)" token="bg-blue-500/10" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
             </div>
 
             <Divider />
@@ -581,10 +581,10 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <PageSubheading>Model Settings</PageSubheading>
             <PageDesc>Colors used on the Model Settings page — NOTE: this page uses a LIGHT THEME unlike the rest of the app.</PageDesc>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
-              <SwatchCard color="#ffffff" name="Model Card BG (Inactive)" rows={[{ label: 'Hex', value: '#ffffff' }, { label: 'Token', value: 'bg-white' }, { label: 'Location', value: 'Inactive model selection card background', isLocation: true }]} />
-              <SwatchCard color="#0f172a" name="Model Card BG (Active)" rows={[{ label: 'Hex', value: '#0f172a' }, { label: 'Token', value: 'bg-slate-900' }, { label: 'Location', value: 'Active/selected model card background, scale-[1.02]', isLocation: true }]} />
-              <SwatchCard color="#faf5ff" name="Admin Share Panel" rows={[{ label: 'Hex', value: '#faf5ff' }, { label: 'Token', value: 'bg-purple-50' }, { label: 'Location', value: 'Admin-only share toggle row background, border-purple-200', isLocation: true }]} />
-              <SwatchCard color="#f8fafc" name="Connection Setup BG" rows={[{ label: 'Hex', value: '#f8fafc' }, { label: 'Token', value: 'bg-slate-50' }, { label: 'Location', value: 'Connection setup container within Model Settings', isLocation: true }]} />
+              <SwatchCardV2 color="#ffffff" name="White" locations="Inactive model selection card background" value="#ffffff" token="bg-white" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="#0f172a" name="Deep Navy" locations="Active/selected model card background, scale-[1.02]" value="#0f172a" token="bg-slate-900" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="#faf5ff" name="Pale Lavender" locations="Admin-only share toggle row background, border-purple-200" value="#faf5ff" token="bg-purple-50" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="#f8fafc" name="Ice White" locations="Connection setup container within Model Settings" value="#f8fafc" token="bg-slate-50" pageSpecific={true} appWide={false} />
             </div>
             <InconsistencyNote items={[
               { file: 'ModelSettingsTab.tsx', note: 'Uses LIGHT THEME (bg-white, text-slate-900, border-slate-200) while every other page in the app uses dark theme. Major design inconsistency.' },
@@ -597,8 +597,8 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <PageSubheading>World Tab</PageSubheading>
             <PageDesc>Colors specific to the World Tab and its hint/character components.</PageDesc>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
-              <SwatchCard color="rgba(0,0,0,0.8)" name="CharacterButton BG" rows={[{ label: 'Value', value: 'rgba(0,0,0,0.8)' }, { label: 'Token', value: 'bg-black/80' }, { label: 'Location', value: 'World Tab character card button background', isLocation: true }]} />
-              <SwatchCard color="#4a5f7f" name="CharacterButton Border" rows={[{ label: 'Hex', value: '#4a5f7f' }, { label: 'Token', value: 'border-[#4a5f7f]' }, { label: 'Hover', value: 'border-[#6b82a8]' }, { label: 'Location', value: 'Character card border, hover brightens to #6b82a8', isLocation: true }]} />
+              <SwatchCardV2 color="rgba(0,0,0,0.8)" name="Near Black Glass" locations="World Tab character card button background" value="rgba(0,0,0,0.8)" token="bg-black/80" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="#4a5f7f" name="Slate Blue" locations="Character card border, hover brightens to #6b82a8" value="#4a5f7f" token="border-[#4a5f7f]" pageSpecific={true} appWide={false} />
             </div>
           </Section>
 
