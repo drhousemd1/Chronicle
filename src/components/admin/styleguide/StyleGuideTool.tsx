@@ -570,9 +570,9 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <PageSubheading>Character Builder</PageSubheading>
             <PageDesc>Colors specific to the Character Builder / CharactersTab editor.</PageDesc>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
-              <SwatchCard color="rgba(58,58,63,0.3)" name="Inner Card Surface" rows={[{ label: 'Value', value: 'rgba(58,58,63,0.3)' }, { label: 'Token', value: 'bg-[#3a3a3f]/30' }, { label: 'Location', value: 'HardcodedSection inner card, character trait row containers', isLocation: true }]} />
-              <SwatchCard color="rgba(24,24,27,0.5)" name="HardcodedRow Label BG" rows={[{ label: 'Value', value: 'rgba(24,24,27,0.5)' }, { label: 'Token', value: 'bg-zinc-900/50' }, { label: 'Location', value: 'Read-only trait labels (Physical Appearance, Personality, etc.)', isLocation: true }]} />
-              <SwatchCard color="rgba(96,165,250,0.1)" name="Enhance Hover BG" rows={[{ label: 'Value', value: 'rgba(96,165,250,0.1)' }, { label: 'Token', value: 'bg-blue-500/10' }, { label: 'Location', value: 'AI Enhance sparkle button hover state', isLocation: true }]} />
+              <SwatchCardV2 color="rgba(58,58,63,0.3)" name="Muted Charcoal" locations="HardcodedSection inner card, character trait row containers" value="rgba(58,58,63,0.3)" token="bg-[#3a3a3f]/30" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="rgba(24,24,27,0.5)" name="Smoke Black" locations="Read-only trait labels (Physical Appearance, Personality, etc.)" value="rgba(24,24,27,0.5)" token="bg-zinc-900/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="rgba(96,165,250,0.1)" name="Faint Blue" locations="AI Enhance sparkle button hover state" value="rgba(96,165,250,0.1)" token="bg-blue-500/10" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
             </div>
 
             <Divider />
