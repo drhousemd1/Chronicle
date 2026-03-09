@@ -1,48 +1,37 @@
 
 
-# Create ButtonCardV2 for Story Builder Buttons
+## Plan: Style Guide Audit & Correction — Complete ✅
 
-## What
-Replace the 3 Story Builder `EntryCard` button entries (lines 968-1001) with a new `ButtonCardV2` component that uses structured metadata rows — matching the pattern established by `SwatchCardV2` and `TypoCardV2`.
+### Status: ✅ All 3 Passes Complete
 
-## ButtonCardV2 Component (new, ~80 lines)
+Audited and corrected all 8 sections of the Visual Style Guide against live source code.
 
-Based on your mockup, each card will have:
+### What was fixed:
 
-| Section | Content |
-|---------|---------|
-| **Header row** | "Button Name:" label + value |
-| **Preview strip** | Button rendered centered, white background, with drop shadow for visibility |
-| **Metadata rows** | Button Color, Text Color, Size, Purpose, Visual Effects, Locations — each as label/value pairs using the existing `labelStyle`/`valueStyle` |
-| **Footer** | Page Specific / App Wide checkboxes |
+**Pass 1 — Colors & Typography:**
+- "Button Background" swatch: `#2F3137` (screenshot approximation) → `hsl(228 7% 20%)` / `bg-[hsl(var(--ui-surface-2))]` (actual CSS variable)
+- "Button Text Color" swatch: `#eaedf1` → `hsl(210 20% 93%)` / `text-[hsl(var(--ui-text))]` (actual CSS variable)
+- Typography specs updated to use Tailwind class names (e.g., `text-xl font-bold tracking-tight`) instead of raw pixel values
+- Field label tracking corrected from `0.5px` to `tracking-wider (0.05em)`
+- Button text tile renamed from "Header actions" to "Shadow Surface" with `leading-none` added
 
-Interface:
-```typescript
-interface ButtonV2Props {
-  buttonName: string;        // e.g. "Shadow Surface"
-  preview: React.ReactNode;  // live button render
-  buttonColor: string;       // e.g. "hsl(228 7% 20%) — bg-[hsl(var(--ui-surface-2))]"
-  textColor: string;         // e.g. "hsl(210,20%,93%) — text-[hsl(var(--ui-text))]"
-  size: string;              // e.g. "h-10 (40px) × px-6 — rounded-xl (12px)"
-  purpose: string;           // e.g. "Header action buttons (save, drafts, close)"
-  visualEffects: string;     // e.g. "Drop shadow: 0 10px 30px rgba(0,0,0,0.35)"
-  locations: string;         // e.g. "Story Builder header, modal footers"
-  pageSpecific: boolean;
-  appWide: boolean;
-}
-```
+**Pass 2 — Buttons, Forms & Badges:**
+- Header Action Button completely rewritten to Shadow Surface pattern with real Tailwind `className` strings
+- Button previews now render using actual `className` attributes instead of inline `style` objects
+- Card Hover Buttons updated to correct `h-8 px-4` compact variant from source (StoryHub.tsx)
+- Delete button corrected from `bg-#ef4444` to `bg-[hsl(var(--destructive))]`
+- Form inputs and badges converted to `className`-based rendering
+- Code blocks now show actual `className` strings from source
 
-## Story Builder Button Cards (3 entries)
+**Pass 3 — Panels, Modals & Icons:**
+- Panel Container: `previewDark` removed, rendered with actual `className`
+- Panel Header Bar: uses actual `className` with `px-5 py-3` (was `16px 24px`)
+- Story Card: added live rendered preview with gradient overlay and `rounded-[2rem]`
+- Modal Container/Header/Footer: `previewDark` removed, rendered with real Tailwind classes
+- Modal Footer buttons now use actual HSL token classes from DeleteConfirmDialog.tsx
+- Icon Size Scale/Containers: `previewDark` removed, previews render on white background
+- Icon Colors: white swatch gets border treatment instead of dark background
 
-1. **Shadow Surface** — header action buttons (DRAFTS, SAVE AND CLOSE)
-2. **AI Generate** — purple gradient generate button
-3. **Dashed Add** — dashed border add-new buttons
-
-Each will have all 6 metadata fields populated from the existing specs data already in the `EntryCard` entries, just restructured into the new format.
-
-## Approach
-- Add `ButtonCardV2` component definition near the other V2 card components (~line 280)
-- Replace lines 968-1001 (3 `EntryCard` calls) with 3 `ButtonCardV2` calls
-- Same visual styling patterns as SwatchCardV2/TypoCardV2 (2px black border, hover lift, labelStyle/valueStyle text)
-- Remove the code snippet block that EntryCard had — not needed in the structured format
-
+**Dark Background Cleanup:**
+- Removed `previewDark` from: buttons (all 5), panel container, modal container/header/footer, icon size scale, icon containers
+- Kept `previewDark` only for: form inputs (dark on dark), modal backdrop (transparency demo)
