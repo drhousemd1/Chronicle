@@ -538,9 +538,19 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
   const [keepOrEditTarget, setKeepOrEditTarget] = useState<{ cardName: string; cardType: string; details: Record<string, string> } | null>(null);
   const [editDetailTarget, setEditDetailTarget] = useState<{ cardName: string; cardType: string; details: Record<string, string>; existingComment?: string; existingId?: string } | null>(null);
 
+  const onEditsCountChangeRef = useRef(onEditsCountChange);
+  onEditsCountChangeRef.current = onEditsCountChange;
+
   const refreshEditsState = useCallback(() => {
     setKeeps(getKeeps());
-    setEditNames(new Set(getEditsRegistry().map(e => e.cardName)));
+    const registry = getEditsRegistry();
+    setEditNames(new Set(registry.map(e => e.cardName)));
+    onEditsCountChangeRef.current?.(registry.length);
+  }, []);
+
+  // Initial sync on mount
+  useEffect(() => {
+    onEditsCountChangeRef.current?.(getEditsRegistry().length);
   }, []);
 
   const handleCardAction = useCallback((cardName: string, cardType: string, details: Record<string, string>) => {
