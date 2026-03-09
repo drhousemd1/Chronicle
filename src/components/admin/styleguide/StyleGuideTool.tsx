@@ -624,6 +624,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
   const fullSpan: React.CSSProperties = isMedium ? {} : { gridColumn: '1 / -1' };
 
   return (
+    <EditsContext.Provider value={editsContextValue}>
     <div style={{ display: 'flex', flexDirection: isNarrow ? 'column' : 'row', height: '100%', background: sg.bg, fontFamily: "'Inter','Segoe UI',system-ui,-apple-system,sans-serif", color: sg.text, lineHeight: 1.5, overflow: 'hidden' }}>
       {/* ─── SIDEBAR / NAV ─── */}
       {isNarrow ? (
