@@ -1,54 +1,37 @@
 
 
-## Fix: Convert Community Gallery Button Entries to ButtonCardV2 Format
+## Plan: Style Guide Audit & Correction — Complete ✅
 
-Lines 1255-1294 contain four `EntryCard` entries for the Community Gallery buttons section. Convert all four to `ButtonCardV2`.
+### Status: ✅ All 3 Passes Complete
 
-### Changes to `StyleGuideTool.tsx` (lines 1255-1294)
+Audited and corrected all 8 sections of the Visual Style Guide against live source code.
 
-Replace the four `EntryCard` entries with `ButtonCardV2`:
+### What was fixed:
 
-**1. "Gallery Icon Buttons — Like / Save"** (lines 1255-1266)
-- `buttonName`: "Gallery Icon Buttons — Like / Save"
-- `buttonColor`: "Default: rgba(255,255,255,0.9) — bg-white/90. Liked: #f43f5e — bg-rose-500. Saved: #f59e0b — bg-amber-500"
-- `textColor`: "Default: #334155 — text-slate-700. Liked/Saved: #ffffff — text-white"
-- `size`: "h-8 w-8 — rounded-xl (12px)"
-- `purpose`: "Icon toggle buttons for liking and saving gallery stories on card hover"
-- `visualEffects`: "shadow-2xl"
-- `locations`: "GalleryStoryCard — hover overlay"
-- `pageSpecific={true}`, `appWide={false}`
-- Preview: same 3 buttons, keep as-is
+**Pass 1 — Colors & Typography:**
+- "Button Background" swatch: `#2F3137` (screenshot approximation) → `hsl(228 7% 20%)` / `bg-[hsl(var(--ui-surface-2))]` (actual CSS variable)
+- "Button Text Color" swatch: `#eaedf1` → `hsl(210 20% 93%)` / `text-[hsl(var(--ui-text))]` (actual CSS variable)
+- Typography specs updated to use Tailwind class names (e.g., `text-xl font-bold tracking-tight`) instead of raw pixel values
+- Field label tracking corrected from `0.5px` to `tracking-wider (0.05em)`
+- Button text tile renamed from "Header actions" to "Shadow Surface" with `leading-none` added
 
-**2. "Gallery PLAY Button"** (lines 1267-1274)
-- `buttonName`: "Gallery PLAY Button"
-- `buttonColor`: "#3b82f6 — bg-blue-600"
-- `textColor`: "#ffffff — text-white"
-- `size`: "h-8 px-4 — rounded-xl (12px)"
-- `purpose`: "Compact play action on gallery story card hover overlay"
-- `visualEffects`: "shadow-2xl · text-[10px] font-bold leading-none uppercase tracking-wider"
-- `locations`: "GalleryStoryCard — hover overlay"
-- `pageSpecific={true}`, `appWide={false}`
-- Preview: same PLAY button
+**Pass 2 — Buttons, Forms & Badges:**
+- Header Action Button completely rewritten to Shadow Surface pattern with real Tailwind `className` strings
+- Button previews now render using actual `className` attributes instead of inline `style` objects
+- Card Hover Buttons updated to correct `h-8 px-4` compact variant from source (StoryHub.tsx)
+- Delete button corrected from `bg-#ef4444` to `bg-[hsl(var(--destructive))]`
+- Form inputs and badges converted to `className`-based rendering
+- Code blocks now show actual `className` strings from source
 
-**3. "Gallery Search Button"** (lines 1275-1282)
-- `buttonName`: "Gallery Search Button"
-- `buttonColor`: "#4a5f7f — bg-[#4a5f7f]"
-- `textColor`: "#ffffff — text-white"
-- `size`: "px-4 py-1.5 — rounded-lg (8px)"
-- `purpose`: "Submit search inside the gallery search input"
-- `visualEffects`: "text-sm font-semibold. Hover: bg-[#5a6f8f]. Positioned absolute inside search input"
-- `locations`: "GalleryHub — search header"
-- `pageSpecific={true}`, `appWide={false}`
-- Preview: same Search button
+**Pass 3 — Panels, Modals & Icons:**
+- Panel Container: `previewDark` removed, rendered with actual `className`
+- Panel Header Bar: uses actual `className` with `px-5 py-3` (was `16px 24px`)
+- Story Card: added live rendered preview with gradient overlay and `rounded-[2rem]`
+- Modal Container/Header/Footer: `previewDark` removed, rendered with real Tailwind classes
+- Modal Footer buttons now use actual HSL token classes from DeleteConfirmDialog.tsx
+- Icon Size Scale/Containers: `previewDark` removed, previews render on white background
+- Icon Colors: white swatch gets border treatment instead of dark background
 
-**4. "Browse Categories Button"** (lines 1283-1294)
-- `buttonName`: "Browse Categories Button"
-- `buttonColor`: "#4a5f7f — bg-[#4a5f7f]"
-- `textColor`: "#ffffff — text-white"
-- `size`: "px-4 py-3 — rounded-lg (8px)"
-- `purpose`: "Toggle the category filter sidebar open/close"
-- `visualEffects`: "text-sm font-semibold. Hover: bg-[#5a6f8f]. Filter count badge: px-1.5 py-0.5 bg-white/20 rounded-full text-xs"
-- `locations`: "GalleryHub — search header, right side"
-- `pageSpecific={true}`, `appWide={false}`
-- Preview: same button with badge
-
+**Dark Background Cleanup:**
+- Removed `previewDark` from: buttons (all 5), panel container, modal container/header/footer, icon size scale, icon containers
+- Kept `previewDark` only for: form inputs (dark on dark), modal backdrop (transparency demo)
