@@ -2517,7 +2517,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 }
               />
               <InputCardV2
-                inputName="Chronicle UI TextArea (Light Theme)"
+                inputName="Chronicle UI TextArea"
                 previewBg="#fff"
                 background="bg-slate-50"
                 border="border-slate-200"
