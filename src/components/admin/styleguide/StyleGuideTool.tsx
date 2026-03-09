@@ -2537,7 +2537,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               />
               <InputCardV2
                 inputName="CharacterPicker Search (Dark Override)"
-                background="!bg-zinc-900/50 (overrides Chronicle light)"
+                background="!bg-zinc-900/50 (overrides Chronicle UI)"
                 border="!border-zinc-700"
                 borderRadius="rounded-2xl (16px — inherited from Chronicle)"
                 textColor="!text-white"
