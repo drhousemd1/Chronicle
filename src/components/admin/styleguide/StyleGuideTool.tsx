@@ -1428,21 +1428,26 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               }
             />
             <ButtonCardV2
-              buttonName="Day Counter +/− Arrows"
+              buttonName="Day Counter Stepper"
               buttonColor="transparent — hover:bg-slate-100"
-              textColor="#000000 — text-black. Hover: text-blue-600. Disabled: opacity-30"
-              size="px-1.5 py-0.5 — inside white rounded-full pill"
+              textColor="#000000 — text-black font-bold text-sm. Arrows: hover:text-blue-600. Down disabled at day 1: opacity-30"
+              size="Container: rounded-lg border border-black shadow-sm. Number: px-3 py-1.5. Arrows: px-1.5 py-0.5"
               purpose="Increment/decrement the in-story day counter"
-              visualEffects="Container: bg-white rounded-full shadow-sm. Down arrow disabled at day 1"
-              locations="ChatInterfaceTab — day/time control panel"
+              visualEffects="Container: bg-white shadow-sm. Vertical divider: border-l border-black"
+              locations="ChatInterfaceTab — day/time control panel, below 'Day' label"
               pageSpecific={true}
               appWide={false}
               preview={
-                <div style={{ display: 'flex', justifyContent: 'center' }}>
-                  <div className="inline-flex items-center gap-1 bg-white rounded-full px-2 py-1 shadow-sm">
-                    <button className="px-1.5 py-0.5 text-black opacity-30" style={{ cursor: 'default', background: 'transparent', border: 'none', fontSize: 12 }}>◀</button>
-                    <span className="text-xs font-bold text-black px-1">Day 1</span>
-                    <button className="px-1.5 py-0.5 text-black hover:text-blue-600" style={{ cursor: 'default', background: 'transparent', border: 'none', fontSize: 12 }}>▶</button>
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: 'black', marginBottom: 2 }}>Day</span>
+                    <div className="inline-flex items-stretch bg-white rounded-lg border border-black shadow-sm" style={{ overflow: 'hidden' }}>
+                      <span className="px-3 py-1.5 font-bold text-sm text-black" style={{ display: 'flex', alignItems: 'center' }}>1</span>
+                      <div className="border-l border-black flex flex-col">
+                        <button className="px-1.5 py-0.5 text-black hover:bg-slate-100" style={{ cursor: 'default', background: 'transparent', border: 'none', fontSize: 10, lineHeight: 1 }}>▲</button>
+                        <button className="px-1.5 py-0.5 text-black opacity-30" style={{ cursor: 'default', background: 'transparent', border: 'none', fontSize: 10, lineHeight: 1 }}>▼</button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               }
