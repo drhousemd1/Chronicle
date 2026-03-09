@@ -1358,6 +1358,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               textColor="Default: #94a3b8 — text-slate-400. Hover: text-white. Save: text-green-400. Cancel: text-red-400"
               size="p-2 — rounded-lg"
               purpose="Per-message actions visible on hover (regenerate, menu, save edit, cancel edit)"
+              visualEffects="transition-colors"
               locations="ChatInterfaceTab — message bubble hover overlay"
               pageSpecific={true}
               appWide={false}
