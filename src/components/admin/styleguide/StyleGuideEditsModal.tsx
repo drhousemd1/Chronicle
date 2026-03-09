@@ -90,9 +90,9 @@ export const KeepOrEditModal: React.FC<KeepOrEditModalProps> = ({
 }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="rounded-xl bg-[hsl(240_6%_10%)] border border-[hsl(0_0%_100%_/_0.10)] shadow-[0_10px_30px_hsl(0_0%_0%_/_0.5)] max-w-sm p-0 gap-0">
+      <DialogContent className="rounded-xl bg-[hsl(240_6%_10%)] border border-[hsl(0_0%_100%_/_0.10)] shadow-[0_10px_30px_hsl(0_0%_0%_/_[0_10px_30px_hsl(0_0%_0%_/_0.5)] max-w-sm p-0 gap-0">
         <DialogHeader className="px-5 pt-5 pb-3">
-          <DialogTitle className="text-white text-base font-bold truncate">{cardName}</DialogTitle>
+          <D[hsl(var(--ui-text))]Title className="text-white text-base font-bold truncate">{cardName}</DialogTitle>
         </DialogHeader>
         <div className="px-5 pb-5 flex gap-3">
           <button
