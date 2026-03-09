@@ -526,11 +526,11 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <PageSubheading>Auth Page</PageSubheading>
             <PageDesc>The light-themed authentication page gradient and card colors.</PageDesc>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
-              <SwatchCard color="linear-gradient(to bottom right, #0f172a, #581c87, #0f172a)" name="Auth Page Gradient" rows={[{ label: 'Value', value: 'from-slate-900 via-purple-900 to-slate-900' }, { label: 'Location', value: 'Auth page full-screen background', isLocation: true }]} extraPreviewStyle={{ background: 'linear-gradient(135deg, #0f172a, #581c87, #0f172a)' }} />
-              <SwatchCard color="rgba(30,41,59,0.5)" name="Auth Card BG" rows={[{ label: 'Value', value: 'rgba(30,41,59,0.5)' }, { label: 'Token', value: 'bg-slate-800/50' }, { label: 'Location', value: 'Login/signup Card component background', isLocation: true }]} />
-              <SwatchCard color="rgba(51,65,85,0.5)" name="Auth Input BG" rows={[{ label: 'Value', value: 'rgba(51,65,85,0.5)' }, { label: 'Token', value: 'bg-slate-700/50' }, { label: 'Location', value: 'Email and password input fields on auth page', isLocation: true }]} />
-              <SwatchCard color="#7c3aed" name="Purple 600 / Auth Submit" rows={[{ label: 'Hex', value: '#7c3aed' }, { label: 'Token', value: 'bg-purple-600' }, { label: 'Location', value: 'Sign In / Create Account button', isLocation: true }]} />
-              <SwatchCard color="#a78bfa" name="Purple 400 / Auth Toggle Link" rows={[{ label: 'Hex', value: '#a78bfa' }, { label: 'Token', value: 'text-purple-400' }, { label: 'Location', value: '"Don\'t have an account? Sign up" toggle text', isLocation: true }]} />
+              <SwatchCardV2 color="linear-gradient(to bottom right, #0f172a, #581c87, #0f172a)" name="Navy-to-Purple Gradient" locations="Auth page full-screen background" value="from-slate-900 via-purple-900 to-slate-900" token="—" pageSpecific={true} appWide={false} extraPreviewStyle={{ background: 'linear-gradient(135deg, #0f172a, #581c87, #0f172a)' }} />
+              <SwatchCardV2 color="rgba(30,41,59,0.5)" name="Dark Slate Glass" locations="Login/signup Card component background" value="rgba(30,41,59,0.5)" token="bg-slate-800/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="rgba(51,65,85,0.5)" name="Slate Glass" locations="Email and password input fields on auth page" value="rgba(51,65,85,0.5)" token="bg-slate-700/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="#7c3aed" name="Vivid Purple" locations="Sign In / Create Account button" value="#7c3aed" token="bg-purple-600" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="#a78bfa" name="Soft Purple" locations="'Don't have an account? Sign up' toggle text" value="#a78bfa" token="text-purple-400" pageSpecific={true} appWide={false} />
             </div>
             <InconsistencyNote items={[
               { file: 'Auth.tsx', note: 'Uses purple accent (purple-600 button, purple-400 link) while rest of app uses blue #4a5f7f accent.' },
