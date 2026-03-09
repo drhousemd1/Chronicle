@@ -78,7 +78,7 @@ interface SwatchV2Props {
   color: string;
   name: string;
   locations: string;
-  hex: string;
+  value: string;
   token: string;
   pageSpecific: boolean;
   appWide: boolean;
