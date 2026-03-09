@@ -2495,7 +2495,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <PageSubheading>Chronicle UI.tsx — Parallel Input System</PageSubheading>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
               <InputCardV2
-                inputName="Chronicle UI Input (Light Theme)"
+                inputName="Chronicle UI Input"
                 previewBg="#fff"
                 background="bg-slate-50"
                 border="border-slate-200"
