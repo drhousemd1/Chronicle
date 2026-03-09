@@ -2508,7 +2508,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 purpose="Light-theme input primitive defined in UI.tsx"
                 locations="StoryHub, CharactersTab, WorldTab, ModelSettings, PublicProfileTab"
                 appWide
-                notes="⚠ Light theme — used across ~50% of the app. Label: text-xs font-bold uppercase text-slate-500. Different from shadcn Input and all dark-themed inputs."
+                notes="Used across ~50% of the app. Label: text-xs font-bold uppercase text-slate-500. Different from shadcn Input and all dark-themed inputs."
                 preview={
                   <div style={{ width: '100%' }}>
                     <label className="block text-xs font-bold uppercase mb-1 text-slate-500">Label</label>
