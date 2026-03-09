@@ -1,6 +1,79 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Sparkles } from 'lucide-react';
+import React, { useEffect, useRef, useState, useCallback, createContext, useContext } from 'react';
+import { Sparkles, Pencil } from 'lucide-react';
 import { StyleGuideDownloadModal } from './StyleGuideDownloadModal';
+import {
+  KeepOrEditModal, EditDetailModal, EditsListModal,
+  getEditsRegistry, upsertEdit, removeKeep, addKeep, getKeeps, getEditsCount,
+  type EditEntry,
+} from './StyleGuideEditsModal';
+
+/* ═══════════════════════ EDITS CONTEXT ═══════════════════════ */
+interface EditsContextValue {
+  keeps: Set<string>;
+  editIds: Set<string>; // card names that have edits
+  onCardAction: (cardName: string, cardType: string, details: Record<string, string>) => void;
+}
+const EditsContext = createContext<EditsContextValue | null>(null);
+
+/* ═══════════════════════ CARD EDIT WRAPPER (HOC-style) ═══════════════════════ */
+const CardEditOverlay: React.FC<{ cardName: string; cardType: string; details: Record<string, string>; children: React.ReactNode }> = ({ cardName, cardType, details, children }) => {
+  const ctx = useContext(EditsContext);
+  const [hovered, setHovered] = useState(false);
+  if (!ctx) return <>{children}</>;
+
+  const isKept = ctx.keeps.has(cardName);
+  const isEdited = ctx.editIds.has(cardName);
+
+  return (
+    <div
+      style={{ position: 'relative' }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {children}
+      {/* Status pills */}
+      {(isKept || isEdited) && (
+        <div style={{ position: 'absolute', top: 6, right: 6, zIndex: 10 }}>
+          {isKept && (
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 3, padding: '2px 8px', borderRadius: 999,
+              fontSize: 9, fontWeight: 800, letterSpacing: '0.6px', textTransform: 'uppercase',
+              background: 'rgba(16,185,129,0.2)', color: '#6ee7b7', border: '1px solid rgba(16,185,129,0.3)',
+            }}>Keep</span>
+          )}
+          {isEdited && (
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 3, padding: '2px 8px', borderRadius: 999,
+              fontSize: 9, fontWeight: 800, letterSpacing: '0.6px', textTransform: 'uppercase',
+              background: 'rgba(245,158,11,0.2)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.3)',
+              marginLeft: isKept ? 4 : 0,
+            }}>Edit</span>
+          )}
+        </div>
+      )}
+      {/* Hover overlay */}
+      {hovered && (
+        <div
+          style={{
+            position: 'absolute', inset: 0, zIndex: 9,
+            background: 'rgba(0,0,0,0.25)', borderRadius: 10,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', transition: 'opacity 0.15s',
+          }}
+          onClick={(e) => { e.stopPropagation(); ctx.onCardAction(cardName, cardType, details); }}
+        >
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: 36, height: 36, borderRadius: 10,
+            background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(4px)',
+          }}>
+            <Pencil size={16} color="#fff" />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const SECTIONS = [
   { id: 'colors', label: 'Colors' },

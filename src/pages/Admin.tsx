@@ -46,10 +46,11 @@ interface AdminPageProps {
   onRegisterGuideSave?: (saveFn: (() => Promise<void>) | null) => void;
   onRegisterGuideSyncAll?: (syncFn: (() => Promise<void>) | null) => void;
   onRegisterStyleGuideDownload?: (fn: (() => void) | null) => void;
+  onRegisterStyleGuideEdits?: (fn: (() => void) | null) => void;
   guideTheme?: 'dark' | 'light';
 }
 
-export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveTool, selectedModelId, onSelectModel, onRegisterGuideSave, onRegisterGuideSyncAll, onRegisterStyleGuideDownload, guideTheme }) => {
+export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveTool, selectedModelId, onSelectModel, onRegisterGuideSave, onRegisterGuideSyncAll, onRegisterStyleGuideDownload, onRegisterStyleGuideEdits, guideTheme }) => {
   const [tools, setTools] = useState<ToolMeta[]>(DEFAULT_TOOLS);
   const [editingTool, setEditingTool] = useState<ToolMeta | null>(null);
 
