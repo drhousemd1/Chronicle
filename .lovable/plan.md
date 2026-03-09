@@ -1,30 +1,37 @@
 
 
-## Fix Chat Interface Button Cards
+## Plan: Style Guide Audit & Correction — Complete ✅
 
-Three problems plus a removal:
+### Status: ✅ All 3 Passes Complete
 
-### 1. Remove "Memory Quick Save" (lines 1450-1466)
-`MemoryQuickSaveButton` is imported but **never rendered** in `ChatInterfaceTab`. Delete this entry entirely.
+Audited and corrected all 8 sections of the Visual Style Guide against live source code.
 
-### 2. Fix "Chat Send Button" (lines 1338-1354)
-**Wrong**: Shown as `h-10 w-10` square icon buttons with `▶` play icon.
-**Actual code** (line 3898-3904): It's a **text button** — `rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest` that displays the word **"Send"** (or "..." when streaming). Not square, not an icon.
+### What was fixed:
 
-Fix `size` to `"rounded-xl px-4 py-2 — text-[10px] font-bold uppercase tracking-widest"` and fix preview to show two text buttons labeled "SEND" — one active (`bg-[#4a5f7f] text-white`) and one inactive (`bg-[hsl(var(--ui-surface-2))] opacity-50`).
+**Pass 1 — Colors & Typography:**
+- "Button Background" swatch: `#2F3137` (screenshot approximation) → `hsl(228 7% 20%)` / `bg-[hsl(var(--ui-surface-2))]` (actual CSS variable)
+- "Button Text Color" swatch: `#eaedf1` → `hsl(210 20% 93%)` / `text-[hsl(var(--ui-text))]` (actual CSS variable)
+- Typography specs updated to use Tailwind class names (e.g., `text-xl font-bold tracking-tight`) instead of raw pixel values
+- Field label tracking corrected from `0.5px` to `tracking-wider (0.05em)`
+- Button text tile renamed from "Header actions" to "Shadow Surface" with `leading-none` added
 
-### 3. Fix "Day Counter +/− Arrows" (lines 1430-1449)
-**Wrong**: Shown as horizontal `rounded-full` pill with `◀ Day 1 ▶` triangles.
-**Actual code** (lines 3374-3395): Vertical layout — white `rounded-lg border border-black shadow-sm` container with number on left (`px-3 py-1.5 font-bold text-sm`) and a `border-l border-black` divider, then **vertical** `ChevronUp` / `ChevronDown` stacked on the right (`px-1.5 py-0.5`). There's also a "Day" label above it.
+**Pass 2 — Buttons, Forms & Badges:**
+- Header Action Button completely rewritten to Shadow Surface pattern with real Tailwind `className` strings
+- Button previews now render using actual `className` attributes instead of inline `style` objects
+- Card Hover Buttons updated to correct `h-8 px-4` compact variant from source (StoryHub.tsx)
+- Delete button corrected from `bg-#ef4444` to `bg-[hsl(var(--destructive))]`
+- Form inputs and badges converted to `className`-based rendering
+- Code blocks now show actual `className` strings from source
 
-Fix `size` to `"rounded-lg border border-black — vertical ChevronUp/ChevronDown"` and fix preview to match the actual vertical stepper layout.
+**Pass 3 — Panels, Modals & Icons:**
+- Panel Container: `previewDark` removed, rendered with actual `className`
+- Panel Header Bar: uses actual `className` with `px-5 py-3` (was `16px 24px`)
+- Story Card: added live rendered preview with gradient overlay and `rounded-[2rem]`
+- Modal Container/Header/Footer: `previewDark` removed, rendered with real Tailwind classes
+- Modal Footer buttons now use actual HSL token classes from DeleteConfirmDialog.tsx
+- Icon Size Scale/Containers: `previewDark` removed, previews render on white background
+- Icon Colors: white swatch gets border treatment instead of dark background
 
-### 4. Fix "Time of Day Selectors" preview (lines 1411-1429)
-Preview uses emoji (🌅☀️🌇🌙) but actual code uses **Lucide icons** (`Sunrise`, `Sun`, `Sunset`, `Moon` via `getTimeIcon()`). Replace emoji with text labels or simple unicode that better represents the actual icon appearance. Also the data is correct but the container in actual code has no background — remove the `rgba(0,0,0,0.2)` wrapper since these sit on the sky-image panel, not a styled container.
-
-### Summary of line changes in `StyleGuideTool.tsx`
-- Lines 1338-1354: Rewrite Send button card with correct text-button preview
-- Lines 1411-1429: Fix Time of Day preview icons and remove fake background
-- Lines 1430-1449: Rewrite Day Counter with vertical stepper preview
-- Lines 1450-1466: Delete Memory Quick Save entry entirely
-
+**Dark Background Cleanup:**
+- Removed `previewDark` from: buttons (all 5), panel container, modal container/header/footer, icon size scale, icon containers
+- Kept `previewDark` only for: form inputs (dark on dark), modal backdrop (transparency demo)

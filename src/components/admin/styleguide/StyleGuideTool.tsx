@@ -1337,18 +1337,18 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             />
             <ButtonCardV2
               buttonName="Chat Send Button (Active / Inactive)"
-              buttonColor="Active: #4a5f7f — bg-[#4a5f7f]. Inactive: bg-[hsl(var(--ui-surface-2))]"
-              textColor="Active: #ffffff — text-white. Inactive: text-[hsl(var(--ui-text-muted))] opacity-50"
-              size="h-10 w-10 — rounded-xl"
-              purpose="Send current message to the AI"
-              visualEffects="shadow-[0_10px_30px_rgba(0,0,0,0.35)]. Active: hover:bg-[#5a6f8f]"
+              buttonColor="Active: #4a5f7f — bg-[#4a5f7f]. Inactive: bg-[hsl(var(--ui-surface-2))] opacity-50"
+              textColor="Active: #ffffff — text-white. Inactive: text-[hsl(var(--ui-text-muted))]"
+              size="rounded-xl px-4 py-2 — text-[10px] font-bold uppercase tracking-widest"
+              purpose="Send current message to the AI. Shows 'Send' or '...' while streaming"
+              visualEffects="shadow-[0_10px_30px_rgba(0,0,0,0.35)] border-[hsl(var(--ui-border))]"
               locations="ChatInterfaceTab — input area, right side"
               pageSpecific={true}
               appWide={false}
               preview={
                 <div style={{ display: 'flex', gap: 8, justifyContent: 'center', alignItems: 'center' }}>
-                  <button className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-[#4a5f7f] text-white border border-[#4a5f7f] shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default' }}>▶</button>
-                  <button className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] text-zinc-500 opacity-50 shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default' }}>▶</button>
+                  <button className="inline-flex items-center justify-center rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest bg-[#4a5f7f] text-white border border-[#4a5f7f] shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default' }}>Send</button>
+                  <button className="inline-flex items-center justify-center rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] text-zinc-500 opacity-50 shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default' }}>Send</button>
                 </div>
               }
             />
@@ -1419,48 +1419,36 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               pageSpecific={true}
               appWide={false}
               preview={
-                <div style={{ display: 'flex', gap: 6, justifyContent: 'center', background: 'rgba(0,0,0,0.2)', padding: 8, borderRadius: 8 }}>
-                  <button className="p-2 rounded-lg bg-white border border-black text-black" style={{ cursor: 'default', fontSize: 14 }}>🌅</button>
-                  <button className="p-2 rounded-lg bg-blue-100 border-2 border-blue-400 text-blue-600 shadow-sm" style={{ cursor: 'default', fontSize: 14 }}>☀️</button>
-                  <button className="p-2 rounded-lg bg-white border border-black text-black" style={{ cursor: 'default', fontSize: 14 }}>🌇</button>
-                  <button className="p-2 rounded-lg bg-white border border-black text-black" style={{ cursor: 'default', fontSize: 14 }}>🌙</button>
+                <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
+                  <button className="p-2 rounded-lg bg-white border border-black text-black" style={{ cursor: 'default', fontSize: 12 }}>☀︎ Rise</button>
+                  <button className="p-2 rounded-lg bg-blue-100 border-2 border-blue-400 text-blue-600 shadow-sm" style={{ cursor: 'default', fontSize: 12 }}>☀ Day</button>
+                  <button className="p-2 rounded-lg bg-white border border-black text-black" style={{ cursor: 'default', fontSize: 12 }}>◐ Set</button>
+                  <button className="p-2 rounded-lg bg-white border border-black text-black" style={{ cursor: 'default', fontSize: 12 }}>☽ Night</button>
                 </div>
               }
             />
             <ButtonCardV2
-              buttonName="Day Counter +/− Arrows"
+              buttonName="Day Counter Stepper"
               buttonColor="transparent — hover:bg-slate-100"
-              textColor="#000000 — text-black. Hover: text-blue-600. Disabled: opacity-30"
-              size="px-1.5 py-0.5 — inside white rounded-full pill"
+              textColor="#000000 — text-black font-bold text-sm. Arrows: hover:text-blue-600. Down disabled at day 1: opacity-30"
+              size="Container: rounded-lg border border-black shadow-sm. Number: px-3 py-1.5. Arrows: px-1.5 py-0.5"
               purpose="Increment/decrement the in-story day counter"
-              visualEffects="Container: bg-white rounded-full shadow-sm. Down arrow disabled at day 1"
-              locations="ChatInterfaceTab — day/time control panel"
+              visualEffects="Container: bg-white shadow-sm. Vertical divider: border-l border-black"
+              locations="ChatInterfaceTab — day/time control panel, below 'Day' label"
               pageSpecific={true}
               appWide={false}
               preview={
-                <div style={{ display: 'flex', justifyContent: 'center' }}>
-                  <div className="inline-flex items-center gap-1 bg-white rounded-full px-2 py-1 shadow-sm">
-                    <button className="px-1.5 py-0.5 text-black opacity-30" style={{ cursor: 'default', background: 'transparent', border: 'none', fontSize: 12 }}>◀</button>
-                    <span className="text-xs font-bold text-black px-1">Day 1</span>
-                    <button className="px-1.5 py-0.5 text-black hover:text-blue-600" style={{ cursor: 'default', background: 'transparent', border: 'none', fontSize: 12 }}>▶</button>
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: 'black', marginBottom: 2 }}>Day</span>
+                    <div className="inline-flex items-stretch bg-white rounded-lg border border-black shadow-sm" style={{ overflow: 'hidden' }}>
+                      <span className="px-3 py-1.5 font-bold text-sm text-black" style={{ display: 'flex', alignItems: 'center' }}>1</span>
+                      <div className="border-l border-black flex flex-col">
+                        <button className="px-1.5 py-0.5 text-black hover:bg-slate-100" style={{ cursor: 'default', background: 'transparent', border: 'none', fontSize: 10, lineHeight: 1 }}>▲</button>
+                        <button className="px-1.5 py-0.5 text-black opacity-30" style={{ cursor: 'default', background: 'transparent', border: 'none', fontSize: 10, lineHeight: 1 }}>▼</button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              }
-            />
-            <ButtonCardV2
-              buttonName="Memory Quick Save"
-              buttonColor="transparent — hover:bg-white/10. Saved: hover:bg-purple-500/20"
-              textColor="Default: #64748b — text-slate-500. Hover: text-purple-400. Saved: text-purple-400"
-              size="p-1.5 — rounded-lg"
-              purpose="Save the current AI message as a memory entry"
-              visualEffects="transition-colors. Saved state shows purple tinted background"
-              locations="ChatInterfaceTab — per-message action row"
-              pageSpecific={true}
-              appWide={false}
-              preview={
-                <div style={{ display: 'flex', gap: 12, justifyContent: 'center', background: '#1e1e1e', padding: 8, borderRadius: 8 }}>
-                  <button className="p-1.5 rounded-lg text-slate-500" style={{ cursor: 'default', background: 'transparent', border: 'none', fontSize: 16 }}>🧠</button>
-                  <button className="p-1.5 rounded-lg text-purple-400" style={{ cursor: 'default', background: 'rgba(168,85,247,0.2)', border: 'none', fontSize: 16 }}>🧠</button>
                 </div>
               }
             />
