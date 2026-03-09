@@ -276,6 +276,78 @@ const TileRow: React.FC<{ label: string; children: React.ReactNode; style?: Reac
   </div>
 );
 
+/* ═══════════════════════ BUTTON CARD V2 (Standardized) ═══════════════════════ */
+interface ButtonV2Props {
+  buttonName: string;
+  preview: React.ReactNode;
+  buttonColor: string;
+  textColor: string;
+  size: string;
+  purpose: string;
+  visualEffects: string;
+  locations: string;
+  pageSpecific: boolean;
+  appWide: boolean;
+}
+
+const ButtonCardV2: React.FC<ButtonV2Props> = ({ buttonName, preview, buttonColor, textColor, size, purpose, visualEffects, locations, pageSpecific, appWide }) => (
+  <div style={{
+    background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
+    boxShadow: sg.shadow, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+  }}
+    onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadowHover; }}
+    onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadow; }}
+  >
+    {/* Preview strip */}
+    <div style={{
+      background: '#fff', padding: '16px 20px',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, minHeight: 64,
+      boxShadow: 'inset 0 -1px 0 #e2e8f0',
+    }}>{preview}</div>
+
+    <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 6, borderTop: '1px solid #e2e8f0' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Button Name:</span>
+        <span style={valueStyle}>{buttonName}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Button Color:</span>
+        <span style={monoStyle}>{buttonColor}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Text Color:</span>
+        <span style={monoStyle}>{textColor}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Size:</span>
+        <span style={monoStyle}>{size}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Purpose:</span>
+        <span style={valueStyle}>{purpose}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Visual Effects:</span>
+        <span style={monoStyle}>{visualEffects}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Locations:</span>
+        <span style={valueStyle}>{locations}</span>
+      </div>
+      <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#334155', cursor: 'default' }}>
+          <input type="checkbox" checked={pageSpecific} disabled style={{ accentColor: '#3b82f6', width: 14, height: 14 }} />
+          Page Specific
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#334155', cursor: 'default' }}>
+          <input type="checkbox" checked={appWide} disabled style={{ accentColor: '#3b82f6', width: 14, height: 14 }} />
+          App Wide
+        </label>
+      </div>
+    </div>
+  </div>
+);
+
 /* ═══════════════════════ ENTRY CARD (buttons, inputs, etc.) ═══════════════════════ */
 interface EntryCardProps {
   name: string;
