@@ -452,7 +452,11 @@ interface EntryCardProps {
   previewStyle?: React.CSSProperties;
 }
 
-const EntryCard: React.FC<EntryCardProps> = ({ name, pageTag, specs, preview, code, previewDark, previewPlain, previewStyle }) => (
+const EntryCard: React.FC<EntryCardProps> = (props) => {
+  const { name, pageTag, specs, preview, code, previewDark, previewPlain, previewStyle } = props;
+  const details = { 'Page Tag': pageTag, Specs: specs };
+  return (
+  <CardEditOverlay cardName={name} cardType="Entry" details={details}>
   <div style={{
     background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
     boxShadow: sg.shadow, display: 'flex', flexDirection: 'column', height: '100%',
@@ -478,7 +482,9 @@ const EntryCard: React.FC<EntryCardProps> = ({ name, pageTag, specs, preview, co
       }}>{code}</div>
     </div>
   </div>
-);
+  </CardEditOverlay>
+  );
+};
 
 /* ═══════════════════════ DIVIDER ═══════════════════════ */
 const Divider: React.FC<{ style?: React.CSSProperties }> = ({ style }) => (
