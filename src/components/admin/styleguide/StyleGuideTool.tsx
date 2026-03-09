@@ -141,7 +141,7 @@ const SwatchCardV2: React.FC<SwatchV2Props> = ({ color, name, locations, value, 
 
 /* ═══════════════════════ TYPO CARD V2 (Standardized) ═══════════════════════ */
 interface TypoV2Props {
-  name: string;
+  fontName: string;
   exampleContent: React.ReactNode;
   exampleBg?: string;
   fontFamily?: string;
@@ -158,7 +158,7 @@ interface TypoV2Props {
 
 const monoStyle: React.CSSProperties = { ...valueStyle, fontFamily: "'SF Mono','Fira Code','JetBrains Mono',monospace", fontSize: 11 };
 
-const TypoCardV2: React.FC<TypoV2Props> = ({ name, exampleContent, exampleBg, fontFamily, fontSize, fontWeight, letterSpacing, textTransform, color, lineHeight, locations, pageSpecific, appWide }) => (
+const TypoCardV2: React.FC<TypoV2Props> = ({ fontName, exampleContent, exampleBg, fontFamily, fontSize, fontWeight, letterSpacing, textTransform, color, lineHeight, locations, pageSpecific, appWide }) => (
   <div style={{
     background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
     boxShadow: sg.shadow, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
