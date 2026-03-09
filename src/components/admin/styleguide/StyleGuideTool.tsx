@@ -139,6 +139,99 @@ const SwatchCardV2: React.FC<SwatchV2Props> = ({ color, name, locations, value, 
   </div>
 );
 
+/* ═══════════════════════ TYPO CARD V2 (Standardized) ═══════════════════════ */
+interface TypoV2Props {
+  name: string;
+  exampleContent: React.ReactNode;
+  exampleBg?: string;
+  fontFamily?: string;
+  fontSize: string;
+  fontWeight: string;
+  letterSpacing?: string;
+  textTransform?: string;
+  color: string;
+  lineHeight?: string;
+  locations: string;
+  pageSpecific: boolean;
+  appWide: boolean;
+}
+
+const monoStyle: React.CSSProperties = { ...valueStyle, fontFamily: "'SF Mono','Fira Code','JetBrains Mono',monospace", fontSize: 11 };
+
+const TypoCardV2: React.FC<TypoV2Props> = ({ name, exampleContent, exampleBg, fontFamily, fontSize, fontWeight, letterSpacing, textTransform, color, lineHeight, locations, pageSpecific, appWide }) => (
+  <div style={{
+    background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
+    boxShadow: sg.shadow, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+  }}
+    onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadowHover; }}
+    onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadow; }}
+  >
+    {/* Example preview strip */}
+    <div style={{
+      background: exampleBg || '#fff', padding: '14px 16px',
+      display: 'flex', alignItems: 'center', minHeight: 56,
+    }}>{exampleContent}</div>
+
+    <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 6, borderTop: '1px solid #e2e8f0' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Name:</span>
+        <span style={valueStyle}>{name}</span>
+      </div>
+      {fontFamily && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={labelStyle}>Font Family:</span>
+          <span style={monoStyle}>{fontFamily}</span>
+        </div>
+      )}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Font Size:</span>
+        <span style={monoStyle}>{fontSize}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Font Weight:</span>
+        <span style={monoStyle}>{fontWeight}</span>
+      </div>
+      {letterSpacing && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={labelStyle}>Letter Spacing:</span>
+          <span style={monoStyle}>{letterSpacing}</span>
+        </div>
+      )}
+      {textTransform && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={labelStyle}>Text Transform:</span>
+          <span style={monoStyle}>{textTransform}</span>
+        </div>
+      )}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Color:</span>
+        <span style={monoStyle}>{color}</span>
+      </div>
+      {lineHeight && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={labelStyle}>Line Height:</span>
+          <span style={monoStyle}>{lineHeight}</span>
+        </div>
+      )}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Locations:</span>
+        <span style={valueStyle}>{locations}</span>
+      </div>
+      <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#334155', cursor: 'default' }}>
+          <input type="checkbox" checked={pageSpecific} disabled style={{ accentColor: '#3b82f6', width: 14, height: 14 }} />
+          Page Specific
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#334155', cursor: 'default' }}>
+          <input type="checkbox" checked={appWide} disabled style={{ accentColor: '#3b82f6', width: 14, height: 14 }} />
+          App Wide
+        </label>
+      </div>
+    </div>
+  </div>
+);
+
+
 
 /* ═══════════════════════ TYPOGRAPHY TILE ═══════════════════════ */
 interface TypeTileProps {
@@ -610,38 +703,55 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
           <Section id="typography" title="Typography" desc="Font sizes, weights, and letter-spacing values extracted from source code." style={twoCol}>
             <div style={fullSpan}><PageSubheading>Story Builder Page</PageSubheading></div>
 
-            <TypeTile name="Page Title (White header bar)" exampleBg="#fff"
+            <TypoCardV2 name="Page Title" exampleBg="#fff"
               exampleContent={<span className="text-lg font-black text-slate-900 uppercase tracking-tight">STORY BUILDER</span>}
-              specs={['18px', 'weight 900', 'tracking-tight', '#0f172a (slate-900)', 'uppercase']}
-              locations='Top-left of the white header bar on every page — "STORY BUILDER", "ACCOUNT", "MY STORIES". Always uppercase, always next to the back arrow.'
+              fontSize="18px (text-lg)" fontWeight="900 (font-black)"
+              letterSpacing="-0.5px (tracking-tight)" textTransform="uppercase"
+              color="#0f172a (slate-900)"
+              locations='Top-left of the white header bar on every page — "STORY BUILDER", "ACCOUNT", "MY STORIES". Always uppercase, next to the back arrow.'
+              pageSpecific={false} appWide={true}
             />
-            <TypeTile name="Section Title (Content area)" exampleBg="#fff"
+            <TypoCardV2 name="Section Heading" exampleBg="#fff"
               exampleContent={<span style={{ fontSize: 36, fontWeight: 900, color: '#0f172a', letterSpacing: '-0.9px' }}>Story Setup</span>}
-              specs={['36px', 'weight 900', '-0.9px tracking', '#0f172a (slate-900)']}
+              fontSize="36px" fontWeight="900 (font-black)"
+              letterSpacing="-0.9px"
+              color="#0f172a (slate-900)"
               locations="Large heading at top of the content area on Story Builder page."
+              pageSpecific={true} appWide={false}
             />
-            <TypeTile name="Panel Header Title (Blue bar)" exampleBg="#4a5f7f"
+            <TypoCardV2 name="Panel Header Title" exampleBg="#4a5f7f"
               exampleContent={<span className="text-xl font-bold tracking-tight text-white">Story Card</span>}
-              specs={['text-xl (20px)', 'font-bold (700)', 'tracking-tight (-0.5px)', 'text-white']}
-              locations='Inside the bg-[#4a5f7f] panel header bars — "Story Card", "World Core", "Story Arcs", "Opening Dialog".'
+              fontSize="20px (text-xl)" fontWeight="700 (font-bold)"
+              letterSpacing="-0.5px (tracking-tight)"
+              color="#ffffff (text-white)"
+              locations='Inside bg-[#4a5f7f] panel header bars — "Story Card", "World Core", "Story Arcs", "Opening Dialog".'
+              pageSpecific={false} appWide={true}
             />
-            <TypeTile name="Field Labels (Inside panels)" exampleBg="#2a2a2f"
+            <TypoCardV2 name="Field Label" exampleBg="#2a2a2f"
               exampleContent={<>
                 <span className="text-[10px] font-bold text-white uppercase tracking-wider">STORY NAME</span>
                 <span className="text-[10px] font-bold text-white uppercase tracking-wider ml-6">BRIEF DESCRIPTION</span>
               </>}
-              specs={['text-[10px]', 'font-bold (700)', 'tracking-wider (0.05em)', 'uppercase', 'text-white']}
+              fontSize="10px (text-[10px])" fontWeight="700 (font-bold)"
+              letterSpacing="0.05em (tracking-wider)" textTransform="uppercase"
+              color="#ffffff (text-white)"
               locations="All form field labels inside dark panels."
+              pageSpecific={false} appWide={true}
             />
-            <TypeTile name="Button Text (Shadow Surface)" exampleBg="hsl(228, 7%, 20%)"
+            <TypoCardV2 name="Button Label" exampleBg="hsl(228, 7%, 20%)"
               exampleContent={<span className="text-[10px] font-bold uppercase tracking-wider leading-none" style={{ color: 'hsl(210, 20%, 93%)' }}>SAVE AND CLOSE</span>}
-              specs={['text-[10px]', 'font-bold (700)', 'tracking-wider', 'uppercase', 'leading-none']}
+              fontSize="10px (text-[10px])" fontWeight="700 (font-bold)"
+              letterSpacing="0.05em (tracking-wider)" textTransform="uppercase"
+              color="hsl(210,20%,93%) (ui-text)" lineHeight="1 (leading-none)"
               locations='All Shadow Surface action buttons — DRAFTS, SAVE AND CLOSE, SAVE DRAFT, Upload Image.'
+              pageSpecific={false} appWide={true}
             />
-            <TypeTile name="Character Name (Roster sidebar)" exampleBg="#2a2a2f"
+            <TypoCardV2 name="Character Name" exampleBg="#2a2a2f"
               exampleContent={<span className="text-sm font-bold text-white">ASHLEY</span>}
-              specs={['14px', 'font-bold (700)', 'normal tracking', 'text-white']}
+              fontSize="14px (text-sm)" fontWeight="700 (font-bold)"
+              color="#ffffff (text-white)"
               locations="Character names in the Character Roster sidebar panel."
+              pageSpecific={true} appWide={false}
             />
 
             <div style={{ ...fullSpan, margin: '8px 0 4px' }}><Divider style={{ margin: '8px 0 4px' }} /></div>
