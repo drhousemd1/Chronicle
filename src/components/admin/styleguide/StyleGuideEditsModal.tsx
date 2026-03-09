@@ -164,12 +164,12 @@ export const EditDetailModal: React.FC<EditDetailModalProps> = ({
         <div className="px-5 pb-3 overflow-y-auto flex-1 min-h-0">
           {/* Current details - read-only */}
           <div className="mb-4">
-            <div className="text-zinc-400 text-[10px] font-bold uppercase tracking-wider mb-2">Current Details</div>
-            <div className="flex flex-col gap-1.5 rounded-xl bg-zinc-800/60 border border-white/5 p-3">
+            <div className="text-[hsl(var(--ui-text-muted))] text-[10px] font-bold uppercase tracking-wider mb-2">Current Details</div>
+            <div className="flex flex-col gap-1.5 rounded-xl bg-[hsl(var(--ui-surface))] border border-[hsl(var(--ui-border))] p-3">
               {detailEntries.map(([key, val]) => (
                 <div key={key} className="flex gap-2 text-xs">
-                  <span className="text-zinc-500 font-semibold shrink-0 min-w-[80px]">{key}:</span>
-                  <span className="text-zinc-300 break-all">{val}</span>
+                  <span className="text-[hsl(var(--ui-text-muted))] font-semibold shrink-0 min-w-[80px]">{key}:</span>
+                  <span className="text-[hsl(var(--ui-text))] break-all">{val}</span>
                 </div>
               ))}
             </div>
