@@ -1,37 +1,35 @@
 
 
-## Plan: Style Guide Audit & Correction — Complete ✅
+## Fix: Hover Overlay Sizing
 
-### Status: ✅ All 3 Passes Complete
+The problem is that `height: '100%'` on the `CardEditOverlay` wrapper makes it stretch to the full grid cell height (which equals the tallest card in that row), but the actual card inside is shorter. So the overlay background extends beyond the card's visible area — making every card look wrong.
 
-Audited and corrected all 8 sections of the Visual Style Guide against live source code.
+### Root Cause
 
-### What was fixed:
+In a CSS grid with `repeat(auto-fit, minmax(220px, 1fr))`, each cell stretches to the row's tallest item. The wrapper now fills that full height, but the card content inside doesn't — creating a mismatch where the dark overlay hangs below the card.
 
-**Pass 1 — Colors & Typography:**
-- "Button Background" swatch: `#2F3137` (screenshot approximation) → `hsl(228 7% 20%)` / `bg-[hsl(var(--ui-surface-2))]` (actual CSS variable)
-- "Button Text Color" swatch: `#eaedf1` → `hsl(210 20% 93%)` / `text-[hsl(var(--ui-text))]` (actual CSS variable)
-- Typography specs updated to use Tailwind class names (e.g., `text-xl font-bold tracking-tight`) instead of raw pixel values
-- Field label tracking corrected from `0.5px` to `tracking-wider (0.05em)`
-- Button text tile renamed from "Header actions" to "Shadow Surface" with `leading-none` added
+### Fix (line 28-30 of StyleGuideTool.tsx)
 
-**Pass 2 — Buttons, Forms & Badges:**
-- Header Action Button completely rewritten to Shadow Surface pattern with real Tailwind `className` strings
-- Button previews now render using actual `className` attributes instead of inline `style` objects
-- Card Hover Buttons updated to correct `h-8 px-4` compact variant from source (StoryHub.tsx)
-- Delete button corrected from `bg-#ef4444` to `bg-[hsl(var(--destructive))]`
-- Form inputs and badges converted to `className`-based rendering
-- Code blocks now show actual `className` strings from source
+Revert `height: '100%'` and instead use `display: 'flex', flexDirection: 'column'` on the wrapper so it only sizes to its content. The overlay with `inset: 0` will then match the card's actual dimensions.
 
-**Pass 3 — Panels, Modals & Icons:**
-- Panel Container: `previewDark` removed, rendered with actual `className`
-- Panel Header Bar: uses actual `className` with `px-5 py-3` (was `16px 24px`)
-- Story Card: added live rendered preview with gradient overlay and `rounded-[2rem]`
-- Modal Container/Header/Footer: `previewDark` removed, rendered with real Tailwind classes
-- Modal Footer buttons now use actual HSL token classes from DeleteConfirmDialog.tsx
-- Icon Size Scale/Containers: `previewDark` removed, previews render on white background
-- Icon Colors: white swatch gets border treatment instead of dark background
+```tsx
+// Line 29-30: Change from
+<div style={{ position: 'relative', height: '100%' }}
 
-**Dark Background Cleanup:**
-- Removed `previewDark` from: buttons (all 5), panel container, modal container/header/footer, icon size scale, icon containers
-- Kept `previewDark` only for: form inputs (dark on dark), modal backdrop (transparency demo)
+// To
+<div style={{ position: 'relative' }}
+```
+
+Then, to make the overlay fit the card (which has `borderRadius: 10` and `overflow: 'hidden'`), the overlay should also inherit the card's rounding. But since the overlay is on the wrapper (outside the card), the simplest fix is to add `overflow: 'hidden', borderRadius: 10` to the wrapper div so the overlay clips to the card shape.
+
+### Final wrapper style
+```tsx
+<div
+  style={{ position: 'relative', overflow: 'hidden', borderRadius: 10 }}
+  onMouseEnter={...}
+  onMouseLeave={...}
+>
+```
+
+This removes the height stretch, keeps the overlay contained to each card's natural size, and clips the overlay to the card's rounded corners.
+
