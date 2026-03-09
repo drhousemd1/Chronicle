@@ -1470,6 +1470,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               textColor="Adaptive via getTimeTextColor(): Sunrise/Day/Sunset → text-black. Night → text-white"
               size="p-0.5 — rounded"
               purpose="Pause or resume the auto-advancing time progression timer"
+              visualEffects="Adaptive text color matches time-of-day sky background"
               locations="ChatInterfaceTab — auto-timer row in day/time panel"
               pageSpecific={true}
               appWide={false}
