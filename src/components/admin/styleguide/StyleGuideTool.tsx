@@ -479,13 +479,13 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <PageSubheading>Chat Interface</PageSubheading>
             <PageDesc>Colors unique to the chat/conversation view.</PageDesc>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
-              <SwatchCardV2 color="#1c1f26" name="Chat Bubble (Solid)" locations="Chat message bubble, transparent mode OFF" value="#1c1f26" token="bg-[#1c1f26]" pageSpecific={true} appWide={false} />
-              <SwatchCardV2 color="rgba(0,0,0,0.5)" name="Chat Bubble (Transparent)" locations="Chat message bubble, transparent mode ON" value="rgba(0,0,0,0.5)" token="bg-black/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
-              <SwatchCardV2 color="#94a3b8" name="Action Text (Italic)" locations="Italic action text in chat (*actions*)" value="#94a3b8" token="text-slate-400" pageSpecific={true} appWide={false} />
-              <SwatchCardV2 color="rgba(199,210,254,0.9)" name="Thought Text (Glowing)" locations="Thought text in chat (parenthetical)" value="rgba(199,210,254,0.9)" token="text-indigo-200/90" effect="textShadow: indigo glow" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
-              <SwatchCardV2 color="#60a5fa" name="User Bubble Border" locations="User message bubble border" value="#60a5fa" token="border-blue-400" pageSpecific={true} appWide={false} />
-              <SwatchCardV2 color="rgba(255,255,255,0.3)" name="Frosted Glass (Light BG)" locations="SideCharacterCard when sidebar bg is dark (isDarkBg=true)" value="rgba(255,255,255,0.3)" token="bg-white/30" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
-              <SwatchCardV2 color="rgba(0,0,0,0.3)" name="Frosted Glass (Dark BG)" locations="SideCharacterCard when sidebar bg is light (isDarkBg=false)" value="rgba(0,0,0,0.3)" token="bg-black/30" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="#1c1f26" name="Ink Blue" locations="Chat message bubble, transparent mode OFF" value="#1c1f26" token="bg-[#1c1f26]" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="rgba(0,0,0,0.5)" name="Half Black" locations="Chat message bubble, transparent mode ON" value="rgba(0,0,0,0.5)" token="bg-black/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="#94a3b8" name="Muted Slate" locations="Italic action text in chat (*actions*)" value="#94a3b8" token="text-slate-400" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="rgba(199,210,254,0.9)" name="Soft Indigo" locations="Thought text in chat (parenthetical)" value="rgba(199,210,254,0.9)" token="text-indigo-200/90" effect="textShadow: indigo glow" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="#60a5fa" name="Sky Blue" locations="User message bubble border" value="#60a5fa" token="border-blue-400" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="rgba(255,255,255,0.3)" name="Milky White" locations="SideCharacterCard when sidebar bg is dark (isDarkBg=true)" value="rgba(255,255,255,0.3)" token="bg-white/30" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="rgba(0,0,0,0.3)" name="Smoke Black" locations="SideCharacterCard when sidebar bg is light (isDarkBg=false)" value="rgba(0,0,0,0.3)" token="bg-black/30" pageSpecific={true} appWide={false} />
             </div>
 
             <Divider />
