@@ -1128,35 +1128,47 @@ h-8 px-4 rounded-xl text-[10px] font-bold leading-none uppercase tracking-wider 
 /* Inactive */ bg-transparent text-[#a1a1aa]
 /* Both */ text-xs font-bold`}
             />
-            <EntryCard name="Settings Gear Icon Button" pageTag="My Stories"
-              specs='Compact icon-only variant of Shadow Surface button. <strong>rounded-xl px-3 py-2</strong> · bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))] · shadow-[0_10px_30px_rgba(0,0,0,0.35)]. No text label, icon only.'
+            <ButtonCardV2
+              buttonName="Settings Gear"
+              buttonColor="hsl(228 7% 20%) — bg-[hsl(var(--ui-surface-2))]"
+              textColor="hsl(210 20% 93%) — text-[hsl(var(--ui-text))]"
+              size="px-3 py-2 icon-only — rounded-xl (12px)"
+              purpose="Opens background customization settings"
+              visualEffects="shadow: 0 10px 30px rgba(0,0,0,0.35) · border: 1px solid hsl(var(--ui-border))"
+              locations="My Stories hub header — gear icon for background picker"
+              pageSpecific={true}
+              appWide={false}
               preview={
                 <button className="inline-flex items-center justify-center rounded-xl px-3 py-2 border bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default' }}>⚙</button>
               }
-              code={`rounded-xl px-3 py-2 border
-bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))]
-text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
-/* Icon-only, no text label */`}
             />
-            <EntryCard name="New Story Card Button" pageTag="My Stories"
-              specs='Full card-sized button. <strong>aspect-[2/3] rounded-[2rem]</strong> · border-2 border-dashed border-zinc-600 · bg-gradient-to-br from-zinc-800 to-zinc-900. Contains centered + icon in a circle and "New Story" label. Hover: border-blue-400.'
-              previewDark
+            <ButtonCardV2
+              buttonName="New Story Card"
+              buttonColor="transparent → zinc-800/zinc-900 gradient — bg-gradient-to-br from-zinc-800 to-zinc-900"
+              textColor="#71717a — text-zinc-500"
+              size="aspect-[2/3] full card — rounded-[2rem]"
+              purpose="Creates a new story — card-sized button in story grid"
+              visualEffects="border: 2px dashed #52525b (zinc-600). Hover: border-blue-400, text-blue-400"
+              locations="My Stories hub — last card in story grid"
+              pageSpecific={true}
+              appWide={false}
               preview={
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '16px 24px', borderRadius: 16, border: '2px dashed #52525b', background: 'linear-gradient(to bottom right, #27272a, #18181b)' }}>
                   <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(113,113,122,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, color: '#71717a' }}>+</div>
                   <span style={{ fontSize: 10, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#71717a' }}>New Story</span>
                 </div>
               }
-              code={`aspect-[2/3] w-full rounded-[2rem]
-border-2 border-dashed border-zinc-600
-bg-gradient-to-br from-zinc-800 to-zinc-900
-hover:border-blue-400
-/* + icon: w-16 h-16 rounded-full bg-zinc-700/50 text-zinc-500 */
-/* Label: text-sm font-black uppercase tracking-widest text-zinc-500 */`}
             />
-            <EntryCard name="Story Detail Modal — Edit / Play / Remove" pageTag="My Stories"
-              specs='Modal action buttons. <strong>Edit:</strong> flex-1 h-12 bg-white/5 border border-white/10 rounded-xl text-white text-sm font-semibold. <strong>Play:</strong> flex-1 h-12 bg-[#3b82f6] rounded-xl text-white shadow-md text-sm font-semibold. <strong>Remove from Gallery:</strong> w-full h-10 bg-white/5 border border-white/10 text-white/60 rounded-xl font-semibold text-sm.'
-              previewDark
+            <ButtonCardV2
+              buttonName="Story Detail Modal Actions"
+              buttonColor="Edit: rgba(255,255,255,0.05) — bg-white/5. Play: #3b82f6 — bg-[#3b82f6]. Remove: rgba(255,255,255,0.05)"
+              textColor="Edit/Play: #ffffff — text-white. Remove: rgba(255,255,255,0.6) — text-white/60"
+              size="Edit/Play: flex-1 h-12 — rounded-xl. Remove: w-full h-10 — rounded-xl"
+              purpose="Story detail modal actions — edit, play, or remove from gallery"
+              visualEffects="Edit: border 1px white/10. Play: shadow-md. Remove: border 1px white/10"
+              locations="StoryDetailModal — owned story actions and gallery removal"
+              pageSpecific={true}
+              appWide={false}
               preview={
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
                   <div style={{ display: 'flex', gap: 8 }}>
@@ -1166,9 +1178,6 @@ hover:border-blue-400
                   <button className="w-full h-10 bg-white/5 border border-white/10 text-white/60 rounded-xl font-semibold text-sm flex items-center justify-center gap-2" style={{ cursor: 'default' }}>🌐 Remove from Gallery</button>
                 </div>
               }
-              code={`/* Edit */  flex-1 h-12 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white text-sm font-semibold
-/* Play */  flex-1 h-12 bg-[#3b82f6] hover:bg-[#2563eb] rounded-xl text-white shadow-md text-sm font-semibold
-/* Remove */ w-full h-10 bg-white/5 hover:bg-white/10 border border-white/10 text-white/60 hover:text-white rounded-xl font-semibold text-sm`}
             />
 
             <div style={fullSpan}><PageSubheading>Community Gallery</PageSubheading></div>
