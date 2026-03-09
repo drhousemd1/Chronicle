@@ -99,11 +99,12 @@ const sg = {
 } as const;
 
 /* ═══════════════════════ PAGE SUBHEADING ═══════════════════════ */
-const PageSubheading: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+const PageSubheading: React.FC<{ children: React.ReactNode; fullSpan?: boolean }> = ({ children, fullSpan }) => (
   <div style={{
     display: 'block', margin: '22px 0 10px', padding: '8px 14px', borderRadius: 6,
     background: 'linear-gradient(90deg, #2d2d2d 0%, #646973 65%, rgba(100,105,115,0) 100%)',
     color: '#fff', fontSize: 11, fontWeight: 700, letterSpacing: '0.6px', textTransform: 'uppercase',
+    ...(fullSpan ? { gridColumn: '1 / -1' } : {}),
   }}>{children}</div>
 );
 
