@@ -1,33 +1,37 @@
 
-You’re right to be pissed — the current fix is still wrong because it targeted `height` while the real problem is **grid item stretching**.
 
-## What’s actually broken
-`CardEditOverlay` is the direct child of multiple CSS grids. Grid items default to `align-self: stretch`, so each overlay wrapper gets stretched to the row’s tallest card. That makes the hover layer look like it’s “one fixed size” per row.
+## Plan: Style Guide Audit & Correction — Complete ✅
 
-## Correct fix plan (single-file, minimal-risk)
-**File:** `src/components/admin/styleguide/StyleGuideTool.tsx`
+### Status: ✅ All 3 Passes Complete
 
-1. **Fix wrapper sizing at the source (`CardEditOverlay`)**
-   - Update wrapper style from the current clipped version to:
-     - `position: 'relative'`
-     - `alignSelf: 'start'` (critical: opt out of grid stretch)
-     - `width: '100%'` (keep full column width)
-   - Remove `overflow: 'hidden'` from the wrapper so card shadows/hover elevation are not chopped.
+Audited and corrected all 8 sections of the Visual Style Guide against live source code.
 
-2. **Keep overlay bounds matched to card**
-   - Keep the hover overlay absolutely positioned with `inset: 0`.
-   - Keep `borderRadius: 10` on overlay (matches current wrapped card shells).
-   - No forced `height: '100%'` anywhere in wrapper.
+### What was fixed:
 
-3. **Do not change individual card components unless needed**
-   - `SwatchCardV2`, `TypoCardV2`, `ButtonCardV2`, `EntryCard` already define their own card surface.
-   - This avoids another broad visual regression.
+**Pass 1 — Colors & Typography:**
+- "Button Background" swatch: `#2F3137` (screenshot approximation) → `hsl(228 7% 20%)` / `bg-[hsl(var(--ui-surface-2))]` (actual CSS variable)
+- "Button Text Color" swatch: `#eaedf1` → `hsl(210 20% 93%)` / `text-[hsl(var(--ui-text))]` (actual CSS variable)
+- Typography specs updated to use Tailwind class names (e.g., `text-xl font-bold tracking-tight`) instead of raw pixel values
+- Field label tracking corrected from `0.5px` to `tracking-wider (0.05em)`
+- Button text tile renamed from "Header actions" to "Shadow Surface" with `leading-none` added
 
-4. **Regression check after patch**
-   - Hover cards in mixed-height rows (especially Buttons and Inputs sections).
-   - Confirm overlay no longer extends below shorter cards.
-   - Confirm keep/edit pills still click correctly and keep-remove still works.
-   - Confirm card shadows are visible (not clipped).
+**Pass 2 — Buttons, Forms & Badges:**
+- Header Action Button completely rewritten to Shadow Surface pattern with real Tailwind `className` strings
+- Button previews now render using actual `className` attributes instead of inline `style` objects
+- Card Hover Buttons updated to correct `h-8 px-4` compact variant from source (StoryHub.tsx)
+- Delete button corrected from `bg-#ef4444` to `bg-[hsl(var(--destructive))]`
+- Form inputs and badges converted to `className`-based rendering
+- Code blocks now show actual `className` strings from source
 
-## Why this will work
-This addresses the real layout mechanic (grid stretch) instead of fighting symptoms with height hacks. One targeted wrapper fix will normalize overlay sizing across all card grids.
+**Pass 3 — Panels, Modals & Icons:**
+- Panel Container: `previewDark` removed, rendered with actual `className`
+- Panel Header Bar: uses actual `className` with `px-5 py-3` (was `16px 24px`)
+- Story Card: added live rendered preview with gradient overlay and `rounded-[2rem]`
+- Modal Container/Header/Footer: `previewDark` removed, rendered with real Tailwind classes
+- Modal Footer buttons now use actual HSL token classes from DeleteConfirmDialog.tsx
+- Icon Size Scale/Containers: `previewDark` removed, previews render on white background
+- Icon Colors: white swatch gets border treatment instead of dark background
+
+**Dark Background Cleanup:**
+- Removed `previewDark` from: buttons (all 5), panel container, modal container/header/footer, icon size scale, icon containers
+- Kept `previewDark` only for: form inputs (dark on dark), modal backdrop (transparency demo)
