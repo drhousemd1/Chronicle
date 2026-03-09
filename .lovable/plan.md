@@ -1,37 +1,43 @@
 
+Issue confirmed. The badge color was fixed, but the count source is stale.
 
-## Plan: Style Guide Audit & Correction — Complete ✅
+What’s actually broken:
+- `Index.tsx` renders the badge only when `styleGuideEditsCount > 0`.
+- That state is only set once when `onRegisterStyleGuideEdits` is registered (mount-time of the style guide tool).
+- After you add/edit/delete style-guide edits, `Index.tsx` is never notified, so count stays `0` even though cards show “Edit”.
 
-### Status: ✅ All 3 Passes Complete
+Implementation plan:
 
-Audited and corrected all 8 sections of the Visual Style Guide against live source code.
+1) Wire real-time count updates from Style Guide tool to header
+- File: `src/components/admin/styleguide/StyleGuideTool.tsx`
+- Add new optional prop: `onEditsCountChange?: (count: number) => void`.
+- Update `refreshEditsState` to:
+  - read registry once,
+  - update local `editNames`,
+  - call `onEditsCountChange(registry.length)`.
+- Run an initial sync on mount (`useEffect`) so existing local edits immediately populate the header badge.
+- Keep existing edit/keep flows; they already call `refreshEditsState`, so this will automatically propagate count updates.
 
-### What was fixed:
+2) Pass the count callback through Admin page
+- File: `src/pages/Admin.tsx`
+- Extend `AdminPageProps` with `onStyleGuideEditsCountChange?: (count: number) => void`.
+- Pass it to `LazyStyleGuide` as `onEditsCountChange={onStyleGuideEditsCountChange}`.
 
-**Pass 1 — Colors & Typography:**
-- "Button Background" swatch: `#2F3137` (screenshot approximation) → `hsl(228 7% 20%)` / `bg-[hsl(var(--ui-surface-2))]` (actual CSS variable)
-- "Button Text Color" swatch: `#eaedf1` → `hsl(210 20% 93%)` / `text-[hsl(var(--ui-text))]` (actual CSS variable)
-- Typography specs updated to use Tailwind class names (e.g., `text-xl font-bold tracking-tight`) instead of raw pixel values
-- Field label tracking corrected from `0.5px` to `tracking-wider (0.05em)`
-- Button text tile renamed from "Header actions" to "Shadow Surface" with `leading-none` added
+3) Update Index to consume live count updates
+- File: `src/pages/Index.tsx`
+- When rendering `AdminPage`, pass:
+  - `onStyleGuideEditsCountChange={(count) => setStyleGuideEditsCount(count)}`
+- Keep existing `onRegisterStyleGuideEdits` ref registration for opening the edits modal.
+- Keep badge rendering condition `styleGuideEditsCount > 0` (so it appears when there is at least one edit).
 
-**Pass 2 — Buttons, Forms & Badges:**
-- Header Action Button completely rewritten to Shadow Surface pattern with real Tailwind `className` strings
-- Button previews now render using actual `className` attributes instead of inline `style` objects
-- Card Hover Buttons updated to correct `h-8 px-4` compact variant from source (StoryHub.tsx)
-- Delete button corrected from `bg-#ef4444` to `bg-[hsl(var(--destructive))]`
-- Form inputs and badges converted to `className`-based rendering
-- Code blocks now show actual `className` strings from source
+Why this fixes your exact screenshot case:
+- The dark charcoal swatch edit already exists in local storage.
+- On style guide mount, initial sync sets badge count immediately.
+- Any new edit/delete updates the top “Edits” counter instantly without tab/tool remounts.
 
-**Pass 3 — Panels, Modals & Icons:**
-- Panel Container: `previewDark` removed, rendered with actual `className`
-- Panel Header Bar: uses actual `className` with `px-5 py-3` (was `16px 24px`)
-- Story Card: added live rendered preview with gradient overlay and `rounded-[2rem]`
-- Modal Container/Header/Footer: `previewDark` removed, rendered with real Tailwind classes
-- Modal Footer buttons now use actual HSL token classes from DeleteConfirmDialog.tsx
-- Icon Size Scale/Containers: `previewDark` removed, previews render on white background
-- Icon Colors: white swatch gets border treatment instead of dark background
-
-**Dark Background Cleanup:**
-- Removed `previewDark` from: buttons (all 5), panel container, modal container/header/footer, icon size scale, icon containers
-- Kept `previewDark` only for: form inputs (dark on dark), modal backdrop (transparency demo)
+Validation checklist (end-to-end):
+1. Open Admin → Style Guide with existing edits already saved: badge should show count immediately.
+2. Add edit to a swatch (e.g., dark charcoal): count increments instantly.
+3. Edit existing entry: count remains stable.
+4. Delete entry in Edits list: count decrements instantly.
+5. Refresh page: badge restores correctly from saved local data.
