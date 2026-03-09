@@ -1393,6 +1393,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               textColor="Dark bg: text-white hover:text-blue-300. Light bg: text-black hover:text-blue-600"
               size="text-xs font-black uppercase tracking-widest"
               purpose="Navigate back from chat to story hub"
+              visualEffects="Adaptive color based on sidebar background luminosity (sidebarBgIsLight)"
               locations="ChatInterfaceTab — sidebar top, above character cards"
               pageSpecific={true}
               appWide={false}
