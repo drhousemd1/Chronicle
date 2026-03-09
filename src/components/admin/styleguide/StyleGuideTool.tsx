@@ -27,7 +27,7 @@ const CardEditOverlay: React.FC<{ cardName: string; cardType: string; details: R
 
   return (
     <div
-      style={{ position: 'relative', height: '100%' }}
+      style={{ position: 'relative', overflow: 'hidden', borderRadius: 10 }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
