@@ -312,7 +312,9 @@ const TypoCardV2: React.FC<TypoV2Props> = (props) => {
       </div>
     </div>
   </div>
-);
+  </CardEditOverlay>
+  );
+};
 
 
 
