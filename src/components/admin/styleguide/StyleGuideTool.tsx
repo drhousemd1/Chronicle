@@ -1318,40 +1318,174 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
             <div style={fullSpan}><PageSubheading>Chat Interface</PageSubheading></div>
 
-            <EntryCard name="Chat Settings / Generate Image Buttons" pageTag="Chat"
-              specs='Shadow Surface variant with icon. <strong>rounded-xl px-4 py-2</strong> · text-[10px] font-bold uppercase tracking-widest. Uses --ui-surface-2 and --ui-border tokens.'
-              preview={<>
-                <button className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest border bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default' }}>⚙ Chat Settings</button>
-                <button className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest border bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default' }}>🖼 Generate Image</button>
-              </>}
-              code={`inline-flex items-center gap-2 rounded-xl px-4 py-2
-text-[10px] font-bold uppercase tracking-widest border
-bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))]
-text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]`}
+            <ButtonCardV2
+              buttonName="Chat Settings / Generate Image Buttons"
+              buttonColor="hsl(var(--ui-surface-2)) — bg-[hsl(var(--ui-surface-2))]"
+              textColor="hsl(var(--ui-text)) — text-[hsl(var(--ui-text))]"
+              size="rounded-xl px-4 py-2 — text-[10px] font-bold uppercase tracking-widest"
+              purpose="Open chat settings modal / trigger scene image generation"
+              visualEffects="border-[hsl(var(--ui-border))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:border-[hsl(var(--ui-border-hover))]"
+              locations="ChatInterfaceTab — quick actions bar above input"
+              pageSpecific={true}
+              appWide={false}
+              preview={
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+                  <button className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest border bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default' }}>⚙ Chat Settings</button>
+                  <button className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest border bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default' }}>🖼 Generate Image</button>
+                </div>
+              }
             />
-            <EntryCard name="Chat Send Button (Active / Inactive)" pageTag="Chat"
-              specs='<strong>Active:</strong> bg-[#4a5f7f] text-white border-[#4a5f7f]. <strong>Inactive:</strong> bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text-muted))] opacity-50.'
-              preview={<>
-                <button className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest bg-[#4a5f7f] text-white border border-[#4a5f7f] shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default' }}>Send</button>
-                <button className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))] text-zinc-500 opacity-50 shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default' }}>Send</button>
-              </>}
-              code={`/* Active (has input) */
-bg-[#4a5f7f] text-white border-[#4a5f7f] hover:bg-[#5a6f8f]
-/* Inactive (empty input) */
-bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text-muted))] opacity-50`}
+            <ButtonCardV2
+              buttonName="Chat Send Button (Active / Inactive)"
+              buttonColor="Active: #4a5f7f — bg-[#4a5f7f]. Inactive: bg-[hsl(var(--ui-surface-2))]"
+              textColor="Active: #ffffff — text-white. Inactive: text-[hsl(var(--ui-text-muted))] opacity-50"
+              size="h-10 w-10 — rounded-xl"
+              purpose="Send current message to the AI"
+              visualEffects="shadow-[0_10px_30px_rgba(0,0,0,0.35)]. Active: hover:bg-[#5a6f8f]"
+              locations="ChatInterfaceTab — input area, right side"
+              pageSpecific={true}
+              appWide={false}
+              preview={
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'center', alignItems: 'center' }}>
+                  <button className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-[#4a5f7f] text-white border border-[#4a5f7f] shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default' }}>▶</button>
+                  <button className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] text-zinc-500 opacity-50 shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default' }}>▶</button>
+                </div>
+              }
             />
-            <EntryCard name="Chat Message Action Icons" pageTag="Chat"
-              specs='Icon-only buttons visible on hover. <strong>p-2 rounded-lg</strong> · text-slate-400 hover:text-white · hover:bg-white/10.'
-              preview={<>
-                <button className="p-2 rounded-lg text-slate-400 hover:bg-white/10 hover:text-white" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>↻</button>
-                <button className="p-2 rounded-lg text-slate-400 hover:bg-white/10 hover:text-white" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>⋮</button>
-                <button className="p-2 rounded-lg text-green-400 hover:bg-white/10" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>✓</button>
-                <button className="p-2 rounded-lg text-red-400 hover:bg-white/10" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>✕</button>
-              </>}
-              code={`p-2 rounded-lg hover:bg-white/10 transition-colors
-/* Default: text-slate-400 hover:text-white */
-/* Save (inline edit): text-green-400 */
-/* Cancel: text-red-400 */`}
+            <ButtonCardV2
+              buttonName="Chat Message Action Icons"
+              buttonColor="transparent — hover:bg-white/10"
+              textColor="Default: #94a3b8 — text-slate-400. Hover: text-white. Save: text-green-400. Cancel: text-red-400"
+              size="p-2 — rounded-lg"
+              purpose="Per-message actions visible on hover (regenerate, menu, save edit, cancel edit)"
+              visualEffects="transition-colors"
+              locations="ChatInterfaceTab — message bubble hover overlay"
+              pageSpecific={true}
+              appWide={false}
+              preview={
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'center', background: '#1e1e1e', padding: 8, borderRadius: 8 }}>
+                  <button className="p-2 rounded-lg text-slate-400" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>↻</button>
+                  <button className="p-2 rounded-lg text-slate-400" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>⋮</button>
+                  <button className="p-2 rounded-lg text-green-400" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>✓</button>
+                  <button className="p-2 rounded-lg text-red-400" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>✕</button>
+                </div>
+              }
+            />
+            <ButtonCardV2
+              buttonName="Sidebar Settings Cog"
+              buttonColor="hsl(var(--ui-surface-2)) — bg-[hsl(var(--ui-surface-2))]"
+              textColor="hsl(var(--ui-text)) — text-[hsl(var(--ui-text))]"
+              size="rounded-xl px-3 py-2 — icon-only"
+              purpose="Opens dropdown with 'Set Theme' option for sidebar customization"
+              visualEffects="border-[hsl(var(--ui-border))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:border-[hsl(var(--ui-border-hover))]"
+              locations="ChatInterfaceTab — sidebar header"
+              pageSpecific={true}
+              appWide={false}
+              preview={
+                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                  <button className="inline-flex items-center justify-center rounded-xl px-3 py-2 border bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default' }}>⚙</button>
+                </div>
+              }
+            />
+            <ButtonCardV2
+              buttonName="Exit Scenario"
+              buttonColor="transparent — text link with icon"
+              textColor="Dark bg: text-white hover:text-blue-300. Light bg: text-black hover:text-blue-600"
+              size="text-xs font-black uppercase tracking-widest"
+              purpose="Navigate back from chat to story hub"
+              visualEffects="Adaptive color based on sidebar background luminosity (sidebarBgIsLight)"
+              locations="ChatInterfaceTab — sidebar top, above character cards"
+              pageSpecific={true}
+              appWide={false}
+              preview={
+                <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
+                  <div style={{ background: '#1e1e1e', padding: '8px 12px', borderRadius: 8 }}>
+                    <span className="text-xs font-black uppercase tracking-widest text-white" style={{ cursor: 'default' }}>‹ Exit Scenario</span>
+                  </div>
+                  <div style={{ background: '#f0f0f0', padding: '8px 12px', borderRadius: 8 }}>
+                    <span className="text-xs font-black uppercase tracking-widest text-black" style={{ cursor: 'default' }}>‹ Exit Scenario</span>
+                  </div>
+                </div>
+              }
+            />
+            <ButtonCardV2
+              buttonName="Time of Day Selectors"
+              buttonColor="Active: #dbeafe — bg-blue-100 border-2 border-blue-400. Inactive: bg-white border border-black"
+              textColor="Active: #2563eb — text-blue-600. Inactive: #000000 — text-black"
+              size="p-2 — rounded-lg"
+              purpose="Set the current time of day for the story (Sunrise / Day / Sunset / Night)"
+              visualEffects="Active: shadow-sm. Inactive: hover:bg-slate-100"
+              locations="ChatInterfaceTab — day/time control panel"
+              pageSpecific={true}
+              appWide={false}
+              preview={
+                <div style={{ display: 'flex', gap: 6, justifyContent: 'center', background: 'rgba(0,0,0,0.2)', padding: 8, borderRadius: 8 }}>
+                  <button className="p-2 rounded-lg bg-white border border-black text-black" style={{ cursor: 'default', fontSize: 14 }}>🌅</button>
+                  <button className="p-2 rounded-lg bg-blue-100 border-2 border-blue-400 text-blue-600 shadow-sm" style={{ cursor: 'default', fontSize: 14 }}>☀️</button>
+                  <button className="p-2 rounded-lg bg-white border border-black text-black" style={{ cursor: 'default', fontSize: 14 }}>🌇</button>
+                  <button className="p-2 rounded-lg bg-white border border-black text-black" style={{ cursor: 'default', fontSize: 14 }}>🌙</button>
+                </div>
+              }
+            />
+            <ButtonCardV2
+              buttonName="Day Counter +/− Arrows"
+              buttonColor="transparent — hover:bg-slate-100"
+              textColor="#000000 — text-black. Hover: text-blue-600. Disabled: opacity-30"
+              size="px-1.5 py-0.5 — inside white rounded-full pill"
+              purpose="Increment/decrement the in-story day counter"
+              visualEffects="Container: bg-white rounded-full shadow-sm. Down arrow disabled at day 1"
+              locations="ChatInterfaceTab — day/time control panel"
+              pageSpecific={true}
+              appWide={false}
+              preview={
+                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                  <div className="inline-flex items-center gap-1 bg-white rounded-full px-2 py-1 shadow-sm">
+                    <button className="px-1.5 py-0.5 text-black opacity-30" style={{ cursor: 'default', background: 'transparent', border: 'none', fontSize: 12 }}>◀</button>
+                    <span className="text-xs font-bold text-black px-1">Day 1</span>
+                    <button className="px-1.5 py-0.5 text-black hover:text-blue-600" style={{ cursor: 'default', background: 'transparent', border: 'none', fontSize: 12 }}>▶</button>
+                  </div>
+                </div>
+              }
+            />
+            <ButtonCardV2
+              buttonName="Memory Quick Save"
+              buttonColor="transparent — hover:bg-white/10. Saved: hover:bg-purple-500/20"
+              textColor="Default: #64748b — text-slate-500. Hover: text-purple-400. Saved: text-purple-400"
+              size="p-1.5 — rounded-lg"
+              purpose="Save the current AI message as a memory entry"
+              visualEffects="transition-colors. Saved state shows purple tinted background"
+              locations="ChatInterfaceTab — per-message action row"
+              pageSpecific={true}
+              appWide={false}
+              preview={
+                <div style={{ display: 'flex', gap: 12, justifyContent: 'center', background: '#1e1e1e', padding: 8, borderRadius: 8 }}>
+                  <button className="p-1.5 rounded-lg text-slate-500" style={{ cursor: 'default', background: 'transparent', border: 'none', fontSize: 16 }}>🧠</button>
+                  <button className="p-1.5 rounded-lg text-purple-400" style={{ cursor: 'default', background: 'rgba(168,85,247,0.2)', border: 'none', fontSize: 16 }}>🧠</button>
+                </div>
+              }
+            />
+            <ButtonCardV2
+              buttonName="Timer Pause / Play"
+              buttonColor="transparent — hover:bg-black/30"
+              textColor="Adaptive via getTimeTextColor(): Sunrise/Day/Sunset → text-black. Night → text-white"
+              size="p-0.5 — rounded"
+              purpose="Pause or resume the auto-advancing time progression timer"
+              visualEffects="Adaptive text color matches time-of-day sky background"
+              locations="ChatInterfaceTab — auto-timer row in day/time panel"
+              pageSpecific={true}
+              appWide={false}
+              preview={
+                <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
+                  <div style={{ background: '#87CEEB', padding: '6px 12px', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span className="text-black text-xs font-mono">04:32</span>
+                    <button className="p-0.5 rounded text-black" style={{ cursor: 'default', background: 'transparent', border: 'none', fontSize: 12 }}>⏸</button>
+                  </div>
+                  <div style={{ background: '#1a1a2e', padding: '6px 12px', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span className="text-white text-xs font-mono">04:32</span>
+                    <button className="p-0.5 rounded text-white" style={{ cursor: 'default', background: 'transparent', border: 'none', fontSize: 12 }}>▶</button>
+                  </div>
+                </div>
+              }
             />
 
             <div style={fullSpan}><PageSubheading>Chat History</PageSubheading></div>
