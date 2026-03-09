@@ -2270,15 +2270,14 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 purpose="Login/signup form fields using shadcn Input with className overrides"
                 locations="Auth Page — email, password, and display name fields"
                 pageSpecific
-                notes="⚠ Uses slate-* palette (unique to Auth) vs zinc-* (rest of app). Third input color system alongside zinc-* (dark) and slate-50 (Chronicle UI)."
-                preview={<>
+                notes="⚠ Uses slate-* palette (unique to Auth) vs zinc-* (rest of app). Third input color system alongside zinc-* (dark) and slate-50 (Chronicle UI)."              preview={<>
                   <input readOnly className="w-full rounded-md border border-slate-600 bg-slate-700/50 text-white text-sm px-3 py-2 outline-none placeholder:text-slate-500" placeholder="you@example.com" />
                   <input readOnly type="password" className="w-full rounded-md border border-slate-600 bg-slate-700/50 text-white text-sm px-3 py-2 outline-none placeholder:text-slate-500" placeholder="••••••••" />
                 </>}
               />
             </div>
             <InconsistencyNote items={[
-              { file: 'Auth.tsx', note: 'Uses bg-slate-700/50 border-slate-600 — a third input color system alongside zinc-* (dark) and slate-50 (ChronicUI).'gUI },
+              { file: 'Auth.tsx', note: 'Uses bg-slate-700/50 border-slate-600 — a third input color system alongside zinc-* (dark) and slate-50 (ChronicUI)le UI).'
             ]} />
 
             <PageSubheading>Character Library Search</PageSubheading>
