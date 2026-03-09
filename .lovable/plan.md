@@ -1,42 +1,37 @@
 
 
-## Convert My Stories Buttons to ButtonCardV2 Format
+## Plan: Style Guide Audit & Correction — Complete ✅
 
-The three new My Stories button entries (lines 1131-1172) currently use the `EntryCard` component format, but all buttons in the Style Guide should use the `ButtonCardV2` component — the same structured format used in the Story Builder section (with `buttonColor`, `textColor`, `size`, `purpose`, `visualEffects`, `locations`, `pageSpecific`, `appWide` fields).
+### Status: ✅ All 3 Passes Complete
 
-### Changes to `StyleGuideTool.tsx`
+Audited and corrected all 8 sections of the Visual Style Guide against live source code.
 
-Replace the three `EntryCard` entries (lines 1131-1172) with `ButtonCardV2` equivalents:
+### What was fixed:
 
-1. **Settings Gear Icon Button** → `ButtonCardV2`
-   - `buttonName`: "Settings Gear"
-   - `buttonColor`: "hsl(228 7% 20%) — bg-[hsl(var(--ui-surface-2))]"
-   - `textColor`: "hsl(210 20% 93%) — text-[hsl(var(--ui-text))]"
-   - `size`: "px-3 py-2 icon-only — rounded-xl (12px)"
-   - `purpose`: "Opens background customization settings"
-   - `visualEffects`: "shadow: 0 10px 30px rgba(0,0,0,0.35) · border: 1px solid hsl(var(--ui-border))"
-   - `locations`: "My Stories hub header — gear icon for background picker"
-   - Same preview (the gear button)
+**Pass 1 — Colors & Typography:**
+- "Button Background" swatch: `#2F3137` (screenshot approximation) → `hsl(228 7% 20%)` / `bg-[hsl(var(--ui-surface-2))]` (actual CSS variable)
+- "Button Text Color" swatch: `#eaedf1` → `hsl(210 20% 93%)` / `text-[hsl(var(--ui-text))]` (actual CSS variable)
+- Typography specs updated to use Tailwind class names (e.g., `text-xl font-bold tracking-tight`) instead of raw pixel values
+- Field label tracking corrected from `0.5px` to `tracking-wider (0.05em)`
+- Button text tile renamed from "Header actions" to "Shadow Surface" with `leading-none` added
 
-2. **New Story Card Button** → `ButtonCardV2`
-   - `buttonName`: "New Story Card"
-   - `buttonColor`: "transparent to zinc-800/zinc-900 gradient — bg-gradient-to-br from-zinc-800 to-zinc-900"
-   - `textColor`: "#71717a — text-zinc-500"
-   - `size`: "aspect-[2/3] full card — rounded-[2rem]"
-   - `purpose`: "Creates a new story — card-sized button in story grid"
-   - `visualEffects`: "border: 2px dashed #52525b (zinc-600). Hover: border-blue-400"
-   - `locations`: "My Stories hub — first card in story grid"
-   - Same preview (the dashed card)
+**Pass 2 — Buttons, Forms & Badges:**
+- Header Action Button completely rewritten to Shadow Surface pattern with real Tailwind `className` strings
+- Button previews now render using actual `className` attributes instead of inline `style` objects
+- Card Hover Buttons updated to correct `h-8 px-4` compact variant from source (StoryHub.tsx)
+- Delete button corrected from `bg-#ef4444` to `bg-[hsl(var(--destructive))]`
+- Form inputs and badges converted to `className`-based rendering
+- Code blocks now show actual `className` strings from source
 
-3. **Story Detail Modal — Edit / Play / Remove** → `ButtonCardV2`
-   - `buttonName`: "Story Detail Modal Actions"
-   - `buttonColor`: "Edit: rgba(255,255,255,0.05) — bg-white/5. Play: #3b82f6 — bg-[#3b82f6]. Remove: rgba(255,255,255,0.05)"
-   - `textColor`: "Edit/Play: #ffffff — text-white. Remove: rgba(255,255,255,0.6) — text-white/60"
-   - `size`: "Edit/Play: flex-1 h-12 — rounded-xl. Remove: w-full h-10 — rounded-xl"
-   - `purpose`: "Story detail modal actions — edit, play, or remove from gallery"
-   - `visualEffects`: "Edit: border 1px white/10. Play: shadow-md. Remove: border 1px white/10"
-   - `locations`: "StoryDetailModal — owned story actions and gallery removal"
-   - Same preview (the three buttons stacked)
+**Pass 3 — Panels, Modals & Icons:**
+- Panel Container: `previewDark` removed, rendered with actual `className`
+- Panel Header Bar: uses actual `className` with `px-5 py-3` (was `16px 24px`)
+- Story Card: added live rendered preview with gradient overlay and `rounded-[2rem]`
+- Modal Container/Header/Footer: `previewDark` removed, rendered with real Tailwind classes
+- Modal Footer buttons now use actual HSL token classes from DeleteConfirmDialog.tsx
+- Icon Size Scale/Containers: `previewDark` removed, previews render on white background
+- Icon Colors: white swatch gets border treatment instead of dark background
 
-All three entries get `pageSpecific={true}` and `appWide={false}`.
-
+**Dark Background Cleanup:**
+- Removed `previewDark` from: buttons (all 5), panel container, modal container/header/footer, icon size scale, icon containers
+- Kept `previewDark` only for: form inputs (dark on dark), modal backdrop (transparency demo)
