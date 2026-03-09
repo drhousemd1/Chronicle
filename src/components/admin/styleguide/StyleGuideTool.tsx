@@ -93,7 +93,7 @@ const valueStyle: React.CSSProperties = {
   fontSize: 12, color: '#334155', fontFamily: 'Inter, system-ui, sans-serif',
 };
 
-const SwatchCardV2: React.FC<SwatchV2Props> = ({ color, name, locations, value, token, pageSpecific, appWide, extraPreviewStyle }) => (
+const SwatchCardV2: React.FC<SwatchV2Props> = ({ color, name, locations, value, token, pageSpecific, appWide, effect, extraPreviewStyle }) => (
   <div style={{
     background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
     boxShadow: sg.shadow, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
@@ -119,6 +119,12 @@ const SwatchCardV2: React.FC<SwatchV2Props> = ({ color, name, locations, value, 
         <span style={labelStyle}>Token:</span>
         <span style={{ ...valueStyle, fontFamily: "'SF Mono','Fira Code','JetBrains Mono',monospace", fontSize: 11 }}>{token}</span>
       </div>
+      {effect && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={labelStyle}>Effect:</span>
+          <span style={{ ...valueStyle, fontFamily: "'SF Mono','Fira Code','JetBrains Mono',monospace", fontSize: 11 }}>{effect}</span>
+        </div>
+      )}
       <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
         <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#334155', cursor: 'default' }}>
           <input type="checkbox" checked={pageSpecific} disabled style={{ accentColor: '#3b82f6', width: 14, height: 14 }} />
