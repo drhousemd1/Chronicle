@@ -214,6 +214,7 @@ const SwatchCardV2: React.FC<SwatchV2Props> = (props) => {
         </label>
       </div>
     </div>
+  </div>
   </CardEditOverlay>
   );
 };
