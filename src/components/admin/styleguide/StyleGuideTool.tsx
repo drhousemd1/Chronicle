@@ -1337,18 +1337,18 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             />
             <ButtonCardV2
               buttonName="Chat Send Button (Active / Inactive)"
-              buttonColor="Active: #4a5f7f — bg-[#4a5f7f]. Inactive: bg-[hsl(var(--ui-surface-2))]"
-              textColor="Active: #ffffff — text-white. Inactive: text-[hsl(var(--ui-text-muted))] opacity-50"
-              size="h-10 w-10 — rounded-xl"
-              purpose="Send current message to the AI"
-              visualEffects="shadow-[0_10px_30px_rgba(0,0,0,0.35)]. Active: hover:bg-[#5a6f8f]"
+              buttonColor="Active: #4a5f7f — bg-[#4a5f7f]. Inactive: bg-[hsl(var(--ui-surface-2))] opacity-50"
+              textColor="Active: #ffffff — text-white. Inactive: text-[hsl(var(--ui-text-muted))]"
+              size="rounded-xl px-4 py-2 — text-[10px] font-bold uppercase tracking-widest"
+              purpose="Send current message to the AI. Shows 'Send' or '...' while streaming"
+              visualEffects="shadow-[0_10px_30px_rgba(0,0,0,0.35)] border-[hsl(var(--ui-border))]"
               locations="ChatInterfaceTab — input area, right side"
               pageSpecific={true}
               appWide={false}
               preview={
                 <div style={{ display: 'flex', gap: 8, justifyContent: 'center', alignItems: 'center' }}>
-                  <button className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-[#4a5f7f] text-white border border-[#4a5f7f] shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default' }}>▶</button>
-                  <button className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] text-zinc-500 opacity-50 shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default' }}>▶</button>
+                  <button className="inline-flex items-center justify-center rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest bg-[#4a5f7f] text-white border border-[#4a5f7f] shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default' }}>Send</button>
+                  <button className="inline-flex items-center justify-center rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] text-zinc-500 opacity-50 shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default' }}>Send</button>
                 </div>
               }
             />
