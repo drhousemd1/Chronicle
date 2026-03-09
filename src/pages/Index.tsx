@@ -173,6 +173,8 @@ const IndexContent = () => {
   const guideSaveRef = React.useRef<(() => Promise<void>) | null>(null);
   const guideSyncAllRef = React.useRef<(() => Promise<void>) | null>(null);
   const styleGuideDownloadRef = React.useRef<(() => void) | null>(null);
+  const styleGuideEditsRef = React.useRef<(() => void) | null>(null);
+  const [styleGuideEditsCount, setStyleGuideEditsCount] = useState(0);
   const imageLibraryUploadRef = React.useRef<(() => void) | null>(null);
   
   // Pagination state
