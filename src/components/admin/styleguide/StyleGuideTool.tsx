@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { Sparkles } from 'lucide-react';
 import { StyleGuideDownloadModal } from './StyleGuideDownloadModal';
 
 const SECTIONS = [
