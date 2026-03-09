@@ -312,6 +312,116 @@ const TypoCardV2: React.FC<TypoV2Props> = (props) => {
 };
 
 
+/* ═══════════════════════ INPUT CARD V2 (Standardized) ═══════════════════════ */
+interface InputV2Props {
+  inputName: string;
+  preview: React.ReactNode;
+  previewBg?: string;
+  background: string;
+  border: string;
+  borderRadius: string;
+  textColor: string;
+  placeholderColor?: string;
+  focusStyle?: string;
+  fontSize: string;
+  padding: string;
+  purpose: string;
+  locations: string;
+  pageSpecific?: boolean;
+  appWide?: boolean;
+  notes?: string;
+}
+
+const InputCardV2: React.FC<InputV2Props> = (props) => {
+  const { inputName, preview, previewBg, background, border, borderRadius, textColor, placeholderColor, focusStyle, fontSize, padding, purpose, locations, pageSpecific, appWide, notes } = props;
+  const details = { Background: background, Border: border, 'Border Radius': borderRadius, 'Text Color': textColor, 'Font Size': fontSize, Padding: padding, Purpose: purpose, Locations: locations };
+  return (
+  <CardEditOverlay cardName={inputName} cardType="Input" details={details}>
+  <div style={{
+    background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
+    boxShadow: sg.shadow, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+  }}
+    onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadowHover; }}
+    onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadow; }}
+  >
+    {/* Preview strip */}
+    <div style={{
+      background: previewBg || '#25272d', padding: '16px 20px',
+      display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'center', gap: 12, minHeight: 64,
+      boxShadow: 'inset 0 -1px 0 #e2e8f0',
+    }}>{preview}</div>
+
+    <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 6, borderTop: '1px solid #e2e8f0' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Input Name:</span>
+        <span style={valueStyle}>{inputName}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Background:</span>
+        <span style={monoStyle}>{background}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Border:</span>
+        <span style={monoStyle}>{border}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Border Radius:</span>
+        <span style={monoStyle}>{borderRadius}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Text Color:</span>
+        <span style={monoStyle}>{textColor}</span>
+      </div>
+      {placeholderColor && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={labelStyle}>Placeholder Color:</span>
+          <span style={monoStyle}>{placeholderColor}</span>
+        </div>
+      )}
+      {focusStyle && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={labelStyle}>Focus Style:</span>
+          <span style={monoStyle}>{focusStyle}</span>
+        </div>
+      )}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Font Size:</span>
+        <span style={monoStyle}>{fontSize}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Padding:</span>
+        <span style={monoStyle}>{padding}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Purpose:</span>
+        <span style={valueStyle}>{purpose}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Locations:</span>
+        <span style={valueStyle}>{locations}</span>
+      </div>
+      {notes && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={labelStyle}>Notes:</span>
+          <span style={valueStyle}>{notes}</span>
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#334155', cursor: 'default' }}>
+          <input type="checkbox" checked={pageSpecific} disabled style={{ accentColor: '#3b82f6', width: 14, height: 14 }} />
+          Page Specific
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#334155', cursor: 'default' }}>
+          <input type="checkbox" checked={appWide} disabled style={{ accentColor: '#3b82f6', width: 14, height: 14 }} />
+          App Wide
+        </label>
+      </div>
+    </div>
+  </div>
+  </CardEditOverlay>
+  );
+};
+
 
 /* ═══════════════════════ TYPOGRAPHY TILE ═══════════════════════ */
 interface TypeTileProps {
@@ -2052,198 +2162,318 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
           <Divider />
 
-          {/* ═══════════════════════════════════════════════════════════════ */}
-          {/* ═══ 4. FORM INPUTS ═══ */}
-          {/* ═══════════════════════════════════════════════════════════════ */}
-          <Section id="inputs" title="Form Inputs" desc="Input fields and textareas used throughout the application.">
-            <PageSubheading>Story Builder Page</PageSubheading>
-            <EntryCard name="Text Input / Textarea (Dark Theme)" pageTag="Story Builder"
-              specs="<strong>bg:</strong> rgba(24,24,27,0.5) · <strong>color:</strong> white · <strong>border:</strong> 1px solid #3f3f46 · <strong>border-radius:</strong> rounded-lg (8px) · <strong>padding:</strong> 8px 12px · <strong>font-size:</strong> 14px"
-              previewDark previewStyle={{ flexDirection: 'column', gap: 12 }}
-              preview={<>
-                <input readOnly className="w-full rounded-lg border border-zinc-700 bg-zinc-900/50 text-white text-sm px-3 py-2 outline-none" placeholder="Enter story arc title..." />
-                <input readOnly className="w-full rounded-lg border border-zinc-700 bg-zinc-900/50 text-white text-sm px-3 py-2 outline-none" placeholder="e.g. The Lakehouse" />
-              </>}
-              code={`bg-zinc-900/50 border-zinc-700 text-white text-sm px-3 py-2 rounded-lg`}
-            />
+           {/* ═══════════════════════════════════════════════════════════════ */}
+           {/* ═══ 4. FORM INPUTS ═══ */}
+           {/* ═══════════════════════════════════════════════════════════════ */}
+           <Section id="inputs" title="Form Inputs" desc="Input fields and textareas used throughout the application.">
 
-            <div style={{ marginTop: 24 }}>
-              <PageSubheading>Community Gallery</PageSubheading>
-              <EntryCard name="Gallery Search Input" pageTag="Gallery"
-                specs='<strong>bg:</strong> bg-[#3a3a3f]/50 · <strong>border:</strong> border-white/10 · <strong>rounded-xl</strong> · <strong>text:</strong> white · <strong>placeholder:</strong> text-zinc-500 · <strong>focus:</strong> ring-2 ring-[#4a5f7f]'
-                previewDark previewStyle={{ flexDirection: 'column', gap: 12 }}
-                preview={
-                  <input readOnly className="w-full pl-12 pr-24 py-3 bg-[#3a3a3f]/50 border border-white/10 rounded-xl text-white placeholder:text-zinc-500 outline-none" placeholder="Search titles, descriptions, or #tags..." />
-                }
-                code={`w-full pl-12 pr-24 py-3
-bg-[#3a3a3f]/50 border border-white/10 rounded-xl
-text-white placeholder:text-zinc-500
-focus:ring-2 focus:ring-[#4a5f7f] focus:border-transparent`}
+            <PageSubheading>Story Builder Page</PageSubheading>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+              <InputCardV2
+                inputName="Dark Theme Text Input"
+                background="rgba(24,24,27,0.5) / bg-zinc-900/50"
+                border="1px solid #3f3f46 / border-zinc-700"
+                borderRadius="rounded-lg (8px)"
+                textColor="white"
+                placeholderColor="text-zinc-500"
+                fontSize="14px / text-sm"
+                padding="px-3 py-2"
+                purpose="Standard dark text input used across Story Builder forms"
+                locations="Story Builder — arc titles, world name, description fields"
+                pageSpecific
+                appWide
+                preview={<>
+                  <input readOnly className="w-full rounded-lg border border-zinc-700 bg-zinc-900/50 text-white text-sm px-3 py-2 outline-none" placeholder="Enter story arc title..." />
+                  <input readOnly className="w-full rounded-lg border border-zinc-700 bg-zinc-900/50 text-white text-sm px-3 py-2 outline-none" placeholder="e.g. The Lakehouse" />
+                </>}
               />
             </div>
 
-            <div style={{ marginTop: 24 }}>
-              <PageSubheading>Chat Interface</PageSubheading>
-              <EntryCard name="Chat Input Textarea (White BG)" pageTag="Chat"
-                specs='<strong>bg:</strong> white · <strong>text:</strong> black · <strong>border:</strong> none (wrapper has border) · <strong>rounded-xl</strong> · <strong>focus:</strong> ring-1 ring-[hsl(var(--accent-teal))]/30. Inside a bg-[hsl(var(--ui-surface-2))] wrapper.'
-                previewStyle={{ flexDirection: 'column', gap: 8 }}
+            <PageSubheading>Community Gallery</PageSubheading>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+              <InputCardV2
+                inputName="Gallery Search Input"
+                background="#3a3a3f/50 / bg-[#3a3a3f]/50"
+                border="border-white/10"
+                borderRadius="rounded-xl (12px)"
+                textColor="white"
+                placeholderColor="text-zinc-500"
+                focusStyle="ring-2 ring-[#4a5f7f] border-transparent"
+                fontSize="14px / text-sm"
+                padding="pl-12 pr-24 py-3"
+                purpose="Full-width search bar with icon prefix and filter suffix"
+                locations="Community Gallery — top search bar"
+                pageSpecific
+                preview={
+                  <input readOnly className="w-full pl-12 pr-24 py-3 bg-[#3a3a3f]/50 border border-white/10 rounded-xl text-white placeholder:text-zinc-500 outline-none" placeholder="Search titles, descriptions, or #tags..." />
+                }
+              />
+            </div>
+
+            <PageSubheading>Chat Interface</PageSubheading>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+              <InputCardV2
+                inputName="Chat Input Textarea"
+                previewBg="#fff"
+                background="white (inside hsl(var(--ui-surface-2)) wrapper)"
+                border="none (wrapper: border-[hsl(var(--ui-border))])"
+                borderRadius="rounded-xl (inner) / rounded-2xl (wrapper)"
+                textColor="black"
+                placeholderColor="placeholder-gray-400"
+                focusStyle="ring-1 ring-[hsl(var(--accent-teal))]/30"
+                fontSize="14px / text-sm"
+                padding="px-4 py-3 (inner) / p-2 (wrapper)"
+                purpose="Primary message composition textarea"
+                locations="Chat Interface — bottom input area"
+                pageSpecific
                 preview={
                   <div className="bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] rounded-2xl p-2 w-full">
                     <textarea readOnly className="block w-full bg-white text-black placeholder-gray-400 rounded-xl px-4 py-3 text-sm outline-none border-0 resize-none" placeholder="Describe your action or dialogue..." rows={2} />
                   </div>
                 }
-                code={`/* Outer wrapper */
-bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] rounded-2xl p-2
-/* Inner textarea */
-bg-white text-black placeholder-gray-400 rounded-xl px-4 py-3 text-sm
-border-0 resize-none focus:ring-1 focus:ring-[hsl(var(--accent-teal))]/30`}
               />
             </div>
 
-            <div style={{ marginTop: 24 }}>
-              <PageSubheading>Account Page</PageSubheading>
-              <EntryCard name="Account Password Input (Dark Theme)" pageTag="Account"
-                specs='<strong>bg:</strong> #2a2a2f · <strong>border:</strong> border-white/10 · <strong>rounded-xl</strong> · <strong>text:</strong> white text-sm · <strong>focus:</strong> ring-2 ring-[#4a5f7f]. Includes visibility toggle button.'
-                previewDark previewStyle={{ flexDirection: 'column', gap: 12 }}
+            <PageSubheading>Account Page</PageSubheading>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+              <InputCardV2
+                inputName="Account Password Input"
+                background="#2a2a2f / bg-[#2a2a2f]"
+                border="border-white/10"
+                borderRadius="rounded-xl (12px)"
+                textColor="white"
+                placeholderColor="text-zinc-500"
+                focusStyle="ring-2 ring-[#4a5f7f]"
+                fontSize="14px / text-sm"
+                padding="px-4 py-3"
+                purpose="Password field with visibility toggle button"
+                locations="Account Settings — Change Password section"
+                pageSpecific
                 preview={
                   <input readOnly type="password" className="w-full bg-[#2a2a2f] border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none" placeholder="••••••••" />
                 }
-                code={`w-full bg-[#2a2a2f] border border-white/10 rounded-xl px-4 py-3
-text-white text-sm focus:ring-2 focus:ring-[#4a5f7f]`}
               />
             </div>
 
-            <div style={{ marginTop: 24 }}>
-              <PageSubheading>Auth Page</PageSubheading>
-              <EntryCard name="Auth Input (Semi-transparent)" pageTag="Auth"
-                specs='<strong>bg:</strong> bg-slate-700/50 · <strong>border:</strong> border-slate-600 · <strong>text:</strong> white · <strong>placeholder:</strong> text-slate-500. Uses shadcn Input component with overrides.'
-                previewDark previewStyle={{ flexDirection: 'column', gap: 12 }}
+            <PageSubheading>Auth Page</PageSubheading>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+              <InputCardV2
+                inputName="Auth Input (Dark Slate)"
+                background="bg-slate-700/50"
+                border="border-slate-600"
+                borderRadius="rounded-md (6px — shadcn default)"
+                textColor="white"
+                placeholderColor="text-slate-400 / text-slate-500"
+                focusStyle="shadcn default ring behavior"
+                fontSize="14px / text-sm"
+                padding="px-3 py-2 (h-10)"
+                purpose="Login/signup form fields using shadcn Input with className overrides"
+                locations="Auth Page — email, password, and display name fields"
+                pageSpecific
+                notes="⚠ Uses slate-* palette (unique to Auth) vs zinc-* (rest of app). Third input color system alongside zinc-* (dark) and slate-50 (Chronicle light)."
                 preview={<>
                   <input readOnly className="w-full rounded-md border border-slate-600 bg-slate-700/50 text-white text-sm px-3 py-2 outline-none placeholder:text-slate-500" placeholder="you@example.com" />
                   <input readOnly type="password" className="w-full rounded-md border border-slate-600 bg-slate-700/50 text-white text-sm px-3 py-2 outline-none placeholder:text-slate-500" placeholder="••••••••" />
                 </>}
-                code={`bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-500
-/* Uses shadcn Input with className overrides */`}
               />
             </div>
+            <InconsistencyNote items={[
+              { file: 'Auth.tsx', note: 'Uses bg-slate-700/50 border-slate-600 — a third input color system alongside zinc-* (dark) and slate-50 (Chronicle light).' },
+            ]} />
 
-            <div style={{ marginTop: 24 }}>
-              <PageSubheading>Character Library Search</PageSubheading>
-              <EntryCard name="Header Search (Dark Pill)" pageTag="Character Library"
-                specs='<strong>bg:</strong> bg-[#2b2b2e] rounded-full · <strong>h-7 w-56 px-3 py-1</strong> · <strong>text-xs font-bold</strong> · text-white placeholder:text-zinc-500. Sits inside dark pill container in white header.'
+            <PageSubheading>Character Library Search</PageSubheading>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+              <InputCardV2
+                inputName="Header Search (Dark Pill)"
+                previewBg="#fff"
+                background="transparent (inside #2b2b2e pill container)"
+                border="none (container provides visual border)"
+                borderRadius="rounded-full (999px)"
+                textColor="white"
+                placeholderColor="text-zinc-500"
+                fontSize="12px / text-xs font-bold"
+                padding="h-7 w-56 px-3 py-1"
+                purpose="Compact search pill inside white header bar"
+                locations="Character Library — header row dark pill"
+                pageSpecific
                 preview={
                   <div className="bg-[#2b2b2e] rounded-full p-1">
                     <input readOnly className="h-7 w-56 px-3 py-1 text-xs font-bold rounded-full bg-transparent text-white placeholder:text-zinc-500 outline-none" placeholder="Search characters..." />
                   </div>
                 }
-                code={`/* Container */ bg-[#2b2b2e] rounded-full p-1
-/* Input */ h-7 w-56 px-3 py-1 text-xs font-bold rounded-full
-bg-transparent text-white placeholder:text-zinc-500`}
               />
             </div>
 
-            <div style={{ marginTop: 24 }}>
-              <PageSubheading>Character Builder</PageSubheading>
-              <EntryCard name="HardcodedRow Textarea (Borderless)" pageTag="Character Builder"
-                specs='<strong>bg:</strong> bg-zinc-900/50 · <strong>border:</strong> border-white/10 (very subtle) · <strong>rounded-lg</strong> · <strong>text:</strong> text-zinc-300 text-sm. Used for trait values inside HardcodedRow layout.'
-                previewDark previewStyle={{ flexDirection: 'column', gap: 12 }}
+            <PageSubheading>Character Builder</PageSubheading>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+              <InputCardV2
+                inputName="HardcodedRow Textarea"
+                background="bg-zinc-900/50"
+                border="border-white/10 (very subtle)"
+                borderRadius="rounded-lg (8px)"
+                textColor="text-zinc-300"
+                placeholderColor="text-zinc-500"
+                fontSize="14px / text-sm"
+                padding="px-3 py-2"
+                purpose="Trait value textarea inside HardcodedRow layout"
+                locations="Character Builder — collapsible sections (Physical Appearance, Background, etc.)"
+                pageSpecific
                 preview={
                   <textarea readOnly className="w-full rounded-lg border border-white/10 bg-zinc-900/50 text-zinc-300 text-sm px-3 py-2 outline-none resize-none" rows={2} placeholder="Athletic build; tall; sharp jawline..." />
                 }
-                code={`bg-zinc-900/50 border border-white/10 rounded-lg
-text-zinc-300 text-sm px-3 py-2 resize-none`}
+              />
+              <InputCardV2
+                inputName="Builder Form Row Input"
+                background="bg-zinc-900/50"
+                border="border-white/10"
+                borderRadius="rounded-lg (8px)"
+                textColor="white"
+                fontSize="14px / text-sm"
+                padding="px-3 py-2"
+                purpose="Label + value pair input in collapsible character builder sections"
+                locations="Character Builder — trait label (w-2/5) and value (flex-1) columns"
+                pageSpecific
+                notes="Lock icon (w-3.5 h-3.5 text-zinc-400) marks hardcoded fields. Both label and value columns share identical input styling."
+                preview={
+                  <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+                    <div style={{ width: '40%', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ color: '#a1a1aa', fontSize: 10 }}>🔒</span>
+                      <input readOnly className="w-full px-3 py-2 bg-zinc-900/50 border border-white/10 rounded-lg text-white text-sm" value="Physical Appearance" />
+                    </div>
+                    <input readOnly className="flex-1 px-3 py-2 bg-zinc-900/50 border border-white/10 rounded-lg text-white text-sm" placeholder="Describe appearance..." />
+                  </div>
+                }
               />
             </div>
 
-            <div style={{ marginTop: 24 }}>
-              <PageSubheading>Chat Settings — LabeledToggle</PageSubheading>
-              <EntryCard name="LabeledToggle Component" pageTag="Chat Settings"
-                specs='Custom toggle with Off/On labels. <strong>Track:</strong> h-5 w-9 rounded-full. <strong>Thumb:</strong> h-4 w-4 rounded-full bg-white. <strong>On:</strong> bg-blue-500, On label text-blue-500. <strong>Off:</strong> bg-zinc-600, Off label text-zinc-200. <strong>Locked:</strong> bg-zinc-500 + Lock icon.'
-                previewDark previewStyle={{ flexDirection: 'column', gap: 16 }}
+            <PageSubheading>Chat Settings — LabeledToggle</PageSubheading>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+              <InputCardV2
+                inputName="LabeledToggle Component"
+                background="N/A (composite control)"
+                border="N/A"
+                borderRadius="rounded-full (track)"
+                textColor="Off label: text-zinc-200, On label: text-blue-500"
+                fontSize="12px / text-xs font-semibold"
+                padding="N/A"
+                purpose="Custom toggle with Off/On text labels flanking the track"
+                locations="Chat Settings — Time Progression, Auto-Generate Side Characters, all model settings toggles"
+                appWide
+                notes="Track: h-5 w-9 rounded-full. Thumb: h-4 w-4 bg-white shadow-md. On: bg-blue-500. Off: bg-zinc-600. Locked: bg-zinc-500 + Lock icon (w-3 h-3 text-zinc-500) + opacity-70."
                 preview={<>
-                  <div className="inline-flex items-center gap-1.5">
-                    <span className="text-xs font-semibold text-zinc-500">Off</span>
-                    <div className="relative h-5 w-9 rounded-full bg-blue-500">
-                      <div className="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-md" style={{ transform: 'translateX(16px)' }} />
+                  <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
+                    <div className="inline-flex items-center gap-1.5">
+                      <span className="text-xs font-semibold text-zinc-500">Off</span>
+                      <div className="relative h-5 w-9 rounded-full bg-blue-500">
+                        <div className="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-md" style={{ transform: 'translateX(16px)' }} />
+                      </div>
+                      <span className="text-xs font-semibold text-blue-500">On</span>
                     </div>
-                    <span className="text-xs font-semibold text-blue-500">On</span>
-                  </div>
-                  <div className="inline-flex items-center gap-1.5">
-                    <span className="text-xs font-semibold text-zinc-200">Off</span>
-                    <div className="relative h-5 w-9 rounded-full bg-zinc-600">
-                      <div className="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-md" style={{ transform: 'translateX(2px)' }} />
+                    <div className="inline-flex items-center gap-1.5">
+                      <span className="text-xs font-semibold text-zinc-200">Off</span>
+                      <div className="relative h-5 w-9 rounded-full bg-zinc-600">
+                        <div className="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-md" style={{ transform: 'translateX(2px)' }} />
+                      </div>
+                      <span className="text-xs font-semibold text-zinc-500">On</span>
                     </div>
-                    <span className="text-xs font-semibold text-zinc-500">On</span>
-                  </div>
-                  <div className="inline-flex items-center gap-1.5 opacity-70">
-                    <span className="text-xs font-semibold text-zinc-200">Off</span>
-                    <div className="relative h-5 w-9 rounded-full bg-zinc-500">
-                      <div className="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-md" style={{ transform: 'translateX(2px)' }} />
+                    <div className="inline-flex items-center gap-1.5 opacity-70">
+                      <span className="text-xs font-semibold text-zinc-200">Off</span>
+                      <div className="relative h-5 w-9 rounded-full bg-zinc-500">
+                        <div className="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-md" style={{ transform: 'translateX(2px)' }} />
+                      </div>
+                      <span className="text-xs font-semibold text-zinc-500">On</span>
+                      <span className="text-zinc-500 text-xs">🔒</span>
                     </div>
-                    <span className="text-xs font-semibold text-zinc-500">On</span>
-                    <span className="text-zinc-500 text-xs">🔒</span>
                   </div>
                 </>}
-                code={`/* Track */ h-5 w-9 rounded-full
-/* On: bg-blue-500 | Off: bg-zinc-600 | Locked: bg-zinc-500 */
-/* Thumb */ h-4 w-4 rounded-full bg-white shadow-md
-/* On label: text-blue-500 | Off label: text-zinc-200 */
-/* Locked: opacity-70 + Lock icon w-3 h-3 text-zinc-500 */`}
               />
             </div>
 
             <PageSubheading>Image Generation Modals (Light Theme)</PageSubheading>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <EntryCard name="Light-Theme Generation Textarea" pageTag="AI Generation Modals"
-                specs='<strong>bg-slate-50 border-slate-200</strong>. Focus: <code>ring-2 ring-blue-100 border-blue-400</code>. Uses shadcn light-theme defaults — unique to Avatar, Cover Image, and Scene Image generation modals. Every other textarea in the app uses dark theme.'
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+              <InputCardV2
+                inputName="Light-Theme Generation Textarea"
+                previewBg="#fff"
+                background="bg-slate-50"
+                border="border-slate-200"
+                borderRadius="rounded-md (6px)"
+                textColor="text-slate-900"
+                placeholderColor="text-slate-400"
+                focusStyle="ring-2 ring-blue-100 border-blue-400"
+                fontSize="14px / text-sm"
+                padding="px-3 py-2"
+                purpose="Prompt textarea in AI generation modals"
+                locations="Avatar Generation, Cover Image Generation, Scene Image Generation modals"
+                pageSpecific
+                notes="⚠ Light theme — only used in generation modals. Every other textarea in the app uses dark theme."
                 preview={
                   <textarea readOnly className="w-full min-h-[60px] rounded-md border bg-slate-50 border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400" placeholder="Describe your character's appearance..." />
                 }
-                code={`bg-slate-50 border-slate-200 text-sm
-focus:ring-2 focus:ring-blue-100 focus:border-blue-400
-/* ⚠ Light theme — only used in generation modals */`}
               />
             </div>
 
             <PageSubheading>Review Modal</PageSubheading>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <EntryCard name="Review Textarea (Frosted)" pageTag="Review Modal"
-                specs='<strong>bg-white/5 border-white/10</strong>. Text: white. Placeholder: <code>text-white/30</code>. Yet another dark textarea variant distinct from Story Builder (bg-zinc-900/50 border-zinc-700).'
-                previewDark
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+              <InputCardV2
+                inputName="Review Textarea (Frosted)"
+                background="bg-white/5"
+                border="border-white/10"
+                borderRadius="rounded-lg (8px)"
+                textColor="white"
+                placeholderColor="text-white/30"
+                fontSize="14px / text-sm"
+                padding="px-3 py-2"
+                purpose="Comment textarea in review submission form"
+                locations="Review Modal — comment field"
+                pageSpecific
+                notes="Yet another dark textarea variant distinct from Story Builder (bg-zinc-900/50 border-zinc-700)."
                 preview={
                   <textarea readOnly className="w-full min-h-[60px] rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/30 px-3 py-2 text-sm" placeholder="Share your thoughts..." />
                 }
-                code={`bg-white/5 border-white/10 text-white
-placeholder:text-white/30 rounded-lg text-sm`}
               />
             </div>
 
             <PageSubheading>Memories Modal</PageSubheading>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <EntryCard name="Memories Select / Textarea (Slate)" pageTag="Memories Modal"
-                specs='<strong>bg-slate-900 border-slate-600</strong> (trigger), <strong>bg-slate-800 border-slate-600</strong> (content). Uses slate-* palette throughout while the app standard is zinc-*.'
-                previewDark
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+              <InputCardV2
+                inputName="Memories Select / Textarea"
+                background="bg-slate-900 (trigger) / bg-slate-800/70 (add form)"
+                border="border-slate-600 (trigger) / border-purple-500/30 (add form)"
+                borderRadius="rounded-md (6px)"
+                textColor="white"
+                placeholderColor="text-slate-400"
+                fontSize="14px / text-sm"
+                padding="px-3 py-2 (h-10 trigger)"
+                purpose="Day selector and memory add form"
+                locations="Memories Modal — day filter select, add memory textarea"
+                pageSpecific
+                notes="⚠ Uses slate-* palette throughout while every other dark component uses zinc-*."
                 preview={
                   <div style={{ display: 'flex', gap: 8, flexDirection: 'column' }}>
                     <div className="h-10 px-3 rounded-md bg-slate-900 border border-slate-600 text-white text-sm flex items-center">Day 1</div>
                     <textarea readOnly className="w-full min-h-[40px] rounded-md bg-slate-800/70 border border-purple-500/30 text-white placeholder:text-slate-400 px-3 py-2 text-sm" placeholder="Add a memory..." />
                   </div>
                 }
-                code={`/* Select trigger: bg-slate-900 border-slate-600 */
-/* Select content: bg-slate-800 border-slate-600 */
-/* Add form: bg-slate-800/70 border-purple-500/30 */
-/* ⚠ Uses slate-* instead of app-standard zinc-* */`}
               />
-              <InconsistencyNote items={[
-                { file: 'MemoriesModal.tsx', note: 'Uses slate-* palette throughout while every other dark component uses zinc-*.' },
-              ]} />
             </div>
+            <InconsistencyNote items={[
+              { file: 'MemoriesModal.tsx', note: 'Uses slate-* palette throughout while every other dark component uses zinc-*.' },
+            ]} />
 
             <PageSubheading>GuidanceStrengthSlider</PageSubheading>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <EntryCard name="GuidanceStrengthSlider (Custom 3-Point)" pageTag="Story Builder"
-                specs='Custom 3-point slider (Rigid / Normal / Flexible). <strong>Track:</strong> 12px height, bg <code>rgba(21,25,34,0.95)</code>. <strong>Fill:</strong> <code>linear-gradient(90deg, #2b4e8d, #4b79d8 60%, #7dadf5)</code>. <strong>Knob:</strong> w-6 h-6 rounded-full bg-white border-[3px] border-blue-500. Labels: <code>text-[10px] font-black uppercase tracking-widest</code>. Active label: text-blue-400, inactive: text-zinc-500.'
-                previewDark previewStyle={{ flexDirection: 'column', gap: 8 }}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+              <InputCardV2
+                inputName="GuidanceStrengthSlider (Custom 3-Point)"
+                background="rgba(21,25,34,0.95) (track)"
+                border="N/A"
+                borderRadius="rounded-full (track + knob)"
+                textColor="text-blue-400 (active label) / text-zinc-500 (inactive)"
+                fontSize="10px / text-[10px] font-black uppercase tracking-widest"
+                padding="N/A"
+                purpose="Custom 3-point slider for AI guidance strength (Rigid / Normal / Flexible)"
+                locations="Story Builder — Model Settings section"
+                pageSpecific
+                notes="Fill gradient: linear-gradient(90deg, #2b4e8d, #4b79d8 60%, #7dadf5). Knob: w-6 h-6 bg-white border-[3px] border-blue-500. Description box: bg-zinc-900 rounded-xl p-4 border-white/5."
                 preview={
                   <div style={{ width: '100%' }}>
                     <div style={{ position: 'relative', height: 12, borderRadius: 999, background: 'rgba(21,25,34,0.95)' }}>
@@ -2257,20 +2487,25 @@ placeholder:text-white/30 rounded-lg text-sm`}
                     </div>
                   </div>
                 }
-                code={`/* Track: h-[12px] rounded-full bg-[rgba(21,25,34,0.95)] */
-/* Fill: linear-gradient(90deg, #2b4e8d, #4b79d8 60%, #7dadf5) */
-/* Knob: w-6 h-6 rounded-full bg-white border-[3px] border-blue-500 */
-/* Labels: text-[10px] font-black uppercase tracking-widest */
-/* Active: text-blue-400 | Inactive: text-zinc-500 */
-/* Description box: bg-zinc-900 rounded-xl p-4 border-white/5 */`}
               />
             </div>
 
             <PageSubheading>TagInput Component</PageSubheading>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <EntryCard name="TagInput (Enter-to-Add)" pageTag="Story Builder / Scene Tag Editor"
-                specs='Input field with enter-to-add pattern. <strong>Input:</strong> <code>bg-zinc-800 border-zinc-700 rounded-lg text-sm</code>. Tags appear as blue chips above (<code>bg-blue-500/20 text-blue-300 rounded-full</code>). Counter: <code>text-[10px] text-zinc-500</code>. Max 10 tags.'
-                previewDark previewStyle={{ flexDirection: 'column', gap: 8 }}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+              <InputCardV2
+                inputName="TagInput (Enter-to-Add)"
+                background="bg-zinc-900/50 / bg-zinc-800"
+                border="border-zinc-700"
+                borderRadius="rounded-xl (12px — input) / rounded-full (tags)"
+                textColor="white (input) / text-blue-300 (tags)"
+                placeholderColor="text-zinc-500"
+                focusStyle="ring-2 ring-blue-500/50 border-transparent"
+                fontSize="14px / text-sm (input) / text-sm font-medium (tags)"
+                padding="px-4 py-3 (input) / px-3 py-1.5 (tags)"
+                purpose="Tag input with enter-to-add pattern and removable tag chips"
+                locations="Story Builder — content themes tags, Scene Tag Editor"
+                appWide
+                notes="Tags: bg-blue-500/20 text-blue-300 border-blue-500/30 rounded-full. Counter: text-xs text-zinc-500. Max 10 tags."
                 preview={
                   <div style={{ width: '100%' }}>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
@@ -2281,110 +2516,96 @@ placeholder:text-white/30 rounded-lg text-sm`}
                     <p className="text-[10px] text-zinc-500 mt-1.5">2/10 tags — Press Enter to add</p>
                   </div>
                 }
-                code={`/* Input: bg-zinc-800 border-zinc-700 rounded-lg text-sm */
-/* Tags: bg-blue-500/20 text-blue-300 border-blue-500/30 rounded-full */
-/* Counter: text-[10px] text-zinc-500 */
-/* Max: 10 tags */`}
               />
             </div>
 
             <PageSubheading>Scene Tag Editor Input</PageSubheading>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <EntryCard name="Scene Tag Editor Input (Dark)" pageTag="Scene Tag Editor"
-                specs='<strong>bg-zinc-800 border-zinc-700 rounded-lg</strong>. Focus: <code>border-[#4a5f7f]</code>. Text: white, placeholder text-zinc-500. Used in the custom overlay SceneTagEditorModal.'
-                previewDark
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+              <InputCardV2
+                inputName="Scene Tag Editor Input"
+                background="bg-zinc-800"
+                border="border-zinc-700"
+                borderRadius="rounded-lg (8px)"
+                textColor="white"
+                placeholderColor="text-zinc-500"
+                focusStyle="border-[#4a5f7f]"
+                fontSize="14px / text-sm"
+                padding="px-3 py-2"
+                purpose="Scene name/tag input field in custom overlay modal"
+                locations="Scene Tag Editor Modal — tag name input"
+                pageSpecific
                 preview={
                   <input readOnly className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm placeholder:text-zinc-500 outline-none" placeholder="Untitled scene" />
                 }
-                code={`bg-zinc-800 border-zinc-700 rounded-lg text-sm text-white
-placeholder:text-zinc-500 focus:border-[#4a5f7f]`}
               />
             </div>
 
             <PageSubheading>Chronicle UI.tsx — Parallel Input System</PageSubheading>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <EntryCard name="Chronicle UI.tsx Input (Light Theme)" pageTag="Chronicle UI System"
-                specs='<strong>bg-slate-50 border-slate-200 rounded-2xl</strong>. Light-theme input used across StoryHub, CharactersTab, WorldTab, ModelSettings, PublicProfileTab. Different from shadcn Input and all dark-themed inputs. Label: <code>text-xs font-bold uppercase</code>.'
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+              <InputCardV2
+                inputName="Chronicle UI Input (Light Theme)"
+                previewBg="#fff"
+                background="bg-slate-50"
+                border="border-slate-200"
+                borderRadius="rounded-2xl (16px)"
+                textColor="text-slate-900 (inherited)"
+                placeholderColor="text-slate-400"
+                focusStyle="ring-2 ring-blue-100 border-blue-400"
+                fontSize="14px / text-sm"
+                padding="px-4 py-3"
+                purpose="Light-theme input primitive defined in UI.tsx"
+                locations="StoryHub, CharactersTab, WorldTab, ModelSettings, PublicProfileTab"
+                appWide
+                notes="⚠ Light theme — used across ~50% of the app. Label: text-xs font-bold uppercase text-slate-500. Different from shadcn Input and all dark-themed inputs."
                 preview={
                   <div style={{ width: '100%' }}>
                     <label className="block text-xs font-bold uppercase mb-1 text-slate-500">Label</label>
                     <input readOnly className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none" placeholder="Chronicle UI Input..." />
                   </div>
                 }
-                code={`/* Chronicle UI.tsx Input */
-rounded-2xl border-slate-200 bg-slate-50 px-4 py-3 text-sm
-focus:ring-2 focus:ring-blue-100 focus:border-blue-400
-/* Label: text-xs font-bold uppercase text-slate-500 */
-/* ⚠ Light theme — used across ~50% of the app */`}
               />
-              <EntryCard name="Chronicle UI.tsx TextArea (Light Theme)" pageTag="Chronicle UI System"
-                specs='Same styling as Chronicle Input. <strong>bg-slate-50 border-slate-200 rounded-2xl</strong>. Supports autoResize prop. Used in CharacterEditForm, WorldTab, ShareStoryModal.'
+              <InputCardV2
+                inputName="Chronicle UI TextArea (Light Theme)"
+                previewBg="#fff"
+                background="bg-slate-50"
+                border="border-slate-200"
+                borderRadius="rounded-2xl (16px)"
+                textColor="text-slate-900 (inherited)"
+                placeholderColor="text-slate-400"
+                focusStyle="ring-2 ring-blue-100 border-blue-400"
+                fontSize="14px / text-sm"
+                padding="px-4 py-3"
+                purpose="Light-theme textarea matching Chronicle Input styling"
+                locations="CharacterEditForm, WorldTab, ShareStoryModal"
+                appWide
+                notes="⚠ Light theme — same issue as Chronicle Input. Supports autoResize prop."
                 preview={
                   <textarea readOnly className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none resize-none" rows={2} placeholder="Chronicle UI TextArea..." />
                 }
-                code={`/* Chronicle UI.tsx TextArea */
-rounded-2xl border-slate-200 bg-slate-50 px-4 py-3 text-sm resize-none
-focus:ring-2 focus:ring-blue-100 focus:border-blue-400
-/* ⚠ Light theme — same issue as Chronicle Input */`}
               />
-              <EntryCard name="CharacterPicker Search (Dark Override)" pageTag="Character Picker"
-                specs='Chronicle UI.tsx Input with <strong>!important overrides</strong> to force dark theme: <code>!bg-zinc-900/50 !border-zinc-700 !text-white</code>. Demonstrates the friction of using light-theme primitives in a dark context.'
-                previewDark
+              <InputCardV2
+                inputName="CharacterPicker Search (Dark Override)"
+                background="!bg-zinc-900/50 (overrides Chronicle light)"
+                border="!border-zinc-700"
+                borderRadius="rounded-2xl (16px — inherited from Chronicle)"
+                textColor="!text-white"
+                placeholderColor="!text-zinc-400"
+                fontSize="14px / text-sm"
+                padding="px-4 py-3"
+                purpose="Chronicle UI Input forced dark with !important overrides"
+                locations="Character Picker — search field"
+                pageSpecific
+                notes="⚠ Demonstrates friction of using light-theme primitives in dark context. Uses !important CSS overrides."
                 preview={
                   <input readOnly className="w-full rounded-2xl bg-zinc-900/50 border border-zinc-700 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500" placeholder="Search characters..." />
                 }
-                code={`/* Chronicle UI.tsx Input with !important dark overrides */
-className="!bg-zinc-900/50 !border-zinc-700 !text-white !placeholder:text-zinc-400"
-/* ⚠ Demonstrates friction of using light primitives in dark context */`}
               />
-              <InconsistencyNote items={[
-                { file: 'UI.tsx', note: 'Defines light-theme Input/TextArea (bg-slate-50 border-slate-200) while app is dark-themed. Components using it in dark contexts need !important overrides.' },
-                { file: 'CharacterPicker.tsx', note: 'Uses !important CSS overrides to force dark styling on Chronicle UI Input.' },
-              ]} />
             </div>
+            <InconsistencyNote items={[
+              { file: 'UI.tsx', note: 'Defines light-theme Input/TextArea (bg-slate-50 border-slate-200) while app is dark-themed. Components using it in dark contexts need !important overrides.' },
+              { file: 'CharacterPicker.tsx', note: 'Uses !important CSS overrides to force dark styling on Chronicle UI Input.' },
+            ]} />
 
-            <PageSubheading>Character Builder Inline Inputs</PageSubheading>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <EntryCard name="Builder Form Row Input (Dark)" pageTag="Character Builder"
-                specs='<strong>bg-zinc-900/50 border-white/10 rounded-lg</strong>. Used in collapsible character builder sections for trait values. Label column: <code>w-2/5</code> with same styling. Both label and value share identical input styling. Lock icon (w-3.5 h-3.5 text-zinc-400) marks hardcoded fields.'
-                previewDark previewStyle={{ flexDirection: 'column', gap: 8 }}
-                preview={
-                  <div style={{ display: 'flex', gap: 8, width: '100%' }}>
-                    <div style={{ width: '40%', display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{ color: '#a1a1aa', fontSize: 10 }}>🔒</span>
-                      <input readOnly className="w-full px-3 py-2 bg-zinc-900/50 border border-white/10 rounded-lg text-white text-sm" value="Physical Appearance" />
-                    </div>
-                    <input readOnly className="flex-1 px-3 py-2 bg-zinc-900/50 border border-white/10 rounded-lg text-white text-sm" placeholder="Describe appearance..." />
-                  </div>
-                }
-                code={`/* Label column: w-2/5 */
-bg-zinc-900/50 border border-white/10 rounded-lg text-sm text-white
-/* Lock icon: w-3.5 h-3.5 text-zinc-400 (hardcoded fields) */
-/* Value column: flex-1, same input styling */`}
-              />
-            </div>
-
-            <PageSubheading>Auth Page Dark Inputs</PageSubheading>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <EntryCard name="Auth Login Input (Dark Slate)" pageTag="Auth Page"
-                specs='<strong>bg-slate-700/50 border-slate-600 text-white</strong>. Unique dark input variant only used on Auth page. Uses shadcn Input as base with className overrides. Focus ring uses default shadcn ring behavior. Different from both Chronicle UI inputs and standard dark inputs (zinc-*).'
-                previewDark
-                preview={
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
-                    <input readOnly className="h-10 w-full rounded-md bg-slate-700/50 border border-slate-600 text-white px-3 py-2 text-sm placeholder:text-slate-400" placeholder="Email address" />
-                    <input readOnly type="password" className="h-10 w-full rounded-md bg-slate-700/50 border border-slate-600 text-white px-3 py-2 text-sm placeholder:text-slate-400" placeholder="Password" />
-                  </div>
-                }
-                code={`/* Auth-only dark input variant */
-bg-slate-700/50 border-slate-600 text-white rounded-md
-placeholder:text-slate-400
-/* ⚠ Uses slate-* (unique to Auth) vs zinc-* (rest of app) */
-/* ⚠ rounded-md (shadcn) vs rounded-2xl (Chronicle) vs rounded-lg (builder) */`}
-              />
-              <InconsistencyNote items={[
-                { file: 'Auth.tsx', note: 'Uses bg-slate-700/50 border-slate-600 — a third input color system alongside zinc-* (dark) and slate-50 (Chronicle light).' },
-              ]} />
-            </div>
           </Section>
 
           <Divider />
