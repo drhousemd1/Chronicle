@@ -514,10 +514,10 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <PageSubheading>Account Page</PageSubheading>
             <PageDesc>Colors for the dark-themed Account settings page.</PageDesc>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
-              <SwatchCard color="#121214" name="Account Page BG" rows={[{ label: 'Hex', value: '#121214' }, { label: 'Token', value: 'bg-[#121214]' }, { label: 'Location', value: 'Full page background for Account section', isLocation: true }]} />
-              <SwatchCard color="#1e1e22" name="Settings Card BG" rows={[{ label: 'Hex', value: '#1e1e22' }, { label: 'Token', value: 'bg-[#1e1e22]' }, { label: 'Location', value: 'Email, Plan, Password setting cards', isLocation: true }]} />
-              <SwatchCard color="#2b2b2e" name="Tab Container BG" rows={[{ label: 'Hex', value: '#2b2b2e' }, { label: 'Token', value: 'bg-[#2b2b2e]' }, { label: 'Location', value: 'Pill tab container on Account and Gallery pages', isLocation: true }]} />
-              <SwatchCard color="rgba(74,95,127,0.2)" name="Plan Badge BG" rows={[{ label: 'Value', value: 'rgba(74,95,127,0.2)' }, { label: 'Token', value: 'bg-[#4a5f7f]/20' }, { label: 'Location', value: 'Subscription plan badge background, text: #7ba3d4', isLocation: true }]} />
+              <SwatchCardV2 color="#121214" name="Near Black" locations="Full page background for Account section" value="#121214" token="bg-[#121214]" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="#1e1e22" name="Charcoal" locations="Email, Plan, Password setting cards" value="#1e1e22" token="bg-[#1e1e22]" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="#2b2b2e" name="Warm Charcoal" locations="Pill tab container on Account and Gallery pages" value="#2b2b2e" token="bg-[#2b2b2e]" pageSpecific={false} appWide={true} />
+              <SwatchCardV2 color="rgba(74,95,127,0.2)" name="Frosted Slate" locations="Subscription plan badge background" value="rgba(74,95,127,0.2)" token="bg-[#4a5f7f]/20" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
             </div>
 
             <Divider />
