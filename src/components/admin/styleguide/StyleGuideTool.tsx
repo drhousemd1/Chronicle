@@ -479,13 +479,13 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <PageSubheading>Chat Interface</PageSubheading>
             <PageDesc>Colors unique to the chat/conversation view.</PageDesc>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
-              <SwatchCard color="#1c1f26" name="Chat Bubble (Solid)" rows={[{ label: 'Hex', value: '#1c1f26' }, { label: 'Token', value: 'bg-[#1c1f26]' }, { label: 'Location', value: 'Chat message bubble when transparent mode is OFF', isLocation: true }]} />
-              <SwatchCard color="rgba(0,0,0,0.5)" name="Chat Bubble (Transparent)" rows={[{ label: 'Value', value: 'rgba(0,0,0,0.5)' }, { label: 'Token', value: 'bg-black/50' }, { label: 'Location', value: 'Chat message bubble when transparent mode is ON', isLocation: true }]} />
-              <SwatchCard color="#94a3b8" name="Action Text (Italic)" rows={[{ label: 'Hex', value: '#94a3b8' }, { label: 'Token', value: 'text-slate-400' }, { label: 'Location', value: 'Italic action text in chat (*actions*)', isLocation: true }]} />
-              <SwatchCard color="rgba(199,210,254,0.9)" name="Thought Text (Glowing)" rows={[{ label: 'Value', value: 'rgba(199,210,254,0.9)' }, { label: 'Token', value: 'text-indigo-200/90' }, { label: 'Effect', value: 'textShadow: indigo glow' }, { label: 'Location', value: 'Thought text in chat (parenthetical)', isLocation: true }]} />
-              <SwatchCard color="rgba(59,130,246,1)" name="User Bubble Border" rows={[{ label: 'Value', value: 'border-2 border-blue-400' }, { label: 'Location', value: 'User (non-AI) message bubble gets a blue-400 border to differentiate', isLocation: true }]} />
-              <SwatchCard color="rgba(255,255,255,0.3)" name="Frosted Glass (Light BG)" rows={[{ label: 'Value', value: 'rgba(255,255,255,0.3)' }, { label: 'Token', value: 'bg-white/30' }, { label: 'Location', value: 'SideCharacterCard when sidebar bg is dark (isDarkBg=true)', isLocation: true }]} extraPreviewStyle={{ border: '1px dashed #999' }} />
-              <SwatchCard color="rgba(0,0,0,0.3)" name="Frosted Glass (Dark BG)" rows={[{ label: 'Value', value: 'rgba(0,0,0,0.3)' }, { label: 'Token', value: 'bg-black/30' }, { label: 'Location', value: 'SideCharacterCard when sidebar bg is light (isDarkBg=false)', isLocation: true }]} />
+              <SwatchCardV2 color="#1c1f26" name="Chat Bubble (Solid)" locations="Chat message bubble, transparent mode OFF" value="#1c1f26" token="bg-[#1c1f26]" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="rgba(0,0,0,0.5)" name="Chat Bubble (Transparent)" locations="Chat message bubble, transparent mode ON" value="rgba(0,0,0,0.5)" token="bg-black/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="#94a3b8" name="Action Text (Italic)" locations="Italic action text in chat (*actions*)" value="#94a3b8" token="text-slate-400" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="rgba(199,210,254,0.9)" name="Thought Text (Glowing)" locations="Thought text in chat (parenthetical)" value="rgba(199,210,254,0.9)" token="text-indigo-200/90" effect="textShadow: indigo glow" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="#60a5fa" name="User Bubble Border" locations="User message bubble border" value="#60a5fa" token="border-blue-400" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="rgba(255,255,255,0.3)" name="Frosted Glass (Light BG)" locations="SideCharacterCard when sidebar bg is dark (isDarkBg=true)" value="rgba(255,255,255,0.3)" token="bg-white/30" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="rgba(0,0,0,0.3)" name="Frosted Glass (Dark BG)" locations="SideCharacterCard when sidebar bg is light (isDarkBg=false)" value="rgba(0,0,0,0.3)" token="bg-black/30" pageSpecific={true} appWide={false} />
             </div>
 
             <Divider />
