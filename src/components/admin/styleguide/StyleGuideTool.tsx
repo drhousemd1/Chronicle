@@ -597,8 +597,8 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <PageSubheading>World Tab</PageSubheading>
             <PageDesc>Colors specific to the World Tab and its hint/character components.</PageDesc>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
-              <SwatchCard color="rgba(0,0,0,0.8)" name="CharacterButton BG" rows={[{ label: 'Value', value: 'rgba(0,0,0,0.8)' }, { label: 'Token', value: 'bg-black/80' }, { label: 'Location', value: 'World Tab character card button background', isLocation: true }]} />
-              <SwatchCard color="#4a5f7f" name="CharacterButton Border" rows={[{ label: 'Hex', value: '#4a5f7f' }, { label: 'Token', value: 'border-[#4a5f7f]' }, { label: 'Hover', value: 'border-[#6b82a8]' }, { label: 'Location', value: 'Character card border, hover brightens to #6b82a8', isLocation: true }]} />
+              <SwatchCardV2 color="rgba(0,0,0,0.8)" name="Near Black Glass" locations="World Tab character card button background" value="rgba(0,0,0,0.8)" token="bg-black/80" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="#4a5f7f" name="Slate Blue" locations="Character card border, hover brightens to #6b82a8" value="#4a5f7f" token="border-[#4a5f7f]" pageSpecific={true} appWide={false} />
             </div>
           </Section>
 
