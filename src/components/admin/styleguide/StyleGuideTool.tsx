@@ -1252,45 +1252,68 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
             <div style={fullSpan}><PageSubheading>Community Gallery</PageSubheading></div>
 
-            <EntryCard name="Gallery Icon Buttons — Like / Save" pageTag="Gallery"
-              specs='<strong>h-8 w-8 rounded-xl</strong> · Icon buttons. Default: bg-white/90 text-slate-700. Active Like: bg-rose-500 text-white. Active Save: bg-amber-500 text-white.'
-              preview={<>
-                <button className="h-8 w-8 flex items-center justify-center rounded-xl bg-white/90 text-slate-700 shadow-2xl" style={{ cursor: 'default' }}>♡</button>
-                <button className="h-8 w-8 flex items-center justify-center rounded-xl bg-rose-500 text-white shadow-2xl" style={{ cursor: 'default' }}>♥</button>
-                <button className="h-8 w-8 flex items-center justify-center rounded-xl bg-amber-500 text-white shadow-2xl" style={{ cursor: 'default' }}>🔖</button>
-              </>}
-              code={`/* Default */ h-8 w-8 rounded-xl bg-white/90 text-slate-700 shadow-2xl
-/* Liked */  bg-rose-500 text-white
-/* Saved */  bg-amber-500 text-white
-/* Source: GalleryStoryCard.tsx lines 108-137 */`}
+            <ButtonCardV2
+              buttonName="Gallery Icon Buttons — Like / Save"
+              buttonColor="Default: rgba(255,255,255,0.9) — bg-white/90. Liked: #f43f5e — bg-rose-500. Saved: #f59e0b — bg-amber-500"
+              textColor="Default: #334155 — text-slate-700. Liked/Saved: #ffffff — text-white"
+              size="h-8 w-8 — rounded-xl (12px)"
+              purpose="Icon toggle buttons for liking and saving gallery stories on card hover"
+              visualEffects="shadow-2xl"
+              locations="GalleryStoryCard — hover overlay"
+              pageSpecific={true}
+              appWide={false}
+              preview={
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+                  <button className="h-8 w-8 flex items-center justify-center rounded-xl bg-white/90 text-slate-700 shadow-2xl" style={{ cursor: 'default' }}>♡</button>
+                  <button className="h-8 w-8 flex items-center justify-center rounded-xl bg-rose-500 text-white shadow-2xl" style={{ cursor: 'default' }}>♥</button>
+                  <button className="h-8 w-8 flex items-center justify-center rounded-xl bg-amber-500 text-white shadow-2xl" style={{ cursor: 'default' }}>🔖</button>
+                </div>
+              }
             />
-            <EntryCard name="Gallery PLAY Button" pageTag="Gallery"
-              specs='<strong>h-8 px-4 rounded-xl bg-blue-600</strong> · text-[10px] font-bold uppercase tracking-wider shadow-2xl. Same compact card variant as My Stories.'
+            <ButtonCardV2
+              buttonName="Gallery PLAY Button"
+              buttonColor="#3b82f6 — bg-blue-600"
+              textColor="#ffffff — text-white"
+              size="h-8 px-4 — rounded-xl (12px)"
+              purpose="Compact play action on gallery story card hover overlay"
+              visualEffects="shadow-2xl · text-[10px] font-bold leading-none uppercase tracking-wider"
+              locations="GalleryStoryCard — hover overlay"
+              pageSpecific={true}
+              appWide={false}
               preview={
                 <button className="h-8 px-4 rounded-xl bg-blue-600 text-white text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl" style={{ cursor: 'default' }}>PLAY</button>
               }
-              code={`h-8 px-4 rounded-xl bg-blue-600 text-white
-text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl`}
             />
-            <EntryCard name="Gallery Search Button" pageTag="Gallery"
-              specs='<strong>bg:</strong> #4a5f7f · <strong>text:</strong> white · <strong>text-sm font-semibold</strong> · <strong>rounded-lg</strong> · Positioned absolute inside search input.'
+            <ButtonCardV2
+              buttonName="Gallery Search Button"
+              buttonColor="#4a5f7f — bg-[#4a5f7f]"
+              textColor="#ffffff — text-white"
+              size="px-4 py-1.5 — rounded-lg (8px)"
+              purpose="Submit search inside the gallery search input"
+              visualEffects="text-sm font-semibold. Hover: bg-[#5a6f8f]. Positioned absolute inside search input"
+              locations="GalleryHub — search header"
+              pageSpecific={true}
+              appWide={false}
               preview={
                 <button className="px-4 py-1.5 bg-[#4a5f7f] text-white rounded-lg font-semibold text-sm" style={{ cursor: 'default' }}>Search</button>
               }
-              code={`px-4 py-1.5 bg-[#4a5f7f] text-white rounded-lg font-semibold text-sm
-hover:bg-[#5a6f8f]`}
             />
-            <EntryCard name="Browse Categories Button" pageTag="Gallery"
-              specs='<strong>bg:</strong> #4a5f7f · <strong>text:</strong> white · <strong>text-sm font-semibold</strong> · <strong>rounded-lg</strong> · Shows filter count badge (bg-white/20).'
+            <ButtonCardV2
+              buttonName="Browse Categories Button"
+              buttonColor="#4a5f7f — bg-[#4a5f7f]"
+              textColor="#ffffff — text-white"
+              size="px-4 py-3 — rounded-lg (8px)"
+              purpose="Toggle the category filter sidebar open/close"
+              visualEffects="text-sm font-semibold. Hover: bg-[#5a6f8f]. Filter count badge: px-1.5 py-0.5 bg-white/20 rounded-full text-xs"
+              locations="GalleryHub — search header, right side"
+              pageSpecific={true}
+              appWide={false}
               preview={
                 <button className="flex items-center gap-2 px-4 py-3 rounded-lg bg-[#4a5f7f] text-white font-semibold text-sm" style={{ cursor: 'default' }}>
                   ▦ Browse Categories
                   <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded-full text-xs">3</span>
                 </button>
               }
-              code={`flex items-center gap-2 px-4 py-3 rounded-lg font-semibold text-sm
-bg-[#4a5f7f] text-white hover:bg-[#5a6f8f]
-/* Filter count badge: px-1.5 py-0.5 bg-white/20 rounded-full text-xs */`}
             />
 
             <div style={fullSpan}><PageSubheading>Chat Interface</PageSubheading></div>
