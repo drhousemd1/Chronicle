@@ -1478,42 +1478,59 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
             <div style={fullSpan}><PageSubheading>Chat History</PageSubheading></div>
 
-            <EntryCard name="Session Delete Button" pageTag="Chat History"
-              specs='<strong>p-2 rounded-lg bg-white/10 border border-white/10</strong> · text-zinc-400. Hover: text-red-400, border-red-500/30.'
+            <ButtonCardV2
+              buttonName="Session Delete Button"
+              buttonColor="bg-white/10 border-white/10"
+              textColor="text-zinc-400"
+              size="p-2 rounded-lg"
+              purpose="Delete a saved conversation session"
+              visualEffects="Hover: bg-white/15 text-red-400 border-red-500/30"
+              locations="ConversationsTab — action column on each session card"
+              pageSpecific
               preview={
                 <button className="p-2 rounded-lg bg-white/10 border border-white/10 text-zinc-400" style={{ cursor: 'default' }}>🗑</button>
               }
-              code={`p-2 rounded-lg bg-white/10 border border-white/10
-text-zinc-400 hover:bg-white/15 hover:text-red-400 hover:border-red-500/30`}
             />
-            <EntryCard name="Load More Button" pageTag="Chat History"
-              specs='Shadow Surface variant. <strong>px-6 py-2 rounded-xl</strong> · text-sm font-bold. Uses --ui-surface-2 and --ui-border tokens.'
+            <ButtonCardV2
+              buttonName="Load More Button"
+              buttonColor="bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))]"
+              textColor="text-[hsl(var(--ui-text))]"
+              size="px-6 py-2 rounded-xl — text-sm font-bold"
+              purpose="Paginated loading of additional conversation sessions"
+              visualEffects="Shadow Surface: shadow-[0_10px_30px_rgba(0,0,0,0.35)]. Hover: bg-white/5. Active: bg-white/10 scale-95"
+              locations="ConversationsTab — bottom of session list"
+              pageSpecific
               preview={
                 <button className="px-6 py-2 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] text-sm font-bold" style={{ cursor: 'default' }}>Load More (15 remaining)</button>
               }
-              code={`px-6 py-2 rounded-xl
-border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))]
-text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
-text-sm font-bold`}
             />
 
             <div style={fullSpan}><PageSubheading>Image Library</PageSubheading></div>
 
-            <EntryCard name="Folder Hover Buttons — Edit / Open" pageTag="Image Library"
-              specs='<strong>px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-wider</strong>. Edit: bg-white text-slate-900. Open: bg-blue-600 text-white.'
+            <ButtonCardV2
+              buttonName="Folder Hover Buttons — Edit / Open"
+              buttonColor="Edit: bg-white text-slate-900. Open: bg-blue-600 text-white"
+              size="px-4 py-2 rounded-xl — font-bold text-xs uppercase tracking-wider"
+              purpose="Overlay actions on folder card hover"
+              visualEffects="shadow-xl on both"
+              locations="ImageLibraryTab — folder card hover overlay"
+              pageSpecific
               preview={<>
                 <button className="px-4 py-2 bg-white text-slate-900 font-bold text-xs uppercase tracking-wider rounded-xl shadow-xl" style={{ cursor: 'default' }}>Edit</button>
                 <button className="px-4 py-2 bg-blue-600 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-xl" style={{ cursor: 'default' }}>Open</button>
               </>}
-              code={`px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-wider shadow-xl
-/* Edit: bg-white text-slate-900 */
-/* Open: bg-blue-600 text-white */`}
             />
 
             <div style={fullSpan}><PageSubheading>Account Page</PageSubheading></div>
 
-            <EntryCard name="Account Tab Pills (Dark Variant)" pageTag="Account"
-              specs='<strong>Active:</strong> bg-[#4a5f7f] text-white shadow-sm. <strong>Inactive:</strong> text-[#a1a1aa] hover:text-[#e4e4e7]. <strong>Container:</strong> bg-[#2b2b2e] rounded-full p-1. Same pattern used on Gallery page sort pills.'
+            <ButtonCardV2
+              buttonName="Account Tab Pills (Dark Variant)"
+              buttonColor="Active: bg-[#4a5f7f] text-white shadow-sm. Inactive: text-[#a1a1aa]"
+              size="px-4 py-1.5 rounded-full — text-xs font-bold"
+              purpose="Tab navigation between Account, Subscription, Profile"
+              visualEffects="Container: bg-[#2b2b2e] rounded-full p-1 gap-0.5 border border-[#2b2b2e]. Inactive hover: text-[#e4e4e7]"
+              locations="Account page tab bar. Same pattern on Gallery page sort pills"
+              appWide
               preview={
                 <div className="flex items-center bg-[#2b2b2e] rounded-full p-1 gap-0.5">
                   <button className="px-4 py-1.5 rounded-full text-xs font-bold bg-[#4a5f7f] text-white shadow-sm" style={{ cursor: 'default' }}>Settings</button>
@@ -1521,30 +1538,31 @@ text-sm font-bold`}
                   <button className="px-4 py-1.5 rounded-full text-xs font-bold text-[#a1a1aa]" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>Profile</button>
                 </div>
               }
-              code={`/* Container */ bg-[#2b2b2e] rounded-full p-1 gap-0.5 border border-[#2b2b2e]
-/* Active */   px-4 py-1.5 rounded-full text-xs font-bold bg-[#4a5f7f] text-white shadow-sm
-/* Inactive */ px-4 py-1.5 rounded-full text-xs font-bold text-[#a1a1aa] hover:text-[#e4e4e7]`}
             />
 
             <div style={fullSpan}><PageSubheading>Auth Page</PageSubheading></div>
 
-            <EntryCard name="Auth Submit Button" pageTag="Auth"
-              specs='<strong>bg-purple-600 hover:bg-purple-700</strong> · text-white · Full-width. Uses shadcn Button component with override classes.'
+            <ButtonCardV2
+              buttonName="Auth Submit Button"
+              buttonColor="bg-purple-600 hover:bg-purple-700 text-white"
+              size="w-full — shadcn Button default (h-10 px-4 py-2 rounded-md text-sm font-medium)"
+              purpose="Sign In / Create Account form submission"
+              locations="Auth.tsx — form submit"
+              pageSpecific
               preview={
                 <button className="w-full py-2.5 px-4 bg-purple-600 text-white rounded-md text-sm font-medium" style={{ cursor: 'default' }}>Sign In</button>
               }
-              code={`/* Uses shadcn <Button> with overrides */
-className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-/* Source: Auth.tsx line 158 */`}
             />
-            <EntryCard name="Auth Toggle Link" pageTag="Auth"
-              specs={'Unstyled button link. <strong>text-purple-400 hover:text-purple-300 text-sm</strong>. "Don\'t have an account? Sign up" / "Already have an account? Sign in".'}
+            <ButtonCardV2
+              buttonName="Auth Toggle Link"
+              buttonColor="text-purple-400 hover:text-purple-300"
+              size="text-sm — unstyled button (no bg, no border)"
+              purpose="Toggle between Sign In and Sign Up forms"
+              locations="Auth.tsx — below form"
+              pageSpecific
               preview={
                 <button className="text-purple-400 hover:text-purple-300 text-sm" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>{"Don't have an account? Sign up"}</button>
               }
-              previewDark
-              code={`text-purple-400 hover:text-purple-300 text-sm
-/* Unstyled button — no bg, no border */`}
             />
 
             <div style={fullSpan}><PageSubheading>Chronicle UI.tsx — Parallel Button System</PageSubheading></div>
@@ -1555,54 +1573,66 @@ className="w-full bg-purple-600 hover:bg-purple-700 text-white"
               ]} />
             </div>
 
-            <EntryCard name="Chronicle UI.tsx — Primary" pageTag="Chronicle UI System"
-              specs='<strong>bg-slate-900 text-white border-slate-900</strong> · rounded-xl px-4 py-2 text-sm font-semibold · active:scale-95. Used across StoryHub, CharactersTab, WorldTab, ModelSettings.'
+            <ButtonCardV2
+              buttonName="Chronicle UI.tsx — Primary"
+              buttonColor="bg-slate-900 text-white border-slate-900"
+              size="rounded-xl px-4 py-2 — text-sm font-semibold"
+              purpose="Primary actions across Chronicle UI system"
+              visualEffects="hover:bg-slate-800 active:scale-95 shadow-md"
+              locations="StoryHub, CharactersTab, WorldTab, ModelSettings"
+              appWide
               preview={
                 <button className="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold border bg-slate-900 text-white border-slate-900 shadow-md" style={{ cursor: 'default' }}>Primary</button>
               }
-              code={`/* Chronicle UI.tsx Button — primary */
-bg-slate-900 text-white border-slate-900 hover:bg-slate-800
-rounded-xl px-4 py-2 text-sm font-semibold active:scale-95 shadow-md`}
             />
-            <EntryCard name="Chronicle UI.tsx — Brand / Gradient / OutlineDark" pageTag="Chronicle UI System"
-              specs='<strong>Brand:</strong> bg-[#4a5f7f] text-white. <strong>Gradient:</strong> bg-gradient-to-r from-purple-600 via-violet-500 to-blue-500 text-white. <strong>OutlineDark:</strong> bg-zinc-900/80 text-white border-zinc-600.'
+            <ButtonCardV2
+              buttonName="Chronicle UI.tsx — Brand / Gradient / OutlineDark"
+              buttonColor="Brand: bg-[#4a5f7f] text-white. Gradient: from-purple-600 via-violet-500 to-blue-500. OutlineDark: bg-zinc-900/80 text-white border-zinc-600"
+              size="rounded-xl px-4 py-2 — text-sm font-semibold"
+              purpose="Accent variant buttons in Chronicle UI system"
+              visualEffects="Brand: shadow-md. Gradient: shadow-lg border-0. OutlineDark: hover:bg-zinc-800"
+              locations="StoryHub, Chat, WorldTab, ModelSettings"
+              appWide
               preview={<>
                 <button className="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold border bg-[#4a5f7f] text-white border-[#4a5f7f] shadow-md" style={{ cursor: 'default' }}>Brand</button>
                 <button className="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold border-0 bg-gradient-to-r from-purple-600 via-violet-500 to-blue-500 text-white shadow-lg" style={{ cursor: 'default' }}>Gradient</button>
                 <button className="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold border bg-zinc-900/80 text-white border-zinc-600" style={{ cursor: 'default' }}>Outline Dark</button>
               </>}
-              previewDark
-              code={`/* Brand */ bg-[#4a5f7f] text-white border-[#4a5f7f] shadow-md
-/* Gradient */ bg-gradient-to-r from-purple-600 via-violet-500 to-blue-500 border-0 shadow-lg
-/* OutlineDark */ bg-zinc-900/80 text-white border-zinc-600`}
             />
 
             <div style={fullSpan}><PageSubheading>Creator Profile</PageSubheading></div>
 
-            <EntryCard name="Follow / Unfollow Toggle" pageTag="Creator Profile"
-              specs='<strong>Follow:</strong> bg-[#4a5f7f] text-white shadow-lg. <strong>Following:</strong> bg-white/10 text-white. Rounded-xl px-6 py-2.5 text-sm font-bold. Brand accent toggle pattern.'
+            <ButtonCardV2
+              buttonName="Follow / Unfollow Toggle"
+              buttonColor="Follow: bg-[#4a5f7f] text-white. Following: bg-white/10 text-white"
+              size="w-full px-4 py-2.5 rounded-xl — text-sm font-semibold"
+              purpose="Toggle follow state on creator profiles"
+              visualEffects="Following hover: bg-red-500/20 text-red-400 (shows 'Unfollow' on hover). Uses UserPlus / UserMinus icons"
+              locations="CreatorProfile.tsx — profile header"
+              pageSpecific
               preview={<>
-                <button className="inline-flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold bg-[#4a5f7f] text-white shadow-lg" style={{ cursor: 'default' }}>Follow</button>
-                <button className="inline-flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold bg-white/10 text-white" style={{ cursor: 'default' }}>Following ✓</button>
+                <button className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold bg-[#4a5f7f] text-white" style={{ cursor: 'default' }}>+ Follow</button>
+                <button className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold bg-white/10 text-white" style={{ cursor: 'default' }}>✓ Following</button>
+                <button className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold bg-red-500/20 text-red-400" style={{ cursor: 'default' }}>− Unfollow</button>
               </>}
-              previewDark
-              code={`/* Follow */ bg-[#4a5f7f] text-white shadow-lg rounded-xl px-6 py-2.5
-/* Following */ bg-white/10 text-white rounded-xl px-6 py-2.5`}
             />
 
             <div style={fullSpan}><PageSubheading>Upload Source Menu</PageSubheading></div>
 
-            <EntryCard name="UploadSourceMenu Dropdown (Light Theme)" pageTag="Modals"
-              specs='Uses Chronicle UI.tsx Button as trigger. Dropdown content: <strong>bg-white border-slate-200 shadow-lg</strong>. Items: standard Radix DropdownMenuItem. Light-theme dropdown appearing over dark-themed modals.'
+            <ButtonCardV2
+              buttonName="UploadSourceMenu Dropdown (Light Theme)"
+              buttonColor="Dropdown: bg-white border-slate-200"
+              size="Dropdown items: px-2 py-1.5 text-sm text-slate-900"
+              purpose="Source selection for image uploads (Device or Library)"
+              visualEffects="shadow-lg. Trigger uses Chronicle UI.tsx Button"
+              locations="AvatarGenerationModal, CoverImageGenerationModal, SceneImageGenerationModal"
+              appWide
               preview={
                 <div className="bg-white border border-slate-200 rounded-md shadow-lg p-1" style={{ width: 180 }}>
                   <div className="px-2 py-1.5 text-sm text-slate-900 rounded-sm" style={{ cursor: 'default' }}>📤 From Device</div>
                   <div className="px-2 py-1.5 text-sm text-slate-900 rounded-sm" style={{ cursor: 'default' }}>🖼 From Library</div>
                 </div>
               }
-              code={`/* Trigger: Chronicle UI.tsx Button */
-/* Dropdown: bg-white border-slate-200 shadow-lg */
-/* ⚠ Light-theme dropdown on dark-themed modals */`}
             />
             <InconsistencyNote items={[
               { file: 'UploadSourceMenu.tsx', note: 'Uses bg-white border-slate-200 dropdown appearing over dark-themed modal content. Should match dark dropdown standard (bg-zinc-800 border-white/10).' },
@@ -1610,45 +1640,56 @@ rounded-xl px-4 py-2 text-sm font-semibold active:scale-95 shadow-md`}
 
             <div style={fullSpan}><PageSubheading>Global Sidebar</PageSubheading></div>
 
-            <EntryCard name="Sidebar Navigation Item" pageTag="Global"
-              specs='<strong>Active:</strong> bg-[#4a5f7f] shadow-lg shadow-black/40 text-white. <strong>Inactive:</strong> text-slate-400 hover:bg-white/10 hover:text-white. <strong>rounded-xl</strong> · font-bold text-sm. Collapsed: px-3 py-3 centered. Expanded: px-4 py-3.'
+            <ButtonCardV2
+              buttonName="Sidebar Navigation Item"
+              buttonColor="Active: bg-[#4a5f7f] shadow-lg shadow-black/40 text-white. Inactive: text-slate-400"
+              size="rounded-xl px-4 py-3 — font-bold text-sm. Collapsed: px-3 py-3 centered"
+              purpose="Primary navigation between app sections"
+              visualEffects="Inactive hover: bg-white/10 text-white shadow-md shadow-black/20"
+              locations="Index.tsx — main sidebar navigation"
+              appWide
               preview={
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4, width: '100%' }}>
                   <button className="w-full flex items-center gap-3 rounded-xl px-4 py-3 font-bold text-sm text-white bg-[#4a5f7f] shadow-lg" style={{ cursor: 'default', border: 'none' }}>📚 My Stories</button>
                   <button className="w-full flex items-center gap-3 rounded-xl px-4 py-3 font-bold text-sm text-slate-400" style={{ cursor: 'default', border: 'none', background: 'transparent' }}>💬 Chat History</button>
                 </div>
               }
-              previewPlain previewStyle={{ flexDirection: 'column' }}
-              code={`/* Active */
-bg-[#4a5f7f] shadow-lg shadow-black/40 text-white
-/* Inactive */
-text-slate-400 hover:bg-white/10 hover:text-white hover:shadow-md hover:shadow-black/20
-/* Shared */
-w-full flex items-center gap-3 rounded-xl px-4 py-3 font-bold text-sm`}
             />
-            <EntryCard name="Sidebar Collapse Toggle" pageTag="Global"
-              specs='<strong>p-2 rounded-lg</strong> · text-slate-400 hover:text-white hover:bg-white/10. Uses PanelLeft / PanelLeftClose icons.'
+            <ButtonCardV2
+              buttonName="Sidebar Collapse Toggle"
+              buttonColor="text-slate-400 hover:text-white hover:bg-white/10"
+              size="p-2 rounded-lg"
+              purpose="Toggle sidebar between expanded and collapsed states"
+              visualEffects="transition-colors. Uses PanelLeft / PanelLeftClose icons"
+              locations="Index.tsx — sidebar header"
+              appWide
               preview={
                 <button className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>◀</button>
               }
-              code={`p-2 rounded-lg text-slate-400
-hover:text-white hover:bg-white/10 transition-colors`}
             />
 
             <div style={fullSpan}><PageSubheading>Character Builder</PageSubheading></div>
 
-            <EntryCard name="AI Enhance Sparkle Button" pageTag="Character Builder"
-              specs='<strong>p-1.5 rounded-md</strong> · text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10. Uses <code>Sparkles size={14}</code>. Opens EnhanceModeModal.'
+            <ButtonCardV2
+              buttonName="AI Enhance Sparkle Button"
+              buttonColor="text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10"
+              size="p-1.5 rounded-md"
+              purpose="Opens EnhanceModeModal for AI-assisted character field enhancement"
+              visualEffects="transition-colors. Uses Sparkles size={14}"
+              locations="CharactersTab — section headers for enhanceable fields"
+              pageSpecific
               preview={
                 <button className="p-1.5 rounded-md text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10 transition-colors" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>✨</button>
               }
-              code={`p-1.5 rounded-md text-zinc-400
-hover:text-blue-400 hover:bg-blue-500/10 transition-colors
-/* Sparkles size={14} */`}
             />
-            <EntryCard name="EnhanceModeModal Option Cards" pageTag="Character Builder"
-              specs='<strong>p-5 rounded-2xl border border-white/10 bg-zinc-800/50</strong>. Icon container: <strong>w-10 h-10 rounded-xl bg-blue-500/20</strong> (Precise) or <strong>bg-purple-500/20</strong> (Detailed). Hover: border-blue-500/50 bg-blue-500/10.'
-              previewDark
+            <ButtonCardV2
+              buttonName="EnhanceModeModal Option Cards"
+              buttonColor="bg-zinc-800/50 border-white/10"
+              size="p-5 rounded-2xl — w-10 h-10 rounded-xl icon containers"
+              purpose="Choose between Precise and Detailed AI enhancement modes"
+              visualEffects="Hover: border-blue-500/50 bg-blue-500/10. Icon bg: blue-500/20 (Precise) or purple-500/20 (Detailed)"
+              locations="EnhanceModeModal — two-column option grid"
+              pageSpecific
               preview={<>
                 <button className="flex flex-col items-center gap-2 p-4 rounded-2xl border border-white/10 bg-zinc-800/50 hover:border-blue-500/50" style={{ cursor: 'default', width: 120 }}>
                   <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400">✨</div>
@@ -1659,28 +1700,39 @@ hover:text-blue-400 hover:bg-blue-500/10 transition-colors
                   <span className="text-white font-bold text-xs">Detailed</span>
                 </button>
               </>}
-              code={`p-5 rounded-2xl border border-white/10 bg-zinc-800/50
-hover:border-blue-500/50 hover:bg-blue-500/10
-/* Icon: w-10 h-10 rounded-xl bg-blue-500/20 */
-/* Alt:  w-10 h-10 rounded-xl bg-purple-500/20 */`}
             />
             <InconsistencyNote items={[
               { file: 'EnhanceModeModal.tsx', note: 'Uses rounded-2xl for option cards, but CharacterCreationModal uses rounded-xl for similar option patterns.' },
             ]} />
 
-            <EntryCard name="ExtraRow Delete Button" pageTag="Character Builder"
-              specs='<strong>p-1 rounded text-red-400 hover:text-red-300 hover:bg-red-900/30</strong>. X icon to remove user-created custom trait rows.'
+            <ButtonCardV2
+              buttonName="ExtraRow Delete Button"
+              buttonColor="text-red-400 hover:text-red-300 hover:bg-red-900/30"
+              size="Section delete: p-1 rounded-md. Item delete: p-1.5 rounded-md"
+              purpose="Remove user-created custom trait rows and sections"
+              visualEffects="transition-colors. Uses X icon"
+              locations="CharacterEditModal — custom section headers (p-1) and individual items (p-1.5)"
+              pageSpecific
               preview={
-                <button className="p-1 rounded text-red-400 hover:text-red-300 hover:bg-red-900/30 transition-colors" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>✕</button>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <button className="p-1 rounded-md text-red-400 hover:text-red-300 hover:bg-red-900/30 transition-colors" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>✕</button>
+                  <span className="text-zinc-500 text-xs">p-1</span>
+                  <button className="p-1.5 rounded-md text-red-400 hover:text-red-300 hover:bg-red-900/30 transition-colors" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>✕</button>
+                  <span className="text-zinc-500 text-xs">p-1.5</span>
+                </div>
               }
-              code={`p-1 rounded text-red-400
-hover:text-red-300 hover:bg-red-900/30 transition-colors`}
             />
 
             <div style={fullSpan}><PageSubheading>Model Settings</PageSubheading></div>
 
-            <EntryCard name="Model Selection Card (Active / Inactive)" pageTag="Model Settings"
-              specs='<strong>Active:</strong> bg-slate-900 border-slate-900 shadow-xl scale-[1.02]. <strong>Inactive:</strong> bg-white border-slate-200 hover:border-blue-400 hover:shadow-lg hover:scale-[1.01]. Light theme — unique to this page.'
+            <ButtonCardV2
+              buttonName="Model Selection Card (Active / Inactive)"
+              buttonColor="Active: bg-slate-900 border-slate-900 text-white. Inactive: bg-white border-slate-200 text-slate-900"
+              size="p-3 rounded-xl"
+              purpose="Select AI model for story generation"
+              visualEffects="Active: shadow-xl scale-[1.02]. Inactive hover: border-blue-400 shadow-lg scale-[1.01]"
+              locations="ModelSettingsTab — model grid"
+              pageSpecific
               preview={<>
                 <button className="text-left p-3 rounded-xl border bg-slate-900 border-slate-900 shadow-xl" style={{ cursor: 'default', width: 160, transform: 'scale(1.02)' }}>
                   <div className="text-white font-bold text-xs">Grok Beta</div>
@@ -1691,13 +1743,6 @@ hover:text-red-300 hover:bg-red-900/30 transition-colors`}
                   <div className="text-slate-500 text-[9px] mt-0.5">Inactive model</div>
                 </button>
               </>}
-              code={`/* Active */
-bg-slate-900 border-slate-900 shadow-xl scale-[1.02]
-text-white
-/* Inactive */
-bg-white border-slate-200 hover:border-blue-400
-hover:shadow-lg hover:scale-[1.01]
-text-slate-900`}
             />
             <InconsistencyNote items={[
               { file: 'ModelSettingsTab.tsx', note: 'LIGHT THEME page (bg-white, text-slate-900) while every other page uses dark theme. Major inconsistency.' },
@@ -1705,28 +1750,32 @@ text-slate-900`}
 
             <div style={fullSpan}><PageSubheading>Image Library</PageSubheading></div>
 
-            <EntryCard name="New Folder Dashed Card" pageTag="Image Library"
-              specs='<strong>border-2 border-dashed border-zinc-600 bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-[2rem]</strong>. Hover: border-blue-400. Same aspect-[2/3] as folder cards.'
-              previewDark
+            <ButtonCardV2
+              buttonName="New Folder Dashed Card"
+              buttonColor="border-zinc-600 (dashed). bg-gradient-to-br from-zinc-800 to-zinc-900"
+              size="rounded-[2rem] aspect-[2/3] — border-2 border-dashed"
+              purpose="Create a new image folder"
+              visualEffects="Hover: border-blue-400 transition-colors"
+              locations="ImageLibraryTab — first card in folder grid"
+              pageSpecific
               preview={
                 <div className="border-2 border-dashed border-zinc-600 bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-[2rem] flex flex-col items-center justify-center gap-2 hover:border-blue-400 transition-colors" style={{ width: 100, aspectRatio: '2/3', cursor: 'default' }}>
                   <span className="text-zinc-400 text-lg">+</span>
                   <span className="text-zinc-400 text-[9px] font-bold uppercase tracking-wider">New Folder</span>
                 </div>
               }
-              code={`border-2 border-dashed border-zinc-600
-bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-[2rem]
-hover:border-blue-400 transition-colors
-aspect-[2/3]`}
             />
-            <EntryCard name="Folder Delete Button (Circular)" pageTag="Image Library"
-              specs='<strong>p-3 bg-black/40 text-white/50 hover:text-rose-500 rounded-full</strong>. Opacity transition. Positioned absolute top-right on folder cards.'
-              previewDark
+            <ButtonCardV2
+              buttonName="Folder Delete Button (Circular)"
+              buttonColor="bg-black/40 text-white/50 hover:text-rose-500"
+              size="p-3 rounded-full"
+              purpose="Delete an image folder"
+              visualEffects="hover:bg-black/60 transition-all. Positioned absolute top-right on folder cards"
+              locations="ImageLibraryTab — folder card overlay"
+              pageSpecific
               preview={
                 <button className="p-3 bg-black/40 text-white/50 hover:text-rose-500 rounded-full transition-all" style={{ cursor: 'default', border: 'none' }}>🗑</button>
               }
-              code={`p-3 bg-black/40 text-white/50
-hover:text-rose-500 rounded-full transition-all`}
             />
             <InconsistencyNote items={[
               { file: 'ImageLibraryTab.tsx', note: 'Folder delete uses rounded-full while all other action buttons in the app use rounded-xl.' },
@@ -1734,37 +1783,40 @@ hover:text-rose-500 rounded-full transition-all`}
 
             <div style={fullSpan}><PageSubheading>Story Detail Modal</PageSubheading></div>
 
-            <EntryCard name="Story Detail Action Buttons" pageTag="Story Detail Modal"
-              specs='<strong>h-12 bg-white/5 border-white/10 rounded-xl</strong>. Taller than standard (h-12 vs h-10). Toggle states: liked <code>bg-rose-500/20 border-rose-500/50 text-rose-400</code>, saved <code>bg-amber-500/20 border-amber-500/50 text-amber-400</code>. Play: <code>bg-[#3b82f6]</code>.'
-              previewDark
+            <ButtonCardV2
+              buttonName="Story Detail Action Buttons"
+              buttonColor="Base: bg-white/5 border-white/10. Liked: bg-rose-500/20 border-rose-500/50 text-rose-400. Saved: bg-amber-500/20 border-amber-500/50 text-amber-400. Play: bg-[#3b82f6] text-white"
+              size="h-12 px-6 rounded-xl — text-sm font-semibold"
+              purpose="Like, Save, Play actions on story detail view"
+              visualEffects="Taller than standard (h-12 vs h-10). Toggle states with color transitions"
+              locations="StoryDetailModal — action bar"
+              pageSpecific
               preview={
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <button className="h-12 px-6 rounded-xl bg-white/5 border border-white/10 text-white text-xs font-semibold" style={{ cursor: 'default' }}>♡ Like</button>
-                  <button className="h-12 px-6 rounded-xl bg-rose-500/20 border border-rose-500/50 text-rose-400 text-xs font-semibold" style={{ cursor: 'default' }}>♥ Liked</button>
-                  <button className="h-12 px-6 rounded-xl bg-amber-500/20 border border-amber-500/50 text-amber-400 text-xs font-semibold" style={{ cursor: 'default' }}>★ Saved</button>
-                  <button className="h-12 px-6 rounded-xl bg-[#3b82f6] text-white text-xs font-bold" style={{ cursor: 'default' }}>▶ PLAY</button>
+                  <button className="h-12 px-6 rounded-xl bg-white/5 border border-white/10 text-white text-sm font-semibold" style={{ cursor: 'default' }}>♡ Like</button>
+                  <button className="h-12 px-6 rounded-xl bg-rose-500/20 border border-rose-500/50 text-rose-400 text-sm font-semibold" style={{ cursor: 'default' }}>♥ Liked</button>
+                  <button className="h-12 px-6 rounded-xl bg-amber-500/20 border border-amber-500/50 text-amber-400 text-sm font-semibold" style={{ cursor: 'default' }}>★ Saved</button>
+                  <button className="h-12 px-6 rounded-xl bg-[#3b82f6] text-white text-sm font-bold" style={{ cursor: 'default' }}>▶ PLAY</button>
                 </div>
               }
-              code={`/* Base: h-12 bg-white/5 border-white/10 rounded-xl */
-/* Liked: bg-rose-500/20 border-rose-500/50 text-rose-400 */
-/* Saved: bg-amber-500/20 border-amber-500/50 text-amber-400 */
-/* Play: bg-[#3b82f6] text-white */`}
             />
 
             <div style={fullSpan}><PageSubheading>Review Modal</PageSubheading></div>
 
-            <EntryCard name="Review Submit / Delete Buttons" pageTag="Review Modal"
-              specs='<strong>h-11</strong> (non-standard — standard is h-10). Submit: <code>bg-[#4a5f7f] rounded-xl font-semibold text-sm</code>. Delete: <code>bg-red-600/20 border-red-500/30 text-red-400 rounded-xl</code>. Both use text-sm instead of standard text-[10px] uppercase.'
-              previewDark
+            <ButtonCardV2
+              buttonName="Review Submit / Delete Buttons"
+              buttonColor="Submit: bg-[#4a5f7f] text-white. Delete: bg-red-600/20 border-red-500/30 text-red-400"
+              size="h-11 px-6 rounded-xl — text-sm font-semibold"
+              purpose="Submit or delete a scenario review"
+              visualEffects="Non-standard h-11 (standard is h-10)"
+              locations="ReviewModal — footer actions"
+              pageSpecific
               preview={
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   <button className="h-11 px-6 rounded-xl bg-[#4a5f7f] text-white text-sm font-semibold" style={{ cursor: 'default' }}>Submit Review</button>
                   <button className="h-11 px-6 rounded-xl bg-red-600/20 border border-red-500/30 text-red-400 text-sm font-semibold" style={{ cursor: 'default' }}>Delete Review</button>
                 </div>
               }
-              code={`/* Submit: h-11 bg-[#4a5f7f] rounded-xl font-semibold text-sm */
-/* Delete: h-11 bg-red-600/20 border-red-500/30 text-red-400 */
-/* ⚠ Non-standard: h-11 + text-sm vs standard h-10 + text-[10px] */`}
             />
             <InconsistencyNote items={[
               { file: 'ReviewModal.tsx', note: 'Uses h-11 + text-sm for buttons instead of standard h-10 + text-[10px] uppercase.' },
@@ -1772,19 +1824,21 @@ hover:text-rose-500 rounded-full transition-all`}
 
             <div style={fullSpan}><PageSubheading>Share Story Modal</PageSubheading></div>
 
-            <EntryCard name="Share Modal !important Override Buttons" pageTag="Share Story Modal"
-              specs='Uses Chronicle UI Button with <code>!important</code> CSS overrides: <code>!bg-blue-600</code>, <code>!bg-rose-500/20</code>. This bypasses the standard Shadow Surface pattern entirely.'
-              previewDark
+            <ButtonCardV2
+              buttonName="Share Modal !important Override Buttons"
+              buttonColor="Publish: !bg-blue-600 text-white. Unpublish: !bg-rose-500/20 !text-rose-300 !border-rose-500/30"
+              size="Chronicle UI.tsx Button base (rounded-xl px-4 py-2 text-sm font-semibold) with !important overrides"
+              purpose="Publish / Update / Unpublish scenario to gallery"
+              visualEffects="Bypasses Shadow Surface pattern via !important CSS overrides"
+              locations="ShareStoryModal — footer actions"
+              pageSpecific
               preview={
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <button className="h-10 px-6 rounded-xl bg-blue-600 text-white text-[10px] font-bold uppercase tracking-wider" style={{ cursor: 'default' }}>Publish</button>
-                  <button className="h-10 px-6 rounded-xl bg-rose-500/20 text-rose-400 text-[10px] font-bold uppercase tracking-wider" style={{ cursor: 'default' }}>Unpublish</button>
+                  <button className="h-10 px-6 rounded-xl bg-blue-600 text-white text-[10px] font-bold uppercase tracking-wider" style={{ cursor: 'default' }}>Publish to Gallery</button>
+                  <button className="h-10 px-6 rounded-xl bg-blue-600 text-white text-[10px] font-bold uppercase tracking-wider" style={{ cursor: 'default' }}>Update Publication</button>
+                  <button className="h-10 px-6 rounded-xl bg-rose-500/20 text-rose-300 text-[10px] font-bold uppercase tracking-wider" style={{ cursor: 'default' }}>Unpublish</button>
                 </div>
               }
-              code={`/* Uses !important overrides on Chronicle UI Button */
-/* !bg-blue-600 — forced blue background */
-/* !bg-rose-500/20 — forced semi-transparent rose */
-/* ⚠ Bypasses Shadow Surface pattern */`}
             />
             <InconsistencyNote items={[
               { file: 'ShareStoryModal.tsx', note: 'Uses !important CSS overrides on buttons instead of proper variant classes.' },
@@ -1792,15 +1846,17 @@ hover:text-rose-500 rounded-full transition-all`}
 
             <div style={fullSpan}><PageSubheading>Arc System</PageSubheading></div>
 
-            <EntryCard name="Arc Phase Delete Button" pageTag="Arc System"
-              specs='<strong>w-[30px] h-[30px] rounded-[10px]</strong> · border border-red-400/50 bg-transparent. Hover: bg-red-500/20. Non-standard sizing — standard buttons use h-10 rounded-xl (12px). This uses 10px radius and 30px dimensions.'
-              previewDark
+            <ButtonCardV2
+              buttonName="Arc Phase Delete Button"
+              buttonColor="border-red-400/50 bg-transparent text-red-300"
+              size="w-[30px] h-[30px] rounded-[10px]"
+              purpose="Delete a narrative arc phase"
+              visualEffects="hover:bg-red-500/20 transition-colors"
+              locations="ArcPhaseCard — phase card header"
+              pageSpecific
               preview={
-                <button className="w-[30px] h-[30px] rounded-[10px] border border-red-400/50 bg-transparent text-red-400 flex items-center justify-center text-xs hover:bg-red-500/20 transition-colors" style={{ cursor: 'default' }}>✕</button>
+                <button className="w-[30px] h-[30px] rounded-[10px] border border-red-400/50 bg-transparent text-red-300 flex items-center justify-center text-xs hover:bg-red-500/20 transition-colors" style={{ cursor: 'default' }}>✕</button>
               }
-              code={`w-[30px] h-[30px] rounded-[10px] border border-red-400/50
-bg-transparent text-red-400 hover:bg-red-500/20
-/* ⚠ Non-standard: rounded-[10px] vs standard rounded-xl (12px) */`}
             />
             <InconsistencyNote items={[
               { file: 'ArcPhaseCard.tsx', note: 'Phase delete button uses rounded-[10px] (10px) and w-[30px] h-[30px] instead of standard rounded-xl (12px) and h-10.' },
@@ -1808,22 +1864,29 @@ bg-transparent text-red-400 hover:bg-red-500/20
 
             <div style={fullSpan}><PageSubheading>Tag Chips</PageSubheading></div>
 
-            <EntryCard name="Tag Chip Remove Button" pageTag="Scene Tag Editor / Tag Input"
-              specs='Blue tag chip with inline X remove. <strong>px-2.5 py-1 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full text-xs</strong>. X icon: opacity-50, hover opacity-100. Hover state transitions entire chip to red variant.'
-              previewDark
+            <ButtonCardV2
+              buttonName="Tag Chip Remove Button"
+              buttonColor="Default: bg-blue-500/20 text-blue-300 border-blue-500/30. Hover: bg-red-500/20 text-red-300 border-red-500/30"
+              size="Modal variant: px-2.5 py-1 text-xs. Input variant: px-3 py-1.5 text-sm. Both: rounded-full font-medium"
+              purpose="Remove a tag from a tag list"
+              visualEffects="X icon: opacity-50 → hover opacity-100. Entire chip transitions to red on hover"
+              locations="SceneTagEditorModal (px-2.5 py-1 text-xs), TagInput (px-3 py-1.5 text-sm)"
+              appWide
               preview={
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
                   <button className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full text-xs font-medium" style={{ cursor: 'default' }}>
                     <span>fantasy</span><span style={{ opacity: 0.5 }}>✕</span>
                   </button>
+                  <span className="text-zinc-500 text-[9px]">xs</span>
+                  <button className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full text-sm font-medium" style={{ cursor: 'default' }}>
+                    <span>romance</span><span style={{ opacity: 0.5 }}>✕</span>
+                  </button>
+                  <span className="text-zinc-500 text-[9px]">sm</span>
                   <button className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-500/20 text-red-300 border border-red-500/30 rounded-full text-xs font-medium" style={{ cursor: 'default' }}>
-                    <span>romance</span><span>✕</span>
+                    <span>hover</span><span>✕</span>
                   </button>
                 </div>
               }
-              code={`/* Default: bg-blue-500/20 text-blue-300 border-blue-500/30 rounded-full */
-/* Hover: bg-red-500/20 text-red-300 border-red-500/30 */
-/* X icon: opacity-50 → hover opacity-100 */`}
             />
           </Section>
 
