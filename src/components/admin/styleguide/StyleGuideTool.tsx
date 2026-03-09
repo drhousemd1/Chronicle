@@ -82,6 +82,7 @@ interface SwatchV2Props {
   token: string;
   pageSpecific: boolean;
   appWide: boolean;
+  effect?: string;
   extraPreviewStyle?: React.CSSProperties;
 }
 
@@ -92,7 +93,7 @@ const valueStyle: React.CSSProperties = {
   fontSize: 12, color: '#334155', fontFamily: 'Inter, system-ui, sans-serif',
 };
 
-const SwatchCardV2: React.FC<SwatchV2Props> = ({ color, name, locations, value, token, pageSpecific, appWide, extraPreviewStyle }) => (
+const SwatchCardV2: React.FC<SwatchV2Props> = ({ color, name, locations, value, token, pageSpecific, appWide, effect, extraPreviewStyle }) => (
   <div style={{
     background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
     boxShadow: sg.shadow, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
@@ -118,6 +119,12 @@ const SwatchCardV2: React.FC<SwatchV2Props> = ({ color, name, locations, value, 
         <span style={labelStyle}>Token:</span>
         <span style={{ ...valueStyle, fontFamily: "'SF Mono','Fira Code','JetBrains Mono',monospace", fontSize: 11 }}>{token}</span>
       </div>
+      {effect && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={labelStyle}>Effect:</span>
+          <span style={{ ...valueStyle, fontFamily: "'SF Mono','Fira Code','JetBrains Mono',monospace", fontSize: 11 }}>{effect}</span>
+        </div>
+      )}
       <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
         <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#334155', cursor: 'default' }}>
           <input type="checkbox" checked={pageSpecific} disabled style={{ accentColor: '#3b82f6', width: 14, height: 14 }} />
@@ -472,13 +479,13 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <PageSubheading>Chat Interface</PageSubheading>
             <PageDesc>Colors unique to the chat/conversation view.</PageDesc>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
-              <SwatchCard color="#1c1f26" name="Chat Bubble (Solid)" rows={[{ label: 'Hex', value: '#1c1f26' }, { label: 'Token', value: 'bg-[#1c1f26]' }, { label: 'Location', value: 'Chat message bubble when transparent mode is OFF', isLocation: true }]} />
-              <SwatchCard color="rgba(0,0,0,0.5)" name="Chat Bubble (Transparent)" rows={[{ label: 'Value', value: 'rgba(0,0,0,0.5)' }, { label: 'Token', value: 'bg-black/50' }, { label: 'Location', value: 'Chat message bubble when transparent mode is ON', isLocation: true }]} />
-              <SwatchCard color="#94a3b8" name="Action Text (Italic)" rows={[{ label: 'Hex', value: '#94a3b8' }, { label: 'Token', value: 'text-slate-400' }, { label: 'Location', value: 'Italic action text in chat (*actions*)', isLocation: true }]} />
-              <SwatchCard color="rgba(199,210,254,0.9)" name="Thought Text (Glowing)" rows={[{ label: 'Value', value: 'rgba(199,210,254,0.9)' }, { label: 'Token', value: 'text-indigo-200/90' }, { label: 'Effect', value: 'textShadow: indigo glow' }, { label: 'Location', value: 'Thought text in chat (parenthetical)', isLocation: true }]} />
-              <SwatchCard color="rgba(59,130,246,1)" name="User Bubble Border" rows={[{ label: 'Value', value: 'border-2 border-blue-400' }, { label: 'Location', value: 'User (non-AI) message bubble gets a blue-400 border to differentiate', isLocation: true }]} />
-              <SwatchCard color="rgba(255,255,255,0.3)" name="Frosted Glass (Light BG)" rows={[{ label: 'Value', value: 'rgba(255,255,255,0.3)' }, { label: 'Token', value: 'bg-white/30' }, { label: 'Location', value: 'SideCharacterCard when sidebar bg is dark (isDarkBg=true)', isLocation: true }]} extraPreviewStyle={{ border: '1px dashed #999' }} />
-              <SwatchCard color="rgba(0,0,0,0.3)" name="Frosted Glass (Dark BG)" rows={[{ label: 'Value', value: 'rgba(0,0,0,0.3)' }, { label: 'Token', value: 'bg-black/30' }, { label: 'Location', value: 'SideCharacterCard when sidebar bg is light (isDarkBg=false)', isLocation: true }]} />
+              <SwatchCardV2 color="#1c1f26" name="Chat Bubble (Solid)" locations="Chat message bubble, transparent mode OFF" value="#1c1f26" token="bg-[#1c1f26]" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="rgba(0,0,0,0.5)" name="Chat Bubble (Transparent)" locations="Chat message bubble, transparent mode ON" value="rgba(0,0,0,0.5)" token="bg-black/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="#94a3b8" name="Action Text (Italic)" locations="Italic action text in chat (*actions*)" value="#94a3b8" token="text-slate-400" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="rgba(199,210,254,0.9)" name="Thought Text (Glowing)" locations="Thought text in chat (parenthetical)" value="rgba(199,210,254,0.9)" token="text-indigo-200/90" effect="textShadow: indigo glow" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="#60a5fa" name="User Bubble Border" locations="User message bubble border" value="#60a5fa" token="border-blue-400" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="rgba(255,255,255,0.3)" name="Frosted Glass (Light BG)" locations="SideCharacterCard when sidebar bg is dark (isDarkBg=true)" value="rgba(255,255,255,0.3)" token="bg-white/30" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="rgba(0,0,0,0.3)" name="Frosted Glass (Dark BG)" locations="SideCharacterCard when sidebar bg is light (isDarkBg=false)" value="rgba(0,0,0,0.3)" token="bg-black/30" pageSpecific={true} appWide={false} />
             </div>
 
             <Divider />
@@ -487,9 +494,13 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <PageSubheading>Chat History</PageSubheading>
             <PageDesc>Colors for the conversation session cards.</PageDesc>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
-              <SwatchCard color="rgba(58,58,63,0.3)" name="Session Inner Card BG" rows={[{ label: 'Value', value: 'rgba(58,58,63,0.3)' }, { label: 'Token', value: 'bg-[#3a3a3f]/30' }, { label: 'Location', value: 'Inner nested card in session entries', isLocation: true }]} />
-              <SwatchCard color="rgba(255,255,255,0.1)" name="Delete Button BG" rows={[{ label: 'Value', value: 'rgba(255,255,255,0.1)' }, { label: 'Token', value: 'bg-white/10' }, { label: 'Location', value: 'Session delete button background, border-white/10', isLocation: true }]} extraPreviewStyle={{ border: '1px dashed #999' }} />
-              <SwatchCard color="rgba(24,24,27,0.5)" name="Message Preview BG" rows={[{ label: 'Value', value: 'rgba(24,24,27,0.5)' }, { label: 'Token', value: 'bg-zinc-900/50' }, { label: 'Location', value: 'Last message preview box in session cards', isLocation: true }]} />
+              <SwatchCardV2 color="#2a2a2f" name="Session Card BG" locations="Session card outer background, empty state card" value="#2a2a2f" token="bg-[#2a2a2f]" pageSpecific={false} appWide={true} />
+              <SwatchCardV2 color="rgba(58,58,63,0.3)" name="Session Inner Card BG" locations="Inner nested card in session entries" value="rgba(58,58,63,0.3)" token="bg-[#3a3a3f]/30" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="rgba(255,255,255,0.05)" name="Inner Card Border" locations="Inner card subtle border" value="rgba(255,255,255,0.05)" token="border-white/5" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="rgba(255,255,255,0.1)" name="Delete Button BG" locations="Session delete button background" value="rgba(255,255,255,0.1)" token="bg-white/10" pageSpecific={false} appWide={true} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="rgba(24,24,27,0.5)" name="Message Preview BG" locations="Last message preview box in session cards" value="rgba(24,24,27,0.5)" token="bg-zinc-900/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="#71717a" name="Meta Text" locations="Message count, date, Created by attribution" value="#71717a" token="text-zinc-500" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="#a1a1aa" name="Preview Text" locations="Last message preview text, delete icon default" value="#a1a1aa" token="text-zinc-400" pageSpecific={true} appWide={false} />
             </div>
 
             <Divider />
