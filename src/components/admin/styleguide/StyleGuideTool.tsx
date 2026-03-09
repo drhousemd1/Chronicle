@@ -438,17 +438,17 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <PageSubheading>My Stories Page</PageSubheading>
             <PageDesc>Colors used on the My Stories gallery/card grid.</PageDesc>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
-              <SwatchCardV2 color="rgba(248,250,252,0.5)" name="Slate 50 (50%)" locations="Full page background" hex="rgba(248,250,252,0.5)" token="bg-slate-50/50" pageSpecific={false} appWide={true} extraPreviewStyle={{ border: '1px dashed #ccc' }} />
-              <SwatchCardV2 color="#4a5f7f" name="Chronicle Blue" locations="Active tab pill bg, story card border (1px solid)" hex="#4a5f7f" token="bg-[#4a5f7f]" pageSpecific={false} appWide={true} />
-              <SwatchCardV2 color="#020617" name="Slate 950" locations="Story card gradient bottom: linear-gradient(to top, #020617, slate-900/60, transparent)" hex="#020617" token="bg-slate-950" pageSpecific={true} appWide={false} />
-              <SwatchCardV2 color="#2a2a2f" name="Badge Dark" locations="SFW/NSFW badge backgrounds on story cards" hex="#2a2a2f" token="bg-[#2a2a2f]" pageSpecific={false} appWide={true} />
-              <SwatchCardV2 color="#f87171" name="Red 400" locations="NSFW badge text color" hex="#f87171" token="text-red-400" pageSpecific={false} appWide={true} />
-              <SwatchCardV2 color="#ef4444" name="Red 500" locations="Delete button background on card hover" hex="#ef4444" token="bg-[hsl(var(--destructive))]" pageSpecific={false} appWide={true} />
-              <SwatchCardV2 color="#2563eb" name="Blue 600" locations="Play button background on card hover" hex="#2563eb" token="bg-blue-600" pageSpecific={false} appWide={true} />
-              <SwatchCardV2 color="#52525b" name="Zinc 600" locations='"Create New Story" dashed card border (2px dashed)' hex="#52525b" token="border-zinc-600" pageSpecific={true} appWide={false} />
-              <SwatchCardV2 color="rgba(255,255,255,0.6)" name="White 60%" locations="Story card description text" hex="rgba(255,255,255,0.6)" token="text-white/60" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
-              <SwatchCardV2 color="rgba(255,255,255,0.5)" name="White 50%" locations='"Created by" text, stat numbers on story cards' hex="rgba(255,255,255,0.5)" token="text-white/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
-              <SwatchCardV2 color="rgba(0,0,0,0.5)" name="Black 50%" locations="Story card and panel box-shadow (0px 12px 32px -2px)" hex="rgba(0,0,0,0.5)" token="shadow-[0_12px_32px_-2px_rgba(0,0,0,0.5)]" pageSpecific={false} appWide={true} />
+              <SwatchCardV2 color="rgba(248,250,252,0.5)" name="Slate 50 (50%)" locations="Full page background" value="rgba(248,250,252,0.5)" token="bg-slate-50/50" pageSpecific={false} appWide={true} extraPreviewStyle={{ border: '1px dashed #ccc' }} />
+              <SwatchCardV2 color="#4a5f7f" name="Chronicle Blue" locations="Active tab pill, story card border" value="#4a5f7f" token="bg-[#4a5f7f]" pageSpecific={false} appWide={true} />
+              <SwatchCardV2 color="#020617" name="Slate 950" locations="Story card gradient overlay" value="#020617" token="bg-slate-950" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="#2a2a2f" name="Badge Dark" locations="SFW/NSFW badge backgrounds on story cards" value="#2a2a2f" token="bg-[#2a2a2f]" pageSpecific={false} appWide={true} />
+              <SwatchCardV2 color="#f87171" name="Red 400" locations="NSFW badge text" value="#f87171" token="text-red-400" pageSpecific={false} appWide={true} />
+              <SwatchCardV2 color="#ef4444" name="Red 500" locations="Delete button on card hover" value="#ef4444" token="bg-[hsl(var(--destructive))]" pageSpecific={false} appWide={true} />
+              <SwatchCardV2 color="#2563eb" name="Blue 600" locations="Play button on card hover" value="#2563eb" token="bg-blue-600" pageSpecific={false} appWide={true} />
+              <SwatchCardV2 color="#52525b" name="Zinc 600" locations='"Create New Story" card border' value="#52525b" token="border-zinc-600" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="rgba(255,255,255,0.6)" name="White 60%" locations="Story card description text" value="rgba(255,255,255,0.6)" token="text-white/60" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="rgba(255,255,255,0.5)" name="White 50%" locations='"Created by" text, stat numbers on story cards' value="rgba(255,255,255,0.5)" token="text-white/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="rgba(0,0,0,0.5)" name="Black 50%" locations="Story card and panel shadow" value="rgba(0,0,0,0.5)" token="shadow-[0_12px_32px_-2px_rgba(0,0,0,0.5)]" pageSpecific={false} appWide={true} />
             </div>
 
             <Divider />
