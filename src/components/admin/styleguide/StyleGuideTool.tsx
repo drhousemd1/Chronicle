@@ -2389,28 +2389,6 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               />
             </div>
 
-            <PageSubheading>Image Generation Modals (Light Theme)</PageSubheading>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
-              <InputCardV2
-                inputName="Light-Theme Generation Textarea"
-                previewBg="#fff"
-                background="bg-slate-50"
-                border="border-slate-200"
-                borderRadius="rounded-md (6px)"
-                textColor="text-slate-900"
-                placeholderColor="text-slate-400"
-                focusStyle="ring-2 ring-blue-100 border-blue-400"
-                fontSize="14px / text-sm"
-                padding="px-3 py-2"
-                purpose="Prompt textarea in AI generation modals"
-                locations="Avatar Generation, Cover Image Generation, Scene Image Generation modals"
-                pageSpecific
-                notes="⚠ Light theme — only used in generation modals. Every other textarea in the app uses dark theme."
-                preview={
-                  <textarea readOnly className="w-full min-h-[60px] rounded-md border bg-slate-50 border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400" placeholder="Describe your character's appearance..." />
-                }
-              />
-            </div>
 
             <PageSubheading>Review Modal</PageSubheading>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
