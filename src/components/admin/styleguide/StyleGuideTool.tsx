@@ -776,44 +776,67 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <div style={{ ...fullSpan, margin: '8px 0 4px' }}><Divider style={{ margin: '8px 0 4px' }} /></div>
             <div style={fullSpan}><PageSubheading>Community Gallery</PageSubheading></div>
 
-            <TypeTile name="Gallery Card Title" exampleBg="linear-gradient(to top, #020617, rgba(15,23,42,0.6))"
+            <TypoCardV2 name="Card Title"
+              exampleBg="linear-gradient(to top, #020617, rgba(15,23,42,0.6))"
               exampleContent={<span className="text-lg font-black text-white leading-tight tracking-tight">The Dark Forest</span>}
-              specs={['text-lg', 'font-black', 'leading-tight tracking-tight', 'text-white']}
+              fontSize="18px (text-lg)" fontWeight="900 (font-black)"
+              letterSpacing="tight (tracking-tight)"
+              color="#ffffff (white)" lineHeight="tight (leading-tight)"
               locations="Story title on Gallery card overlay. Truncated. Hover: text-blue-300."
+              pageSpecific={true} appWide={false}
             />
-            <TypeTile name="Gallery Card Description" exampleBg="#2a2a2f"
+            <TypoCardV2 name="Card Description"
+              exampleBg="#2a2a2f"
               exampleContent={<span className="text-xs text-white/60 italic leading-relaxed">A romantic fantasy adventure in the fae lands...</span>}
-              specs={['text-xs (12px)', 'weight 400', 'italic', 'text-white/60', 'line-clamp-2']}
-              locations="Story description below title on gallery cards."
+              fontSize="12px (text-xs)" fontWeight="400 (normal, italic)"
+              color="rgba(255,255,255,0.6) (white/60)" lineHeight="relaxed (leading-relaxed)"
+              locations="Story description below title on gallery cards. line-clamp-2."
+              pageSpecific={true} appWide={false}
             />
-            <TypeTile name="Gallery Card Stats" exampleBg="#2a2a2f"
+            <TypoCardV2 name="Card Stats"
+              exampleBg="#2a2a2f"
               exampleContent={<span className="text-[10px] text-white/50">👁 123 ❤ 45 🔖 12 ▶ 67</span>}
-              specs={['text-[10px]', 'weight 400', 'text-white/50', 'flex gap-3']}
-              locations="View/like/save/play counts at bottom of gallery cards."
+              fontSize="10px (text-[10px])" fontWeight="400 (normal)"
+              color="rgba(255,255,255,0.5) (white/50)"
+              locations="View/like/save/play counts at bottom of gallery cards. flex gap-3."
+              pageSpecific={true} appWide={false}
             />
-            <TypeTile name="Gallery Search Placeholder" exampleBg="#3a3a3f"
+            <TypoCardV2 name="Search Placeholder"
+              exampleBg="#3a3a3f"
               exampleContent={<span className="text-sm text-zinc-500">Search titles, descriptions, or #tags...</span>}
-              specs={['text-sm (14px)', 'weight 400', 'text-zinc-500 placeholder']}
+              fontSize="14px (text-sm)" fontWeight="400 (normal)"
+              color="#71717a (zinc-500)"
               locations="Gallery search input placeholder text."
+              pageSpecific={true} appWide={false}
             />
 
             <div style={{ ...fullSpan, margin: '8px 0 4px' }}><Divider style={{ margin: '8px 0 4px' }} /></div>
             <div style={fullSpan}><PageSubheading>Chat Interface</PageSubheading></div>
 
-            <TypeTile name="Chat Message Text (Speech)" exampleBg="#1c1f26"
+            <TypoCardV2 name="Speech Text"
+              exampleBg="#1c1f26"
               exampleContent={<span className="text-[15px] font-medium text-white leading-relaxed">"Hello there, how are you?"</span>}
-              specs={['15px', 'font-medium (500)', 'text-white', 'leading-relaxed']}
+              fontSize="15px (text-[15px])" fontWeight="500 (font-medium)"
+              color="#ffffff (white)" lineHeight="relaxed (leading-relaxed)"
               locations="Speech/dialogue text in chat messages. Quoted content."
+              pageSpecific={true} appWide={false}
             />
-            <TypeTile name="Chat Action Text (Italic)" exampleBg="#1c1f26"
+            <TypoCardV2 name="Action Text"
+              exampleBg="#1c1f26"
               exampleContent={<span className="text-[15px] italic text-slate-400 leading-relaxed">*walks slowly toward the door*</span>}
-              specs={['15px', 'italic', 'text-slate-400', 'leading-relaxed']}
+              fontSize="15px (text-[15px])" fontWeight="400 (italic)"
+              color="#94a3b8 (slate-400)" lineHeight="relaxed (leading-relaxed)"
               locations="Action text in chat messages wrapped in asterisks."
+              pageSpecific={true} appWide={false}
             />
-            <TypeTile name="Character Label (Chat)" exampleBg="#1c1f26"
+            <TypoCardV2 name="Character Label"
+              exampleBg="#1c1f26"
               exampleContent={<span className="text-[9px] font-black uppercase tracking-widest text-slate-500">NARRATOR</span>}
-              specs={['text-[9px]', 'font-black', 'uppercase', 'tracking-widest', 'text-slate-500']}
+              fontSize="9px (text-[9px])" fontWeight="900 (font-black)"
+              letterSpacing="widest (tracking-widest)" textTransform="uppercase"
+              color="#64748b (slate-500)"
               locations="Character name below avatar in chat bubbles. AI: text-slate-500, User: text-blue-300."
+              pageSpecific={true} appWide={false}
             />
 
             <div style={{ ...fullSpan, margin: '8px 0 4px' }}><Divider style={{ margin: '8px 0 4px' }} /></div>
