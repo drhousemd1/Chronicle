@@ -167,7 +167,11 @@ const valueStyle: React.CSSProperties = {
   fontSize: 12, color: '#334155', fontFamily: 'Inter, system-ui, sans-serif',
 };
 
-const SwatchCardV2: React.FC<SwatchV2Props> = ({ color, name, locations, value, token, pageSpecific, appWide, effect, extraPreviewStyle }) => (
+const SwatchCardV2: React.FC<SwatchV2Props> = (props) => {
+  const { color, name, locations, value, token, pageSpecific, appWide, effect, extraPreviewStyle } = props;
+  const details = { Value: value, Token: token, Locations: locations, ...(effect ? { Effect: effect } : {}) };
+  return (
+  <CardEditOverlay cardName={name} cardType="Swatch" details={details}>
   <div style={{
     background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
     boxShadow: sg.shadow, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
