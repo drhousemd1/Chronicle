@@ -177,14 +177,14 @@ export const EditDetailModal: React.FC<EditDetailModalProps> = ({
 
           {/* Comment */}
           <div>
-            <div className="text-zinc-400 text-[10px] font-bold uppercase tracking-wider mb-2">What needs to change?</div>
+            <div className="text-[hsl(var(--ui-text-muted))] text-[10px] font-bold uppercase tracking-wider mb-2">What needs to change?</div>
             <textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               placeholder="Describe what needs to be changed…"
               rows={4}
               spellCheck={true}
-              className="w-full rounded-xl bg-zinc-800/60 border border-white/10 text-white text-sm px-3 py-2.5 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-amber-500/50 resize-none"
+              className="w-full rounded-xl bg-[hsl(var(--ui-surface))] border border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] text-sm px-3 py-2.5 placeholder:text-[hsl(var(--ui-text-muted))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--ui-border-hover))] resize-none"
             />
           </div>
         </div>
