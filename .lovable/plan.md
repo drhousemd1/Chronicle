@@ -1,37 +1,55 @@
 
 
-## Plan: Style Guide Audit & Correction — Complete ✅
+## Split "Story Detail Modal Actions" into 5 Individual ButtonCardV2 Entries
 
-### Status: ✅ All 3 Passes Complete
+The current single "Story Detail Modal Actions" entry (lines 1170-1189) jams Edit, Play, and Remove into one card and completely omits Like and Save. Each button gets its own `ButtonCardV2`.
 
-Audited and corrected all 8 sections of the Visual Style Guide against live source code.
+### Replace lines 1170-1189 with 5 entries:
 
-### What was fixed:
+**1. "Story Detail — Edit"**
+- buttonColor: `rgba(255,255,255,0.05) — bg-white/5`
+- textColor: `#ffffff — text-white`
+- size: `flex-1 h-12 — rounded-xl`
+- purpose: `Edit owned story from detail modal`
+- visualEffects: `border: 1px solid rgba(255,255,255,0.1) — border-white/10. Hover: bg-white/10`
+- locations: `StoryDetailModal — owned mode only`
+- preview: single Edit button with pencil icon
 
-**Pass 1 — Colors & Typography:**
-- "Button Background" swatch: `#2F3137` (screenshot approximation) → `hsl(228 7% 20%)` / `bg-[hsl(var(--ui-surface-2))]` (actual CSS variable)
-- "Button Text Color" swatch: `#eaedf1` → `hsl(210 20% 93%)` / `text-[hsl(var(--ui-text))]` (actual CSS variable)
-- Typography specs updated to use Tailwind class names (e.g., `text-xl font-bold tracking-tight`) instead of raw pixel values
-- Field label tracking corrected from `0.5px` to `tracking-wider (0.05em)`
-- Button text tile renamed from "Header actions" to "Shadow Surface" with `leading-none` added
+**2. "Story Detail — Play"**
+- buttonColor: `#3b82f6 — bg-[#3b82f6]`
+- textColor: `#ffffff — text-white`
+- size: `flex-1 h-12 — rounded-xl`
+- purpose: `Play/resume story from detail modal`
+- visualEffects: `shadow-md. Hover: bg-[#2563eb]`
+- locations: `StoryDetailModal — both owned and gallery modes`
+- preview: single Play button
 
-**Pass 2 — Buttons, Forms & Badges:**
-- Header Action Button completely rewritten to Shadow Surface pattern with real Tailwind `className` strings
-- Button previews now render using actual `className` attributes instead of inline `style` objects
-- Card Hover Buttons updated to correct `h-8 px-4` compact variant from source (StoryHub.tsx)
-- Delete button corrected from `bg-#ef4444` to `bg-[hsl(var(--destructive))]`
-- Form inputs and badges converted to `className`-based rendering
-- Code blocks now show actual `className` strings from source
+**3. "Story Detail — Like"**
+- buttonColor: `Default: rgba(255,255,255,0.05) — bg-white/5. Active: rgba(244,63,94,0.2) — bg-rose-500/20`
+- textColor: `Default: #ffffff — text-white. Active: #fb7185 — text-rose-400`
+- size: `flex-1 h-12 — rounded-xl`
+- purpose: `Like a story — toggle button with filled heart when active`
+- visualEffects: `Default: border-white/10. Active: border-rose-500/50. fill-current on icon when active`
+- locations: `StoryDetailModal — gallery mode (non-owned)`
+- preview: both default and active states side by side
 
-**Pass 3 — Panels, Modals & Icons:**
-- Panel Container: `previewDark` removed, rendered with actual `className`
-- Panel Header Bar: uses actual `className` with `px-5 py-3` (was `16px 24px`)
-- Story Card: added live rendered preview with gradient overlay and `rounded-[2rem]`
-- Modal Container/Header/Footer: `previewDark` removed, rendered with real Tailwind classes
-- Modal Footer buttons now use actual HSL token classes from DeleteConfirmDialog.tsx
-- Icon Size Scale/Containers: `previewDark` removed, previews render on white background
-- Icon Colors: white swatch gets border treatment instead of dark background
+**4. "Story Detail — Save"**
+- buttonColor: `Default: rgba(255,255,255,0.05) — bg-white/5. Active: rgba(245,158,11,0.2) — bg-amber-500/20`
+- textColor: `Default: #ffffff — text-white. Active: #fbbf24 — text-amber-400`
+- size: `flex-1 h-12 — rounded-xl`
+- purpose: `Save/bookmark a story — toggle button with filled bookmark when active`
+- visualEffects: `Default: border-white/10. Active: border-amber-500/50. fill-current on icon when active`
+- locations: `StoryDetailModal — gallery mode (non-owned)`
+- preview: both default and active states side by side
 
-**Dark Background Cleanup:**
-- Removed `previewDark` from: buttons (all 5), panel container, modal container/header/footer, icon size scale, icon containers
-- Kept `previewDark` only for: form inputs (dark on dark), modal backdrop (transparency demo)
+**5. "Story Detail — Remove from Gallery"**
+- buttonColor: `rgba(255,255,255,0.05) — bg-white/5`
+- textColor: `rgba(255,255,255,0.6) — text-white/60`
+- size: `w-full h-10 — rounded-xl`
+- purpose: `Unpublish owned story from community gallery`
+- visualEffects: `border: 1px solid rgba(255,255,255,0.1) — border-white/10`
+- locations: `StoryDetailModal — owned + published stories only`
+- preview: full-width button with globe icon
+
+All 5: `pageSpecific={true}`, `appWide={false}`
+
