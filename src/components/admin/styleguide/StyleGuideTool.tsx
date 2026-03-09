@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { Sparkles } from 'lucide-react';
 import { StyleGuideDownloadModal } from './StyleGuideDownloadModal';
 
 const SECTIONS = [
@@ -1053,15 +1054,40 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <ButtonCardV2
               buttonName="AI Generate"
               preview={
-                <button className="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold bg-gradient-to-r from-purple-600 via-violet-500 to-blue-500 text-white border-0 shadow-lg cursor-default">AI GENERATE</button>
+                <button
+                  className="group relative flex h-10 px-4 rounded-xl overflow-hidden text-white text-[10px] font-bold leading-none shadow-[0_12px_40px_rgba(0,0,0,0.45)] cursor-default"
+                  style={{ minWidth: 140 }}
+                >
+                  {/* Layer 1: Iridescent outer border ring */}
+                  <span aria-hidden className="absolute inset-0 rounded-xl" style={{ background: "linear-gradient(90deg, rgba(255,255,255,0.34) 0%, rgba(34,184,200,0.62) 18%, rgba(255,255,255,0.22) 44%, rgba(109,94,247,0.64) 78%, rgba(255,255,255,0.28) 100%)", filter: "drop-shadow(0 0 10px rgba(255,255,255,0.10)) drop-shadow(0 0 18px rgba(109,94,247,0.10)) drop-shadow(0 0 18px rgba(34,184,200,0.10))" }} />
+                  {/* Layer 2: 2px border mask */}
+                  <span aria-hidden className="absolute inset-[2px] rounded-[10px]" style={{ background: "#2B2D33" }} />
+                  {/* Layer 3: Surface gradient */}
+                  <span aria-hidden className="absolute inset-[2px] rounded-[10px]" style={{ background: "linear-gradient(90deg, rgba(34,184,200,0.22), rgba(109,94,247,0.22)), #2B2D33" }} />
+                  {/* Layer 4: Top sheen */}
+                  <span aria-hidden className="absolute inset-[2px] rounded-[10px]" style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.11), rgba(255,255,255,0.00) 46%, rgba(0,0,0,0.16))" }} />
+                  {/* Layer 5: Diagonal sheen */}
+                  <span aria-hidden className="absolute inset-0 rounded-xl pointer-events-none" style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.26), inset 0 -1px 0 rgba(0,0,0,0.22)", background: "linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.00) 55%)", mixBlendMode: "screen" }} />
+                  {/* Layer 6: Teal bloom */}
+                  <span aria-hidden className="absolute -left-8 -top-8 h-32 w-32 rounded-full blur-2xl pointer-events-none" style={{ background: "radial-gradient(circle, rgba(34,184,200,0.28), transparent 62%)" }} />
+                  {/* Layer 7: Purple bloom */}
+                  <span aria-hidden className="absolute -right-10 -bottom-10 h-40 w-40 rounded-full blur-3xl pointer-events-none" style={{ background: "radial-gradient(circle, rgba(109,94,247,0.26), transparent 65%)" }} />
+                  {/* Layer 8: Inner edge shadows */}
+                  <span aria-hidden className="absolute inset-0 rounded-xl pointer-events-none" style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -1px 0 rgba(0,0,0,0.26), 0 0 0 1px rgba(255,255,255,0.06)" }} />
+                  {/* Content */}
+                  <span className="relative z-10 flex items-center justify-center gap-2 w-full">
+                    <Sparkles className="w-3.5 h-3.5 shrink-0 text-cyan-200" style={{ filter: "drop-shadow(0 0 10px rgba(34,184,200,0.35))" }} />
+                    <span className="whitespace-nowrap drop-shadow-[0_1px_0_rgba(0,0,0,0.35)]">AI Generate</span>
+                  </span>
+                </button>
               }
-              buttonColor="bg-gradient-to-r from-purple-600 via-violet-500 to-blue-500"
-              textColor="#ffffff — text-white"
-              size="h-auto × px-4 py-2 — rounded-xl (12px)"
+              buttonColor="#2B2D33 base with teal rgba(34,184,200) and purple rgba(109,94,247) gradient overlays at 22% opacity"
+              textColor="#ffffff — text-white, text-[10px] font-bold. Sparkles icon: text-cyan-200 with teal glow filter"
+              size="h-10 × px-4 — rounded-xl (12px), overflow-hidden"
               purpose="AI-powered generation actions — triggers AI content creation"
-              visualEffects="Gradient background (purple-600 → violet-500 → blue-500, left-to-right). No border. Drop shadow: shadow-lg."
-              locations="Story Builder — AI Generate button in character, world, and arc sections."
-              pageSpecific={true} appWide={false}
+              visualEffects="8-layer construction: iridescent border ring (linear-gradient 90deg teal/purple/white), 2px border mask (#2B2D33), surface gradient, top sheen, diagonal sheen (mix-blend-mode: screen), teal bloom (blur-2xl top-left), purple bloom (blur-3xl bottom-right), inset edge shadows. Outer shadow: 0 12px 40px rgba(0,0,0,0.45)"
+              locations="Avatar AI Generate, Cover Image AI Generate, Scene Gallery AI Generate — all action button groups"
+              pageSpecific={false} appWide={true}
             />
             <ButtonCardV2
               buttonName="Dashed Add"
