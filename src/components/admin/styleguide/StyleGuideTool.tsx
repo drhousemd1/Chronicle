@@ -525,7 +525,7 @@ interface StyleGuideToolProps {
   onEditsCountChange?: (count: number) => void;
 }
 
-export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownload, onRegisterEdits }) => {
+export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownload, onRegisterEdits, onEditsCountChange }) => {
   const [activeSection, setActiveSection] = useState('colors');
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [showRestructuring, setShowRestructuring] = useState(false);
