@@ -47,6 +47,7 @@ interface AdminPageProps {
   onRegisterGuideSyncAll?: (syncFn: (() => Promise<void>) | null) => void;
   onRegisterStyleGuideDownload?: (fn: (() => void) | null) => void;
   onRegisterStyleGuideEdits?: (fn: (() => void) | null) => void;
+  onStyleGuideEditsCountChange?: (count: number) => void;
   guideTheme?: 'dark' | 'light';
 }
 
