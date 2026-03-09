@@ -241,7 +241,7 @@ export const EditsListModal: React.FC<EditsListModalProps> = ({ open, onOpenChan
   return (
     <>
       <Dialog open={open && !editingEntry} onOpenChange={onOpenChange}>
-        <DialogContent className="rounded-xl bg-zinc-900 border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)] max-w-md p-0 gap-0 max-h-[70vh] flex flex-col">
+        <DialogContent className="rounded-xl bg-[hsl(240_6%_10%)] border border-[hsl(0_0%_100%_/_0.10)] shadow-[0_10px_30px_hsl(0_0%_0%_/_0.5)] max-w-md p-0 gap-0 max-h-[70vh] flex flex-col">
           <DialogHeader className="px-5 pt-5 pb-3 shrink-0">
             <DialogTitle className="text-white text-base font-bold">Style Guide Edits</DialogTitle>
           </DialogHeader>
