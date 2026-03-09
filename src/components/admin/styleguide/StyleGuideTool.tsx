@@ -1105,28 +1105,36 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
             <div style={fullSpan}><PageSubheading>My Stories Page</PageSubheading></div>
 
-            <EntryCard name="Card Hover Buttons — Edit / Delete / Play" pageTag="My Stories"
-              specs='Compact card variant: <strong>h-8 px-4 rounded-xl</strong> · <strong>text-[10px] font-bold leading-none uppercase tracking-wider</strong>. Edit: bg-white text-slate-900. Delete: bg-[hsl(var(--destructive))]. Play: bg-blue-600.'
-              preview={<>
+            <ButtonCardV2
+              buttonName="Card Hover Buttons — Edit / Delete / Play"
+              buttonColor="Edit: #ffffff — bg-white. Delete: hsl(var(--destructive)) — bg-[hsl(var(--destructive))]. Play: #3b82f6 — bg-blue-600"
+              textColor="Edit: #0f172a — text-slate-900. Delete/Play: #ffffff — text-white"
+              size="h-8 px-4 — rounded-xl (12px)"
+              purpose="Compact card variant for story card hover overlay actions"
+              visualEffects="shadow-2xl · text-[10px] font-bold leading-none uppercase tracking-wider"
+              locations="StoryHub — story card hover overlay"
+              pageSpecific={true}
+              appWide={false}
+              preview={<div className="flex gap-2">
                 <button className="h-8 px-4 rounded-xl bg-white text-slate-900 text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl" style={{ cursor: 'default' }}>EDIT</button>
                 <button className="h-8 px-4 rounded-xl bg-[hsl(var(--destructive))] text-white text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl" style={{ cursor: 'default' }}>DELETE</button>
                 <button className="h-8 px-4 rounded-xl bg-blue-600 text-white text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl" style={{ cursor: 'default' }}>PLAY</button>
-              </>}
-              code={`/* Card hover buttons (compact h-8 variant) */
-h-8 px-4 rounded-xl text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl
-/* Edit: bg-white text-slate-900 */
-/* Delete: bg-[hsl(var(--destructive))] text-white */
-/* Play: bg-blue-600 text-white */`}
+              </div>}
             />
-            <EntryCard name="Tab Pills — Active / Inactive" pageTag="My Stories"
-              specs="<strong>Active:</strong> bg #4a5f7f, white text, rounded-full · <strong>Inactive:</strong> transparent, #a1a1aa text · Both 12px / 700"
-              preview={<>
+            <ButtonCardV2
+              buttonName="Tab Pills — Active / Inactive"
+              buttonColor="Active: #4a5f7f — bg-[#4a5f7f]. Inactive: transparent — bg-transparent"
+              textColor="Active: #ffffff — text-white. Inactive: #a1a1aa — text-[#a1a1aa]"
+              size="px-4 py-1.5 — rounded-full"
+              purpose="Filter pill bar for story list segmentation"
+              visualEffects="text-xs font-bold"
+              locations="My Stories hub header — filter pills"
+              pageSpecific={true}
+              appWide={false}
+              preview={<div className="flex gap-2">
                 <button className="bg-[#4a5f7f] text-white text-xs font-bold px-4 py-1.5 rounded-full" style={{ cursor: 'default' }}>My Stories</button>
                 <button className="text-zinc-400 text-xs font-bold px-4 py-1.5 rounded-full" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>Community</button>
-              </>}
-              code={`/* Active */  bg-[#4a5f7f] text-white rounded-full px-4 py-1.5
-/* Inactive */ bg-transparent text-[#a1a1aa]
-/* Both */ text-xs font-bold`}
+              </div>}
             />
             <ButtonCardV2
               buttonName="Settings Gear"
