@@ -111,8 +111,8 @@ const SwatchCardV2: React.FC<SwatchV2Props> = ({ color, name, locations, value, 
         <span style={valueStyle}>{locations}</span>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <span style={labelStyle}>Hex:</span>
-        <span style={{ ...valueStyle, fontFamily: "'SF Mono','Fira Code','JetBrains Mono',monospace", fontSize: 11 }}>{hex}</span>
+        <span style={labelStyle}>Value:</span>
+        <span style={{ ...valueStyle, fontFamily: "'SF Mono','Fira Code','JetBrains Mono',monospace", fontSize: 11 }}>{value}</span>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         <span style={labelStyle}>Token:</span>
