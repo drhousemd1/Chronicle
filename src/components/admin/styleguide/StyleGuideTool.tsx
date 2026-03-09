@@ -522,6 +522,7 @@ const Section: React.FC<{ id: string; title: string; desc: string; children: Rea
 interface StyleGuideToolProps {
   onRegisterDownload?: (fn: (() => void) | null) => void;
   onRegisterEdits?: (fn: (() => void) | null) => void;
+  onEditsCountChange?: (count: number) => void;
 }
 
 export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownload, onRegisterEdits }) => {
