@@ -1453,23 +1453,6 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               }
             />
             <ButtonCardV2
-              buttonName="Memory Quick Save"
-              buttonColor="transparent — hover:bg-white/10. Saved: hover:bg-purple-500/20"
-              textColor="Default: #64748b — text-slate-500. Hover: text-purple-400. Saved: text-purple-400"
-              size="p-1.5 — rounded-lg"
-              purpose="Save the current AI message as a memory entry"
-              visualEffects="transition-colors. Saved state shows purple tinted background"
-              locations="ChatInterfaceTab — per-message action row"
-              pageSpecific={true}
-              appWide={false}
-              preview={
-                <div style={{ display: 'flex', gap: 12, justifyContent: 'center', background: '#1e1e1e', padding: 8, borderRadius: 8 }}>
-                  <button className="p-1.5 rounded-lg text-slate-500" style={{ cursor: 'default', background: 'transparent', border: 'none', fontSize: 16 }}>🧠</button>
-                  <button className="p-1.5 rounded-lg text-purple-400" style={{ cursor: 'default', background: 'rgba(168,85,247,0.2)', border: 'none', fontSize: 16 }}>🧠</button>
-                </div>
-              }
-            />
-            <ButtonCardV2
               buttonName="Timer Pause / Play"
               buttonColor="transparent — hover:bg-black/30"
               textColor="Adaptive via getTimeTextColor(): Sunrise/Day/Sunset → text-black. Night → text-white"
