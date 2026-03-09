@@ -376,7 +376,11 @@ interface ButtonV2Props {
   appWide?: boolean;
 }
 
-const ButtonCardV2: React.FC<ButtonV2Props> = ({ buttonName, preview, buttonColor, textColor, size, purpose, visualEffects, locations, pageSpecific, appWide }) => (
+const ButtonCardV2: React.FC<ButtonV2Props> = (props) => {
+  const { buttonName, preview, buttonColor, textColor, size, purpose, visualEffects, locations, pageSpecific, appWide } = props;
+  const details = { 'Button Color': buttonColor, 'Text Color': textColor || '', Size: size, Purpose: purpose, 'Visual Effects': visualEffects || '', Locations: locations };
+  return (
+  <CardEditOverlay cardName={buttonName} cardType="Button" details={details}>
   <div style={{
     background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
     boxShadow: sg.shadow, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
@@ -432,7 +436,9 @@ const ButtonCardV2: React.FC<ButtonV2Props> = ({ buttonName, preview, buttonColo
       </div>
     </div>
   </div>
-);
+  </CardEditOverlay>
+  );
+};
 
 /* ═══════════════════════ ENTRY CARD (buttons, inputs, etc.) ═══════════════════════ */
 interface EntryCardProps {
