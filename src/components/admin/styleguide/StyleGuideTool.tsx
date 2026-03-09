@@ -139,6 +139,99 @@ const SwatchCardV2: React.FC<SwatchV2Props> = ({ color, name, locations, value, 
   </div>
 );
 
+/* ═══════════════════════ TYPO CARD V2 (Standardized) ═══════════════════════ */
+interface TypoV2Props {
+  name: string;
+  exampleContent: React.ReactNode;
+  exampleBg?: string;
+  fontFamily?: string;
+  fontSize: string;
+  fontWeight: string;
+  letterSpacing?: string;
+  textTransform?: string;
+  color: string;
+  lineHeight?: string;
+  locations: string;
+  pageSpecific: boolean;
+  appWide: boolean;
+}
+
+const monoStyle: React.CSSProperties = { ...valueStyle, fontFamily: "'SF Mono','Fira Code','JetBrains Mono',monospace", fontSize: 11 };
+
+const TypoCardV2: React.FC<TypoV2Props> = ({ name, exampleContent, exampleBg, fontFamily, fontSize, fontWeight, letterSpacing, textTransform, color, lineHeight, locations, pageSpecific, appWide }) => (
+  <div style={{
+    background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
+    boxShadow: sg.shadow, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+  }}
+    onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadowHover; }}
+    onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadow; }}
+  >
+    {/* Example preview strip */}
+    <div style={{
+      background: exampleBg || '#fff', padding: '14px 16px',
+      display: 'flex', alignItems: 'center', minHeight: 56,
+    }}>{exampleContent}</div>
+
+    <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 6, borderTop: '1px solid #e2e8f0' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Name:</span>
+        <span style={valueStyle}>{name}</span>
+      </div>
+      {fontFamily && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={labelStyle}>Font Family:</span>
+          <span style={monoStyle}>{fontFamily}</span>
+        </div>
+      )}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Font Size:</span>
+        <span style={monoStyle}>{fontSize}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Font Weight:</span>
+        <span style={monoStyle}>{fontWeight}</span>
+      </div>
+      {letterSpacing && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={labelStyle}>Letter Spacing:</span>
+          <span style={monoStyle}>{letterSpacing}</span>
+        </div>
+      )}
+      {textTransform && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={labelStyle}>Text Transform:</span>
+          <span style={monoStyle}>{textTransform}</span>
+        </div>
+      )}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Color:</span>
+        <span style={monoStyle}>{color}</span>
+      </div>
+      {lineHeight && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={labelStyle}>Line Height:</span>
+          <span style={monoStyle}>{lineHeight}</span>
+        </div>
+      )}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Locations:</span>
+        <span style={valueStyle}>{locations}</span>
+      </div>
+      <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#334155', cursor: 'default' }}>
+          <input type="checkbox" checked={pageSpecific} disabled style={{ accentColor: '#3b82f6', width: 14, height: 14 }} />
+          Page Specific
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#334155', cursor: 'default' }}>
+          <input type="checkbox" checked={appWide} disabled style={{ accentColor: '#3b82f6', width: 14, height: 14 }} />
+          App Wide
+        </label>
+      </div>
+    </div>
+  </div>
+);
+
+
 
 /* ═══════════════════════ TYPOGRAPHY TILE ═══════════════════════ */
 interface TypeTileProps {
