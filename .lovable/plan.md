@@ -1,37 +1,63 @@
 
 
-## Plan: Style Guide Audit & Correction — Complete ✅
+## Fix Chat Interface Buttons Section
 
-### Status: ✅ All 3 Passes Complete
+### Current State (lines 1319-1355)
+Three `EntryCard` entries that need converting to `ButtonCardV2`:
+1. "Chat Settings / Generate Image Buttons"
+2. "Chat Send Button (Active / Inactive)"  
+3. "Chat Message Action Icons"
 
-Audited and corrected all 8 sections of the Visual Style Guide against live source code.
+### Missing Buttons (from actual code)
+4. **Sidebar Settings Cog** — icon-only Shadow Surface button (`rounded-xl px-3 py-2`, same tokens). Opens dropdown with "Set Theme".
+5. **Exit Scenario** — text link button with chevron icon. Adaptive color: dark bg → `text-white hover:text-blue-300`, light bg → `text-black hover:text-blue-600`. `text-xs font-black uppercase tracking-widest`.
+6. **Time of Day Selectors** — 4 icon buttons (Sunrise/Day/Sunset/Night). Active: `bg-blue-100 border-2 border-blue-400 text-blue-600 shadow-sm`. Inactive: `bg-white border border-black text-black hover:bg-slate-100`. `p-2 rounded-lg`.
+7. **Day Counter +/− Arrows** — tiny stepper buttons inside white pill. `px-1.5 py-0.5 hover:bg-slate-100 text-black hover:text-blue-600`. Down disabled at day 1.
+8. **Memory Quick Save** — per-message brain icon. Default: `text-slate-500 hover:text-purple-400 hover:bg-white/10`. Saved: `text-purple-400 hover:bg-purple-500/20`. `p-1.5 rounded-lg`.
+9. **Timer Pause/Play** — micro button in auto-timer row. `p-0.5 rounded hover:bg-black/30`. Uses `getTimeTextColor()` for adaptive color.
 
-### What was fixed:
+### Plan
 
-**Pass 1 — Colors & Typography:**
-- "Button Background" swatch: `#2F3137` (screenshot approximation) → `hsl(228 7% 20%)` / `bg-[hsl(var(--ui-surface-2))]` (actual CSS variable)
-- "Button Text Color" swatch: `#eaedf1` → `hsl(210 20% 93%)` / `text-[hsl(var(--ui-text))]` (actual CSS variable)
-- Typography specs updated to use Tailwind class names (e.g., `text-xl font-bold tracking-tight`) instead of raw pixel values
-- Field label tracking corrected from `0.5px` to `tracking-wider (0.05em)`
-- Button text tile renamed from "Header actions" to "Shadow Surface" with `leading-none` added
+Replace the 3 `EntryCard` entries (lines 1321-1355) with 9 `ButtonCardV2` entries:
 
-**Pass 2 — Buttons, Forms & Badges:**
-- Header Action Button completely rewritten to Shadow Surface pattern with real Tailwind `className` strings
-- Button previews now render using actual `className` attributes instead of inline `style` objects
-- Card Hover Buttons updated to correct `h-8 px-4` compact variant from source (StoryHub.tsx)
-- Delete button corrected from `bg-#ef4444` to `bg-[hsl(var(--destructive))]`
-- Form inputs and badges converted to `className`-based rendering
-- Code blocks now show actual `className` strings from source
+**1. Chat Settings / Generate Image** → `ButtonCardV2`
+- buttonColor: `hsl(var(--ui-surface-2)) — bg-[hsl(var(--ui-surface-2))]`
+- textColor: `hsl(var(--ui-text)) — text-[hsl(var(--ui-text))]`
+- size: `rounded-xl px-4 py-2 — text-[10px] font-bold uppercase tracking-widest`
+- purpose: `Open chat settings modal / trigger scene image generation`
+- visualEffects: `border-[hsl(var(--ui-border))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:border-[hsl(var(--ui-border-hover))]`
+- locations: `ChatInterfaceTab — quick actions bar above input`
 
-**Pass 3 — Panels, Modals & Icons:**
-- Panel Container: `previewDark` removed, rendered with actual `className`
-- Panel Header Bar: uses actual `className` with `px-5 py-3` (was `16px 24px`)
-- Story Card: added live rendered preview with gradient overlay and `rounded-[2rem]`
-- Modal Container/Header/Footer: `previewDark` removed, rendered with real Tailwind classes
-- Modal Footer buttons now use actual HSL token classes from DeleteConfirmDialog.tsx
-- Icon Size Scale/Containers: `previewDark` removed, previews render on white background
-- Icon Colors: white swatch gets border treatment instead of dark background
+**2. Chat Send Button** → `ButtonCardV2`
+- Show both active and inactive states
+- Active: `bg-[#4a5f7f] text-white border-[#4a5f7f]`
+- Inactive: `bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text-muted))] opacity-50`
 
-**Dark Background Cleanup:**
-- Removed `previewDark` from: buttons (all 5), panel container, modal container/header/footer, icon size scale, icon containers
-- Kept `previewDark` only for: form inputs (dark on dark), modal backdrop (transparency demo)
+**3. Chat Message Action Icons** → `ButtonCardV2`
+- `p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10`
+- Include green (save) and red (cancel) variants
+
+**4. Sidebar Settings Cog** (NEW)
+- Icon-only Shadow Surface variant, `rounded-xl px-3 py-2`
+- Same tokens as other Shadow Surface buttons
+
+**5. Exit Scenario** (NEW)
+- Adaptive text link: dark bg `text-white`, light bg `text-black`
+- `text-xs font-black uppercase tracking-widest`
+
+**6. Time of Day Selectors** (NEW)
+- Active/inactive toggle states, `p-2 rounded-lg`
+- Active: `bg-blue-100 border-2 border-blue-400 text-blue-600`
+
+**7. Day Counter Arrows** (NEW)
+- Stepper inside white pill, `px-1.5 py-0.5`
+
+**8. Memory Quick Save** (NEW)
+- Per-message brain icon with default/saved states
+- Default: `text-slate-500`, Saved: `text-purple-400`
+
+**9. Timer Pause/Play** (NEW)
+- Micro control, `p-0.5 rounded`
+
+All entries use `pageSpecific={true}`, `appWide={false}`. Entries 1-3 keep their existing preview styles. Entries 6-9 need dark preview wrappers since they render on dark/image backgrounds.
+
