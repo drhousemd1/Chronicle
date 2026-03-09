@@ -312,6 +312,116 @@ const TypoCardV2: React.FC<TypoV2Props> = (props) => {
 };
 
 
+/* ═══════════════════════ INPUT CARD V2 (Standardized) ═══════════════════════ */
+interface InputV2Props {
+  inputName: string;
+  preview: React.ReactNode;
+  previewBg?: string;
+  background: string;
+  border: string;
+  borderRadius: string;
+  textColor: string;
+  placeholderColor?: string;
+  focusStyle?: string;
+  fontSize: string;
+  padding: string;
+  purpose: string;
+  locations: string;
+  pageSpecific?: boolean;
+  appWide?: boolean;
+  notes?: string;
+}
+
+const InputCardV2: React.FC<InputV2Props> = (props) => {
+  const { inputName, preview, previewBg, background, border, borderRadius, textColor, placeholderColor, focusStyle, fontSize, padding, purpose, locations, pageSpecific, appWide, notes } = props;
+  const details = { Background: background, Border: border, 'Border Radius': borderRadius, 'Text Color': textColor, 'Font Size': fontSize, Padding: padding, Purpose: purpose, Locations: locations };
+  return (
+  <CardEditOverlay cardName={inputName} cardType="Input" details={details}>
+  <div style={{
+    background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
+    boxShadow: sg.shadow, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+  }}
+    onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadowHover; }}
+    onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadow; }}
+  >
+    {/* Preview strip */}
+    <div style={{
+      background: previewBg || '#25272d', padding: '16px 20px',
+      display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'center', gap: 12, minHeight: 64,
+      boxShadow: 'inset 0 -1px 0 #e2e8f0',
+    }}>{preview}</div>
+
+    <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 6, borderTop: '1px solid #e2e8f0' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Input Name:</span>
+        <span style={valueStyle}>{inputName}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Background:</span>
+        <span style={monoStyle}>{background}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Border:</span>
+        <span style={monoStyle}>{border}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Border Radius:</span>
+        <span style={monoStyle}>{borderRadius}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Text Color:</span>
+        <span style={monoStyle}>{textColor}</span>
+      </div>
+      {placeholderColor && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={labelStyle}>Placeholder Color:</span>
+          <span style={monoStyle}>{placeholderColor}</span>
+        </div>
+      )}
+      {focusStyle && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={labelStyle}>Focus Style:</span>
+          <span style={monoStyle}>{focusStyle}</span>
+        </div>
+      )}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Font Size:</span>
+        <span style={monoStyle}>{fontSize}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Padding:</span>
+        <span style={monoStyle}>{padding}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Purpose:</span>
+        <span style={valueStyle}>{purpose}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Locations:</span>
+        <span style={valueStyle}>{locations}</span>
+      </div>
+      {notes && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={labelStyle}>Notes:</span>
+          <span style={valueStyle}>{notes}</span>
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#334155', cursor: 'default' }}>
+          <input type="checkbox" checked={pageSpecific} disabled style={{ accentColor: '#3b82f6', width: 14, height: 14 }} />
+          Page Specific
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#334155', cursor: 'default' }}>
+          <input type="checkbox" checked={appWide} disabled style={{ accentColor: '#3b82f6', width: 14, height: 14 }} />
+          App Wide
+        </label>
+      </div>
+    </div>
+  </div>
+  </CardEditOverlay>
+  );
+};
+
 
 /* ═══════════════════════ TYPOGRAPHY TILE ═══════════════════════ */
 interface TypeTileProps {
