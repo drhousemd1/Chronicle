@@ -174,8 +174,8 @@ const TypoCardV2: React.FC<TypoV2Props> = ({ fontName, exampleContent, exampleBg
 
     <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 6, borderTop: '1px solid #e2e8f0' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <span style={labelStyle}>Name:</span>
-        <span style={valueStyle}>{name}</span>
+        <span style={labelStyle}>Font Name:</span>
+        <span style={valueStyle}>{fontName}</span>
       </div>
       {fontFamily && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
