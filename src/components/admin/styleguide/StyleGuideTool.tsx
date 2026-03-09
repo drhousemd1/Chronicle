@@ -2277,7 +2277,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               />
             </div>
             <InconsistencyNote items={[
-              { file: 'Auth.tsx', note: 'Uses bg-slate-700/50 border-slate-600 — a third input color system alongside zinc-* (dark) and slate-50 (ChronicUI)le UI).'
+              { file: 'Auth.tsx', note: 'Uses bg-slate-700/50 border-slate-600 — a third input color system alongside zinc-* (dark) and slate-50 (Chronicle UI).' },
             ]} />
 
             <PageSubheading>Character Library Search</PageSubheading>
