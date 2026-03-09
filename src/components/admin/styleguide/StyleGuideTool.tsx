@@ -73,6 +73,66 @@ const SwatchCard: React.FC<SwatchProps> = ({ color, name, rows, extraPreviewStyl
   </div>
 );
 
+/* ═══════════════════════ SWATCH CARD V2 (Standardized) ═══════════════════════ */
+interface SwatchV2Props {
+  color: string;
+  name: string;
+  locations: string;
+  hex: string;
+  token: string;
+  pageSpecific: boolean;
+  appWide: boolean;
+  extraPreviewStyle?: React.CSSProperties;
+}
+
+const labelStyle: React.CSSProperties = {
+  fontSize: 12, fontWeight: 700, color: '#334155', fontFamily: 'Inter, system-ui, sans-serif',
+};
+const valueStyle: React.CSSProperties = {
+  fontSize: 12, color: '#334155', fontFamily: 'Inter, system-ui, sans-serif',
+};
+
+const SwatchCardV2: React.FC<SwatchV2Props> = ({ color, name, locations, hex, token, pageSpecific, appWide, extraPreviewStyle }) => (
+  <div style={{
+    background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
+    boxShadow: sg.shadow, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+  }}
+    onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadowHover; }}
+    onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadow; }}
+  >
+    <div style={{ height: 78, background: color, ...extraPreviewStyle }} />
+    <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Color Name:</span>
+        <span style={valueStyle}>{name}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Locations:</span>
+        <span style={valueStyle}>{locations}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Hex:</span>
+        <span style={{ ...valueStyle, fontFamily: "'SF Mono','Fira Code','JetBrains Mono',monospace", fontSize: 11 }}>{hex}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Token:</span>
+        <span style={{ ...valueStyle, fontFamily: "'SF Mono','Fira Code','JetBrains Mono',monospace", fontSize: 11 }}>{token}</span>
+      </div>
+      <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#334155', cursor: 'default' }}>
+          <input type="checkbox" checked={pageSpecific} disabled style={{ accentColor: '#3b82f6', width: 14, height: 14 }} />
+          Page Specific
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#334155', cursor: 'default' }}>
+          <input type="checkbox" checked={appWide} disabled style={{ accentColor: '#3b82f6', width: 14, height: 14 }} />
+          App Wide
+        </label>
+      </div>
+    </div>
+  </div>
+);
+
+
 /* ═══════════════════════ TYPOGRAPHY TILE ═══════════════════════ */
 interface TypeTileProps {
   name: string;
