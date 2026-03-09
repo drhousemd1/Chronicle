@@ -1,5 +1,9 @@
 import React, { useEffect, useRef, useState, useCallback, createContext, useContext } from 'react';
-import { Sparkles, Pencil } from 'lucide-react';
+import { Sparkles, Pencil, Lock, X, Plus } from 'lucide-react';
+import { StarRating } from '@/components/chronicle/StarRating';
+import { SpiceRating } from '@/components/chronicle/SpiceRating';
+import { CircularProgress } from '@/components/chronicle/CircularProgress';
+import { Badge } from '@/components/ui/badge';
 import { StyleGuideDownloadModal } from './StyleGuideDownloadModal';
 import {
   KeepOrEditModal, EditDetailModal, EditsListModal,
@@ -95,11 +99,12 @@ const sg = {
 } as const;
 
 /* ═══════════════════════ PAGE SUBHEADING ═══════════════════════ */
-const PageSubheading: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+const PageSubheading: React.FC<{ children: React.ReactNode; fullSpan?: boolean }> = ({ children, fullSpan }) => (
   <div style={{
     display: 'block', margin: '22px 0 10px', padding: '8px 14px', borderRadius: 6,
     background: 'linear-gradient(90deg, #2d2d2d 0%, #646973 65%, rgba(100,105,115,0) 100%)',
     color: '#fff', fontSize: 11, fontWeight: 700, letterSpacing: '0.6px', textTransform: 'uppercase',
+    ...(fullSpan ? { gridColumn: '1 / -1' } : {}),
   }}>{children}</div>
 );
 
@@ -423,7 +428,105 @@ const InputCardV2: React.FC<InputV2Props> = (props) => {
 };
 
 
-/* ═══════════════════════ TYPOGRAPHY TILE ═══════════════════════ */
+/* ═══════════════════════ BADGE CARD V2 (Standardized) ═══════════════════════ */
+interface BadgeV2Props {
+  badgeName: string;
+  preview: React.ReactNode;
+  previewBg?: string;
+  background: string;
+  textColor: string;
+  size: string;
+  borderRadius: string;
+  padding: string;
+  purpose: string;
+  locations: string;
+  pageSpecific?: boolean;
+  appWide?: boolean;
+  notes?: string;
+  states?: string;
+}
+
+const BadgeCardV2: React.FC<BadgeV2Props> = (props) => {
+  const { badgeName, preview, previewBg, background, textColor, size, borderRadius, padding, purpose, locations, pageSpecific, appWide, notes, states } = props;
+  const details = { Background: background, 'Text Color': textColor, Size: size, 'Border Radius': borderRadius, Padding: padding, Purpose: purpose, Locations: locations };
+  return (
+  <CardEditOverlay cardName={badgeName} cardType="Badge" details={details}>
+  <div style={{
+    background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
+    boxShadow: sg.shadow, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+  }}
+    onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadowHover; }}
+    onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadow; }}
+  >
+    {/* Preview strip */}
+    <div style={{
+      background: previewBg || '#1a1a2e', padding: '16px 20px',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, minHeight: 64,
+      boxShadow: 'inset 0 -1px 0 #e2e8f0', flexWrap: 'wrap',
+    }}>{preview}</div>
+
+    <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 6, borderTop: '1px solid #e2e8f0' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Badge Name:</span>
+        <span style={valueStyle}>{badgeName}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Background:</span>
+        <span style={monoStyle}>{background}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Text Color:</span>
+        <span style={monoStyle}>{textColor}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Size:</span>
+        <span style={monoStyle}>{size}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Border Radius:</span>
+        <span style={monoStyle}>{borderRadius}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Padding:</span>
+        <span style={monoStyle}>{padding}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Purpose:</span>
+        <span style={valueStyle}>{purpose}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Locations:</span>
+        <span style={valueStyle}>{locations}</span>
+      </div>
+      {states && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={labelStyle}>States:</span>
+          <span style={valueStyle}>{states}</span>
+        </div>
+      )}
+      {notes && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={labelStyle}>Notes:</span>
+          <span style={valueStyle}>{notes}</span>
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#334155', cursor: 'default' }}>
+          <input type="checkbox" checked={pageSpecific} disabled style={{ accentColor: '#3b82f6', width: 14, height: 14 }} />
+          Page Specific
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#334155', cursor: 'default' }}>
+          <input type="checkbox" checked={appWide} disabled style={{ accentColor: '#3b82f6', width: 14, height: 14 }} />
+          App Wide
+        </label>
+      </div>
+    </div>
+  </div>
+  </CardEditOverlay>
+  );
+};
+
+
 interface TypeTileProps {
   name: string;
   exampleBg?: string;
@@ -2563,240 +2666,460 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
           {/* ═══════════════════════════════════════════════════════════════ */}
           {/* ═══ 5. BADGES & TAGS ═══ */}
           {/* ═══════════════════════════════════════════════════════════════ */}
-          <Section id="badges" title="Badges & Tags" desc="Badges on story cards, tag chips, and status indicators.">
-            <PageSubheading>Story Builder Page</PageSubheading>
-            <EntryCard name="Content Theme Tag Chips" pageTag="Story Builder"
-              specs='<strong>bg:</strong> #27272a · <strong>color:</strong> #a1a1aa · <strong>border:</strong> 1px solid #3f3f46 · <strong>12px / 500</strong> · <strong>border-radius:</strong> 8px'
-              previewPlain previewStyle={{ gap: 8 }}
-              preview={<>
-                <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 border border-zinc-700 text-zinc-400">Fantasy</span>
-                <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 border border-zinc-700 text-zinc-400">Romance</span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', padding: '5px 10px', borderRadius: 8, fontSize: 12, background: 'transparent', border: '2px dashed #71717a', color: '#60a5fa', fontWeight: 500 }}>+ Add custom</span>
-              </>}
-              code={`bg-zinc-800 border border-zinc-700 text-zinc-400
-px-3 py-1.5 rounded-lg text-xs font-medium`}
-            />
+           <Section id="badges" title="Badges & Tags" desc="Badges on story cards, tag chips, and status indicators.">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
 
-            <div style={{ marginTop: 24 }}>
-              <PageSubheading>My Stories + Gallery Cards</PageSubheading>
-              <EntryCard name="SFW / NSFW Badges" pageTag="Cards"
-                specs='<strong>bg:</strong> #2a2a2f · <strong>12px / 700</strong> · <strong>rounded-lg</strong> · SFW = <strong>blue-400</strong>, NSFW = <strong>red-400</strong>. Positioned absolute top-right on card.'
-                previewPlain
-                preview={<>
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-[#2a2a2f] text-blue-400">SFW</span>
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-[#2a2a2f] text-red-400">NSFW</span>
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-[#2a2a2f] text-emerald-400 uppercase tracking-wide">Published</span>
-                </>}
-                code={`px-2.5 py-1 rounded-lg text-xs font-bold bg-[#2a2a2f]
-/* SFW */       text-blue-400
-/* NSFW */      text-red-400
-/* Published */ text-emerald-400 uppercase tracking-wide`}
+              {/* ── Story Builder — Content Theme Chips ── */}
+              <PageSubheading fullSpan>Story Builder — Content Theme Chips</PageSubheading>
+
+              <BadgeCardV2
+                badgeName="Content Theme Chip (Unselected)"
+                background="bg-zinc-800"
+                textColor="text-zinc-400"
+                size="text-xs font-medium"
+                borderRadius="rounded-lg"
+                padding="px-3 py-1.5"
+                purpose="Unselected preset option in content theme picker"
+                locations="ContentThemesSection — genre, origin, character type, trigger warning pickers"
+                pageSpecific
+                notes="border border-zinc-700. Hover: hover:bg-zinc-700 hover:text-zinc-300"
+                preview={
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 border border-zinc-700 text-zinc-400">Fantasy</span>
+                    <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 border border-zinc-700 text-zinc-400">Romance</span>
+                    <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 border border-zinc-700 text-zinc-400">Horror</span>
+                  </div>
+                }
               />
-            </div>
 
-            <div style={{ marginTop: 24 }}>
-              <PageSubheading>Community Gallery Filters</PageSubheading>
-              <EntryCard name="Active Filter Chips" pageTag="Gallery"
-                specs='Color-coded by category. <strong>px-2 py-1 rounded-full text-xs font-medium</strong>. Each category uses a different color-500/20 bg with matching color-400 text.'
-                previewPlain previewStyle={{ gap: 8 }}
-                preview={<>
-                  <span className="px-2 py-1 bg-white/20 text-white rounded-full text-xs font-medium">"search text"</span>
-                  <span className="px-2 py-1 bg-blue-500/20 text-blue-400 rounded-full text-xs font-medium">SFW</span>
-                  <span className="px-2 py-1 bg-purple-500/20 text-purple-400 rounded-full text-xs font-medium">Romance</span>
-                  <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-medium">Original</span>
-                  <span className="px-2 py-1 bg-amber-500/20 text-amber-400 rounded-full text-xs font-medium">Violence</span>
-                </>}
-                code={`/* Pattern: px-2 py-1 bg-{color}-500/20 text-{color}-400 rounded-full text-xs font-medium */
-/* Search text: bg-white/20 text-white */
-/* Story Type:  bg-blue-500/20 text-blue-400 */
-/* Genre:       bg-purple-500/20 text-purple-400 */
-/* Origin:      bg-green-500/20 text-green-400 */
-/* Warnings:    bg-amber-500/20 text-amber-400 */`}
+              <BadgeCardV2
+                badgeName="Content Theme Chip (Selected)"
+                background="bg-blue-500/20"
+                textColor="text-blue-300"
+                size="text-xs font-medium"
+                borderRadius="rounded-lg"
+                padding="px-3 py-1.5"
+                purpose="Selected preset option in content theme picker"
+                locations="ContentThemesSection — selected genre, origin, character type, trigger warning"
+                pageSpecific
+                notes="border border-blue-500/30"
+                preview={
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30">Fantasy</span>
+                    <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30">Romance</span>
+                  </div>
+                }
               />
-            </div>
 
-            <div style={{ marginTop: 24 }}>
-              <PageSubheading>Chat Interface</PageSubheading>
-              <EntryCard name="Character Control Badge" pageTag="Chat"
-                specs='<strong>text-[8px] px-1.5 py-0.5 rounded</strong>. User-controlled: bg-blue-500 text-white. AI-controlled: bg-slate-500 text-white. Positioned absolute bottom-right of avatar.'
-                previewPlain previewStyle={{ gap: 8 }}
-                preview={<>
-                  <span className="text-[8px] px-1.5 py-0.5 bg-blue-500 text-white rounded shadow-sm font-bold">User</span>
-                  <span className="text-[8px] px-1.5 py-0.5 bg-slate-500 text-white rounded shadow-sm font-bold">AI</span>
-                </>}
-                code={`text-[8px] px-1.5 py-0.5 shadow-sm border-0
-/* User: bg-blue-500 text-white */
-/* AI: bg-slate-500 text-white */`}
+              <BadgeCardV2
+                badgeName="Custom Tag (Removable)"
+                background="bg-blue-500/20"
+                textColor="text-blue-300"
+                size="text-xs font-medium"
+                borderRadius="rounded-lg"
+                padding="px-3 py-1.5"
+                purpose="User-added custom tag with X dismiss button"
+                locations="ContentThemesSection — custom options list"
+                pageSpecific
+                notes="border border-blue-500/30. X button: hover:text-white transition-colors. Uses Lucide X icon w-3 h-3."
+                preview={
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                      my-custom-tag
+                      <X className="w-3 h-3 opacity-70" />
+                    </span>
+                  </div>
+                }
               />
-            </div>
 
-            <div style={{ marginTop: 24 }}>
-              <PageSubheading>Image Library</PageSubheading>
-              <EntryCard name="Image Count Badge" pageTag="Image Library"
-                specs='<strong>bg-blue-600 text-[9px] font-black text-white px-2 py-1 rounded-md uppercase tracking-widest shadow-lg</strong>. Shows image count in folder cards.'
-                previewPlain
+              <BadgeCardV2
+                badgeName="Add Custom Button (Dashed)"
+                background="bg-transparent"
+                textColor="text-blue-400"
+                size="text-xs font-medium"
+                borderRadius="rounded-lg"
+                padding="px-3 py-1.5"
+                purpose="Trigger to add custom content theme tag"
+                locations="ContentThemesSection — end of tag list when allowCustom=true"
+                pageSpecific
+                notes="border-2 border-dashed border-zinc-500. Hover: hover:border-blue-400 hover:bg-blue-500/5. Uses Lucide Plus icon w-3 h-3."
+                preview={
+                  <button className="px-3 py-1.5 rounded-lg text-xs font-medium bg-transparent text-blue-400 border-2 border-dashed border-zinc-500 flex items-center gap-1">
+                    <Plus className="w-3 h-3" />
+                    Add custom
+                  </button>
+                }
+              />
+
+              {/* ── Story Cards — Overlay Badges ── */}
+              <PageSubheading fullSpan>Story Cards — Overlay Badges</PageSubheading>
+
+              <BadgeCardV2
+                badgeName="SFW / NSFW Badge"
+                background="bg-[#2a2a2f]"
+                textColor="SFW: text-blue-400 · NSFW: text-red-400"
+                size="text-xs font-bold uppercase tracking-wide"
+                borderRadius="rounded-lg"
+                padding="px-2.5 py-1"
+                purpose="Content rating badge overlaid on story cards"
+                locations="GalleryStoryCard (top-right), StoryHub (top-right)"
+                appWide
+                notes="backdrop-blur-sm shadow-lg. Positioned absolute top-4 right-4 z-10."
+                states="SFW = text-blue-400, NSFW = text-red-400"
+                preview={
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <span className="px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f] text-blue-400 uppercase tracking-wide">SFW</span>
+                    <span className="px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f] text-red-400 uppercase tracking-wide">NSFW</span>
+                  </div>
+                }
+              />
+
+              <BadgeCardV2
+                badgeName="Published Badge (Card Overlay)"
+                background="bg-[#2a2a2f]"
+                textColor="text-emerald-400"
+                size="text-xs font-bold uppercase tracking-wide"
+                borderRadius="rounded-lg"
+                padding="px-2.5 py-1"
+                purpose="Indicates story is published to the gallery"
+                locations="StoryHub — top-left badge container on story cards"
+                pageSpecific
+                notes="backdrop-blur-sm shadow-lg. Only shown for owned published scenarios."
+                preview={
+                  <span className="px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f] text-emerald-400 uppercase tracking-wide">Published</span>
+                }
+              />
+
+              <BadgeCardV2
+                badgeName="Editable Badge (Pencil Icon)"
+                background="bg-[#2a2a2f]"
+                textColor="text-purple-400 (icon)"
+                size="w-4 h-4 (Pencil icon)"
+                borderRadius="rounded-lg"
+                padding="p-1.5"
+                purpose="Indicates story allows remixing/editing by other users"
+                locations="GalleryStoryCard (top-left), StoryHub (top-left badge container)"
+                appWide
+                notes="backdrop-blur-sm shadow-lg. Contains Lucide Pencil icon only, no text."
+                preview={
+                  <div className="p-1.5 backdrop-blur-sm rounded-lg shadow-lg bg-[#2a2a2f]">
+                    <Pencil className="w-4 h-4 text-purple-400" />
+                  </div>
+                }
+              />
+
+              {/* ── Story Detail Modal — Inline Status Badges ── */}
+              <PageSubheading fullSpan>Story Detail Modal — Inline Status Badges</PageSubheading>
+
+              <BadgeCardV2
+                badgeName="Published Badge (Inline)"
+                background="bg-emerald-500/20"
+                textColor="text-emerald-400"
+                size="text-xs font-bold"
+                borderRadius="rounded-lg"
+                padding="px-2.5 py-1"
+                purpose="Inline published status badge in story detail modal header"
+                locations="StoryDetailModal — status badges row (owned scenarios only)"
+                pageSpecific
+                notes="No backdrop-blur. Different from card overlay version which uses bg-[#2a2a2f]."
+                preview={
+                  <span className="inline-flex w-fit px-2.5 py-1 bg-emerald-500/20 rounded-lg text-xs font-bold text-emerald-400">PUBLISHED</span>
+                }
+              />
+
+              <BadgeCardV2
+                badgeName="Editable Badge (Inline)"
+                background="bg-purple-500/20"
+                textColor="text-purple-400"
+                size="text-xs font-bold"
+                borderRadius="rounded-lg"
+                padding="px-2.5 py-1"
+                purpose="Inline editable status badge in story detail modal header"
+                locations="StoryDetailModal — status badges row (when allow_remix enabled)"
+                pageSpecific
+                notes="No backdrop-blur. Text-only variant (no Pencil icon)."
+                preview={
+                  <span className="inline-flex w-fit px-2.5 py-1 bg-purple-500/20 rounded-lg text-xs font-bold text-purple-400">EDITABLE</span>
+                }
+              />
+
+              {/* ── Community Gallery — Active Filter Chips ── */}
+              <PageSubheading fullSpan>Community Gallery — Active Filter Chips</PageSubheading>
+
+              <BadgeCardV2
+                badgeName="Gallery Filter Chips (Color-Coded)"
+                background="bg-{color}-500/20 per category"
+                textColor="text-{color}-400 per category"
+                size="text-xs font-medium"
+                borderRadius="rounded-full"
+                padding="px-2 py-1"
+                purpose="Active filter indicators in gallery with X dismiss"
+                locations="GalleryHub — active filters bar"
+                pageSpecific
+                notes="Search text: bg-white/20 text-white. Story Type: blue. Genre: purple. Origin: green. Warnings: amber. Search tags: bg-white/20 text-white. Each has X dismiss button (Lucide X w-3 h-3, hover:text-red-300)."
+                states="5 color variants by category type"
+                preview={
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    <span className="px-2 py-1 bg-white/20 text-white rounded-full text-xs font-medium flex items-center gap-1">"search" <X className="w-3 h-3" /></span>
+                    <span className="px-2 py-1 bg-blue-500/20 text-blue-400 rounded-full text-xs font-medium flex items-center gap-1">SFW <X className="w-3 h-3" /></span>
+                    <span className="px-2 py-1 bg-purple-500/20 text-purple-400 rounded-full text-xs font-medium flex items-center gap-1">Romance <X className="w-3 h-3" /></span>
+                    <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-medium flex items-center gap-1">Original <X className="w-3 h-3" /></span>
+                    <span className="px-2 py-1 bg-amber-500/20 text-amber-400 rounded-full text-xs font-medium flex items-center gap-1">Violence <X className="w-3 h-3" /></span>
+                  </div>
+                }
+              />
+
+              {/* ── Scene Tags ── */}
+              <PageSubheading fullSpan>Scene Tags & Tag Input</PageSubheading>
+
+              <BadgeCardV2
+                badgeName="Scene Tag Chip"
+                background="bg-blue-500/20"
+                textColor="text-blue-300"
+                size="text-xs font-medium"
+                borderRadius="rounded-full"
+                padding="px-2.5 py-1"
+                purpose="Tag chips for scene/image tags"
+                locations="SceneTagEditorModal — tag list, TagInput — displayed tags"
+                appWide
+                notes="border border-blue-500/30. SceneTagEditorModal tags have hover:bg-red-500/20 hover:text-red-300 hover:border-red-500/30 for removal. TagInput variant uses slightly larger px-3 py-1.5."
+                preview={
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full text-xs font-medium">
+                      landscape <X size={12} className="opacity-50" />
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full text-xs font-medium">
+                      battle
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full text-sm font-medium">
+                      night <X className="w-3.5 h-3.5" />
+                    </span>
+                  </div>
+                }
+              />
+
+              {/* ── Chat Interface ── */}
+              <PageSubheading fullSpan>Chat Interface</PageSubheading>
+
+              <BadgeCardV2
+                badgeName="Side Character Control Badge"
+                background="User: bg-blue-500 · AI: bg-slate-500"
+                textColor="text-white"
+                size="text-[8px] (smallest text in app)"
+                borderRadius="rounded (shadcn Badge)"
+                padding="px-1.5 py-0.5"
+                purpose="Micro badge indicating character control type on avatar"
+                locations="SideCharacterCard — absolute -bottom-1 -right-1 on avatar"
+                pageSpecific
+                notes="Uses shadcn Badge component. shadow-sm border-0. hover:bg-blue-500 / hover:bg-slate-500 (no hover change)."
+                states="User = bg-blue-500, AI = bg-slate-500"
+                preview={
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                    <Badge variant="default" className="text-[8px] px-1.5 py-0.5 shadow-sm border-0 bg-blue-500 hover:bg-blue-500 text-white">User</Badge>
+                    <Badge variant="secondary" className="text-[8px] px-1.5 py-0.5 shadow-sm border-0 bg-slate-500 hover:bg-slate-500 text-white">AI</Badge>
+                  </div>
+                }
+              />
+
+              {/* ── Image Library ── */}
+              <PageSubheading fullSpan>Image Library</PageSubheading>
+
+              <BadgeCardV2
+                badgeName="Folder Image Count Badge"
+                background="bg-blue-600"
+                textColor="text-white"
+                size="text-[9px] font-black uppercase tracking-widest"
+                borderRadius="rounded-md"
+                padding="px-2 py-1"
+                purpose="Displays image count in folder cards"
+                locations="ImageLibraryTab — folder card bottom overlay"
+                pageSpecific
+                notes="shadow-lg"
                 preview={
                   <span className="bg-blue-600 text-[9px] font-black text-white px-2 py-1 rounded-md uppercase tracking-widest shadow-lg">12 IMAGES</span>
                 }
-                code={`bg-blue-600 text-[9px] font-black text-white
-px-2 py-1 rounded-md uppercase tracking-widest shadow-lg`}
               />
-            </div>
 
-            <div style={{ marginTop: 24 }}>
-              <PageSubheading>Account Page</PageSubheading>
-              <EntryCard name="Subscription Plan Badge" pageTag="Account"
-                specs='<strong>bg-[#4a5f7f]/20 text-[#7ba3d4]</strong> · <strong>px-3 py-1.5 rounded-lg text-sm font-bold</strong>.'
-                previewPlain
+              {/* ── Account Page ── */}
+              <PageSubheading fullSpan>Account Page — Subscription Tier Badges</PageSubheading>
+
+              <BadgeCardV2
+                badgeName="Current Plan Badge"
+                background="bg-emerald-500/20"
+                textColor="text-emerald-400"
+                size="text-[10px] font-bold uppercase tracking-wider"
+                borderRadius="rounded-full"
+                padding="px-3 py-1"
+                purpose="Indicates the user's current subscription tier"
+                locations="SubscriptionTab — absolute -top-3 right-4 on tier card"
+                pageSpecific
+                notes="border border-emerald-500/30"
                 preview={
-                  <span className="px-3 py-1.5 bg-[#4a5f7f]/20 text-[#7ba3d4] rounded-lg text-sm font-bold">Free</span>
+                  <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full text-[10px] font-bold uppercase tracking-wider">Current Plan</span>
                 }
-                code={`px-3 py-1.5 bg-[#4a5f7f]/20 text-[#7ba3d4] rounded-lg text-sm font-bold`}
               />
-            </div>
 
-            <div style={{ marginTop: 24 }}>
-              <PageSubheading>Character Builder</PageSubheading>
-              <EntryCard name="Lock Icon Indicator (HardcodedRow)" pageTag="Character Builder"
-                specs='<strong>w-3.5 h-3.5 text-zinc-400</strong>. Lock icon positioned at end of HardcodedRow to indicate read-only status. Only on hardcoded trait sections, not user-added extras.'
-                previewPlain previewStyle={{ gap: 12 }}
-                preview={<>
+              <BadgeCardV2
+                badgeName="Coming Soon Badge"
+                background="bg-[#4a5f7f]"
+                textColor="text-white"
+                size="text-[10px] font-bold uppercase tracking-wider"
+                borderRadius="rounded-full"
+                padding="px-3 py-1"
+                purpose="Indicates a subscription tier is not yet available"
+                locations="SubscriptionTab — absolute -top-3 right-4 on tier card"
+                pageSpecific
+                preview={
+                  <span className="px-3 py-1 bg-[#4a5f7f] text-white rounded-full text-[10px] font-bold uppercase tracking-wider">Coming Soon</span>
+                }
+              />
+
+              {/* ── Character Builder ── */}
+              <PageSubheading fullSpan>Character Builder</PageSubheading>
+
+              <BadgeCardV2
+                badgeName="Lock Icon Indicator"
+                background="(none — icon only)"
+                textColor="text-zinc-400"
+                size="w-3.5 h-3.5 (Lucide Lock icon)"
+                borderRadius="n/a"
+                padding="w-7 flex-shrink-0 container"
+                purpose="Indicates non-removable, system-defined trait section in character builder"
+                locations="CharacterEditModal, CharactersTab — HardcodedRow end position"
+                pageSpecific
+                notes="Positioned in a w-7 flex-shrink-0 container at end of row. Only on hardcoded trait sections, not user-added extras."
+                preview={
                   <div className="flex items-center gap-2 bg-zinc-900/50 px-3 py-1.5 rounded-lg border border-white/10">
                     <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">PERSONALITY</span>
-                    <span className="text-zinc-400 text-xs">🔒</span>
+                    <div className="w-7 flex-shrink-0 flex items-center justify-center">
+                      <Lock className="w-3.5 h-3.5 text-zinc-400" />
+                    </div>
                   </div>
-                </>}
-                code={`/* Lock icon: w-3.5 h-3.5 text-zinc-400 (Lucide Lock) */
-/* Positioned after label in HardcodedRow */
-/* Indicates non-removable, system-defined trait section */`}
+                }
               />
-            </div>
 
-            <div style={{ marginTop: 24 }}>
-              <PageSubheading>Model Settings</PageSubheading>
-              <EntryCard name="Connection Status Badge (Animated)" pageTag="Model Settings"
-                specs='<strong>px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest</strong>. Connected: bg-emerald-50 text-emerald-600 border-emerald-100, dot animate-pulse. Checking: bg-amber-50 text-amber-600 border-amber-100, dot animate-bounce. Unlinked: bg-slate-100 text-slate-500.'
-                previewPlain previewStyle={{ gap: 8, flexWrap: 'wrap' }}
-                preview={<>
-                  <span className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />System Linked
-                  </span>
-                  <span className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-amber-50 text-amber-600 border border-amber-100 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-bounce" />Checking...
-                  </span>
-                  <span className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-slate-100 text-slate-500 border border-slate-200 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-slate-300" />Unlinked
-                  </span>
-                </>}
-                code={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest
-/* Connected: bg-emerald-50 text-emerald-600 border-emerald-100, dot animate-pulse */
-/* Checking:  bg-amber-50 text-amber-600 border-amber-100, dot animate-bounce */
-/* Unlinked:  bg-slate-100 text-slate-500 border-slate-200 */`}
+              {/* ── Model Settings ── */}
+              <PageSubheading fullSpan>Model Settings</PageSubheading>
+
+              <BadgeCardV2
+                badgeName="Connection Status Badge (Animated)"
+                background="Connected: bg-emerald-50 · Checking: bg-amber-50 · Unlinked: bg-slate-100"
+                textColor="Connected: text-emerald-600 · Checking: text-amber-600 · Unlinked: text-slate-500"
+                size="text-[10px] font-black uppercase tracking-widest"
+                borderRadius="rounded-full"
+                padding="px-4 py-2"
+                purpose="Shows API connection status with animated indicator dot"
+                locations="ModelSettingsTab — header area"
+                pageSpecific
+                states="Connected: border-emerald-100, dot bg-emerald-500 animate-pulse · Checking: border-amber-100, dot bg-amber-500 animate-bounce · Unlinked: border-slate-200, dot bg-slate-300"
+                preview={
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <span className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />System Linked
+                    </span>
+                    <span className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-amber-50 text-amber-600 border border-amber-100 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-amber-500 animate-bounce" />Checking...
+                    </span>
+                    <span className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-slate-100 text-slate-500 border border-slate-200 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-slate-300" />Unlinked
+                    </span>
+                  </div>
+                }
               />
-            </div>
 
-            <PageSubheading>Interactive Rating Components</PageSubheading>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <EntryCard name="StarRating Component" pageTag="Review Modal / Story Detail"
-                specs='<strong>Amber stars:</strong> filled <code>text-amber-400 fill-amber-400</code>, empty <code>text-white/20</code>. Interactive: <code>hover:scale-110</code> transition. Sizes: 16px (default), 20px (review display). Used in review forms and story detail review cards.'
-                previewDark
+              {/* ── Interactive Rating Components ── */}
+              <PageSubheading fullSpan>Interactive Rating Components</PageSubheading>
+
+              <BadgeCardV2
+                badgeName="Star Rating"
+                background="(transparent)"
+                textColor="Filled: text-amber-400 fill-amber-400 · Empty: text-white/20"
+                size="16px default, 20px review display"
+                borderRadius="n/a"
+                padding="gap-0.5"
+                purpose="Star-based rating display/input using Lucide Star/StarHalf icons"
+                locations="ReviewModal — review form criteria, StoryDetailModal — review cards"
+                appWide
+                notes="Interactive mode: cursor-pointer hover:scale-110 transition-transform. Also has 'slate' color variant: filled text-[hsl(215,25%,40%)] fill-[hsl(215,25%,40%)]."
+                states="Interactive (hover:scale-110) vs Non-interactive (cursor-default). Supports half-star display."
+                preview={
+                  <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 4 }}>Amber 4/5</div>
+                      <StarRating rating={4} size={18} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 4 }}>Half star 3.5/5</div>
+                      <StarRating rating={3.5} size={18} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 4 }}>Slate variant</div>
+                      <StarRating rating={3} size={18} color="slate" />
+                    </div>
+                  </div>
+                }
+              />
+
+              <BadgeCardV2
+                badgeName="Spice Rating"
+                background="(transparent)"
+                textColor="Filled: text-red-500 fill-red-500 · Empty: text-white/20"
+                size="16px default"
+                borderRadius="n/a"
+                padding="gap-0.5"
+                purpose="Flame-based spice/heat level rating using Lucide Flame icon"
+                locations="ReviewModal — spice level criteria, StoryDetailModal — review cards"
+                appWide
+                notes="5-level scale (maxLevel default: 5). Same interactive pattern as StarRating."
+                states="Interactive (hover:scale-110) vs Non-interactive (cursor-default)"
+                preview={
+                  <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 4 }}>3/5</div>
+                      <SpiceRating rating={3} size={18} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 4 }}>5/5</div>
+                      <SpiceRating rating={5} size={18} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 4 }}>0/5</div>
+                      <SpiceRating rating={0} size={18} />
+                    </div>
+                  </div>
+                }
+              />
+
+              <BadgeCardV2
+                badgeName="Circular Progress Ring"
+                background="Dark: bg stroke #334155"
+                textColor="0%: text-slate-400 · 1-99%: text-blue-400 · 100%: text-green-400"
+                size="40px default (font-bold text-[10px] center text)"
+                borderRadius="circular (SVG)"
+                padding="n/a"
+                purpose="SVG circle progress ring showing completion percentage"
+                locations="Story Builder — Arc system phase cards"
+                pageSpecific
+                notes="strokeWidth: 3. Progress stroke: #3b82f6 (in-progress), #22c55e (complete). Has light variant (bg stroke #e2e8f0) and dark variant (bg stroke #334155). Center text: text-lg for size≥80."
+                states="0% → slate (empty) · 1-99% → blue · 100% → green"
                 preview={
                   <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-                    <div style={{ display: 'flex', gap: 2 }}>
-                      {'★★★★☆'.split('').map((s, i) => (
-                        <span key={i} style={{ fontSize: 16, color: s === '★' ? '#fbbf24' : 'rgba(255,255,255,0.2)' }}>{s === '★' ? '★' : '☆'}</span>
-                      ))}
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 4 }}>0%</div>
+                      <CircularProgress value={0} variant="dark" />
                     </div>
-                    <span style={{ fontSize: 10, color: '#94a3b8' }}>4/5</span>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 4 }}>50%</div>
+                      <CircularProgress value={50} variant="dark" />
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 4 }}>100%</div>
+                      <CircularProgress value={100} variant="dark" />
+                    </div>
                   </div>
                 }
-                code={`/* Filled: text-amber-400 fill-amber-400 */
-/* Empty: text-white/20 */
-/* Interactive: cursor-pointer hover:scale-110 transition-transform */
-/* Non-interactive: cursor-default */`}
               />
 
-              <EntryCard name="SpiceRating Component" pageTag="Review Modal / Story Detail"
-                specs='<strong>Red flames:</strong> filled <code>text-red-500 fill-red-500</code>, empty <code>text-white/20</code>. Same interactive pattern as StarRating. Uses Lucide <code>Flame</code> icon. 5-level scale.'
-                previewDark
-                preview={
-                  <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-                    <div style={{ display: 'flex', gap: 2 }}>
-                      {[1,2,3,4,5].map(i => (
-                        <span key={i} style={{ fontSize: 16, color: i <= 3 ? '#ef4444' : 'rgba(255,255,255,0.2)' }}>🔥</span>
-                      ))}
-                    </div>
-                    <span style={{ fontSize: 10, color: '#94a3b8' }}>3/5</span>
-                  </div>
-                }
-                code={`/* Filled: text-red-500 fill-red-500 */
-/* Empty: text-white/20 */
-/* Interactive: cursor-pointer hover:scale-110 transition-transform */
-/* Uses Lucide Flame icon, maxLevel default: 5 */`}
-              />
-
-              <EntryCard name="CircularProgress (SVG Ring)" pageTag="Story Builder / Arc System"
-                specs='SVG circle progress ring. <strong>Light variant:</strong> bg stroke #e2e8f0, progress stroke varies by state. <strong>Dark variant:</strong> bg stroke #334155. <strong>States:</strong> 0% → slate (empty), 1-99% → #3b82f6 (blue), 100% → #22c55e (green). Center text: <code>font-bold text-[10px]</code> (or text-lg for size≥80).'
-                previewDark
-                preview={
-                  <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-                    <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <svg width={40} height={40} style={{ transform: 'rotate(-90deg)' }}>
-                        <circle cx={20} cy={20} r={17} stroke="#334155" strokeWidth={3} fill="none" />
-                        <circle cx={20} cy={20} r={17} stroke="#3b82f6" strokeWidth={3} fill="none" strokeLinecap="round" strokeDasharray={106.8} strokeDashoffset={53.4} />
-                      </svg>
-                      <span style={{ position: 'absolute', fontSize: 10, fontWeight: 700, color: '#60a5fa' }}>50%</span>
-                    </div>
-                    <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <svg width={40} height={40} style={{ transform: 'rotate(-90deg)' }}>
-                        <circle cx={20} cy={20} r={17} stroke="#334155" strokeWidth={3} fill="none" />
-                        <circle cx={20} cy={20} r={17} stroke="#22c55e" strokeWidth={3} fill="none" strokeLinecap="round" strokeDasharray={106.8} strokeDashoffset={0} />
-                      </svg>
-                      <span style={{ position: 'absolute', fontSize: 10, fontWeight: 700, color: '#4ade80' }}>100%</span>
-                    </div>
-                    <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <svg width={40} height={40} style={{ transform: 'rotate(-90deg)' }}>
-                        <circle cx={20} cy={20} r={17} stroke="#334155" strokeWidth={3} fill="none" />
-                      </svg>
-                      <span style={{ position: 'absolute', fontSize: 10, fontWeight: 700, color: '#94a3b8' }}>0%</span>
-                    </div>
-                  </div>
-                }
-                code={`/* SVG circle: radius = (size - strokeWidth) / 2 */
-/* Background stroke: #e2e8f0 (light) or #334155 (dark) */
-/* Progress: #3b82f6 (in-progress), #22c55e (complete) */
-/* Empty: #475569 (dark) or #94a3b8 (light) */
-/* Center: font-bold text-[10px] (size<80) or text-lg */`}
-              />
-
-              <EntryCard name="Tag Chips (Blue Rounded-Full)" pageTag="Scene Tag Editor / Tag Input"
-                specs='<strong>px-2.5 py-1 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full text-xs font-medium</strong>. Used in TagInput and SceneTagEditorModal for scene/image tags. Different from content theme chips which use category-specific colors.'
-                previewDark
-                preview={
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    <span className="px-2.5 py-1 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full text-xs font-medium">landscape</span>
-                    <span className="px-2.5 py-1 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full text-xs font-medium">battle</span>
-                    <span className="px-2.5 py-1 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full text-xs font-medium">night</span>
-                  </div>
-                }
-                code={`px-2.5 py-1 bg-blue-500/20 text-blue-300
-border border-blue-500/30 rounded-full text-xs font-medium
-/* ≠ Content theme chips which use category-specific colors */`}
-              />
-
-              <EntryCard name="Side Character Control Badge" pageTag="Chat Interface"
-                specs='Micro badge showing character control. <strong>User-controlled:</strong> bg-blue-500 text-white text-[8px]. <strong>AI-controlled:</strong> bg-slate-500 text-white text-[8px]. <strong>rounded-md px-1.5 py-0.5</strong>. Smallest text in the app.'
-                previewDark
-                preview={
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <span className="px-1.5 py-0.5 rounded-md bg-blue-500 text-white font-bold" style={{ fontSize: 8 }}>USER</span>
-                    <span className="px-1.5 py-0.5 rounded-md bg-slate-500 text-white font-bold" style={{ fontSize: 8 }}>AI</span>
-                  </div>
-                }
-                code={`/* User: bg-blue-500 text-white text-[8px] font-bold */
-/* AI: bg-slate-500 text-white text-[8px] font-bold */
-/* rounded-md px-1.5 py-0.5 */`}
-              />
             </div>
           </Section>
 
