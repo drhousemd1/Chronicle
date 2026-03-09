@@ -1433,6 +1433,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               textColor="#000000 — text-black. Hover: text-blue-600. Disabled: opacity-30"
               size="px-1.5 py-0.5 — inside white rounded-full pill"
               purpose="Increment/decrement the in-story day counter"
+              visualEffects="Container: bg-white rounded-full shadow-sm. Down arrow disabled at day 1"
               locations="ChatInterfaceTab — day/time control panel"
               pageSpecific={true}
               appWide={false}
