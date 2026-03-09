@@ -1,56 +1,37 @@
 
-Goal: remove location/function labels from typography “Name” and make that field show the actual font family identity only.
 
-What I found in code:
-- `TypoCardV2` currently renders `Name:` from `name` (line ~177 in `StyleGuideTool.tsx`), and many values are function/location labels (“Card Title”, “Speech Text”, etc.).
-- Community Gallery + Chat Interface were converted to `TypoCardV2`, but still using those location/function labels as `name`.
-- Remaining typography sections still use `TypeTile`, which also uses location/function naming patterns.
-- No custom font files or font-family overrides are configured in Tailwind/theme for app UI text; typography is using the default sans stack behavior (plus explicit mono only for code-like fields).
+## Plan: Style Guide Audit & Correction — Complete ✅
 
-Implementation plan:
-1) Redefine typography card identity
-- Update `TypoV2Props`:
-  - Replace `name` with `fontName` (required).
-  - Keep `locations` as the only place for functional usage/location descriptions.
-- In `TypoCardV2` UI:
-  - Change label from `Name:` to `Font Name:`.
-  - Render `fontName` value only.
-  - Keep technical rows (size, weight, spacing, transform, color, line-height) unchanged.
+### Status: ✅ All 3 Passes Complete
 
-2) Standardize font identity values
-- Use real family identity instead of role/location labels.
-- For these cards, set font name to the actual app text family identity (default sans stack), not “Card Title / Action Text / etc.”
-- Keep all role/function wording strictly inside `Locations`.
+Audited and corrected all 8 sections of the Visual Style Guide against live source code.
 
-3) Fix the already-converted sections
-- Community Gallery:
-  - Replace `name="Card Title" | "Card Description" | "Card Stats" | "Search Placeholder"` with `fontName="..."` technical font family value.
-- Chat Interface:
-  - Replace `name="Speech Text" | "Action Text" | "Character Label"` with `fontName="..."` technical font family value.
-- Keep existing `locations` text (already the correct place for role/location).
+### What was fixed:
 
-4) Complete consistency across all typography sections
-- Convert remaining `TypeTile` entries (My Stories, Chat History, Account, Global Sidebar, Character Builder, Model Settings) to `TypoCardV2` using the same rule:
-  - `fontName` = actual font family identity
-  - `locations` = usage/function/location explanation
-- Remove old `TypeTile` usage from Typography section once fully migrated.
+**Pass 1 — Colors & Typography:**
+- "Button Background" swatch: `#2F3137` (screenshot approximation) → `hsl(228 7% 20%)` / `bg-[hsl(var(--ui-surface-2))]` (actual CSS variable)
+- "Button Text Color" swatch: `#eaedf1` → `hsl(210 20% 93%)` / `text-[hsl(var(--ui-text))]` (actual CSS variable)
+- Typography specs updated to use Tailwind class names (e.g., `text-xl font-bold tracking-tight`) instead of raw pixel values
+- Field label tracking corrected from `0.5px` to `tracking-wider (0.05em)`
+- Button text tile renamed from "Header actions" to "Shadow Surface" with `leading-none` added
 
-5) Cleanup + guardrails
-- Search check to ensure no typography card uses function/location words as identity fields.
-- Ensure no duplicated “location as name” pattern remains.
-- Keep typography card structure uniform across all subsections.
+**Pass 2 — Buttons, Forms & Badges:**
+- Header Action Button completely rewritten to Shadow Surface pattern with real Tailwind `className` strings
+- Button previews now render using actual `className` attributes instead of inline `style` objects
+- Card Hover Buttons updated to correct `h-8 px-4` compact variant from source (StoryHub.tsx)
+- Delete button corrected from `bg-#ef4444` to `bg-[hsl(var(--destructive))]`
+- Form inputs and badges converted to `className`-based rendering
+- Code blocks now show actual `className` strings from source
 
-Technical details:
-- Files touched: `src/components/admin/styleguide/StyleGuideTool.tsx` only.
-- Key refactor points:
-  - `interface TypoV2Props` (`name` → `fontName`)
-  - `TypoCardV2` render label/value (`Name:` → `Font Name:`)
-  - All `<TypoCardV2 ...>` call sites in Typography section
-  - Remaining `<TypeTile ...>` call sites converted
-- No backend/database/auth changes required.
+**Pass 3 — Panels, Modals & Icons:**
+- Panel Container: `previewDark` removed, rendered with actual `className`
+- Panel Header Bar: uses actual `className` with `px-5 py-3` (was `16px 24px`)
+- Story Card: added live rendered preview with gradient overlay and `rounded-[2rem]`
+- Modal Container/Header/Footer: `previewDark` removed, rendered with real Tailwind classes
+- Modal Footer buttons now use actual HSL token classes from DeleteConfirmDialog.tsx
+- Icon Size Scale/Containers: `previewDark` removed, previews render on white background
+- Icon Colors: white swatch gets border treatment instead of dark background
 
-Acceptance criteria:
-- Every typography card shows `Font Name` as a real font family identity (not role/location).
-- Terms like “Card Title”, “Speech Text”, “Action Text”, “Character Label”, etc. appear only in `Locations`, never as the card identity field.
-- Community Gallery and Chat Interface specifically follow this rule.
-- Typography section is fully standardized to `TypoCardV2` with no lingering legacy naming pattern.
+**Dark Background Cleanup:**
+- Removed `previewDark` from: buttons (all 5), panel container, modal container/header/footer, icon size scale, icon containers
+- Kept `previewDark` only for: form inputs (dark on dark), modal backdrop (transparency demo)
