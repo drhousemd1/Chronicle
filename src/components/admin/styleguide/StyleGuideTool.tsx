@@ -1168,23 +1168,79 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               }
             />
             <ButtonCardV2
-              buttonName="Story Detail Modal Actions"
-              buttonColor="Edit: rgba(255,255,255,0.05) — bg-white/5. Play: #3b82f6 — bg-[#3b82f6]. Remove: rgba(255,255,255,0.05)"
-              textColor="Edit/Play: #ffffff — text-white. Remove: rgba(255,255,255,0.6) — text-white/60"
-              size="Edit/Play: flex-1 h-12 — rounded-xl. Remove: w-full h-10 — rounded-xl"
-              purpose="Story detail modal actions — edit, play, or remove from gallery"
-              visualEffects="Edit: border 1px white/10. Play: shadow-md. Remove: border 1px white/10"
-              locations="StoryDetailModal — owned story actions and gallery removal"
+              buttonName="Story Detail — Edit"
+              buttonColor="rgba(255,255,255,0.05) — bg-white/5"
+              textColor="#ffffff — text-white"
+              size="flex-1 h-12 — rounded-xl"
+              purpose="Edit owned story from detail modal"
+              visualEffects="border: 1px solid rgba(255,255,255,0.1) — border-white/10. Hover: bg-white/10"
+              locations="StoryDetailModal — owned mode only"
               pageSpecific={true}
               appWide={false}
               preview={
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button className="flex-1 h-12 bg-white/5 border border-white/10 rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2" style={{ cursor: 'default' }}>✏ Edit</button>
-                    <button className="flex-1 h-12 bg-[#3b82f6] rounded-xl text-white shadow-md text-sm font-semibold flex items-center justify-center gap-2" style={{ cursor: 'default' }}>▶ Play</button>
-                  </div>
-                  <button className="w-full h-10 bg-white/5 border border-white/10 text-white/60 rounded-xl font-semibold text-sm flex items-center justify-center gap-2" style={{ cursor: 'default' }}>🌐 Remove from Gallery</button>
+                <button className="flex-1 h-12 bg-white/5 border border-white/10 rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2 hover:bg-white/10 transition-colors" style={{ cursor: 'default', minWidth: 140 }}>✏ Edit</button>
+              }
+            />
+            <ButtonCardV2
+              buttonName="Story Detail — Play"
+              buttonColor="#3b82f6 — bg-[#3b82f6]"
+              textColor="#ffffff — text-white"
+              size="flex-1 h-12 — rounded-xl"
+              purpose="Play/resume story from detail modal"
+              visualEffects="shadow-md. Hover: bg-[#2563eb]"
+              locations="StoryDetailModal — both owned and gallery modes"
+              pageSpecific={true}
+              appWide={false}
+              preview={
+                <button className="flex-1 h-12 bg-[#3b82f6] rounded-xl text-white shadow-md text-sm font-semibold flex items-center justify-center gap-2 hover:bg-[#2563eb] transition-colors" style={{ cursor: 'default', minWidth: 140 }}>▶ Play</button>
+              }
+            />
+            <ButtonCardV2
+              buttonName="Story Detail — Like"
+              buttonColor="Default: rgba(255,255,255,0.05) — bg-white/5. Active: rgba(244,63,94,0.2) — bg-rose-500/20"
+              textColor="Default: #ffffff — text-white. Active: #fb7185 — text-rose-400"
+              size="flex-1 h-12 — rounded-xl"
+              purpose="Like a story — toggle button with filled heart when active"
+              visualEffects="Default: border-white/10. Active: border-rose-500/50. fill-current on icon when active"
+              locations="StoryDetailModal — gallery mode (non-owned)"
+              pageSpecific={true}
+              appWide={false}
+              preview={
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button className="flex-1 h-12 bg-white/5 border border-white/10 rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 100 }}>♡ Like</button>
+                  <button className="flex-1 h-12 bg-rose-500/20 border border-rose-500/50 rounded-xl text-rose-400 text-sm font-semibold flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 100 }}>❤ Liked</button>
                 </div>
+              }
+            />
+            <ButtonCardV2
+              buttonName="Story Detail — Save"
+              buttonColor="Default: rgba(255,255,255,0.05) — bg-white/5. Active: rgba(245,158,11,0.2) — bg-amber-500/20"
+              textColor="Default: #ffffff — text-white. Active: #fbbf24 — text-amber-400"
+              size="flex-1 h-12 — rounded-xl"
+              purpose="Save/bookmark a story — toggle button with filled bookmark when active"
+              visualEffects="Default: border-white/10. Active: border-amber-500/50. fill-current on icon when active"
+              locations="StoryDetailModal — gallery mode (non-owned)"
+              pageSpecific={true}
+              appWide={false}
+              preview={
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button className="flex-1 h-12 bg-white/5 border border-white/10 rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 100 }}>🔖 Save</button>
+                  <button className="flex-1 h-12 bg-amber-500/20 border border-amber-500/50 rounded-xl text-amber-400 text-sm font-semibold flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 100 }}>🔖 Saved</button>
+                </div>
+              }
+            />
+            <ButtonCardV2
+              buttonName="Story Detail — Remove from Gallery"
+              buttonColor="rgba(255,255,255,0.05) — bg-white/5"
+              textColor="rgba(255,255,255,0.6) — text-white/60"
+              size="w-full h-10 — rounded-xl"
+              purpose="Unpublish owned story from community gallery"
+              visualEffects="border: 1px solid rgba(255,255,255,0.1) — border-white/10"
+              locations="StoryDetailModal — owned + published stories only"
+              pageSpecific={true}
+              appWide={false}
+              preview={
+                <button className="w-full h-10 bg-white/5 border border-white/10 text-white/60 rounded-xl font-semibold text-sm flex items-center justify-center gap-2" style={{ cursor: 'default' }}>🌐 Remove from Gallery</button>
               }
             />
 
