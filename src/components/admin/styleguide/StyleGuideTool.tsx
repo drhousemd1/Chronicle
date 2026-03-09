@@ -1453,6 +1453,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               textColor="Default: #64748b — text-slate-500. Hover: text-purple-400. Saved: text-purple-400"
               size="p-1.5 — rounded-lg"
               purpose="Save the current AI message as a memory entry"
+              visualEffects="transition-colors. Saved state shows purple tinted background"
               locations="ChatInterfaceTab — per-message action row"
               pageSpecific={true}
               appWide={false}
