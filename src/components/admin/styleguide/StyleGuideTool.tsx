@@ -1,11 +1,5 @@
-import React, { useEffect, useRef, useState, useCallback, useContext, createContext } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { StyleGuideDownloadModal } from './StyleGuideDownloadModal';
-
-/* ═══════════════════════ CONFIRMATION CONTEXT ═══════════════════════ */
-const ConfirmContext = createContext<{
-  isConfirmed: (id: string) => boolean;
-  toggle: (id: string) => void;
-}>({ isConfirmed: () => false, toggle: () => {} });
 
 const SECTIONS = [
   { id: 'colors', label: 'Colors' },
@@ -45,24 +39,6 @@ const PageDesc: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <p style={{ fontSize: 12, color: sg.muted, marginBottom: 16 }}>{children}</p>
 );
 
-/* ═══════════════════════ CONFIRMED CHECK BADGE ═══════════════════════ */
-const ConfirmedBadge: React.FC<{ confirmed: boolean; onToggle: () => void }> = ({ confirmed, onToggle }) => (
-  <button
-    onClick={(e) => { e.stopPropagation(); onToggle(); }}
-    title={confirmed ? 'Confirmed – click to unconfirm' : 'Click to mark as confirmed'}
-    style={{
-      position: 'absolute', bottom: 8, right: 8, width: 28, height: 28,
-      padding: 0, border: 'none', borderRadius: 6, cursor: 'pointer',
-      background: confirmed ? 'transparent' : 'rgba(148,163,184,0.15)',
-      opacity: confirmed ? 1 : 0.35,
-      transition: 'opacity 0.2s ease, background 0.2s ease',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-    }}
-  >
-    <img src="/images/confirmed-check.svg" alt="confirmed" style={{ width: 24, height: 24 }} />
-  </button>
-);
-
 /* ═══════════════════════ SWATCH CARD ═══════════════════════ */
 interface SwatchProps {
   color: string;
@@ -71,37 +47,31 @@ interface SwatchProps {
   extraPreviewStyle?: React.CSSProperties;
 }
 
-const SwatchCard: React.FC<SwatchProps> = ({ color, name, rows, extraPreviewStyle }) => {
-  const { isConfirmed, toggle } = useContext(ConfirmContext);
-  const id = `swatch::${name}`;
-  return (
-    <div style={{
-      position: 'relative',
-      background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
-      boxShadow: sg.shadow, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-    }}
-      onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadowHover; }}
-      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadow; }}
-    >
-      <div style={{ height: 78, background: color, ...extraPreviewStyle }} />
-      <div style={{ padding: 12 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: '#111827', marginBottom: 8 }}>{name}</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {rows.map((r, i) => (
-            <div key={i} style={{ display: 'grid', gridTemplateColumns: '56px 1fr', gap: 8, alignItems: 'start', fontSize: 11 }}>
-              <span style={{ textTransform: 'uppercase', fontSize: 9, fontWeight: 700, letterSpacing: '0.6px', color: '#94a3b8', whiteSpace: 'nowrap' }}>{r.label}</span>
-              <span style={{
-                fontSize: 11, color: r.isLocation ? '#475569' : '#334155',
-                fontFamily: r.isLocation ? 'Inter, system-ui, sans-serif' : "'SF Mono','Fira Code','JetBrains Mono',monospace",
-              }}>{r.value}</span>
-            </div>
-          ))}
-        </div>
+const SwatchCard: React.FC<SwatchProps> = ({ color, name, rows, extraPreviewStyle }) => (
+  <div style={{
+    background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
+    boxShadow: sg.shadow, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+  }}
+    onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadowHover; }}
+    onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadow; }}
+  >
+    <div style={{ height: 78, background: color, ...extraPreviewStyle }} />
+    <div style={{ padding: 12 }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: '#111827', marginBottom: 8 }}>{name}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {rows.map((r, i) => (
+          <div key={i} style={{ display: 'grid', gridTemplateColumns: '56px 1fr', gap: 8, alignItems: 'start', fontSize: 11 }}>
+            <span style={{ textTransform: 'uppercase', fontSize: 9, fontWeight: 700, letterSpacing: '0.6px', color: '#94a3b8', whiteSpace: 'nowrap' }}>{r.label}</span>
+            <span style={{
+              fontSize: 11, color: r.isLocation ? '#475569' : '#334155',
+              fontFamily: r.isLocation ? 'Inter, system-ui, sans-serif' : "'SF Mono','Fira Code','JetBrains Mono',monospace",
+            }}>{r.value}</span>
+          </div>
+        ))}
       </div>
-      <ConfirmedBadge confirmed={isConfirmed(id)} onToggle={() => toggle(id)} />
     </div>
-  );
-};
+  </div>
+);
 
 /* ═══════════════════════ TYPOGRAPHY TILE ═══════════════════════ */
 interface TypeTileProps {
@@ -158,39 +128,33 @@ interface EntryCardProps {
   previewStyle?: React.CSSProperties;
 }
 
-const EntryCard: React.FC<EntryCardProps> = ({ name, pageTag, specs, preview, code, previewDark, previewPlain, previewStyle }) => {
-  const { isConfirmed, toggle } = useContext(ConfirmContext);
-  const id = `entry::${pageTag}::${name}`;
-  return (
-    <div style={{
-      position: 'relative',
-      background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
-      boxShadow: sg.shadow, display: 'flex', flexDirection: 'column', height: '100%',
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '10px 14px', background: '#f8fafc' }}>
-        <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.4px', textTransform: 'uppercase', color: '#111827' }}>{name}</span>
-        <span style={{
-          display: 'inline-flex', alignItems: 'center', padding: '3px 8px', borderRadius: 999, fontSize: 9,
-          fontWeight: 700, letterSpacing: '0.6px', textTransform: 'uppercase', color: '#334155', background: '#e2e8f0',
-        }}>{pageTag}</span>
-      </div>
-      <div style={{ padding: 14, display: 'grid', gridTemplateRows: 'auto auto minmax(112px,1fr)', gap: 10, flex: 1, minHeight: 0 }}>
-        <p style={{ color: '#475569', fontSize: 12, lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: specs }} />
-        <div style={{
-          display: 'flex', flexWrap: 'wrap', alignItems: previewPlain ? undefined : 'center', gap: 10, padding: previewPlain ? 0 : 14,
-          borderRadius: 8, background: previewPlain ? 'transparent' : previewDark ? '#25272d' : '#f8fafc',
-          minHeight: 72, ...previewStyle,
-        }}>{preview}</div>
-        <div style={{
-          fontFamily: "'SF Mono','Fira Code','JetBrains Mono',monospace", fontSize: 11, lineHeight: 1.6,
-          color: '#334155', whiteSpace: 'pre-wrap', background: '#f1f5f9', borderRadius: 8, padding: 12,
-          minHeight: 112, overflow: 'auto',
-        }}>{code}</div>
-      </div>
-      <ConfirmedBadge confirmed={isConfirmed(id)} onToggle={() => toggle(id)} />
+const EntryCard: React.FC<EntryCardProps> = ({ name, pageTag, specs, preview, code, previewDark, previewPlain, previewStyle }) => (
+  <div style={{
+    background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
+    boxShadow: sg.shadow, display: 'flex', flexDirection: 'column', height: '100%',
+  }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '10px 14px', background: '#f8fafc' }}>
+      <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.4px', textTransform: 'uppercase', color: '#111827' }}>{name}</span>
+      <span style={{
+        display: 'inline-flex', alignItems: 'center', padding: '3px 8px', borderRadius: 999, fontSize: 9,
+        fontWeight: 700, letterSpacing: '0.6px', textTransform: 'uppercase', color: '#334155', background: '#e2e8f0',
+      }}>{pageTag}</span>
     </div>
-  );
-};
+    <div style={{ padding: 14, display: 'grid', gridTemplateRows: 'auto auto minmax(112px,1fr)', gap: 10, flex: 1, minHeight: 0 }}>
+      <p style={{ color: '#475569', fontSize: 12, lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: specs }} />
+      <div style={{
+        display: 'flex', flexWrap: 'wrap', alignItems: previewPlain ? undefined : 'center', gap: 10, padding: previewPlain ? 0 : 14,
+        borderRadius: 8, background: previewPlain ? 'transparent' : previewDark ? '#25272d' : '#f8fafc',
+        minHeight: 72, ...previewStyle,
+      }}>{preview}</div>
+      <div style={{
+        fontFamily: "'SF Mono','Fira Code','JetBrains Mono',monospace", fontSize: 11, lineHeight: 1.6,
+        color: '#334155', whiteSpace: 'pre-wrap', background: '#f1f5f9', borderRadius: 8, padding: 12,
+        minHeight: 112, overflow: 'auto',
+      }}>{code}</div>
+    </div>
+  </div>
+);
 
 /* ═══════════════════════ DIVIDER ═══════════════════════ */
 const Divider: React.FC<{ style?: React.CSSProperties }> = ({ style }) => (
@@ -241,26 +205,6 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
   const [showRestructuring, setShowRestructuring] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
-  // ─── Confirmed checkmark state (persisted in localStorage) ───
-  const CONFIRMED_STORAGE_KEY = 'sg_confirmed_items';
-  const [confirmedSet, setConfirmedSet] = useState<Set<string>>(() => {
-    try {
-      const raw = localStorage.getItem(CONFIRMED_STORAGE_KEY);
-      return raw ? new Set(JSON.parse(raw)) : new Set();
-    } catch { return new Set(); }
-  });
-
-  const toggleConfirmed = useCallback((id: string) => {
-    setConfirmedSet(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      localStorage.setItem(CONFIRMED_STORAGE_KEY, JSON.stringify([...next]));
-      return next;
-    });
-  }, []);
-
-  const isConfirmed = useCallback((id: string) => confirmedSet.has(id), [confirmedSet]);
-
   useEffect(() => {
     onRegisterDownload?.(() => setShowDownloadModal(true));
     return () => onRegisterDownload?.(null);
@@ -298,10 +242,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
   const twoCol: React.CSSProperties = { display: 'grid', gridTemplateColumns: isMedium ? '1fr' : 'repeat(2,minmax(0,1fr))', gap: 16, alignItems: 'stretch' };
   const fullSpan: React.CSSProperties = isMedium ? {} : { gridColumn: '1 / -1' };
 
-  const confirmCtx = React.useMemo(() => ({ isConfirmed, toggle: toggleConfirmed }), [isConfirmed, toggleConfirmed]);
-
   return (
-    <ConfirmContext.Provider value={confirmCtx}>
     <div style={{ display: 'flex', flexDirection: isNarrow ? 'column' : 'row', height: '100%', background: sg.bg, fontFamily: "'Inter','Segoe UI',system-ui,-apple-system,sans-serif", color: sg.text, lineHeight: 1.5, overflow: 'hidden' }}>
       {/* ─── SIDEBAR / NAV ─── */}
       {isNarrow ? (
@@ -376,28 +317,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
       {/* ─── MAIN AREA ─── */}
       {showRestructuring ? (
-        <div style={{ flex: 1, background: '#ffffff', padding: '48px 42px' }}>
-          <div style={{ maxWidth: 600 }}>
-            <h2 style={{ fontSize: 28, fontWeight: 900, letterSpacing: '-0.03em', color: '#111827', marginBottom: 16 }}>
-              App Style Restructuring
-            </h2>
-            <div style={{
-              display: 'flex', alignItems: 'flex-start', gap: 14, padding: '16px 18px', borderRadius: 10,
-              background: '#f8fafc', border: '1px solid #e2e8f0',
-            }}>
-              <img src="/images/confirmed-check.svg" alt="" style={{ width: 28, height: 28, flexShrink: 0, marginTop: 2 }} />
-              <div style={{ fontSize: 13, color: '#475569', lineHeight: 1.7 }}>
-                <span style={{ fontWeight: 700, color: '#111827' }}>Purple checkmark</span> = confirmed &amp; finalized styling.
-                <br />
-                Click the checkmark area in the bottom-right corner of any card in the Style Guide to toggle its confirmation status.
-                Confirmed items persist across sessions.
-                <div style={{ marginTop: 10, fontSize: 12, color: '#94a3b8' }}>
-                  {confirmedSet.size} item{confirmedSet.size !== 1 ? 's' : ''} confirmed so far.
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <div style={{ flex: 1, background: '#ffffff' }} />
       ) : (
       <div style={{ flex: 1, overflow: 'auto' }}>
         {/* Header */}
@@ -3313,7 +3233,6 @@ text-white/40    — Disabled`}
       )}
       <StyleGuideDownloadModal open={showDownloadModal} onClose={() => setShowDownloadModal(false)} contentRef={contentRef} />
     </div>
-    </ConfirmContext.Provider>
   );
 };
 
