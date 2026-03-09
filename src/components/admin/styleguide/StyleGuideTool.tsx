@@ -703,31 +703,31 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
           <Section id="typography" title="Typography" desc="Font sizes, weights, and letter-spacing values extracted from source code." style={twoCol}>
             <div style={fullSpan}><PageSubheading>Story Builder Page</PageSubheading></div>
 
-            <TypoCardV2 name="Page Title" exampleBg="#fff"
+            <TypoCardV2 fontName="System Sans-Serif" exampleBg="#fff"
               exampleContent={<span className="text-lg font-black text-slate-900 uppercase tracking-tight">STORY BUILDER</span>}
               fontSize="18px (text-lg)" fontWeight="900 (font-black)"
               letterSpacing="-0.5px (tracking-tight)" textTransform="uppercase"
               color="#0f172a (slate-900)"
-              locations='Top-left of the white header bar on every page — "STORY BUILDER", "ACCOUNT", "MY STORIES". Always uppercase, next to the back arrow.'
+              locations='Page title — top-left of the white header bar on every page ("STORY BUILDER", "ACCOUNT", "MY STORIES"). Always uppercase, next to the back arrow.'
               pageSpecific={false} appWide={true}
             />
-            <TypoCardV2 name="Section Heading" exampleBg="#fff"
+            <TypoCardV2 fontName="System Sans-Serif" exampleBg="#fff"
               exampleContent={<span style={{ fontSize: 36, fontWeight: 900, color: '#0f172a', letterSpacing: '-0.9px' }}>Story Setup</span>}
               fontSize="36px" fontWeight="900 (font-black)"
               letterSpacing="-0.9px"
               color="#0f172a (slate-900)"
-              locations="Large heading at top of the content area on Story Builder page."
+              locations="Section heading — large heading at top of the content area on Story Builder page."
               pageSpecific={true} appWide={false}
             />
-            <TypoCardV2 name="Panel Header Title" exampleBg="#4a5f7f"
+            <TypoCardV2 fontName="System Sans-Serif" exampleBg="#4a5f7f"
               exampleContent={<span className="text-xl font-bold tracking-tight text-white">Story Card</span>}
               fontSize="20px (text-xl)" fontWeight="700 (font-bold)"
               letterSpacing="-0.5px (tracking-tight)"
               color="#ffffff (text-white)"
-              locations='Inside bg-[#4a5f7f] panel header bars — "Story Card", "World Core", "Story Arcs", "Opening Dialog".'
+              locations='Panel header title — inside bg-[#4a5f7f] panel header bars ("Story Card", "World Core", "Story Arcs", "Opening Dialog").'
               pageSpecific={false} appWide={true}
             />
-            <TypoCardV2 name="Field Label" exampleBg="#2a2a2f"
+            <TypoCardV2 fontName="System Sans-Serif" exampleBg="#2a2a2f"
               exampleContent={<>
                 <span className="text-[10px] font-bold text-white uppercase tracking-wider">STORY NAME</span>
                 <span className="text-[10px] font-bold text-white uppercase tracking-wider ml-6">BRIEF DESCRIPTION</span>
@@ -735,183 +735,225 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               fontSize="10px (text-[10px])" fontWeight="700 (font-bold)"
               letterSpacing="0.05em (tracking-wider)" textTransform="uppercase"
               color="#ffffff (text-white)"
-              locations="All form field labels inside dark panels."
+              locations="Field label — all form field labels inside dark panels."
               pageSpecific={false} appWide={true}
             />
-            <TypoCardV2 name="Button Label" exampleBg="hsl(228, 7%, 20%)"
+            <TypoCardV2 fontName="System Sans-Serif" exampleBg="hsl(228, 7%, 20%)"
               exampleContent={<span className="text-[10px] font-bold uppercase tracking-wider leading-none" style={{ color: 'hsl(210, 20%, 93%)' }}>SAVE AND CLOSE</span>}
               fontSize="10px (text-[10px])" fontWeight="700 (font-bold)"
               letterSpacing="0.05em (tracking-wider)" textTransform="uppercase"
               color="hsl(210,20%,93%) (ui-text)" lineHeight="1 (leading-none)"
-              locations='All Shadow Surface action buttons — DRAFTS, SAVE AND CLOSE, SAVE DRAFT, Upload Image.'
+              locations='Button label — all Shadow Surface action buttons (DRAFTS, SAVE AND CLOSE, SAVE DRAFT, Upload Image).'
               pageSpecific={false} appWide={true}
             />
-            <TypoCardV2 name="Character Name" exampleBg="#2a2a2f"
+            <TypoCardV2 fontName="System Sans-Serif" exampleBg="#2a2a2f"
               exampleContent={<span className="text-sm font-bold text-white">ASHLEY</span>}
               fontSize="14px (text-sm)" fontWeight="700 (font-bold)"
               color="#ffffff (text-white)"
-              locations="Character names in the Character Roster sidebar panel."
+              locations="Character name — names in the Character Roster sidebar panel."
               pageSpecific={true} appWide={false}
             />
 
             <div style={{ ...fullSpan, margin: '8px 0 4px' }}><Divider style={{ margin: '8px 0 4px' }} /></div>
             <div style={fullSpan}><PageSubheading>My Stories Page</PageSubheading></div>
 
-            <TypeTile name="Story Card Title" exampleBg="linear-gradient(to top, #020617, rgba(15,23,42,0.6))"
+            <TypoCardV2 fontName="System Sans-Serif"
+              exampleBg="linear-gradient(to top, #020617, rgba(15,23,42,0.6))"
               exampleContent={<span className="text-lg font-black text-white tracking-tight">Acotar</span>}
-              specs={['text-lg (18px)', 'font-black (900)', 'tracking-tight', 'text-white']}
-              locations="Story name on the card overlay gradient."
+              fontSize="18px (text-lg)" fontWeight="900 (font-black)"
+              letterSpacing="tight (tracking-tight)"
+              color="#ffffff (white)"
+              locations="Story card title — story name on the card overlay gradient."
+              pageSpecific={true} appWide={false}
             />
-            <TypeTile name="Tab Pill Text" exampleBg="#fff"
+            <TypoCardV2 fontName="System Sans-Serif"
+              exampleBg="#fff"
               exampleContent={
                 <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                   <span className="text-xs font-bold text-white bg-[#4a5f7f] rounded-full px-4 py-1.5">My Stories</span>
                   <span className="text-xs font-bold text-zinc-400">Community</span>
                 </div>
               }
-              specs={['12px', 'font-bold (700)', 'Active: #fff on #4a5f7f', 'Inactive: #a1a1aa']}
-              locations="Navigation tabs below the header bar on My Stories page."
+              fontSize="12px (text-xs)" fontWeight="700 (font-bold)"
+              color="Active: #fff on #4a5f7f · Inactive: #a1a1aa"
+              locations="Tab pill text — navigation tabs below the header bar on My Stories page."
+              pageSpecific={true} appWide={false}
             />
 
             <div style={{ ...fullSpan, margin: '8px 0 4px' }}><Divider style={{ margin: '8px 0 4px' }} /></div>
             <div style={fullSpan}><PageSubheading>Community Gallery</PageSubheading></div>
 
-            <TypoCardV2 name="Card Title"
+            <TypoCardV2 fontName="System Sans-Serif"
               exampleBg="linear-gradient(to top, #020617, rgba(15,23,42,0.6))"
               exampleContent={<span className="text-lg font-black text-white leading-tight tracking-tight">The Dark Forest</span>}
               fontSize="18px (text-lg)" fontWeight="900 (font-black)"
               letterSpacing="tight (tracking-tight)"
               color="#ffffff (white)" lineHeight="tight (leading-tight)"
-              locations="Story title on Gallery card overlay. Truncated. Hover: text-blue-300."
+              locations="Card title — story title on Gallery card overlay. Truncated. Hover: text-blue-300."
               pageSpecific={true} appWide={false}
             />
-            <TypoCardV2 name="Card Description"
+            <TypoCardV2 fontName="System Sans-Serif"
               exampleBg="#2a2a2f"
               exampleContent={<span className="text-xs text-white/60 italic leading-relaxed">A romantic fantasy adventure in the fae lands...</span>}
               fontSize="12px (text-xs)" fontWeight="400 (normal, italic)"
               color="rgba(255,255,255,0.6) (white/60)" lineHeight="relaxed (leading-relaxed)"
-              locations="Story description below title on gallery cards. line-clamp-2."
+              locations="Card description — story description below title on gallery cards. line-clamp-2."
               pageSpecific={true} appWide={false}
             />
-            <TypoCardV2 name="Card Stats"
+            <TypoCardV2 fontName="System Sans-Serif"
               exampleBg="#2a2a2f"
               exampleContent={<span className="text-[10px] text-white/50">👁 123 ❤ 45 🔖 12 ▶ 67</span>}
               fontSize="10px (text-[10px])" fontWeight="400 (normal)"
               color="rgba(255,255,255,0.5) (white/50)"
-              locations="View/like/save/play counts at bottom of gallery cards. flex gap-3."
+              locations="Card stats — view/like/save/play counts at bottom of gallery cards. flex gap-3."
               pageSpecific={true} appWide={false}
             />
-            <TypoCardV2 name="Search Placeholder"
+            <TypoCardV2 fontName="System Sans-Serif"
               exampleBg="#3a3a3f"
               exampleContent={<span className="text-sm text-zinc-500">Search titles, descriptions, or #tags...</span>}
               fontSize="14px (text-sm)" fontWeight="400 (normal)"
               color="#71717a (zinc-500)"
-              locations="Gallery search input placeholder text."
+              locations="Search placeholder — gallery search input placeholder text."
               pageSpecific={true} appWide={false}
             />
 
             <div style={{ ...fullSpan, margin: '8px 0 4px' }}><Divider style={{ margin: '8px 0 4px' }} /></div>
             <div style={fullSpan}><PageSubheading>Chat Interface</PageSubheading></div>
 
-            <TypoCardV2 name="Speech Text"
+            <TypoCardV2 fontName="System Sans-Serif"
               exampleBg="#1c1f26"
               exampleContent={<span className="text-[15px] font-medium text-white leading-relaxed">"Hello there, how are you?"</span>}
               fontSize="15px (text-[15px])" fontWeight="500 (font-medium)"
               color="#ffffff (white)" lineHeight="relaxed (leading-relaxed)"
-              locations="Speech/dialogue text in chat messages. Quoted content."
+              locations="Speech text — speech/dialogue text in chat messages. Quoted content."
               pageSpecific={true} appWide={false}
             />
-            <TypoCardV2 name="Action Text"
+            <TypoCardV2 fontName="System Sans-Serif"
               exampleBg="#1c1f26"
               exampleContent={<span className="text-[15px] italic text-slate-400 leading-relaxed">*walks slowly toward the door*</span>}
               fontSize="15px (text-[15px])" fontWeight="400 (italic)"
               color="#94a3b8 (slate-400)" lineHeight="relaxed (leading-relaxed)"
-              locations="Action text in chat messages wrapped in asterisks."
+              locations="Action text — action text in chat messages wrapped in asterisks."
               pageSpecific={true} appWide={false}
             />
-            <TypoCardV2 name="Character Label"
+            <TypoCardV2 fontName="System Sans-Serif"
               exampleBg="#1c1f26"
               exampleContent={<span className="text-[9px] font-black uppercase tracking-widest text-slate-500">NARRATOR</span>}
               fontSize="9px (text-[9px])" fontWeight="900 (font-black)"
               letterSpacing="widest (tracking-widest)" textTransform="uppercase"
               color="#64748b (slate-500)"
-              locations="Character name below avatar in chat bubbles. AI: text-slate-500, User: text-blue-300."
+              locations="Character label — character name below avatar in chat bubbles. AI: text-slate-500, User: text-blue-300."
               pageSpecific={true} appWide={false}
             />
 
             <div style={{ ...fullSpan, margin: '8px 0 4px' }}><Divider style={{ margin: '8px 0 4px' }} /></div>
             <div style={fullSpan}><PageSubheading>Chat History</PageSubheading></div>
 
-            <TypeTile name="Session Title" exampleBg="#2a2a2f"
+            <TypoCardV2 fontName="System Sans-Serif"
+              exampleBg="#2a2a2f"
               exampleContent={<span className="font-bold text-white">The Dark Forest Adventure</span>}
-              specs={['default (16px)', 'font-bold', 'text-white', 'truncate']}
-              locations="Scenario title in chat history session cards."
+              fontSize="16px (default)" fontWeight="700 (font-bold)"
+              color="#ffffff (white)"
+              locations="Session title — scenario title in chat history session cards. truncate."
+              pageSpecific={true} appWide={false}
             />
-            <TypeTile name="Message Preview" exampleBg="rgba(24,24,27,0.5)"
+            <TypoCardV2 fontName="System Sans-Serif"
+              exampleBg="rgba(24,24,27,0.5)"
               exampleContent={<span className="text-sm text-zinc-400 leading-relaxed">The wind howled through the trees as she approached...</span>}
-              specs={['text-sm (14px)', 'weight 400', 'text-zinc-400', 'line-clamp-2']}
-              locations="Last message preview in session cards."
+              fontSize="14px (text-sm)" fontWeight="400 (normal)"
+              color="#a1a1aa (zinc-400)" lineHeight="relaxed (leading-relaxed)"
+              locations="Message preview — last message preview in session cards. line-clamp-2."
+              pageSpecific={true} appWide={false}
             />
 
             <div style={{ ...fullSpan, margin: '8px 0 4px' }}><Divider style={{ margin: '8px 0 4px' }} /></div>
             <div style={fullSpan}><PageSubheading>Account Page</PageSubheading></div>
 
-            <TypeTile name="Settings Section Title" exampleBg="#1e1e22"
+            <TypoCardV2 fontName="System Sans-Serif"
+              exampleBg="#1e1e22"
               exampleContent={<span className="text-lg font-bold text-white">Email Address</span>}
-              specs={['text-lg (18px)', 'font-bold', 'text-white']}
-              locations="Section headings in Account settings cards (Email, Plan, Password)."
+              fontSize="18px (text-lg)" fontWeight="700 (font-bold)"
+              color="#ffffff (white)"
+              locations="Settings section title — section headings in Account settings cards (Email, Plan, Password)."
+              pageSpecific={true} appWide={false}
             />
-            <TypeTile name="Account Field Label" exampleBg="#1e1e22"
+            <TypoCardV2 fontName="System Sans-Serif"
+              exampleBg="#1e1e22"
               exampleContent={<span className="text-xs font-bold text-white/40 uppercase tracking-wider">NEW PASSWORD</span>}
-              specs={['text-xs', 'font-bold', 'text-white/40', 'uppercase tracking-wider']}
-              locations="Form field labels in Account settings (New Password, Confirm)."
+              fontSize="12px (text-xs)" fontWeight="700 (font-bold)"
+              letterSpacing="0.05em (tracking-wider)" textTransform="uppercase"
+              color="rgba(255,255,255,0.4) (white/40)"
+              locations="Account field label — form field labels in Account settings (New Password, Confirm)."
+              pageSpecific={true} appWide={false}
             />
 
             <div style={{ ...fullSpan, margin: '8px 0 4px' }}><Divider style={{ margin: '8px 0 4px' }} /></div>
             <div style={fullSpan}><PageSubheading>Global Sidebar</PageSubheading></div>
 
-            <TypeTile name="Sidebar Nav Item" exampleBg="#1a1a1a"
+            <TypoCardV2 fontName="System Sans-Serif"
+              exampleBg="#1a1a1a"
               exampleContent={
                 <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                   <span className="text-sm font-bold text-white">My Stories</span>
                   <span className="text-sm font-bold text-slate-400 ml-4">Chat History</span>
                 </div>
               }
-              specs={['text-sm (14px)', 'font-bold', 'Active: text-white', 'Inactive: text-slate-400']}
-              locations="Global sidebar navigation items (expanded mode)."
+              fontSize="14px (text-sm)" fontWeight="700 (font-bold)"
+              color="Active: #ffffff (white) · Inactive: #94a3b8 (slate-400)"
+              locations="Sidebar nav item — global sidebar navigation items (expanded mode)."
+              pageSpecific={false} appWide={true}
             />
-            <TypeTile name="Sidebar Subtitle" exampleBg="#4a5f7f"
+            <TypoCardV2 fontName="System Sans-Serif"
+              exampleBg="#4a5f7f"
               exampleContent={<span className="text-[10px] font-black tracking-wide uppercase text-blue-200">ACOTAR</span>}
-              specs={['text-[10px]', 'font-black', 'tracking-wide uppercase', 'text-blue-200']}
-              locations="Active scenario subtitle below Story Builder nav item."
+              fontSize="10px (text-[10px])" fontWeight="900 (font-black)"
+              letterSpacing="wide (tracking-wide)" textTransform="uppercase"
+              color="#bfdbfe (blue-200)"
+              locations="Sidebar subtitle — active scenario subtitle below Story Builder nav item."
+              pageSpecific={false} appWide={true}
             />
 
             <div style={{ ...fullSpan, margin: '8px 0 4px' }}><Divider style={{ margin: '8px 0 4px' }} /></div>
             <div style={fullSpan}><PageSubheading>Character Builder</PageSubheading></div>
 
-            <TypeTile name="HardcodedRow Label (Read-only)" exampleBg="rgba(24,24,27,0.5)"
+            <TypoCardV2 fontName="System Sans-Serif"
+              exampleBg="rgba(24,24,27,0.5)"
               exampleContent={<span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">PHYSICAL APPEARANCE</span>}
-              specs={['text-[10px]', 'font-bold', 'uppercase', 'tracking-widest', 'text-zinc-400']}
-              locations="Read-only trait labels in character builder HardcodedRow components. Paired with Lock icon (w-3.5 h-3.5 text-zinc-400)."
+              fontSize="10px (text-[10px])" fontWeight="700 (font-bold)"
+              letterSpacing="widest (tracking-widest)" textTransform="uppercase"
+              color="#a1a1aa (zinc-400)"
+              locations="HardcodedRow label (read-only) — read-only trait labels in character builder HardcodedRow components. Paired with Lock icon (w-3.5 h-3.5 text-zinc-400)."
+              pageSpecific={true} appWide={false}
             />
-            <TypeTile name="ExtraRow Editable Label" exampleBg="rgba(24,24,27,0.5)"
+            <TypoCardV2 fontName="System Sans-Serif"
+              exampleBg="rgba(24,24,27,0.5)"
               exampleContent={<span className="text-[10px] font-bold text-zinc-300 uppercase tracking-widest">CUSTOM TRAIT</span>}
-              specs={['text-[10px]', 'font-bold', 'uppercase', 'tracking-widest', 'text-zinc-300']}
-              locations="User-created custom trait labels — editable via input. Same layout as HardcodedRow but without Lock icon, has red X delete."
+              fontSize="10px (text-[10px])" fontWeight="700 (font-bold)"
+              letterSpacing="widest (tracking-widest)" textTransform="uppercase"
+              color="#d4d4d8 (zinc-300)"
+              locations="ExtraRow editable label — user-created custom trait labels, editable via input. Same layout as HardcodedRow but without Lock icon, has red X delete."
+              pageSpecific={true} appWide={false}
             />
 
             <div style={{ ...fullSpan, margin: '8px 0 4px' }}><Divider style={{ margin: '8px 0 4px' }} /></div>
             <div style={fullSpan}><PageSubheading>Model Settings</PageSubheading></div>
 
-            <TypeTile name="Model Name (Active Card)" exampleBg="#0f172a"
+            <TypoCardV2 fontName="System Sans-Serif"
+              exampleBg="#0f172a"
               exampleContent={<span className="font-bold text-white">Grok Beta</span>}
-              specs={['default (16px)', 'font-bold', 'text-white (active)', 'text-slate-900 (inactive)']}
-              locations="Model name inside selection cards. White on dark active card, slate-900 on white inactive card."
+              fontSize="16px (default)" fontWeight="700 (font-bold)"
+              color="Active: #ffffff (white) · Inactive: #0f172a (slate-900)"
+              locations="Model name — model name inside selection cards. White on dark active card, slate-900 on white inactive card."
+              pageSpecific={true} appWide={false}
             />
-            <TypeTile name="Connection Status Text" exampleBg="#f8fafc"
+            <TypoCardV2 fontName="System Sans-Serif"
+              exampleBg="#f8fafc"
               exampleContent={<span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">SYSTEM LINKED</span>}
-              specs={['text-[10px]', 'font-black', 'uppercase', 'tracking-widest', 'text-emerald-600']}
-              locations="Connection status badge text in Model Settings. Error state: text-slate-500."
+              fontSize="10px (text-[10px])" fontWeight="900 (font-black)"
+              letterSpacing="widest (tracking-widest)" textTransform="uppercase"
+              color="#059669 (emerald-600)"
+              locations="Connection status text — connection status badge text in Model Settings. Error state: text-slate-500."
+              pageSpecific={true} appWide={false}
             />
           </Section>
 
