@@ -53,11 +53,7 @@ const CardEditOverlay: React.FC<{ cardName: string; cardType: string; details: R
           }}
           onClick={(e) => { e.stopPropagation(); ctx.onCardAction(cardName, cardType, details); }}
         >
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            width: 36, height: 36, borderRadius: 10,
-            background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(4px)',
-          }}>
+          <div className="flex items-center justify-center w-9 h-9 rounded-[10px] bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] backdrop-blur-sm">
             <Pencil size={16} color="#fff" />
           </div>
         </div>
