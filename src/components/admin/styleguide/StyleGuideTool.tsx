@@ -2547,7 +2547,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 purpose="Chronicle UI Input forced dark with !important overrides"
                 locations="Character Picker — search field"
                 pageSpecific
-                notes="⚠ Demonstrates friction of using light-theme primitives in dark context. Uses !important CSS overrides."
+                notes="⚠ Demonstrates friction of using Chronicle UI primitives in dark context. Uses !important CSS overrides."
                 preview={
                   <input readOnly className="w-full rounded-2xl bg-zinc-900/50 border border-zinc-700 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500" placeholder="Search characters..." />
                 }
