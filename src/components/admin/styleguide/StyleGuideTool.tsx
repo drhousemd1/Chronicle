@@ -12,6 +12,7 @@ interface EditsContextValue {
   keeps: Set<string>;
   editIds: Set<string>; // card names that have edits
   onCardAction: (cardName: string, cardType: string, details: Record<string, string>) => void;
+  onRemoveKeep: (cardName: string) => void;
 }
 const EditsContext = createContext<EditsContextValue | null>(null);
 
@@ -35,7 +36,13 @@ const CardEditOverlay: React.FC<{ cardName: string; cardType: string; details: R
       {(isKept || isEdited) && (
         <div style={{ position: 'absolute', top: 6, right: 6, zIndex: 10, display: 'flex', gap: 4 }}>
           {isKept && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))]">Keep</span>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); ctx.onRemoveKeep(cardName); }}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] hover:brightness-125 hover:border-red-500/50 active:scale-95 transition-all cursor-pointer"
+            >
+              Keep <span className="text-[8px] ml-0.5 opacity-60">✕</span>
+            </button>
           )}
           {isEdited && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))]">Edit</span>
@@ -562,11 +569,17 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
     refreshEditsState();
   }, [refreshEditsState]);
 
+  const handleRemoveKeep = useCallback((cardName: string) => {
+    removeKeep(cardName);
+    refreshEditsState();
+  }, [refreshEditsState]);
+
   const editsContextValue = React.useMemo<EditsContextValue>(() => ({
     keeps,
     editIds: editNames,
     onCardAction: handleCardAction,
-  }), [keeps, editNames, handleCardAction]);
+    onRemoveKeep: handleRemoveKeep,
+  }), [keeps, editNames, handleCardAction, handleRemoveKeep]);
 
   useEffect(() => {
     onRegisterDownload?.(() => setShowDownloadModal(true));
