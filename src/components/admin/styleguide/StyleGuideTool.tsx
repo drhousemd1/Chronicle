@@ -2554,8 +2554,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               />
             </div>
             <InconsistencyNote items={[
-              { file: 'UI.tsx', note: 'Defines light-theme Input/TextArea (bg-slate-50 border-slate-200) while app is dark-themed. Components using it in dark contexts need !important overrides.' },
-              { file: 'CharacterPicker.tsx', note: 'Uses !important CSS overrides to force dark styling on Chronicle UI Input.' },
+              { file: 'UI.tsx', note: 'Defines Input/TextArea with bg-slate-50 border-slate-200 styling. Components in dark contexts need !important overrides.' },
             ]} />
 
           </Section>
