@@ -28,7 +28,7 @@ import { useAuth } from "@/hooks/use-auth";
 
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { PanelLeftClose, PanelLeft, Settings, Image as ImageIcon, Sparkles, ArrowLeft, UserCircle, Sun, Moon, Download } from "lucide-react";
+import { PanelLeftClose, PanelLeft, Settings, Image as ImageIcon, Sparkles, ArrowLeft, UserCircle, Sun, Moon, Download, Pencil } from "lucide-react";
 import { AIPromptModal } from "@/components/chronicle/AIPromptModal";
 import {
   DropdownMenu,
@@ -40,6 +40,7 @@ import * as supabaseData from "@/services/supabase-data";
 import { DeleteConfirmDialog } from "@/components/chronicle/DeleteConfirmDialog";
 import { ChangeNameModal } from "@/components/chronicle/ChangeNameModal";
 import { DraftsModal, upsertDraftRegistry, removeDraftFromRegistry, getDraftRegistry } from "@/components/chronicle/DraftsModal";
+import { getEditsCount } from "@/components/admin/styleguide/StyleGuideEditsModal";
 
 const IconsList = {
   Gallery: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>,
@@ -173,6 +174,8 @@ const IndexContent = () => {
   const guideSaveRef = React.useRef<(() => Promise<void>) | null>(null);
   const guideSyncAllRef = React.useRef<(() => Promise<void>) | null>(null);
   const styleGuideDownloadRef = React.useRef<(() => void) | null>(null);
+  const styleGuideEditsRef = React.useRef<(() => void) | null>(null);
+  const [styleGuideEditsCount, setStyleGuideEditsCount] = useState(0);
   const imageLibraryUploadRef = React.useRef<(() => void) | null>(null);
   
   // Pagination state
@@ -1918,6 +1921,19 @@ const IndexContent = () => {
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
+                    onClick={() => { styleGuideEditsRef.current?.(); }}
+                    className="relative inline-flex items-center gap-2 justify-center h-10 px-5 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
+                  >
+                    <Pencil size={14} />
+                    Edits
+                    {styleGuideEditsCount > 0 && (
+                      <span className="ml-1 inline-flex items-center justify-center h-4 min-w-[16px] rounded-full bg-white/15 text-[9px] font-bold px-1">
+                        {styleGuideEditsCount}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => styleGuideDownloadRef.current?.()}
                     className="inline-flex items-center gap-2 justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
                   >
@@ -2323,7 +2339,7 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
 
 
           {tab === "admin" && (
-              <AdminPage activeTool={adminActiveTool} onSetActiveTool={setAdminActiveTool} selectedModelId={globalModelId} onSelectModel={setGlobalModelId} onRegisterGuideSave={(fn) => { guideSaveRef.current = fn; }} onRegisterGuideSyncAll={(fn) => { guideSyncAllRef.current = fn; }} onRegisterStyleGuideDownload={(fn) => { styleGuideDownloadRef.current = fn; }} guideTheme={guideTheme} />
+              <AdminPage activeTool={adminActiveTool} onSetActiveTool={setAdminActiveTool} selectedModelId={globalModelId} onSelectModel={setGlobalModelId} onRegisterGuideSave={(fn) => { guideSaveRef.current = fn; }} onRegisterGuideSyncAll={(fn) => { guideSyncAllRef.current = fn; }} onRegisterStyleGuideDownload={(fn) => { styleGuideDownloadRef.current = fn; }} onRegisterStyleGuideEdits={(fn) => { styleGuideEditsRef.current = fn; setStyleGuideEditsCount(getEditsCount()); }} guideTheme={guideTheme} />
           )}
 
           {tab === "account" && (

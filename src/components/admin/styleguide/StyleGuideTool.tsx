@@ -1,6 +1,79 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Sparkles } from 'lucide-react';
+import React, { useEffect, useRef, useState, useCallback, createContext, useContext } from 'react';
+import { Sparkles, Pencil } from 'lucide-react';
 import { StyleGuideDownloadModal } from './StyleGuideDownloadModal';
+import {
+  KeepOrEditModal, EditDetailModal, EditsListModal,
+  getEditsRegistry, upsertEdit, removeKeep, addKeep, getKeeps, getEditsCount,
+  type EditEntry,
+} from './StyleGuideEditsModal';
+
+/* ═══════════════════════ EDITS CONTEXT ═══════════════════════ */
+interface EditsContextValue {
+  keeps: Set<string>;
+  editIds: Set<string>; // card names that have edits
+  onCardAction: (cardName: string, cardType: string, details: Record<string, string>) => void;
+}
+const EditsContext = createContext<EditsContextValue | null>(null);
+
+/* ═══════════════════════ CARD EDIT WRAPPER (HOC-style) ═══════════════════════ */
+const CardEditOverlay: React.FC<{ cardName: string; cardType: string; details: Record<string, string>; children: React.ReactNode }> = ({ cardName, cardType, details, children }) => {
+  const ctx = useContext(EditsContext);
+  const [hovered, setHovered] = useState(false);
+  if (!ctx) return <>{children}</>;
+
+  const isKept = ctx.keeps.has(cardName);
+  const isEdited = ctx.editIds.has(cardName);
+
+  return (
+    <div
+      style={{ position: 'relative' }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {children}
+      {/* Status pills */}
+      {(isKept || isEdited) && (
+        <div style={{ position: 'absolute', top: 6, right: 6, zIndex: 10 }}>
+          {isKept && (
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 3, padding: '2px 8px', borderRadius: 999,
+              fontSize: 9, fontWeight: 800, letterSpacing: '0.6px', textTransform: 'uppercase',
+              background: 'rgba(16,185,129,0.2)', color: '#6ee7b7', border: '1px solid rgba(16,185,129,0.3)',
+            }}>Keep</span>
+          )}
+          {isEdited && (
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 3, padding: '2px 8px', borderRadius: 999,
+              fontSize: 9, fontWeight: 800, letterSpacing: '0.6px', textTransform: 'uppercase',
+              background: 'rgba(245,158,11,0.2)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.3)',
+              marginLeft: isKept ? 4 : 0,
+            }}>Edit</span>
+          )}
+        </div>
+      )}
+      {/* Hover overlay */}
+      {hovered && (
+        <div
+          style={{
+            position: 'absolute', inset: 0, zIndex: 9,
+            background: 'rgba(0,0,0,0.25)', borderRadius: 10,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', transition: 'opacity 0.15s',
+          }}
+          onClick={(e) => { e.stopPropagation(); ctx.onCardAction(cardName, cardType, details); }}
+        >
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: 36, height: 36, borderRadius: 10,
+            background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(4px)',
+          }}>
+            <Pencil size={16} color="#fff" />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const SECTIONS = [
   { id: 'colors', label: 'Colors' },
@@ -94,7 +167,11 @@ const valueStyle: React.CSSProperties = {
   fontSize: 12, color: '#334155', fontFamily: 'Inter, system-ui, sans-serif',
 };
 
-const SwatchCardV2: React.FC<SwatchV2Props> = ({ color, name, locations, value, token, pageSpecific, appWide, effect, extraPreviewStyle }) => (
+const SwatchCardV2: React.FC<SwatchV2Props> = (props) => {
+  const { color, name, locations, value, token, pageSpecific, appWide, effect, extraPreviewStyle } = props;
+  const details = { Value: value, Token: token, Locations: locations, ...(effect ? { Effect: effect } : {}) };
+  return (
+  <CardEditOverlay cardName={name} cardType="Swatch" details={details}>
   <div style={{
     background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
     boxShadow: sg.shadow, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
@@ -138,7 +215,9 @@ const SwatchCardV2: React.FC<SwatchV2Props> = ({ color, name, locations, value, 
       </div>
     </div>
   </div>
-);
+  </CardEditOverlay>
+  );
+};
 
 /* ═══════════════════════ TYPO CARD V2 (Standardized) ═══════════════════════ */
 interface TypoV2Props {
@@ -159,7 +238,11 @@ interface TypoV2Props {
 
 const monoStyle: React.CSSProperties = { ...valueStyle, fontFamily: "'SF Mono','Fira Code','JetBrains Mono',monospace", fontSize: 11 };
 
-const TypoCardV2: React.FC<TypoV2Props> = ({ fontName, exampleContent, exampleBg, fontFamily, fontSize, fontWeight, letterSpacing, textTransform, color, lineHeight, locations, pageSpecific, appWide }) => (
+const TypoCardV2: React.FC<TypoV2Props> = (props) => {
+  const { fontName, exampleContent, exampleBg, fontFamily, fontSize, fontWeight, letterSpacing, textTransform, color, lineHeight, locations, pageSpecific, appWide } = props;
+  const details = { 'Font Family': fontFamily || '', 'Font Size': fontSize, 'Font Weight': fontWeight, Color: color, Locations: locations };
+  return (
+  <CardEditOverlay cardName={fontName} cardType="Typography" details={details}>
   <div style={{
     background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
     boxShadow: sg.shadow, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
@@ -230,7 +313,9 @@ const TypoCardV2: React.FC<TypoV2Props> = ({ fontName, exampleContent, exampleBg
       </div>
     </div>
   </div>
-);
+  </CardEditOverlay>
+  );
+};
 
 
 
@@ -291,7 +376,11 @@ interface ButtonV2Props {
   appWide?: boolean;
 }
 
-const ButtonCardV2: React.FC<ButtonV2Props> = ({ buttonName, preview, buttonColor, textColor, size, purpose, visualEffects, locations, pageSpecific, appWide }) => (
+const ButtonCardV2: React.FC<ButtonV2Props> = (props) => {
+  const { buttonName, preview, buttonColor, textColor, size, purpose, visualEffects, locations, pageSpecific, appWide } = props;
+  const details = { 'Button Color': buttonColor, 'Text Color': textColor || '', Size: size, Purpose: purpose, 'Visual Effects': visualEffects || '', Locations: locations };
+  return (
+  <CardEditOverlay cardName={buttonName} cardType="Button" details={details}>
   <div style={{
     background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
     boxShadow: sg.shadow, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
@@ -347,7 +436,9 @@ const ButtonCardV2: React.FC<ButtonV2Props> = ({ buttonName, preview, buttonColo
       </div>
     </div>
   </div>
-);
+  </CardEditOverlay>
+  );
+};
 
 /* ═══════════════════════ ENTRY CARD (buttons, inputs, etc.) ═══════════════════════ */
 interface EntryCardProps {
@@ -361,7 +452,11 @@ interface EntryCardProps {
   previewStyle?: React.CSSProperties;
 }
 
-const EntryCard: React.FC<EntryCardProps> = ({ name, pageTag, specs, preview, code, previewDark, previewPlain, previewStyle }) => (
+const EntryCard: React.FC<EntryCardProps> = (props) => {
+  const { name, pageTag, specs, preview, code, previewDark, previewPlain, previewStyle } = props;
+  const details = { 'Page Tag': pageTag, Specs: specs };
+  return (
+  <CardEditOverlay cardName={name} cardType="Entry" details={details}>
   <div style={{
     background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
     boxShadow: sg.shadow, display: 'flex', flexDirection: 'column', height: '100%',
@@ -387,7 +482,9 @@ const EntryCard: React.FC<EntryCardProps> = ({ name, pageTag, specs, preview, co
       }}>{code}</div>
     </div>
   </div>
-);
+  </CardEditOverlay>
+  );
+};
 
 /* ═══════════════════════ DIVIDER ═══════════════════════ */
 const Divider: React.FC<{ style?: React.CSSProperties }> = ({ style }) => (
@@ -430,18 +527,69 @@ const Section: React.FC<{ id: string; title: string; desc: string; children: Rea
 /* ═══════════════════════ MAIN COMPONENT ═══════════════════════ */
 interface StyleGuideToolProps {
   onRegisterDownload?: (fn: (() => void) | null) => void;
+  onRegisterEdits?: (fn: (() => void) | null) => void;
 }
 
-export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownload }) => {
+export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownload, onRegisterEdits }) => {
   const [activeSection, setActiveSection] = useState('colors');
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [showRestructuring, setShowRestructuring] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
+  // Edits system state
+  const [keeps, setKeeps] = useState<Set<string>>(() => getKeeps());
+  const [editNames, setEditNames] = useState<Set<string>>(() => new Set(getEditsRegistry().map(e => e.cardName)));
+  const [showEditsListModal, setShowEditsListModal] = useState(false);
+  const [keepOrEditTarget, setKeepOrEditTarget] = useState<{ cardName: string; cardType: string; details: Record<string, string> } | null>(null);
+  const [editDetailTarget, setEditDetailTarget] = useState<{ cardName: string; cardType: string; details: Record<string, string>; existingComment?: string; existingId?: string } | null>(null);
+
+  const refreshEditsState = useCallback(() => {
+    setKeeps(getKeeps());
+    setEditNames(new Set(getEditsRegistry().map(e => e.cardName)));
+  }, []);
+
+  const handleCardAction = useCallback((cardName: string, cardType: string, details: Record<string, string>) => {
+    setKeepOrEditTarget({ cardName, cardType, details });
+  }, []);
+
+  const handleKeep = useCallback(() => {
+    if (!keepOrEditTarget) return;
+    addKeep(keepOrEditTarget.cardName);
+    refreshEditsState();
+  }, [keepOrEditTarget, refreshEditsState]);
+
+  const handleEditOpen = useCallback(() => {
+    if (!keepOrEditTarget) return;
+    const existing = getEditsRegistry().find(e => e.cardName === keepOrEditTarget.cardName);
+    setEditDetailTarget({
+      cardName: keepOrEditTarget.cardName,
+      cardType: keepOrEditTarget.cardType,
+      details: keepOrEditTarget.details,
+      existingComment: existing?.comment,
+      existingId: existing?.id,
+    });
+  }, [keepOrEditTarget]);
+
+  const handleSaveEdit = useCallback((entry: EditEntry) => {
+    upsertEdit(entry);
+    refreshEditsState();
+  }, [refreshEditsState]);
+
+  const editsContextValue = React.useMemo<EditsContextValue>(() => ({
+    keeps,
+    editIds: editNames,
+    onCardAction: handleCardAction,
+  }), [keeps, editNames, handleCardAction]);
+
   useEffect(() => {
     onRegisterDownload?.(() => setShowDownloadModal(true));
     return () => onRegisterDownload?.(null);
   }, [onRegisterDownload]);
+
+  useEffect(() => {
+    onRegisterEdits?.(() => setShowEditsListModal(true));
+    return () => onRegisterEdits?.(null);
+  }, [onRegisterEdits]);
   const isNarrow = useMediaQuery('(max-width: 1024px)');
   const isMedium = useMediaQuery('(max-width: 1100px)');
 
@@ -476,6 +624,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
   const fullSpan: React.CSSProperties = isMedium ? {} : { gridColumn: '1 / -1' };
 
   return (
+    <EditsContext.Provider value={editsContextValue}>
     <div style={{ display: 'flex', flexDirection: isNarrow ? 'column' : 'row', height: '100%', background: sg.bg, fontFamily: "'Inter','Segoe UI',system-ui,-apple-system,sans-serif", color: sg.text, lineHeight: 1.5, overflow: 'hidden' }}>
       {/* ─── SIDEBAR / NAV ─── */}
       {isNarrow ? (
@@ -3915,7 +4064,34 @@ text-white/40    — Disabled`}
       </div>
       )}
       <StyleGuideDownloadModal open={showDownloadModal} onClose={() => setShowDownloadModal(false)} contentRef={contentRef} />
+      
+      {/* Edits modals */}
+      <KeepOrEditModal
+        open={!!keepOrEditTarget}
+        onOpenChange={(o) => { if (!o) setKeepOrEditTarget(null); }}
+        cardName={keepOrEditTarget?.cardName || ''}
+        cardType={keepOrEditTarget?.cardType || ''}
+        details={keepOrEditTarget?.details || {}}
+        onKeep={handleKeep}
+        onEdit={handleEditOpen}
+      />
+      <EditDetailModal
+        open={!!editDetailTarget}
+        onOpenChange={(o) => { if (!o) setEditDetailTarget(null); }}
+        cardName={editDetailTarget?.cardName || ''}
+        cardType={editDetailTarget?.cardType || ''}
+        details={editDetailTarget?.details || {}}
+        existingComment={editDetailTarget?.existingComment}
+        existingId={editDetailTarget?.existingId}
+        onSave={handleSaveEdit}
+      />
+      <EditsListModal
+        open={showEditsListModal}
+        onOpenChange={setShowEditsListModal}
+        onCountChange={refreshEditsState}
+      />
     </div>
+    </EditsContext.Provider>
   );
 };
 
