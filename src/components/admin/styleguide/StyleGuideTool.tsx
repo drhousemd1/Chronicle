@@ -237,7 +237,11 @@ interface TypoV2Props {
 
 const monoStyle: React.CSSProperties = { ...valueStyle, fontFamily: "'SF Mono','Fira Code','JetBrains Mono',monospace", fontSize: 11 };
 
-const TypoCardV2: React.FC<TypoV2Props> = ({ fontName, exampleContent, exampleBg, fontFamily, fontSize, fontWeight, letterSpacing, textTransform, color, lineHeight, locations, pageSpecific, appWide }) => (
+const TypoCardV2: React.FC<TypoV2Props> = (props) => {
+  const { fontName, exampleContent, exampleBg, fontFamily, fontSize, fontWeight, letterSpacing, textTransform, color, lineHeight, locations, pageSpecific, appWide } = props;
+  const details = { 'Font Family': fontFamily || '', 'Font Size': fontSize, 'Font Weight': fontWeight, Color: color, Locations: locations };
+  return (
+  <CardEditOverlay cardName={fontName} cardType="Typography" details={details}>
   <div style={{
     background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
     boxShadow: sg.shadow, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
