@@ -12,6 +12,7 @@ interface EditsContextValue {
   keeps: Set<string>;
   editIds: Set<string>; // card names that have edits
   onCardAction: (cardName: string, cardType: string, details: Record<string, string>) => void;
+  onRemoveKeep: (cardName: string) => void;
 }
 const EditsContext = createContext<EditsContextValue | null>(null);
 
