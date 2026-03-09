@@ -1419,11 +1419,11 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               pageSpecific={true}
               appWide={false}
               preview={
-                <div style={{ display: 'flex', gap: 6, justifyContent: 'center', background: 'rgba(0,0,0,0.2)', padding: 8, borderRadius: 8 }}>
-                  <button className="p-2 rounded-lg bg-white border border-black text-black" style={{ cursor: 'default', fontSize: 14 }}>🌅</button>
-                  <button className="p-2 rounded-lg bg-blue-100 border-2 border-blue-400 text-blue-600 shadow-sm" style={{ cursor: 'default', fontSize: 14 }}>☀️</button>
-                  <button className="p-2 rounded-lg bg-white border border-black text-black" style={{ cursor: 'default', fontSize: 14 }}>🌇</button>
-                  <button className="p-2 rounded-lg bg-white border border-black text-black" style={{ cursor: 'default', fontSize: 14 }}>🌙</button>
+                <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
+                  <button className="p-2 rounded-lg bg-white border border-black text-black" style={{ cursor: 'default', fontSize: 12 }}>☀︎ Rise</button>
+                  <button className="p-2 rounded-lg bg-blue-100 border-2 border-blue-400 text-blue-600 shadow-sm" style={{ cursor: 'default', fontSize: 12 }}>☀ Day</button>
+                  <button className="p-2 rounded-lg bg-white border border-black text-black" style={{ cursor: 'default', fontSize: 12 }}>◐ Set</button>
+                  <button className="p-2 rounded-lg bg-white border border-black text-black" style={{ cursor: 'default', fontSize: 12 }}>☽ Night</button>
                 </div>
               }
             />
