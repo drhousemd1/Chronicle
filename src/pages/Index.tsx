@@ -1792,7 +1792,7 @@ const IndexContent = () => {
                   >
                     Drafts
                     {draftCount > 0 && (
-                      <span className="ml-1.5 inline-flex items-center justify-center h-4 min-w-[16px] rounded-full bg-white/15 text-[9px] font-bold px-1">
+                      <span className="ml-1.5 inline-flex items-center justify-center h-4 min-w-[16px] rounded-full bg-zinc-600 text-[9px] font-bold px-1">
                         {draftCount}
                       </span>
                     )}
