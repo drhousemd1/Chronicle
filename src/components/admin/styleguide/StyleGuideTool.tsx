@@ -527,18 +527,69 @@ const Section: React.FC<{ id: string; title: string; desc: string; children: Rea
 /* ═══════════════════════ MAIN COMPONENT ═══════════════════════ */
 interface StyleGuideToolProps {
   onRegisterDownload?: (fn: (() => void) | null) => void;
+  onRegisterEdits?: (fn: (() => void) | null) => void;
 }
 
-export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownload }) => {
+export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownload, onRegisterEdits }) => {
   const [activeSection, setActiveSection] = useState('colors');
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [showRestructuring, setShowRestructuring] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
+  // Edits system state
+  const [keeps, setKeeps] = useState<Set<string>>(() => getKeeps());
+  const [editNames, setEditNames] = useState<Set<string>>(() => new Set(getEditsRegistry().map(e => e.cardName)));
+  const [showEditsListModal, setShowEditsListModal] = useState(false);
+  const [keepOrEditTarget, setKeepOrEditTarget] = useState<{ cardName: string; cardType: string; details: Record<string, string> } | null>(null);
+  const [editDetailTarget, setEditDetailTarget] = useState<{ cardName: string; cardType: string; details: Record<string, string>; existingComment?: string; existingId?: string } | null>(null);
+
+  const refreshEditsState = useCallback(() => {
+    setKeeps(getKeeps());
+    setEditNames(new Set(getEditsRegistry().map(e => e.cardName)));
+  }, []);
+
+  const handleCardAction = useCallback((cardName: string, cardType: string, details: Record<string, string>) => {
+    setKeepOrEditTarget({ cardName, cardType, details });
+  }, []);
+
+  const handleKeep = useCallback(() => {
+    if (!keepOrEditTarget) return;
+    addKeep(keepOrEditTarget.cardName);
+    refreshEditsState();
+  }, [keepOrEditTarget, refreshEditsState]);
+
+  const handleEditOpen = useCallback(() => {
+    if (!keepOrEditTarget) return;
+    const existing = getEditsRegistry().find(e => e.cardName === keepOrEditTarget.cardName);
+    setEditDetailTarget({
+      cardName: keepOrEditTarget.cardName,
+      cardType: keepOrEditTarget.cardType,
+      details: keepOrEditTarget.details,
+      existingComment: existing?.comment,
+      existingId: existing?.id,
+    });
+  }, [keepOrEditTarget]);
+
+  const handleSaveEdit = useCallback((entry: EditEntry) => {
+    upsertEdit(entry);
+    refreshEditsState();
+  }, [refreshEditsState]);
+
+  const editsContextValue = React.useMemo<EditsContextValue>(() => ({
+    keeps,
+    editIds: editNames,
+    onCardAction: handleCardAction,
+  }), [keeps, editNames, handleCardAction]);
+
   useEffect(() => {
     onRegisterDownload?.(() => setShowDownloadModal(true));
     return () => onRegisterDownload?.(null);
   }, [onRegisterDownload]);
+
+  useEffect(() => {
+    onRegisterEdits?.(() => setShowEditsListModal(true));
+    return () => onRegisterEdits?.(null);
+  }, [onRegisterEdits]);
   const isNarrow = useMediaQuery('(max-width: 1024px)');
   const isMedium = useMediaQuery('(max-width: 1100px)');
 
