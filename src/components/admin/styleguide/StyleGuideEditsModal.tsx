@@ -157,8 +157,8 @@ export const EditDetailModal: React.FC<EditDetailModalProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="rounded-xl bg-[hsl(240_6%_10%)] border border-[hsl(0_0%_100%_/_0.10)] shadow-[0_10px_30px_hsl(0_0%_0%_/_0.5)] max-w-lg p-0 gap-0 max-h-[80vh] flex flex-col">
         <DialogHeader className="px-5 pt-5 pb-3 shrink-0">
-          <DialogTitle className="text-white text-base font-bold">Edit: {cardName}</DialogTitle>
-          <p className="text-zinc-500 text-xs mt-1 uppercase tracking-wider font-bold">{cardType}</p>
+          <DialogTitle className="text-[hsl(var(--ui-text))] text-base font-bold">Edit: {cardName}</DialogTitle>
+          <p className="text-[hsl(var(--ui-text-muted))] text-xs mt-1 uppercase tracking-wider font-bold">{cardType}</p>
         </DialogHeader>
 
         <div className="px-5 pb-3 overflow-y-auto flex-1 min-h-0">
