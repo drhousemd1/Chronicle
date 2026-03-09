@@ -1,37 +1,30 @@
 
 
-## Plan: Style Guide Audit & Correction — Complete ✅
+## Fix AI Generate Button — Use Actual App Styling
 
-### Status: ✅ All 3 Passes Complete
+The current style guide entry is completely wrong. It uses a simple Tailwind gradient (`bg-gradient-to-r from-purple-600...`) which doesn't exist anywhere in the app. The real button in `AvatarActionButtons.tsx` (and identical in `CoverImageActionButtons.tsx`, `SceneGalleryActionButtons.tsx`) is a premium multi-layered design.
 
-Audited and corrected all 8 sections of the Visual Style Guide against live source code.
+### What the real button actually is
 
-### What was fixed:
+A `relative overflow-hidden` button with **8 stacked layers**:
+1. **Iridescent outer border ring** — `linear-gradient(90deg)` with teal/purple/white stops
+2. **2px border mask** — `inset-[2px]` with `#2B2D33` background
+3. **Surface gradient** — teal/purple at 22% opacity over `#2B2D33`
+4. **Top sheen** — white-to-transparent vertical gradient
+5. **Diagonal sheen** — 135deg white gradient with `mix-blend-mode: screen`
+6. **Teal bloom** — radial gradient, top-left, blurred
+7. **Purple bloom** — radial gradient, bottom-right, blurred
+8. **Inner edge shadows** — inset box-shadows
 
-**Pass 1 — Colors & Typography:**
-- "Button Background" swatch: `#2F3137` (screenshot approximation) → `hsl(228 7% 20%)` / `bg-[hsl(var(--ui-surface-2))]` (actual CSS variable)
-- "Button Text Color" swatch: `#eaedf1` → `hsl(210 20% 93%)` / `text-[hsl(var(--ui-text))]` (actual CSS variable)
-- Typography specs updated to use Tailwind class names (e.g., `text-xl font-bold tracking-tight`) instead of raw pixel values
-- Field label tracking corrected from `0.5px` to `tracking-wider (0.05em)`
-- Button text tile renamed from "Header actions" to "Shadow Surface" with `leading-none` added
+Plus a Sparkles icon (cyan-200 with teal glow) and text with drop-shadow.
 
-**Pass 2 — Buttons, Forms & Badges:**
-- Header Action Button completely rewritten to Shadow Surface pattern with real Tailwind `className` strings
-- Button previews now render using actual `className` attributes instead of inline `style` objects
-- Card Hover Buttons updated to correct `h-8 px-4` compact variant from source (StoryHub.tsx)
-- Delete button corrected from `bg-#ef4444` to `bg-[hsl(var(--destructive))]`
-- Form inputs and badges converted to `className`-based rendering
-- Code blocks now show actual `className` strings from source
+### Changes to `StyleGuideTool.tsx` lines 1053-1065
 
-**Pass 3 — Panels, Modals & Icons:**
-- Panel Container: `previewDark` removed, rendered with actual `className`
-- Panel Header Bar: uses actual `className` with `px-5 py-3` (was `16px 24px`)
-- Story Card: added live rendered preview with gradient overlay and `rounded-[2rem]`
-- Modal Container/Header/Footer: `previewDark` removed, rendered with real Tailwind classes
-- Modal Footer buttons now use actual HSL token classes from DeleteConfirmDialog.tsx
-- Icon Size Scale/Containers: `previewDark` removed, previews render on white background
-- Icon Colors: white swatch gets border treatment instead of dark background
+1. **Preview**: Replace the simple `<button>` with a replica of the real multi-layered button from `AvatarActionButtons.tsx`, including all 8 layers, the Sparkles icon, and proper sizing
+2. **buttonColor**: Update to `#2B2D33 base surface with teal (rgba(34,184,200)) and purple (rgba(109,94,247)) gradient overlays`
+3. **textColor**: Update to `#ffffff — text-white, text-[10px] font-bold uppercase. Sparkles icon: text-cyan-200`
+4. **size**: Update to `h-10 × px-4 — rounded-xl (12px), overflow-hidden`
+5. **visualEffects**: Update to describe the layered construction: iridescent border ring, teal/purple blooms, top sheen, diagonal sheen, inset edge shadows, outer shadow `shadow-[0_12px_40px_rgba(0,0,0,0.45)]`
+6. **locations**: Update to `Avatar AI Generate, Cover Image AI Generate, Scene Gallery AI Generate — all action button groups`
+7. **pageSpecific**: Change to `false`, **appWide**: Change to `true` (used across multiple pages)
 
-**Dark Background Cleanup:**
-- Removed `previewDark` from: buttons (all 5), panel container, modal container/header/footer, icon size scale, icon containers
-- Kept `previewDark` only for: form inputs (dark on dark), modal backdrop (transparency demo)
