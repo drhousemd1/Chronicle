@@ -82,6 +82,7 @@ interface SwatchV2Props {
   token: string;
   pageSpecific: boolean;
   appWide: boolean;
+  effect?: string;
   extraPreviewStyle?: React.CSSProperties;
 }
 
