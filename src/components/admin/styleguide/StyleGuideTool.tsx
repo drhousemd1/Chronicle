@@ -581,10 +581,10 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <PageSubheading>Model Settings</PageSubheading>
             <PageDesc>Colors used on the Model Settings page — NOTE: this page uses a LIGHT THEME unlike the rest of the app.</PageDesc>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
-              <SwatchCard color="#ffffff" name="Model Card BG (Inactive)" rows={[{ label: 'Hex', value: '#ffffff' }, { label: 'Token', value: 'bg-white' }, { label: 'Location', value: 'Inactive model selection card background', isLocation: true }]} />
-              <SwatchCard color="#0f172a" name="Model Card BG (Active)" rows={[{ label: 'Hex', value: '#0f172a' }, { label: 'Token', value: 'bg-slate-900' }, { label: 'Location', value: 'Active/selected model card background, scale-[1.02]', isLocation: true }]} />
-              <SwatchCard color="#faf5ff" name="Admin Share Panel" rows={[{ label: 'Hex', value: '#faf5ff' }, { label: 'Token', value: 'bg-purple-50' }, { label: 'Location', value: 'Admin-only share toggle row background, border-purple-200', isLocation: true }]} />
-              <SwatchCard color="#f8fafc" name="Connection Setup BG" rows={[{ label: 'Hex', value: '#f8fafc' }, { label: 'Token', value: 'bg-slate-50' }, { label: 'Location', value: 'Connection setup container within Model Settings', isLocation: true }]} />
+              <SwatchCardV2 color="#ffffff" name="White" locations="Inactive model selection card background" value="#ffffff" token="bg-white" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="#0f172a" name="Deep Navy" locations="Active/selected model card background, scale-[1.02]" value="#0f172a" token="bg-slate-900" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="#faf5ff" name="Pale Lavender" locations="Admin-only share toggle row background, border-purple-200" value="#faf5ff" token="bg-purple-50" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="#f8fafc" name="Ice White" locations="Connection setup container within Model Settings" value="#f8fafc" token="bg-slate-50" pageSpecific={true} appWide={false} />
             </div>
             <InconsistencyNote items={[
               { file: 'ModelSettingsTab.tsx', note: 'Uses LIGHT THEME (bg-white, text-slate-900, border-slate-200) while every other page in the app uses dark theme. Major design inconsistency.' },
