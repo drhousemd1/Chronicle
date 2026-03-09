@@ -2411,32 +2411,6 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               />
             </div>
 
-            <PageSubheading>Memories Modal</PageSubheading>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
-              <InputCardV2
-                inputName="Memories Select / Textarea"
-                background="bg-slate-900 (trigger) / bg-slate-800/70 (add form)"
-                border="border-slate-600 (trigger) / border-purple-500/30 (add form)"
-                borderRadius="rounded-md (6px)"
-                textColor="white"
-                placeholderColor="text-slate-400"
-                fontSize="14px / text-sm"
-                padding="px-3 py-2 (h-10 trigger)"
-                purpose="Day selector and memory add form"
-                locations="Memories Modal — day filter select, add memory textarea"
-                pageSpecific
-                notes="⚠ Uses slate-* palette throughout while every other dark component uses zinc-*."
-                preview={
-                  <div style={{ display: 'flex', gap: 8, flexDirection: 'column' }}>
-                    <div className="h-10 px-3 rounded-md bg-slate-900 border border-slate-600 text-white text-sm flex items-center">Day 1</div>
-                    <textarea readOnly className="w-full min-h-[40px] rounded-md bg-slate-800/70 border border-purple-500/30 text-white placeholder:text-slate-400 px-3 py-2 text-sm" placeholder="Add a memory..." />
-                  </div>
-                }
-              />
-            </div>
-            <InconsistencyNote items={[
-              { file: 'MemoriesModal.tsx', note: 'Uses slate-* palette throughout while every other dark component uses zinc-*.' },
-            ]} />
 
             <PageSubheading>GuidanceStrengthSlider</PageSubheading>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
