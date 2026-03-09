@@ -3841,27 +3841,6 @@ shadow-[0_10px_30px_rgba(0,0,0,0.35)]
 /* Delete: bg-red-600/20 border-red-500/30 text-red-400 */`}
             />
 
-            <div style={{ marginTop: 16 }} />
-
-            <EntryCard name="Memories Modal (Slate Theme)" pageTag="Chat Interface"
-              specs='<strong>bg-slate-900 border-slate-700</strong>. Uses slate-* palette throughout instead of app-standard zinc-*. Toggle rows: <code>bg-slate-800/50 border-slate-700</code>. Add form: <code>bg-slate-800/70 border-purple-500/30</code> with <code>animate-in slide-in-from-top-2</code>.'
-              previewDark
-              preview={
-                <div style={{ position: 'relative', width: '100%', height: 100, borderRadius: 8, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
-                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#0f172a', border: '1px solid #334155', borderRadius: 8, padding: '12px 24px', color: '#fff', fontSize: 11, fontWeight: 600 }}>
-                    Memories — slate palette
-                  </div>
-                </div>
-              }
-              code={`bg-slate-900 border-slate-700
-/* Toggle: bg-slate-800/50 border-slate-700 rounded-lg */
-/* Add form: bg-slate-800/70 border-purple-500/30 */
-/* ⚠ Uses slate-* instead of app-standard zinc-* */`}
-            />
-
-            <InconsistencyNote items={[
-              { file: 'MemoriesModal.tsx', note: 'Uses slate-* palette throughout while every other modal uses zinc-*. Also uses bg-slate-900 vs standard bg-zinc-900.' },
-            ]} />
 
             <div style={{ marginTop: 16 }} />
 
