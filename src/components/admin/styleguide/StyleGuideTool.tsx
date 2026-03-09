@@ -4064,7 +4064,34 @@ text-white/40    — Disabled`}
       </div>
       )}
       <StyleGuideDownloadModal open={showDownloadModal} onClose={() => setShowDownloadModal(false)} contentRef={contentRef} />
+      
+      {/* Edits modals */}
+      <KeepOrEditModal
+        open={!!keepOrEditTarget}
+        onOpenChange={(o) => { if (!o) setKeepOrEditTarget(null); }}
+        cardName={keepOrEditTarget?.cardName || ''}
+        cardType={keepOrEditTarget?.cardType || ''}
+        details={keepOrEditTarget?.details || {}}
+        onKeep={handleKeep}
+        onEdit={handleEditOpen}
+      />
+      <EditDetailModal
+        open={!!editDetailTarget}
+        onOpenChange={(o) => { if (!o) setEditDetailTarget(null); }}
+        cardName={editDetailTarget?.cardName || ''}
+        cardType={editDetailTarget?.cardType || ''}
+        details={editDetailTarget?.details || {}}
+        existingComment={editDetailTarget?.existingComment}
+        existingId={editDetailTarget?.existingId}
+        onSave={handleSaveEdit}
+      />
+      <EditsListModal
+        open={showEditsListModal}
+        onOpenChange={setShowEditsListModal}
+        onCountChange={refreshEditsState}
+      />
     </div>
+    </EditsContext.Provider>
   );
 };
 
