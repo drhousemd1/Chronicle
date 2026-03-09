@@ -1,38 +1,37 @@
 
 
-# Fix Story Builder Swatch Names & Locations
+## Plan: Style Guide Audit & Correction — Complete ✅
 
-## Problem
-Color names still contain location info (e.g., "Slate 900 / Title Text", "Zinc 700 / Input Border"). Every name needs to be JUST the color identity. Locations need to describe WHERE the color appears.
+### Status: ✅ All 3 Passes Complete
 
-## All 22 swatches — corrected values
+Audited and corrected all 8 sections of the Visual Style Guide against live source code.
 
-| # | Current `name` | Fixed `name` | Fixed `locations` |
-|---|---|---|---|
-| 1 | Chronicle Blue | Chronicle Blue | Panel header bars, MAIN CHARACTERS pill |
-| 2 | Panel Body / Dark Surface | Panel Body | Panel containers, Character Roster sidebar, character cards |
-| 3 | Icon Sidebar | Sidebar Black | Left icon navigation sidebar |
-| 4 | Shadow Surface Button BG | Shadow Surface | DRAFTS, SAVE AND CLOSE, SAVE DRAFT, Upload Image buttons |
-| 5 | Header Bar | White | Top header bar background |
-| 6 | Content Area Background | Slate 50 (30%) | Main content area behind panels |
-| 7 | Slate 900 / Title Text | Slate 900 | "Story Setup" heading, "STORY BUILDER" header title |
-| 8 | Slate 500 / Subtitle | Slate 500 | Subtitle text below page headings |
-| 9 | Input Background | Zinc 900 (50%) | Text inputs, textareas, bullet-list containers |
-| 10 | Zinc 700 / Input Border | Zinc 700 | Input borders, textarea borders, tag chip borders |
-| 11 | Blue 400 / Link Blue | Blue 400 | "+ Add Location" links, "+ Add custom" text, SFW badge |
-| 12 | Blue 500 / Checkmark | Blue 500 | Art Style checkmark badge, guidance box border |
-| 13 | Zinc 400 / Muted Text | Zinc 400 | Trash icons, tag chip text, inactive tab text |
-| 14 | Zinc 500 / Dashed Borders | Zinc 500 | Dashed "add" button borders, inactive slider labels |
-| 15 | Zinc 800 / Tag Chip BG | Zinc 800 | Genre/Origin/Type tag chips, art style cards, character avatar |
-| 16 | UI Text Color | UI Text | Shadow Surface button text, dark panel text |
-| 17 | Slate 200 / Header Border | Slate 200 | Header bar bottom border |
-| 18 | Guidance Box Surface | Guidance Surface | Story Arc guidance description box |
-| 19 | Zinc 300 / Body Text | Zinc 300 | Bullet list text in World Codex |
-| 20 | White / 10% — Subtle Border | White 10% | Button borders, panel outer borders, character card borders |
-| 21 | White / 20% — Panel Header Border | White 20% | Panel header bar bottom border |
+### What was fixed:
 
-## Scope
-- File: `src/components/admin/styleguide/StyleGuideTool.tsx`, lines 412-432
-- Update `name` and `locations` props on each `SwatchCardV2` call
-- No structural or component changes
+**Pass 1 — Colors & Typography:**
+- "Button Background" swatch: `#2F3137` (screenshot approximation) → `hsl(228 7% 20%)` / `bg-[hsl(var(--ui-surface-2))]` (actual CSS variable)
+- "Button Text Color" swatch: `#eaedf1` → `hsl(210 20% 93%)` / `text-[hsl(var(--ui-text))]` (actual CSS variable)
+- Typography specs updated to use Tailwind class names (e.g., `text-xl font-bold tracking-tight`) instead of raw pixel values
+- Field label tracking corrected from `0.5px` to `tracking-wider (0.05em)`
+- Button text tile renamed from "Header actions" to "Shadow Surface" with `leading-none` added
 
+**Pass 2 — Buttons, Forms & Badges:**
+- Header Action Button completely rewritten to Shadow Surface pattern with real Tailwind `className` strings
+- Button previews now render using actual `className` attributes instead of inline `style` objects
+- Card Hover Buttons updated to correct `h-8 px-4` compact variant from source (StoryHub.tsx)
+- Delete button corrected from `bg-#ef4444` to `bg-[hsl(var(--destructive))]`
+- Form inputs and badges converted to `className`-based rendering
+- Code blocks now show actual `className` strings from source
+
+**Pass 3 — Panels, Modals & Icons:**
+- Panel Container: `previewDark` removed, rendered with actual `className`
+- Panel Header Bar: uses actual `className` with `px-5 py-3` (was `16px 24px`)
+- Story Card: added live rendered preview with gradient overlay and `rounded-[2rem]`
+- Modal Container/Header/Footer: `previewDark` removed, rendered with real Tailwind classes
+- Modal Footer buttons now use actual HSL token classes from DeleteConfirmDialog.tsx
+- Icon Size Scale/Containers: `previewDark` removed, previews render on white background
+- Icon Colors: white swatch gets border treatment instead of dark background
+
+**Dark Background Cleanup:**
+- Removed `previewDark` from: buttons (all 5), panel container, modal container/header/footer, icon size scale, icon containers
+- Kept `previewDark` only for: form inputs (dark on dark), modal backdrop (transparency demo)
