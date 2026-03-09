@@ -1178,7 +1178,9 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               pageSpecific={true}
               appWide={false}
               preview={
-                <button className="flex-1 h-12 bg-white/5 border border-white/10 rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2 hover:bg-white/10 transition-colors" style={{ cursor: 'default', minWidth: 140 }}>✏ Edit</button>
+                <div style={{ background: '#1a1a2e', borderRadius: 12, padding: '16px 20px', width: '100%', display: 'flex', justifyContent: 'center' }}>
+                  <button className="h-12 bg-white/5 border border-white/10 rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2 hover:bg-white/10 transition-colors" style={{ cursor: 'default', minWidth: 140 }}>✏ Edit</button>
+                </div>
               }
             />
             <ButtonCardV2
@@ -1192,7 +1194,9 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               pageSpecific={true}
               appWide={false}
               preview={
-                <button className="flex-1 h-12 bg-[#3b82f6] rounded-xl text-white shadow-md text-sm font-semibold flex items-center justify-center gap-2 hover:bg-[#2563eb] transition-colors" style={{ cursor: 'default', minWidth: 140 }}>▶ Play</button>
+                <div style={{ background: '#1a1a2e', borderRadius: 12, padding: '16px 20px', width: '100%', display: 'flex', justifyContent: 'center' }}>
+                  <button className="h-12 bg-[#3b82f6] rounded-xl text-white shadow-md text-sm font-semibold flex items-center justify-center gap-2 hover:bg-[#2563eb] transition-colors" style={{ cursor: 'default', minWidth: 140 }}>▶ Play</button>
+                </div>
               }
             />
             <ButtonCardV2
@@ -1206,9 +1210,9 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               pageSpecific={true}
               appWide={false}
               preview={
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button className="flex-1 h-12 bg-white/5 border border-white/10 rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 100 }}>♡ Like</button>
-                  <button className="flex-1 h-12 bg-rose-500/20 border border-rose-500/50 rounded-xl text-rose-400 text-sm font-semibold flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 100 }}>❤ Liked</button>
+                <div style={{ background: '#1a1a2e', borderRadius: 12, padding: '16px 20px', width: '100%', display: 'flex', justifyContent: 'center', gap: 8 }}>
+                  <button className="h-12 bg-white/5 border border-white/10 rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 100 }}>♡ Like</button>
+                  <button className="h-12 bg-rose-500/20 border border-rose-500/50 rounded-xl text-rose-400 text-sm font-semibold flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 100 }}>❤ Liked</button>
                 </div>
               }
             />
@@ -1223,9 +1227,9 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               pageSpecific={true}
               appWide={false}
               preview={
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button className="flex-1 h-12 bg-white/5 border border-white/10 rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 100 }}>🔖 Save</button>
-                  <button className="flex-1 h-12 bg-amber-500/20 border border-amber-500/50 rounded-xl text-amber-400 text-sm font-semibold flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 100 }}>🔖 Saved</button>
+                <div style={{ background: '#1a1a2e', borderRadius: 12, padding: '16px 20px', width: '100%', display: 'flex', justifyContent: 'center', gap: 8 }}>
+                  <button className="h-12 bg-white/5 border border-white/10 rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 100 }}>🔖 Save</button>
+                  <button className="h-12 bg-amber-500/20 border border-amber-500/50 rounded-xl text-amber-400 text-sm font-semibold flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 100 }}>🔖 Saved</button>
                 </div>
               }
             />
@@ -1240,7 +1244,9 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               pageSpecific={true}
               appWide={false}
               preview={
-                <button className="w-full h-10 bg-white/5 border border-white/10 text-white/60 rounded-xl font-semibold text-sm flex items-center justify-center gap-2" style={{ cursor: 'default' }}>🌐 Remove from Gallery</button>
+                <div style={{ background: '#1a1a2e', borderRadius: 12, padding: '16px 20px', width: '100%', display: 'flex', justifyContent: 'center' }}>
+                  <button className="h-10 bg-white/5 border border-white/10 text-white/60 rounded-xl font-semibold text-sm flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 220 }}>🌐 Remove from Gallery</button>
+                </div>
               }
             />
 
