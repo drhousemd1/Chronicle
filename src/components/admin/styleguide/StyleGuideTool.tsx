@@ -494,9 +494,13 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <PageSubheading>Chat History</PageSubheading>
             <PageDesc>Colors for the conversation session cards.</PageDesc>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
-              <SwatchCard color="rgba(58,58,63,0.3)" name="Session Inner Card BG" rows={[{ label: 'Value', value: 'rgba(58,58,63,0.3)' }, { label: 'Token', value: 'bg-[#3a3a3f]/30' }, { label: 'Location', value: 'Inner nested card in session entries', isLocation: true }]} />
-              <SwatchCard color="rgba(255,255,255,0.1)" name="Delete Button BG" rows={[{ label: 'Value', value: 'rgba(255,255,255,0.1)' }, { label: 'Token', value: 'bg-white/10' }, { label: 'Location', value: 'Session delete button background, border-white/10', isLocation: true }]} extraPreviewStyle={{ border: '1px dashed #999' }} />
-              <SwatchCard color="rgba(24,24,27,0.5)" name="Message Preview BG" rows={[{ label: 'Value', value: 'rgba(24,24,27,0.5)' }, { label: 'Token', value: 'bg-zinc-900/50' }, { label: 'Location', value: 'Last message preview box in session cards', isLocation: true }]} />
+              <SwatchCardV2 color="#2a2a2f" name="Session Card BG" locations="Session card outer background, empty state card" value="#2a2a2f" token="bg-[#2a2a2f]" pageSpecific={false} appWide={true} />
+              <SwatchCardV2 color="rgba(58,58,63,0.3)" name="Session Inner Card BG" locations="Inner nested card in session entries" value="rgba(58,58,63,0.3)" token="bg-[#3a3a3f]/30" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="rgba(255,255,255,0.05)" name="Inner Card Border" locations="Inner card subtle border" value="rgba(255,255,255,0.05)" token="border-white/5" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="rgba(255,255,255,0.1)" name="Delete Button BG" locations="Session delete button background" value="rgba(255,255,255,0.1)" token="bg-white/10" pageSpecific={false} appWide={true} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="rgba(24,24,27,0.5)" name="Message Preview BG" locations="Last message preview box in session cards" value="rgba(24,24,27,0.5)" token="bg-zinc-900/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="#71717a" name="Meta Text" locations="Message count, date, Created by attribution" value="#71717a" token="text-zinc-500" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="#a1a1aa" name="Preview Text" locations="Last message preview text, delete icon default" value="#a1a1aa" token="text-zinc-400" pageSpecific={true} appWide={false} />
             </div>
 
             <Divider />
