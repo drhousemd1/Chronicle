@@ -248,7 +248,7 @@ export const EditsListModal: React.FC<EditsListModalProps> = ({ open, onOpenChan
 
           <div className="px-5 pb-5 overflow-y-auto flex-1 min-h-0">
             {edits.length === 0 ? (
-              <p className="text-zinc-500 text-sm text-center py-8">No edits flagged yet.</p>
+              <p className="text-[hsl(var(--ui-text-muted))] text-sm text-center py-8">No edits flagged yet.</p>
             ) : (
               <div className="flex flex-col gap-2">
                 {edits.map((edit) => (
