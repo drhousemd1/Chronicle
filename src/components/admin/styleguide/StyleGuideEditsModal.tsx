@@ -273,7 +273,7 @@ export const EditsListModal: React.FC<EditsListModalProps> = ({ open, onOpenChan
                     <button
                       type="button"
                       onClick={() => setEditingEntry(edit)}
-                      className="flex items-center justify-center h-8 w-8 rounded-lg text-zinc-500 hover:text-amber-400 hover:bg-white/5 transition-colors shrink-0"
+                      className="flex items-center justify-center h-8 w-8 rounded-lg text-[hsl(var(--ui-text-muted))] hover:text-[hsl(var(--ui-text))] hover:bg-[hsl(var(--ui-border))] transition-colors shrink-0"
                     >
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
