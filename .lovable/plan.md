@@ -1,37 +1,29 @@
 
 
-## Plan: Style Guide Audit & Correction — Complete ✅
+## Fix My Stories Page Buttons in Style Guide
 
-### Status: ✅ All 3 Passes Complete
+After reviewing `Index.tsx` (hub tab header, lines 1637-1890) and `StoryHub.tsx` (card grid), here are **all** buttons actually present on the My Stories page:
 
-Audited and corrected all 8 sections of the Visual Style Guide against live source code.
+### Buttons currently in the style guide
+1. **Card Hover Buttons — Edit / Delete / Play** (h-8 compact variant) ✅ correct
+2. **Tab Pills — Active / Inactive** ✅ correct
 
-### What was fixed:
+### Buttons MISSING from the style guide
 
-**Pass 1 — Colors & Typography:**
-- "Button Background" swatch: `#2F3137` (screenshot approximation) → `hsl(228 7% 20%)` / `bg-[hsl(var(--ui-surface-2))]` (actual CSS variable)
-- "Button Text Color" swatch: `#eaedf1` → `hsl(210 20% 93%)` / `text-[hsl(var(--ui-text))]` (actual CSS variable)
-- Typography specs updated to use Tailwind class names (e.g., `text-xl font-bold tracking-tight`) instead of raw pixel values
-- Field label tracking corrected from `0.5px` to `tracking-wider (0.05em)`
-- Button text tile renamed from "Header actions" to "Shadow Surface" with `leading-none` added
+3. **Settings Gear Icon Button** (line 1875-1880) — `rounded-xl px-3 py-2 border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]` with a Settings icon. No text, just icon.
 
-**Pass 2 — Buttons, Forms & Badges:**
-- Header Action Button completely rewritten to Shadow Surface pattern with real Tailwind `className` strings
-- Button previews now render using actual `className` attributes instead of inline `style` objects
-- Card Hover Buttons updated to correct `h-8 px-4` compact variant from source (StoryHub.tsx)
-- Delete button corrected from `bg-#ef4444` to `bg-[hsl(var(--destructive))]`
-- Form inputs and badges converted to `className`-based rendering
-- Code blocks now show actual `className` strings from source
+4. **New Story Card** (StoryHub.tsx line 261-269) — `aspect-[2/3] rounded-[2rem] border-2 border-dashed border-zinc-600 bg-gradient-to-br from-zinc-800 to-zinc-900` with a `+` icon in a circle and "New Story" label. This is a full card-sized button, not a standard button.
 
-**Pass 3 — Panels, Modals & Icons:**
-- Panel Container: `previewDark` removed, rendered with actual `className`
-- Panel Header Bar: uses actual `className` with `px-5 py-3` (was `16px 24px`)
-- Story Card: added live rendered preview with gradient overlay and `rounded-[2rem]`
-- Modal Container/Header/Footer: `previewDark` removed, rendered with real Tailwind classes
-- Modal Footer buttons now use actual HSL token classes from DeleteConfirmDialog.tsx
-- Icon Size Scale/Containers: `previewDark` removed, previews render on white background
-- Icon Colors: white swatch gets border treatment instead of dark background
+5. **Story Detail Modal buttons** (opened from My Stories cards via StoryDetailModal.tsx):
+   - **Edit** (owned mode): `flex-1 h-12 bg-white/5 border border-white/10 rounded-xl text-white text-sm font-semibold` with Edit icon
+   - **Play** (both modes): `flex-1 h-12 bg-[#3b82f6] hover:bg-[#2563eb] rounded-xl text-white shadow-md text-sm font-semibold` with Play icon
+   - **Remove from Gallery**: `w-full h-10 bg-white/5 border border-white/10 text-white/60 rounded-xl font-semibold text-sm` with Globe icon
 
-**Dark Background Cleanup:**
-- Removed `previewDark` from: buttons (all 5), panel container, modal container/header/footer, icon size scale, icon containers
-- Kept `previewDark` only for: form inputs (dark on dark), modal backdrop (transparency demo)
+### Changes to `StyleGuideTool.tsx`
+
+After the existing "Tab Pills" entry (~line 1130), add three new `EntryCard` entries under the My Stories section:
+
+1. **"Settings Gear Button"** — pageTag "My Stories", preview showing the gear icon button with the exact shadow-surface styling, specs noting it's a compact icon-only variant of the default button
+2. **"New Story Card"** — pageTag "My Stories", preview showing the dashed-border card with + icon and "New Story" text, specs noting the gradient background and dashed border
+3. **"Story Detail Modal Buttons — Edit / Play / Remove"** — pageTag "My Stories", preview showing all three button variants side by side, specs noting the h-12 size, bg-white/5 glass style for Edit, bg-[#3b82f6] for Play, and the full-width Remove from Gallery button
+
