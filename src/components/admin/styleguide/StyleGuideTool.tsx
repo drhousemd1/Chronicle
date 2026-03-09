@@ -2270,15 +2270,14 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 purpose="Login/signup form fields using shadcn Input with className overrides"
                 locations="Auth Page — email, password, and display name fields"
                 pageSpecific
-                notes="⚠ Uses slate-* palette (unique to Auth) vs zinc-* (rest of app). Third input color system alongside zinc-* (dark) and slate-50 (Chronicle light)."
-                preview={<>
+                notes="⚠ Uses slate-* palette (unique to Auth) vs zinc-* (rest of app). Third input color system alongside zinc-* (dark) and slate-50 (Chronicle UI)."              preview={<>
                   <input readOnly className="w-full rounded-md border border-slate-600 bg-slate-700/50 text-white text-sm px-3 py-2 outline-none placeholder:text-slate-500" placeholder="you@example.com" />
                   <input readOnly type="password" className="w-full rounded-md border border-slate-600 bg-slate-700/50 text-white text-sm px-3 py-2 outline-none placeholder:text-slate-500" placeholder="••••••••" />
                 </>}
               />
             </div>
             <InconsistencyNote items={[
-              { file: 'Auth.tsx', note: 'Uses bg-slate-700/50 border-slate-600 — a third input color system alongside zinc-* (dark) and slate-50 (Chronicle light).' },
+              { file: 'Auth.tsx', note: 'Uses bg-slate-700/50 border-slate-600 — a third input color system alongside zinc-* (dark) and slate-50 (Chronicle UI).' },
             ]} />
 
             <PageSubheading>Character Library Search</PageSubheading>
@@ -2389,28 +2388,6 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               />
             </div>
 
-            <PageSubheading>Image Generation Modals (Light Theme)</PageSubheading>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
-              <InputCardV2
-                inputName="Light-Theme Generation Textarea"
-                previewBg="#fff"
-                background="bg-slate-50"
-                border="border-slate-200"
-                borderRadius="rounded-md (6px)"
-                textColor="text-slate-900"
-                placeholderColor="text-slate-400"
-                focusStyle="ring-2 ring-blue-100 border-blue-400"
-                fontSize="14px / text-sm"
-                padding="px-3 py-2"
-                purpose="Prompt textarea in AI generation modals"
-                locations="Avatar Generation, Cover Image Generation, Scene Image Generation modals"
-                pageSpecific
-                notes="⚠ Light theme — only used in generation modals. Every other textarea in the app uses dark theme."
-                preview={
-                  <textarea readOnly className="w-full min-h-[60px] rounded-md border bg-slate-50 border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400" placeholder="Describe your character's appearance..." />
-                }
-              />
-            </div>
 
             <PageSubheading>Review Modal</PageSubheading>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
@@ -2433,32 +2410,6 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               />
             </div>
 
-            <PageSubheading>Memories Modal</PageSubheading>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
-              <InputCardV2
-                inputName="Memories Select / Textarea"
-                background="bg-slate-900 (trigger) / bg-slate-800/70 (add form)"
-                border="border-slate-600 (trigger) / border-purple-500/30 (add form)"
-                borderRadius="rounded-md (6px)"
-                textColor="white"
-                placeholderColor="text-slate-400"
-                fontSize="14px / text-sm"
-                padding="px-3 py-2 (h-10 trigger)"
-                purpose="Day selector and memory add form"
-                locations="Memories Modal — day filter select, add memory textarea"
-                pageSpecific
-                notes="⚠ Uses slate-* palette throughout while every other dark component uses zinc-*."
-                preview={
-                  <div style={{ display: 'flex', gap: 8, flexDirection: 'column' }}>
-                    <div className="h-10 px-3 rounded-md bg-slate-900 border border-slate-600 text-white text-sm flex items-center">Day 1</div>
-                    <textarea readOnly className="w-full min-h-[40px] rounded-md bg-slate-800/70 border border-purple-500/30 text-white placeholder:text-slate-400 px-3 py-2 text-sm" placeholder="Add a memory..." />
-                  </div>
-                }
-              />
-            </div>
-            <InconsistencyNote items={[
-              { file: 'MemoriesModal.tsx', note: 'Uses slate-* palette throughout while every other dark component uses zinc-*.' },
-            ]} />
 
             <PageSubheading>GuidanceStrengthSlider</PageSubheading>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
@@ -2543,7 +2494,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <PageSubheading>Chronicle UI.tsx — Parallel Input System</PageSubheading>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
               <InputCardV2
-                inputName="Chronicle UI Input (Light Theme)"
+                inputName="Chronicle UI Input"
                 previewBg="#fff"
                 background="bg-slate-50"
                 border="border-slate-200"
@@ -2556,7 +2507,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 purpose="Light-theme input primitive defined in UI.tsx"
                 locations="StoryHub, CharactersTab, WorldTab, ModelSettings, PublicProfileTab"
                 appWide
-                notes="⚠ Light theme — used across ~50% of the app. Label: text-xs font-bold uppercase text-slate-500. Different from shadcn Input and all dark-themed inputs."
+                notes="Used across ~50% of the app. Label: text-xs font-bold uppercase text-slate-500. Different from shadcn Input and all dark-themed inputs."
                 preview={
                   <div style={{ width: '100%' }}>
                     <label className="block text-xs font-bold uppercase mb-1 text-slate-500">Label</label>
@@ -2565,7 +2516,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 }
               />
               <InputCardV2
-                inputName="Chronicle UI TextArea (Light Theme)"
+                inputName="Chronicle UI TextArea"
                 previewBg="#fff"
                 background="bg-slate-50"
                 border="border-slate-200"
@@ -2578,14 +2529,14 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 purpose="Light-theme textarea matching Chronicle Input styling"
                 locations="CharacterEditForm, WorldTab, ShareStoryModal"
                 appWide
-                notes="⚠ Light theme — same issue as Chronicle Input. Supports autoResize prop."
+                notes="Same styling as Chronicle Input. Supports autoResize prop."
                 preview={
                   <textarea readOnly className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none resize-none" rows={2} placeholder="Chronicle UI TextArea..." />
                 }
               />
               <InputCardV2
                 inputName="CharacterPicker Search (Dark Override)"
-                background="!bg-zinc-900/50 (overrides Chronicle light)"
+                background="!bg-zinc-900/50 (overrides Chronicle UI)"
                 border="!border-zinc-700"
                 borderRadius="rounded-2xl (16px — inherited from Chronicle)"
                 textColor="!text-white"
@@ -2595,15 +2546,14 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 purpose="Chronicle UI Input forced dark with !important overrides"
                 locations="Character Picker — search field"
                 pageSpecific
-                notes="⚠ Demonstrates friction of using light-theme primitives in dark context. Uses !important CSS overrides."
+                notes="⚠ Demonstrates friction of using Chronicle UI primitives in dark context. Uses !important CSS overrides."
                 preview={
                   <input readOnly className="w-full rounded-2xl bg-zinc-900/50 border border-zinc-700 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500" placeholder="Search characters..." />
                 }
               />
             </div>
             <InconsistencyNote items={[
-              { file: 'UI.tsx', note: 'Defines light-theme Input/TextArea (bg-slate-50 border-slate-200) while app is dark-themed. Components using it in dark contexts need !important overrides.' },
-              { file: 'CharacterPicker.tsx', note: 'Uses !important CSS overrides to force dark styling on Chronicle UI Input.' },
+              { file: 'UI.tsx', note: 'Defines Input/TextArea with bg-slate-50 border-slate-200 styling. Components in dark contexts need !important overrides.' },
             ]} />
 
           </Section>
@@ -3890,27 +3840,6 @@ shadow-[0_10px_30px_rgba(0,0,0,0.35)]
 /* Delete: bg-red-600/20 border-red-500/30 text-red-400 */`}
             />
 
-            <div style={{ marginTop: 16 }} />
-
-            <EntryCard name="Memories Modal (Slate Theme)" pageTag="Chat Interface"
-              specs='<strong>bg-slate-900 border-slate-700</strong>. Uses slate-* palette throughout instead of app-standard zinc-*. Toggle rows: <code>bg-slate-800/50 border-slate-700</code>. Add form: <code>bg-slate-800/70 border-purple-500/30</code> with <code>animate-in slide-in-from-top-2</code>.'
-              previewDark
-              preview={
-                <div style={{ position: 'relative', width: '100%', height: 100, borderRadius: 8, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
-                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#0f172a', border: '1px solid #334155', borderRadius: 8, padding: '12px 24px', color: '#fff', fontSize: 11, fontWeight: 600 }}>
-                    Memories — slate palette
-                  </div>
-                </div>
-              }
-              code={`bg-slate-900 border-slate-700
-/* Toggle: bg-slate-800/50 border-slate-700 rounded-lg */
-/* Add form: bg-slate-800/70 border-purple-500/30 */
-/* ⚠ Uses slate-* instead of app-standard zinc-* */`}
-            />
-
-            <InconsistencyNote items={[
-              { file: 'MemoriesModal.tsx', note: 'Uses slate-* palette throughout while every other modal uses zinc-*. Also uses bg-slate-900 vs standard bg-zinc-900.' },
-            ]} />
 
             <div style={{ marginTop: 16 }} />
 
