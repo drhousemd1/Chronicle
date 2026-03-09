@@ -98,7 +98,7 @@ export const KeepOrEditModal: React.FC<KeepOrEditModalProps> = ({
           <button
             type="button"
             onClick={() => { onKeep(); onOpenChange(false); }}
-            className="flex-1 inline-flex items-center justify-center gap-2 h-10 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold uppercase tracking-wider hover:brightness-125 active:brightness-150 transition-all"
+            className="flex-1 inline-flex items-center justify-center gap-2 h-10 rounded-xl bg-[hsl(240_6%_18%)] border-[hsl(0_0%_100%_/_0.10)] text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider shadow-[0_10px_30px_hsl(0_0%_0%_/_0.35)] hover:brightness-125 active:brightness-150 transition-all"
           >
             <Check className="w-3.5 h-3.5" />
             Keep
@@ -106,7 +106,7 @@ export const KeepOrEditModal: React.FC<KeepOrEditModalProps> = ({
           <button
             type="button"
             onClick={() => { onEdit(); onOpenChange(false); }}
-            className="flex-1 inline-flex items-center justify-center gap-2 h-10 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold uppercase tracking-wider hover:brightness-125 active:brightness-150 transition-all"
+            className="flex-1 inline-flex items-center justify-center gap-2 h-10 rounded-xl bg-[hsl(240_6%_18%)] border-[hsl(0_0%_100%_/_0.10)] text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider shadow-[0_10px_30px_hsl(0_0%_0%_/_0.35)] hover:brightness-125 active:brightness-150 transition-all"
           >
             <Pencil className="w-3.5 h-3.5" />
             Edit
