@@ -464,13 +464,13 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <PageSubheading>Community Gallery</PageSubheading>
             <PageDesc>Colors specific to the Community Gallery page and gallery cards.</PageDesc>
              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
-              <SwatchCardV2 color="#121214" name="Gallery Background" locations="GalleryHub main wrapper, Account page background" value="#121214" token="bg-[#121214]" pageSpecific={true} appWide={false} />
-              <SwatchCardV2 color="rgba(18,18,20,0.8)" name="Header Glass" locations="Gallery sticky header" value="rgba(18,18,20,0.8)" token="bg-[#121214]/80" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
-              <SwatchCardV2 color="rgba(58,58,63,0.5)" name="Search Input BG" locations="Gallery search input background" value="rgba(58,58,63,0.5)" token="bg-[#3a3a3f]/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
-              <SwatchCardV2 color="#18181b" name="Sidebar BG" locations="Gallery category filter sidebar" value="#18181b" token="bg-[#18181b]" pageSpecific={true} appWide={false} />
-              <SwatchCardV2 color="#facc15" name="Yellow 400" locations="Category sidebar accent bar" value="#facc15" token="bg-yellow-400" pageSpecific={true} appWide={false} />
-              <SwatchCardV2 color="rgba(59,130,246,0.2)" name="Blue 500/20" locations="Active story type filter chip background" value="rgba(59,130,246,0.2)" token="bg-blue-500/20" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
-              <SwatchCardV2 color="rgba(168,85,247,0.2)" name="Purple 500/20" locations="Active genre filter chip background" value="rgba(168,85,247,0.2)" token="bg-purple-500/20" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="#121214" name="Near Black" locations="GalleryHub main wrapper, Account page background" value="#121214" token="bg-[#121214]" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="rgba(18,18,20,0.8)" name="Glass Black" locations="Gallery sticky header" value="rgba(18,18,20,0.8)" token="bg-[#121214]/80" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="rgba(58,58,63,0.5)" name="Smoke Charcoal" locations="Gallery search input background" value="rgba(58,58,63,0.5)" token="bg-[#3a3a3f]/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="#18181b" name="Dark Zinc" locations="Gallery category filter sidebar" value="#18181b" token="bg-[#18181b]" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="#facc15" name="Bright Yellow" locations="Category sidebar accent bar" value="#facc15" token="bg-yellow-400" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="rgba(59,130,246,0.2)" name="Faint Blue" locations="Active story type filter chip background" value="rgba(59,130,246,0.2)" token="bg-blue-500/20" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="rgba(168,85,247,0.2)" name="Faint Purple" locations="Active genre filter chip background" value="rgba(168,85,247,0.2)" token="bg-purple-500/20" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
             </div>
 
             <Divider />
