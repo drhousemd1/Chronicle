@@ -125,7 +125,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
   if (activeTool === 'style_guide') {
     return (
       <React.Suspense fallback={<div className="flex items-center justify-center h-full text-slate-400">Loading…</div>}>
-        <LazyStyleGuide onRegisterDownload={onRegisterStyleGuideDownload} />
+        <LazyStyleGuide onRegisterDownload={onRegisterStyleGuideDownload} onRegisterEdits={onRegisterStyleGuideEdits} />
       </React.Suspense>
     );
   }
