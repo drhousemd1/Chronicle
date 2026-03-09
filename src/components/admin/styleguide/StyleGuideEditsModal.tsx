@@ -254,19 +254,19 @@ export const EditsListModal: React.FC<EditsListModalProps> = ({ open, onOpenChan
                 {edits.map((edit) => (
                   <div
                     key={edit.id}
-                    className="flex items-start gap-3 rounded-xl bg-zinc-800/60 border border-white/5 px-4 py-3 group"
+                    className="flex items-start gap-3 rounded-xl bg-[hsl(var(--ui-surface))] border border-[hsl(var(--ui-border))] px-4 py-3 group"
                   >
                     <div className="flex-1 min-w-0">
-                      <div className="text-white text-sm font-semibold truncate">
+                      <div className="text-[hsl(var(--ui-text))] text-sm font-semibold truncate">
                         {edit.cardName}
                       </div>
-                      <div className="text-amber-400/70 text-[10px] font-bold uppercase tracking-wider mt-0.5">
+                      <div className="text-[hsl(var(--ui-text-muted))] text-[10px] font-bold uppercase tracking-wider mt-0.5">
                         {edit.cardType}
                       </div>
-                      <div className="text-zinc-400 text-xs mt-1 line-clamp-2">
+                      <div className="text-[hsl(var(--ui-text-muted))] text-xs mt-1 line-clamp-2">
                         {edit.comment}
                       </div>
-                      <div className="text-zinc-600 text-[10px] mt-1">
+                      <div className="text-[hsl(var(--ui-text-muted))] opacity-60 text-[10px] mt-1">
                         {formatDate(edit.savedAt)}
                       </div>
                     </div>
