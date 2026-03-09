@@ -1,23 +1,37 @@
 
 
-## Fix Hover Overlay Sizing
+## Plan: Style Guide Audit & Correction — Complete ✅
 
-The hover overlay doesn't fill the full card because the `CardEditOverlay` wrapper `div` only has `position: 'relative'` — it doesn't stretch to fill its CSS grid cell. The cards inside have their own height, but in a grid with `repeat(auto-fit, minmax(220px, 1fr))`, each cell can be taller than its content (grid rows align to the tallest card).
+### Status: ✅ All 3 Passes Complete
 
-### Fix
+Audited and corrected all 8 sections of the Visual Style Guide against live source code.
 
-**File: `src/components/admin/styleguide/StyleGuideTool.tsx`** — Line 30
+### What was fixed:
 
-Change the wrapper div style from:
-```tsx
-style={{ position: 'relative' }}
-```
-to:
-```tsx
-style={{ position: 'relative', height: '100%' }}
-```
+**Pass 1 — Colors & Typography:**
+- "Button Background" swatch: `#2F3137` (screenshot approximation) → `hsl(228 7% 20%)` / `bg-[hsl(var(--ui-surface-2))]` (actual CSS variable)
+- "Button Text Color" swatch: `#eaedf1` → `hsl(210 20% 93%)` / `text-[hsl(var(--ui-text))]` (actual CSS variable)
+- Typography specs updated to use Tailwind class names (e.g., `text-xl font-bold tracking-tight`) instead of raw pixel values
+- Field label tracking corrected from `0.5px` to `tracking-wider (0.05em)`
+- Button text tile renamed from "Header actions" to "Shadow Surface" with `leading-none` added
 
-And ensure the child card div inside each card component (SwatchCardV2, TypoCardV2, ButtonCardV2, etc.) also stretches to fill with `height: '100%'` so the overlay's `inset: 0` matches the full grid cell height.
+**Pass 2 — Buttons, Forms & Badges:**
+- Header Action Button completely rewritten to Shadow Surface pattern with real Tailwind `className` strings
+- Button previews now render using actual `className` attributes instead of inline `style` objects
+- Card Hover Buttons updated to correct `h-8 px-4` compact variant from source (StoryHub.tsx)
+- Delete button corrected from `bg-#ef4444` to `bg-[hsl(var(--destructive))]`
+- Form inputs and badges converted to `className`-based rendering
+- Code blocks now show actual `className` strings from source
 
-This is a one-line fix on the wrapper, plus adding `height: '100%'` to each card's root div so everything stretches uniformly in the grid.
+**Pass 3 — Panels, Modals & Icons:**
+- Panel Container: `previewDark` removed, rendered with actual `className`
+- Panel Header Bar: uses actual `className` with `px-5 py-3` (was `16px 24px`)
+- Story Card: added live rendered preview with gradient overlay and `rounded-[2rem]`
+- Modal Container/Header/Footer: `previewDark` removed, rendered with real Tailwind classes
+- Modal Footer buttons now use actual HSL token classes from DeleteConfirmDialog.tsx
+- Icon Size Scale/Containers: `previewDark` removed, previews render on white background
+- Icon Colors: white swatch gets border treatment instead of dark background
 
+**Dark Background Cleanup:**
+- Removed `previewDark` from: buttons (all 5), panel container, modal container/header/footer, icon size scale, icon containers
+- Kept `previewDark` only for: form inputs (dark on dark), modal backdrop (transparency demo)
