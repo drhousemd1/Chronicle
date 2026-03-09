@@ -90,15 +90,15 @@ export const KeepOrEditModal: React.FC<KeepOrEditModalProps> = ({
 }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="rounded-xl bg-zinc-900 border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)] max-w-sm p-0 gap-0">
+        <DialogContent className="rounded-xl bg-[hsl(240_6%_10%)] border border-[hsl(0_0%_100%_/_0.10)] shadow-[0_10px_30px_hsl(0_0%_0%_/_0.5)] max-w-sm p-0 gap-0">
         <DialogHeader className="px-5 pt-5 pb-3">
-          <DialogTitle className="text-white text-base font-bold truncate">{cardName}</DialogTitle>
+          <DialogTitle className="text-[hsl(var(--ui-text))] text-base font-bold truncate">{cardName}</DialogTitle>
         </DialogHeader>
         <div className="px-5 pb-5 flex gap-3">
           <button
             type="button"
             onClick={() => { onKeep(); onOpenChange(false); }}
-            className="flex-1 inline-flex items-center justify-center gap-2 h-10 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold uppercase tracking-wider hover:brightness-125 active:brightness-150 transition-all"
+            className="flex-1 inline-flex items-center justify-center gap-2 h-10 rounded-xl bg-[hsl(240_6%_18%)] border-[hsl(0_0%_100%_/_0.10)] text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider shadow-[0_10px_30px_hsl(0_0%_0%_/_0.35)] hover:brightness-125 active:brightness-150 transition-all"
           >
             <Check className="w-3.5 h-3.5" />
             Keep
@@ -106,7 +106,7 @@ export const KeepOrEditModal: React.FC<KeepOrEditModalProps> = ({
           <button
             type="button"
             onClick={() => { onEdit(); onOpenChange(false); }}
-            className="flex-1 inline-flex items-center justify-center gap-2 h-10 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold uppercase tracking-wider hover:brightness-125 active:brightness-150 transition-all"
+            className="flex-1 inline-flex items-center justify-center gap-2 h-10 rounded-xl bg-[hsl(240_6%_18%)] border-[hsl(0_0%_100%_/_0.10)] text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider shadow-[0_10px_30px_hsl(0_0%_0%_/_0.35)] hover:brightness-125 active:brightness-150 transition-all"
           >
             <Pencil className="w-3.5 h-3.5" />
             Edit
@@ -155,21 +155,21 @@ export const EditDetailModal: React.FC<EditDetailModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="rounded-xl bg-zinc-900 border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)] max-w-lg p-0 gap-0 max-h-[80vh] flex flex-col">
+      <DialogContent className="rounded-xl bg-[hsl(240_6%_10%)] border border-[hsl(0_0%_100%_/_0.10)] shadow-[0_10px_30px_hsl(0_0%_0%_/_0.5)] max-w-lg p-0 gap-0 max-h-[80vh] flex flex-col">
         <DialogHeader className="px-5 pt-5 pb-3 shrink-0">
-          <DialogTitle className="text-white text-base font-bold">Edit: {cardName}</DialogTitle>
-          <p className="text-zinc-500 text-xs mt-1 uppercase tracking-wider font-bold">{cardType}</p>
+          <DialogTitle className="text-[hsl(var(--ui-text))] text-base font-bold">Edit: {cardName}</DialogTitle>
+          <p className="text-[hsl(var(--ui-text-muted))] text-xs mt-1 uppercase tracking-wider font-bold">{cardType}</p>
         </DialogHeader>
 
         <div className="px-5 pb-3 overflow-y-auto flex-1 min-h-0">
           {/* Current details - read-only */}
           <div className="mb-4">
-            <div className="text-zinc-400 text-[10px] font-bold uppercase tracking-wider mb-2">Current Details</div>
-            <div className="flex flex-col gap-1.5 rounded-xl bg-zinc-800/60 border border-white/5 p-3">
+            <div className="text-[hsl(var(--ui-text-muted))] text-[10px] font-bold uppercase tracking-wider mb-2">Current Details</div>
+            <div className="flex flex-col gap-1.5 rounded-xl bg-[hsl(var(--ui-surface))] border border-[hsl(var(--ui-border))] p-3">
               {detailEntries.map(([key, val]) => (
                 <div key={key} className="flex gap-2 text-xs">
-                  <span className="text-zinc-500 font-semibold shrink-0 min-w-[80px]">{key}:</span>
-                  <span className="text-zinc-300 break-all">{val}</span>
+                  <span className="text-[hsl(var(--ui-text-muted))] font-semibold shrink-0 min-w-[80px]">{key}:</span>
+                  <span className="text-[hsl(var(--ui-text))] break-all">{val}</span>
                 </div>
               ))}
             </div>
@@ -177,14 +177,14 @@ export const EditDetailModal: React.FC<EditDetailModalProps> = ({
 
           {/* Comment */}
           <div>
-            <div className="text-zinc-400 text-[10px] font-bold uppercase tracking-wider mb-2">What needs to change?</div>
+            <div className="text-[hsl(var(--ui-text-muted))] text-[10px] font-bold uppercase tracking-wider mb-2">What needs to change?</div>
             <textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               placeholder="Describe what needs to be changed…"
               rows={4}
               spellCheck={true}
-              className="w-full rounded-xl bg-zinc-800/60 border border-white/10 text-white text-sm px-3 py-2.5 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-amber-500/50 resize-none"
+              className="w-full rounded-xl bg-[hsl(var(--ui-surface))] border border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] text-sm px-3 py-2.5 placeholder:text-[hsl(var(--ui-text-muted))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--ui-border-hover))] resize-none"
             />
           </div>
         </div>
@@ -194,7 +194,7 @@ export const EditDetailModal: React.FC<EditDetailModalProps> = ({
             type="button"
             onClick={handleSave}
             disabled={!comment.trim()}
-            className="w-full h-10 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold uppercase tracking-wider hover:brightness-125 active:brightness-150 transition-all disabled:opacity-40 disabled:pointer-events-none"
+            className="w-full h-10 rounded-xl bg-[hsl(240_6%_18%)] border-[hsl(0_0%_100%_/_0.10)] text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider shadow-[0_10px_30px_hsl(0_0%_0%_/_0.35)] hover:brightness-125 active:brightness-150 transition-all disabled:opacity-40 disabled:pointer-events-none"
           >
             Save Edit
           </button>
@@ -241,46 +241,46 @@ export const EditsListModal: React.FC<EditsListModalProps> = ({ open, onOpenChan
   return (
     <>
       <Dialog open={open && !editingEntry} onOpenChange={onOpenChange}>
-        <DialogContent className="rounded-xl bg-zinc-900 border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)] max-w-md p-0 gap-0 max-h-[70vh] flex flex-col">
+        <DialogContent className="rounded-xl bg-[hsl(240_6%_10%)] border border-[hsl(0_0%_100%_/_0.10)] shadow-[0_10px_30px_hsl(0_0%_0%_/_0.5)] max-w-md p-0 gap-0 max-h-[70vh] flex flex-col">
           <DialogHeader className="px-5 pt-5 pb-3 shrink-0">
-            <DialogTitle className="text-white text-base font-bold">Style Guide Edits</DialogTitle>
+            <DialogTitle className="text-[hsl(var(--ui-text))] text-base font-bold">Style Guide Edits</DialogTitle>
           </DialogHeader>
 
           <div className="px-5 pb-5 overflow-y-auto flex-1 min-h-0">
             {edits.length === 0 ? (
-              <p className="text-zinc-500 text-sm text-center py-8">No edits flagged yet.</p>
+              <p className="text-[hsl(var(--ui-text-muted))] text-sm text-center py-8">No edits flagged yet.</p>
             ) : (
               <div className="flex flex-col gap-2">
                 {edits.map((edit) => (
                   <div
                     key={edit.id}
-                    className="flex items-start gap-3 rounded-xl bg-zinc-800/60 border border-white/5 px-4 py-3 group"
+                    className="flex items-start gap-3 rounded-xl bg-[hsl(var(--ui-surface))] border border-[hsl(var(--ui-border))] px-4 py-3 group"
                   >
                     <div className="flex-1 min-w-0">
-                      <div className="text-white text-sm font-semibold truncate">
+                      <div className="text-[hsl(var(--ui-text))] text-sm font-semibold truncate">
                         {edit.cardName}
                       </div>
-                      <div className="text-amber-400/70 text-[10px] font-bold uppercase tracking-wider mt-0.5">
+                      <div className="text-[hsl(var(--ui-text-muted))] text-[10px] font-bold uppercase tracking-wider mt-0.5">
                         {edit.cardType}
                       </div>
-                      <div className="text-zinc-400 text-xs mt-1 line-clamp-2">
+                      <div className="text-[hsl(var(--ui-text-muted))] text-xs mt-1 line-clamp-2">
                         {edit.comment}
                       </div>
-                      <div className="text-zinc-600 text-[10px] mt-1">
+                      <div className="text-[hsl(var(--ui-text-muted))] opacity-60 text-[10px] mt-1">
                         {formatDate(edit.savedAt)}
                       </div>
                     </div>
                     <button
                       type="button"
                       onClick={() => setEditingEntry(edit)}
-                      className="flex items-center justify-center h-8 w-8 rounded-lg text-zinc-500 hover:text-amber-400 hover:bg-white/5 transition-colors shrink-0"
+                      className="flex items-center justify-center h-8 w-8 rounded-lg text-[hsl(var(--ui-text-muted))] hover:text-[hsl(var(--ui-text))] hover:bg-[hsl(var(--ui-border))] transition-colors shrink-0"
                     >
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
                     <button
                       type="button"
                       onClick={() => handleDelete(edit.id)}
-                      className="flex items-center justify-center h-8 w-8 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-white/5 transition-colors shrink-0"
+                      className="flex items-center justify-center h-8 w-8 rounded-lg text-[hsl(var(--ui-text-muted))] hover:text-[hsl(var(--destructive))] hover:bg-[hsl(var(--ui-border))] transition-colors shrink-0"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>

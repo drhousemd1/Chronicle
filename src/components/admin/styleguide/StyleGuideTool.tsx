@@ -33,21 +33,12 @@ const CardEditOverlay: React.FC<{ cardName: string; cardType: string; details: R
       {children}
       {/* Status pills */}
       {(isKept || isEdited) && (
-        <div style={{ position: 'absolute', top: 6, right: 6, zIndex: 10 }}>
+        <div style={{ position: 'absolute', top: 6, right: 6, zIndex: 10, display: 'flex', gap: 4 }}>
           {isKept && (
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: 3, padding: '2px 8px', borderRadius: 999,
-              fontSize: 9, fontWeight: 800, letterSpacing: '0.6px', textTransform: 'uppercase',
-              background: 'rgba(16,185,129,0.2)', color: '#6ee7b7', border: '1px solid rgba(16,185,129,0.3)',
-            }}>Keep</span>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))]">Keep</span>
           )}
           {isEdited && (
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: 3, padding: '2px 8px', borderRadius: 999,
-              fontSize: 9, fontWeight: 800, letterSpacing: '0.6px', textTransform: 'uppercase',
-              background: 'rgba(245,158,11,0.2)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.3)',
-              marginLeft: isKept ? 4 : 0,
-            }}>Edit</span>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))]">Edit</span>
           )}
         </div>
       )}
@@ -62,11 +53,7 @@ const CardEditOverlay: React.FC<{ cardName: string; cardType: string; details: R
           }}
           onClick={(e) => { e.stopPropagation(); ctx.onCardAction(cardName, cardType, details); }}
         >
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            width: 36, height: 36, borderRadius: 10,
-            background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(4px)',
-          }}>
+          <div className="flex items-center justify-center w-9 h-9 rounded-[10px] bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] backdrop-blur-sm">
             <Pencil size={16} color="#fff" />
           </div>
         </div>
