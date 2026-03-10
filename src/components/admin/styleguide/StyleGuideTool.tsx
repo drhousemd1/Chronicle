@@ -79,8 +79,7 @@ const SECTIONS = [
   { id: 'buttons', label: 'Buttons' },
   { id: 'inputs', label: 'Form Inputs' },
   { id: 'badges', label: 'Badges & Tags' },
-  { id: 'panels', label: 'Panels' },
-  { id: 'modals', label: 'Modals' },
+  { id: 'panels', label: 'Panels & Modals' },
   { id: 'icons', label: 'Icons' },
 ] as const;
 
@@ -533,6 +532,94 @@ interface TypeTileProps {
   specs: string[];
   locations: string;
 }
+
+/* ═══════════════════════ PANEL CARD V2 (Standardized) ═══════════════════════ */
+interface PanelV2Props {
+  panelName: string;
+  preview: React.ReactNode;
+  previewBg?: string;
+  background: string;
+  border: string;
+  borderRadius: string;
+  shadow?: string;
+  purpose: string;
+  locations: string;
+  pageSpecific?: boolean;
+  appWide?: boolean;
+  notes?: string;
+}
+
+const PanelCardV2: React.FC<PanelV2Props> = (props) => {
+  const { panelName, preview, previewBg, background, border, borderRadius, shadow, purpose, locations, pageSpecific, appWide, notes } = props;
+  const details = { Background: background, Border: border, 'Border Radius': borderRadius, ...(shadow ? { Shadow: shadow } : {}), Purpose: purpose, Locations: locations };
+  return (
+  <CardEditOverlay cardName={panelName} cardType="Panel" details={details}>
+  <div style={{
+    background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
+    boxShadow: sg.shadow, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+  }}
+    onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadowHover; }}
+    onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadow; }}
+  >
+    {/* Preview strip */}
+    <div style={{
+      background: previewBg || '#fff', padding: '16px 20px',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, minHeight: 80,
+      boxShadow: 'inset 0 -1px 0 #e2e8f0',
+    }}>{preview}</div>
+
+    <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 6, borderTop: '1px solid #e2e8f0' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Panel Name:</span>
+        <span style={valueStyle}>{panelName}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Background:</span>
+        <span style={monoStyle}>{background}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Border:</span>
+        <span style={monoStyle}>{border}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Border Radius:</span>
+        <span style={monoStyle}>{borderRadius}</span>
+      </div>
+      {shadow && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={labelStyle}>Shadow:</span>
+          <span style={monoStyle}>{shadow}</span>
+        </div>
+      )}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Purpose:</span>
+        <span style={valueStyle}>{purpose}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Locations:</span>
+        <span style={valueStyle}>{locations}</span>
+      </div>
+      {notes && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={labelStyle}>Notes:</span>
+          <span style={valueStyle}>{notes}</span>
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#334155', cursor: 'default' }}>
+          <input type="checkbox" checked={pageSpecific} disabled style={{ accentColor: '#3b82f6', width: 14, height: 14 }} />
+          Page Specific
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#334155', cursor: 'default' }}>
+          <input type="checkbox" checked={appWide} disabled style={{ accentColor: '#3b82f6', width: 14, height: 14 }} />
+          App Wide
+        </label>
+      </div>
+    </div>
+  </div>
+  </CardEditOverlay>
+  );
+};
 
 const TypeTile: React.FC<TypeTileProps> = ({ name, exampleBg, exampleContent, specs, locations }) => (
   <div style={{
@@ -3122,1234 +3209,1129 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
           <Divider />
 
           {/* ═══════════════════════════════════════════════════════════════ */}
-          {/* ═══ 6. PANELS ═══ */}
+          {/* ═══ 6. PANELS & MODALS ═══ */}
           {/* ═══════════════════════════════════════════════════════════════ */}
-          <Section id="panels" title="Panels" desc="Container patterns: dark rounded panels, card layouts, sidebars, and special containers.">
-            <PageSubheading>Story Builder Page</PageSubheading>
+          <Section id="panels" title="Panels & Modals" desc="Container patterns, card layouts, sidebars, modal dialogs, and overlay systems used throughout the application.">
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <EntryCard name="Panel Container" pageTag="Story Builder"
-                specs="<strong>bg:</strong> #2a2a2f · <strong>border-radius:</strong> rounded-[24px] · <strong>border:</strong> border-white/10 · <strong>box-shadow:</strong> 0 12px 32px -2px rgba(0,0,0,0.5)"
-                preview={<div className="w-full h-20 bg-[#2a2a2f] rounded-[24px] border border-white/10" style={{ boxShadow: 'rgba(0,0,0,0.5) 0px 12px 32px -2px' }} />}
-                previewPlain
-                code={`bg-[#2a2a2f] rounded-[24px] border border-white/10
-shadow: rgba(0,0,0,0.5) 0px 12px 32px -2px`}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+
+              {/* ─── Story Builder Page ─── */}
+              <PageSubheading fullSpan>Story Builder Page</PageSubheading>
+
+              <PanelCardV2
+                panelName="Panel Container"
+                background="#2a2a2f"
+                border="border-white/10"
+                borderRadius="rounded-[24px]"
+                shadow="0 12px 32px -2px rgba(0,0,0,0.5)"
+                purpose="Primary dark container for builder sections (Characters, World, Arc)"
+                locations="CharactersTab.tsx, WorldTab.tsx"
+                pageSpecific appWide={false}
+                preview={<div className="w-full h-16 bg-[#2a2a2f] rounded-[24px] border border-white/10" style={{ boxShadow: '0 12px 32px -2px rgba(0,0,0,0.5)' }} />}
               />
-              <EntryCard name="Panel Header Bar" pageTag="Story Builder"
-                specs="<strong>bg:</strong> #4a5f7f · <strong>padding:</strong> px-5 py-3 · <strong>border-bottom:</strong> border-white/20 · <strong>shadow-lg</strong>"
+
+              <PanelCardV2
+                panelName="Panel Header Bar"
+                background="#4a5f7f"
+                border="border-b border-white/20"
+                borderRadius="rounded-t-[24px] (inherits from parent)"
+                shadow="shadow-lg"
+                purpose="Colored header banner for collapsible builder sections"
+                locations="CharactersTab.tsx"
+                pageSpecific appWide={false}
                 preview={
-                  <div className="w-full bg-[#4a5f7f] rounded-xl px-5 py-3 flex items-center gap-3 border-b border-white/20 shadow-lg">
-                    <div className="w-7 h-7 rounded-md bg-white/20 flex items-center justify-center text-white text-sm">⚙</div>
-                    <span className="text-white text-xl font-bold tracking-tight">Story Card</span>
+                  <div className="w-full bg-[#4a5f7f] rounded-xl px-4 py-2 flex items-center gap-2 border-b border-white/20 shadow-lg">
+                    <div className="w-6 h-6 rounded-md bg-white/20 flex items-center justify-center text-white text-[10px]">⚙</div>
+                    <span className="text-white text-sm font-bold tracking-tight">Section Title</span>
                   </div>
                 }
-                previewPlain
-                code={`bg-[#4a5f7f] px-5 py-3 border-b border-white/20 shadow-lg
-/* Title: text-white text-xl font-bold tracking-tight */`}
               />
-              <EntryCard name="Story Card (My Stories + Gallery)" pageTag="Cards"
-                specs='<strong>aspect-ratio:</strong> 2/3 · <strong>border-radius:</strong> rounded-[2rem] (32px) · <strong>border:</strong> 1px solid #4a5f7f · <strong>shadow:</strong> 0 12px 32px -2px rgba(0,0,0,0.5) · <strong>gradient overlay:</strong> from-slate-950 via-slate-900/60 to-transparent'
+
+              <PanelCardV2
+                panelName="Story Card"
+                background="gradient overlay: from-slate-950 via-slate-900/60 to-transparent"
+                border="border border-[#4a5f7f]"
+                borderRadius="rounded-[2rem]"
+                shadow="0 12px 32px -2px rgba(0,0,0,0.5)"
+                purpose="Card for stories in My Stories grid and Gallery. Aspect 2/3."
+                locations="StoryHub.tsx, GalleryStoryCard.tsx, ImageLibraryTab.tsx"
+                appWide pageSpecific={false}
                 preview={
-                  <div className="relative overflow-hidden rounded-[2rem] border border-[#4a5f7f]" style={{ width: 120, aspectRatio: '2/3', boxShadow: '0 12px 32px -2px rgba(0,0,0,0.5)' }}>
+                  <div className="relative overflow-hidden rounded-[2rem] border border-[#4a5f7f]" style={{ width: 90, aspectRatio: '2/3', boxShadow: '0 12px 32px -2px rgba(0,0,0,0.5)' }}>
                     <div className="absolute inset-0 bg-slate-700" />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/60 to-transparent" />
-                    <div className="absolute bottom-3 left-3 right-3">
-                      <div className="text-white text-xs font-bold">Story Title</div>
-                      <div className="text-white/60 text-[9px] mt-0.5">Description text...</div>
+                    <div className="absolute bottom-2 left-2 right-2">
+                      <div className="text-white text-[8px] font-bold">Story Title</div>
                     </div>
                   </div>
                 }
-                previewPlain
-                code={`aspect-[2/3] rounded-[2rem] border border-[#4a5f7f]
-shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]
-/* Gradient: bg-gradient-to-t from-slate-950 via-slate-900/60 to-transparent */`}
               />
-            </div>
 
-            <div style={{ marginTop: 24 }}>
-              <PageSubheading>Chat Interface</PageSubheading>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <EntryCard name="Chat Message Bubble" pageTag="Chat"
-                  specs='<strong>Solid:</strong> bg-[#1c1f26]. <strong>Transparent:</strong> bg-black/50. <strong>border-radius:</strong> rounded-[2rem]. <strong>padding:</strong> p-8 pt-14 pb-12. User: border-2 border-blue-400. AI: border border-white/5.'
-                  preview={
-                    <div style={{ display: 'flex', gap: 12, width: '100%' }}>
-                      <div className="flex-1 bg-[#1c1f26] rounded-[2rem] border border-white/5 p-4" style={{ minHeight: 60 }}>
-                        <div className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-1">AI</div>
-                        <div className="text-xs text-white">Message content...</div>
-                      </div>
-                      <div className="flex-1 bg-[#1c1f26] rounded-[2rem] border-2 border-blue-400 p-4" style={{ minHeight: 60 }}>
-                        <div className="text-[9px] font-black uppercase tracking-widest text-blue-300 mb-1">USER</div>
-                        <div className="text-xs text-white">User message...</div>
-                      </div>
-                    </div>
-                  }
-                  previewPlain
-                  code={`/* AI bubble */
-bg-[#1c1f26] rounded-[2rem] border border-white/5 p-8 pt-14 pb-12
-/* User bubble */
-bg-[#1c1f26] rounded-[2rem] border-2 border-blue-400 p-8 pt-14 pb-12
-/* Transparent variant: bg-black/50 instead of bg-[#1c1f26] */`}
-                />
-                <EntryCard name="Frosted Glass Character Card" pageTag="Chat"
-                  specs='Adaptive frosted glass. <strong>Dark BG (isDarkBg):</strong> bg-white/30 text-slate-800. <strong>Light BG:</strong> bg-black/30 text-white. <strong>rounded-2xl backdrop-blur-sm</strong>. Brightness threshold: 128.'
-                  preview={
-                    <div style={{ display: 'flex', gap: 12, width: '100%' }}>
-                      <div className="flex-1 rounded-2xl p-3 text-center bg-white/30 backdrop-blur-sm border-2 border-transparent" style={{ background: 'rgba(255,255,255,0.3)', minHeight: 60 }}>
-                        <div className="text-xs font-bold text-slate-800">Light mode</div>
-                        <div className="text-[9px] text-slate-600">Dark sidebar bg</div>
-                      </div>
-                      <div className="flex-1 rounded-2xl p-3 text-center bg-black/30 backdrop-blur-sm border-2 border-transparent" style={{ background: 'rgba(0,0,0,0.3)', minHeight: 60 }}>
-                        <div className="text-xs font-bold text-white">Dark mode</div>
-                        <div className="text-[9px] text-white/70">Light sidebar bg</div>
-                      </div>
-                    </div>
-                  }
-                  previewPlain
-                  code={`/* isDarkBg=true (dark sidebar) → light card */
-bg-white/30 text-slate-800 border-transparent backdrop-blur-sm rounded-2xl
-/* isDarkBg=false (light sidebar) → dark card */
-bg-black/30 text-white border-transparent backdrop-blur-sm rounded-2xl`}
-                />
-                <EntryCard name="Chat Input Bar Container" pageTag="Chat"
-                  specs='<strong>bg:</strong> bg-[hsl(var(--ui-surface))] · <strong>border-top:</strong> border-[hsl(var(--ui-border))] · <strong>shadow:</strong> 0 -4px 12px rgba(0,0,0,0.15). Contains quick actions row + textarea wrapper.'
-                  preview={
-                    <div className="w-full bg-[hsl(var(--ui-surface))] border-t border-[hsl(var(--ui-border))] shadow-[0_-4px_12px_rgba(0,0,0,0.15)] rounded-b-lg p-3" style={{ minHeight: 50 }}>
-                      <div className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">Input Bar Container</div>
-                    </div>
-                  }
-                  previewPlain
-                  code={`bg-[hsl(var(--ui-surface))] border-t border-[hsl(var(--ui-border))]
-shadow-[0_-4px_12px_rgba(0,0,0,0.15)] pt-3 pb-3 px-8`}
-                />
-              </div>
-            </div>
-
-            <div style={{ marginTop: 24 }}>
-              <PageSubheading>Chat History</PageSubheading>
-              <EntryCard name="Session Card (Double-nested)" pageTag="Chat History"
-                specs='<strong>Outer:</strong> bg-[#2a2a2f] rounded-2xl border border-[#4a5f7f] p-4. <strong>Inner:</strong> bg-[#3a3a3f]/30 rounded-2xl border border-white/5 p-4. Contains thumbnail, title, actions, preview.'
+              <PanelCardV2
+                panelName="Builder Collapsible Section"
+                background="#2a2a2f (outer), #3a3a3f/30 (inner)"
+                border="border-white/10 (outer), border-white/5 (inner)"
+                borderRadius="rounded-[24px]"
+                shadow="0 12px 32px -2px rgba(0,0,0,0.5)"
+                purpose="Collapsible character trait sections with header bar and nested inner cards"
+                locations="CharactersTab.tsx"
+                pageSpecific appWide={false}
+                notes="Uses rounded-[24px] — yet another radius variant. Form inputs: bg-zinc-900/50 border-white/10 rounded-lg"
                 preview={
-                  <div className="w-full bg-[#2a2a2f] rounded-2xl border border-[#4a5f7f] p-3">
-                    <div className="bg-[#3a3a3f]/30 rounded-2xl border border-white/5 p-3">
-                      <div className="flex gap-3">
-                        <div className="w-12 h-12 rounded-lg bg-zinc-800 border border-[#4a5f7f] flex-shrink-0" />
-                        <div className="flex-1">
-                          <div className="text-xs font-bold text-white">Story Title</div>
-                          <div className="text-[9px] text-zinc-500 mt-1">💬 24 • Mar 5, 2026</div>
+                  <div className="rounded-[16px] border border-white/10 overflow-hidden" style={{ background: '#2a2a2f', width: '100%', boxShadow: '0 8px 20px -2px rgba(0,0,0,0.4)' }}>
+                    <div className="px-3 py-1.5 border-b border-white/20 flex items-center justify-between" style={{ background: '#4a5f7f' }}>
+                      <span className="text-white text-[9px] font-bold uppercase tracking-wider">Appearance</span>
+                      <span className="text-white/60 text-[10px]">▾</span>
+                    </div>
+                    <div className="p-2">
+                      <div className="rounded-lg p-2" style={{ background: 'rgba(58,58,63,0.3)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        <div style={{ display: 'flex', gap: 4 }}>
+                          <input readOnly className="w-2/5 px-2 py-1 bg-zinc-900/50 border border-white/10 rounded-lg text-white text-[9px]" value="Hair" />
+                          <input readOnly className="flex-1 px-2 py-1 bg-zinc-900/50 border border-white/10 rounded-lg text-white text-[9px]" value="Silver strands" />
                         </div>
                       </div>
                     </div>
                   </div>
                 }
-                previewPlain
-                code={`/* Outer card */
-bg-[#2a2a2f] rounded-2xl border border-[#4a5f7f] overflow-hidden p-4
-/* Inner card */
-bg-[#3a3a3f]/30 rounded-2xl border border-white/5 p-4
-/* Thumbnail */
-w-24 h-24 rounded-lg bg-zinc-800 border border-[#4a5f7f] shadow-[0_4px_12px_rgba(0,0,0,0.4)]`}
               />
-            </div>
 
-            <div style={{ marginTop: 24 }}>
-              <PageSubheading>Community Gallery</PageSubheading>
-              <EntryCard name="Category Sidebar" pageTag="Gallery"
-                specs='<strong>bg:</strong> #18181b · <strong>width:</strong> 288px (w-72) · <strong>border-right:</strong> border-white/10. Yellow accent bar (h-0.5 bg-yellow-400) at top. Collapsible sections.'
+              {/* ─── Chat Interface ─── */}
+              <PageSubheading fullSpan>Chat Interface</PageSubheading>
+
+              <PanelCardV2
+                panelName="Chat Message Bubble"
+                background="AI: #1c1f26 · User: #1c1f26 · Transparent: bg-black/50"
+                border="AI: border-white/5 · User: border-2 border-blue-400"
+                borderRadius="rounded-[2rem]"
+                purpose="Chat message containers. AI and User variants with optional transparent mode."
+                locations="ChatInterfaceTab.tsx"
+                pageSpecific appWide={false}
+                notes="bg #1c1f26 is unique — doesn't match any panel token"
                 preview={
-                  <div className="rounded-lg overflow-hidden" style={{ width: 180 }}>
-                    <div className="h-0.5 bg-yellow-400" />
-                    <div className="bg-[#18181b] p-3">
-                      <div className="text-xs font-bold text-white mb-2">Browse Categories</div>
-                      <div className="text-[9px] text-white/70 py-1">▸ Story Type</div>
-                      <div className="text-[9px] text-white/70 py-1">▸ Genre</div>
-                      <div className="text-[9px] text-white/70 py-1">▸ Origin</div>
+                  <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+                    <div className="flex-1 bg-[#1c1f26] rounded-[2rem] border border-white/5 p-3" style={{ minHeight: 48 }}>
+                      <div className="text-[8px] font-black uppercase tracking-widest text-slate-500 mb-0.5">AI</div>
+                      <div className="text-[9px] text-white">Message...</div>
+                    </div>
+                    <div className="flex-1 bg-[#1c1f26] rounded-[2rem] border-2 border-blue-400 p-3" style={{ minHeight: 48 }}>
+                      <div className="text-[8px] font-black uppercase tracking-widest text-blue-300 mb-0.5">USER</div>
+                      <div className="text-[9px] text-white">Reply...</div>
                     </div>
                   </div>
                 }
-                previewPlain
-                code={`w-72 bg-[#18181b] border-r border-white/10
-/* Yellow accent: h-0.5 bg-yellow-400 */
-/* Section item: px-3 py-2 rounded-lg text-sm
-   Selected: bg-blue-500/20 text-blue-400
-   Default: text-white/70 hover:bg-white/5 */`}
               />
-            </div>
 
-            <div style={{ marginTop: 24 }}>
-              <PageSubheading>Image Library</PageSubheading>
-              <EntryCard name="Folder Grid Card" pageTag="Image Library"
-                specs='Shared card pattern with My Stories. <strong>aspect-[2/3] rounded-[2rem] border border-[#4a5f7f]</strong>. Shadow, gradient overlay, hover actions identical to story cards.'
+              <PanelCardV2
+                panelName="Frosted Glass Character Card"
+                background="Dark BG: bg-white/30 · Light BG: bg-black/30"
+                border="border-transparent"
+                borderRadius="rounded-2xl"
+                purpose="Adaptive frosted glass card. Switches tint based on sidebar brightness threshold (128)."
+                locations="SideCharacterCard.tsx"
+                pageSpecific appWide={false}
+                notes="backdrop-blur-sm. Avatar: w-20 h-20 rounded-full — only circular avatar in app."
                 preview={
-                  <div className="relative overflow-hidden rounded-[2rem] border border-[#4a5f7f]" style={{ width: 100, aspectRatio: '2/3', boxShadow: '0 12px 32px -2px rgba(0,0,0,0.5)' }}>
-                    <div className="absolute inset-0 bg-slate-900 flex items-center justify-center">
-                      <span className="text-white/10 text-2xl">📁</span>
+                  <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+                    <div className="flex-1 rounded-2xl p-2 text-center backdrop-blur-sm" style={{ background: 'rgba(255,255,255,0.3)', minHeight: 48 }}>
+                      <div className="text-[9px] font-bold text-slate-800">Light card</div>
+                      <div className="text-[8px] text-slate-600">Dark bg</div>
                     </div>
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/20 to-transparent" />
-                    <div className="absolute bottom-2 left-2 right-2">
-                      <div className="text-[9px] text-white font-bold">Folder Name</div>
+                    <div className="flex-1 rounded-2xl p-2 text-center backdrop-blur-sm" style={{ background: 'rgba(0,0,0,0.3)', minHeight: 48 }}>
+                      <div className="text-[9px] font-bold text-white">Dark card</div>
+                      <div className="text-[8px] text-white/70">Light bg</div>
                     </div>
                   </div>
                 }
-                previewPlain
-                code={`/* Same card pattern as My Stories */
-aspect-[2/3] rounded-[2rem] border border-[#4a5f7f]
-shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]
-/* Gradient: from-slate-950 via-slate-900/20 to-transparent */`}
               />
-            </div>
 
-            <div style={{ marginTop: 24 }}>
-              <PageSubheading>Account Page</PageSubheading>
-              <EntryCard name="Settings Card" pageTag="Account"
-                specs='<strong>bg:</strong> #1e1e22 · <strong>rounded-2xl</strong> · <strong>border:</strong> border-white/10 · <strong>padding:</strong> p-6. Contains icon, title, and content section.'
+              <PanelCardV2
+                panelName="Chat Input Bar"
+                background="hsl(var(--ui-surface))"
+                border="border-t border-[hsl(var(--ui-border))]"
+                borderRadius="N/A (bottom-docked)"
+                shadow="0 -4px 12px rgba(0,0,0,0.15)"
+                purpose="Bottom-docked input area with quick actions row and textarea"
+                locations="ChatInterfaceTab.tsx"
+                pageSpecific appWide={false}
                 preview={
-                  <div className="w-full bg-[#1e1e22] rounded-2xl border border-white/10 p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-[#4a5f7f]">✉</span>
-                      <span className="text-sm font-bold text-white">Email Address</span>
+                  <div className="w-full bg-[hsl(var(--ui-surface))] border-t border-[hsl(var(--ui-border))] shadow-[0_-4px_12px_rgba(0,0,0,0.15)] rounded-b-lg p-2" style={{ minHeight: 40 }}>
+                    <div className="text-[8px] font-bold text-zinc-400 uppercase tracking-wider">Input Bar</div>
+                  </div>
+                }
+              />
+
+              <PanelCardV2
+                panelName="Chat Sidebar (White)"
+                background="bg-white (with bg image: bg-white/90 backdrop-blur-md)"
+                border="N/A (inset shadow)"
+                borderRadius="N/A"
+                shadow="inset -4px 0 12px rgba(0,0,0,0.02)"
+                purpose="Light-themed sidebar with character info, world info, collapsible sections"
+                locations="ChatInterfaceTab.tsx"
+                pageSpecific appWide={false}
+                notes="⚠ White sidebar in dark-themed app. Section headers: bg-[#4a5f7f] rounded-lg"
+                preview={
+                  <div style={{ display: 'flex', width: '100%', height: 80, borderRadius: 6, overflow: 'hidden' }}>
+                    <div style={{ width: '45%', background: '#fff', padding: 8, boxShadow: 'inset -4px 0 12px rgba(0,0,0,0.02)' }}>
+                      <div className="px-1.5 py-0.5 rounded text-white text-[7px] font-black uppercase mb-1" style={{ background: '#4a5f7f', display: 'inline-block' }}>Characters</div>
+                      <div className="text-[8px] font-bold text-slate-700">Castle Grounds</div>
                     </div>
-                    <div className="text-xs text-white/70 bg-[#2a2a2f] rounded-xl px-3 py-2 border border-white/5">user@example.com</div>
+                    <div style={{ flex: 1, background: '#1a1a1f', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span style={{ fontSize: 8, color: '#64748b' }}>Chat (dark)</span>
+                    </div>
                   </div>
                 }
-                previewPlain
-                code={`bg-[#1e1e22] rounded-2xl border border-white/10 p-6
-/* Inner display: bg-[#2a2a2f] rounded-xl px-4 py-3 border border-white/5 */`}
               />
-            </div>
 
-            <div style={{ marginTop: 24 }}>
-              <PageSubheading>Auth Page</PageSubheading>
-              <EntryCard name="Auth Card (Light Theme)" pageTag="Auth"
-                specs='Uses shadcn Card component. <strong>bg-slate-800/50 border-slate-700 backdrop-blur-sm</strong>. Max-width: max-w-md. Semi-transparent with blur effect on gradient background.'
+              <PanelCardV2
+                panelName="Chat Sidebar Collapsible Info"
+                background="bg-white (inherits from sidebar)"
+                border="N/A"
+                borderRadius="N/A"
+                purpose="Collapsible info sections with label/value pairs inside the white sidebar"
+                locations="ChatInterfaceTab.tsx"
+                pageSpecific appWide={false}
+                notes="Labels: text-[9px] font-bold text-slate-400 uppercase. Values: text-[11px] font-bold text-slate-700."
                 preview={
-                  <div className="rounded-lg border border-slate-700 p-4" style={{ background: 'rgba(30,41,59,0.5)', backdropFilter: 'blur(4px)', width: 200 }}>
-                    <div className="text-sm font-bold text-white text-center mb-1">Chronicle Studio</div>
-                    <div className="text-[9px] text-slate-400 text-center">Sign in to continue</div>
+                  <div style={{ background: '#fff', padding: 8, borderRadius: 6, width: '100%' }}>
+                    <div className="text-[8px] font-black text-slate-400 uppercase mb-1" style={{ letterSpacing: '0.15em' }}>World Info</div>
+                    <div><span className="text-[8px] font-bold text-slate-400 uppercase">Location</span><div className="text-[10px] font-bold text-slate-700">Castle</div></div>
                   </div>
                 }
-                previewPlain
-                code={`/* shadcn Card with overrides */
-bg-slate-800/50 border-slate-700 backdrop-blur-sm
-max-w-md w-full`}
               />
-            </div>
 
-            <div style={{ marginTop: 24 }}>
-              <PageSubheading>Global Sidebar</PageSubheading>
-              <EntryCard name="Sidebar (Expanded + Collapsed)" pageTag="Global"
-                specs='<strong>bg:</strong> #1a1a1a · <strong>Expanded:</strong> w-[280px]. <strong>Collapsed:</strong> w-[72px]. <strong>border-right:</strong> border-black · <strong>shadow:</strong> shadow-2xl. Smooth transition: transition-all duration-300.'
+              <PanelCardV2
+                panelName="Side Character Card (Dual Mode)"
+                background="Frosted glass — adaptive tint"
+                border="border-transparent"
+                borderRadius="rounded-2xl"
+                purpose="Side character display with frosted glass, circular avatar, and updating vignette pulse"
+                locations="SideCharacterCard.tsx"
+                pageSpecific appWide={false}
+                notes="Avatar: w-20 h-20 rounded-full (only circular avatar). Updating: blue vignette + animate-vignette-pulse."
                 preview={
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <div className="bg-[#1a1a1a] rounded-lg border-r border-black shadow-2xl p-3" style={{ width: 120, minHeight: 80 }}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-6 h-6 rounded-lg bg-[#4a5f7f] flex items-center justify-center text-white text-[9px] font-black italic">C</div>
-                        <span className="text-[9px] font-black text-white uppercase tracking-tighter">Chronicle</span>
-                      </div>
-                      <div className="text-[8px] font-bold text-white bg-[#4a5f7f] rounded-lg px-2 py-1 mb-1">My Stories</div>
-                      <div className="text-[8px] font-bold text-slate-400 px-2 py-1">Chat</div>
+                    <div className="rounded-2xl p-2 backdrop-blur-sm" style={{ background: 'rgba(255,255,255,0.3)', width: 80 }}>
+                      <div className="w-10 h-10 rounded-full bg-slate-600 mx-auto mb-1" />
+                      <div className="text-[8px] font-bold text-slate-800 text-center">Name</div>
                     </div>
-                    <div className="bg-[#1a1a1a] rounded-lg border-r border-black shadow-2xl p-2 flex flex-col items-center gap-2" style={{ width: 40, minHeight: 80 }}>
-                      <div className="w-6 h-6 rounded-lg bg-[#4a5f7f] flex items-center justify-center text-white text-[9px] font-black italic">C</div>
-                      <div className="w-6 h-6 rounded bg-[#4a5f7f] opacity-70" />
-                      <div className="w-6 h-6 rounded bg-transparent" />
+                    <div className="rounded-2xl p-2 backdrop-blur-sm" style={{ background: 'rgba(0,0,0,0.3)', width: 80 }}>
+                      <div className="w-10 h-10 rounded-full bg-zinc-700 mx-auto mb-1" />
+                      <div className="text-[8px] font-bold text-white text-center">Name</div>
                     </div>
                   </div>
                 }
-                previewPlain
-                code={`/* Expanded */ w-[280px] bg-[#1a1a1a] border-r border-black shadow-2xl
-/* Collapsed */ w-[72px]
-/* transition-all duration-300 */
-/* Logo: w-10 h-10 rounded-xl bg-[#4a5f7f] shadow-xl shadow-[#4a5f7f]/30 */`}
               />
-            </div>
 
-            <div style={{ marginTop: 24 }}>
-              <PageSubheading>Character Builder</PageSubheading>
-              <EntryCard name="Chat Message Bubble (AI / User / Transparent)" pageTag="Chat"
-                specs='<strong>AI Solid:</strong> bg-[#1c1f26] rounded-[2rem] border border-white/5. <strong>User:</strong> same + border-2 border-blue-400. <strong>Transparent:</strong> bg-black/50. Padding: p-8 pt-14 pb-12.'
-                previewDark previewStyle={{ flexDirection: 'column', gap: 12 }}
-                preview={<>
-                  <div className="bg-[#1c1f26] rounded-[2rem] border border-white/5 p-4">
-                    <div className="text-xs text-white">AI message (solid mode)</div>
-                  </div>
-                  <div className="bg-[#1c1f26] rounded-[2rem] border-2 border-blue-400 p-4">
-                    <div className="text-xs text-white">User message</div>
-                  </div>
-                  <div className="bg-black/50 rounded-[2rem] border border-white/5 p-4">
-                    <div className="text-xs text-white">AI message (transparent mode)</div>
-                  </div>
-                </>}
-                code={`/* AI Solid */      bg-[#1c1f26] rounded-[2rem] border border-white/5
-/* User */          bg-[#1c1f26] rounded-[2rem] border-2 border-blue-400
-/* AI Transparent */ bg-black/50 rounded-[2rem] border border-white/5
-/* Padding: p-8 pt-14 pb-12 */`}
-              />
-              <InconsistencyNote items={[
-                { file: 'ChatInterfaceTab.tsx', note: 'Chat bubble bg #1c1f26 does not match any panel token (#2a2a2f or bg-zinc-900). Unique surface color only used here.' },
-              ]} />
-            </div>
-
-            <div style={{ marginTop: 24 }}>
-              <PageSubheading>World Tab</PageSubheading>
-              <EntryCard name="HintBox Component" pageTag="World Tab"
-                specs='<strong>bg-zinc-900 rounded-xl p-4 border border-white/5</strong>. Contains ◆ diamond bullet points in text-zinc-400. Used for contextual guidance text.'
-                previewDark
+              <PanelCardV2
+                panelName="Day/Time Sky Panel"
+                background="Preloaded stacked images with crossfade"
+                border="N/A"
+                borderRadius="rounded-xl"
+                shadow="shadow-lg"
+                purpose="Dynamic time-of-day visual with crossfade transitions and bg-black/20 overlay"
+                locations="ChatInterfaceTab.tsx"
+                pageSpecific appWide={false}
+                notes="Images: object-cover object-center. Text color via getTimeTextColor() helper."
                 preview={
-                  <div className="bg-zinc-900 rounded-xl p-4 border border-white/5">
-                    <div className="text-xs text-zinc-400 leading-relaxed">
-                      <span className="text-zinc-500 mr-1">◆</span> Hint text with diamond bullets<br/>
-                      <span className="text-zinc-500 mr-1">◆</span> Additional guidance line
-                    </div>
-                  </div>
-                }
-                code={`bg-zinc-900 rounded-xl p-4 border border-white/5
-/* Bullets: ◆ text-zinc-500 mr-1 */
-/* Text: text-zinc-400 text-xs leading-relaxed */`}
-              />
-            </div>
-
-            <div style={{ marginTop: 24 }}>
-              <EntryCard name="CharacterButton (World Tab)" pageTag="World Tab"
-                specs='<strong>bg-black/80 rounded-2xl border-[#4a5f7f] hover:border-[#6b82a8]</strong>. Error state: border-2 border-red-500. Contains avatar + name + control badge.'
-                previewDark previewStyle={{ gap: 12 }}
-                preview={<>
-                  <div className="bg-black/80 rounded-2xl border border-[#4a5f7f] p-3 flex items-center gap-2" style={{ cursor: 'default', width: 160 }}>
-                    <div className="w-8 h-8 rounded-lg bg-zinc-700" />
-                    <span className="text-white text-xs font-bold">Ashley</span>
-                  </div>
-                  <div className="bg-black/80 rounded-2xl border-2 border-red-500 p-3 flex items-center gap-2" style={{ cursor: 'default', width: 160 }}>
-                    <div className="w-8 h-8 rounded-lg bg-zinc-700" />
-                    <span className="text-white text-xs font-bold">Error State</span>
-                  </div>
-                </>}
-                code={`bg-black/80 rounded-2xl border border-[#4a5f7f]
-hover:border-[#6b82a8] transition-colors
-/* Error: border-2 border-red-500 */`}
-              />
-            </div>
-
-            <div style={{ marginTop: 24 }}>
-              <PageSubheading>Day/Time Panel</PageSubheading>
-              <EntryCard name="Day/Time Sky Panel" pageTag="Chat"
-                specs='Preloaded stacked &lt;img&gt; elements with crossfade (opacity duration-700). <strong>bg-black/20</strong> overlay for legibility. <strong>shadow-lg</strong> elevation. Timer controls use getTimeTextColor helper.'
-                previewDark
-                preview={
-                  <div className="relative rounded-xl overflow-hidden shadow-lg" style={{ width: '100%', height: 80 }}>
+                  <div className="relative rounded-lg overflow-hidden shadow-lg" style={{ width: '100%', height: 56 }}>
                     <div className="absolute inset-0 bg-gradient-to-r from-orange-400 via-pink-300 to-blue-400" />
                     <div className="absolute inset-0 bg-black/20" />
                     <div className="relative flex items-center justify-center h-full">
-                      <span className="text-white text-xs font-bold">Day 1 · Sunrise</span>
+                      <span className="text-white text-[9px] font-bold">Day 1 · Sunrise</span>
                     </div>
                   </div>
                 }
-                previewPlain
-                code={`/* Stacked preloaded images with opacity crossfade */
-/* object-cover object-center */
-/* Overlay: absolute inset-0 bg-black/20 */
-/* Container: shadow-lg rounded-xl overflow-hidden */
-/* Text: getTimeTextColor() → black for Sunrise/Day/Sunset, white for Night */`}
-              />
-            </div>
-
-            <div style={{ marginTop: 24 }}>
-              <PageSubheading>Model Settings</PageSubheading>
-              <EntryCard name="Narrative Core Info Card" pageTag="Model Settings"
-                specs='<strong>bg-slate-900 text-white</strong> Card with watermark text. Watermark: <strong>text-[120px] font-black text-white/5 italic</strong>. Light-theme page, dark info card.'
-                previewDark
-                preview={
-                  <div className="bg-slate-900 text-white rounded-lg p-4 relative overflow-hidden" style={{ width: '100%', minHeight: 80 }}>
-                    <div className="relative z-10">
-                      <div className="font-black text-sm tracking-tight mb-1">Narrative Core</div>
-                      <div className="text-[9px] text-white/60">Powered by xAI Grok</div>
-                    </div>
-                    <div className="absolute -right-2 -bottom-2 text-[60px] font-black text-white/5 italic select-none">AI</div>
-                  </div>
-                }
-                previewPlain
-                code={`bg-slate-900 text-white rounded-lg p-6 relative overflow-hidden
-/* Watermark: absolute -right-4 -bottom-4
-   text-[120px] font-black text-white/5 italic select-none */`}
-              />
-            </div>
-
-            <div style={{ marginTop: 24 }}>
-              <PageSubheading>Dropdown Menus</PageSubheading>
-              <EntryCard name="Dropdown Menu Panel (Standardized)" pageTag="Global"
-                specs='<strong>bg-zinc-800 border-white/10</strong>. Items: hover bg-zinc-700 text-white. Destructive items: text-red-600 hover bg-zinc-700. Used across character cards, theme settings, etc.'
-                previewDark
-                preview={
-                  <div className="bg-zinc-800 border border-white/10 rounded-md p-1 shadow-lg" style={{ width: 180 }}>
-                    <div className="px-2 py-1.5 text-sm text-white rounded-sm hover:bg-zinc-700" style={{ cursor: 'default' }}>Edit character</div>
-                    <div className="px-2 py-1.5 text-sm text-white rounded-sm hover:bg-zinc-700" style={{ cursor: 'default' }}>Duplicate</div>
-                    <div className="h-px bg-white/10 my-1" />
-                    <div className="px-2 py-1.5 text-sm text-red-600 rounded-sm hover:bg-zinc-700" style={{ cursor: 'default' }}>Delete character</div>
-                  </div>
-                }
-                previewPlain
-                code={`bg-zinc-800 border border-white/10 rounded-md p-1 shadow-lg
-/* Items: px-2 py-1.5 text-sm text-white rounded-sm */
-/* Hover: bg-zinc-700 */
-/* Destructive: text-red-600 (keeps bg-zinc-700 on hover) */
-/* Separator: h-px bg-white/10 */`}
-              />
-            </div>
-
-            <PageSubheading>Art Style Selection Grid (Shared)</PageSubheading>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <EntryCard name="Art Style Selection Card" pageTag="AI Generation Modals"
-                specs='<strong>Card:</strong> <code>rounded-xl bg-card ring-1 ring-border p-2</code>. Selected: <code>ring-2 ring-blue-400 shadow-md</code>. <strong>Checkmark:</strong> <code>w-5 h-5 bg-primary rounded-full</code> absolute top-right. <strong>Label:</strong> <code>text-xs font-semibold text-foreground</code>. Shared across Avatar, Cover Image, and Scene Image generation modals.'
-                preview={
-                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                    <div style={{ width: 100, padding: 8, borderRadius: 12, background: '#fff', boxShadow: '0 0 0 1px #e2e8f0', position: 'relative' }}>
-                      <div style={{ width: '100%', aspectRatio: '1/1', borderRadius: 8, background: '#e2e8f0' }} />
-                      <p style={{ fontSize: 11, fontWeight: 600, textAlign: 'center', marginTop: 8, color: '#111827' }}>Style A</p>
-                    </div>
-                    <div style={{ width: 100, padding: 8, borderRadius: 12, background: '#fff', boxShadow: '0 0 0 2px #60a5fa', position: 'relative' }}>
-                      <div style={{ width: '100%', aspectRatio: '1/1', borderRadius: 8, background: '#e2e8f0' }} />
-                      <p style={{ fontSize: 11, fontWeight: 600, textAlign: 'center', marginTop: 8, color: '#111827' }}>Style B</p>
-                      <div style={{ position: 'absolute', top: 4, right: 4, width: 20, height: 20, borderRadius: '50%', background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 12, fontWeight: 700 }}>✓</div>
-                    </div>
-                  </div>
-                }
-                code={`/* Card: rounded-xl bg-card ring-1 ring-border p-2 */
-/* Selected: ring-2 ring-blue-400 shadow-md */
-/* Checkmark: w-5 h-5 bg-primary rounded-full (absolute top-1 right-1) */
-/* Label: text-xs font-semibold text-center text-foreground */
-/* ⚠ Uses light-theme (bg-card) while app is dark */`}
-              />
-            </div>
-
-            <PageSubheading>Story Detail Modal</PageSubheading>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <EntryCard name="Story Detail Character Card" pageTag="Story Detail Modal"
-                specs='<strong>bg-white/5 rounded-xl p-3</strong>. Contains avatar (w-12 h-12 rounded-xl), character name (font-semibold text-white), role description (text-xs text-white/60). Used in character listing within Story Detail.'
-                previewDark
-                preview={
-                  <div className="bg-white/5 rounded-xl p-3 flex items-center gap-3" style={{ maxWidth: 280 }}>
-                    <div className="w-12 h-12 rounded-xl bg-zinc-700 flex items-center justify-center text-zinc-400 text-lg">👤</div>
-                    <div>
-                      <div className="text-white font-semibold text-sm">Elena Blackwood</div>
-                      <div className="text-white/60 text-xs">Protagonist</div>
-                    </div>
-                  </div>
-                }
-                code={`bg-white/5 rounded-xl p-3
-/* Avatar: w-12 h-12 rounded-xl */
-/* Name: font-semibold text-white text-sm */
-/* Role: text-xs text-white/60 */`}
               />
 
-              <EntryCard name="Review Card" pageTag="Story Detail Modal"
-                specs='<strong>bg-white/5 rounded-xl p-4</strong>. Contains StarRating + SpiceRating inline, reviewer name (text-sm font-semibold text-white), comment (text-sm text-white/70), date (text-xs text-white/40).'
-                previewDark
-                preview={
-                  <div className="bg-white/5 rounded-xl p-4" style={{ maxWidth: 320 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                      <span className="text-sm font-semibold text-white">Reviewer</span>
-                      <span className="text-xs text-white/40">2 days ago</span>
-                    </div>
-                    <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                      <span style={{ fontSize: 12 }}>⭐⭐⭐⭐☆</span>
-                      <span style={{ fontSize: 12 }}>🔥🔥🔥</span>
-                    </div>
-                    <p className="text-sm text-white/70">Great story, well-crafted characters.</p>
-                  </div>
-                }
-                code={`bg-white/5 rounded-xl p-4
-/* StarRating + SpiceRating inline row */
-/* Reviewer: text-sm font-semibold text-white */
-/* Comment: text-sm text-white/70 */
-/* Date: text-xs text-white/40 */`}
-              />
-            </div>
+              {/* ─── Chat History ─── */}
+              <PageSubheading fullSpan>Chat History</PageSubheading>
 
-            <PageSubheading>Share Story Modal</PageSubheading>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <EntryCard name="Blue Info Callout" pageTag="Share Story Modal"
-                specs='<strong>bg-blue-500/10 border-blue-500/20 rounded-xl p-4</strong>. Used for permission/info callouts. Text: <code>text-blue-300 text-xs</code>. Unique pattern — not used anywhere else in the app.'
-                previewDark
+              <PanelCardV2
+                panelName="Session Card (Double-nested)"
+                background="Outer: #2a2a2f · Inner: #3a3a3f/30"
+                border="Outer: border-[#4a5f7f] · Inner: border-white/5"
+                borderRadius="rounded-2xl"
+                purpose="Chat session card with nested inner card for conversation preview"
+                locations="ConversationsTab.tsx"
+                pageSpecific appWide={false}
                 preview={
-                  <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4" style={{ maxWidth: 320 }}>
-                    <p className="text-blue-300 text-xs">ℹ️ Published stories are visible to all users in the Community Gallery.</p>
-                  </div>
-                }
-                code={`bg-blue-500/10 border border-blue-500/20 rounded-xl p-4
-/* Text: text-blue-300 text-xs */
-/* Unique info callout pattern */`}
-              />
-            </div>
-
-            <PageSubheading>Side Character Card</PageSubheading>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <EntryCard name="Side Character Card (Dual Mode)" pageTag="Chat Interface"
-                specs='Frosted glass card with <strong>isDarkBg</strong> prop. Dark BG → bg-white/30 text-slate-800. Light BG → bg-black/30 text-white. <strong>Avatar: w-20 h-20 rounded-full</strong> — only circular avatar in the app. Updating state: blue vignette with animate-vignette-pulse.'
-                previewDark
-                preview={
-                  <div style={{ display: 'flex', gap: 12 }}>
-                    <div className="rounded-2xl p-3 backdrop-blur-sm" style={{ background: 'rgba(255,255,255,0.3)', width: 120 }}>
-                      <div className="w-12 h-12 rounded-full bg-slate-600 mx-auto mb-2" />
-                      <div className="text-xs font-bold text-slate-800 text-center">Dark BG</div>
-                    </div>
-                    <div className="rounded-2xl p-3 backdrop-blur-sm" style={{ background: 'rgba(0,0,0,0.3)', width: 120 }}>
-                      <div className="w-12 h-12 rounded-full bg-zinc-700 mx-auto mb-2" />
-                      <div className="text-xs font-bold text-white text-center">Light BG</div>
-                    </div>
-                  </div>
-                }
-                previewPlain
-                code={`/* isDarkBg=true → bg-white/30 text-slate-800 */
-/* isDarkBg=false → bg-black/30 text-white */
-/* Avatar: w-20 h-20 rounded-full (⚠ only circular avatar) */
-/* Updating: blue vignette overlay + animate-vignette-pulse */`}
-              />
-              <InconsistencyNote items={[
-                { file: 'SideCharacterCard.tsx', note: 'Uses rounded-full avatar (w-20 h-20) — every other avatar in the app uses rounded-2xl.' },
-              ]} />
-            </div>
-
-            <PageSubheading>Creator Profile</PageSubheading>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <EntryCard name="Creator Profile Card" pageTag="Creator Profile"
-                specs='<strong>bg-[#1e1e22] rounded-2xl border-white/10 p-6</strong>. Contains avatar, display name, bio, stats pills (bg-white/5 rounded-xl). Follow button: bg-[#4a5f7f]. Yet another dark surface color (#1e1e22 vs #2a2a2f vs zinc-900).'
-                previewDark
-                preview={
-                  <div className="bg-[#1e1e22] rounded-2xl border border-white/10 p-4" style={{ width: '100%' }}>
-                    <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                      <div className="w-16 h-16 rounded-2xl bg-zinc-700" />
-                      <div>
-                        <div className="text-white font-bold text-sm">Creator Name</div>
-                        <div className="text-white/60 text-xs">@username</div>
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                      <div className="bg-white/5 rounded-xl px-3 py-1.5 text-xs text-white/70">👁 1.2k</div>
-                      <div className="bg-white/5 rounded-xl px-3 py-1.5 text-xs text-white/70">❤ 340</div>
-                    </div>
-                  </div>
-                }
-                previewPlain
-                code={`bg-[#1e1e22] rounded-2xl border border-white/10 p-6
-/* Stats: bg-white/5 rounded-xl px-3 py-2 */
-/* ⚠ #1e1e22 — yet another dark surface, not matching #2a2a2f or zinc-900 */`}
-              />
-            </div>
-
-            <PageSubheading>Character Picker (Full-Screen Overlay)</PageSubheading>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <EntryCard name="CharacterPicker Overlay" pageTag="Chat Interface"
-                specs='Third overlay implementation: <strong>fixed inset-0 bg-slate-900/50 backdrop-blur-sm</strong>. Inner container: <strong>bg-zinc-900 rounded-3xl border-white/10</strong>. Character cards: <code>bg-black/30 rounded-2xl border-transparent hover:bg-black/50</code>. Uses rounded-3xl — unique container radius.'
-                previewDark
-                preview={
-                  <div style={{ position: 'relative', width: '100%', height: 100, borderRadius: 8, overflow: 'hidden' }}>
-                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.5)', backdropFilter: 'blur(4px)' }} />
-                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#18181b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 24, padding: '12px 24px', color: '#fff', fontSize: 11, fontWeight: 600 }}>
-                      CharacterPicker — rounded-3xl
-                    </div>
-                  </div>
-                }
-                code={`/* Backdrop: fixed inset-0 bg-slate-900/50 backdrop-blur-sm */
-/* Container: bg-zinc-900 rounded-3xl border-white/10 */
-/* Character cards: bg-black/30 rounded-2xl hover:bg-black/50 */
-/* ⚠ Third overlay implementation (not Dialog, not AlertDialog) */
-/* ⚠ rounded-3xl — unique, standard containers use rounded-2xl */`}
-              />
-              <InconsistencyNote items={[
-                { file: 'CharacterPicker.tsx', note: 'Uses rounded-3xl container — unique in the app. Standard is rounded-2xl. Also uses custom overlay (bg-slate-900/50) instead of Radix Dialog.' },
-              ]} />
-            </div>
-
-            <PageSubheading>ScrollableSection Fade Indicators</PageSubheading>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <EntryCard name="ScrollableSection (White Fade)" pageTag="Global"
-                specs='Fade indicators for overflow scrolling. <strong>Top:</strong> <code>bg-gradient-to-b from-white via-white/80 to-transparent</code>. <strong>Bottom:</strong> <code>bg-gradient-to-t from-white via-white/80 to-transparent</code>. Height: h-8. Uses white gradients that assume light-theme containers.'
-                preview={
-                  <div style={{ position: 'relative', height: 60, width: '100%', background: '#2a2a2f', borderRadius: 8, overflow: 'hidden' }}>
-                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 20, background: 'linear-gradient(to bottom, white, rgba(255,255,255,0.8), transparent)', zIndex: 1 }} />
-                    <div style={{ padding: '24px 12px', fontSize: 10, color: '#94a3b8' }}>Content underneath</div>
-                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 20, background: 'linear-gradient(to top, white, rgba(255,255,255,0.8), transparent)', zIndex: 1 }} />
-                  </div>
-                }
-                previewPlain
-                code={`/* Top: from-white via-white/80 to-transparent h-8 */
-/* Bottom: from-white via-white/80 to-transparent h-8 */
-/* ⚠ White gradients on dark backgrounds — visually jarring */`}
-              />
-              <InconsistencyNote items={[
-                { file: 'ScrollableSection.tsx', note: 'Uses from-white fade gradients that assume light-theme containers. Appears broken on dark backgrounds.' },
-              ]} />
-            </div>
-
-            <PageSubheading>Chronicle UI.tsx Card (Light Theme)</PageSubheading>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <EntryCard name="Chronicle UI.tsx Card" pageTag="Chronicle UI System"
-                specs='<strong>rounded-3xl border-slate-200 bg-white p-4 shadow-sm</strong>. Light-theme card used in BackgroundPickerModal, some settings views. Part of the parallel Chronicle UI component system.'
-                preview={
-                  <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm" style={{ width: '100%' }}>
-                    <div className="text-sm font-bold text-slate-900">Chronicle Card</div>
-                    <div className="text-xs text-slate-500 mt-1">Light-theme card from UI.tsx</div>
-                  </div>
-                }
-                previewPlain
-                code={`/* Chronicle UI.tsx Card */
-rounded-3xl border-slate-200 bg-white p-4 shadow-sm
-/* ⚠ Light theme — parallel to dark app panels (bg-[#2a2a2f]) */`}
-              />
-              <InconsistencyNote items={[
-                { file: 'UI.tsx', note: 'Defines light-theme Card (bg-white rounded-3xl border-slate-200). Conflicts with app-wide dark panel standard (bg-[#2a2a2f] border-white/10).' },
-              ]} />
-            </div>
-
-            <PageSubheading>Arc System</PageSubheading>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <EntryCard name="Arc Phase Card Container" pageTag="Arc System"
-                specs='Phase container within the Story Arc. Contains progress ring (CircularProgress), phase title, branch lanes (success/fail), and sparkle enhance buttons. Uses <code>rounded-2xl</code> container where linked phases appear as inline sections separated by <code>border-t</code>.'
-                previewDark
-                preview={
-                  <div className="bg-[#2a2a2f] rounded-2xl border border-white/10 p-4" style={{ width: '100%' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                      <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <svg width={32} height={32} style={{ transform: 'rotate(-90deg)' }}>
-                          <circle cx={16} cy={16} r={13} stroke="#334155" strokeWidth={3} fill="none" />
-                          <circle cx={16} cy={16} r={13} stroke="#3b82f6" strokeWidth={3} fill="none" strokeDasharray={81.7} strokeDashoffset={40.8} />
-                        </svg>
-                        <span style={{ position: 'absolute', fontSize: 8, fontWeight: 700, color: '#60a5fa' }}>50%</span>
-                      </div>
-                      <span className="text-white font-bold text-sm">Phase 1: Discovery</span>
-                    </div>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <div className="flex-1 rounded-lg p-2" style={{ background: 'rgba(34,197,127,0.28)' }}>
-                        <span className="text-[9px] font-bold text-emerald-300 uppercase">Succeed</span>
-                      </div>
-                      <div className="flex-1 rounded-lg p-2" style={{ background: 'rgba(240,74,95,0.28)' }}>
-                        <span className="text-[9px] font-bold text-red-300 uppercase">Fail</span>
+                  <div className="w-full bg-[#2a2a2f] rounded-2xl border border-[#4a5f7f] p-2">
+                    <div className="bg-[#3a3a3f]/30 rounded-xl border border-white/5 p-2">
+                      <div className="flex gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-zinc-800 border border-[#4a5f7f] flex-shrink-0" />
+                        <div><div className="text-[9px] font-bold text-white">Story</div><div className="text-[7px] text-zinc-500">💬 24</div></div>
                       </div>
                     </div>
                   </div>
                 }
-                previewPlain
-                code={`/* Container: rounded-2xl border-t (inline sections) */
-/* Progress: CircularProgress component */
-/* Branch lanes: success rgba(34,197,127,0.28), fail rgba(240,74,95,0.28) */
-/* Phase title: text-white font-bold text-sm */`}
               />
 
-              <EntryCard name="Arc Branch Lane (Success / Fail)" pageTag="Arc System"
-                specs='Color-coded branch lanes. <strong>Success:</strong> strip bg <code>rgba(34,197,127,0.28)</code>, step cards <code>rgba(51,75,66,0.78)</code>. <strong>Fail:</strong> strip bg <code>rgba(240,74,95,0.28)</code>, step cards <code>rgba(78,58,68,0.78)</code>. Step card borders are status-based: Red (Failed), Blue (Succeeded), Orange (Deviated). Uses inline <code>rgba()</code> instead of Tailwind tokens.'
-                previewDark
+              {/* ─── Community Gallery ─── */}
+              <PageSubheading fullSpan>Community Gallery</PageSubheading>
+
+              <PanelCardV2
+                panelName="Category Sidebar"
+                background="#18181b"
+                border="border-r border-white/10"
+                borderRadius="N/A"
+                purpose="Left sidebar with collapsible category filters and yellow accent bar"
+                locations="GalleryCategorySidebar.tsx"
+                pageSpecific appWide={false}
+                notes="Yellow accent: h-0.5 bg-yellow-400 at top. Selected item: bg-blue-500/20 text-blue-400."
                 preview={
-                  <div style={{ display: 'flex', gap: 8, width: '100%' }}>
-                    <div className="flex-1 rounded-lg p-3" style={{ background: 'rgba(34,197,127,0.28)' }}>
-                      <div className="text-[9px] font-bold text-emerald-300 uppercase tracking-wider mb-2">Succeed</div>
-                      <div className="rounded-lg p-2 border-l-2 border-blue-500 mb-1.5" style={{ background: 'rgba(51,75,66,0.78)' }}>
-                        <span className="text-[9px] text-white">Step 1 — Resolved</span>
-                      </div>
-                      <div className="rounded-lg p-2 border-l-2 border-orange-400" style={{ background: 'rgba(51,75,66,0.78)' }}>
-                        <span className="text-[9px] text-white">Step 2 — Deviated</span>
-                      </div>
-                    </div>
-                    <div className="flex-1 rounded-lg p-3" style={{ background: 'rgba(240,74,95,0.28)' }}>
-                      <div className="text-[9px] font-bold text-red-300 uppercase tracking-wider mb-2">Fail</div>
-                      <div className="rounded-lg p-2 border-l-2 border-red-500 mb-1.5" style={{ background: 'rgba(78,58,68,0.78)' }}>
-                        <span className="text-[9px] text-white">Step 1 — Failed</span>
-                      </div>
-                      <div className="rounded-lg p-2 border-l-2 border-zinc-600 opacity-50" style={{ background: 'rgba(78,58,68,0.78)' }}>
-                        <span className="text-[9px] text-zinc-400">🔒 DYNAMIC RECOVERY</span>
-                      </div>
+                  <div className="rounded-lg overflow-hidden" style={{ width: 140 }}>
+                    <div className="h-0.5 bg-yellow-400" />
+                    <div className="bg-[#18181b] p-2">
+                      <div className="text-[8px] font-bold text-white mb-1">Categories</div>
+                      <div className="text-[7px] text-white/70 py-0.5">▸ Genre</div>
+                      <div className="text-[7px] text-white/70 py-0.5">▸ Origin</div>
                     </div>
                   </div>
                 }
-                previewPlain
-                code={`/* Success lane: rgba(34,197,127,0.28) */
-/* Success step: rgba(51,75,66,0.78) */
-/* Fail lane: rgba(240,74,95,0.28) */
-/* Fail step: rgba(78,58,68,0.78) */
-/* Step borders: Red (failed), Blue (succeeded), Orange (deviated) */
-/* ⚠ Uses inline rgba() instead of Tailwind tokens */`}
               />
-              <InconsistencyNote items={[
-                { file: 'ArcBranchLane.tsx', note: 'Uses inline rgba() colors instead of Tailwind tokens. Unique to the Arc system — no other component does this.' },
-              ]} />
-            </div>
 
-            <PageSubheading>Chat Interface — White Sidebar</PageSubheading>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <EntryCard name="Chat Sidebar (Light Theme)" pageTag="Chat Interface"
-                specs='<strong>bg-white</strong> with <code>shadow-[inset_-4px_0_12px_rgba(0,0,0,0.02)]</code>. Optional background image overlay adds <code>bg-white/90 backdrop-blur-md</code>. Section headers: <code>#4a5f7f rounded-lg</code> pills with uppercase labels (MAIN CHARACTERS, SIDE CHARACTERS). Collapsible sections with chevron toggles.'
+              {/* ─── Account Page ─── */}
+              <PageSubheading fullSpan>Account Page</PageSubheading>
+
+              <PanelCardV2
+                panelName="Settings Card"
+                background="#1e1e22"
+                border="border-white/10"
+                borderRadius="rounded-2xl"
+                purpose="Account settings section card with icon, title, and content area"
+                locations="AccountSettingsTab.tsx"
+                pageSpecific appWide={false}
                 preview={
-                  <div style={{ display: 'flex', gap: 0, width: '100%', height: 140, borderRadius: 8, overflow: 'hidden' }}>
-                    <div style={{ width: '40%', background: '#fff', padding: 10, borderRight: '1px solid #e2e8f0', boxShadow: 'inset -4px 0 12px rgba(0,0,0,0.02)' }}>
-                      <div className="px-2 py-1 rounded-lg text-white text-[8px] font-black uppercase tracking-widest mb-2" style={{ background: '#4a5f7f', display: 'inline-block' }}>Main Characters</div>
-                      <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] mb-1">Location</div>
-                      <div className="text-[11px] font-bold text-slate-700 mb-2">Castle Grounds</div>
-                      <div className="px-2 py-1 rounded-lg text-white text-[8px] font-black uppercase tracking-widest" style={{ background: '#4a5f7f', display: 'inline-block' }}>Side Characters</div>
+                  <div className="w-full bg-[#1e1e22] rounded-2xl border border-white/10 p-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[#4a5f7f] text-[10px]">✉</span>
+                      <span className="text-[10px] font-bold text-white">Email</span>
                     </div>
-                    <div style={{ flex: 1, background: '#1a1a1f', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <span style={{ fontSize: 10, color: '#64748b' }}>Chat Area (dark)</span>
+                    <div className="text-[8px] text-white/70 bg-[#2a2a2f] rounded-lg px-2 py-1.5 border border-white/5">user@email.com</div>
+                  </div>
+                }
+              />
+
+              <PanelCardV2
+                panelName="Subscription Tier Cards"
+                background="Free: bg-white/5 · Pro: bg-[#4a5f7f]/10 · Premium: bg-amber-500/10"
+                border="Free: border-white/10 · Pro: border-[#4a5f7f]/30 · Premium: border-amber-500/20"
+                borderRadius="rounded-2xl"
+                purpose="Pricing tier comparison cards with badges (Current Plan, Coming Soon)"
+                locations="SubscriptionTab.tsx"
+                pageSpecific appWide={false}
+                notes="Current badge: bg-emerald-500/20 text-emerald-400. Soon badge: bg-[#4a5f7f] text-white."
+                preview={
+                  <div style={{ display: 'flex', gap: 6, width: '100%' }}>
+                    <div className="flex-1 rounded-lg border border-white/10 p-2" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                      <div className="text-slate-400 text-[7px] font-bold">Free</div>
+                      <div className="text-white text-[10px] font-black">$0</div>
+                    </div>
+                    <div className="flex-1 rounded-lg p-2" style={{ background: 'rgba(74,95,127,0.1)', border: '1px solid rgba(74,95,127,0.3)' }}>
+                      <div style={{ color: '#7ba3d4' }} className="text-[7px] font-bold">Pro</div>
+                      <div className="text-white text-[10px] font-black">$9.99</div>
+                    </div>
+                    <div className="flex-1 rounded-lg p-2" style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)' }}>
+                      <div className="text-amber-400 text-[7px] font-bold">Premium</div>
+                      <div className="text-white text-[10px] font-black">$19.99</div>
                     </div>
                   </div>
                 }
-                previewPlain
-                code={`/* Sidebar: bg-white shadow-[inset_-4px_0_12px_rgba(0,0,0,0.02)] */
-/* With BG image: bg-white/90 backdrop-blur-md */
-/* Section headers: bg-[#4a5f7f] rounded-lg px-2 py-1 */
-/* Labels: text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 */
-/* Values: text-[11px] font-bold text-slate-700 */
-/* ⚠ White sidebar in otherwise dark-themed app */`}
               />
-              <InconsistencyNote items={[
-                { file: 'ChatInterfaceTab.tsx', note: 'Uses bg-white sidebar with text-slate-700 values inside a dark-themed application. Jarring contrast with surrounding dark content.' },
-              ]} />
-            </div>
 
-            <PageSubheading>World Tab — Two-Pane Layout</PageSubheading>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <EntryCard name="World Tab Sidebar + Content" pageTag="World Tab"
-                specs='<strong>Left sidebar:</strong> <code>w-[260px] bg-[#2a2a2f] border-r border-white/10</code> with <code>#4a5f7f</code> header. <strong>Right content:</strong> uses Chronicle UI.tsx components (light-theme Cards/Inputs on dark background). "Add Character" button: <code>border-2 border-dashed border-zinc-600</code> with <code>bg-[#1a1a1f]</code> icon container.'
-                previewDark
+              {/* ─── Auth Page ─── */}
+              <PageSubheading fullSpan>Auth Page</PageSubheading>
+
+              <PanelCardV2
+                panelName="Auth Card"
+                background="bg-slate-800/50"
+                border="border-slate-700"
+                borderRadius="rounded-lg"
+                purpose="Login/signup card with frosted glass on gradient background"
+                locations="Auth.tsx"
+                pageSpecific appWide={false}
+                notes="backdrop-blur-sm. Max-width: max-w-md. Uses shadcn Card with overrides."
                 preview={
-                  <div style={{ display: 'flex', width: '100%', height: 130, borderRadius: 8, overflow: 'hidden' }}>
-                    <div style={{ width: 120, background: '#2a2a2f', borderRight: '1px solid rgba(255,255,255,0.1)', padding: 8 }}>
-                      <div className="text-[8px] font-black uppercase tracking-widest text-white/70 px-2 py-1 rounded-lg mb-2" style={{ background: '#4a5f7f' }}>Characters</div>
-                      <div className="rounded-lg p-2 mb-2" style={{ background: 'rgba(58,58,63,0.3)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                        <div className="text-[9px] text-white font-semibold">Hero</div>
+                  <div className="rounded-lg border border-slate-700 p-3" style={{ background: 'rgba(30,41,59,0.5)', backdropFilter: 'blur(4px)', width: 160 }}>
+                    <div className="text-[10px] font-bold text-white text-center">Chronicle Studio</div>
+                    <div className="text-[7px] text-slate-400 text-center">Sign in</div>
+                  </div>
+                }
+              />
+
+              {/* ─── Global ─── */}
+              <PageSubheading fullSpan>Global</PageSubheading>
+
+              <PanelCardV2
+                panelName="Global Sidebar"
+                background="#1a1a1a"
+                border="border-r border-black"
+                borderRadius="N/A"
+                shadow="shadow-2xl"
+                purpose="Main navigation sidebar. Expanded: w-[280px], Collapsed: w-[72px]. Smooth transition-all duration-300."
+                locations="ChronicleApp.tsx"
+                appWide pageSpecific={false}
+                notes="Logo: w-10 h-10 rounded-xl bg-[#4a5f7f] shadow-xl shadow-[#4a5f7f]/30"
+                preview={
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <div className="bg-[#1a1a1a] rounded-lg border-r border-black shadow-2xl p-2" style={{ width: 90, minHeight: 60 }}>
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <div className="w-5 h-5 rounded-lg bg-[#4a5f7f] flex items-center justify-center text-white text-[7px] font-black italic">C</div>
+                        <span className="text-[7px] font-black text-white uppercase">Chronicle</span>
                       </div>
-                      <div className="flex items-center justify-center rounded-xl p-2" style={{ background: 'rgba(58,58,63,0.3)' }}>
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: '#1a1a1f', border: '2px dashed #52525b' }}>
-                          <span className="text-zinc-500 text-xs">+</span>
-                        </div>
+                      <div className="text-[7px] font-bold text-white bg-[#4a5f7f] rounded px-1.5 py-0.5 mb-0.5">Stories</div>
+                      <div className="text-[7px] font-bold text-slate-400 px-1.5 py-0.5">Chat</div>
+                    </div>
+                    <div className="bg-[#1a1a1a] rounded-lg border-r border-black shadow-2xl p-1.5 flex flex-col items-center gap-1" style={{ width: 30, minHeight: 60 }}>
+                      <div className="w-5 h-5 rounded-lg bg-[#4a5f7f] flex items-center justify-center text-white text-[7px] font-black italic">C</div>
+                      <div className="w-4 h-4 rounded bg-[#4a5f7f] opacity-70" />
+                    </div>
+                  </div>
+                }
+              />
+
+              <PanelCardV2
+                panelName="Dropdown Menu"
+                background="bg-zinc-800"
+                border="border-white/10"
+                borderRadius="rounded-md"
+                shadow="shadow-lg"
+                purpose="Context menus for character cards, theme settings, etc."
+                locations="Global pattern"
+                appWide pageSpecific={false}
+                notes="Items: hover:bg-zinc-700 text-white. Destructive: text-red-600 hover:bg-zinc-700."
+                preview={
+                  <div className="bg-zinc-800 border border-white/10 rounded-md p-1 shadow-lg" style={{ width: 140 }}>
+                    <div className="px-2 py-1 text-[9px] text-white rounded-sm" style={{ cursor: 'default' }}>Edit</div>
+                    <div className="px-2 py-1 text-[9px] text-white rounded-sm" style={{ cursor: 'default' }}>Duplicate</div>
+                    <div className="h-px bg-white/10 my-0.5" />
+                    <div className="px-2 py-1 text-[9px] text-red-600 rounded-sm" style={{ cursor: 'default' }}>Delete</div>
+                  </div>
+                }
+              />
+
+              {/* ─── World Tab ─── */}
+              <PageSubheading fullSpan>World Tab</PageSubheading>
+
+              <PanelCardV2
+                panelName="HintBox"
+                background="bg-zinc-900"
+                border="border border-white/5"
+                borderRadius="rounded-xl"
+                purpose="Contextual guidance text with diamond bullet points"
+                locations="WorldTab.tsx"
+                pageSpecific appWide={false}
+                preview={
+                  <div className="bg-zinc-900 rounded-xl p-3 border border-white/5" style={{ width: '100%' }}>
+                    <div className="text-[8px] text-zinc-400 leading-relaxed">
+                      <span className="text-zinc-500 mr-1">◆</span> Hint text<br/>
+                      <span className="text-zinc-500 mr-1">◆</span> Guidance line
+                    </div>
+                  </div>
+                }
+              />
+
+              <PanelCardV2
+                panelName="CharacterButton"
+                background="bg-black/80"
+                border="border-[#4a5f7f] · hover: border-[#6b82a8] · error: border-2 border-red-500"
+                borderRadius="rounded-2xl"
+                purpose="Character selection button in World Tab with avatar, name, and control badge"
+                locations="WorldTab.tsx"
+                pageSpecific appWide={false}
+                preview={
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <div className="bg-black/80 rounded-2xl border border-[#4a5f7f] p-2 flex items-center gap-1.5" style={{ cursor: 'default' }}>
+                      <div className="w-6 h-6 rounded-lg bg-zinc-700" />
+                      <span className="text-white text-[8px] font-bold">Name</span>
+                    </div>
+                    <div className="bg-black/80 rounded-2xl border-2 border-red-500 p-2 flex items-center gap-1.5" style={{ cursor: 'default' }}>
+                      <div className="w-6 h-6 rounded-lg bg-zinc-700" />
+                      <span className="text-white text-[8px] font-bold">Error</span>
+                    </div>
+                  </div>
+                }
+              />
+
+              <PanelCardV2
+                panelName="World Tab Two-Pane Layout"
+                background="Sidebar: #2a2a2f · Content: Chronicle UI light Cards"
+                border="border-r border-white/10"
+                borderRadius="N/A"
+                purpose="Two-pane layout with dark sidebar and light-theme Chronicle UI Cards on right"
+                locations="WorldTab.tsx"
+                pageSpecific appWide={false}
+                notes="⚠ Right pane uses light-theme Cards (bg-white) on dark background"
+                preview={
+                  <div style={{ display: 'flex', width: '100%', height: 70, borderRadius: 6, overflow: 'hidden' }}>
+                    <div style={{ width: 80, background: '#2a2a2f', borderRight: '1px solid rgba(255,255,255,0.1)', padding: 6 }}>
+                      <div className="text-[7px] font-black uppercase text-white/70 px-1 py-0.5 rounded mb-1" style={{ background: '#4a5f7f' }}>Chars</div>
+                      <div className="rounded p-1" style={{ background: 'rgba(58,58,63,0.3)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        <div className="text-[7px] text-white font-semibold">Hero</div>
                       </div>
                     </div>
                     <div style={{ flex: 1, background: '#2a2a2f', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <div className="rounded-2xl bg-white border border-slate-200 p-3 text-[9px] text-slate-500" style={{ width: '80%' }}>Chronicle UI Card (light)</div>
+                      <div className="rounded-xl bg-white border border-slate-200 p-2 text-[7px] text-slate-500" style={{ width: '80%' }}>Light Card</div>
                     </div>
                   </div>
                 }
-                previewPlain
-                code={`/* Sidebar: w-[260px] bg-[#2a2a2f] border-r border-white/10 */
-/* Header: bg-[#4a5f7f] rounded-lg */
-/* Character item: bg-[#3a3a3f]/30 rounded-xl border-white/5 */
-/* Add button: border-2 border-dashed border-zinc-600 */
-/* Icon container: w-14 h-14 rounded-xl bg-[#1a1a1f] */
-/* ⚠ Right pane uses Chronicle UI light-theme Cards on dark bg */`}
               />
-              <InconsistencyNote items={[
-                { file: 'WorldTab.tsx', note: 'Right content area uses Chronicle UI.tsx light-theme components (bg-white Cards, bg-slate-50 Inputs) on a bg-[#2a2a2f] dark background.' },
-              ]} />
-            </div>
 
-            <PageSubheading>Character Builder — Collapsible Sections</PageSubheading>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <EntryCard name="Builder Collapsible Section" pageTag="Character Builder"
-                specs='<strong>Container:</strong> <code>bg-[#2a2a2f] rounded-[24px] border border-white/10 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]</code>. <strong>Header bar:</strong> <code>bg-[#4a5f7f] border-b border-white/20 px-5 py-3 shadow-lg</code>. <strong>Inner card:</strong> <code>bg-[#3a3a3f]/30 rounded-2xl border border-white/5</code>. Form rows: label (w-2/5) + value input, both <code>bg-zinc-900/50 border-white/10 rounded-lg</code>.'
-                previewDark previewStyle={{ flexDirection: 'column', gap: 0, padding: 0 }}
+              {/* ─── Story Detail ─── */}
+              <PageSubheading fullSpan>Story Detail</PageSubheading>
+
+              <PanelCardV2
+                panelName="Story Detail Character Card"
+                background="bg-white/5"
+                border="N/A"
+                borderRadius="rounded-xl"
+                purpose="Character listing within Story Detail modal"
+                locations="StoryDetailModal.tsx"
+                pageSpecific appWide={false}
+                notes="Avatar: w-12 h-12 rounded-xl. Name: font-semibold text-white. Role: text-xs text-white/60."
                 preview={
-                  <div className="rounded-[16px] border border-white/10 overflow-hidden" style={{ background: '#2a2a2f', width: '100%', boxShadow: '0 12px 32px -2px rgba(0,0,0,0.50)' }}>
-                    <div className="px-4 py-2 border-b border-white/20 flex items-center justify-between" style={{ background: '#4a5f7f' }}>
-                      <span className="text-white text-[10px] font-bold uppercase tracking-wider">Physical Appearance</span>
-                      <span className="text-white/60 text-xs">▾</span>
+                  <div className="bg-white/5 rounded-xl p-2 flex items-center gap-2" style={{ maxWidth: 200 }}>
+                    <div className="w-8 h-8 rounded-lg bg-zinc-700 flex items-center justify-center text-zinc-400 text-[10px]">👤</div>
+                    <div><div className="text-white font-semibold text-[9px]">Elena</div><div className="text-white/60 text-[7px]">Protagonist</div></div>
+                  </div>
+                }
+              />
+
+              <PanelCardV2
+                panelName="Review Card"
+                background="bg-white/5"
+                border="N/A"
+                borderRadius="rounded-xl"
+                purpose="User review display with StarRating, SpiceRating, comment"
+                locations="StoryDetailModal.tsx"
+                pageSpecific appWide={false}
+                preview={
+                  <div className="bg-white/5 rounded-xl p-3" style={{ maxWidth: 220 }}>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-[9px] font-semibold text-white">Reviewer</span>
+                      <span className="text-[7px] text-white/40">2d ago</span>
                     </div>
-                    <div className="p-3">
-                      <div className="rounded-xl p-2" style={{ background: 'rgba(58,58,63,0.3)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                        <div style={{ display: 'flex', gap: 6 }}>
-                          <input readOnly className="w-2/5 px-2 py-1.5 bg-zinc-900/50 border border-white/10 rounded-lg text-white text-[10px]" value="Hair" />
-                          <input readOnly className="flex-1 px-2 py-1.5 bg-zinc-900/50 border border-white/10 rounded-lg text-white text-[10px]" value="Long silver strands" />
-                        </div>
+                    <div className="flex gap-2 mb-1"><span style={{ fontSize: 9 }}>⭐⭐⭐⭐☆</span><span style={{ fontSize: 9 }}>🔥🔥</span></div>
+                    <p className="text-[8px] text-white/70">Great story!</p>
+                  </div>
+                }
+              />
+
+              {/* ─── Share Story ─── */}
+              <PageSubheading fullSpan>Share Story</PageSubheading>
+
+              <PanelCardV2
+                panelName="Blue Info Callout"
+                background="bg-blue-500/10"
+                border="border border-blue-500/20"
+                borderRadius="rounded-xl"
+                purpose="Permission/info callout in Share Story modal"
+                locations="ShareStoryModal.tsx"
+                pageSpecific appWide={false}
+                notes="Text: text-blue-300 text-xs. Unique pattern — not used elsewhere."
+                preview={
+                  <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3" style={{ maxWidth: 240 }}>
+                    <p className="text-blue-300 text-[8px]">ℹ️ Published stories visible to all users.</p>
+                  </div>
+                }
+              />
+
+              {/* ─── Art Style Selection ─── */}
+              <PageSubheading fullSpan>Art Style Selection</PageSubheading>
+
+              <PanelCardV2
+                panelName="Art Style Selection Card"
+                background="bg-card"
+                border="ring-1 ring-border · selected: ring-2 ring-blue-400"
+                borderRadius="rounded-xl"
+                shadow="selected: shadow-md"
+                purpose="Art style picker in image generation modals"
+                locations="AvatarGenerationModal, CoverImageGenerationModal, SceneImageGenerationModal"
+                appWide={false} pageSpecific
+                notes="Checkmark: w-5 h-5 bg-primary rounded-full. ⚠ Uses light-theme (bg-card)."
+                preview={
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <div style={{ width: 70, padding: 6, borderRadius: 10, background: '#fff', boxShadow: '0 0 0 1px #e2e8f0', position: 'relative' }}>
+                      <div style={{ width: '100%', aspectRatio: '1/1', borderRadius: 6, background: '#e2e8f0' }} />
+                      <p style={{ fontSize: 8, fontWeight: 600, textAlign: 'center', marginTop: 4, color: '#111827' }}>Style A</p>
+                    </div>
+                    <div style={{ width: 70, padding: 6, borderRadius: 10, background: '#fff', boxShadow: '0 0 0 2px #60a5fa', position: 'relative' }}>
+                      <div style={{ width: '100%', aspectRatio: '1/1', borderRadius: 6, background: '#e2e8f0' }} />
+                      <p style={{ fontSize: 8, fontWeight: 600, textAlign: 'center', marginTop: 4, color: '#111827' }}>Style B</p>
+                      <div style={{ position: 'absolute', top: 2, right: 2, width: 14, height: 14, borderRadius: '50%', background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 8, fontWeight: 700 }}>✓</div>
+                    </div>
+                  </div>
+                }
+              />
+
+              {/* ─── Misc Panels ─── */}
+              <PageSubheading fullSpan>Misc Panels</PageSubheading>
+
+              <PanelCardV2
+                panelName="CharacterPicker Overlay"
+                background="bg-zinc-900"
+                border="border-white/10"
+                borderRadius="rounded-3xl"
+                purpose="Full-screen character picker with custom backdrop (bg-slate-900/50 backdrop-blur-sm)"
+                locations="CharacterPicker.tsx"
+                pageSpecific appWide={false}
+                notes="⚠ rounded-3xl — unique container radius. Third overlay implementation (not Dialog/AlertDialog)."
+                preview={
+                  <div style={{ position: 'relative', width: '100%', height: 60, borderRadius: 6, overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.5)', backdropFilter: 'blur(2px)' }} />
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#18181b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 18, padding: '8px 16px', color: '#fff', fontSize: 9, fontWeight: 600 }}>
+                      Picker — rounded-3xl
+                    </div>
+                  </div>
+                }
+              />
+
+              <PanelCardV2
+                panelName="ScrollableSection Fade"
+                background="from-white via-white/80 to-transparent"
+                border="N/A"
+                borderRadius="N/A"
+                purpose="Fade indicators for overflow scrolling (top and bottom)"
+                locations="ScrollableSection.tsx"
+                appWide pageSpecific={false}
+                notes="⚠ White gradients on dark backgrounds — visually jarring. Height: h-8."
+                preview={
+                  <div style={{ position: 'relative', height: 40, width: '100%', background: '#2a2a2f', borderRadius: 6, overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 14, background: 'linear-gradient(to bottom, white, rgba(255,255,255,0.8), transparent)', zIndex: 1 }} />
+                    <div style={{ padding: '16px 8px', fontSize: 8, color: '#94a3b8' }}>Content</div>
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 14, background: 'linear-gradient(to top, white, rgba(255,255,255,0.8), transparent)', zIndex: 1 }} />
+                  </div>
+                }
+              />
+
+              <PanelCardV2
+                panelName="Chronicle UI Card"
+                background="bg-white"
+                border="border-slate-200"
+                borderRadius="rounded-3xl"
+                shadow="shadow-sm"
+                purpose="Light-theme card from Chronicle UI.tsx. Parallel to dark app panels."
+                locations="UI.tsx, BackgroundPickerModal.tsx"
+                appWide={false} pageSpecific
+                notes="⚠ Light theme — conflicts with dark panel standard (bg-[#2a2a2f])."
+                preview={
+                  <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm" style={{ width: '100%' }}>
+                    <div className="text-[9px] font-bold text-slate-900">Chronicle Card</div>
+                    <div className="text-[7px] text-slate-500 mt-0.5">Light-theme from UI.tsx</div>
+                  </div>
+                }
+              />
+
+              {/* ─── Arc System ─── */}
+              <PageSubheading fullSpan>Arc System</PageSubheading>
+
+              <PanelCardV2
+                panelName="Arc Phase Card"
+                background="#2a2a2f"
+                border="border-white/10"
+                borderRadius="rounded-2xl"
+                purpose="Phase container with progress ring, phase title, branch lanes (success/fail)"
+                locations="ArcPhaseCard.tsx"
+                pageSpecific appWide={false}
+                notes="Phases inline separated by border-t. Contains CircularProgress component."
+                preview={
+                  <div className="bg-[#2a2a2f] rounded-2xl border border-white/10 p-3" style={{ width: '100%' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                      <svg width={24} height={24} style={{ transform: 'rotate(-90deg)' }}>
+                        <circle cx={12} cy={12} r={9} stroke="#334155" strokeWidth={3} fill="none" />
+                        <circle cx={12} cy={12} r={9} stroke="#3b82f6" strokeWidth={3} fill="none" strokeDasharray={56.5} strokeDashoffset={28.3} />
+                      </svg>
+                      <span className="text-white font-bold text-[9px]">Phase 1</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 4 }}>
+                      <div className="flex-1 rounded p-1.5" style={{ background: 'rgba(34,197,127,0.28)' }}><span className="text-[7px] font-bold text-emerald-300 uppercase">Succeed</span></div>
+                      <div className="flex-1 rounded p-1.5" style={{ background: 'rgba(240,74,95,0.28)' }}><span className="text-[7px] font-bold text-red-300 uppercase">Fail</span></div>
+                    </div>
+                  </div>
+                }
+              />
+
+              <PanelCardV2
+                panelName="Arc Branch Lane"
+                background="Success: rgba(34,197,127,0.28) · Fail: rgba(240,74,95,0.28)"
+                border="Step borders: Red (failed), Blue (succeeded), Orange (deviated)"
+                borderRadius="rounded-lg"
+                purpose="Color-coded branch lanes with status-based step cards"
+                locations="ArcBranchLane.tsx"
+                pageSpecific appWide={false}
+                notes="Step cards: success rgba(51,75,66,0.78), fail rgba(78,58,68,0.78). ⚠ Uses inline rgba() not Tailwind tokens."
+                preview={
+                  <div style={{ display: 'flex', gap: 6, width: '100%' }}>
+                    <div className="flex-1 rounded p-2" style={{ background: 'rgba(34,197,127,0.28)' }}>
+                      <div className="text-[7px] font-bold text-emerald-300 uppercase mb-1">Succeed</div>
+                      <div className="rounded p-1 border-l-2 border-blue-500 mb-1" style={{ background: 'rgba(51,75,66,0.78)' }}><span className="text-[7px] text-white">Step 1</span></div>
+                    </div>
+                    <div className="flex-1 rounded p-2" style={{ background: 'rgba(240,74,95,0.28)' }}>
+                      <div className="text-[7px] font-bold text-red-300 uppercase mb-1">Fail</div>
+                      <div className="rounded p-1 border-l-2 border-red-500 mb-1" style={{ background: 'rgba(78,58,68,0.78)' }}><span className="text-[7px] text-white">Step 1</span></div>
+                    </div>
+                  </div>
+                }
+              />
+
+              {/* ─── Creator Profile ─── */}
+              <PageSubheading fullSpan>Creator Profile</PageSubheading>
+
+              <PanelCardV2
+                panelName="Creator Profile Card"
+                background="#1e1e22"
+                border="border-white/10"
+                borderRadius="rounded-2xl"
+                purpose="Creator profile display with avatar, bio, stats pills, follow button"
+                locations="CreatorProfile.tsx"
+                pageSpecific appWide={false}
+                notes="Stats: bg-white/5 rounded-xl. ⚠ #1e1e22 — yet another dark surface color."
+                preview={
+                  <div className="bg-[#1e1e22] rounded-2xl border border-white/10 p-3" style={{ width: '100%' }}>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <div className="w-10 h-10 rounded-xl bg-zinc-700" />
+                      <div><div className="text-white font-bold text-[9px]">Creator</div><div className="text-white/60 text-[7px]">@user</div></div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 4, marginTop: 8 }}>
+                      <div className="bg-white/5 rounded-lg px-2 py-1 text-[7px] text-white/70">👁 1.2k</div>
+                      <div className="bg-white/5 rounded-lg px-2 py-1 text-[7px] text-white/70">❤ 340</div>
+                    </div>
+                  </div>
+                }
+              />
+
+              {/* ─── Model Settings ─── */}
+              <PageSubheading fullSpan>Model Settings</PageSubheading>
+
+              <PanelCardV2
+                panelName="Narrative Core Info Card"
+                background="bg-slate-900"
+                border="N/A"
+                borderRadius="rounded-lg"
+                purpose="Dark info card with watermark text on light-theme settings page"
+                locations="ModelSettingsTab.tsx"
+                pageSpecific appWide={false}
+                notes="Watermark: text-[120px] font-black text-white/5 italic. Light page, dark card."
+                preview={
+                  <div className="bg-slate-900 text-white rounded-lg p-3 relative overflow-hidden" style={{ width: '100%', minHeight: 50 }}>
+                    <div className="relative z-10">
+                      <div className="font-black text-[9px] tracking-tight">Narrative Core</div>
+                      <div className="text-[7px] text-white/60">Powered by AI</div>
+                    </div>
+                    <div className="absolute -right-1 -bottom-1 text-[36px] font-black text-white/5 italic select-none">AI</div>
+                  </div>
+                }
+              />
+
+              {/* ═══════════════════════════════════════════════════════════ */}
+              {/* ═══ MODALS ═══ */}
+              {/* ═══════════════════════════════════════════════════════════ */}
+              <PageSubheading fullSpan>Modal — Global Patterns</PageSubheading>
+
+              <PanelCardV2
+                panelName="Modal Backdrop"
+                background="bg-black/80 (standard)"
+                border="N/A"
+                borderRadius="N/A"
+                purpose="Radix DialogOverlay. Fixed inset-0, z-50."
+                locations="Global (all Dialog-based modals)"
+                appWide pageSpecific={false}
+                notes="Variants: bg-black/90 backdrop-blur-sm (ReviewModal), bg-black/85 (SceneTagEditor)"
+                preview={
+                  <div style={{ position: 'relative', width: '100%', height: 60, borderRadius: 6, overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #334155, #475569)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, color: '#94a3b8' }}>App Content</div>
+                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.8)' }} />
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#18181b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '6px 14px', color: '#fff', fontSize: 8, fontWeight: 600 }}>Modal</div>
+                  </div>
+                }
+              />
+
+              <PanelCardV2
+                panelName="Modal Footer / Button Row"
+                background="N/A (inherits modal bg)"
+                border="N/A"
+                borderRadius="rounded-xl (buttons)"
+                purpose="Standard modal action buttons: Cancel, Save, Delete"
+                locations="Global modal pattern"
+                appWide pageSpecific={false}
+                notes="h-10 px-6 text-[10px] font-bold uppercase tracking-wider. Cancel: bg-[hsl(240_6%_18%)]. Destructive: bg-[hsl(var(--destructive))]."
+                preview={
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                    <button className="h-8 px-4 rounded-xl bg-[hsl(240_6%_18%)] border border-[hsl(var(--ui-border))] text-zinc-300 text-[8px] font-bold uppercase tracking-wider leading-none" style={{ cursor: 'default' }}>Cancel</button>
+                    <button className="h-8 px-4 rounded-xl bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] text-[8px] font-bold uppercase tracking-wider leading-none" style={{ cursor: 'default' }}>Save</button>
+                    <button className="h-8 px-4 rounded-xl bg-[hsl(var(--destructive))] text-white text-[8px] font-bold uppercase tracking-wider leading-none" style={{ cursor: 'default' }}>Delete</button>
+                  </div>
+                }
+              />
+
+              {/* ─── Specific Modals ─── */}
+              <PageSubheading fullSpan>Modal — Specific Implementations</PageSubheading>
+
+              <PanelCardV2
+                panelName="DeleteConfirmDialog"
+                background="hsl(240, 6%, 10%)"
+                border="border-white/10"
+                borderRadius="rounded-2xl"
+                shadow="0 10px 30px rgba(0,0,0,0.5)"
+                purpose="AlertDialog for all destructive actions (characters, sessions, stories)"
+                locations="DeleteConfirmDialog.tsx"
+                appWide pageSpecific={false}
+                notes="Uses AlertDialog (not Dialog). Cancel: bg-[hsl(240_6%_18%)]. Delete: bg-[hsl(var(--destructive))]."
+                preview={
+                  <div style={{ position: 'relative', width: '100%', height: 60, borderRadius: 6, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: 'hsl(240,6%,10%)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '8px 16px' }}>
+                      <div style={{ fontSize: 8, fontWeight: 700, color: '#e8eef8', marginBottom: 4 }}>Delete this?</div>
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        <button style={{ padding: '2px 8px', borderRadius: 8, background: 'hsl(240,6%,18%)', border: '1px solid rgba(255,255,255,0.1)', color: '#e8eef8', fontSize: 7, fontWeight: 700, textTransform: 'uppercase', cursor: 'default' }}>Cancel</button>
+                        <button style={{ padding: '2px 8px', borderRadius: 8, background: '#ef4444', color: '#fff', fontSize: 7, fontWeight: 700, textTransform: 'uppercase', cursor: 'default', border: 'none' }}>Delete</button>
                       </div>
                     </div>
                   </div>
                 }
-                previewPlain
-                code={`/* Container: bg-[#2a2a2f] rounded-[24px] border-white/10 */
-/* shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)] */
-/* Header: bg-[#4a5f7f] border-b border-white/20 px-5 py-3 */
-/* Inner card: bg-[#3a3a3f]/30 rounded-2xl border-white/5 */
-/* Form inputs: bg-zinc-900/50 border-white/10 rounded-lg */
-/* ⚠ Uses rounded-[24px] — yet another radius variant */`}
               />
-              <InconsistencyNote items={[
-                { file: 'CharactersTab.tsx', note: 'Uses rounded-[24px] for section containers — different from rounded-2xl (16px), rounded-3xl (24px Tailwind), and rounded-[2rem] (story cards).' },
-              ]} />
-            </div>
 
-            <PageSubheading>Chat Sidebar — Info Sections</PageSubheading>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <EntryCard name="Chat Sidebar Collapsible Info" pageTag="Chat Interface"
-                specs='Light-themed collapsible info sections inside the white sidebar. <strong>Labels:</strong> <code>text-[9px] font-bold text-slate-400 uppercase tracking-wider</code>. <strong>Values:</strong> <code>text-[11px] font-bold text-slate-700</code>. <strong>Section header:</strong> <code>text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]</code> with rotate-180 chevron toggle.'
+              <PanelCardV2
+                panelName="Chat Settings Modal"
+                background="bg-zinc-900"
+                border="border-white/10"
+                borderRadius="rounded-lg"
+                shadow="0 12px 32px -2px rgba(0,0,0,0.5)"
+                purpose="Toggle grid for chat display options (Dynamic BG, Transparent, POV)"
+                locations="ChatInterfaceTab.tsx"
+                pageSpecific appWide={false}
+                notes="max-w-2xl. Toggle rows: p-3 bg-zinc-800/50 rounded-xl. Grid: grid-cols-2."
                 preview={
-                  <div style={{ background: '#fff', padding: 12, borderRadius: 8, width: '100%' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                      <span className="text-[10px] font-black text-slate-400 uppercase" style={{ letterSpacing: '0.15em' }}>World Info</span>
-                      <span style={{ color: '#94a3b8', fontSize: 10 }}>▾</span>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      <div>
-                        <span className="text-[9px] font-bold text-slate-400 uppercase" style={{ letterSpacing: '0.05em' }}>Location</span>
-                        <div className="text-[11px] font-bold text-slate-700">Castle Grounds</div>
-                      </div>
-                      <div>
-                        <span className="text-[9px] font-bold text-slate-400 uppercase" style={{ letterSpacing: '0.05em' }}>Time</span>
-                        <div className="text-[11px] font-bold text-slate-700">Day 3, Sunset</div>
-                      </div>
+                  <div className="bg-zinc-900 border border-white/10 rounded-lg p-3" style={{ width: '100%' }}>
+                    <div className="text-[8px] font-black text-white uppercase tracking-tight mb-2">⚙ Chat Settings</div>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <div className="p-1.5 bg-zinc-800/50 rounded-lg"><span className="text-[7px] font-semibold text-zinc-200">Dynamic BG</span></div>
+                      <div className="p-1.5 bg-zinc-800/50 rounded-lg"><span className="text-[7px] font-semibold text-zinc-200">Transparent</span></div>
                     </div>
                   </div>
                 }
-                previewPlain
-                code={`/* Section header: text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] */
-/* Label: text-[9px] font-bold text-slate-400 uppercase tracking-wider */
-/* Value: text-[11px] font-bold text-slate-700 */
-/* ⚠ Uses text-slate-700 (light theme) — consistent within white sidebar */`}
               />
-            </div>
 
-            <PageSubheading>Subscription Tab</PageSubheading>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <EntryCard name="Subscription Tier Card" pageTag="Account Page"
-                specs='Pricing tier cards with <strong>bg-white/5 rounded-2xl border-white/10</strong> (Free), <strong>bg-[#4a5f7f]/10 border-[#4a5f7f]/30</strong> (Pro), <strong>bg-amber-500/10 border-amber-500/20</strong> (Premium). "Coming Soon" badge: <code>bg-[#4a5f7f] text-white rounded-full text-[10px]</code>. "Current Plan" badge: <code>bg-emerald-500/20 text-emerald-400 border-emerald-500/30</code>.'
-                previewDark previewStyle={{ gap: 8 }}
-                preview={
-                  <div style={{ display: 'flex', gap: 8, width: '100%' }}>
-                    <div className="flex-1 rounded-xl border border-white/10 p-3" style={{ background: 'rgba(255,255,255,0.05)' }}>
-                      <div className="text-slate-400 text-[9px] font-bold">Free</div>
-                      <div className="text-white text-sm font-black mt-1">$0</div>
-                      <div className="mt-2 px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full text-[8px] font-bold uppercase inline-block">Current</div>
-                    </div>
-                    <div className="flex-1 rounded-xl p-3" style={{ background: 'rgba(74,95,127,0.1)', border: '1px solid rgba(74,95,127,0.3)' }}>
-                      <div style={{ color: '#7ba3d4' }} className="text-[9px] font-bold">Pro</div>
-                      <div className="text-white text-sm font-black mt-1">$9.99</div>
-                      <div className="mt-2 px-2 py-0.5 bg-[#4a5f7f] text-white rounded-full text-[8px] font-bold uppercase inline-block">Soon</div>
-                    </div>
-                    <div className="flex-1 rounded-xl p-3" style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)' }}>
-                      <div className="text-amber-400 text-[9px] font-bold">Premium</div>
-                      <div className="text-white text-sm font-black mt-1">$19.99</div>
-                      <div className="mt-2 px-2 py-0.5 bg-[#4a5f7f] text-white rounded-full text-[8px] font-bold uppercase inline-block">Soon</div>
-                    </div>
-                  </div>
-                }
-                previewPlain
-                code={`/* Free: bg-white/5 border-white/10 */
-/* Pro: bg-[#4a5f7f]/10 border-[#4a5f7f]/30, color: #7ba3d4 */
-/* Premium: bg-amber-500/10 border-amber-500/20, color: text-amber-400 */
-/* Current badge: bg-emerald-500/20 text-emerald-400 border-emerald-500/30 */
-/* Coming Soon badge: bg-[#4a5f7f] text-white rounded-full */
-/* CTA button: bg-[#4a5f7f] hover:bg-[#5a6f8f] (brand accent) */`}
-              />
-            </div>
-          </Section>
-
-          <Divider />
-
-          {/* ═══════════════════════════════════════════════════════════════ */}
-          {/* ═══ 7. MODALS ═══ */}
-          {/* ═══════════════════════════════════════════════════════════════ */}
-          <Section id="modals" title="Modals" desc="Pop-up modal and dialog container styling. Canonical patterns and inconsistencies documented.">
-
-            <EntryCard name="Modal Backdrop" pageTag="Global"
-              specs='<strong>Standard:</strong> Radix DialogOverlay default — <code>bg-black/80</code> (fixed inset-0, z-50).'
-              preview={
-                <div style={{ position: 'relative', width: '100%', height: 120, borderRadius: 8, overflow: 'hidden' }}>
-                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #334155 0%, #475569 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#94a3b8' }}>App Content Behind</div>
-                  <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.8)' }} />
-                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#18181b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '12px 24px', color: '#fff', fontSize: 11, fontWeight: 600 }}>Modal Content</div>
-                </div>
-              }
-              previewDark
-              code={`background: rgba(0, 0, 0, 0.80);  /* bg-black/80 */
-position: fixed; inset: 0; z-index: 50;`}
-            />
-            <InconsistencyNote items={[
-              { file: 'ReviewModal.tsx', note: 'Uses bg-black/90 backdrop-blur-sm instead of standard bg-black/80' },
-              { file: 'SceneTagEditorModal.tsx', note: 'Uses raw div with bg-black/85 instead of Radix DialogOverlay' },
-            ]} />
-
-            <div style={{ marginTop: 16 }} />
-
-            <EntryCard name="Modal Container" pageTag="Global"
-              specs='<strong>Canonical:</strong> bg-zinc-900 · border: 1px solid rgba(255,255,255,0.1) · border-radius: rounded-lg · shadow: 0 10px 30px rgba(0,0,0,0.5)'
-              preview={
-                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', width: '100%' }}>
-                  <div className="flex-1 bg-zinc-900 border border-white/10 rounded-lg p-4" style={{ minWidth: 180, boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
-                    <div className="text-xs font-bold text-white mb-1">Standard Modal</div>
-                    <div className="text-[10px] text-zinc-400">bg-zinc-900 · border-white/10</div>
-                  </div>
-                  <div className="flex-1 bg-[#2a2a2f] border border-white/10 rounded-lg p-4" style={{ minWidth: 180, boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
-                    <div className="text-xs font-bold text-white mb-1">Variant (Edit Modals)</div>
-                    <div className="text-[10px] text-zinc-400">bg-[#2a2a2f] · border-white/10</div>
-                  </div>
-                </div>
-              }
-              code={`/* Canonical */ bg-zinc-900 border border-white/10 rounded-lg
-/* Edit variant */ bg-[#2a2a2f] border border-white/10`}
-            />
-            <InconsistencyNote items={[
-              { file: 'ShareStoryModal, CharacterEditModal', note: 'bg-[#2a2a2f] instead of bg-zinc-900' },
-              { file: 'ReviewModal', note: 'bg-[#121214] (darker variant)' },
-              { file: 'MemoriesModal', note: 'bg-slate-900 + border-slate-700' },
-              { file: 'AIPromptModal', note: 'bg-[hsl(var(--ui-surface))] (CSS variable tokens)' },
-            ]} />
-
-            <div style={{ marginTop: 16 }} />
-
-            <EntryCard name="Modal Header" pageTag="Global"
-              specs='<strong>Pattern A — Simple:</strong> text-lg font-bold text-white. <strong>Pattern B — Banner:</strong> bg-[#4a5f7f] full-width header bar.'
-              preview={
-                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', width: '100%' }}>
-                  <div className="flex-1 bg-zinc-900 rounded-lg overflow-hidden" style={{ minWidth: 180 }}>
-                    <div className="px-4 pt-3 pb-2">
-                      <div className="text-sm font-bold text-white">Simple Header</div>
-                      <div className="text-xs text-zinc-500 mt-0.5">Optional description</div>
-                    </div>
-                  </div>
-                  <div className="flex-1 bg-zinc-900 rounded-lg overflow-hidden" style={{ minWidth: 180 }}>
-                    <div className="bg-[#4a5f7f] px-4 py-2.5">
-                      <div className="text-xs font-bold text-white uppercase tracking-wider">Banner Header</div>
-                    </div>
-                  </div>
-                </div>
-              }
-              code={`/* Pattern A — Simple header */
-text-lg font-bold text-white
-/* Pattern B — Slate blue banner */
-bg-[#4a5f7f] px-6 py-4 border-b border-white/20`}
-            />
-
-            <div style={{ marginTop: 16 }} />
-
-            <EntryCard name="Modal Footer / Button Row" pageTag="Global"
-              specs='Shadow Surface buttons: <strong>h-10 px-6 rounded-xl text-[10px] font-bold uppercase tracking-wider leading-none</strong>. Standard: bg-[hsl(var(--ui-surface-2))]. Cancel: bg-[hsl(240_6%_18%)]. Destructive: bg-[hsl(var(--destructive))].'
-              preview={
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <button className="h-10 px-6 rounded-xl bg-[hsl(240_6%_18%)] border border-[hsl(var(--ui-border))] text-zinc-300 text-[10px] font-bold uppercase tracking-wider leading-none shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default' }}>Cancel</button>
-                  <button className="h-10 px-6 rounded-xl bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] text-[10px] font-bold uppercase tracking-wider leading-none shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default' }}>Save</button>
-                  <button className="h-10 px-6 rounded-xl bg-[hsl(var(--destructive))] text-white text-[10px] font-bold uppercase tracking-wider leading-none shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default' }}>Delete</button>
-                </div>
-              }
-              code={`h-10 px-6 rounded-xl text-[10px] font-bold uppercase tracking-wider leading-none
-shadow-[0_10px_30px_rgba(0,0,0,0.35)]
-/* Standard: bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] */
-/* Cancel: bg-[hsl(240_6%_18%)] text-zinc-300 */
-/* Destructive: bg-[hsl(var(--destructive))] text-white */`}
-            />
-            <InconsistencyNote items={[
-              { file: 'ReviewModal', note: 'h-11 text-sm font-semibold instead of h-10 text-[10px] uppercase' },
-              { file: 'SceneTagEditorModal', note: 'Raw px-4 py-2 text-sm — non-standard' },
-              { file: 'ChangeNameModal', note: 'Uses <Button> with hardcoded bg-slate-900/bg-slate-100' },
-            ]} />
-
-            <div style={{ marginTop: 16 }} />
-
-            <EntryCard name="Chat Settings Modal" pageTag="Chat"
-              specs='<strong>max-w-2xl bg-zinc-900 border-white/10</strong>. Contains toggle grid: 2-col layout. Each toggle row: <strong>p-3 bg-zinc-800/50 rounded-xl</strong> with text-sm font-semibold text-zinc-200.'
-              preview={
-                <div className="bg-zinc-900 border border-white/10 rounded-lg p-4" style={{ maxWidth: 300 }}>
-                  <div className="flex items-center gap-2 border-b border-white/10 pb-2 mb-3">
-                    <span className="text-xs font-black text-white uppercase tracking-tight">⚙ Chat Settings</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="p-2 bg-zinc-800/50 rounded-xl">
-                      <span className="text-[9px] font-semibold text-zinc-200">Dynamic BG</span>
-                    </div>
-                    <div className="p-2 bg-zinc-800/50 rounded-xl">
-                      <span className="text-[9px] font-semibold text-zinc-200">Transparent</span>
-                    </div>
-                  </div>
-                </div>
-              }
-              previewPlain
-              code={`max-w-2xl bg-zinc-900 border-white/10
-/* Toggle rows: p-3 bg-zinc-800/50 rounded-xl */
-/* Grid: grid-cols-1 md:grid-cols-2 gap-3 */
-/* Labels: text-sm font-semibold text-zinc-200 */
-/* POV buttons: px-3 py-1.5 text-xs font-semibold rounded-lg
-   Active: bg-blue-500 text-white
-   Inactive: bg-zinc-700 text-zinc-300 */`}
-            />
-
-            <div style={{ marginTop: 16 }} />
-
-            <EntryCard name="EnhanceModeModal" pageTag="Character Builder"
-              specs='<strong>sm:max-w-md bg-zinc-900 border-white/10</strong>. Close button hidden. 2-column grid of option cards (Precise / Detailed). Each card: p-5 rounded-2xl bg-zinc-800/50 with icon container w-10 h-10 rounded-xl.'
-              preview={
-                <div className="bg-zinc-900 border border-white/10 rounded-lg p-4" style={{ maxWidth: 300 }}>
-                  <div className="mb-3">
-                    <div className="text-sm font-bold text-white">Enhancement Style</div>
-                    <div className="text-[9px] text-zinc-400 mt-0.5">Choose how the AI should expand this field.</div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="flex flex-col items-center gap-1.5 p-3 rounded-2xl border border-white/10 bg-zinc-800/50">
-                      <div className="w-8 h-8 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400 text-xs">✨</div>
-                      <span className="text-white font-bold text-[9px]">Precise</span>
-                    </div>
-                    <div className="flex flex-col items-center gap-1.5 p-3 rounded-2xl border border-white/10 bg-zinc-800/50">
-                      <div className="w-8 h-8 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-400 text-xs">≡</div>
-                      <span className="text-white font-bold text-[9px]">Detailed</span>
-                    </div>
-                  </div>
-                </div>
-              }
-              previewPlain
-              code={`sm:max-w-md bg-zinc-900 border-white/10 p-0 gap-0 [&>button]:hidden
-/* Option cards: p-5 rounded-2xl border-white/10 bg-zinc-800/50 */
-/* Precise icon: w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 */
-/* Detailed icon: w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 */
-/* Hover: border-blue-500/50 bg-blue-500/10 (Precise) */
-/* Hover: border-purple-500/50 bg-purple-500/10 (Detailed) */`}
-            />
-            <div style={{ marginTop: 16 }} />
-
-            <EntryCard name="Image Generation Modal (Light Theme)" pageTag="AI Generation Modals"
-              specs='<strong>Uses shadcn DialogContent defaults</strong> — light background, no dark overrides. Inputs: <code>bg-slate-50 border-slate-200</code>. Buttons: shadcn Button default variant. These are the <strong>only modals</strong> in the entire app using light-theme defaults.'
-              preview={
-                <div style={{ position: 'relative', width: '100%', height: 120, borderRadius: 8, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
-                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 12, padding: '12px 24px', color: '#111827', fontSize: 11, fontWeight: 600, boxShadow: '0 10px 40px rgba(0,0,0,0.3)' }}>
-                    <div style={{ marginBottom: 6 }}>✨ Generate Avatar</div>
-                    <div style={{ padding: '6px 8px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 6, fontSize: 10, color: '#94a3b8' }}>Describe your character...</div>
-                  </div>
-                </div>
-              }
-              previewDark
-              code={`/* Container: shadcn DialogContent (default light bg) */
-/* Inputs: bg-slate-50 border-slate-200 */
-/* Focus: ring-2 ring-blue-100 border-blue-400 */
-/* Buttons: shadcn <Button> default variant */
-/* ⚠ ONLY light-theme modals in the entire app */`}
-            />
-
-            <InconsistencyNote items={[
-              { file: 'AvatarGenerationModal.tsx', note: 'Uses shadcn light-theme DialogContent defaults while every other modal uses bg-zinc-900 border-white/10.' },
-              { file: 'CoverImageGenerationModal.tsx', note: 'Same light-theme inconsistency as AvatarGenerationModal.' },
-              { file: 'SceneImageGenerationModal.tsx', note: 'Same light-theme inconsistency as AvatarGenerationModal.' },
-            ]} />
-
-            <div style={{ marginTop: 16 }} />
-
-            <EntryCard name="Story Detail Modal" pageTag="Story Detail / Gallery"
-              specs='<strong>bg-[#121214] rounded-[32px]</strong>. Unique 32px radius — the only modal using this value. Standard modals use rounded-lg. Contains custom action bar, character cards, review section, and content theme tags.'
-              previewDark
-              preview={
-                <div style={{ position: 'relative', width: '100%', height: 120, borderRadius: 8, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
-                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#121214', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 32, padding: '16px 28px', color: '#fff', fontSize: 11, fontWeight: 600, boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
-                    Story Detail — rounded-[32px]
-                  </div>
-                </div>
-              }
-              code={`bg-[#121214] rounded-[32px] border-white/10
-/* ⚠ Unique 32px radius — standard modals use rounded-lg */
-/* Contains: action bar, character cards, review section */`}
-            />
-
-            <InconsistencyNote items={[
-              { file: 'StoryDetailModal.tsx', note: 'Uses rounded-[32px] while standard modals use rounded-lg. Also uses bg-[#121214] vs standard bg-zinc-900.' },
-            ]} />
-
-            <div style={{ marginTop: 16 }} />
-
-            <EntryCard name="Review Modal" pageTag="Gallery / Story Detail"
-              specs='<strong>bg-[#121214] rounded-2xl</strong>. Third different dark modal bg variant. Buttons use non-standard h-11 + text-sm (standard is h-10 + text-[10px]). Submit: <code>bg-[#4a5f7f]</code>. Delete: <code>bg-red-600/20</code>.'
-              previewDark
-              preview={
-                <div style={{ position: 'relative', width: '100%', height: 100, borderRadius: 8, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
-                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#121214', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: '12px 24px', color: '#fff', fontSize: 11, fontWeight: 600 }}>
-                    Review Modal — rounded-2xl
-                  </div>
-                </div>
-              }
-              code={`bg-[#121214] rounded-2xl
-/* Buttons: h-11 text-sm (non-standard) */
-/* Submit: bg-[#4a5f7f] */
-/* Delete: bg-red-600/20 border-red-500/30 text-red-400 */`}
-            />
-
-
-            <div style={{ marginTop: 16 }} />
-
-            <EntryCard name="Share Story Modal" pageTag="Story Builder"
-              specs='<strong>bg-[#2a2a2f] border-white/10</strong>. Uses !important CSS overrides on buttons (<code>!bg-blue-600</code>, <code>!bg-rose-500/20</code>). Info card: <code>bg-zinc-900/50 rounded-xl border-zinc-700</code>.'
-              previewDark
-              preview={
-                <div style={{ position: 'relative', width: '100%', height: 100, borderRadius: 8, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
-                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#2a2a2f', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '12px 24px', color: '#fff', fontSize: 11, fontWeight: 600 }}>
-                    Share Story — bg-[#2a2a2f]
-                  </div>
-                </div>
-              }
-              code={`bg-[#2a2a2f] border-white/10
-/* Buttons: !important overrides (!bg-blue-600, !bg-rose-500/20) */
-/* Info card: bg-zinc-900/50 rounded-xl border-zinc-700 */`}
-            />
-
-            <div style={{ marginTop: 16 }} />
-
-            <EntryCard name="ChangeNameModal (Light Theme)" pageTag="Character Builder"
-              specs='<strong>Uses default DialogContent</strong> — no dark overrides. Buttons: <code>bg-slate-100 text-slate-700</code> (Cancel), <code>bg-slate-900 text-white</code> (Save). Current name display: <code>bg-slate-100 text-slate-600</code>. Same light-theme issue as Image Generation modals.'
-              preview={
-                <div style={{ position: 'relative', width: '100%', height: 100, borderRadius: 8, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
-                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 8, padding: '12px 24px', color: '#111827', fontSize: 11, fontWeight: 600, boxShadow: '0 10px 40px rgba(0,0,0,0.3)' }}>
-                    Change Name — light theme
-                  </div>
-                </div>
-              }
-              previewDark
-              code={`/* Default DialogContent (light theme, no overrides) */
-/* Cancel: bg-slate-100 hover:bg-slate-200 text-slate-700 */
-/* Save: bg-slate-900 hover:bg-slate-800 text-white */
-/* ⚠ Light theme — same issue as Image Gen modals */`}
-            />
-            <InconsistencyNote items={[
-              { file: 'ChangeNameModal.tsx', note: 'Uses default light-theme DialogContent while every other modal uses dark overrides. Uses slate-100/slate-700 buttons.' },
-            ]} />
-
-            <div style={{ marginTop: 16 }} />
-
-            <EntryCard name="AIPromptModal (Colored Header)" pageTag="Chat Interface"
-              specs='<strong>bg-[hsl(var(--ui-surface))]</strong> with unique colored header bar: <code>bg-[#4a5f7f] -mx-6 -mt-6 px-6 py-4 rounded-t-lg</code>. Only modal with a full-width colored header banner that uses negative margins to bleed edge-to-edge.'
-              previewDark
-              preview={
-                <div style={{ position: 'relative', width: '100%', height: 110, borderRadius: 8, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
-                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#2a2a2f', borderRadius: 8, overflow: 'hidden', width: 220, boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }}>
-                    <div style={{ background: '#4a5f7f', padding: '8px 16px' }}>
-                      <span style={{ fontSize: 10, fontWeight: 700, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.5px' }}>AI Prompt</span>
-                    </div>
-                    <div style={{ padding: '8px 16px', fontSize: 10, color: '#94a3b8' }}>Modal content...</div>
-                  </div>
-                </div>
-              }
-              code={`bg-[hsl(var(--ui-surface))]
-/* Header: bg-[#4a5f7f] -mx-6 -mt-6 px-6 py-4 rounded-t-lg */
-/* ⚠ Only modal with a colored header bar using negative margins */`}
-            />
-            <InconsistencyNote items={[
-              { file: 'AIPromptModal.tsx', note: 'Only modal with a colored header bar pattern (bg-[#4a5f7f] -mx-6 -mt-6). Not used anywhere else.' },
-            ]} />
-
-            <div style={{ marginTop: 16 }} />
-
-            <EntryCard name="DeleteConfirmDialog (AlertDialog)" pageTag="Global"
-              specs='Uses <strong>AlertDialog</strong> instead of Dialog. <strong>bg-[hsl(240_6%_10%)] rounded-2xl border-white/10</strong>. Cancel: <code>bg-[hsl(240_6%_18%)]</code>. Delete: <code>bg-[hsl(var(--destructive))]</code>. Standardized across all destructive actions. Shadow: <code>0 10px 30px rgba(0,0,0,0.5)</code>.'
-              previewDark
-              preview={
-                <div style={{ position: 'relative', width: '100%', height: 110, borderRadius: 8, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
-                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: 'hsl(240, 6%, 10%)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: '12px 24px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: '#e8eef8', marginBottom: 4 }}>Delete this? <span style={{ color: '#ef4444' }}>Delete</span></div>
-                    <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                      <button style={{ padding: '4px 12px', borderRadius: 12, background: 'hsl(240, 6%, 18%)', border: '1px solid rgba(255,255,255,0.1)', color: '#e8eef8', fontSize: 9, fontWeight: 700, textTransform: 'uppercase', cursor: 'default' }}>Cancel</button>
-                      <button style={{ padding: '4px 12px', borderRadius: 12, background: '#ef4444', border: 'none', color: '#fff', fontSize: 9, fontWeight: 700, textTransform: 'uppercase', cursor: 'default' }}>Delete</button>
-                    </div>
-                  </div>
-                </div>
-              }
-              code={`/* AlertDialog (not Dialog) */
-bg-[hsl(240_6%_10%)] rounded-2xl border-white/10
-shadow-[0_10px_30px_rgba(0,0,0,0.5)]
-/* Cancel: bg-[hsl(240_6%_18%)] border-white/10 */
-/* Delete: bg-[hsl(var(--destructive))] */
-/* Buttons: h-10 px-6 text-[10px] font-bold uppercase tracking-wider */`}
-            />
-
-            <div style={{ marginTop: 16 }} />
-
-            <EntryCard name="SceneTagEditorModal (Custom Overlay)" pageTag="Image Library"
-              specs='Uses <strong>custom <code>fixed inset-0</code> overlay</strong> instead of Radix Dialog. Backdrop: <code>bg-black/85</code>. Container: <code>bg-zinc-900 rounded-xl border-[#4a5f7f]</code>. Contains image preview, title input, and tag editor. Uses accent border <code>border-[#4a5f7f]</code> instead of standard <code>border-white/10</code>.'
-              previewDark
-              preview={
-                <div style={{ position: 'relative', width: '100%', height: 100, borderRadius: 8, overflow: 'hidden', background: 'rgba(0,0,0,0.85)' }}>
-                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#18181b', border: '1px solid #4a5f7f', borderRadius: 12, padding: '12px 24px', color: '#fff', fontSize: 11, fontWeight: 600 }}>
-                    Scene Tags — custom overlay
-                  </div>
-                </div>
-              }
-              code={`/* Custom overlay: fixed inset-0 bg-black/85 (NOT Radix Dialog) */
-bg-zinc-900 rounded-xl border-[#4a5f7f]
-/* ⚠ Uses fixed inset-0 instead of Dialog component */
-/* ⚠ Uses border-[#4a5f7f] instead of border-white/10 */`}
-            />
-            <InconsistencyNote items={[
-              { file: 'SceneTagEditorModal.tsx', note: 'Uses custom fixed inset-0 overlay instead of Radix Dialog component. Also uses border-[#4a5f7f] instead of standard border-white/10.' },
-            ]} />
-
-            <div style={{ marginTop: 16 }} />
-
-            <EntryCard name="FolderEditModal (Accent Border)" pageTag="Image Library"
-              specs='<strong>bg-zinc-900 border-[#4a5f7f]</strong>. Uses accent border <code>border-[#4a5f7f]</code> matching the Story Builder panel system instead of standard modal <code>border-white/10</code>. Close button hidden via <code>[&>button]:hidden</code>.'
-              previewDark
-              preview={
-                <div style={{ position: 'relative', width: '100%', height: 100, borderRadius: 8, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
-                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#18181b', border: '1px solid #4a5f7f', borderRadius: 8, padding: '12px 24px', color: '#fff', fontSize: 11, fontWeight: 600 }}>
-                    Folder Edit — border-[#4a5f7f]
-                  </div>
-                </div>
-              }
-              code={`bg-zinc-900 border-[#4a5f7f] [&>button]:hidden
-/* ⚠ Uses border-[#4a5f7f] instead of standard border-white/10 */`}
-            />
-            <InconsistencyNote items={[
-              { file: 'FolderEditModal.tsx', note: 'Uses accent border-[#4a5f7f] instead of standard modal border-white/10.' },
-            ]} />
-
-            <div style={{ marginTop: 16 }} />
-
-            <PageSubheading>Two-Option Selection Modal (Shared Pattern)</PageSubheading>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <EntryCard name="Two-Option Selection Modal" pageTag="CharacterCreation / EnhanceMode / CustomContentType"
-                specs='<strong>Shared reusable pattern</strong> used by 3 modals (CharacterCreationModal, EnhanceModeModal, CustomContentTypeModal). Container: <code>bg-zinc-900 border-white/10 p-0 gap-0 [&>button]:hidden</code>. Header: <code>px-6 pt-5 pb-3</code> with <code>text-white text-lg font-bold tracking-tight</code>. Grid: <code>px-6 pb-6 grid grid-cols-2 gap-3</code>. Option cards: <code>p-5 rounded-2xl border border-white/10 bg-zinc-800/50</code>. Left hover: <code>hover:border-blue-500/50 hover:bg-blue-500/10</code>. Right hover: <code>hover:border-purple-500/50 hover:bg-purple-500/10</code>. Icon: <code>w-10 h-10 rounded-xl</code> with <code>bg-blue-500/20</code> (left) / <code>bg-purple-500/20</code> (right).'
-                previewDark previewStyle={{ flexDirection: 'column', gap: 0, padding: 0 }}
+              <PanelCardV2
+                panelName="Two-Option Selection Modal"
+                background="bg-zinc-900"
+                border="border-white/10"
+                borderRadius="rounded-lg"
+                purpose="Shared 2-column option picker pattern (blue/purple accent cards)"
+                locations="CharacterCreationModal, EnhanceModeModal, CustomContentTypeModal"
+                appWide={false} pageSpecific
+                notes="p-0 gap-0 [&>button]:hidden. Option cards: p-5 rounded-2xl bg-zinc-800/50. ⚠ 3 identical layouts — should be shared component."
                 preview={
                   <div className="rounded-lg overflow-hidden" style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.1)', width: '100%' }}>
-                    <div style={{ padding: '12px 16px 8px' }}>
-                      <div className="text-white text-sm font-bold" style={{ letterSpacing: '-0.01em' }}>Selection Title</div>
-                      <div className="text-zinc-400 text-[10px] mt-0.5">Choose an option below.</div>
+                    <div style={{ padding: '8px 12px 4px' }}>
+                      <div className="text-white text-[9px] font-bold">Select Option</div>
+                      <div className="text-zinc-400 text-[7px] mt-0.5">Choose below.</div>
                     </div>
-                    <div style={{ padding: '0 16px 16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                      <div className="p-3 rounded-xl border border-white/10 text-center" style={{ background: 'rgba(39,39,42,0.5)' }}>
-                        <div className="w-8 h-8 rounded-lg mx-auto mb-2 flex items-center justify-center" style={{ background: 'rgba(59,130,246,0.2)' }}>
-                          <span className="text-blue-400 text-xs">★</span>
-                        </div>
-                        <div className="text-white text-[10px] font-bold">Option A</div>
-                        <div className="text-zinc-400 text-[8px] mt-0.5">Blue hover accent</div>
+                    <div style={{ padding: '4px 12px 12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                      <div className="p-2 rounded-xl border border-white/10 text-center" style={{ background: 'rgba(39,39,42,0.5)' }}>
+                        <div className="w-6 h-6 rounded-lg mx-auto mb-1 flex items-center justify-center" style={{ background: 'rgba(59,130,246,0.2)' }}><span className="text-blue-400 text-[8px]">★</span></div>
+                        <div className="text-white text-[7px] font-bold">Option A</div>
                       </div>
-                      <div className="p-3 rounded-xl border border-white/10 text-center" style={{ background: 'rgba(39,39,42,0.5)' }}>
-                        <div className="w-8 h-8 rounded-lg mx-auto mb-2 flex items-center justify-center" style={{ background: 'rgba(168,85,247,0.2)' }}>
-                          <span className="text-purple-400 text-xs">◆</span>
-                        </div>
-                        <div className="text-white text-[10px] font-bold">Option B</div>
-                        <div className="text-zinc-400 text-[8px] mt-0.5">Purple hover accent</div>
+                      <div className="p-2 rounded-xl border border-white/10 text-center" style={{ background: 'rgba(39,39,42,0.5)' }}>
+                        <div className="w-6 h-6 rounded-lg mx-auto mb-1 flex items-center justify-center" style={{ background: 'rgba(168,85,247,0.2)' }}><span className="text-purple-400 text-[8px]">◆</span></div>
+                        <div className="text-white text-[7px] font-bold">Option B</div>
                       </div>
                     </div>
                   </div>
                 }
-                previewPlain
-                code={`/* Container: bg-zinc-900 border-white/10 p-0 gap-0 [&>button]:hidden */
-/* Header: px-6 pt-5 pb-3 */
-/* Title: text-white text-lg font-bold tracking-tight */
-/* Subtitle: text-zinc-400 text-sm mt-1 */
-/* Grid: px-6 pb-6 grid grid-cols-2 gap-3 */
-/* Option card: p-5 rounded-2xl border border-white/10 bg-zinc-800/50 */
-/* Left hover: hover:border-blue-500/50 hover:bg-blue-500/10 */
-/* Right hover: hover:border-purple-500/50 hover:bg-purple-500/10 */
-/* Icon: w-10 h-10 rounded-xl bg-{color}-500/20 */
-/* Used by: CharacterCreationModal, EnhanceModeModal, CustomContentTypeModal */
-/* ⚠ 3 identical layouts implemented separately — should be shared component */`}
               />
-              <InconsistencyNote items={[
-                { file: 'CharacterCreationModal / EnhanceModeModal / CustomContentTypeModal', note: 'Three modals share identical layout (bg-zinc-900, grid cols-2, blue/purple option cards) but are implemented as separate components with duplicated markup.' },
-              ]} />
+
+              <PanelCardV2
+                panelName="AIPromptModal"
+                background="hsl(var(--ui-surface))"
+                border="border-[hsl(var(--ui-border))]"
+                borderRadius="rounded-lg"
+                purpose="AI character fill/generate prompt with colored header banner"
+                locations="AIPromptModal.tsx"
+                pageSpecific appWide={false}
+                notes="Only modal with colored header bar: bg-[#4a5f7f] -mx-6 -mt-6 px-6 py-4 rounded-t-lg"
+                preview={
+                  <div style={{ position: 'relative', width: '100%', height: 56, borderRadius: 6, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#2a2a2f', borderRadius: 6, overflow: 'hidden', width: 160 }}>
+                      <div style={{ background: '#4a5f7f', padding: '4px 10px' }}><span style={{ fontSize: 7, fontWeight: 700, color: '#fff', textTransform: 'uppercase' }}>AI Prompt</span></div>
+                      <div style={{ padding: '4px 10px', fontSize: 7, color: '#94a3b8' }}>Content...</div>
+                    </div>
+                  </div>
+                }
+              />
+
+              <PanelCardV2
+                panelName="CharacterEditModal"
+                background="#2a2a2f"
+                border="border-white/10"
+                borderRadius="rounded-lg"
+                purpose="Full character editing modal with dark header and form sections"
+                locations="CharacterEditModal.tsx"
+                pageSpecific appWide={false}
+                notes="max-w-6xl. Header: bg-black. ⚠ Uses bg-[#2a2a2f] instead of standard bg-zinc-900."
+                preview={
+                  <div style={{ position: 'relative', width: '100%', height: 56, borderRadius: 6, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#2a2a2f', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '8px 16px', color: '#fff', fontSize: 8, fontWeight: 600 }}>
+                      Character Edit — max-w-6xl
+                    </div>
+                  </div>
+                }
+              />
+
+              <PanelCardV2
+                panelName="ShareStoryModal"
+                background="#2a2a2f"
+                border="border-white/10"
+                borderRadius="rounded-lg"
+                purpose="Publish/share settings with permission toggles and !important button overrides"
+                locations="ShareStoryModal.tsx"
+                pageSpecific appWide={false}
+                notes="max-w-lg. Info card: bg-zinc-900/50 rounded-xl border-zinc-700. ⚠ !important CSS overrides on buttons."
+                preview={
+                  <div style={{ position: 'relative', width: '100%', height: 56, borderRadius: 6, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#2a2a2f', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '8px 16px', color: '#fff', fontSize: 8, fontWeight: 600 }}>
+                      Share Story
+                    </div>
+                  </div>
+                }
+              />
+
+              <PanelCardV2
+                panelName="StoryDetailModal"
+                background="#121214"
+                border="border-white/10"
+                borderRadius="rounded-[32px]"
+                shadow="0 20px 50px rgba(0,0,0,0.5)"
+                purpose="Full story detail view with action bar, characters, reviews"
+                locations="StoryDetailModal.tsx"
+                pageSpecific appWide={false}
+                notes="⚠ Unique 32px radius — standard modals use rounded-lg. Custom overlay."
+                preview={
+                  <div style={{ position: 'relative', width: '100%', height: 56, borderRadius: 6, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#121214', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 24, padding: '8px 20px', color: '#fff', fontSize: 8, fontWeight: 600, boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }}>
+                      Story Detail — rounded-[32px]
+                    </div>
+                  </div>
+                }
+              />
+
+              <PanelCardV2
+                panelName="ReviewModal"
+                background="#121214"
+                border="border-white/10"
+                borderRadius="rounded-2xl"
+                purpose="Review submission/editing with star + spice ratings"
+                locations="ReviewModal.tsx"
+                pageSpecific appWide={false}
+                notes="Custom overlay: bg-black/90 backdrop-blur-sm. Buttons: h-11 text-sm (non-standard). Submit: bg-[#4a5f7f]. Delete: bg-red-600/20."
+                preview={
+                  <div style={{ position: 'relative', width: '100%', height: 56, borderRadius: 6, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#121214', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '8px 16px', color: '#fff', fontSize: 8, fontWeight: 600 }}>
+                      Review — rounded-2xl
+                    </div>
+                  </div>
+                }
+              />
+
+              <PanelCardV2
+                panelName="DraftsModal"
+                background="bg-zinc-900"
+                border="border border-white/10"
+                borderRadius="rounded-xl"
+                shadow="0 10px 30px rgba(0,0,0,0.5)"
+                purpose="Draft message list with restore/delete actions"
+                locations="DraftsModal.tsx"
+                pageSpecific appWide={false}
+                notes="max-w-md p-0. Uses rounded-xl (unique among modals)."
+                preview={
+                  <div style={{ position: 'relative', width: '100%', height: 56, borderRadius: 6, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#18181b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '8px 16px', color: '#fff', fontSize: 8, fontWeight: 600, boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
+                      Drafts — rounded-xl
+                    </div>
+                  </div>
+                }
+              />
+
+              <PanelCardV2
+                panelName="FolderEditModal"
+                background="bg-zinc-900"
+                border="border-[#4a5f7f]"
+                borderRadius="rounded-lg"
+                purpose="Folder name/description editing. Close button hidden."
+                locations="FolderEditModal.tsx"
+                pageSpecific appWide={false}
+                notes="⚠ Uses border-[#4a5f7f] (accent) instead of standard border-white/10. [&>button]:hidden."
+                preview={
+                  <div style={{ position: 'relative', width: '100%', height: 56, borderRadius: 6, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#18181b', border: '1px solid #4a5f7f', borderRadius: 6, padding: '8px 16px', color: '#fff', fontSize: 8, fontWeight: 600 }}>
+                      Folder Edit — border-[#4a5f7f]
+                    </div>
+                  </div>
+                }
+              />
+
+              <PanelCardV2
+                panelName="SidebarThemeModal"
+                background="bg-zinc-900"
+                border="border-white/10"
+                borderRadius="rounded-lg"
+                shadow="0 12px 32px -2px rgba(0,0,0,0.5)"
+                purpose="Sidebar background/theme customization with image picker and color controls"
+                locations="SidebarThemeModal.tsx"
+                pageSpecific appWide={false}
+                notes="w-[min(96vw,1280px)]. [&>button]:hidden. Wide modal."
+                preview={
+                  <div style={{ position: 'relative', width: '100%', height: 56, borderRadius: 6, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#18181b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '8px 16px', color: '#fff', fontSize: 8, fontWeight: 600 }}>
+                      Sidebar Theme — wide modal
+                    </div>
+                  </div>
+                }
+              />
+
+              <PanelCardV2
+                panelName="SceneTagEditorModal"
+                background="bg-zinc-900"
+                border="border-[#4a5f7f]"
+                borderRadius="rounded-xl"
+                purpose="Image tag editing with preview and tag input. Custom overlay (not Radix Dialog)."
+                locations="SceneTagEditorModal.tsx"
+                pageSpecific appWide={false}
+                notes="⚠ Uses fixed inset-0 overlay (bg-black/85) instead of Radix Dialog. Accent border."
+                preview={
+                  <div style={{ position: 'relative', width: '100%', height: 56, borderRadius: 6, overflow: 'hidden', background: 'rgba(0,0,0,0.85)' }}>
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#18181b', border: '1px solid #4a5f7f', borderRadius: 10, padding: '8px 16px', color: '#fff', fontSize: 8, fontWeight: 600 }}>
+                      Scene Tag Editor
+                    </div>
+                  </div>
+                }
+              />
+
+              {/* ─── Light-Theme Modals ─── */}
+              <PageSubheading fullSpan>Modal — Light-Theme Variants</PageSubheading>
+
+              <PanelCardV2
+                panelName="Image Generation Modals"
+                background="shadcn DialogContent default (light bg)"
+                border="border-slate-200 (default)"
+                borderRadius="rounded-lg"
+                purpose="Avatar, Cover Image, Scene Image generation. Only light-theme modals in app."
+                locations="AvatarGenerationModal, CoverImageGenerationModal, SceneImageGenerationModal"
+                pageSpecific appWide={false}
+                notes="⚠ Only light-theme modals in entire app. Inputs: bg-slate-50 border-slate-200."
+                preview={
+                  <div style={{ position: 'relative', width: '100%', height: 56, borderRadius: 6, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 16px', color: '#111827', fontSize: 8, fontWeight: 600, boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
+                      ✨ Generate — light theme
+                    </div>
+                  </div>
+                }
+              />
+
+              <PanelCardV2
+                panelName="ChangeNameModal"
+                background="shadcn DialogContent default (light bg)"
+                border="default"
+                borderRadius="rounded-lg"
+                purpose="Character name change. Cancel: bg-slate-100. Save: bg-slate-900."
+                locations="ChangeNameModal.tsx"
+                pageSpecific appWide={false}
+                notes="⚠ Light theme — same inconsistency as Image Gen modals. Uses slate-100/slate-700 buttons."
+                preview={
+                  <div style={{ position: 'relative', width: '100%', height: 56, borderRadius: 6, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 6, padding: '8px 16px', color: '#111827', fontSize: 8, fontWeight: 600 }}>
+                      Change Name — light
+                    </div>
+                  </div>
+                }
+              />
+
+              <PanelCardV2
+                panelName="BackgroundPickerModal"
+                background="bg-transparent"
+                border="N/A"
+                borderRadius="rounded-lg"
+                purpose="Wraps Chronicle UI Card. Transparent shell with shadow-none."
+                locations="BackgroundPickerModal.tsx"
+                pageSpecific appWide={false}
+                notes="[&>button]:hidden. Uses Chronicle UI Card inside a transparent Dialog."
+                preview={
+                  <div style={{ position: 'relative', width: '100%', height: 56, borderRadius: 6, overflow: 'hidden', background: 'rgba(0,0,0,0.6)' }}>
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)' }}>
+                      <div className="rounded-xl border border-slate-200 bg-white p-2 text-[8px] text-slate-600 font-semibold" style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>Background Picker (transparent shell)</div>
+                    </div>
+                  </div>
+                }
+              />
+
+              <PanelCardV2
+                panelName="ImageLibraryPickerModal"
+                background="shadcn DialogContent default"
+                border="default"
+                borderRadius="rounded-lg"
+                purpose="Image selection from library folders"
+                locations="ImageLibraryPickerModal.tsx"
+                pageSpecific appWide={false}
+                notes="Header: bg-slate-50. Light-theme modal."
+                preview={
+                  <div style={{ position: 'relative', width: '100%', height: 56, borderRadius: 6, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 6, overflow: 'hidden' }}>
+                      <div style={{ background: '#f8fafc', padding: '4px 12px', fontSize: 7, fontWeight: 700, borderBottom: '1px solid #e2e8f0' }}>Image Library</div>
+                      <div style={{ padding: '4px 12px', fontSize: 7, color: '#64748b' }}>Select image...</div>
+                    </div>
+                  </div>
+                }
+              />
+
+              <PanelCardV2
+                panelName="MemoriesModal"
+                background="bg-slate-900"
+                border="border-slate-700"
+                borderRadius="rounded-lg"
+                purpose="Conversation memory viewer"
+                locations="MemoriesModal.tsx"
+                pageSpecific appWide={false}
+                notes="⚠ Uses bg-slate-900 + border-slate-700 — neither standard dark tokens."
+                preview={
+                  <div style={{ position: 'relative', width: '100%', height: 56, borderRadius: 6, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#0f172a', border: '1px solid #334155', borderRadius: 6, padding: '8px 16px', color: '#fff', fontSize: 8, fontWeight: 600 }}>
+                      Memories — bg-slate-900
+                    </div>
+                  </div>
+                }
+              />
+
             </div>
 
-            <div style={{ marginTop: 16 }} />
-
-            {/* Master Modal Inconsistency Summary */}
-            <InconsistencyNote items={[
-              { file: 'Global', note: '5 different modal background colors: bg-zinc-900, bg-[#2a2a2f], bg-[#121214], bg-slate-900, and default light (shadcn).' },
-              { file: 'Global', note: '3 different modal border-radius values: rounded-lg (standard), rounded-2xl (Review/Delete), rounded-[32px] (Story Detail).' },
-              { file: 'Global', note: 'Button sizing varies: h-10 (standard), h-11 (Review), h-12 (Story Detail actions).' },
-              { file: 'Global', note: '3 different modal border styles: border-white/10 (standard), border-[#4a5f7f] (accent), border-slate-700 (Memories).' },
-              { file: 'Global', note: '2 different dialog systems: Radix Dialog (standard) vs custom fixed inset-0 overlay (SceneTagEditor).' },
-            ]} />
+            {/* Inconsistency notes at bottom */}
+            <div style={{ marginTop: 24 }}>
+              <InconsistencyNote items={[
+                { file: 'SideCharacterCard.tsx', note: 'Uses rounded-full avatar (w-20 h-20) — every other avatar in the app uses rounded-2xl.' },
+                { file: 'ChatInterfaceTab.tsx', note: 'Chat bubble bg #1c1f26 does not match any panel token (#2a2a2f or bg-zinc-900).' },
+                { file: 'ChatInterfaceTab.tsx', note: 'White sidebar (bg-white) with text-slate-700 inside a dark-themed app.' },
+                { file: 'ScrollableSection.tsx', note: 'White fade gradients on dark backgrounds — visually jarring.' },
+                { file: 'WorldTab.tsx', note: 'Right pane uses light-theme Chronicle UI Cards on dark bg-[#2a2a2f] background.' },
+                { file: 'CharactersTab.tsx', note: 'Uses rounded-[24px] — yet another radius variant alongside rounded-2xl/3xl/[2rem]/[32px].' },
+                { file: 'ArcBranchLane.tsx', note: 'Uses inline rgba() instead of Tailwind tokens.' },
+                { file: 'UI.tsx', note: 'Light-theme Card (bg-white rounded-3xl) conflicts with dark panel standard.' },
+              ]} />
+              <InconsistencyNote items={[
+                { file: 'Global', note: '5 different modal backgrounds: bg-zinc-900, bg-[#2a2a2f], bg-[#121214], bg-slate-900, default light (shadcn).' },
+                { file: 'Global', note: '3 different modal border-radius values: rounded-lg (standard), rounded-2xl (Review/Delete), rounded-[32px] (Story Detail).' },
+                { file: 'Global', note: 'Button sizing varies: h-10 (standard), h-11 (Review), h-12 (Story Detail actions).' },
+                { file: 'Global', note: '3 modal border styles: border-white/10 (standard), border-[#4a5f7f] (accent), border-slate-700 (Memories).' },
+                { file: 'Global', note: '2 dialog systems: Radix Dialog (standard) vs custom fixed inset-0 (SceneTagEditor, CharacterPicker).' },
+                { file: 'CharacterCreation / EnhanceMode / CustomContentType', note: '3 identical Two-Option modal layouts — should be shared component.' },
+                { file: 'AvatarGen / CoverGen / SceneGen / ChangeNameModal', note: 'Light-theme modals in otherwise dark-themed app.' },
+                { file: 'AIPromptModal.tsx', note: 'Only modal with colored header bar pattern (bg-[#4a5f7f] -mx-6 -mt-6).' },
+              ]} />
+            </div>
           </Section>
 
           <Divider />
 
           {/* ═══════════════════════════════════════════════════════════════ */}
-          {/* ═══ 8. ICONS ═══ */}
+          {/* ═══ 7. ICONS ═══ */}
           {/* ═══════════════════════════════════════════════════════════════ */}
           <Section id="icons" title="Icons" desc="Icon sizing, color conventions, and container patterns. All icons use Lucide React.">
 
