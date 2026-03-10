@@ -351,7 +351,7 @@ const InputCardV2: React.FC<InputV2Props> = (props) => {
   >
     {/* Preview strip */}
     <div style={{
-      background: previewBg || '#25272d', padding: '16px 20px',
+      background: '#fff', padding: '16px 20px',
       display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'center', gap: 12, minHeight: 64,
       boxShadow: 'inset 0 -1px 0 #e2e8f0',
     }}>{preview}</div>
