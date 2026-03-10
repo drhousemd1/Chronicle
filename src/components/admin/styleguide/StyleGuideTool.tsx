@@ -2385,7 +2385,6 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
               <InputCardV2
                 inputName="Header Search (Dark Pill)"
-                previewBg="#fff"
                 background="transparent (inside #2b2b2e pill container)"
                 border="none (container provides visual border)"
                 borderRadius="rounded-full (999px)"
