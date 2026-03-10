@@ -460,7 +460,7 @@ const BadgeCardV2: React.FC<BadgeV2Props> = (props) => {
   >
     {/* Preview strip */}
     <div style={{
-      background: previewBg || '#1a1a2e', padding: '16px 20px',
+      background: '#fff', padding: '16px 20px',
       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, minHeight: 64,
       boxShadow: 'inset 0 -1px 0 #e2e8f0', flexWrap: 'wrap',
     }}>{preview}</div>
