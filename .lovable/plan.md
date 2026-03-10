@@ -1,37 +1,37 @@
 
 
-# Fix Three Issues: Time-of-Day Icons, Input Preview Backgrounds, Badge Preview Backgrounds
+## Plan: Style Guide Audit & Correction — Complete ✅
 
-## Issues
+### Status: ✅ All 3 Passes Complete
 
-1. **Time of Day buttons** (line ~1796): Using emoji text (`☀︎ Rise`, `☀ Day`, `◐ Set`, `☽ Night`) instead of actual Lucide icons (`Sunrise`, `Sun`, `Sunset`, `Moon`) with NO text labels — the real buttons are icon-only.
+Audited and corrected all 8 sections of the Visual Style Guide against live source code.
 
-2. **InputCardV2 preview strip** (line 353-354): Uses `background: previewBg || '#25272d'` — a dark colored background. Should be white (`#fff`) like ButtonCardV2, with the element shown standalone.
+### What was fixed:
 
-3. **BadgeCardV2 preview strip** (line 462-463): Uses `background: previewBg || '#1a1a2e'` — another dark colored background. Same fix: white bg, element shown standalone.
+**Pass 1 — Colors & Typography:**
+- "Button Background" swatch: `#2F3137` (screenshot approximation) → `hsl(228 7% 20%)` / `bg-[hsl(var(--ui-surface-2))]` (actual CSS variable)
+- "Button Text Color" swatch: `#eaedf1` → `hsl(210 20% 93%)` / `text-[hsl(var(--ui-text))]` (actual CSS variable)
+- Typography specs updated to use Tailwind class names (e.g., `text-xl font-bold tracking-tight`) instead of raw pixel values
+- Field label tracking corrected from `0.5px` to `tracking-wider (0.05em)`
+- Button text tile renamed from "Header actions" to "Shadow Surface" with `leading-none` added
 
-## Changes
+**Pass 2 — Buttons, Forms & Badges:**
+- Header Action Button completely rewritten to Shadow Surface pattern with real Tailwind `className` strings
+- Button previews now render using actual `className` attributes instead of inline `style` objects
+- Card Hover Buttons updated to correct `h-8 px-4` compact variant from source (StoryHub.tsx)
+- Delete button corrected from `bg-#ef4444` to `bg-[hsl(var(--destructive))]`
+- Form inputs and badges converted to `className`-based rendering
+- Code blocks now show actual `className` strings from source
 
-**File: `src/components/admin/styleguide/StyleGuideTool.tsx`**
+**Pass 3 — Panels, Modals & Icons:**
+- Panel Container: `previewDark` removed, rendered with actual `className`
+- Panel Header Bar: uses actual `className` with `px-5 py-3` (was `16px 24px`)
+- Story Card: added live rendered preview with gradient overlay and `rounded-[2rem]`
+- Modal Container/Header/Footer: `previewDark` removed, rendered with real Tailwind classes
+- Modal Footer buttons now use actual HSL token classes from DeleteConfirmDialog.tsx
+- Icon Size Scale/Containers: `previewDark` removed, previews render on white background
+- Icon Colors: white swatch gets border treatment instead of dark background
 
-### 1. Add Lucide icon imports
-Add `Sunrise, Sun, Sunset, Moon` to the existing lucide-react import on line 2.
-
-### 2. Fix Time of Day button preview (line ~1794-1801)
-Replace the emoji+text buttons with icon-only buttons using the real Lucide components:
-```tsx
-<button className="p-2 rounded-lg bg-white border border-black text-black"><Sunrise className="w-4 h-4" /></button>
-<button className="p-2 rounded-lg bg-blue-100 border-2 border-blue-400 text-blue-600 shadow-sm"><Sun className="w-4 h-4" /></button>
-<button className="p-2 rounded-lg bg-white border border-black text-black"><Sunset className="w-4 h-4" /></button>
-<button className="p-2 rounded-lg bg-white border border-black text-black"><Moon className="w-4 h-4" /></button>
-```
-
-### 3. Fix InputCardV2 preview strip background (line 354)
-Change from `background: previewBg || '#25272d'` to `background: '#fff'`. Remove the `previewBg` prop from the component entirely since it's no longer needed.
-
-### 4. Fix BadgeCardV2 preview strip background (line 463)
-Change from `background: previewBg || '#1a1a2e'` to `background: '#fff'`. Remove the `previewBg` prop from the component entirely.
-
-### 5. Remove all `previewBg` prop usages
-Search all `InputCardV2` and `BadgeCardV2` instances and remove any `previewBg="..."` props being passed to them.
-
+**Dark Background Cleanup:**
+- Removed `previewDark` from: buttons (all 5), panel container, modal container/header/footer, icon size scale, icon containers
+- Kept `previewDark` only for: form inputs (dark on dark), modal backdrop (transparency demo)

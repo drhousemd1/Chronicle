@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback, createContext, useContext } from 'react';
-import { Sparkles, Pencil, Lock, X, Plus } from 'lucide-react';
+import { Sparkles, Pencil, Lock, X, Plus, Sunrise, Sun, Sunset, Moon } from 'lucide-react';
 import { StarRating } from '@/components/chronicle/StarRating';
 import { SpiceRating } from '@/components/chronicle/SpiceRating';
 import { CircularProgress } from '@/components/chronicle/CircularProgress';
@@ -321,7 +321,6 @@ const TypoCardV2: React.FC<TypoV2Props> = (props) => {
 interface InputV2Props {
   inputName: string;
   preview: React.ReactNode;
-  previewBg?: string;
   background: string;
   border: string;
   borderRadius: string;
@@ -338,7 +337,7 @@ interface InputV2Props {
 }
 
 const InputCardV2: React.FC<InputV2Props> = (props) => {
-  const { inputName, preview, previewBg, background, border, borderRadius, textColor, placeholderColor, focusStyle, fontSize, padding, purpose, locations, pageSpecific, appWide, notes } = props;
+  const { inputName, preview, background, border, borderRadius, textColor, placeholderColor, focusStyle, fontSize, padding, purpose, locations, pageSpecific, appWide, notes } = props;
   const details = { Background: background, Border: border, 'Border Radius': borderRadius, 'Text Color': textColor, 'Font Size': fontSize, Padding: padding, Purpose: purpose, Locations: locations };
   return (
   <CardEditOverlay cardName={inputName} cardType="Input" details={details}>
@@ -351,7 +350,7 @@ const InputCardV2: React.FC<InputV2Props> = (props) => {
   >
     {/* Preview strip */}
     <div style={{
-      background: previewBg || '#25272d', padding: '16px 20px',
+      background: '#fff', padding: '16px 20px',
       display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'center', gap: 12, minHeight: 64,
       boxShadow: 'inset 0 -1px 0 #e2e8f0',
     }}>{preview}</div>
@@ -432,7 +431,7 @@ const InputCardV2: React.FC<InputV2Props> = (props) => {
 interface BadgeV2Props {
   badgeName: string;
   preview: React.ReactNode;
-  previewBg?: string;
+  
   background: string;
   textColor: string;
   size: string;
@@ -447,7 +446,7 @@ interface BadgeV2Props {
 }
 
 const BadgeCardV2: React.FC<BadgeV2Props> = (props) => {
-  const { badgeName, preview, previewBg, background, textColor, size, borderRadius, padding, purpose, locations, pageSpecific, appWide, notes, states } = props;
+  const { badgeName, preview, background, textColor, size, borderRadius, padding, purpose, locations, pageSpecific, appWide, notes, states } = props;
   const details = { Background: background, 'Text Color': textColor, Size: size, 'Border Radius': borderRadius, Padding: padding, Purpose: purpose, Locations: locations };
   return (
   <CardEditOverlay cardName={badgeName} cardType="Badge" details={details}>
@@ -460,7 +459,7 @@ const BadgeCardV2: React.FC<BadgeV2Props> = (props) => {
   >
     {/* Preview strip */}
     <div style={{
-      background: previewBg || '#1a1a2e', padding: '16px 20px',
+      background: '#fff', padding: '16px 20px',
       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, minHeight: 64,
       boxShadow: 'inset 0 -1px 0 #e2e8f0', flexWrap: 'wrap',
     }}>{preview}</div>
@@ -1793,10 +1792,10 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               appWide={false}
               preview={
                 <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
-                  <button className="p-2 rounded-lg bg-white border border-black text-black" style={{ cursor: 'default', fontSize: 12 }}>☀︎ Rise</button>
-                  <button className="p-2 rounded-lg bg-blue-100 border-2 border-blue-400 text-blue-600 shadow-sm" style={{ cursor: 'default', fontSize: 12 }}>☀ Day</button>
-                  <button className="p-2 rounded-lg bg-white border border-black text-black" style={{ cursor: 'default', fontSize: 12 }}>◐ Set</button>
-                  <button className="p-2 rounded-lg bg-white border border-black text-black" style={{ cursor: 'default', fontSize: 12 }}>☽ Night</button>
+                  <button className="p-2 rounded-lg bg-white border border-black text-black" style={{ cursor: 'default' }}><Sunrise className="w-4 h-4" /></button>
+                  <button className="p-2 rounded-lg bg-blue-100 border-2 border-blue-400 text-blue-600 shadow-sm" style={{ cursor: 'default' }}><Sun className="w-4 h-4" /></button>
+                  <button className="p-2 rounded-lg bg-white border border-black text-black" style={{ cursor: 'default' }}><Sunset className="w-4 h-4" /></button>
+                  <button className="p-2 rounded-lg bg-white border border-black text-black" style={{ cursor: 'default' }}><Moon className="w-4 h-4" /></button>
                 </div>
               }
             />
@@ -2317,7 +2316,6 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
               <InputCardV2
                 inputName="Chat Input Textarea"
-                previewBg="#fff"
                 background="white (inside hsl(var(--ui-surface-2)) wrapper)"
                 border="none (wrapper: border-[hsl(var(--ui-border))])"
                 borderRadius="rounded-xl (inner) / rounded-2xl (wrapper)"
@@ -2387,7 +2385,6 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
               <InputCardV2
                 inputName="Header Search (Dark Pill)"
-                previewBg="#fff"
                 background="transparent (inside #2b2b2e pill container)"
                 border="none (container provides visual border)"
                 borderRadius="rounded-full (999px)"
@@ -2598,7 +2595,6 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
               <InputCardV2
                 inputName="Chronicle UI Input"
-                previewBg="#fff"
                 background="bg-slate-50"
                 border="border-slate-200"
                 borderRadius="rounded-2xl (16px)"
@@ -2620,7 +2616,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               />
               <InputCardV2
                 inputName="Chronicle UI TextArea"
-                previewBg="#fff"
+                
                 background="bg-slate-50"
                 border="border-slate-200"
                 borderRadius="rounded-2xl (16px)"
