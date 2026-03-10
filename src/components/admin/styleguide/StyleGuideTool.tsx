@@ -337,7 +337,7 @@ interface InputV2Props {
 }
 
 const InputCardV2: React.FC<InputV2Props> = (props) => {
-  const { inputName, preview, previewBg, background, border, borderRadius, textColor, placeholderColor, focusStyle, fontSize, padding, purpose, locations, pageSpecific, appWide, notes } = props;
+  const { inputName, preview, background, border, borderRadius, textColor, placeholderColor, focusStyle, fontSize, padding, purpose, locations, pageSpecific, appWide, notes } = props;
   const details = { Background: background, Border: border, 'Border Radius': borderRadius, 'Text Color': textColor, 'Font Size': fontSize, Padding: padding, Purpose: purpose, Locations: locations };
   return (
   <CardEditOverlay cardName={inputName} cardType="Input" details={details}>
