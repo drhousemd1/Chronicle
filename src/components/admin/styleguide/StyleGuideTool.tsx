@@ -431,7 +431,7 @@ const InputCardV2: React.FC<InputV2Props> = (props) => {
 interface BadgeV2Props {
   badgeName: string;
   preview: React.ReactNode;
-  previewBg?: string;
+  
   background: string;
   textColor: string;
   size: string;
