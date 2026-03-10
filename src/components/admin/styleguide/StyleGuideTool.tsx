@@ -446,7 +446,7 @@ interface BadgeV2Props {
 }
 
 const BadgeCardV2: React.FC<BadgeV2Props> = (props) => {
-  const { badgeName, preview, previewBg, background, textColor, size, borderRadius, padding, purpose, locations, pageSpecific, appWide, notes, states } = props;
+  const { badgeName, preview, background, textColor, size, borderRadius, padding, purpose, locations, pageSpecific, appWide, notes, states } = props;
   const details = { Background: background, 'Text Color': textColor, Size: size, 'Border Radius': borderRadius, Padding: padding, Purpose: purpose, Locations: locations };
   return (
   <CardEditOverlay cardName={badgeName} cardType="Badge" details={details}>
