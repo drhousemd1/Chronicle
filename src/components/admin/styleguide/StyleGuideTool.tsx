@@ -533,6 +533,94 @@ interface TypeTileProps {
   locations: string;
 }
 
+/* ═══════════════════════ PANEL CARD V2 (Standardized) ═══════════════════════ */
+interface PanelV2Props {
+  panelName: string;
+  preview: React.ReactNode;
+  previewBg?: string;
+  background: string;
+  border: string;
+  borderRadius: string;
+  shadow?: string;
+  purpose: string;
+  locations: string;
+  pageSpecific?: boolean;
+  appWide?: boolean;
+  notes?: string;
+}
+
+const PanelCardV2: React.FC<PanelV2Props> = (props) => {
+  const { panelName, preview, previewBg, background, border, borderRadius, shadow, purpose, locations, pageSpecific, appWide, notes } = props;
+  const details = { Background: background, Border: border, 'Border Radius': borderRadius, ...(shadow ? { Shadow: shadow } : {}), Purpose: purpose, Locations: locations };
+  return (
+  <CardEditOverlay cardName={panelName} cardType="Panel" details={details}>
+  <div style={{
+    background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
+    boxShadow: sg.shadow, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+  }}
+    onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadowHover; }}
+    onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadow; }}
+  >
+    {/* Preview strip */}
+    <div style={{
+      background: previewBg || '#fff', padding: '16px 20px',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, minHeight: 80,
+      boxShadow: 'inset 0 -1px 0 #e2e8f0',
+    }}>{preview}</div>
+
+    <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 6, borderTop: '1px solid #e2e8f0' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Panel Name:</span>
+        <span style={valueStyle}>{panelName}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Background:</span>
+        <span style={monoStyle}>{background}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Border:</span>
+        <span style={monoStyle}>{border}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Border Radius:</span>
+        <span style={monoStyle}>{borderRadius}</span>
+      </div>
+      {shadow && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={labelStyle}>Shadow:</span>
+          <span style={monoStyle}>{shadow}</span>
+        </div>
+      )}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Purpose:</span>
+        <span style={valueStyle}>{purpose}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Locations:</span>
+        <span style={valueStyle}>{locations}</span>
+      </div>
+      {notes && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={labelStyle}>Notes:</span>
+          <span style={valueStyle}>{notes}</span>
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#334155', cursor: 'default' }}>
+          <input type="checkbox" checked={pageSpecific} disabled style={{ accentColor: '#3b82f6', width: 14, height: 14 }} />
+          Page Specific
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#334155', cursor: 'default' }}>
+          <input type="checkbox" checked={appWide} disabled style={{ accentColor: '#3b82f6', width: 14, height: 14 }} />
+          App Wide
+        </label>
+      </div>
+    </div>
+  </div>
+  </CardEditOverlay>
+  );
+};
+
 const TypeTile: React.FC<TypeTileProps> = ({ name, exampleBg, exampleContent, specs, locations }) => (
   <div style={{
     background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
