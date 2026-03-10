@@ -79,8 +79,7 @@ const SECTIONS = [
   { id: 'buttons', label: 'Buttons' },
   { id: 'inputs', label: 'Form Inputs' },
   { id: 'badges', label: 'Badges & Tags' },
-  { id: 'panels', label: 'Panels' },
-  { id: 'modals', label: 'Modals' },
+  { id: 'panels', label: 'Panels & Modals' },
   { id: 'icons', label: 'Icons' },
 ] as const;
 
