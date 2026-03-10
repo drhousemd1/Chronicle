@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback, createContext, useContext } from 'react';
-import { Sparkles, Pencil, Lock, X, Plus } from 'lucide-react';
+import { Sparkles, Pencil, Lock, X, Plus, Sunrise, Sun, Sunset, Moon } from 'lucide-react';
 import { StarRating } from '@/components/chronicle/StarRating';
 import { SpiceRating } from '@/components/chronicle/SpiceRating';
 import { CircularProgress } from '@/components/chronicle/CircularProgress';
