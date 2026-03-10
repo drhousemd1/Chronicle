@@ -321,7 +321,6 @@ const TypoCardV2: React.FC<TypoV2Props> = (props) => {
 interface InputV2Props {
   inputName: string;
   preview: React.ReactNode;
-  previewBg?: string;
   background: string;
   border: string;
   borderRadius: string;
