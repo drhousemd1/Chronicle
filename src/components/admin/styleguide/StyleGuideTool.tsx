@@ -3082,7 +3082,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
           {/* ═══════════════════════════════════════════════════════════════ */}
           <Section id="panels" title="Panels & Modals" desc="Container patterns, card layouts, sidebars, modal dialogs, and overlay systems used throughout the application.">
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14 }}>
 
               {/* ─── Story Builder Page ─── */}
               <PageSubheading fullSpan>Story Builder Page</PageSubheading>
