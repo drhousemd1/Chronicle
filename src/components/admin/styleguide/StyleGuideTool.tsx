@@ -3815,7 +3815,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 notes="⚠ Light theme — conflicts with dark panel standard (bg-[#2a2a2f])."
                 preview={
                   <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm" style={{ width: '100%' }}>
-                    <div className="text-[9px] font-bold text-slate-900">Chronicle Card</div>
+                    <div className="text-[9px] font-bold text-[hsl(var(--ui-surface-2))]">Chronicle Card</div>
                     <div className="text-[7px] text-slate-500 mt-0.5">Light-theme from UI.tsx</div>
                   </div>
                 }
