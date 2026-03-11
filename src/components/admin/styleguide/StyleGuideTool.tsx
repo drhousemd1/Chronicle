@@ -3740,7 +3740,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <PanelCardV2
                 panelName="Art Style Selection Card"
                 background="bg-card"
-                border="ring-1 ring-border · selected: ring-2 ring-blue-400"
+                border="ring-1 ring-border · selected: ring-2 ring-blue-500"
                 borderRadius="rounded-xl"
                 shadow="selected: shadow-md"
                 purpose="Art style picker in image generation modals"
