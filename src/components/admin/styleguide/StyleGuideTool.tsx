@@ -187,10 +187,11 @@ const CollapsibleCardBody: React.FC<{
   hasCollapsible: boolean;
   pageSpecific?: boolean;
   appWide?: boolean;
-}> = ({ nameLabel, nameValue, locations, collapsibleContent, hasCollapsible, pageSpecific, appWide }) => {
+  alwaysVisibleExtra?: React.ReactNode;
+}> = ({ nameLabel, nameValue, locations, collapsibleContent, hasCollapsible, pageSpecific, appWide, alwaysVisibleExtra }) => {
   const [expanded, setExpanded] = useState(false);
   return (
-    <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 6, borderTop: '1px solid #e2e8f0' }}>
+    <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 6, borderTop: '1px solid #e2e8f0', flex: 1 }}>
       {/* Always visible: Name + Locations */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         <span style={labelStyle}>{nameLabel}:</span>
@@ -203,6 +204,7 @@ const CollapsibleCardBody: React.FC<{
           ...(!expanded ? { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' } : {}),
         }}>{locations}</span>
       </div>
+      {alwaysVisibleExtra}
       {/* Collapsible metadata */}
       {hasCollapsible && (
         <div style={{
@@ -217,7 +219,7 @@ const CollapsibleCardBody: React.FC<{
         </div>
       )}
       {/* Fixed-height toggle row — always present for uniform sizing */}
-      <div style={{ height: 24, display: 'flex', alignItems: 'center', marginTop: 'auto' }}>
+      <div style={{ position: 'relative', zIndex: 10, height: 24, display: 'flex', alignItems: 'center', marginTop: 'auto' }}>
         {hasCollapsible && (
           <button
             type="button"
@@ -246,6 +248,7 @@ const SwatchCardV2: React.FC<SwatchV2Props> = (props) => {
   <div style={{
     background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
     boxShadow: sg.shadow, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+    minHeight: 260, display: 'flex', flexDirection: 'column',
   }}
     onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadowHover; }}
     onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadow; }}
@@ -257,8 +260,8 @@ const SwatchCardV2: React.FC<SwatchV2Props> = (props) => {
       locations={locations}
       pageSpecific={pageSpecific}
       appWide={appWide}
-      hasCollapsible={true}
-      collapsibleContent={<>
+      hasCollapsible={!!(effect)}
+      alwaysVisibleExtra={<>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <span style={labelStyle}>Value:</span>
           <span style={monoStyle}>{value}</span>
@@ -267,13 +270,13 @@ const SwatchCardV2: React.FC<SwatchV2Props> = (props) => {
           <span style={labelStyle}>Token:</span>
           <span style={monoStyle}>{token}</span>
         </div>
-        {effect && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <span style={labelStyle}>Effect:</span>
-            <span style={monoStyle}>{effect}</span>
-          </div>
-        )}
       </>}
+      collapsibleContent={effect ? <>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={labelStyle}>Effect:</span>
+          <span style={monoStyle}>{effect}</span>
+        </div>
+      </> : undefined}
     />
   </div>
   </CardEditOverlay>
@@ -307,6 +310,7 @@ const TypoCardV2: React.FC<TypoV2Props> = (props) => {
   <div style={{
     background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
     boxShadow: sg.shadow, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+    minHeight: 260, display: 'flex', flexDirection: 'column',
   }}
     onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadowHover; }}
     onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadow; }}
@@ -365,6 +369,7 @@ const InputCardV2: React.FC<InputV2Props> = (props) => {
   <div style={{
     background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
     boxShadow: sg.shadow, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+    minHeight: 260, display: 'flex', flexDirection: 'column',
   }}
     onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadowHover; }}
     onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadow; }}
@@ -426,6 +431,7 @@ const BadgeCardV2: React.FC<BadgeV2Props> = (props) => {
   <div style={{
     background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
     boxShadow: sg.shadow, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+    minHeight: 260, display: 'flex', flexDirection: 'column',
   }}
     onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadowHover; }}
     onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadow; }}
@@ -491,6 +497,7 @@ const PanelCardV2: React.FC<PanelV2Props> = (props) => {
   <div style={{
     background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
     boxShadow: sg.shadow, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+    minHeight: 260, display: 'flex', flexDirection: 'column',
   }}
     onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadowHover; }}
     onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadow; }}
@@ -577,6 +584,7 @@ const ButtonCardV2: React.FC<ButtonV2Props> = (props) => {
   <div style={{
     background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
     boxShadow: sg.shadow, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+    minHeight: 260, display: 'flex', flexDirection: 'column',
   }}
     onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadowHover; }}
     onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadow; }}
@@ -939,7 +947,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             {/* ─── Story Builder ─── */}
             <PageSubheading>Story Builder Page</PageSubheading>
             <PageDesc>Colors used across the Story Builder / Story Setup interface.</PageDesc>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 14 }}>
               <SwatchCardV2 color="#4a5f7f" name="Slate Blue" locations="Panel header bars, MAIN CHARACTERS pill" value="#4a5f7f" token="bg-[#4a5f7f]" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#2a2a2f" name="Dark Charcoal" locations="Panel containers, Character Roster sidebar, character cards" value="#2a2a2f" token="bg-[#2a2a2f]" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#1a1a1a" name="Soft Black" locations="Left icon navigation sidebar" value="#1a1a1a" token="bg-[#1a1a1a]" pageSpecific={true} appWide={false} />
@@ -965,7 +973,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             {/* ─── My Stories ─── */}
             <PageSubheading>My Stories Page</PageSubheading>
             <PageDesc>Colors used on the My Stories gallery/card grid.</PageDesc>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 14 }}>
               <SwatchCardV2 color="rgba(248,250,252,0.5)" name="Frosted White" locations="Full page background" value="rgba(248,250,252,0.5)" token="bg-slate-50/50" pageSpecific={false} appWide={true} extraPreviewStyle={{ border: '1px dashed #ccc' }} />
               <SwatchCardV2 color="#4a5f7f" name="Slate Blue" locations="Active tab pill, story card border" value="#4a5f7f" token="bg-[#4a5f7f]" pageSpecific={false} appWide={true} />
               
@@ -983,7 +991,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             {/* ─── Community Gallery ─── */}
             <PageSubheading>Community Gallery</PageSubheading>
             <PageDesc>Colors specific to the Community Gallery page and gallery cards.</PageDesc>
-             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
+             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 14 }}>
               <SwatchCardV2 color="#121214" name="Near Black" locations="GalleryHub main wrapper, Account page background" value="#121214" token="bg-[#121214]" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="rgba(18,18,20,0.8)" name="Glass Black" locations="Gallery sticky header" value="rgba(18,18,20,0.8)" token="bg-[#121214]/80" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
               <SwatchCardV2 color="rgba(58,58,63,0.5)" name="Smoke Charcoal" locations="Gallery search input background" value="rgba(58,58,63,0.5)" token="bg-[#3a3a3f]/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
@@ -998,7 +1006,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             {/* ─── Chat Interface ─── */}
             <PageSubheading>Chat Interface</PageSubheading>
             <PageDesc>Colors unique to the chat/conversation view.</PageDesc>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 14 }}>
               <SwatchCardV2 color="#1c1f26" name="Ink Blue" locations="Chat message bubble, transparent mode OFF" value="#1c1f26" token="bg-[#1c1f26]" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="rgba(0,0,0,0.5)" name="Half Black" locations="Chat message bubble, transparent mode ON" value="rgba(0,0,0,0.5)" token="bg-black/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
               <SwatchCardV2 color="#94a3b8" name="Muted Slate" locations="Italic action text in chat (*actions*)" value="#94a3b8" token="text-slate-400" pageSpecific={true} appWide={false} />
@@ -1013,7 +1021,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             {/* ─── Chat History ─── */}
             <PageSubheading>Chat History</PageSubheading>
             <PageDesc>Colors for the conversation session cards.</PageDesc>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 14 }}>
               <SwatchCardV2 color="#2a2a2f" name="Dark Charcoal" locations="Session card outer background, empty state card" value="#2a2a2f" token="bg-[#2a2a2f]" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="rgba(58,58,63,0.3)" name="Muted Charcoal" locations="Inner nested card in session entries" value="rgba(58,58,63,0.3)" token="bg-[#3a3a3f]/30" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
               <SwatchCardV2 color="rgba(255,255,255,0.05)" name="Ghost White" locations="Inner card subtle border" value="rgba(255,255,255,0.05)" token="border-white/5" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
@@ -1033,7 +1041,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             {/* ─── Account Page ─── */}
             <PageSubheading>Account Page</PageSubheading>
             <PageDesc>Colors for the dark-themed Account settings page.</PageDesc>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 14 }}>
               <SwatchCardV2 color="#121214" name="Near Black" locations="Full page background for Account section" value="#121214" token="bg-[#121214]" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="#1e1e22" name="Charcoal" locations="Email, Plan, Password setting cards" value="#1e1e22" token="bg-[#1e1e22]" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="#2b2b2e" name="Warm Charcoal" locations="Pill tab container on Account and Gallery pages" value="#2b2b2e" token="bg-[#2b2b2e]" pageSpecific={false} appWide={true} />
@@ -1045,7 +1053,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             {/* ─── Auth Page ─── */}
             <PageSubheading>Auth Page</PageSubheading>
             <PageDesc>The light-themed authentication page gradient and card colors.</PageDesc>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 14 }}>
               <SwatchCardV2 color="linear-gradient(to bottom right, #0f172a, #581c87, #0f172a)" name="Navy-to-Purple Gradient" locations="Auth page full-screen background" value="from-slate-900 via-purple-900 to-slate-900" token="—" pageSpecific={true} appWide={false} extraPreviewStyle={{ background: 'linear-gradient(135deg, #0f172a, #581c87, #0f172a)' }} />
               <SwatchCardV2 color="rgba(30,41,59,0.5)" name="Dark Slate Glass" locations="Login/signup Card component background" value="rgba(30,41,59,0.5)" token="bg-slate-800/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
               <SwatchCardV2 color="rgba(51,65,85,0.5)" name="Slate Glass" locations="Email and password input fields on auth page" value="rgba(51,65,85,0.5)" token="bg-slate-700/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
@@ -1061,7 +1069,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             {/* ─── Creator Profile ─── */}
             <PageSubheading>Creator Profile</PageSubheading>
             <PageDesc>Colors for the public Creator Profile page.</PageDesc>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 14 }}>
               <SwatchCardV2 color="#121214" name="Near Black" locations="Full page background (same as Gallery/Account)" value="#121214" token="bg-[#121214]" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="#1e1e22" name="Charcoal" locations="Profile info card, bio section" value="#1e1e22" token="bg-[#1e1e22]" pageSpecific={true} appWide={false} />
               
@@ -1077,7 +1085,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             {/* ─── Global Sidebar ─── */}
             <PageSubheading>Global Sidebar</PageSubheading>
             <PageDesc>Colors for the main application navigation sidebar.</PageDesc>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 14 }}>
               <SwatchCardV2 color="#1a1a1a" name="Soft Black" locations="Global left sidebar (280px expanded, 72px collapsed)" value="#1a1a1a" token="bg-[#1a1a1a]" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#4a5f7f" name="Slate Blue" locations="Active navigation item background" value="#4a5f7f" token="bg-[#4a5f7f]" pageSpecific={false} appWide={true} effect="shadow-lg shadow-black/40" />
               <SwatchCardV2 color="#94a3b8" name="Muted Slate" locations="Inactive sidebar item text and icons" value="#94a3b8" token="text-slate-400" pageSpecific={false} appWide={true} />
@@ -1088,7 +1096,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             {/* ─── Character Builder ─── */}
             <PageSubheading>Character Builder</PageSubheading>
             <PageDesc>Colors specific to the Character Builder / CharactersTab editor.</PageDesc>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 14 }}>
               <SwatchCardV2 color="rgba(58,58,63,0.3)" name="Muted Charcoal" locations="HardcodedSection inner card, character trait row containers" value="rgba(58,58,63,0.3)" token="bg-[#3a3a3f]/30" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
               <SwatchCardV2 color="rgba(24,24,27,0.5)" name="Smoke Black" locations="Read-only trait labels (Physical Appearance, Personality, etc.)" value="rgba(24,24,27,0.5)" token="bg-zinc-900/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
               <SwatchCardV2 color="rgba(96,165,250,0.1)" name="Faint Blue" locations="AI Enhance sparkle button hover state" value="rgba(96,165,250,0.1)" token="bg-blue-500/10" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
@@ -1099,7 +1107,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             {/* ─── Model Settings ─── */}
             <PageSubheading>Model Settings</PageSubheading>
             <PageDesc>Colors used on the Model Settings page — NOTE: this page uses a LIGHT THEME unlike the rest of the app.</PageDesc>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 14 }}>
               <SwatchCardV2 color="#ffffff" name="White" locations="Inactive model selection card background" value="#ffffff" token="bg-white" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="#0f172a" name="Deep Navy" locations="Active/selected model card background, scale-[1.02]" value="#0f172a" token="bg-slate-900" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="#faf5ff" name="Pale Lavender" locations="Admin-only share toggle row background, border-purple-200" value="#faf5ff" token="bg-purple-50" pageSpecific={true} appWide={false} />
@@ -1115,7 +1123,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             {/* ─── World Tab ─── */}
             <PageSubheading>World Tab</PageSubheading>
             <PageDesc>Colors specific to the World Tab and its hint/character components.</PageDesc>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 14 }}>
               <SwatchCardV2 color="rgba(0,0,0,0.8)" name="Near Black Glass" locations="World Tab character card button background" value="rgba(0,0,0,0.8)" token="bg-black/80" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="#4a5f7f" name="Slate Blue" locations="Character card border, hover brightens to #6b82a8" value="#4a5f7f" token="border-[#4a5f7f]" pageSpecific={true} appWide={false} />
             </div>
