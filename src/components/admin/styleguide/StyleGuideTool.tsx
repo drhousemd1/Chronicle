@@ -145,6 +145,61 @@ const SwatchCard: React.FC<SwatchProps> = ({ color, name, rows, extraPreviewStyl
   </div>
 );
 
+/* ═══════════════════════ LOCATION VIEWER MODAL ═══════════════════════ */
+interface LocationImage { url: string; location: string; function: string }
+
+const LocationViewerModal: React.FC<{
+  open: boolean; onClose: () => void; title: string; images: LocationImage[];
+}> = ({ open, onClose, title, images }) => {
+  const [idx, setIdx] = useState(0);
+  if (!open || images.length === 0) return null;
+  const img = images[idx];
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.7)' }} onClick={onClose}>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: 'hsl(240 6% 10%)', borderRadius: 16, border: '1px solid hsl(0 0% 100% / 0.10)',
+          boxShadow: '0 10px 30px hsl(0 0% 0% / 0.5)', width: '90%', maxWidth: 700, padding: 24,
+          display: 'flex', flexDirection: 'column', gap: 16, position: 'relative',
+        }}
+      >
+        {/* Close */}
+        <button type="button" onClick={onClose} style={{ position: 'absolute', top: 12, right: 12, background: 'none', border: 'none', cursor: 'pointer', color: '#a1a1aa' }}><X size={18} /></button>
+
+        {/* Title */}
+        <h3 style={{ color: '#fff', fontSize: 16, fontWeight: 700, margin: 0 }}>{title} — Locations</h3>
+
+        {/* Image */}
+        <div style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', background: '#18181b', minHeight: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <img src={img.url} alt={img.location} style={{ width: '100%', height: 'auto', maxHeight: 420, objectFit: 'contain' }} />
+          {images.length > 1 && (
+            <>
+              <button type="button" onClick={() => setIdx((idx - 1 + images.length) % images.length)} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', background: 'hsl(240 6% 18%)', border: '1px solid hsl(0 0% 100% / 0.15)', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff' }}><ArrowLeft size={14} /></button>
+              <button type="button" onClick={() => setIdx((idx + 1) % images.length)} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'hsl(240 6% 18%)', border: '1px solid hsl(0 0% 100% / 0.15)', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff' }}><ArrowRight size={14} /></button>
+            </>
+          )}
+        </div>
+
+        {/* Dot indicators */}
+        {images.length > 1 && (
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 6 }}>
+            {images.map((_, i) => (
+              <button key={i} type="button" onClick={() => setIdx(i)} style={{ width: 8, height: 8, borderRadius: '50%', border: 'none', cursor: 'pointer', background: i === idx ? '#3b82f6' : '#52525b', transition: 'background 0.2s' }} />
+            ))}
+          </div>
+        )}
+
+        {/* Location + Function text */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div><span style={{ fontSize: 12, fontWeight: 700, color: '#a1a1aa' }}>Location: </span><span style={{ fontSize: 12, color: '#e4e4e7' }}>{img.location}</span></div>
+          <div><span style={{ fontSize: 12, fontWeight: 700, color: '#a1a1aa' }}>Function: </span><span style={{ fontSize: 12, color: '#e4e4e7' }}>{img.function}</span></div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 /* ═══════════════════════ SWATCH CARD V2 (Standardized) ═══════════════════════ */
 interface SwatchV2Props {
   color: string;
@@ -156,6 +211,7 @@ interface SwatchV2Props {
   appWide: boolean;
   effect?: string;
   extraPreviewStyle?: React.CSSProperties;
+  locationImages?: LocationImage[];
 }
 
 const labelStyle: React.CSSProperties = {
