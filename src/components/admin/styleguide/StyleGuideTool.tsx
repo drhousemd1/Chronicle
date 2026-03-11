@@ -3173,7 +3173,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <BadgeCardV2
                 badgeName="Circular Progress Ring"
                 background="Dark: bg stroke #334155"
-                textColor="0%: text-slate-400 · 1-99%: text-blue-400 · 100%: text-green-400"
+                textColor="0%: text-slate-400 · 1-99%: text-blue-500 · 100%: text-green-400"
                 size="40px default (font-bold text-[10px] center text)"
                 borderRadius="circular (SVG)"
                 padding="n/a"
