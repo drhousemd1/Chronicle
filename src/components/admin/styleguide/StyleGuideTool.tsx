@@ -4026,7 +4026,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                     </div>
                     <div style={{ padding: '4px 12px 12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                       <div className="p-2 rounded-xl border border-white/10 text-center" style={{ background: 'rgba(39,39,42,0.5)' }}>
-                        <div className="w-6 h-6 rounded-lg mx-auto mb-1 flex items-center justify-center" style={{ background: 'rgba(59,130,246,0.2)' }}><span className="text-blue-400 text-[8px]">★</span></div>
+                        <div className="w-6 h-6 rounded-lg mx-auto mb-1 flex items-center justify-center" style={{ background: 'rgba(59,130,246,0.2)' }}><span className="text-blue-500 text-[8px]">★</span></div>
                         <div className="text-white text-[7px] font-bold">Option A</div>
                       </div>
                       <div className="p-2 rounded-xl border border-white/10 text-center" style={{ background: 'rgba(39,39,42,0.5)' }}>
