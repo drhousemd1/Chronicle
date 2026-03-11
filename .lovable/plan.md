@@ -1,37 +1,39 @@
 
 
-## Plan: Style Guide Audit & Correction — Complete ✅
+# Persist Style Guide Edits to Supabase
 
-### Status: ✅ All 3 Passes Complete
+## Problem
+Style guide edits and "keeps" are stored in `localStorage` only, which gets wiped when the preview domain changes between deployments. Data is unrecoverable.
 
-Audited and corrected all 8 sections of the Visual Style Guide against live source code.
+## Solution
+Migrate the entire edits/keeps system from localStorage to the `app_settings` table in the database, using two setting keys: `styleguide_edits` and `styleguide_keeps`. Every edit, keep, and delete auto-saves immediately.
 
-### What was fixed:
+## Changes
 
-**Pass 1 — Colors & Typography:**
-- "Button Background" swatch: `#2F3137` (screenshot approximation) → `hsl(228 7% 20%)` / `bg-[hsl(var(--ui-surface-2))]` (actual CSS variable)
-- "Button Text Color" swatch: `#eaedf1` → `hsl(210 20% 93%)` / `text-[hsl(var(--ui-text))]` (actual CSS variable)
-- Typography specs updated to use Tailwind class names (e.g., `text-xl font-bold tracking-tight`) instead of raw pixel values
-- Field label tracking corrected from `0.5px` to `tracking-wider (0.05em)`
-- Button text tile renamed from "Header actions" to "Shadow Surface" with `leading-none` added
+### 1. Database: No schema changes needed
+The `app_settings` table already exists with `setting_key` (text) and `setting_value` (jsonb). We'll use:
+- `setting_key = 'styleguide_edits'` → `setting_value` = array of `EditEntry` objects
+- `setting_key = 'styleguide_keeps'` → `setting_value` = array of card name strings
 
-**Pass 2 — Buttons, Forms & Badges:**
-- Header Action Button completely rewritten to Shadow Surface pattern with real Tailwind `className` strings
-- Button previews now render using actual `className` attributes instead of inline `style` objects
-- Card Hover Buttons updated to correct `h-8 px-4` compact variant from source (StoryHub.tsx)
-- Delete button corrected from `bg-#ef4444` to `bg-[hsl(var(--destructive))]`
-- Form inputs and badges converted to `className`-based rendering
-- Code blocks now show actual `className` strings from source
+### 2. Rewrite `StyleGuideEditsModal.tsx` storage helpers
+Replace all localStorage calls with async Supabase operations:
 
-**Pass 3 — Panels, Modals & Icons:**
-- Panel Container: `previewDark` removed, rendered with actual `className`
-- Panel Header Bar: uses actual `className` with `px-5 py-3` (was `16px 24px`)
-- Story Card: added live rendered preview with gradient overlay and `rounded-[2rem]`
-- Modal Container/Header/Footer: `previewDark` removed, rendered with real Tailwind classes
-- Modal Footer buttons now use actual HSL token classes from DeleteConfirmDialog.tsx
-- Icon Size Scale/Containers: `previewDark` removed, previews render on white background
-- Icon Colors: white swatch gets border treatment instead of dark background
+- `getEditsRegistry()` → async function that reads from `app_settings` where `setting_key = 'styleguide_edits'`
+- `upsertEdit(entry)` → async function that reads current array, upserts entry, writes back to `app_settings`
+- `removeEdit(id)` → async function that filters and writes back
+- `getKeeps()` / `addKeep()` / `removeKeep()` → same pattern with `styleguide_keeps` key
 
-**Dark Background Cleanup:**
-- Removed `previewDark` from: buttons (all 5), panel container, modal container/header/footer, icon size scale, icon containers
-- Kept `previewDark` only for: form inputs (dark on dark), modal backdrop (transparency demo)
+Each write uses upsert (`insert ... on conflict update`) on `app_settings`.
+
+### 3. Update all consumers to handle async
+- `CardEditOverlay` in `StyleGuideTool.tsx` — load keeps on mount, update state after async save
+- `EditsListModal` — load edits from Supabase on open
+- `KeepOrEditModal` / `EditDetailModal` — save callbacks become async
+- Edits count badge in admin header — refresh from Supabase state
+
+### 4. Keep localStorage as write-through cache
+For fast reads, also cache in localStorage, but Supabase is the source of truth. On mount, load from Supabase and overwrite localStorage cache.
+
+### 5. Auto-save on every change
+Every `upsertEdit`, `removeEdit`, `addKeep`, `removeKeep` call writes to Supabase immediately — no manual save button needed.
+
