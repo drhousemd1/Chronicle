@@ -1887,7 +1887,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <ButtonCardV2
               buttonName="Day Counter Stepper"
               buttonColor="transparent — hover:bg-slate-100"
-              textColor="#000000 — text-black font-bold text-sm. Arrows: hover:text-blue-600. Down disabled at day 1: opacity-30"
+              textColor="#000000 — text-black font-bold text-sm. Arrows: hover:text-blue-500. Down disabled at day 1: opacity-30"
               size="Container: rounded-lg border border-black shadow-sm. Number: px-3 py-1.5. Arrows: px-1.5 py-0.5"
               purpose="Increment/decrement the in-story day counter"
               visualEffects="Container: bg-white shadow-sm. Vertical divider: border-l border-black"
