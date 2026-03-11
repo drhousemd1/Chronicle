@@ -481,12 +481,8 @@ const PanelCardV2: React.FC<PanelV2Props> = (props) => {
   <CardEditOverlay cardName={panelName} cardType="Panel" details={details}>
   <div style={{
     background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
-    boxShadow: sg.shadow, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-    minHeight: 260, display: 'flex', flexDirection: 'column',
-  }}
-    onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadowHover; }}
-    onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadow; }}
-  >
+    boxShadow: sg.shadow, minHeight: 260, display: 'flex', flexDirection: 'column',
+  }}>
     <div style={{
       background: previewBg || '#fff', padding: '16px 20px',
       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, minHeight: 80,
@@ -498,16 +494,14 @@ const PanelCardV2: React.FC<PanelV2Props> = (props) => {
       locations={locations}
       pageSpecific={pageSpecific}
       appWide={appWide}
-      hasCollapsible={true}
-      collapsibleContent={<>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Background:</span><span style={monoStyle}>{background}</span></div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Border:</span><span style={monoStyle}>{border}</span></div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Border Radius:</span><span style={monoStyle}>{borderRadius}</span></div>
-        {shadow && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Shadow:</span><span style={monoStyle}>{shadow}</span></div>}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Purpose:</span><span style={valueStyle}>{purpose}</span></div>
-        {notes && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Notes:</span><span style={valueStyle}>{notes}</span></div>}
-      </>}
-    />
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Background:</span><span style={monoStyle}>{background}</span></div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Border:</span><span style={monoStyle}>{border}</span></div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Border Radius:</span><span style={monoStyle}>{borderRadius}</span></div>
+      {shadow && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Shadow:</span><span style={monoStyle}>{shadow}</span></div>}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Purpose:</span><span style={valueStyle}>{purpose}</span></div>
+      {notes && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Notes:</span><span style={valueStyle}>{notes}</span></div>}
+    </CollapsibleCardBody>
   </div>
   </CardEditOverlay>
   );
