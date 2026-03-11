@@ -2303,7 +2303,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
             <ButtonCardV2
               buttonName="Arc Phase Delete Button"
-              buttonColor="border-red-400/50 bg-transparent text-red-300"
+              buttonColor="border-red-500/50 bg-transparent text-red-300"
               size="w-[30px] h-[30px] rounded-[10px]"
               purpose="Delete a narrative arc phase"
               visualEffects="hover:bg-red-500/20 transition-colors"
