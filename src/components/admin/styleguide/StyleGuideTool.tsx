@@ -4433,7 +4433,7 @@ text-white/40    — Disabled`}
             <div style={{ marginTop: 16 }} />
 
             <EntryCard name="Sparkles Enhance Icon" pageTag="Character Builder"
-              specs='<strong>Sparkles size={14}</strong> (w-3.5 h-3.5). Default: text-zinc-400. Hover: text-blue-400. Used as AI enhancement trigger on character trait rows. Paired with p-1.5 rounded-md container.'
+              specs='<strong>Sparkles size={14}</strong> (w-3.5 h-3.5). Default: text-zinc-400. Hover: text-blue-500. Used as AI enhancement trigger on character trait rows. Paired with p-1.5 rounded-md container.'
               preview={
                 <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
