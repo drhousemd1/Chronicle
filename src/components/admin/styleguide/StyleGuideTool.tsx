@@ -2941,7 +2941,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 preview={
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     <span className="px-2 py-1 bg-white/20 text-white rounded-full text-xs font-medium flex items-center gap-1">"search" <X className="w-3 h-3" /></span>
-                    <span className="px-2 py-1 bg-blue-500/20 text-blue-400 rounded-full text-xs font-medium flex items-center gap-1">SFW <X className="w-3 h-3" /></span>
+                    <span className="px-2 py-1 bg-blue-500/20 text-blue-500 rounded-full text-xs font-medium flex items-center gap-1">SFW <X className="w-3 h-3" /></span>
                     <span className="px-2 py-1 bg-purple-500/20 text-purple-400 rounded-full text-xs font-medium flex items-center gap-1">Romance <X className="w-3 h-3" /></span>
                     <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-medium flex items-center gap-1">Original <X className="w-3 h-3" /></span>
                     <span className="px-2 py-1 bg-amber-500/20 text-amber-400 rounded-full text-xs font-medium flex items-center gap-1">Violence <X className="w-3 h-3" /></span>
