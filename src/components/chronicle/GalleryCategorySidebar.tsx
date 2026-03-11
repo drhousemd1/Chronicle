@@ -114,7 +114,7 @@ const CategorySection: React.FC<CategorySectionProps> = ({
         <div className="pl-4 pr-2 pb-2 space-y-0.5">
           {items.map((item) => {
             const Icon = getIcon ? getIcon(item) : Tag;
-            const iconColor = getIconColor ? getIconColor(item) : 'text-white/60';
+            const iconColor = getIconColor ? getIconColor(item) : 'text-[rgba(248,250,252,0.3)]';
             const isSelected = selectedItems.includes(item);
             
             return (
