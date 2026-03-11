@@ -1362,7 +1362,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                             onClick={() => updateField('controlledBy', 'AI')}
                             className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded transition-all ${
                               draft.controlledBy === 'AI' 
-                                ? 'bg-zinc-700 text-blue-400 shadow-sm' 
+                                ? 'bg-zinc-700 text-blue-500 shadow-sm' 
                                 : 'text-zinc-500 hover:text-zinc-300'
                             }`}
                           >
