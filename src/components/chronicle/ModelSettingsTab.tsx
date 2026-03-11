@@ -119,7 +119,7 @@ export function ModelSettingsTab({ selectedModelId, onSelectModel }: ModelSettin
             <div className="flex items-center justify-between mb-6">
               <div>
                 <Label>Current Configuration</Label>
-                <h3 className="text-2xl font-black text-slate-900 tracking-tight">{selectedModel?.name}</h3>
+                <h3 className="text-2xl font-black text-[hsl(var(--ui-surface-2))] tracking-tight">{selectedModel?.name}</h3>
                 <p className="text-blue-600 font-bold text-xs uppercase tracking-widest mt-1">
                   Provider: xAI
                 </p>
