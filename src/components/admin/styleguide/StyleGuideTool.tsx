@@ -244,7 +244,8 @@ const CollapsibleCardBody: React.FC<{
   children: React.ReactNode;
   pageSpecific?: boolean;
   appWide?: boolean;
-}> = ({ nameLabel, nameValue, locations, children, pageSpecific, appWide }) => {
+  onViewLocations?: () => void;
+}> = ({ nameLabel, nameValue, locations, children, pageSpecific, appWide, onViewLocations }) => {
   const [expanded, setExpanded] = useState(false);
   const [isOverflowing, setIsOverflowing] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
