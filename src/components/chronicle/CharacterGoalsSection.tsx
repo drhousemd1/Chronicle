@@ -353,7 +353,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
           })}
 
           {isEditMode && (
-            <button onClick={addGoal} className="w-full py-2.5 text-sm bg-transparent border-2 border-dashed border-zinc-500 text-blue-400 hover:border-blue-400 hover:bg-blue-500/5 font-medium rounded-xl transition-colors flex items-center justify-center gap-2">
+            <button onClick={addGoal} className="w-full py-2.5 text-sm bg-transparent border-2 border-dashed border-zinc-500 text-blue-500 hover:border-blue-500 hover:bg-blue-500/5 font-medium rounded-xl transition-colors flex items-center justify-center gap-2">
               <Plus className="w-4 h-4" />
               Add New Goal
             </button>

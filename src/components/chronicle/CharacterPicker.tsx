@@ -73,7 +73,7 @@ export function CharacterPicker({ summaries, onSelect, onClose }: CharacterPicke
                    )}
                 </div>
                 <div className="min-w-0">
-                  <h3 className="font-bold text-white truncate group-hover:text-blue-400 transition-colors">{c.name}</h3>
+                  <h3 className="font-bold text-white truncate group-hover:text-blue-500 transition-colors">{c.name}</h3>
                   <p className="text-xs text-zinc-400 truncate mt-0.5">{c.tags || "No tags"}</p>
                   {loadingId === c.id ? (
                     <div className="flex items-center gap-1 mt-1">

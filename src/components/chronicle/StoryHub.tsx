@@ -265,7 +265,7 @@ export function ScenarioHub({
           <div className="w-16 h-16 rounded-full bg-zinc-700/50 flex items-center justify-center text-3xl text-zinc-500 group-hover:bg-blue-900/30 group-hover:text-blue-500 transition-colors">
              +
           </div>
-          <span className="text-sm font-black uppercase tracking-widest text-zinc-500 group-hover:text-blue-400">New Story</span>
+          <span className="text-sm font-black uppercase tracking-widest text-zinc-500 group-hover:text-blue-500">New Story</span>
         </button>
       </div>
 
