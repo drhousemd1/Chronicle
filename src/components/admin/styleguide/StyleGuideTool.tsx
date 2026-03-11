@@ -2269,7 +2269,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               preview={
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   <button className="h-11 px-6 rounded-xl bg-[#4a5f7f] text-white text-sm font-semibold" style={{ cursor: 'default' }}>Submit Review</button>
-                  <button className="h-11 px-6 rounded-xl bg-red-600/20 border border-red-500/30 text-red-400 text-sm font-semibold" style={{ cursor: 'default' }}>Delete Review</button>
+                  <button className="h-11 px-6 rounded-xl bg-red-600/20 border border-red-500/30 text-red-500 text-sm font-semibold" style={{ cursor: 'default' }}>Delete Review</button>
                 </div>
               }
             />
