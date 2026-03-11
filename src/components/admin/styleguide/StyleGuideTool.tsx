@@ -1050,8 +1050,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <SwatchCardV2 color="#64748b" name="Cool Gray" locations="Subtitle text below page headings" value="#64748b" token="text-slate-500" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="rgba(24,24,27,0.5)" name="Smoke Black" locations="All text inputs, textareas, bullet-list containers" value="rgba(24,24,27,0.5)" token="bg-zinc-900/50" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#3f3f46" name="Mid Charcoal" locations="Input borders, textarea borders, tag chip borders" value="#3f3f46" token="border-zinc-700" pageSpecific={false} appWide={true} />
-              <SwatchCardV2 color="#60a5fa" name="Sky Blue" locations='"+ Add Location" links, "+ Add custom" text, active slider labels, SFW badge text' value="#60a5fa" token="text-blue-400" pageSpecific={false} appWide={true} />
-              <SwatchCardV2 color="#3b82f6" name="True Blue" locations="Art Style checkmark badge, guidance box border, Play button on card hover, tag badges, Open buttons, Plus buttons, reposition overlay, Chronicle logo, Provider label, Learn More link, day counter arrows, time-of-day active state, arc flow connectors, Save buttons" value="#3b82f6" token="bg-blue-500" pageSpecific={false} appWide={true} />
+              <SwatchCardV2 color="#3b82f6" name="True Blue" locations="Art Style checkmark badge, guidance box border, Play button on card hover, tag badges, Open buttons, Plus buttons, reposition overlay, Chronicle logo, Provider label, Learn More link, day counter arrows, time-of-day active state, arc flow connectors, Save buttons, '+ Add' links, active slider labels, SFW badge text, user message bubble border, dashed add button text, sparkle icon hover, character name hover, AI/Player toggle, focus rings on style selectors, input focus borders" value="#3b82f6" token="bg-blue-500 / text-blue-500 / border-blue-500 / ring-blue-500" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#a1a1aa" name="Silver Gray" locations="Trash icons, tag chip text, inactive tab text" value="#a1a1aa" token="text-zinc-400" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#71717a" name="Stone Gray" locations='Dashed "add" button borders, inactive slider labels' value="#71717a" token="border-zinc-500" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#27272a" name="Dark Zinc" locations="Genre/Origin/Type tag chips, art style card backgrounds, character avatar, Story card gradient overlay, admin card gradient, folder card gradient, loading screen background" value="#27272a" token="bg-zinc-800" pageSpecific={false} appWide={true} />
@@ -1107,7 +1106,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <SwatchCardV2 color="rgba(0,0,0,0.5)" name="Half Black" locations="Chat message bubble, transparent mode ON" value="rgba(0,0,0,0.5)" token="bg-black/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
               <SwatchCardV2 color="#94a3b8" name="Muted Slate" locations="Italic action text in chat (*actions*)" value="#94a3b8" token="text-slate-400" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="rgba(199,210,254,0.9)" name="Soft Indigo" locations="Thought text in chat (parenthetical)" value="rgba(199,210,254,0.9)" token="text-indigo-200/90" effect="textShadow: indigo glow" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
-              <SwatchCardV2 color="#60a5fa" name="Sky Blue" locations="User message bubble border" value="#60a5fa" token="border-blue-400" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="#3b82f6" name="True Blue" locations="User message bubble border" value="#3b82f6" token="border-blue-500" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="rgba(255,255,255,0.3)" name="Milky White" locations="SideCharacterCard when sidebar bg is dark (isDarkBg=true)" value="rgba(255,255,255,0.3)" token="bg-white/30" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
               <SwatchCardV2 color="rgba(0,0,0,0.3)" name="Smoke Black" locations="SideCharacterCard when sidebar bg is light (isDarkBg=false)" value="rgba(0,0,0,0.3)" token="bg-black/30" pageSpecific={true} appWide={false} />
             </div>
@@ -1549,13 +1548,13 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <ButtonCardV2
               buttonName="Dashed Add"
               preview={
-                <button style={{ width: '100%', minHeight: 64, padding: '12px 18px', borderRadius: 12, border: '2px dashed #71717a', background: 'transparent', color: '#60a5fa', fontSize: 14, fontWeight: 500, cursor: 'default', fontFamily: 'inherit' }}>+ Add Custom Content</button>
+                <button style={{ width: '100%', minHeight: 64, padding: '12px 18px', borderRadius: 12, border: '2px dashed #71717a', background: 'transparent', color: '#3b82f6', fontSize: 14, fontWeight: 500, cursor: 'default', fontFamily: 'inherit' }}>+ Add Custom Content</button>
               }
               buttonColor="transparent — bg-transparent"
-              textColor="#60a5fa — text-blue-400"
+              textColor="#3b82f6 — text-blue-500"
               size="full-width × min-h-[64px] × px-[18px] py-[12px] — rounded-[12px]"
               purpose="Add new items — story arcs, characters, custom content sections"
-              visualEffects="border: 2px dashed #71717a (zinc-500). Hover: border-color #60a5fa, bg rgba(96,165,250,0.12)."
+              visualEffects="border: 2px dashed #71717a (zinc-500). Hover: border-color #3b82f6, bg rgba(59,130,246,0.05)."
               locations="Story Builder — Add New Story Arc, Add Character, Add Custom Content, Add Next Phase."
               pageSpecific={true} appWide={false}
             />
@@ -1613,7 +1612,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               textColor="#71717a — text-zinc-500"
               size="aspect-[2/3] full card — rounded-[2rem]"
               purpose="Creates a new story — card-sized button in story grid"
-              visualEffects="border: 2px dashed #52525b (zinc-600). Hover: border-blue-400, text-blue-400"
+              visualEffects="border: 2px dashed #52525b (zinc-600). Hover: border-blue-500, text-blue-500"
               locations="My Stories hub — last card in story grid"
               pageSpecific={true}
               appWide={false}
@@ -1867,7 +1866,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             />
             <ButtonCardV2
               buttonName="Time of Day Selectors"
-              buttonColor="Active: #dbeafe — bg-blue-100 border-2 border-blue-400. Inactive: bg-white border border-black"
+              buttonColor="Active: #dbeafe — bg-blue-100 border-2 border-blue-500. Inactive: bg-white border border-black"
               textColor="Active: #3b82f6 — text-blue-500. Inactive: #000000 — text-black"
               size="p-2 — rounded-lg"
               purpose="Set the current time of day for the story (Sunrise / Day / Sunset / Night)"
@@ -1878,7 +1877,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               preview={
                 <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
                   <button className="p-2 rounded-lg bg-white border border-black text-black" style={{ cursor: 'default' }}><Sunrise className="w-4 h-4" /></button>
-                  <button className="p-2 rounded-lg bg-blue-100 border-2 border-blue-400 text-blue-500 shadow-sm" style={{ cursor: 'default' }}><Sun className="w-4 h-4" /></button>
+                  <button className="p-2 rounded-lg bg-blue-100 border-2 border-blue-500 text-blue-500 shadow-sm" style={{ cursor: 'default' }}><Sun className="w-4 h-4" /></button>
                   <button className="p-2 rounded-lg bg-white border border-black text-black" style={{ cursor: 'default' }}><Sunset className="w-4 h-4" /></button>
                   <button className="p-2 rounded-lg bg-white border border-black text-black" style={{ cursor: 'default' }}><Moon className="w-4 h-4" /></button>
                 </div>
@@ -2129,14 +2128,14 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
             <ButtonCardV2
               buttonName="AI Enhance Sparkle Button"
-              buttonColor="text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10"
+              buttonColor="text-zinc-400 hover:text-blue-500 hover:bg-blue-500/10"
               size="p-1.5 rounded-md"
               purpose="Opens EnhanceModeModal for AI-assisted character field enhancement"
               visualEffects="transition-colors. Uses Sparkles size={14}"
               locations="CharactersTab — section headers for enhanceable fields"
               pageSpecific
               preview={
-                <button className="p-1.5 rounded-md text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10 transition-colors" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>✨</button>
+                <button className="p-1.5 rounded-md text-zinc-400 hover:text-blue-500 hover:bg-blue-500/10 transition-colors" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>✨</button>
               }
             />
             <ButtonCardV2
@@ -2149,7 +2148,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               pageSpecific
               preview={<>
                 <button className="flex flex-col items-center gap-2 p-4 rounded-2xl border border-white/10 bg-zinc-800/50 hover:border-blue-500/50" style={{ cursor: 'default', width: 120 }}>
-                  <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400">✨</div>
+                  <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-500">✨</div>
                   <span className="text-white font-bold text-xs">Precise</span>
                 </button>
                 <button className="flex flex-col items-center gap-2 p-4 rounded-2xl border border-white/10 bg-zinc-800/50 hover:border-purple-500/50" style={{ cursor: 'default', width: 120 }}>
@@ -2187,7 +2186,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               buttonColor="Active: bg-slate-900 border-slate-900 text-white. Inactive: bg-white border-slate-200 text-[hsl(var(--ui-surface-2))]"
               size="p-3 rounded-xl"
               purpose="Select AI model for story generation"
-              visualEffects="Active: shadow-xl scale-[1.02]. Inactive hover: border-blue-400 shadow-lg scale-[1.01]"
+              visualEffects="Active: shadow-xl scale-[1.02]. Inactive hover: border-blue-500 shadow-lg scale-[1.01]"
               locations="ModelSettingsTab — model grid"
               pageSpecific
               preview={<>
@@ -2212,11 +2211,11 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               buttonColor="border-zinc-600 (dashed). bg-gradient-to-br from-zinc-800 to-zinc-900"
               size="rounded-[2rem] aspect-[2/3] — border-2 border-dashed"
               purpose="Create a new image folder"
-              visualEffects="Hover: border-blue-400 transition-colors"
+              visualEffects="Hover: border-blue-500 transition-colors"
               locations="ImageLibraryTab — first card in folder grid"
               pageSpecific
               preview={
-                <div className="border-2 border-dashed border-zinc-600 bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-[2rem] flex flex-col items-center justify-center gap-2 hover:border-blue-400 transition-colors" style={{ width: 100, aspectRatio: '2/3', cursor: 'default' }}>
+                <div className="border-2 border-dashed border-zinc-600 bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-[2rem] flex flex-col items-center justify-center gap-2 hover:border-blue-500 transition-colors" style={{ width: 100, aspectRatio: '2/3', cursor: 'default' }}>
                   <span className="text-zinc-400 text-lg">+</span>
                   <span className="text-zinc-400 text-[9px] font-bold uppercase tracking-wider">New Folder</span>
                 </div>
@@ -2603,7 +2602,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 background="rgba(21,25,34,0.95) (track)"
                 border="N/A"
                 borderRadius="rounded-full (track + knob)"
-                textColor="text-blue-400 (active label) / text-zinc-500 (inactive)"
+                textColor="text-blue-500 (active label) / text-zinc-500 (inactive)"
                 fontSize="10px / text-[10px] font-black uppercase tracking-widest"
                 padding="N/A"
                 purpose="Custom 3-point slider for AI guidance strength (Rigid / Normal / Flexible)"
@@ -2618,7 +2617,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
                       <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Rigid</span>
-                      <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">Normal</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-blue-500">Normal</span>
                       <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Flexible</span>
                     </div>
                   </div>
@@ -2685,7 +2684,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 borderRadius="rounded-2xl (16px)"
                 textColor="text-[hsl(var(--ui-surface-2))] (inherited)"
                 placeholderColor="text-slate-400"
-                focusStyle="ring-2 ring-blue-100 border-blue-400"
+                focusStyle="ring-2 ring-blue-100 border-blue-500"
                 fontSize="14px / text-sm"
                 padding="px-4 py-3"
                 purpose="Light-theme input primitive defined in UI.tsx"
@@ -2707,7 +2706,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 borderRadius="rounded-2xl (16px)"
                 textColor="text-[hsl(var(--ui-surface-2))] (inherited)"
                 placeholderColor="text-slate-400"
-                focusStyle="ring-2 ring-blue-100 border-blue-400"
+                focusStyle="ring-2 ring-blue-100 border-blue-500"
                 fontSize="14px / text-sm"
                 padding="px-4 py-3"
                 purpose="Light-theme textarea matching Chronicle Input styling"
@@ -2816,16 +2815,16 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <BadgeCardV2
                 badgeName="Add Custom Button (Dashed)"
                 background="bg-transparent"
-                textColor="text-blue-400"
+                textColor="text-blue-500"
                 size="text-xs font-medium"
                 borderRadius="rounded-lg"
                 padding="px-3 py-1.5"
                 purpose="Trigger to add custom content theme tag"
                 locations="ContentThemesSection — end of tag list when allowCustom=true"
                 pageSpecific
-                notes="border-2 border-dashed border-zinc-500. Hover: hover:border-blue-400 hover:bg-blue-500/5. Uses Lucide Plus icon w-3 h-3."
+                notes="border-2 border-dashed border-zinc-500. Hover: hover:border-blue-500 hover:bg-blue-500/5. Uses Lucide Plus icon w-3 h-3."
                 preview={
-                  <button className="px-3 py-1.5 rounded-lg text-xs font-medium bg-transparent text-blue-400 border-2 border-dashed border-zinc-500 flex items-center gap-1">
+                  <button className="px-3 py-1.5 rounded-lg text-xs font-medium bg-transparent text-blue-500 border-2 border-dashed border-zinc-500 flex items-center gap-1">
                     <Plus className="w-3 h-3" />
                     Add custom
                   </button>
@@ -2838,7 +2837,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <BadgeCardV2
                 badgeName="SFW / NSFW Badge"
                 background="bg-[#2a2a2f]"
-                textColor="SFW: text-blue-400 · NSFW: text-red-400"
+                textColor="SFW: text-blue-500 · NSFW: text-red-400"
                 size="text-xs font-bold uppercase tracking-wide"
                 borderRadius="rounded-lg"
                 padding="px-2.5 py-1"
@@ -2846,10 +2845,10 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 locations="GalleryStoryCard (top-right), StoryHub (top-right)"
                 appWide
                 notes="backdrop-blur-sm shadow-lg. Positioned absolute top-4 right-4 z-10."
-                states="SFW = text-blue-400, NSFW = text-red-400"
+                states="SFW = text-blue-500, NSFW = text-red-400"
                 preview={
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <span className="px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f] text-blue-400 uppercase tracking-wide">SFW</span>
+                    <span className="px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f] text-blue-500 uppercase tracking-wide">SFW</span>
                     <span className="px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f] text-red-400 uppercase tracking-wide">NSFW</span>
                   </div>
                 }
@@ -2942,7 +2941,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 preview={
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     <span className="px-2 py-1 bg-white/20 text-white rounded-full text-xs font-medium flex items-center gap-1">"search" <X className="w-3 h-3" /></span>
-                    <span className="px-2 py-1 bg-blue-500/20 text-blue-400 rounded-full text-xs font-medium flex items-center gap-1">SFW <X className="w-3 h-3" /></span>
+                    <span className="px-2 py-1 bg-blue-500/20 text-blue-500 rounded-full text-xs font-medium flex items-center gap-1">SFW <X className="w-3 h-3" /></span>
                     <span className="px-2 py-1 bg-purple-500/20 text-purple-400 rounded-full text-xs font-medium flex items-center gap-1">Romance <X className="w-3 h-3" /></span>
                     <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-medium flex items-center gap-1">Original <X className="w-3 h-3" /></span>
                     <span className="px-2 py-1 bg-amber-500/20 text-amber-400 rounded-full text-xs font-medium flex items-center gap-1">Violence <X className="w-3 h-3" /></span>
@@ -3174,7 +3173,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <BadgeCardV2
                 badgeName="Circular Progress Ring"
                 background="Dark: bg stroke #334155"
-                textColor="0%: text-slate-400 · 1-99%: text-blue-400 · 100%: text-green-400"
+                textColor="0%: text-slate-400 · 1-99%: text-blue-500 · 100%: text-green-400"
                 size="40px default (font-bold text-[10px] center text)"
                 borderRadius="circular (SVG)"
                 padding="n/a"
@@ -3299,7 +3298,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <PanelCardV2
                 panelName="Chat Message Bubble"
                 background="AI: #1c1f26 · User: #1c1f26 · Transparent: bg-black/50"
-                border="AI: border-white/5 · User: border-2 border-blue-400"
+                border="AI: border-white/5 · User: border-2 border-blue-500"
                 borderRadius="rounded-[2rem]"
                 purpose="Chat message containers. AI and User variants with optional transparent mode."
                 locations="ChatInterfaceTab.tsx"
@@ -3311,7 +3310,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                       <div className="text-[8px] font-black uppercase tracking-widest text-slate-500 mb-0.5">AI</div>
                       <div className="text-[9px] text-white">Message...</div>
                     </div>
-                    <div className="flex-1 bg-[#1c1f26] rounded-[2rem] border-2 border-blue-400 p-3" style={{ minHeight: 48 }}>
+                    <div className="flex-1 bg-[#1c1f26] rounded-[2rem] border-2 border-blue-500 p-3" style={{ minHeight: 48 }}>
                       <div className="text-[8px] font-black uppercase tracking-widest text-blue-300 mb-0.5">USER</div>
                       <div className="text-[9px] text-white">Reply...</div>
                     </div>
@@ -3433,7 +3432,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 notes="Images: object-cover object-center. Text color via getTimeTextColor() helper."
                 preview={
                   <div className="relative rounded-lg overflow-hidden shadow-lg" style={{ width: '100%', height: 56 }}>
-                    <div className="absolute inset-0 bg-gradient-to-r from-orange-400 via-pink-300 to-blue-400" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-orange-400 via-pink-300 to-blue-500" />
                     <div className="absolute inset-0 bg-black/20" />
                     <div className="relative flex items-center justify-center h-full">
                       <span className="text-white text-[9px] font-bold">Day 1 · Sunrise</span>
@@ -3476,7 +3475,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 purpose="Left sidebar with collapsible category filters and yellow accent bar"
                 locations="GalleryCategorySidebar.tsx"
                 pageSpecific appWide={false}
-                notes="Yellow accent: h-0.5 bg-yellow-400 at top. Selected item: bg-blue-500/20 text-blue-400."
+                notes="Yellow accent: h-0.5 bg-yellow-400 at top. Selected item: bg-blue-500/20 text-blue-500."
                 preview={
                   <div className="rounded-lg overflow-hidden" style={{ width: 140 }}>
                     <div className="h-0.5 bg-yellow-400" />
@@ -3741,7 +3740,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <PanelCardV2
                 panelName="Art Style Selection Card"
                 background="bg-card"
-                border="ring-1 ring-border · selected: ring-2 ring-blue-400"
+                border="ring-1 ring-border · selected: ring-2 ring-blue-500"
                 borderRadius="rounded-xl"
                 shadow="selected: shadow-md"
                 purpose="Art style picker in image generation modals"
@@ -3754,7 +3753,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                       <div style={{ width: '100%', aspectRatio: '1/1', borderRadius: 6, background: '#e2e8f0' }} />
                       <p style={{ fontSize: 8, fontWeight: 600, textAlign: 'center', marginTop: 4, color: '#111827' }}>Style A</p>
                     </div>
-                    <div style={{ width: 70, padding: 6, borderRadius: 10, background: '#fff', boxShadow: '0 0 0 2px #60a5fa', position: 'relative' }}>
+                    <div style={{ width: 70, padding: 6, borderRadius: 10, background: '#fff', boxShadow: '0 0 0 2px #3b82f6', position: 'relative' }}>
                       <div style={{ width: '100%', aspectRatio: '1/1', borderRadius: 6, background: '#e2e8f0' }} />
                       <p style={{ fontSize: 8, fontWeight: 600, textAlign: 'center', marginTop: 4, color: '#111827' }}>Style B</p>
                       <div style={{ position: 'absolute', top: 2, right: 2, width: 14, height: 14, borderRadius: '50%', background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 8, fontWeight: 700 }}>✓</div>
@@ -4027,7 +4026,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                     </div>
                     <div style={{ padding: '4px 12px 12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                       <div className="p-2 rounded-xl border border-white/10 text-center" style={{ background: 'rgba(39,39,42,0.5)' }}>
-                        <div className="w-6 h-6 rounded-lg mx-auto mb-1 flex items-center justify-center" style={{ background: 'rgba(59,130,246,0.2)' }}><span className="text-blue-400 text-[8px]">★</span></div>
+                        <div className="w-6 h-6 rounded-lg mx-auto mb-1 flex items-center justify-center" style={{ background: 'rgba(59,130,246,0.2)' }}><span className="text-blue-500 text-[8px]">★</span></div>
                         <div className="text-white text-[7px] font-bold">Option A</div>
                       </div>
                       <div className="p-2 rounded-xl border border-white/10 text-center" style={{ background: 'rgba(39,39,42,0.5)' }}>
@@ -4364,13 +4363,13 @@ w-8 h-8  → 32px  — Empty state placeholders`}
             <div style={{ marginTop: 16 }} />
 
             <EntryCard name="Icon Colors" pageTag="Global"
-              specs='<strong>Default:</strong> text-white, text-zinc-400. <strong>Accent:</strong> text-blue-400, text-purple-400, text-cyan-200. <strong>Destructive:</strong> text-red-400.'
+              specs='<strong>Default:</strong> text-white, text-zinc-400. <strong>Accent:</strong> text-blue-500, text-purple-400, text-cyan-200. <strong>Destructive:</strong> text-red-400.'
               preview={
                 <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                   {[
                     { color: '#ffffff', label: 'text-white', role: 'Default', needsBorder: true },
                     { color: '#a1a1aa', label: 'text-zinc-400', role: 'Muted', needsBorder: false },
-                    { color: '#60a5fa', label: 'text-blue-400', role: 'Accent', needsBorder: false },
+                    { color: '#3b82f6', label: 'text-blue-500', role: 'Accent', needsBorder: false },
                     { color: '#c084fc', label: 'text-purple-400', role: 'Accent', needsBorder: false },
                     { color: '#f87171', label: 'text-red-400', role: 'Destructive', needsBorder: false },
                     { color: 'rgba(255,255,255,0.4)', label: 'text-white/40', role: 'Disabled', needsBorder: true },
@@ -4388,7 +4387,7 @@ w-8 h-8  → 32px  — Empty state placeholders`}
               }
               code={`text-white       — Default
 text-zinc-400    — Muted
-text-blue-400    — Accent
+text-blue-500    — Accent
 text-purple-400  — Accent
 text-red-400     — Destructive
 hover:text-white — Hover state
@@ -4413,7 +4412,7 @@ text-white/40    — Disabled`}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
                     <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
-                      <div className="w-5 h-5 rounded bg-blue-400" />
+                      <div className="w-5 h-5 rounded bg-blue-500" />
                     </div>
                     <span style={{ fontSize: 8, color: '#64748b' }}>Option</span>
                   </div>
@@ -4434,7 +4433,7 @@ text-white/40    — Disabled`}
             <div style={{ marginTop: 16 }} />
 
             <EntryCard name="Sparkles Enhance Icon" pageTag="Character Builder"
-              specs='<strong>Sparkles size={14}</strong> (w-3.5 h-3.5). Default: text-zinc-400. Hover: text-blue-400. Used as AI enhancement trigger on character trait rows. Paired with p-1.5 rounded-md container.'
+              specs='<strong>Sparkles size={14}</strong> (w-3.5 h-3.5). Default: text-zinc-400. Hover: text-blue-500. Used as AI enhancement trigger on character trait rows. Paired with p-1.5 rounded-md container.'
               preview={
                 <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
@@ -4442,14 +4441,14 @@ text-white/40    — Disabled`}
                     <span style={{ fontSize: 8, color: '#64748b' }}>Default</span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                    <div className="p-1.5 rounded-md text-blue-400 bg-blue-500/10">✨</div>
+                    <div className="p-1.5 rounded-md text-blue-500 bg-blue-500/10">✨</div>
                     <span style={{ fontSize: 8, color: '#64748b' }}>Hover</span>
                   </div>
                 </div>
               }
               code={`/* Sparkles size={14} — Lucide React */
 /* Default: text-zinc-400 */
-/* Hover: text-blue-400, container bg-blue-500/10 */
+/* Hover: text-blue-500, container bg-blue-500/10 */
 /* Container: p-1.5 rounded-md */`}
             />
           </Section>

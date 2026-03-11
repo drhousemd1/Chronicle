@@ -109,7 +109,7 @@ const TraitRow: React.FC<{
                 "p-1.5 rounded-md transition-all flex-shrink-0",
                 isEnhancing
                   ? "text-blue-500 animate-pulse cursor-wait"
-                  : "text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10"
+                  : "text-zinc-400 hover:text-blue-500 hover:bg-blue-500/10"
               )}
             >
               <Sparkles size={14} />
@@ -179,7 +179,7 @@ const TraitList: React.FC<{
       <button
         type="button"
         onClick={onAddTrait}
-        className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all flex items-center justify-center gap-1"
+        className="w-full py-2.5 text-sm font-medium text-blue-500 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-500 hover:bg-blue-500/5 rounded-xl transition-all flex items-center justify-center gap-1"
       >
         <Plus className="w-4 h-4" /> Add Trait
       </button>
@@ -287,7 +287,7 @@ export const PersonalitySection: React.FC<PersonalitySectionProps> = ({
                     className={cn(
                       "px-3.5 py-1.5 text-[10px] font-black uppercase tracking-widest rounded border-none cursor-pointer transition-all",
                       !personality.splitMode
-                        ? "bg-zinc-700 text-blue-400 shadow-sm"
+                        ? "bg-zinc-700 text-blue-500 shadow-sm"
                         : "bg-transparent text-zinc-500 hover:text-zinc-300"
                     )}
                   >
@@ -299,7 +299,7 @@ export const PersonalitySection: React.FC<PersonalitySectionProps> = ({
                     className={cn(
                       "px-3.5 py-1.5 text-[10px] font-black uppercase tracking-widest rounded border-none cursor-pointer transition-all",
                       personality.splitMode
-                        ? "bg-zinc-700 text-blue-400 shadow-sm"
+                        ? "bg-zinc-700 text-blue-500 shadow-sm"
                         : "bg-transparent text-zinc-500 hover:text-zinc-300"
                     )}
                   >

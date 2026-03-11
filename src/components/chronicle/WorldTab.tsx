@@ -698,7 +698,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                             locs.push({ id: uid('loc'), label: '', description: '' });
                             updateCore({ structuredLocations: locs });
                           }}
-                          className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm transition-colors"
+                          className="flex items-center gap-2 text-blue-500 hover:text-blue-300 text-sm transition-colors"
                         >
                           <Plus size={16} />
                           <span>Add Location</span>
@@ -779,7 +779,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                                         "p-1.5 rounded-md transition-all flex-shrink-0",
                                         enhancingField === `world_custom_${item.id}`
                                           ? "text-blue-500 animate-pulse cursor-wait"
-                                          : "text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10"
+                                          : "text-zinc-400 hover:text-blue-500 hover:bg-blue-500/10"
                                       )}
                                     >
                                       <Sparkles size={14} />
@@ -819,7 +819,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                                 sections[sIdx] = { ...sections[sIdx], items: [...sections[sIdx].items, { id: uid('wci'), label: '', value: '' }] };
                                 updateCore({ customWorldSections: sections });
                               }}
-                              className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm transition-colors"
+                              className="flex items-center gap-2 text-blue-500 hover:text-blue-300 text-sm transition-colors"
                             >
                               <Plus size={16} />
                               <span>Add Item</span>
@@ -846,7 +846,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                     <button
                       type="button"
                       onClick={() => setShowContentTypeModal(true)}
-                      className="w-full py-3 bg-transparent border-2 border-dashed border-zinc-500 text-blue-400 hover:border-blue-400 hover:bg-blue-500/5 font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
+                      className="w-full py-3 bg-transparent border-2 border-dashed border-zinc-500 text-blue-500 hover:border-blue-500 hover:bg-blue-500/5 font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
                     >
                       <Plus size={16} />
                       Add Custom Content
@@ -1019,7 +1019,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                             className={cn(
                               "px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg border-none cursor-pointer transition-all",
                               (openingDialog.timeProgressionMode || 'manual') === 'manual'
-                                ? "bg-zinc-700 text-blue-400 shadow-sm"
+                                ? "bg-zinc-700 text-blue-500 shadow-sm"
                                 : "bg-transparent text-zinc-500 hover:text-zinc-300"
                             )}
                           >
@@ -1031,7 +1031,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                             className={cn(
                               "px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg border-none cursor-pointer transition-all",
                               openingDialog.timeProgressionMode === 'automatic'
-                                ? "bg-zinc-700 text-blue-400 shadow-sm"
+                                ? "bg-zinc-700 text-blue-500 shadow-sm"
                                 : "bg-transparent text-zinc-500 hover:text-zinc-300"
                             )}
                           >
@@ -1223,9 +1223,9 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                           "relative rounded-xl p-2 transition-all duration-200 cursor-pointer outline-none",
                           "bg-zinc-800 hover:bg-zinc-700",
                           selectedArtStyle === style.id
-                            ? "ring-2 ring-blue-400 shadow-md shadow-blue-500/20"
+                            ? "ring-2 ring-blue-500 shadow-md shadow-blue-500/20"
                             : "ring-1 ring-zinc-600 hover:ring-zinc-500",
-                          "focus:ring-2 focus:ring-blue-400 focus:ring-offset-0"
+                          "focus:ring-2 focus:ring-blue-500 focus:ring-offset-0"
                         )}
                       >
                         <div className="aspect-square rounded-lg overflow-hidden bg-zinc-900">

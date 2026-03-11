@@ -91,7 +91,7 @@ export function ModelSettingsTab({ selectedModelId, onSelectModel }: ModelSettin
                       ? 'bg-slate-900 border-slate-900 shadow-xl scale-[1.02]' 
                       : model.disabled 
                         ? 'bg-slate-50 border-slate-100 opacity-50 cursor-not-allowed'
-                        : 'bg-white border-slate-200 hover:border-blue-400 hover:shadow-lg hover:scale-[1.01]'
+                        : 'bg-white border-slate-200 hover:border-blue-500 hover:shadow-lg hover:scale-[1.01]'
                   }`}
                 >
                   <div className="flex items-center gap-3">

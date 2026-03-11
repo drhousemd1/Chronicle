@@ -287,7 +287,7 @@ export const CharacterEditForm: React.FC<CharacterEditFormProps> = ({
           size="sm"
           onClick={handleSave}
           disabled={isSaving}
-          className="flex-1 text-xs bg-blue-500 hover:bg-blue-400"
+          className="flex-1 text-xs bg-blue-500 hover:bg-blue-600"
         >
           <Save className="w-3 h-3 mr-1" />
           {isSaving ? 'Saving...' : 'Save'}

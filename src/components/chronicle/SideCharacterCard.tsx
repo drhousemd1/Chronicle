@@ -28,7 +28,7 @@ export const SideCharacterCard: React.FC<SideCharacterCardProps> = ({
   isDarkBg = false
 }) => {
   return (
-    <div className={`rounded-2xl transition-all duration-300 border-2 backdrop-blur-sm relative ${isDarkBg ? 'bg-white/30 border-transparent hover:bg-white' : 'bg-black/30 border-transparent hover:bg-black/50'} ${isUpdating ? 'ring-2 ring-blue-400/60' : ''}`}>
+    <div className={`rounded-2xl transition-all duration-300 border-2 backdrop-blur-sm relative ${isDarkBg ? 'bg-white/30 border-transparent hover:bg-white' : 'bg-black/30 border-transparent hover:bg-black/50'} ${isUpdating ? 'ring-2 ring-blue-500/60' : ''}`}>
       {/* Blue vignette overlay - scoped to this card */}
       {isUpdating && (
         <div 
