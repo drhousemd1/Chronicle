@@ -251,40 +251,30 @@ const SwatchCardV2: React.FC<SwatchV2Props> = (props) => {
     onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadow; }}
   >
     <div style={{ height: 78, background: color, ...extraPreviewStyle }} />
-    <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <span style={labelStyle}>Color Name:</span>
-        <span style={valueStyle}>{name}</span>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <span style={labelStyle}>Locations:</span>
-        <span style={valueStyle}>{locations}</span>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <span style={labelStyle}>Value:</span>
-        <span style={{ ...valueStyle, fontFamily: "'SF Mono','Fira Code','JetBrains Mono',monospace", fontSize: 11 }}>{value}</span>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <span style={labelStyle}>Token:</span>
-        <span style={{ ...valueStyle, fontFamily: "'SF Mono','Fira Code','JetBrains Mono',monospace", fontSize: 11 }}>{token}</span>
-      </div>
-      {effect && (
+    <CollapsibleCardBody
+      nameLabel="Color Name"
+      nameValue={name}
+      locations={locations}
+      pageSpecific={pageSpecific}
+      appWide={appWide}
+      hasCollapsible={true}
+      collapsibleContent={<>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <span style={labelStyle}>Effect:</span>
-          <span style={{ ...valueStyle, fontFamily: "'SF Mono','Fira Code','JetBrains Mono',monospace", fontSize: 11 }}>{effect}</span>
+          <span style={labelStyle}>Value:</span>
+          <span style={monoStyle}>{value}</span>
         </div>
-      )}
-      <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#334155', cursor: 'default' }}>
-          <input type="checkbox" checked={pageSpecific} disabled style={{ accentColor: '#3b82f6', width: 14, height: 14 }} />
-          Page Specific
-        </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#334155', cursor: 'default' }}>
-          <input type="checkbox" checked={appWide} disabled style={{ accentColor: '#3b82f6', width: 14, height: 14 }} />
-          App Wide
-        </label>
-      </div>
-    </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={labelStyle}>Token:</span>
+          <span style={monoStyle}>{token}</span>
+        </div>
+        {effect && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <span style={labelStyle}>Effect:</span>
+            <span style={monoStyle}>{effect}</span>
+          </div>
+        )}
+      </>}
+    />
   </div>
   </CardEditOverlay>
   );
