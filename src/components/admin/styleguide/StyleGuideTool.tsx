@@ -1210,7 +1210,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <SwatchCardV2 color="#f8fafc" name="Ice White" locations="Connection setup container within Model Settings" value="#f8fafc" token="bg-slate-50" pageSpecific={true} appWide={false} />
             </div>
             <InconsistencyNote items={[
-              { file: 'ModelSettingsTab.tsx', note: 'Uses LIGHT THEME (bg-white, text-slate-900, border-slate-200) while every other page in the app uses dark theme. Major design inconsistency.' },
+              { file: 'ModelSettingsTab.tsx', note: 'Uses LIGHT THEME (bg-white, text-[hsl(var(--ui-surface-2))], border-slate-200) while every other page in the app uses dark theme. Major design inconsistency.' },
               { file: 'ModelSettingsTab.tsx', note: 'Card hover uses scale-[1.02] transition — unique to this page, not used elsewhere.' },
             ]} />
 
