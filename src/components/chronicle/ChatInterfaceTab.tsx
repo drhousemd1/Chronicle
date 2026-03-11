@@ -3380,7 +3380,7 @@ const updatedChar: SideCharacter = {
                   <div className="flex flex-col border-l border-black">
                     <button 
                       onClick={incrementDay}
-                      className="px-1.5 py-0.5 hover:bg-slate-100 transition-colors text-black hover:text-blue-600"
+                      className="px-1.5 py-0.5 hover:bg-slate-100 transition-colors text-black hover:text-blue-500"
                     >
                       <ChevronUp className="w-3 h-3" />
                     </button>
