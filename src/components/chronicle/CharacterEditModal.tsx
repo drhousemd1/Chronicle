@@ -1736,7 +1736,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                         value={section.title}
                         onChange={(v) => updateSectionTitle(section.id, v)}
                         placeholder="Category name"
-                        className="bg-transparent border-none text-white text-xl font-bold tracking-tight placeholder:text-white/50 focus:outline-none flex-1 mr-2"
+                        className="bg-transparent border-none text-white text-xl font-bold tracking-tight placeholder:text-[rgba(248,250,252,0.3)] focus:outline-none flex-1 mr-2"
                       />
                       <div className="flex items-center gap-2 shrink-0">
                         <button 

@@ -455,7 +455,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                               <div className="flex items-center gap-1.5 mt-0.5">
                                 <span className="text-sm text-white/40">Creator rating:</span>
                                 <StarRating rating={creatorRating.rating} size={16} color="slate" />
-                                <span className="text-sm text-white/50">{creatorRating.rating.toFixed(1)} ({creatorRating.totalReviews} review{creatorRating.totalReviews !== 1 ? 's' : ''})</span>
+                                <span className="text-sm text-[rgba(248,250,252,0.3)]">{creatorRating.rating.toFixed(1)} ({creatorRating.totalReviews} review{creatorRating.totalReviews !== 1 ? 's' : ''})</span>
                               </div>
                             )}
                           </div>
@@ -556,7 +556,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                       ))}
                     </div>
                   ) : characters.length === 0 ? (
-                    <p className="text-sm text-white/50 italic">No characters yet</p>
+                    <p className="text-sm text-[rgba(248,250,252,0.3)] italic">No characters yet</p>
                   ) : (
                     <div className="flex flex-wrap gap-4">
                       {characters.slice(0, 8).map((char) => (
@@ -646,7 +646,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                         <button
                           onClick={loadMoreReviews}
                           disabled={loadingMoreReviews}
-                          className="px-4 py-2 text-xs font-medium text-white/50 hover:text-white/80 transition-colors disabled:opacity-50"
+                          className="px-4 py-2 text-xs font-medium text-[rgba(248,250,252,0.3)] hover:text-white/80 transition-colors disabled:opacity-50"
                         >
                           {loadingMoreReviews ? (
                             <Loader2 className="w-4 h-4 animate-spin" />

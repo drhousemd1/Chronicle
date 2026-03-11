@@ -75,7 +75,7 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDel
           </div>
         )}
         
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/60 to-transparent opacity-90 group-hover:opacity-95 transition-opacity" />
+        <div className="absolute inset-0 bg-gradient-to-t from-zinc-800 via-slate-900/60 to-transparent opacity-90 group-hover:opacity-95 transition-opacity" />
         
         {/* Hover Actions - Edit, Delete, Play */}
         <div className="absolute inset-0 flex items-center justify-center gap-2 px-4 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 scale-90 group-hover:scale-100 flex-wrap">
@@ -108,7 +108,7 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDel
             {scen.description || "No summary provided."}
           </p>
           {/* Stats row: show all 4 for published, only Play for unpublished */}
-          <div className="flex items-center gap-3 text-[10px] text-white/50 mt-1">
+          <div className="flex items-center gap-3 text-[10px] text-[rgba(248,250,252,0.3)] mt-1">
             {publishedData ? (
               <>
                 <span className="flex items-center gap-1">
@@ -135,7 +135,7 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDel
               </span>
             )}
           </div>
-          <span className="text-[11px] text-white/50 font-medium mt-1">
+          <span className="text-[11px] text-[rgba(248,250,252,0.3)] font-medium mt-1">
             Created by: {displayAuthor || 'Anonymous'}
           </span>
         </div>

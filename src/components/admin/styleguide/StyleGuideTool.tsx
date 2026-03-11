@@ -1046,7 +1046,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <SwatchCardV2 color="#2a2a2f" name="Dark Charcoal" locations="Panel containers, Character Roster sidebar, character cards" value="#2a2a2f" token="bg-[#2a2a2f]" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#1a1a1a" name="Soft Black" locations="Left icon navigation sidebar" value="#1a1a1a" token="bg-[#1a1a1a]" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="hsl(228, 7%, 20%)" name="Graphite" locations="Story Setup heading, header titles, DRAFTS, SAVE AND CLOSE, SAVE DRAFT, Upload Image, header action buttons, secondary button text, ghost button hover" value="hsl(228 7% 20%)" token="text-[hsl(var(--ui-surface-2))]" pageSpecific={false} appWide={true} />
-              <SwatchCardV2 color="rgba(248,250,252,0.3)" name="Ghost White" locations="Top header bar backgrounds, Main content area behind panels" value="rgba(248,250,252,0.3)" token="bg-[rgba(248,250,252,0.3)]" pageSpecific={false} appWide={true} extraPreviewStyle={{ border: '1px dashed #ccc' }} />
+              <SwatchCardV2 color="rgba(248,250,252,0.3)" name="Ghost White" locations="Top header bar backgrounds, Main content area behind panels, Story card stats, 'Created by' text, form labels, loading text, checkbox labels" value="rgba(248,250,252,0.3)" token="text-[rgba(248,250,252,0.3)] / bg-[rgba(248,250,252,0.3)]" pageSpecific={false} appWide={true} extraPreviewStyle={{ border: '1px dashed #ccc' }} />
               <SwatchCardV2 color="#64748b" name="Cool Gray" locations="Subtitle text below page headings" value="#64748b" token="text-slate-500" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="rgba(24,24,27,0.5)" name="Smoke Black" locations="All text inputs, textareas, bullet-list containers" value="rgba(24,24,27,0.5)" token="bg-zinc-900/50" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#3f3f46" name="Mid Charcoal" locations="Input borders, textarea borders, tag chip borders" value="#3f3f46" token="border-zinc-700" pageSpecific={false} appWide={true} />
@@ -1054,7 +1054,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <SwatchCardV2 color="#3b82f6" name="True Blue" locations="Art Style checkmark badge, guidance box border" value="#3b82f6" token="text-blue-500" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#a1a1aa" name="Silver Gray" locations="Trash icons, tag chip text, inactive tab text" value="#a1a1aa" token="text-zinc-400" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#71717a" name="Stone Gray" locations='Dashed "add" button borders, inactive slider labels' value="#71717a" token="border-zinc-500" pageSpecific={false} appWide={true} />
-              <SwatchCardV2 color="#27272a" name="Dark Zinc" locations="Genre/Origin/Type tag chips, art style card backgrounds, character avatar" value="#27272a" token="bg-zinc-800" pageSpecific={false} appWide={true} />
+              <SwatchCardV2 color="#27272a" name="Dark Zinc" locations="Genre/Origin/Type tag chips, art style card backgrounds, character avatar, Story card gradient overlay, admin card gradient, folder card gradient, loading screen background" value="#27272a" token="bg-zinc-800" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="hsl(210, 20%, 93%)" name="Pale Silver" locations="Shadow Surface button text, dark panel text" value="hsl(210 20% 93%)" token="text-[hsl(var(--ui-text))]" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#e2e8f0" name="Light Steel" locations="Header bar bottom border" value="#e2e8f0" token="border-slate-200" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="rgba(58,58,63,0.3)" name="Muted Charcoal" locations="Story Arc guidance description box" value="rgba(58,58,63,0.3)" token="bg-[#3a3a3f]/30" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px solid rgba(59,130,246,0.2)' }} />
@@ -1071,14 +1071,14 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
               <SwatchCardV2 color="rgba(248,250,252,0.5)" name="Frosted White" locations="Full page background" value="rgba(248,250,252,0.5)" token="bg-slate-50/50" pageSpecific={false} appWide={true} extraPreviewStyle={{ border: '1px dashed #ccc' }} />
               <SwatchCardV2 color="#4a5f7f" name="Slate Blue" locations="Active tab pill, story card border" value="#4a5f7f" token="bg-[#4a5f7f]" pageSpecific={false} appWide={true} />
-              <SwatchCardV2 color="#020617" name="Near Black Blue" locations="Story card gradient overlay" value="#020617" token="bg-slate-950" pageSpecific={true} appWide={false} />
+              
               <SwatchCardV2 color="#2a2a2f" name="Dark Charcoal" locations="SFW/NSFW badge backgrounds on story cards" value="#2a2a2f" token="bg-[#2a2a2f]" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#f87171" name="Coral Red" locations="NSFW badge text" value="#f87171" token="text-red-400" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#ef4444" name="Bright Red" locations="Delete button on card hover" value="#ef4444" token="bg-[hsl(var(--destructive))]" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#2563eb" name="Royal Blue" locations="Play button on card hover" value="#2563eb" token="bg-blue-600" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#52525b" name="Ash Gray" locations='"Create New Story" card border' value="#52525b" token="border-zinc-600" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="rgba(255,255,255,0.6)" name="Hazy White" locations="Story card description text" value="rgba(255,255,255,0.6)" token="text-white/60" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
-              <SwatchCardV2 color="rgba(255,255,255,0.5)" name="Half White" locations='"Created by" text, stat numbers on story cards' value="rgba(255,255,255,0.5)" token="text-white/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              
               <SwatchCardV2 color="rgba(0,0,0,0.5)" name="Half Black" locations="Story card and panel shadow" value="rgba(0,0,0,0.5)" token="shadow-[0_12px_32px_-2px_rgba(0,0,0,0.5)]" pageSpecific={false} appWide={true} />
             </div>
 
@@ -1332,9 +1332,9 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             />
             <TypoCardV2 fontName="System Sans-Serif"
               exampleBg="#2a2a2f"
-              exampleContent={<span className="text-[10px] text-white/50">👁 123 ❤ 45 🔖 12 ▶ 67</span>}
+              exampleContent={<span className="text-[10px] text-[rgba(248,250,252,0.3)]">👁 123 ❤ 45 🔖 12 ▶ 67</span>}
               fontSize="10px (text-[10px])" fontWeight="400 (normal)"
-              color="rgba(255,255,255,0.5) (white/50)"
+              color="rgba(248,250,252,0.3) (Ghost White)"
               locations="Card stats — view/like/save/play counts at bottom of gallery cards. flex gap-3."
               pageSpecific={true} appWide={false}
             />
@@ -2224,14 +2224,14 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             />
             <ButtonCardV2
               buttonName="Folder Delete Button (Circular)"
-              buttonColor="bg-black/40 text-white/50 hover:text-rose-500"
+              buttonColor="bg-black/40 text-[rgba(248,250,252,0.3)] hover:text-rose-500"
               size="p-3 rounded-full"
               purpose="Delete an image folder"
               visualEffects="hover:bg-black/60 transition-all. Positioned absolute top-right on folder cards"
               locations="ImageLibraryTab — folder card overlay"
               pageSpecific
               preview={
-                <button className="p-3 bg-black/40 text-white/50 hover:text-rose-500 rounded-full transition-all" style={{ cursor: 'default', border: 'none' }}>🗑</button>
+                <button className="p-3 bg-black/40 text-[rgba(248,250,252,0.3)] hover:text-rose-500 rounded-full transition-all" style={{ cursor: 'default', border: 'none' }}>🗑</button>
               }
             />
             <InconsistencyNote items={[
@@ -3247,7 +3247,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
               <PanelCardV2
                 panelName="Story Card"
-                background="gradient overlay: from-slate-950 via-slate-900/60 to-transparent"
+                background="gradient overlay: from-zinc-800 via-slate-900/60 to-transparent"
                 border="border border-[#4a5f7f]"
                 borderRadius="rounded-[2rem]"
                 shadow="0 12px 32px -2px rgba(0,0,0,0.5)"
@@ -3257,7 +3257,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 preview={
                   <div className="relative overflow-hidden rounded-[2rem] border border-[#4a5f7f]" style={{ width: 90, aspectRatio: '2/3', boxShadow: '0 12px 32px -2px rgba(0,0,0,0.5)' }}>
                     <div className="absolute inset-0 bg-slate-700" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/60 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-800 via-slate-900/60 to-transparent" />
                     <div className="absolute bottom-2 left-2 right-2">
                       <div className="text-white text-[8px] font-bold">Story Title</div>
                     </div>
