@@ -1966,7 +1966,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
             <ButtonCardV2
               buttonName="Folder Hover Buttons — Edit / Open"
-              buttonColor="Edit: bg-white text-[hsl(var(--ui-surface-2))]. Open: bg-blue-600 text-white"
+              buttonColor="Edit: bg-white text-[hsl(var(--ui-surface-2))]. Open: bg-blue-500 text-white"
               size="px-4 py-2 rounded-xl — font-bold text-xs uppercase tracking-wider"
               purpose="Overlay actions on folder card hover"
               visualEffects="shadow-xl on both"
