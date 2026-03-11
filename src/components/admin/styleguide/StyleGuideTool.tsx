@@ -88,7 +88,7 @@ const sg = {
   primary: '#4a5f7f',
   bg: '#f3f4f6',
   surface: '#ffffff',
-  text: '#0f172a',
+  text: 'hsl(228, 7%, 20%)',
   muted: '#64748b',
   border: '#d9dee6',
   borderStrong: '#c6ced9',
