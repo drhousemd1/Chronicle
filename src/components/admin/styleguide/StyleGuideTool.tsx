@@ -2617,7 +2617,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
                       <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Rigid</span>
-                      <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">Normal</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-blue-500">Normal</span>
                       <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Flexible</span>
                     </div>
                   </div>
