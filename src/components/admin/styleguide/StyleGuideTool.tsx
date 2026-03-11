@@ -1126,7 +1126,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <SwatchCardV2 color="#4a5f7f" name="Slate Blue" locations="Session card border, empty state border, thumbnail border" value="#4a5f7f" token="border-[#4a5f7f]" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#27272a" name="Dark Zinc" locations="Thumbnail fallback background" value="#27272a" token="bg-zinc-800" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="rgba(255,255,255,0.15)" name="Dim White" locations="Delete button hover background" value="rgba(255,255,255,0.15)" token="bg-white/15" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
-              <SwatchCardV2 color="#f87171" name="Coral Red" locations="Delete button hover icon color" value="#f87171" token="text-red-400" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="#ef4444" name="Bright Red" locations="Delete button hover icon color" value="#ef4444" token="text-red-500" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="rgba(239,68,68,0.3)" name="Faint Red" locations="Delete button hover border" value="rgba(239,68,68,0.3)" token="border-red-500/30" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
             </div>
 
