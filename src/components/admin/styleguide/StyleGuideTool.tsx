@@ -3278,11 +3278,36 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 locations="StoryHub.tsx, GalleryStoryCard.tsx, ImageLibraryTab.tsx"
                 appWide pageSpecific={false}
                 preview={
-                  <div className="relative overflow-hidden rounded-[2rem] border border-[#4a5f7f]" style={{ width: 90, aspectRatio: '2/3', boxShadow: '0 12px 32px -2px rgba(0,0,0,0.5)' }}>
-                    <div className="absolute inset-0 bg-slate-700" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-800 via-slate-900/60 to-transparent" />
-                    <div className="absolute bottom-2 left-2 right-2">
-                      <div className="text-white text-[8px] font-bold">Story Title</div>
+                  <div className="group relative overflow-hidden rounded-[2rem] border border-[#4a5f7f] bg-slate-200" style={{ width: 140, aspectRatio: '2/3', boxShadow: '0 12px 32px -2px rgba(0,0,0,0.5)' }}>
+                    {/* Cover image fallback */}
+                    <div className="flex h-full w-full items-center justify-center bg-slate-900 p-4 text-center">
+                      <div className="font-black text-white/10 text-3xl uppercase tracking-tighter italic">S</div>
+                    </div>
+                    {/* Gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-800 via-slate-900/60 to-transparent opacity-90" />
+                    {/* Top-left badges */}
+                    <div className="absolute top-2 left-2 flex items-center gap-1 z-10">
+                      <div className="px-1.5 py-0.5 backdrop-blur-sm rounded-md text-[6px] font-bold shadow-lg bg-[#2a2a2f] text-emerald-400 uppercase tracking-wide">Published</div>
+                    </div>
+                    {/* Top-right SFW badge */}
+                    <div className="absolute top-2 right-2 px-1.5 py-0.5 backdrop-blur-sm rounded-md text-[6px] font-bold shadow-lg bg-[#2a2a2f] text-blue-500 uppercase tracking-wide z-10">SFW</div>
+                    {/* Hover actions */}
+                    <div className="absolute inset-0 flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 scale-90 group-hover:scale-100">
+                      <button className="h-5 px-2 rounded-xl bg-white text-[hsl(var(--ui-surface-2))] text-[7px] font-bold leading-none uppercase tracking-wider shadow-2xl" style={{ cursor: 'default' }}>Edit</button>
+                      <button className="h-5 px-2 rounded-xl bg-[hsl(var(--destructive))] text-white text-[7px] font-bold leading-none uppercase tracking-wider shadow-2xl" style={{ cursor: 'default' }}>Delete</button>
+                      <button className="h-5 px-2 rounded-xl bg-blue-500 text-white text-[7px] font-bold leading-none uppercase tracking-wider shadow-2xl" style={{ cursor: 'default' }}>Play</button>
+                    </div>
+                    {/* Bottom info */}
+                    <div className="absolute inset-x-0 bottom-0 p-2 pb-2.5 pointer-events-none flex flex-col">
+                      <h3 className="text-[9px] font-black text-white leading-tight tracking-tight truncate">Story Title</h3>
+                      <p className="text-[7px] text-[rgba(248,250,252,0.3)] line-clamp-2 leading-relaxed italic">No summary provided.</p>
+                      <div className="flex items-center gap-1.5 text-[6px] text-[rgba(248,250,252,0.3)] mt-0.5">
+                        <span className="flex items-center gap-0.5"><Eye className="w-2 h-2" />12</span>
+                        <span className="flex items-center gap-0.5"><Heart className="w-2 h-2" />3</span>
+                        <span className="flex items-center gap-0.5"><Bookmark className="w-2 h-2" />1</span>
+                        <span className="flex items-center gap-0.5"><Play className="w-2 h-2" />5</span>
+                      </div>
+                      <span className="text-[7px] text-[rgba(248,250,252,0.3)] font-medium mt-0.5">Created by: Author</span>
                     </div>
                   </div>
                 }
