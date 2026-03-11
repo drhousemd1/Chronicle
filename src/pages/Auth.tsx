@@ -131,7 +131,7 @@ export default function Auth() {
                 className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-500"
                 disabled={isLoading}
               />
-              {errors.password && <p className="text-red-400 text-sm">{errors.password}</p>}
+              {errors.password && <p className="text-red-500 text-sm">{errors.password}</p>}
             </div>
 
             {isSignUp && (
