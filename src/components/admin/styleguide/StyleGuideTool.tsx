@@ -4362,7 +4362,7 @@ w-8 h-8  → 32px  — Empty state placeholders`}
             <div style={{ marginTop: 16 }} />
 
             <EntryCard name="Icon Colors" pageTag="Global"
-              specs='<strong>Default:</strong> text-white, text-zinc-400. <strong>Accent:</strong> text-blue-500, text-purple-400, text-cyan-200. <strong>Destructive:</strong> text-red-400.'
+              specs='<strong>Default:</strong> text-white, text-zinc-400. <strong>Accent:</strong> text-blue-500, text-purple-400, text-cyan-200. <strong>Destructive:</strong> text-red-500.'
               preview={
                 <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                   {[
