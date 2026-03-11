@@ -131,7 +131,7 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
                   </span>
                 )}
                 {isPermanentlyFailed && (
-                  <span className="inline-flex items-center gap-1 text-[9px] font-bold text-red-400/80 bg-red-500/10 border border-red-500/20 rounded-full px-1.5 py-0.5">
+                  <span className="inline-flex items-center gap-1 text-[9px] font-bold text-red-500/80 bg-red-500/10 border border-red-500/20 rounded-full px-1.5 py-0.5">
                     <Ban size={9} />
                     Max retries
                   </span>
