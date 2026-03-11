@@ -282,7 +282,7 @@ const CollapsibleCardBody: React.FC<{
             {onViewLocations && (
               <span
                 onClick={(e) => { e.stopPropagation(); onViewLocations(); }}
-                style={{ fontSize: 11, fontWeight: 600, color: '#3b82f6', cursor: 'pointer' }}
+                style={{ fontSize: 11, fontWeight: 600, color: '#3b82f6', cursor: 'pointer', position: 'relative', zIndex: 10 }}
               >View</span>
             )}
           </div>
