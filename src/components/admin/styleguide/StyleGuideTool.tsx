@@ -3475,7 +3475,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 purpose="Left sidebar with collapsible category filters and yellow accent bar"
                 locations="GalleryCategorySidebar.tsx"
                 pageSpecific appWide={false}
-                notes="Yellow accent: h-0.5 bg-yellow-400 at top. Selected item: bg-blue-500/20 text-blue-400."
+                notes="Yellow accent: h-0.5 bg-yellow-400 at top. Selected item: bg-blue-500/20 text-blue-500."
                 preview={
                   <div className="rounded-lg overflow-hidden" style={{ width: 140 }}>
                     <div className="h-0.5 bg-yellow-400" />
