@@ -169,7 +169,7 @@ export const ArcPhaseCard: React.FC<ArcPhaseCardProps> = ({
           "p-1 rounded-md transition-all",
           enhancingField === fieldKey
             ? "text-blue-500 animate-pulse cursor-wait"
-            : "text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10"
+            : "text-zinc-400 hover:text-blue-500 hover:bg-blue-500/10"
         )}
       >
         <Sparkles size={14} />
@@ -181,7 +181,7 @@ export const ArcPhaseCard: React.FC<ArcPhaseCardProps> = ({
     <div className="mt-4 pt-5 border-t border-white/10">
       {/* Phase label + delete */}
       <div className="flex items-center justify-between mb-5">
-        <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">
+        <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">
           Phase {phaseNumber}
         </span>
         <button
@@ -248,7 +248,7 @@ export const ArcPhaseCard: React.FC<ArcPhaseCardProps> = ({
       <div className="mt-4 pt-5 border-t border-white/10">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <CheckSquare size={14} className="text-blue-400" />
+            <CheckSquare size={14} className="text-blue-500" />
             <h4 className="text-[10px] font-black text-white uppercase tracking-[0.2em] m-0">Steps</h4>
           </div>
           <ArcModeToggle mode={mode} onChange={(m) => {

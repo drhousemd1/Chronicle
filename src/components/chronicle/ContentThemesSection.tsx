@@ -137,7 +137,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
                 <button
                   type="button"
                   onClick={addCustom}
-                  className="p-1.5 rounded-lg bg-blue-500 text-white hover:bg-blue-400 transition-colors"
+                  className="p-1.5 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors"
                 >
                   <Plus className="w-3 h-3" />
                 </button>
@@ -146,7 +146,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
               <button
                 type="button"
                 onClick={() => setShowInput(true)}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-transparent text-blue-400 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 transition-all flex items-center gap-1"
+                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-transparent text-blue-500 border-2 border-dashed border-zinc-500 hover:border-blue-500 hover:bg-blue-500/5 transition-all flex items-center gap-1"
               >
                 <Plus className="w-3 h-3" />
                 Add custom
@@ -184,7 +184,7 @@ const StoryTypeSelector: React.FC<{
                   isSelected
                     ? type === 'NSFW'
                       ? "bg-red-500/20 text-red-400 border-red-500/30"
-                      : "bg-blue-500/20 text-blue-400 border-blue-500/30"
+                      : "bg-blue-500/20 text-blue-500 border-blue-500/30"
                     : "bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700 hover:text-zinc-300"
                 )}
               >
@@ -268,7 +268,7 @@ const CustomTagsSection: React.FC<{
               <button
                 type="button"
                 onClick={addTag}
-                className="p-1.5 rounded-lg bg-blue-500 text-white hover:bg-blue-400 transition-colors"
+                className="p-1.5 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors"
               >
                 <Plus className="w-3 h-3" />
               </button>
@@ -277,7 +277,7 @@ const CustomTagsSection: React.FC<{
             <button
               type="button"
               onClick={() => setShowInput(true)}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-transparent text-blue-400 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 transition-all flex items-center gap-1"
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-transparent text-blue-500 border-2 border-dashed border-zinc-500 hover:border-blue-500 hover:bg-blue-500/5 transition-all flex items-center gap-1"
             >
               <Plus className="w-3 h-3" />
               Add custom

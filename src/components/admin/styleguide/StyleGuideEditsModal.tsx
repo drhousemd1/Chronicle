@@ -117,7 +117,7 @@ export const KeepOrEditModal: React.FC<KeepOrEditModalProps> = ({
             className="group flex flex-col items-center gap-3 p-5 rounded-2xl border border-white/10 bg-zinc-800/50 hover:border-blue-500/50 hover:bg-blue-500/10 transition-all cursor-pointer text-center"
           >
             <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center group-hover:bg-blue-500/30 transition-colors">
-              <Check className="w-5 h-5 text-blue-400" />
+              <Check className="w-5 h-5 text-blue-500" />
             </div>
             <div>
               <div className="text-white font-bold text-sm">Keep As-Is</div>

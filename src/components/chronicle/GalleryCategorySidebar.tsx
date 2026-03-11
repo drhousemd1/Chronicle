@@ -124,11 +124,11 @@ const CategorySection: React.FC<CategorySectionProps> = ({
                 className={cn(
                   "flex items-center gap-2 w-full px-3 py-2 rounded-lg text-left text-sm transition-colors",
                   isSelected 
-                    ? "bg-blue-500/20 text-blue-400" 
+                    ? "bg-blue-500/20 text-blue-500" 
                     : "text-white/70 hover:bg-white/5 hover:text-white"
                 )}
               >
-                <Icon className={cn("w-4 h-4 flex-shrink-0", isSelected ? "text-blue-400" : iconColor)} />
+                <Icon className={cn("w-4 h-4 flex-shrink-0", isSelected ? "text-blue-500" : iconColor)} />
                 <span className="truncate">{item}</span>
               </button>
             );
@@ -197,7 +197,7 @@ export const GalleryCategorySidebar: React.FC<GalleryCategorySidebarProps> = ({
         <div className="px-4 py-2 border-b border-white/10">
           <button
             onClick={clearAllFilters}
-            className="text-xs text-blue-400 hover:text-blue-300 font-medium"
+            className="text-xs text-blue-500 hover:text-blue-300 font-medium"
           >
             Clear all filters
           </button>

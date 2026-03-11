@@ -3174,7 +3174,7 @@ const updatedChar: SideCharacter = {
     return (
       <div
         key={char.id}
-        className={`min-h-[140px] rounded-2xl transition-all duration-300 border-2 backdrop-blur-sm relative ${!sidebarBgIsLight ? 'bg-white/30 border-transparent hover:bg-white' : 'bg-black/30 border-transparent hover:bg-black/50'} ${isUpdating ? 'ring-2 ring-blue-400/60' : ''}`}
+        className={`min-h-[140px] rounded-2xl transition-all duration-300 border-2 backdrop-blur-sm relative ${!sidebarBgIsLight ? 'bg-white/30 border-transparent hover:bg-white' : 'bg-black/30 border-transparent hover:bg-black/50'} ${isUpdating ? 'ring-2 ring-blue-500/60' : ''}`}
       >
         {/* Blue vignette overlay - scoped to this card */}
         {isUpdating && (
@@ -3405,7 +3405,7 @@ const updatedChar: SideCharacter = {
                       onClick={() => selectTime(time)}
                       className={`p-2 rounded-lg transition-all ${
                         currentTimeOfDay === time
-                          ? 'bg-blue-100 border-2 border-blue-400 text-blue-500 shadow-sm'
+                          ? 'bg-blue-100 border-2 border-blue-500 text-blue-500 shadow-sm'
                           : 'bg-white border border-black text-black hover:bg-slate-100'
                       }`}
                       title={time.charAt(0).toUpperCase() + time.slice(1)}
@@ -3552,7 +3552,7 @@ const updatedChar: SideCharacter = {
                   bubblesTransparent
                     ? 'bg-black/50'
                     : 'bg-[#1c1f26]'
-                } ${!isAi ? 'border-2 border-blue-400' : 'border border-white/5 hover:border-white/20'}`}>
+                } ${!isAi ? 'border-2 border-blue-500' : 'border border-white/5 hover:border-white/20'}`}>
                   
                   {/* Action buttons - top right corner */}
                   <div className={`absolute top-4 right-4 flex items-center gap-1 transition-opacity ${
@@ -3722,7 +3722,7 @@ const updatedChar: SideCharacter = {
                               ) : segmentAvatar ? (
                                 <img src={segmentAvatar} alt={segmentName} className="w-full h-full object-cover" />
                               ) : (
-                                <div className={`font-black italic text-lg ${isAi ? 'text-white/30' : 'text-blue-400/50'}`}>
+                                <div className={`font-black italic text-lg ${isAi ? 'text-white/30' : 'text-blue-500/50'}`}>
                                   {segmentName.charAt(0) || '?'}
                                 </div>
                               )}

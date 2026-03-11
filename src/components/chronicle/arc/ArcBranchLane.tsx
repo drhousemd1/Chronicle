@@ -113,7 +113,7 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
                 "p-2.5 pb-3 rounded-[18px] border shadow-[0_14px_26px_-6px_rgba(0,0,0,0.4)]",
                 step.status === 'failed' ? "border-red-500/50" :
                 step.status === 'deviated' ? "border-orange-500/50" :
-                step.status === 'succeeded' ? "border-blue-400/50" :
+                step.status === 'succeeded' ? "border-blue-500/50" :
                 "border-white/15"
               )}
               style={{ background: stepCardBg }}
@@ -265,7 +265,7 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
           <button
             type="button"
             onClick={onAddStep}
-            className="flex items-center justify-center gap-2 text-blue-400 hover:text-blue-300 text-sm mt-3 transition-colors w-full"
+            className="flex items-center justify-center gap-2 text-blue-500 hover:text-blue-300 text-sm mt-3 transition-colors w-full"
           >
             <Plus className="h-4 w-4" />
             <span>Add Step</span>

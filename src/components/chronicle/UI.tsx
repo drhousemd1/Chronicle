@@ -17,7 +17,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       ghost: "bg-transparent text-slate-500 border-transparent hover:bg-slate-100 hover:text-[hsl(var(--ui-surface-2))]",
       brand: "bg-[#4a5f7f] text-white border-[#4a5f7f] hover:bg-[#5a6f8f] shadow-md hover:shadow-lg",
       outlineDark: "bg-zinc-900/80 text-white border border-zinc-600 hover:bg-zinc-800 hover:border-zinc-500",
-      gradient: "bg-gradient-to-r from-purple-600 via-violet-500 to-blue-500 text-white border-0 hover:from-purple-500 hover:via-violet-400 hover:to-blue-400 shadow-lg",
+      gradient: "bg-gradient-to-r from-purple-600 via-violet-500 to-blue-500 text-white border-0 hover:from-purple-500 hover:via-violet-400 hover:to-blue-500 shadow-lg",
     };
     const dis = disabled ? "opacity-50 pointer-events-none" : "";
     return (
@@ -84,7 +84,7 @@ export function Input({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         spellCheck={true}
-        className={cn("w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all", className, "w-full")}
+        className={cn("w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all", className, "w-full")}
       />
     </div>
   );
@@ -131,7 +131,7 @@ export function TextArea({
         placeholder={placeholder}
         rows={rows}
         spellCheck={true}
-        className={cn("w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all", autoResize ? 'resize-none overflow-hidden' : 'resize-none', className, "w-full")}
+        className={cn("w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all", autoResize ? 'resize-none overflow-hidden' : 'resize-none', className, "w-full")}
       />
     </div>
   );

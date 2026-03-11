@@ -1362,7 +1362,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                             onClick={() => updateField('controlledBy', 'AI')}
                             className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded transition-all ${
                               draft.controlledBy === 'AI' 
-                                ? 'bg-zinc-700 text-blue-400 shadow-sm' 
+                                ? 'bg-zinc-700 text-blue-500 shadow-sm' 
                                 : 'text-zinc-500 hover:text-zinc-300'
                             }`}
                           >
@@ -1450,7 +1450,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                   {((draft.physicalAppearance as any)?._extras || []).map((extra: CharacterExtraRow) => (
                     <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('physicalAppearance', extra.id, patch)} onDelete={() => deleteModalExtra('physicalAppearance', extra.id)} />
                   ))}
-                  <Button variant="ghost" size="sm" onClick={() => addModalExtra('physicalAppearance')} className="text-blue-400 hover:text-blue-300 w-full border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5">
+                  <Button variant="ghost" size="sm" onClick={() => addModalExtra('physicalAppearance')} className="text-blue-500 hover:text-blue-300 w-full border-2 border-dashed border-zinc-500 hover:border-blue-500 hover:bg-blue-500/5">
                     <Plus className="w-4 h-4 mr-1" /> Add Row
                   </Button>
                 </CollapsibleSection>
@@ -1476,7 +1476,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                   {((draft.currentlyWearing as any)?._extras || []).map((extra: CharacterExtraRow) => (
                     <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('currentlyWearing', extra.id, patch)} onDelete={() => deleteModalExtra('currentlyWearing', extra.id)} />
                   ))}
-                  <Button variant="ghost" size="sm" onClick={() => addModalExtra('currentlyWearing')} className="text-blue-400 hover:text-blue-300 w-full border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5">
+                  <Button variant="ghost" size="sm" onClick={() => addModalExtra('currentlyWearing')} className="text-blue-500 hover:text-blue-300 w-full border-2 border-dashed border-zinc-500 hover:border-blue-500 hover:bg-blue-500/5">
                     <Plus className="w-4 h-4 mr-1" /> Add Row
                   </Button>
                 </CollapsibleSection>
@@ -1504,7 +1504,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                   {((draft.preferredClothing as any)?._extras || []).map((extra: CharacterExtraRow) => (
                     <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('preferredClothing', extra.id, patch)} onDelete={() => deleteModalExtra('preferredClothing', extra.id)} />
                   ))}
-                  <Button variant="ghost" size="sm" onClick={() => addModalExtra('preferredClothing')} className="text-blue-400 hover:text-blue-300 w-full border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5">
+                  <Button variant="ghost" size="sm" onClick={() => addModalExtra('preferredClothing')} className="text-blue-500 hover:text-blue-300 w-full border-2 border-dashed border-zinc-500 hover:border-blue-500 hover:bg-blue-500/5">
                     <Plus className="w-4 h-4 mr-1" /> Add Row
                   </Button>
                 </CollapsibleSection>
@@ -1529,7 +1529,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     {((draft.tone as any)?._extras || []).map((extra: CharacterExtraRow) => (
                       <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('tone', extra.id, patch)} onDelete={() => deleteModalExtra('tone', extra.id)} />
                     ))}
-                    <Button variant="ghost" size="sm" onClick={() => addModalExtra('tone')} className="text-blue-400 hover:text-blue-300 w-full border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5">
+                    <Button variant="ghost" size="sm" onClick={() => addModalExtra('tone')} className="text-blue-500 hover:text-blue-300 w-full border-2 border-dashed border-zinc-500 hover:border-blue-500 hover:bg-blue-500/5">
                       <Plus className="w-4 h-4 mr-1" /> Add Row
                     </Button>
                   </CollapsibleSection>
@@ -1561,7 +1561,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     {(((draft as any).mainBackground as any)?._extras || []).map((extra: CharacterExtraRow) => (
                       <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('background', extra.id, patch)} onDelete={() => deleteModalExtra('background', extra.id)} />
                     ))}
-                    <Button variant="ghost" size="sm" onClick={() => addModalExtra('background')} className="text-blue-400 hover:text-blue-300 w-full border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5">
+                    <Button variant="ghost" size="sm" onClick={() => addModalExtra('background')} className="text-blue-500 hover:text-blue-300 w-full border-2 border-dashed border-zinc-500 hover:border-blue-500 hover:bg-blue-500/5">
                       <Plus className="w-4 h-4 mr-1" /> Add Row
                     </Button>
                   </CollapsibleSection>
@@ -1577,7 +1577,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     {((draft.keyLifeEvents as any)?._extras || []).map((extra: CharacterExtraRow) => (
                       <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('keyLifeEvents', extra.id, patch)} onDelete={() => deleteModalExtra('keyLifeEvents', extra.id)} />
                     ))}
-                    <Button variant="ghost" size="sm" onClick={() => addModalExtra('keyLifeEvents')} className="text-blue-400 hover:text-blue-300 w-full border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5">
+                    <Button variant="ghost" size="sm" onClick={() => addModalExtra('keyLifeEvents')} className="text-blue-500 hover:text-blue-300 w-full border-2 border-dashed border-zinc-500 hover:border-blue-500 hover:bg-blue-500/5">
                       <Plus className="w-4 h-4 mr-1" /> Add Row
                     </Button>
                   </CollapsibleSection>
@@ -1593,7 +1593,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     {((draft.relationships as any)?._extras || []).map((extra: CharacterExtraRow) => (
                       <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('relationships', extra.id, patch)} onDelete={() => deleteModalExtra('relationships', extra.id)} />
                     ))}
-                    <Button variant="ghost" size="sm" onClick={() => addModalExtra('relationships')} className="text-blue-400 hover:text-blue-300 w-full border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5">
+                    <Button variant="ghost" size="sm" onClick={() => addModalExtra('relationships')} className="text-blue-500 hover:text-blue-300 w-full border-2 border-dashed border-zinc-500 hover:border-blue-500 hover:bg-blue-500/5">
                       <Plus className="w-4 h-4 mr-1" /> Add Row
                     </Button>
                   </CollapsibleSection>
@@ -1609,7 +1609,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     {((draft.secrets as any)?._extras || []).map((extra: CharacterExtraRow) => (
                       <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('secrets', extra.id, patch)} onDelete={() => deleteModalExtra('secrets', extra.id)} />
                     ))}
-                    <Button variant="ghost" size="sm" onClick={() => addModalExtra('secrets')} className="text-blue-400 hover:text-blue-300 w-full border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5">
+                    <Button variant="ghost" size="sm" onClick={() => addModalExtra('secrets')} className="text-blue-500 hover:text-blue-300 w-full border-2 border-dashed border-zinc-500 hover:border-blue-500 hover:bg-blue-500/5">
                       <Plus className="w-4 h-4 mr-1" /> Add Row
                     </Button>
                   </CollapsibleSection>

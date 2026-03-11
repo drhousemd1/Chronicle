@@ -194,7 +194,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
           "p-1 rounded-md transition-all",
           enhancingField === fieldKey
             ? "text-blue-500 animate-pulse cursor-wait"
-            : "text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10"
+            : "text-zinc-400 hover:text-blue-500 hover:bg-blue-500/10"
         )}
       >
         <Sparkles size={14} />
@@ -282,7 +282,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
                     {/* Steps Section */}
                     <div className="mt-4 pt-4 border-t border-white/5">
                       <h4 className="text-[10px] font-bold text-white uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
-                        <CheckSquare className="h-4 w-4 text-blue-400" />
+                        <CheckSquare className="h-4 w-4 text-blue-500" />
                         Steps
                       </h4>
 
@@ -332,7 +332,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
                       )}
 
                       {isEditMode && (
-                        <button onClick={() => addStep(goal.id)} className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm mt-3 transition-colors">
+                        <button onClick={() => addStep(goal.id)} className="flex items-center gap-2 text-blue-500 hover:text-blue-300 text-sm mt-3 transition-colors">
                           <Plus className="h-4 w-4" />
                           <span>Add Step</span>
                         </button>
@@ -353,7 +353,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
           })}
 
           {isEditMode && (
-            <button onClick={addGoal} className="w-full py-2.5 text-sm bg-transparent border-2 border-dashed border-zinc-500 text-blue-400 hover:border-blue-400 hover:bg-blue-500/5 font-medium rounded-xl transition-colors flex items-center justify-center gap-2">
+            <button onClick={addGoal} className="w-full py-2.5 text-sm bg-transparent border-2 border-dashed border-zinc-500 text-blue-500 hover:border-blue-500 hover:bg-blue-500/5 font-medium rounded-xl transition-colors flex items-center justify-center gap-2">
               <Plus className="w-4 h-4" />
               Add New Goal
             </button>
