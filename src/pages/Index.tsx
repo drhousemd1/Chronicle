@@ -1637,7 +1637,7 @@ const IndexContent = () => {
                 </div>
               )}
               {tab === "conversations" && (
-                <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
+                <h1 className="text-lg font-black text-[hsl(var(--ui-surface-2))] uppercase tracking-tight">
                   Chat History
                 </h1>
               )}
