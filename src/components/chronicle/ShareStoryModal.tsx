@@ -136,7 +136,7 @@ export const ShareScenarioModal: React.FC<ShareScenarioModalProps> = ({
             {/* What permissions mean */}
             <div className="p-4 bg-blue-500/10 rounded-xl border border-blue-500/20">
               <div className="flex items-start gap-3">
-                <Globe className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                <Globe className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
                 <div className="text-sm text-blue-200/80 space-y-1">
                   <p className="font-medium text-blue-300">What others can do:</p>
                   <ul className="list-disc list-inside space-y-0.5 text-blue-200/70">
