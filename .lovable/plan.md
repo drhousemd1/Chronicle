@@ -1,26 +1,11 @@
 
 
-# Fix: "View" Link Hidden Behind Edit Overlay
+## Plan: Persist Style Guide Edits to Supabase — Complete ✅
 
-## Problem
-The `CardEditOverlay` renders a hover overlay at `zIndex: 9` covering the entire card (`inset: 0`). The "View" link sits inside the card content at a lower z-index, so it's unclickable when hovering.
+### What was done:
 
-## Solution (single file: `StyleGuideTool.tsx`)
-
-Give the "View" link the same z-index treatment already used by the "Show more" toggle — wrap or style it with `position: relative; zIndex: 10` so it sits above the overlay (z-index 9).
-
-### Change in `CollapsibleCardBody` (~line 280-286)
-
-Update the "View" span to include `position: 'relative', zIndex: 10`:
-
-```tsx
-{onViewLocations && (
-  <span
-    onClick={(e) => { e.stopPropagation(); onViewLocations(); }}
-    style={{ fontSize: 11, fontWeight: 600, color: '#3b82f6', cursor: 'pointer', position: 'relative', zIndex: 10 }}
-  >View</span>
-)}
-```
-
-This is the exact same pattern already used for the "Show more / Show less" toggle to prevent click bubbling to the edit overlay. One line change, no other modifications needed.
-
+1. **Seeded `app_settings` rows** — `styleguide_edits` and `styleguide_keeps` rows inserted into the database
+2. **Rewrote all storage helpers** in `StyleGuideEditsModal.tsx` from sync localStorage to async Supabase operations (`getEditsRegistry`, `upsertEdit`, `removeEdit`, `getKeeps`, `addKeep`, `removeKeep`, `getEditsCount`)
+3. **Updated all consumers** in `StyleGuideTool.tsx` — `refreshEditsState`, `handleKeep`, `handleEditOpen`, `handleSaveEdit`, `handleRemoveKeep` are all async now
+4. **Updated `Index.tsx`** — `getEditsCount()` call now uses `.then()` since it's async
+5. **Every edit, keep, and delete auto-saves to Supabase immediately** — no data loss on domain changes
