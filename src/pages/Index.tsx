@@ -2289,7 +2289,7 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
           {tab === "chat_interface" && activeId && playingConversationId && (
             <ChatInterfaceTab
               scenarioId={activeId}
-              appData={activeData || createDefaultScenarioData()}
+              appData={activeData || defaultScenarioData}
               conversationId={playingConversationId}
               modelId={globalModelId}
               onUpdate={(convs) => handleUpdateActive({ conversations: convs })}
