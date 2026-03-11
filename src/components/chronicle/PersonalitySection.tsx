@@ -23,7 +23,7 @@ const FLEX_OPTIONS: { value: PersonalityTraitFlexibility; label: string }[] = [
 ];
 
 const FLEX_COLORS: Record<PersonalityTraitFlexibility, string> = {
-  rigid: 'text-red-400',
+  rigid: 'text-red-500',
   normal: 'text-blue-500',
   flexible: 'text-emerald-400',
 };
