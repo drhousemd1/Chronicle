@@ -1868,7 +1868,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <ButtonCardV2
               buttonName="Time of Day Selectors"
               buttonColor="Active: #dbeafe — bg-blue-100 border-2 border-blue-400. Inactive: bg-white border border-black"
-              textColor="Active: #2563eb — text-blue-600. Inactive: #000000 — text-black"
+              textColor="Active: #3b82f6 — text-blue-500. Inactive: #000000 — text-black"
               size="p-2 — rounded-lg"
               purpose="Set the current time of day for the story (Sunrise / Day / Sunset / Night)"
               visualEffects="Active: shadow-sm. Inactive: hover:bg-slate-100"
