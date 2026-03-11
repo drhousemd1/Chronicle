@@ -1221,7 +1221,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                       const next = selected.sections.filter(s => s.id !== section.id);
                       onUpdate(selected.id, { sections: next });
                     }}
-                    className="text-red-400 hover:text-red-300 p-1 rounded-md hover:bg-red-900/30"
+                    className="text-red-500 hover:text-red-400 p-1 rounded-md hover:bg-red-900/30"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
