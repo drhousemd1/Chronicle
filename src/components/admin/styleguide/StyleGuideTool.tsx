@@ -1096,7 +1096,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             {/* ─── Character Builder ─── */}
             <PageSubheading>Character Builder</PageSubheading>
             <PageDesc>Colors specific to the Character Builder / CharactersTab editor.</PageDesc>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 14 }}>
               <SwatchCardV2 color="rgba(58,58,63,0.3)" name="Muted Charcoal" locations="HardcodedSection inner card, character trait row containers" value="rgba(58,58,63,0.3)" token="bg-[#3a3a3f]/30" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
               <SwatchCardV2 color="rgba(24,24,27,0.5)" name="Smoke Black" locations="Read-only trait labels (Physical Appearance, Personality, etc.)" value="rgba(24,24,27,0.5)" token="bg-zinc-900/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
               <SwatchCardV2 color="rgba(96,165,250,0.1)" name="Faint Blue" locations="AI Enhance sparkle button hover state" value="rgba(96,165,250,0.1)" token="bg-blue-500/10" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
