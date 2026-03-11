@@ -4412,7 +4412,7 @@ text-white/40    — Disabled`}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
                     <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
-                      <div className="w-5 h-5 rounded bg-blue-400" />
+                      <div className="w-5 h-5 rounded bg-blue-500" />
                     </div>
                     <span style={{ fontSize: 8, color: '#64748b' }}>Option</span>
                   </div>
