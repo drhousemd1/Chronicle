@@ -2128,7 +2128,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
             <ButtonCardV2
               buttonName="AI Enhance Sparkle Button"
-              buttonColor="text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10"
+              buttonColor="text-zinc-400 hover:text-blue-500 hover:bg-blue-500/10"
               size="p-1.5 rounded-md"
               purpose="Opens EnhanceModeModal for AI-assisted character field enhancement"
               visualEffects="transition-colors. Uses Sparkles size={14}"
