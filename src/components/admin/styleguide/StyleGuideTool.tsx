@@ -2527,7 +2527,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             </div>
 
             <PageSubheading>Scene Tag Editor Input</PageSubheading>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14 }}>
               <InputCardV2
                 inputName="Scene Tag Editor Input"
                 background="bg-zinc-800"
