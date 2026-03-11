@@ -4525,6 +4525,7 @@ text-white/40    — Disabled`}
         open={showEditsListModal}
         onOpenChange={setShowEditsListModal}
         onCountChange={refreshEditsState}
+        allSwatches={ALL_SWATCHES}
       />
     </div>
     </EditsContext.Provider>
