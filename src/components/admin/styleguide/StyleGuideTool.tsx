@@ -2822,9 +2822,9 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 purpose="Trigger to add custom content theme tag"
                 locations="ContentThemesSection — end of tag list when allowCustom=true"
                 pageSpecific
-                notes="border-2 border-dashed border-zinc-500. Hover: hover:border-blue-400 hover:bg-blue-500/5. Uses Lucide Plus icon w-3 h-3."
+                notes="border-2 border-dashed border-zinc-500. Hover: hover:border-blue-500 hover:bg-blue-500/5. Uses Lucide Plus icon w-3 h-3."
                 preview={
-                  <button className="px-3 py-1.5 rounded-lg text-xs font-medium bg-transparent text-blue-400 border-2 border-dashed border-zinc-500 flex items-center gap-1">
+                  <button className="px-3 py-1.5 rounded-lg text-xs font-medium bg-transparent text-blue-500 border-2 border-dashed border-zinc-500 flex items-center gap-1">
                     <Plus className="w-3 h-3" />
                     Add custom
                   </button>
