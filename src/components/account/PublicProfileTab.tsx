@@ -341,7 +341,7 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
                 <Button
                   variant={isRepositioning ? 'primary' : 'secondary'}
                   onClick={handleRepositionToggle}
-                  className={`w-full text-[10px] font-bold leading-none ${isRepositioning ? 'bg-blue-600 text-white' : ''}`}
+                  className={`w-full text-[10px] font-bold leading-none ${isRepositioning ? 'bg-blue-500 text-white' : ''}`}
                 >
                   {isRepositioning ? "Save Position" : "Reposition"}
                 </Button>

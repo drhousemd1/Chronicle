@@ -324,7 +324,7 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
               <>
                 <button
                   onClick={handleSave}
-                  className="flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium bg-blue-500 hover:bg-blue-600 text-white transition-colors"
                 >
                   <Save size={12} />
                   Save

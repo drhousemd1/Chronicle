@@ -242,7 +242,7 @@ export function ModelSettingsTab({ selectedModelId, onSelectModel }: ModelSettin
               href="https://console.x.ai/" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="text-blue-600 font-bold text-xs uppercase tracking-widest hover:underline"
+              className="text-blue-500 font-bold text-xs uppercase tracking-widest hover:underline"
             >
               Learn More →
             </a>

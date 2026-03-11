@@ -268,7 +268,7 @@ const CustomTagsSection: React.FC<{
               <button
                 type="button"
                 onClick={addTag}
-                className="p-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-500 transition-colors"
+                className="p-1.5 rounded-lg bg-blue-500 text-white hover:bg-blue-400 transition-colors"
               >
                 <Plus className="w-3 h-3" />
               </button>

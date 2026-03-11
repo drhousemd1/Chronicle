@@ -551,7 +551,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                             <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
                               <div className="w-full h-[1px] bg-blue-500/40 absolute" />
                               <div className="h-full w-[1px] bg-blue-500/40 absolute" />
-                              <div className="bg-blue-500 text-white text-[9px] font-black uppercase px-3 py-1.5 rounded-lg absolute bottom-3 tracking-widest shadow-xl">
+                               <div className="bg-blue-500 text-white text-[9px] font-black uppercase px-3 py-1.5 rounded-lg absolute bottom-3 tracking-widest shadow-xl">
                                 Drag to Refocus
                               </div>
                             </div>
