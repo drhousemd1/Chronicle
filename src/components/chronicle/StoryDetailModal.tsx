@@ -556,7 +556,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                       ))}
                     </div>
                   ) : characters.length === 0 ? (
-                    <p className="text-sm text-white/50 italic">No characters yet</p>
+                    <p className="text-sm text-[rgba(248,250,252,0.3)] italic">No characters yet</p>
                   ) : (
                     <div className="flex flex-wrap gap-4">
                       {characters.slice(0, 8).map((char) => (
