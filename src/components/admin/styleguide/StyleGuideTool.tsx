@@ -1866,7 +1866,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             />
             <ButtonCardV2
               buttonName="Time of Day Selectors"
-              buttonColor="Active: #dbeafe — bg-blue-100 border-2 border-blue-400. Inactive: bg-white border border-black"
+              buttonColor="Active: #dbeafe — bg-blue-100 border-2 border-blue-500. Inactive: bg-white border border-black"
               textColor="Active: #3b82f6 — text-blue-500. Inactive: #000000 — text-black"
               size="p-2 — rounded-lg"
               purpose="Set the current time of day for the story (Sunrise / Day / Sunset / Night)"
@@ -1877,7 +1877,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               preview={
                 <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
                   <button className="p-2 rounded-lg bg-white border border-black text-black" style={{ cursor: 'default' }}><Sunrise className="w-4 h-4" /></button>
-                  <button className="p-2 rounded-lg bg-blue-100 border-2 border-blue-400 text-blue-500 shadow-sm" style={{ cursor: 'default' }}><Sun className="w-4 h-4" /></button>
+                  <button className="p-2 rounded-lg bg-blue-100 border-2 border-blue-500 text-blue-500 shadow-sm" style={{ cursor: 'default' }}><Sun className="w-4 h-4" /></button>
                   <button className="p-2 rounded-lg bg-white border border-black text-black" style={{ cursor: 'default' }}><Sunset className="w-4 h-4" /></button>
                   <button className="p-2 rounded-lg bg-white border border-black text-black" style={{ cursor: 'default' }}><Moon className="w-4 h-4" /></button>
                 </div>
