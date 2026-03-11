@@ -4369,7 +4369,7 @@ w-8 h-8  → 32px  — Empty state placeholders`}
                   {[
                     { color: '#ffffff', label: 'text-white', role: 'Default', needsBorder: true },
                     { color: '#a1a1aa', label: 'text-zinc-400', role: 'Muted', needsBorder: false },
-                    { color: '#60a5fa', label: 'text-blue-400', role: 'Accent', needsBorder: false },
+                    { color: '#3b82f6', label: 'text-blue-500', role: 'Accent', needsBorder: false },
                     { color: '#c084fc', label: 'text-purple-400', role: 'Accent', needsBorder: false },
                     { color: '#f87171', label: 'text-red-400', role: 'Destructive', needsBorder: false },
                     { color: 'rgba(255,255,255,0.4)', label: 'text-white/40', role: 'Disabled', needsBorder: true },
