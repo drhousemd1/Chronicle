@@ -2062,7 +2062,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               buttonColor="Follow: bg-[#4a5f7f] text-white. Following: bg-white/10 text-white"
               size="w-full px-4 py-2.5 rounded-xl — text-sm font-semibold"
               purpose="Toggle follow state on creator profiles"
-              visualEffects="Following hover: bg-red-500/20 text-red-400 (shows 'Unfollow' on hover). Uses UserPlus / UserMinus icons"
+              visualEffects="Following hover: bg-red-500/20 text-red-500 (shows 'Unfollow' on hover). Uses UserPlus / UserMinus icons"
               locations="CreatorProfile.tsx — profile header"
               pageSpecific
               preview={<>
