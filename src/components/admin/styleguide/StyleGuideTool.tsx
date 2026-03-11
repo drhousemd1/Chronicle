@@ -8,7 +8,7 @@ import { StyleGuideDownloadModal } from './StyleGuideDownloadModal';
 import {
   KeepOrEditModal, EditDetailModal, EditsListModal,
   getEditsRegistry, upsertEdit, removeKeep, addKeep, getKeeps, getEditsCount,
-  type EditEntry,
+  type EditEntry, type SwatchOption,
 } from './StyleGuideEditsModal';
 
 /* ═══════════════════════ EDITS CONTEXT ═══════════════════════ */
@@ -673,6 +673,58 @@ interface StyleGuideToolProps {
   onRegisterEdits?: (fn: (() => void) | null) => void;
   onEditsCountChange?: (count: number) => void;
 }
+
+/* ═══════════════════════ ALL SWATCHES (for edit modal dropdown) ═══════════════════════ */
+const ALL_SWATCHES: SwatchOption[] = [
+  { color: '#4a5f7f', name: 'Slate Blue' },
+  { color: '#2a2a2f', name: 'Dark Charcoal' },
+  { color: '#1a1a1a', name: 'Soft Black' },
+  { color: 'hsl(228, 7%, 20%)', name: 'Graphite' },
+  { color: 'rgba(248,250,252,0.3)', name: 'Ghost White' },
+  { color: '#64748b', name: 'Cool Gray' },
+  { color: 'rgba(24,24,27,0.5)', name: 'Smoke Black' },
+  { color: '#3f3f46', name: 'Mid Charcoal' },
+  { color: '#3b82f6', name: 'True Blue' },
+  { color: '#a1a1aa', name: 'Silver Gray' },
+  { color: '#71717a', name: 'Stone Gray' },
+  { color: '#27272a', name: 'Dark Zinc' },
+  { color: 'hsl(210, 20%, 93%)', name: 'Pale Silver' },
+  { color: '#e2e8f0', name: 'Light Steel' },
+  { color: 'rgba(58,58,63,0.3)', name: 'Muted Charcoal' },
+  { color: '#d4d4d8', name: 'Light Zinc' },
+  { color: 'rgba(255,255,255,0.1)', name: 'Faint White' },
+  { color: 'rgba(255,255,255,0.2)', name: 'Dim White' },
+  { color: 'rgba(248,250,252,0.5)', name: 'Frosted White' },
+  { color: '#ef4444', name: 'Bright Red' },
+  { color: '#52525b', name: 'Ash Gray' },
+  { color: 'rgba(0,0,0,0.5)', name: 'Half Black' },
+  { color: '#121214', name: 'Near Black' },
+  { color: 'rgba(18,18,20,0.8)', name: 'Glass Black' },
+  { color: 'rgba(58,58,63,0.5)', name: 'Smoke Charcoal' },
+  { color: '#18181b', name: 'Dark Zinc (Gallery)' },
+  { color: '#facc15', name: 'Bright Yellow' },
+  { color: 'rgba(59,130,246,0.2)', name: 'Faint Blue' },
+  { color: 'rgba(168,85,247,0.2)', name: 'Faint Purple' },
+  { color: '#1c1f26', name: 'Ink Blue' },
+  { color: '#94a3b8', name: 'Muted Slate' },
+  { color: 'rgba(199,210,254,0.9)', name: 'Soft Indigo' },
+  { color: 'rgba(255,255,255,0.3)', name: 'Milky White' },
+  { color: 'rgba(0,0,0,0.3)', name: 'Smoke Black (Light)' },
+  { color: 'rgba(255,255,255,0.05)', name: 'Ghost White (Border)' },
+  { color: 'rgba(255,255,255,0.15)', name: 'Dim White (Hover)' },
+  { color: 'rgba(239,68,68,0.3)', name: 'Faint Red' },
+  { color: '#1e1e22', name: 'Charcoal' },
+  { color: '#2b2b2e', name: 'Warm Charcoal' },
+  { color: 'rgba(74,95,127,0.2)', name: 'Frosted Slate' },
+  { color: '#7c3aed', name: 'Vivid Purple' },
+  { color: '#a78bfa', name: 'Soft Purple' },
+  { color: '#ffffff', name: 'White' },
+  { color: '#0f172a', name: 'Deep Navy' },
+  { color: '#faf5ff', name: 'Pale Lavender' },
+  { color: '#f8fafc', name: 'Ice White' },
+  { color: 'rgba(0,0,0,0.8)', name: 'Near Black Glass' },
+  { color: 'rgba(96,165,250,0.1)', name: 'Faint Blue (Hover)' },
+];
 
 export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownload, onRegisterEdits, onEditsCountChange }) => {
   const [activeSection, setActiveSection] = useState('colors');
@@ -4467,11 +4519,13 @@ text-white/40    — Disabled`}
         existingComment={editDetailTarget?.existingComment}
         existingId={editDetailTarget?.existingId}
         onSave={handleSaveEdit}
+        allSwatches={ALL_SWATCHES}
       />
       <EditsListModal
         open={showEditsListModal}
         onOpenChange={setShowEditsListModal}
         onCountChange={refreshEditsState}
+        allSwatches={ALL_SWATCHES}
       />
     </div>
     </EditsContext.Provider>
