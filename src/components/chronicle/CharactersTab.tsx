@@ -660,7 +660,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
         {/* Left Column - Avatar Panel */}
         <div className="space-y-6 lg:sticky lg:top-0 lg:max-h-[calc(100vh-9rem)] lg:overflow-y-auto lg:pr-4 lg:pb-6 lg:pl-2 lg:overscroll-contain">
           <div className="flex justify-between items-center h-9">
-            <h2 className="text-xl font-bold text-slate-900">Profile</h2>
+            <h2 className="text-xl font-bold text-[hsl(var(--ui-surface-2))]">Profile</h2>
           </div>
           <div className="pb-4 px-2">
           <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
