@@ -343,6 +343,7 @@ interface EditsListModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCountChange?: () => void;
+  allSwatches?: SwatchOption[];
 }
 
 export const EditsListModal: React.FC<EditsListModalProps> = ({ open, onOpenChange, onCountChange }) => {
