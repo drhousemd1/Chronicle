@@ -1593,7 +1593,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     {((draft.relationships as any)?._extras || []).map((extra: CharacterExtraRow) => (
                       <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('relationships', extra.id, patch)} onDelete={() => deleteModalExtra('relationships', extra.id)} />
                     ))}
-                    <Button variant="ghost" size="sm" onClick={() => addModalExtra('relationships')} className="text-blue-400 hover:text-blue-300 w-full border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5">
+                    <Button variant="ghost" size="sm" onClick={() => addModalExtra('relationships')} className="text-blue-500 hover:text-blue-300 w-full border-2 border-dashed border-zinc-500 hover:border-blue-500 hover:bg-blue-500/5">
                       <Plus className="w-4 h-4 mr-1" /> Add Row
                     </Button>
                   </CollapsibleSection>
