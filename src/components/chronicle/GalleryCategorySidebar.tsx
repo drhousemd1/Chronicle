@@ -197,7 +197,7 @@ export const GalleryCategorySidebar: React.FC<GalleryCategorySidebarProps> = ({
         <div className="px-4 py-2 border-b border-white/10">
           <button
             onClick={clearAllFilters}
-            className="text-xs text-blue-400 hover:text-blue-300 font-medium"
+            className="text-xs text-blue-500 hover:text-blue-300 font-medium"
           >
             Clear all filters
           </button>
