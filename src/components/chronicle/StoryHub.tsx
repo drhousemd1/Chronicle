@@ -262,7 +262,7 @@ export function ScenarioHub({
           onClick={onCreate}
           className="aspect-[2/3] w-full rounded-[2rem] border-2 border-dashed border-zinc-600 bg-gradient-to-br from-zinc-800 to-zinc-900 flex flex-col items-center justify-center gap-4 group hover:border-blue-500 transition-all duration-300"
         >
-          <div className="w-16 h-16 rounded-full bg-zinc-700/50 flex items-center justify-center text-3xl text-zinc-500 group-hover:bg-blue-900/30 group-hover:text-blue-400 transition-colors">
+          <div className="w-16 h-16 rounded-full bg-zinc-700/50 flex items-center justify-center text-3xl text-zinc-500 group-hover:bg-blue-900/30 group-hover:text-blue-500 transition-colors">
              +
           </div>
           <span className="text-sm font-black uppercase tracking-widest text-zinc-500 group-hover:text-blue-400">New Story</span>
