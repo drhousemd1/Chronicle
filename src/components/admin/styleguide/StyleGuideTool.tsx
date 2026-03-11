@@ -4387,7 +4387,7 @@ w-8 h-8  → 32px  — Empty state placeholders`}
               }
               code={`text-white       — Default
 text-zinc-400    — Muted
-text-blue-400    — Accent
+text-blue-500    — Accent
 text-purple-400  — Accent
 text-red-400     — Destructive
 hover:text-white — Hover state
