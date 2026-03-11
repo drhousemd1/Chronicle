@@ -1939,7 +1939,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               textColor="text-zinc-400"
               size="p-2 rounded-lg"
               purpose="Delete a saved conversation session"
-              visualEffects="Hover: bg-white/15 text-red-400 border-red-500/30"
+              visualEffects="Hover: bg-white/15 text-red-500 border-red-500/30"
               locations="ConversationsTab — action column on each session card"
               pageSpecific
               preview={
