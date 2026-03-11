@@ -224,7 +224,6 @@ const CollapsibleCardBody: React.FC<{
           <span style={valueStyle}>{locations}</span>
         </div>
         {children}
-        <VisibilityFlags pageSpecific={pageSpecific} appWide={appWide} />
       </div>
       {/* Fixed-height toggle row — always present for uniform sizing */}
       <div style={{ position: 'relative', zIndex: 10, height: 24, display: 'flex', alignItems: 'center', marginTop: 'auto' }}>
