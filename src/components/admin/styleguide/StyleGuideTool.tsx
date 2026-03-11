@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback, createContext, useContext } from 'react';
-import { Sparkles, Pencil, Lock, X, Plus, Sunrise, Sun, Sunset, Moon } from 'lucide-react';
+import { Sparkles, Pencil, Lock, X, Plus, Sunrise, Sun, Sunset, Moon, Eye, Heart, Bookmark, Play, ChevronUp, ChevronDown } from 'lucide-react';
 import { StarRating } from '@/components/chronicle/StarRating';
 import { SpiceRating } from '@/components/chronicle/SpiceRating';
 import { CircularProgress } from '@/components/chronicle/CircularProgress';
@@ -1027,6 +1027,31 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 Every color, font size, border radius, and spacing value below was extracted from the live Chronicle source code. Use this as the single source of truth for all styling decisions.
               </p>
             </div>
+          </div>
+        </div>
+
+        {/* Instructions for Lovable */}
+        <div style={{ padding: isNarrow ? '16px 16px 0' : '24px 42px 0', maxWidth: 1400 }}>
+          <div style={{
+            background: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderRadius: 12,
+            padding: '24px 28px',
+            marginBottom: 0,
+          }}>
+            <h2 style={{ fontSize: 16, fontWeight: 800, color: '#1e293b', marginBottom: 10, letterSpacing: '-0.01em' }}>
+              Instructions for Lovable
+            </h2>
+            <p style={{ fontSize: 13, color: '#334155', lineHeight: 1.7, marginBottom: 14 }}>
+              This App Style Guide is the single source of truth for all styling in the Chronicle Application. Every color, token, component, and design element on this page must exactly match what is used in the live application.
+            </p>
+            <h3 style={{ fontSize: 13, fontWeight: 700, color: '#1e293b', marginBottom: 8 }}>Rules:</h3>
+            <ol style={{ paddingLeft: 20, margin: 0, fontSize: 13, color: '#334155', lineHeight: 1.8, listStyleType: 'decimal' }}>
+              <li style={{ marginBottom: 6 }}>When building or modifying any element in the Chronicle Application, only use colors, tokens, components, and styles that exist on this page. Never introduce slight variations — values must be exact.</li>
+              <li style={{ marginBottom: 6 }}>Before selecting a style, determine whether the context is page-specific or app-wide, then choose from the appropriate tokens/elements on this page.</li>
+              <li style={{ marginBottom: 6 }}>If a new feature requires a color, style, or component that does not exist on this page, stop and confirm the addition with the user before implementing it.</li>
+              <li>Any time you add, remove, or reassign a style in the application, update this page to reflect the change — including the "Locations" field on affected swatches/elements.</li>
+            </ol>
           </div>
         </div>
 
@@ -3253,11 +3278,36 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 locations="StoryHub.tsx, GalleryStoryCard.tsx, ImageLibraryTab.tsx"
                 appWide pageSpecific={false}
                 preview={
-                  <div className="relative overflow-hidden rounded-[2rem] border border-[#4a5f7f]" style={{ width: 90, aspectRatio: '2/3', boxShadow: '0 12px 32px -2px rgba(0,0,0,0.5)' }}>
-                    <div className="absolute inset-0 bg-slate-700" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-800 via-slate-900/60 to-transparent" />
-                    <div className="absolute bottom-2 left-2 right-2">
-                      <div className="text-white text-[8px] font-bold">Story Title</div>
+                  <div className="group relative overflow-hidden rounded-[2rem] border border-[#4a5f7f] bg-slate-200" style={{ width: 140, aspectRatio: '2/3', boxShadow: '0 12px 32px -2px rgba(0,0,0,0.5)' }}>
+                    {/* Cover image fallback */}
+                    <div className="flex h-full w-full items-center justify-center bg-slate-900 p-4 text-center">
+                      <div className="font-black text-white/10 text-3xl uppercase tracking-tighter italic">S</div>
+                    </div>
+                    {/* Gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-800 via-slate-900/60 to-transparent opacity-90" />
+                    {/* Top-left badges */}
+                    <div className="absolute top-2 left-2 flex items-center gap-1 z-10">
+                      <div className="px-1.5 py-0.5 backdrop-blur-sm rounded-md text-[6px] font-bold shadow-lg bg-[#2a2a2f] text-emerald-400 uppercase tracking-wide">Published</div>
+                    </div>
+                    {/* Top-right SFW badge */}
+                    <div className="absolute top-2 right-2 px-1.5 py-0.5 backdrop-blur-sm rounded-md text-[6px] font-bold shadow-lg bg-[#2a2a2f] text-blue-500 uppercase tracking-wide z-10">SFW</div>
+                    {/* Hover actions */}
+                    <div className="absolute inset-0 flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 scale-90 group-hover:scale-100">
+                      <button className="h-5 px-2 rounded-xl bg-white text-[hsl(var(--ui-surface-2))] text-[7px] font-bold leading-none uppercase tracking-wider shadow-2xl" style={{ cursor: 'default' }}>Edit</button>
+                      <button className="h-5 px-2 rounded-xl bg-[hsl(var(--destructive))] text-white text-[7px] font-bold leading-none uppercase tracking-wider shadow-2xl" style={{ cursor: 'default' }}>Delete</button>
+                      <button className="h-5 px-2 rounded-xl bg-blue-500 text-white text-[7px] font-bold leading-none uppercase tracking-wider shadow-2xl" style={{ cursor: 'default' }}>Play</button>
+                    </div>
+                    {/* Bottom info */}
+                    <div className="absolute inset-x-0 bottom-0 p-2 pb-2.5 pointer-events-none flex flex-col">
+                      <h3 className="text-[9px] font-black text-white leading-tight tracking-tight truncate">Story Title</h3>
+                      <p className="text-[7px] text-[rgba(248,250,252,0.3)] line-clamp-2 leading-relaxed italic">No summary provided.</p>
+                      <div className="flex items-center gap-1.5 text-[6px] text-[rgba(248,250,252,0.3)] mt-0.5">
+                        <span className="flex items-center gap-0.5"><Eye className="w-2 h-2" />12</span>
+                        <span className="flex items-center gap-0.5"><Heart className="w-2 h-2" />3</span>
+                        <span className="flex items-center gap-0.5"><Bookmark className="w-2 h-2" />1</span>
+                        <span className="flex items-center gap-0.5"><Play className="w-2 h-2" />5</span>
+                      </div>
+                      <span className="text-[7px] text-[rgba(248,250,252,0.3)] font-medium mt-0.5">Created by: Author</span>
                     </div>
                   </div>
                 }
@@ -3430,11 +3480,33 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 pageSpecific appWide={false}
                 notes="Images: object-cover object-center. Text color via getTimeTextColor() helper."
                 preview={
-                  <div className="relative rounded-lg overflow-hidden shadow-lg" style={{ width: '100%', height: 56 }}>
-                    <div className="absolute inset-0 bg-gradient-to-r from-orange-400 via-pink-300 to-blue-500" />
-                    <div className="absolute inset-0 bg-black/20" />
-                    <div className="relative flex items-center justify-center h-full">
-                      <span className="text-white text-[9px] font-bold">Day 1 · Sunrise</span>
+                  <div className="relative rounded-xl border border-slate-200 overflow-hidden shadow-lg" style={{ width: '100%' }}>
+                    {/* Sky image placeholder */}
+                    <div className="relative" style={{ height: 52, background: 'linear-gradient(180deg, #87CEEB 0%, #FDB99B 100%)' }}>
+                      <div className="absolute inset-0 bg-black/20" />
+                      {/* Day counter */}
+                      <div className="absolute top-1 left-1/2 -translate-x-1/2 flex flex-col items-center z-10">
+                        <div className="bg-white rounded-lg border border-black px-2 py-0.5 flex flex-col items-center" style={{ minWidth: 28 }}>
+                          <ChevronUp className="w-2.5 h-2.5 text-black" />
+                          <span className="text-[8px] font-bold text-black leading-none">1</span>
+                          <ChevronDown className="w-2.5 h-2.5 text-black" />
+                        </div>
+                      </div>
+                    </div>
+                    {/* Time selector buttons */}
+                    <div className="flex items-center justify-center gap-1.5 py-1.5 bg-white">
+                      <button className="w-6 h-6 rounded-lg bg-blue-100 border-2 border-blue-500 text-blue-500 flex items-center justify-center" style={{ cursor: 'default' }}>
+                        <Sunrise className="w-3 h-3" />
+                      </button>
+                      <button className="w-6 h-6 rounded-lg bg-white border border-black text-black flex items-center justify-center" style={{ cursor: 'default' }}>
+                        <Sun className="w-3 h-3" />
+                      </button>
+                      <button className="w-6 h-6 rounded-lg bg-white border border-black text-black flex items-center justify-center" style={{ cursor: 'default' }}>
+                        <Sunset className="w-3 h-3" />
+                      </button>
+                      <button className="w-6 h-6 rounded-lg bg-white border border-black text-black flex items-center justify-center" style={{ cursor: 'default' }}>
+                        <Moon className="w-3 h-3" />
+                      </button>
                     </div>
                   </div>
                 }
@@ -3708,7 +3780,10 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                       <span className="text-[9px] font-semibold text-white">Reviewer</span>
                       <span className="text-[7px] text-white/40">2d ago</span>
                     </div>
-                    <div className="flex gap-2 mb-1"><span style={{ fontSize: 9 }}>⭐⭐⭐⭐☆</span><span style={{ fontSize: 9 }}>🔥🔥</span></div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <StarRating rating={4} maxStars={5} size={10} />
+                      <SpiceRating rating={2} maxLevel={5} size={10} />
+                    </div>
                     <p className="text-[8px] text-white/70">Great story!</p>
                   </div>
                 }
@@ -4388,7 +4463,7 @@ w-8 h-8  → 32px  — Empty state placeholders`}
 text-zinc-400    — Muted
 text-blue-500    — Accent
 text-purple-400  — Accent
-text-red-400     — Destructive
+text-red-500     — Destructive
 hover:text-white — Hover state
 text-white/40    — Disabled`}
             />
