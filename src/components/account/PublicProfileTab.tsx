@@ -429,7 +429,7 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
               checked={profile.hide_published_works}
               onCheckedChange={(checked) => setProfile(prev => ({ ...prev, hide_published_works: !!checked }))}
             />
-            <span className="text-xs text-white/50">Hide Published Works</span>
+            <span className="text-xs text-[rgba(248,250,252,0.3)]">Hide Published Works</span>
           </label>
 
           <div className="flex items-center gap-4 ml-auto text-white/40">
