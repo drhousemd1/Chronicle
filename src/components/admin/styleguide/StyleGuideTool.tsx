@@ -306,12 +306,8 @@ const TypoCardV2: React.FC<TypoV2Props> = (props) => {
   <CardEditOverlay cardName={fontName} cardType="Typography" details={details}>
   <div style={{
     background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
-    boxShadow: sg.shadow, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-    minHeight: 260, display: 'flex', flexDirection: 'column',
-  }}
-    onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadowHover; }}
-    onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadow; }}
-  >
+    boxShadow: sg.shadow, minHeight: 260, display: 'flex', flexDirection: 'column',
+  }}>
     <div style={{
       background: exampleBg || '#fff', padding: '14px 16px',
       display: 'flex', alignItems: 'center', minHeight: 56,
@@ -322,17 +318,15 @@ const TypoCardV2: React.FC<TypoV2Props> = (props) => {
       locations={locations}
       pageSpecific={pageSpecific}
       appWide={appWide}
-      hasCollapsible={true}
-      collapsibleContent={<>
-        {fontFamily && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Font Family:</span><span style={monoStyle}>{fontFamily}</span></div>}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Font Size:</span><span style={monoStyle}>{fontSize}</span></div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Font Weight:</span><span style={monoStyle}>{fontWeight}</span></div>
-        {letterSpacing && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Letter Spacing:</span><span style={monoStyle}>{letterSpacing}</span></div>}
-        {textTransform && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Text Transform:</span><span style={monoStyle}>{textTransform}</span></div>}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Color:</span><span style={monoStyle}>{color}</span></div>
-        {lineHeight && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Line Height:</span><span style={monoStyle}>{lineHeight}</span></div>}
-      </>}
-    />
+    >
+      {fontFamily && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Font Family:</span><span style={monoStyle}>{fontFamily}</span></div>}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Font Size:</span><span style={monoStyle}>{fontSize}</span></div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Font Weight:</span><span style={monoStyle}>{fontWeight}</span></div>
+      {letterSpacing && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Letter Spacing:</span><span style={monoStyle}>{letterSpacing}</span></div>}
+      {textTransform && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Text Transform:</span><span style={monoStyle}>{textTransform}</span></div>}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Color:</span><span style={monoStyle}>{color}</span></div>
+      {lineHeight && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Line Height:</span><span style={monoStyle}>{lineHeight}</span></div>}
+    </CollapsibleCardBody>
   </div>
   </CardEditOverlay>
   );
