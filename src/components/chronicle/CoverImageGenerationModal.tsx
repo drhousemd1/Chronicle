@@ -113,7 +113,7 @@ export const CoverImageGenerationModal: React.FC<CoverImageGenerationModalProps>
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               placeholder="Describe your cover image..."
-              className="min-h-[100px] resize-none bg-slate-50 border-slate-200 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 focus-visible:ring-0 focus-visible:ring-offset-0"
+              className="min-h-[100px] resize-none bg-slate-50 border-slate-200 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 focus-visible:ring-0 focus-visible:ring-offset-0"
             />
             <p className="text-xs text-muted-foreground">
               Tip: Cover images work best with a 2:3 portrait aspect ratio. Include setting, mood, and key visual elements.
