@@ -166,6 +166,8 @@ const valueStyle: React.CSSProperties = {
 };
 
 /* ═══════════════════════ SHARED COLLAPSIBLE CARD BODY ═══════════════════════ */
+const COLLAPSED_META_HEIGHT = 130;
+
 const VisibilityFlags: React.FC<{ pageSpecific?: boolean; appWide?: boolean }> = ({ pageSpecific, appWide }) => (
   <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
     <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#334155', cursor: 'default' }}>
@@ -183,44 +185,47 @@ const CollapsibleCardBody: React.FC<{
   nameLabel: string;
   nameValue: string;
   locations: string;
-  collapsibleContent: React.ReactNode;
-  hasCollapsible: boolean;
+  children: React.ReactNode;
   pageSpecific?: boolean;
   appWide?: boolean;
-  alwaysVisibleExtra?: React.ReactNode;
-}> = ({ nameLabel, nameValue, locations, collapsibleContent, hasCollapsible, pageSpecific, appWide, alwaysVisibleExtra }) => {
+}> = ({ nameLabel, nameValue, locations, children, pageSpecific, appWide }) => {
   const [expanded, setExpanded] = useState(false);
+  const [isOverflowing, setIsOverflowing] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = contentRef.current;
+    if (el) {
+      setIsOverflowing(el.scrollHeight > COLLAPSED_META_HEIGHT);
+    }
+  }, [nameValue, locations, children]);
+
   return (
-    <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 6, borderTop: '1px solid #e2e8f0', flex: 1 }}>
-      {/* Always visible: Name + Locations */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <span style={labelStyle}>{nameLabel}:</span>
-        <span style={valueStyle}>{nameValue}</span>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <span style={labelStyle}>Locations:</span>
-        <span style={{
-          ...valueStyle,
-          ...(!expanded ? { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' } : {}),
-        }}>{locations}</span>
-      </div>
-      {alwaysVisibleExtra}
-      {/* Collapsible metadata */}
-      {hasCollapsible && (
-        <div style={{
+    <div style={{ padding: 12, display: 'flex', flexDirection: 'column', borderTop: '1px solid #e2e8f0', flex: 1 }}>
+      {/* Measured content container */}
+      <div
+        ref={contentRef}
+        style={{
+          display: 'flex', flexDirection: 'column', gap: 6,
+          maxHeight: expanded ? 9999 : COLLAPSED_META_HEIGHT,
           overflow: 'hidden',
-          maxHeight: expanded ? 2000 : 0,
           transition: 'max-height 0.3s ease',
-        }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {collapsibleContent}
-            <VisibilityFlags pageSpecific={pageSpecific} appWide={appWide} />
-          </div>
+        }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={labelStyle}>{nameLabel}:</span>
+          <span style={valueStyle}>{nameValue}</span>
         </div>
-      )}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={labelStyle}>Locations:</span>
+          <span style={valueStyle}>{locations}</span>
+        </div>
+        {children}
+        <VisibilityFlags pageSpecific={pageSpecific} appWide={appWide} />
+      </div>
       {/* Fixed-height toggle row — always present for uniform sizing */}
       <div style={{ position: 'relative', zIndex: 10, height: 24, display: 'flex', alignItems: 'center', marginTop: 'auto' }}>
-        {hasCollapsible && (
+        {isOverflowing && (
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
@@ -247,12 +252,8 @@ const SwatchCardV2: React.FC<SwatchV2Props> = (props) => {
   <CardEditOverlay cardName={name} cardType="Swatch" details={details}>
   <div style={{
     background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
-    boxShadow: sg.shadow, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-    minHeight: 260, display: 'flex', flexDirection: 'column',
-  }}
-    onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadowHover; }}
-    onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadow; }}
-  >
+    boxShadow: sg.shadow, minHeight: 260, display: 'flex', flexDirection: 'column',
+  }}>
     <div style={{ height: 78, background: color, ...extraPreviewStyle }} />
     <CollapsibleCardBody
       nameLabel="Color Name"
@@ -260,24 +261,20 @@ const SwatchCardV2: React.FC<SwatchV2Props> = (props) => {
       locations={locations}
       pageSpecific={pageSpecific}
       appWide={appWide}
-      hasCollapsible={!!(effect)}
-      alwaysVisibleExtra={<>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <span style={labelStyle}>Value:</span>
-          <span style={monoStyle}>{value}</span>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <span style={labelStyle}>Token:</span>
-          <span style={monoStyle}>{token}</span>
-        </div>
-      </>}
-      collapsibleContent={effect ? <>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <span style={labelStyle}>Effect:</span>
-          <span style={monoStyle}>{effect}</span>
-        </div>
-      </> : undefined}
-    />
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Value:</span>
+        <span style={monoStyle}>{value}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Token:</span>
+        <span style={monoStyle}>{token}</span>
+      </div>
+      {effect && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Effect:</span>
+        <span style={monoStyle}>{effect}</span>
+      </div>}
+    </CollapsibleCardBody>
   </div>
   </CardEditOverlay>
   );
@@ -309,12 +306,8 @@ const TypoCardV2: React.FC<TypoV2Props> = (props) => {
   <CardEditOverlay cardName={fontName} cardType="Typography" details={details}>
   <div style={{
     background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
-    boxShadow: sg.shadow, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-    minHeight: 260, display: 'flex', flexDirection: 'column',
-  }}
-    onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadowHover; }}
-    onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadow; }}
-  >
+    boxShadow: sg.shadow, minHeight: 260, display: 'flex', flexDirection: 'column',
+  }}>
     <div style={{
       background: exampleBg || '#fff', padding: '14px 16px',
       display: 'flex', alignItems: 'center', minHeight: 56,
@@ -325,17 +318,15 @@ const TypoCardV2: React.FC<TypoV2Props> = (props) => {
       locations={locations}
       pageSpecific={pageSpecific}
       appWide={appWide}
-      hasCollapsible={true}
-      collapsibleContent={<>
-        {fontFamily && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Font Family:</span><span style={monoStyle}>{fontFamily}</span></div>}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Font Size:</span><span style={monoStyle}>{fontSize}</span></div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Font Weight:</span><span style={monoStyle}>{fontWeight}</span></div>
-        {letterSpacing && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Letter Spacing:</span><span style={monoStyle}>{letterSpacing}</span></div>}
-        {textTransform && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Text Transform:</span><span style={monoStyle}>{textTransform}</span></div>}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Color:</span><span style={monoStyle}>{color}</span></div>
-        {lineHeight && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Line Height:</span><span style={monoStyle}>{lineHeight}</span></div>}
-      </>}
-    />
+    >
+      {fontFamily && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Font Family:</span><span style={monoStyle}>{fontFamily}</span></div>}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Font Size:</span><span style={monoStyle}>{fontSize}</span></div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Font Weight:</span><span style={monoStyle}>{fontWeight}</span></div>
+      {letterSpacing && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Letter Spacing:</span><span style={monoStyle}>{letterSpacing}</span></div>}
+      {textTransform && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Text Transform:</span><span style={monoStyle}>{textTransform}</span></div>}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Color:</span><span style={monoStyle}>{color}</span></div>
+      {lineHeight && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Line Height:</span><span style={monoStyle}>{lineHeight}</span></div>}
+    </CollapsibleCardBody>
   </div>
   </CardEditOverlay>
   );
@@ -368,12 +359,8 @@ const InputCardV2: React.FC<InputV2Props> = (props) => {
   <CardEditOverlay cardName={inputName} cardType="Input" details={details}>
   <div style={{
     background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
-    boxShadow: sg.shadow, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-    minHeight: 260, display: 'flex', flexDirection: 'column',
-  }}
-    onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadowHover; }}
-    onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadow; }}
-  >
+    boxShadow: sg.shadow, minHeight: 260, display: 'flex', flexDirection: 'column',
+  }}>
     <div style={{
       background: '#fff', padding: '16px 20px',
       display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'center', gap: 12, minHeight: 64,
@@ -385,20 +372,18 @@ const InputCardV2: React.FC<InputV2Props> = (props) => {
       locations={locations}
       pageSpecific={pageSpecific}
       appWide={appWide}
-      hasCollapsible={true}
-      collapsibleContent={<>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Background:</span><span style={monoStyle}>{background}</span></div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Border:</span><span style={monoStyle}>{border}</span></div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Border Radius:</span><span style={monoStyle}>{borderRadius}</span></div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Text Color:</span><span style={monoStyle}>{textColor}</span></div>
-        {placeholderColor && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Placeholder Color:</span><span style={monoStyle}>{placeholderColor}</span></div>}
-        {focusStyle && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Focus Style:</span><span style={monoStyle}>{focusStyle}</span></div>}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Font Size:</span><span style={monoStyle}>{fontSize}</span></div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Padding:</span><span style={monoStyle}>{padding}</span></div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Purpose:</span><span style={valueStyle}>{purpose}</span></div>
-        {notes && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Notes:</span><span style={valueStyle}>{notes}</span></div>}
-      </>}
-    />
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Background:</span><span style={monoStyle}>{background}</span></div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Border:</span><span style={monoStyle}>{border}</span></div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Border Radius:</span><span style={monoStyle}>{borderRadius}</span></div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Text Color:</span><span style={monoStyle}>{textColor}</span></div>
+      {placeholderColor && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Placeholder Color:</span><span style={monoStyle}>{placeholderColor}</span></div>}
+      {focusStyle && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Focus Style:</span><span style={monoStyle}>{focusStyle}</span></div>}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Font Size:</span><span style={monoStyle}>{fontSize}</span></div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Padding:</span><span style={monoStyle}>{padding}</span></div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Purpose:</span><span style={valueStyle}>{purpose}</span></div>
+      {notes && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Notes:</span><span style={valueStyle}>{notes}</span></div>}
+    </CollapsibleCardBody>
   </div>
   </CardEditOverlay>
   );
@@ -430,12 +415,8 @@ const BadgeCardV2: React.FC<BadgeV2Props> = (props) => {
   <CardEditOverlay cardName={badgeName} cardType="Badge" details={details}>
   <div style={{
     background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
-    boxShadow: sg.shadow, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-    minHeight: 260, display: 'flex', flexDirection: 'column',
-  }}
-    onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadowHover; }}
-    onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadow; }}
-  >
+    boxShadow: sg.shadow, minHeight: 260, display: 'flex', flexDirection: 'column',
+  }}>
     <div style={{
       background: '#fff', padding: '16px 20px',
       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, minHeight: 64,
@@ -447,18 +428,16 @@ const BadgeCardV2: React.FC<BadgeV2Props> = (props) => {
       locations={locations}
       pageSpecific={pageSpecific}
       appWide={appWide}
-      hasCollapsible={true}
-      collapsibleContent={<>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Background:</span><span style={monoStyle}>{background}</span></div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Text Color:</span><span style={monoStyle}>{textColor}</span></div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Size:</span><span style={monoStyle}>{size}</span></div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Border Radius:</span><span style={monoStyle}>{borderRadius}</span></div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Padding:</span><span style={monoStyle}>{padding}</span></div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Purpose:</span><span style={valueStyle}>{purpose}</span></div>
-        {states && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>States:</span><span style={valueStyle}>{states}</span></div>}
-        {notes && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Notes:</span><span style={valueStyle}>{notes}</span></div>}
-      </>}
-    />
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Background:</span><span style={monoStyle}>{background}</span></div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Text Color:</span><span style={monoStyle}>{textColor}</span></div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Size:</span><span style={monoStyle}>{size}</span></div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Border Radius:</span><span style={monoStyle}>{borderRadius}</span></div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Padding:</span><span style={monoStyle}>{padding}</span></div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Purpose:</span><span style={valueStyle}>{purpose}</span></div>
+      {states && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>States:</span><span style={valueStyle}>{states}</span></div>}
+      {notes && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Notes:</span><span style={valueStyle}>{notes}</span></div>}
+    </CollapsibleCardBody>
   </div>
   </CardEditOverlay>
   );
@@ -496,12 +475,8 @@ const PanelCardV2: React.FC<PanelV2Props> = (props) => {
   <CardEditOverlay cardName={panelName} cardType="Panel" details={details}>
   <div style={{
     background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
-    boxShadow: sg.shadow, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-    minHeight: 260, display: 'flex', flexDirection: 'column',
-  }}
-    onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadowHover; }}
-    onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadow; }}
-  >
+    boxShadow: sg.shadow, minHeight: 260, display: 'flex', flexDirection: 'column',
+  }}>
     <div style={{
       background: previewBg || '#fff', padding: '16px 20px',
       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, minHeight: 80,
@@ -513,16 +488,14 @@ const PanelCardV2: React.FC<PanelV2Props> = (props) => {
       locations={locations}
       pageSpecific={pageSpecific}
       appWide={appWide}
-      hasCollapsible={true}
-      collapsibleContent={<>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Background:</span><span style={monoStyle}>{background}</span></div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Border:</span><span style={monoStyle}>{border}</span></div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Border Radius:</span><span style={monoStyle}>{borderRadius}</span></div>
-        {shadow && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Shadow:</span><span style={monoStyle}>{shadow}</span></div>}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Purpose:</span><span style={valueStyle}>{purpose}</span></div>
-        {notes && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Notes:</span><span style={valueStyle}>{notes}</span></div>}
-      </>}
-    />
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Background:</span><span style={monoStyle}>{background}</span></div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Border:</span><span style={monoStyle}>{border}</span></div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Border Radius:</span><span style={monoStyle}>{borderRadius}</span></div>
+      {shadow && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Shadow:</span><span style={monoStyle}>{shadow}</span></div>}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Purpose:</span><span style={valueStyle}>{purpose}</span></div>
+      {notes && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Notes:</span><span style={valueStyle}>{notes}</span></div>}
+    </CollapsibleCardBody>
   </div>
   </CardEditOverlay>
   );
@@ -583,12 +556,8 @@ const ButtonCardV2: React.FC<ButtonV2Props> = (props) => {
   <CardEditOverlay cardName={buttonName} cardType="Button" details={details}>
   <div style={{
     background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
-    boxShadow: sg.shadow, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-    minHeight: 260, display: 'flex', flexDirection: 'column',
-  }}
-    onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadowHover; }}
-    onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadow; }}
-  >
+    boxShadow: sg.shadow, minHeight: 260, display: 'flex', flexDirection: 'column',
+  }}>
     <div style={{
       background: '#fff', padding: '16px 20px',
       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, minHeight: 64,
@@ -600,15 +569,13 @@ const ButtonCardV2: React.FC<ButtonV2Props> = (props) => {
       locations={locations}
       pageSpecific={pageSpecific}
       appWide={appWide}
-      hasCollapsible={true}
-      collapsibleContent={<>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Button Color:</span><span style={monoStyle}>{buttonColor}</span></div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Text Color:</span><span style={monoStyle}>{textColor}</span></div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Size:</span><span style={monoStyle}>{size}</span></div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Purpose:</span><span style={valueStyle}>{purpose}</span></div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Visual Effects:</span><span style={monoStyle}>{visualEffects}</span></div>
-      </>}
-    />
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Button Color:</span><span style={monoStyle}>{buttonColor}</span></div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Text Color:</span><span style={monoStyle}>{textColor}</span></div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Size:</span><span style={monoStyle}>{size}</span></div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Purpose:</span><span style={valueStyle}>{purpose}</span></div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Visual Effects:</span><span style={monoStyle}>{visualEffects}</span></div>
+    </CollapsibleCardBody>
   </div>
   </CardEditOverlay>
   );
@@ -947,7 +914,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             {/* ─── Story Builder ─── */}
             <PageSubheading>Story Builder Page</PageSubheading>
             <PageDesc>Colors used across the Story Builder / Story Setup interface.</PageDesc>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 14 }}>
               <SwatchCardV2 color="#4a5f7f" name="Slate Blue" locations="Panel header bars, MAIN CHARACTERS pill" value="#4a5f7f" token="bg-[#4a5f7f]" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#2a2a2f" name="Dark Charcoal" locations="Panel containers, Character Roster sidebar, character cards" value="#2a2a2f" token="bg-[#2a2a2f]" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#1a1a1a" name="Soft Black" locations="Left icon navigation sidebar" value="#1a1a1a" token="bg-[#1a1a1a]" pageSpecific={true} appWide={false} />
@@ -973,7 +940,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             {/* ─── My Stories ─── */}
             <PageSubheading>My Stories Page</PageSubheading>
             <PageDesc>Colors used on the My Stories gallery/card grid.</PageDesc>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 14 }}>
               <SwatchCardV2 color="rgba(248,250,252,0.5)" name="Frosted White" locations="Full page background" value="rgba(248,250,252,0.5)" token="bg-slate-50/50" pageSpecific={false} appWide={true} extraPreviewStyle={{ border: '1px dashed #ccc' }} />
               <SwatchCardV2 color="#4a5f7f" name="Slate Blue" locations="Active tab pill, story card border" value="#4a5f7f" token="bg-[#4a5f7f]" pageSpecific={false} appWide={true} />
               
@@ -991,7 +958,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             {/* ─── Community Gallery ─── */}
             <PageSubheading>Community Gallery</PageSubheading>
             <PageDesc>Colors specific to the Community Gallery page and gallery cards.</PageDesc>
-             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 14 }}>
+             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 14 }}>
               <SwatchCardV2 color="#121214" name="Near Black" locations="GalleryHub main wrapper, Account page background" value="#121214" token="bg-[#121214]" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="rgba(18,18,20,0.8)" name="Glass Black" locations="Gallery sticky header" value="rgba(18,18,20,0.8)" token="bg-[#121214]/80" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
               <SwatchCardV2 color="rgba(58,58,63,0.5)" name="Smoke Charcoal" locations="Gallery search input background" value="rgba(58,58,63,0.5)" token="bg-[#3a3a3f]/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
@@ -1006,7 +973,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             {/* ─── Chat Interface ─── */}
             <PageSubheading>Chat Interface</PageSubheading>
             <PageDesc>Colors unique to the chat/conversation view.</PageDesc>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 14 }}>
               <SwatchCardV2 color="#1c1f26" name="Ink Blue" locations="Chat message bubble, transparent mode OFF" value="#1c1f26" token="bg-[#1c1f26]" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="rgba(0,0,0,0.5)" name="Half Black" locations="Chat message bubble, transparent mode ON" value="rgba(0,0,0,0.5)" token="bg-black/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
               <SwatchCardV2 color="#94a3b8" name="Muted Slate" locations="Italic action text in chat (*actions*)" value="#94a3b8" token="text-slate-400" pageSpecific={true} appWide={false} />
@@ -1021,7 +988,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             {/* ─── Chat History ─── */}
             <PageSubheading>Chat History</PageSubheading>
             <PageDesc>Colors for the conversation session cards.</PageDesc>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 14 }}>
               <SwatchCardV2 color="#2a2a2f" name="Dark Charcoal" locations="Session card outer background, empty state card" value="#2a2a2f" token="bg-[#2a2a2f]" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="rgba(58,58,63,0.3)" name="Muted Charcoal" locations="Inner nested card in session entries" value="rgba(58,58,63,0.3)" token="bg-[#3a3a3f]/30" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
               <SwatchCardV2 color="rgba(255,255,255,0.05)" name="Ghost White" locations="Inner card subtle border" value="rgba(255,255,255,0.05)" token="border-white/5" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
@@ -1041,7 +1008,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             {/* ─── Account Page ─── */}
             <PageSubheading>Account Page</PageSubheading>
             <PageDesc>Colors for the dark-themed Account settings page.</PageDesc>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 14 }}>
               <SwatchCardV2 color="#121214" name="Near Black" locations="Full page background for Account section" value="#121214" token="bg-[#121214]" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="#1e1e22" name="Charcoal" locations="Email, Plan, Password setting cards" value="#1e1e22" token="bg-[#1e1e22]" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="#2b2b2e" name="Warm Charcoal" locations="Pill tab container on Account and Gallery pages" value="#2b2b2e" token="bg-[#2b2b2e]" pageSpecific={false} appWide={true} />
@@ -1053,7 +1020,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             {/* ─── Auth Page ─── */}
             <PageSubheading>Auth Page</PageSubheading>
             <PageDesc>The light-themed authentication page gradient and card colors.</PageDesc>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 14 }}>
               <SwatchCardV2 color="linear-gradient(to bottom right, #0f172a, #581c87, #0f172a)" name="Navy-to-Purple Gradient" locations="Auth page full-screen background" value="from-slate-900 via-purple-900 to-slate-900" token="—" pageSpecific={true} appWide={false} extraPreviewStyle={{ background: 'linear-gradient(135deg, #0f172a, #581c87, #0f172a)' }} />
               <SwatchCardV2 color="rgba(30,41,59,0.5)" name="Dark Slate Glass" locations="Login/signup Card component background" value="rgba(30,41,59,0.5)" token="bg-slate-800/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
               <SwatchCardV2 color="rgba(51,65,85,0.5)" name="Slate Glass" locations="Email and password input fields on auth page" value="rgba(51,65,85,0.5)" token="bg-slate-700/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
@@ -1069,7 +1036,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             {/* ─── Creator Profile ─── */}
             <PageSubheading>Creator Profile</PageSubheading>
             <PageDesc>Colors for the public Creator Profile page.</PageDesc>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 14 }}>
               <SwatchCardV2 color="#121214" name="Near Black" locations="Full page background (same as Gallery/Account)" value="#121214" token="bg-[#121214]" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="#1e1e22" name="Charcoal" locations="Profile info card, bio section" value="#1e1e22" token="bg-[#1e1e22]" pageSpecific={true} appWide={false} />
               
@@ -1085,7 +1052,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             {/* ─── Global Sidebar ─── */}
             <PageSubheading>Global Sidebar</PageSubheading>
             <PageDesc>Colors for the main application navigation sidebar.</PageDesc>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 14 }}>
               <SwatchCardV2 color="#1a1a1a" name="Soft Black" locations="Global left sidebar (280px expanded, 72px collapsed)" value="#1a1a1a" token="bg-[#1a1a1a]" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#4a5f7f" name="Slate Blue" locations="Active navigation item background" value="#4a5f7f" token="bg-[#4a5f7f]" pageSpecific={false} appWide={true} effect="shadow-lg shadow-black/40" />
               <SwatchCardV2 color="#94a3b8" name="Muted Slate" locations="Inactive sidebar item text and icons" value="#94a3b8" token="text-slate-400" pageSpecific={false} appWide={true} />
@@ -1096,7 +1063,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             {/* ─── Character Builder ─── */}
             <PageSubheading>Character Builder</PageSubheading>
             <PageDesc>Colors specific to the Character Builder / CharactersTab editor.</PageDesc>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 14 }}>
               <SwatchCardV2 color="rgba(58,58,63,0.3)" name="Muted Charcoal" locations="HardcodedSection inner card, character trait row containers" value="rgba(58,58,63,0.3)" token="bg-[#3a3a3f]/30" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
               <SwatchCardV2 color="rgba(24,24,27,0.5)" name="Smoke Black" locations="Read-only trait labels (Physical Appearance, Personality, etc.)" value="rgba(24,24,27,0.5)" token="bg-zinc-900/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
               <SwatchCardV2 color="rgba(96,165,250,0.1)" name="Faint Blue" locations="AI Enhance sparkle button hover state" value="rgba(96,165,250,0.1)" token="bg-blue-500/10" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
@@ -1107,7 +1074,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             {/* ─── Model Settings ─── */}
             <PageSubheading>Model Settings</PageSubheading>
             <PageDesc>Colors used on the Model Settings page — NOTE: this page uses a LIGHT THEME unlike the rest of the app.</PageDesc>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 14 }}>
               <SwatchCardV2 color="#ffffff" name="White" locations="Inactive model selection card background" value="#ffffff" token="bg-white" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="#0f172a" name="Deep Navy" locations="Active/selected model card background, scale-[1.02]" value="#0f172a" token="bg-slate-900" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="#faf5ff" name="Pale Lavender" locations="Admin-only share toggle row background, border-purple-200" value="#faf5ff" token="bg-purple-50" pageSpecific={true} appWide={false} />
@@ -1123,7 +1090,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             {/* ─── World Tab ─── */}
             <PageSubheading>World Tab</PageSubheading>
             <PageDesc>Colors specific to the World Tab and its hint/character components.</PageDesc>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 14 }}>
               <SwatchCardV2 color="rgba(0,0,0,0.8)" name="Near Black Glass" locations="World Tab character card button background" value="rgba(0,0,0,0.8)" token="bg-black/80" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="#4a5f7f" name="Slate Blue" locations="Character card border, hover brightens to #6b82a8" value="#4a5f7f" token="border-[#4a5f7f]" pageSpecific={true} appWide={false} />
             </div>
@@ -2259,7 +2226,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
            <Section id="inputs" title="Form Inputs" desc="Input fields and textareas used throughout the application.">
 
             <PageSubheading>Story Builder Page</PageSubheading>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14 }}>
               <InputCardV2
                 inputName="Dark Theme Text Input"
                 background="rgba(24,24,27,0.5) / bg-zinc-900/50"
@@ -2281,7 +2248,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             </div>
 
             <PageSubheading>Community Gallery</PageSubheading>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14 }}>
               <InputCardV2
                 inputName="Gallery Search Input"
                 background="#3a3a3f/50 / bg-[#3a3a3f]/50"
@@ -2302,7 +2269,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             </div>
 
             <PageSubheading>Chat Interface</PageSubheading>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14 }}>
               <InputCardV2
                 inputName="Chat Input Textarea"
                 background="white (inside hsl(var(--ui-surface-2)) wrapper)"
@@ -2325,7 +2292,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             </div>
 
             <PageSubheading>Account Page</PageSubheading>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14 }}>
               <InputCardV2
                 inputName="Account Password Input"
                 background="#2a2a2f / bg-[#2a2a2f]"
@@ -2346,7 +2313,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             </div>
 
             <PageSubheading>Auth Page</PageSubheading>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14 }}>
               <InputCardV2
                 inputName="Auth Input (Dark Slate)"
                 background="bg-slate-700/50"
@@ -2371,7 +2338,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             ]} />
 
             <PageSubheading>Character Library Search</PageSubheading>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14 }}>
               <InputCardV2
                 inputName="Header Search (Dark Pill)"
                 background="transparent (inside #2b2b2e pill container)"
@@ -2393,7 +2360,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             </div>
 
             <PageSubheading>Character Builder</PageSubheading>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14 }}>
               <InputCardV2
                 inputName="HardcodedRow Textarea"
                 background="bg-zinc-900/50"
@@ -2435,7 +2402,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             </div>
 
             <PageSubheading>Chat Settings — LabeledToggle</PageSubheading>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14 }}>
               <InputCardV2
                 inputName="LabeledToggle Component"
                 background="N/A (composite control)"
@@ -2479,7 +2446,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
 
             <PageSubheading>Review Modal</PageSubheading>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14 }}>
               <InputCardV2
                 inputName="Review Textarea (Frosted)"
                 background="bg-white/5"
@@ -2501,7 +2468,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
 
             <PageSubheading>GuidanceStrengthSlider</PageSubheading>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14 }}>
               <InputCardV2
                 inputName="GuidanceStrengthSlider (Custom 3-Point)"
                 background="rgba(21,25,34,0.95) (track)"
@@ -2531,7 +2498,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             </div>
 
             <PageSubheading>TagInput Component</PageSubheading>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14 }}>
               <InputCardV2
                 inputName="TagInput (Enter-to-Add)"
                 background="bg-zinc-900/50 / bg-zinc-800"
@@ -2560,7 +2527,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             </div>
 
             <PageSubheading>Scene Tag Editor Input</PageSubheading>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14 }}>
               <InputCardV2
                 inputName="Scene Tag Editor Input"
                 background="bg-zinc-800"
@@ -2581,7 +2548,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             </div>
 
             <PageSubheading>Chronicle UI.tsx — Parallel Input System</PageSubheading>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14 }}>
               <InputCardV2
                 inputName="Chronicle UI Input"
                 background="bg-slate-50"
@@ -2652,7 +2619,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
           {/* ═══ 5. BADGES & TAGS ═══ */}
           {/* ═══════════════════════════════════════════════════════════════ */}
            <Section id="badges" title="Badges & Tags" desc="Badges on story cards, tag chips, and status indicators.">
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14 }}>
 
               {/* ── Story Builder — Content Theme Chips ── */}
               <PageSubheading fullSpan>Story Builder — Content Theme Chips</PageSubheading>
@@ -3115,7 +3082,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
           {/* ═══════════════════════════════════════════════════════════════ */}
           <Section id="panels" title="Panels & Modals" desc="Container patterns, card layouts, sidebars, modal dialogs, and overlay systems used throughout the application.">
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14 }}>
 
               {/* ─── Story Builder Page ─── */}
               <PageSubheading fullSpan>Story Builder Page</PageSubheading>
