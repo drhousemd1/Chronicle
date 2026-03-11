@@ -76,7 +76,7 @@ export const GuidanceStrengthSlider: React.FC<GuidanceStrengthSliderProps> = ({ 
             onClick={() => onChange(level.value)}
             className={cn(
               "cursor-pointer text-[10px] font-black uppercase tracking-widest transition-colors",
-              value === level.value ? "text-blue-400" : "text-zinc-500"
+              value === level.value ? "text-blue-500" : "text-zinc-500"
             )}
           >
             {level.label}

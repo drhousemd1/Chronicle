@@ -248,7 +248,7 @@ export const ArcPhaseCard: React.FC<ArcPhaseCardProps> = ({
       <div className="mt-4 pt-5 border-t border-white/10">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <CheckSquare size={14} className="text-blue-400" />
+            <CheckSquare size={14} className="text-blue-500" />
             <h4 className="text-[10px] font-black text-white uppercase tracking-[0.2em] m-0">Steps</h4>
           </div>
           <ArcModeToggle mode={mode} onChange={(m) => {

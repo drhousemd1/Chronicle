@@ -233,7 +233,7 @@ export const AvatarGenerationModal: React.FC<AvatarGenerationModalProps> = ({
                     "relative rounded-xl p-2 transition-all duration-200 cursor-pointer",
                     "bg-card hover:bg-accent/50",
                     selectedStyleId === style.id
-                      ? "ring-2 ring-blue-400 shadow-md"
+                      ? "ring-2 ring-blue-500 shadow-md"
                       : "ring-1 ring-border hover:ring-slate-300",
                     "focus-visible:outline-none"
                   )}

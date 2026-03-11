@@ -3722,7 +3722,7 @@ const updatedChar: SideCharacter = {
                               ) : segmentAvatar ? (
                                 <img src={segmentAvatar} alt={segmentName} className="w-full h-full object-cover" />
                               ) : (
-                                <div className={`font-black italic text-lg ${isAi ? 'text-white/30' : 'text-blue-400/50'}`}>
+                                <div className={`font-black italic text-lg ${isAi ? 'text-white/30' : 'text-blue-500/50'}`}>
                                   {segmentName.charAt(0) || '?'}
                                 </div>
                               )}
