@@ -181,7 +181,7 @@ export const ArcPhaseCard: React.FC<ArcPhaseCardProps> = ({
     <div className="mt-4 pt-5 border-t border-white/10">
       {/* Phase label + delete */}
       <div className="flex items-center justify-between mb-5">
-        <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">
+        <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">
           Phase {phaseNumber}
         </span>
         <button
