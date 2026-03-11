@@ -2184,7 +2184,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
             <ButtonCardV2
               buttonName="Model Selection Card (Active / Inactive)"
-              buttonColor="Active: bg-slate-900 border-slate-900 text-white. Inactive: bg-white border-slate-200 text-slate-900"
+              buttonColor="Active: bg-slate-900 border-slate-900 text-white. Inactive: bg-white border-slate-200 text-[hsl(var(--ui-surface-2))]"
               size="p-3 rounded-xl"
               purpose="Select AI model for story generation"
               visualEffects="Active: shadow-xl scale-[1.02]. Inactive hover: border-blue-400 shadow-lg scale-[1.01]"
