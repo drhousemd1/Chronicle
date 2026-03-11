@@ -1810,7 +1810,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <ButtonCardV2
               buttonName="Chat Message Action Icons"
               buttonColor="transparent — hover:bg-white/10"
-              textColor="Default: #94a3b8 — text-slate-400. Hover: text-white. Save: text-green-400. Cancel: text-red-400"
+              textColor="Default: #94a3b8 — text-slate-400. Hover: text-white. Save: text-green-400. Cancel: text-red-500"
               size="p-2 — rounded-lg"
               purpose="Per-message actions visible on hover (regenerate, menu, save edit, cancel edit)"
               visualEffects="transition-colors"
