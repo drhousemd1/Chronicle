@@ -1233,18 +1233,18 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <div style={fullSpan}><PageSubheading>Story Builder Page</PageSubheading></div>
 
             <TypoCardV2 fontName="System Sans-Serif" exampleBg="#fff"
-              exampleContent={<span className="text-lg font-black text-slate-900 uppercase tracking-tight">STORY BUILDER</span>}
+              exampleContent={<span className="text-lg font-black text-[hsl(var(--ui-surface-2))] uppercase tracking-tight">STORY BUILDER</span>}
               fontSize="18px (text-lg)" fontWeight="900 (font-black)"
               letterSpacing="-0.5px (tracking-tight)" textTransform="uppercase"
-              color="#0f172a (slate-900)"
+              color="hsl(228,7%,20%) (Graphite)"
               locations='Page title — top-left of the white header bar on every page ("STORY BUILDER", "ACCOUNT", "MY STORIES"). Always uppercase, next to the back arrow.'
               pageSpecific={false} appWide={true}
             />
             <TypoCardV2 fontName="System Sans-Serif" exampleBg="#fff"
-              exampleContent={<span style={{ fontSize: 36, fontWeight: 900, color: '#0f172a', letterSpacing: '-0.9px' }}>Story Setup</span>}
+              exampleContent={<span style={{ fontSize: 36, fontWeight: 900, color: 'hsl(228,7%,20%)', letterSpacing: '-0.9px' }}>Story Setup</span>}
               fontSize="36px" fontWeight="900 (font-black)"
               letterSpacing="-0.9px"
-              color="#0f172a (slate-900)"
+              color="hsl(228,7%,20%) (Graphite)"
               locations="Section heading — large heading at top of the content area on Story Builder page."
               pageSpecific={true} appWide={false}
             />
