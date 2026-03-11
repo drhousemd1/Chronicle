@@ -1030,6 +1030,31 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
           </div>
         </div>
 
+        {/* Instructions for Lovable */}
+        <div style={{ padding: isNarrow ? '16px 16px 0' : '24px 42px 0', maxWidth: 1400 }}>
+          <div style={{
+            background: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderRadius: 12,
+            padding: '24px 28px',
+            marginBottom: 0,
+          }}>
+            <h2 style={{ fontSize: 16, fontWeight: 800, color: '#1e293b', marginBottom: 10, letterSpacing: '-0.01em' }}>
+              Instructions for Lovable
+            </h2>
+            <p style={{ fontSize: 13, color: '#334155', lineHeight: 1.7, marginBottom: 14 }}>
+              This App Style Guide is the single source of truth for all styling in the Chronicle Application. Every color, token, component, and design element on this page must exactly match what is used in the live application.
+            </p>
+            <h3 style={{ fontSize: 13, fontWeight: 700, color: '#1e293b', marginBottom: 8 }}>Rules:</h3>
+            <ol style={{ paddingLeft: 20, margin: 0, fontSize: 13, color: '#334155', lineHeight: 1.8, listStyleType: 'decimal' }}>
+              <li style={{ marginBottom: 6 }}>When building or modifying any element in the Chronicle Application, only use colors, tokens, components, and styles that exist on this page. Never introduce slight variations — values must be exact.</li>
+              <li style={{ marginBottom: 6 }}>Before selecting a style, determine whether the context is page-specific or app-wide, then choose from the appropriate tokens/elements on this page.</li>
+              <li style={{ marginBottom: 6 }}>If a new feature requires a color, style, or component that does not exist on this page, stop and confirm the addition with the user before implementing it.</li>
+              <li>Any time you add, remove, or reassign a style in the application, update this page to reflect the change — including the "Locations" field on affected swatches/elements.</li>
+            </ol>
+          </div>
+        </div>
+
         {/* Content */}
         <div ref={contentRef} style={{ padding: isNarrow ? '24px 16px 68px' : '36px 42px 84px', maxWidth: 1400 }}>
 
