@@ -2226,7 +2226,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
            <Section id="inputs" title="Form Inputs" desc="Input fields and textareas used throughout the application.">
 
             <PageSubheading>Story Builder Page</PageSubheading>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14 }}>
               <InputCardV2
                 inputName="Dark Theme Text Input"
                 background="rgba(24,24,27,0.5) / bg-zinc-900/50"
