@@ -1729,7 +1729,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             />
             <ButtonCardV2
               buttonName="Gallery PLAY Button"
-              buttonColor="#3b82f6 — bg-blue-600"
+              buttonColor="#3b82f6 — bg-blue-500"
               textColor="#ffffff — text-white"
               size="h-8 px-4 — rounded-xl (12px)"
               purpose="Compact play action on gallery story card hover overlay"
