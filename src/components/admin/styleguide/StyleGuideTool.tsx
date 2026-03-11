@@ -4519,6 +4519,7 @@ text-white/40    — Disabled`}
         existingComment={editDetailTarget?.existingComment}
         existingId={editDetailTarget?.existingId}
         onSave={handleSaveEdit}
+        allSwatches={ALL_SWATCHES}
       />
       <EditsListModal
         open={showEditsListModal}
