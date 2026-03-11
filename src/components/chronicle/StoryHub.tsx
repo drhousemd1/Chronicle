@@ -54,7 +54,7 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDel
         {contentThemes?.storyType && (
           <div className={cn(
             "absolute top-4 right-4 px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f] z-10 uppercase tracking-wide",
-            contentThemes.storyType === 'NSFW' ? "text-red-400" : "text-blue-500"
+            contentThemes.storyType === 'NSFW' ? "text-red-500" : "text-blue-500"
           )}>
             {contentThemes.storyType}
           </div>

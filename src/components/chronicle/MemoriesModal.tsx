@@ -370,7 +370,7 @@ export const MemoriesModal: React.FC<MemoriesModalProps> = ({
                 size="sm"
                 onClick={handleDeleteAll}
                 disabled={isDeleting}
-                className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                className="text-red-500 hover:text-red-400 hover:bg-red-500/10"
               >
                 <Trash2 className="w-4 h-4 mr-1" />
                 {isDeleting ? 'Deleting...' : 'Delete All'}

@@ -140,7 +140,7 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
               <button
                 type="button"
                 onClick={() => onDeleteStep(step.id)}
-                className="w-[26px] h-[26px] rounded-[8px] border border-red-400/50 bg-transparent text-red-300 flex items-center justify-center cursor-pointer"
+                className="w-[26px] h-[26px] rounded-[8px] border border-red-500/50 bg-transparent text-red-300 flex items-center justify-center cursor-pointer"
               >
                 <Trash2 size={13} />
               </button>

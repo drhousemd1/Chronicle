@@ -3571,7 +3571,7 @@ const updatedChar: SideCharacter = {
                         {/* Cancel (X) */}
                         <button
                           onClick={handleInlineEditCancel}
-                          className="p-2 rounded-lg hover:bg-white/10 text-red-400 hover:text-red-300 transition-colors"
+                          className="p-2 rounded-lg hover:bg-white/10 text-red-500 hover:text-red-400 transition-colors"
                           title="Cancel editing"
                         >
                           <X className="w-4 h-4" />

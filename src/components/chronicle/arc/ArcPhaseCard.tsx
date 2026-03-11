@@ -186,7 +186,7 @@ export const ArcPhaseCard: React.FC<ArcPhaseCardProps> = ({
         </span>
         <button
           onClick={onDelete}
-          className="w-[30px] h-[30px] rounded-[10px] border border-red-400/50 bg-transparent text-red-300 flex items-center justify-center cursor-pointer"
+          className="w-[30px] h-[30px] rounded-[10px] border border-red-500/50 bg-transparent text-red-300 flex items-center justify-center cursor-pointer"
           title="Delete phase"
         >
           <Trash2 size={15} />

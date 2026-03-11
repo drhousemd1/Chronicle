@@ -151,7 +151,7 @@ export default function Auth() {
             )}
 
             {errors.form && (
-              <p className="text-red-400 text-sm text-center">{errors.form}</p>
+              <p className="text-red-500 text-sm text-center">{errors.form}</p>
             )}
 
             <Button

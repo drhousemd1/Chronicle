@@ -136,7 +136,7 @@ const TraitRow: React.FC<{
       <button
         type="button"
         onClick={onDelete}
-        className="text-red-400 hover:text-red-300 p-1.5 rounded-md hover:bg-red-900/30 mt-1"
+        className="text-red-500 hover:text-red-400 p-1.5 rounded-md hover:bg-red-900/30 mt-1"
       >
         <X className="w-4 h-4" />
       </button>
