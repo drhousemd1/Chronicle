@@ -2815,7 +2815,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <BadgeCardV2
                 badgeName="Add Custom Button (Dashed)"
                 background="bg-transparent"
-                textColor="text-blue-400"
+                textColor="text-blue-500"
                 size="text-xs font-medium"
                 borderRadius="rounded-lg"
                 padding="px-3 py-1.5"
