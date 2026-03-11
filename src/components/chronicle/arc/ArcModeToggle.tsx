@@ -16,7 +16,7 @@ export const ArcModeToggle: React.FC<ArcModeToggleProps> = ({ mode, onChange }) 
         className={cn(
           "flex-1 px-3.5 py-1.5 text-[10px] font-black uppercase tracking-widest rounded border-none cursor-pointer transition-all",
           mode === 'simple'
-            ? "bg-zinc-700 text-blue-400 shadow-sm"
+            ? "bg-zinc-700 text-blue-500 shadow-sm"
             : "bg-transparent text-zinc-500 hover:text-zinc-300"
         )}
       >
