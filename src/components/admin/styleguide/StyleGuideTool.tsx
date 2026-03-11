@@ -1332,9 +1332,9 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             />
             <TypoCardV2 fontName="System Sans-Serif"
               exampleBg="#2a2a2f"
-              exampleContent={<span className="text-[10px] text-white/50">👁 123 ❤ 45 🔖 12 ▶ 67</span>}
+              exampleContent={<span className="text-[10px] text-[rgba(248,250,252,0.3)]">👁 123 ❤ 45 🔖 12 ▶ 67</span>}
               fontSize="10px (text-[10px])" fontWeight="400 (normal)"
-              color="rgba(255,255,255,0.5) (white/50)"
+              color="rgba(248,250,252,0.3) (Ghost White)"
               locations="Card stats — view/like/save/play counts at bottom of gallery cards. flex gap-3."
               pageSpecific={true} appWide={false}
             />
