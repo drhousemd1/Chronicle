@@ -212,9 +212,12 @@ const CollapsibleCardBody: React.FC<{
           transition: 'max-height 0.3s ease',
         }}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <span style={labelStyle}>{nameLabel}:</span>
-          <span style={valueStyle}>{nameValue}</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <span style={labelStyle}>{nameLabel}:</span>
+            <span style={valueStyle}>{nameValue}</span>
+          </div>
+          <VisibilityFlags pageSpecific={pageSpecific} appWide={appWide} />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <span style={labelStyle}>Locations:</span>
