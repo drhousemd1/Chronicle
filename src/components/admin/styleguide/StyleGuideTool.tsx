@@ -166,6 +166,8 @@ const valueStyle: React.CSSProperties = {
 };
 
 /* ═══════════════════════ SHARED COLLAPSIBLE CARD BODY ═══════════════════════ */
+const COLLAPSED_META_HEIGHT = 130;
+
 const VisibilityFlags: React.FC<{ pageSpecific?: boolean; appWide?: boolean }> = ({ pageSpecific, appWide }) => (
   <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
     <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#334155', cursor: 'default' }}>
@@ -183,44 +185,47 @@ const CollapsibleCardBody: React.FC<{
   nameLabel: string;
   nameValue: string;
   locations: string;
-  collapsibleContent: React.ReactNode;
-  hasCollapsible: boolean;
+  children: React.ReactNode;
   pageSpecific?: boolean;
   appWide?: boolean;
-  alwaysVisibleExtra?: React.ReactNode;
-}> = ({ nameLabel, nameValue, locations, collapsibleContent, hasCollapsible, pageSpecific, appWide, alwaysVisibleExtra }) => {
+}> = ({ nameLabel, nameValue, locations, children, pageSpecific, appWide }) => {
   const [expanded, setExpanded] = useState(false);
+  const [isOverflowing, setIsOverflowing] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = contentRef.current;
+    if (el) {
+      setIsOverflowing(el.scrollHeight > COLLAPSED_META_HEIGHT);
+    }
+  }, [nameValue, locations, children]);
+
   return (
-    <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 6, borderTop: '1px solid #e2e8f0', flex: 1 }}>
-      {/* Always visible: Name + Locations */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <span style={labelStyle}>{nameLabel}:</span>
-        <span style={valueStyle}>{nameValue}</span>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <span style={labelStyle}>Locations:</span>
-        <span style={{
-          ...valueStyle,
-          ...(!expanded ? { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' } : {}),
-        }}>{locations}</span>
-      </div>
-      {alwaysVisibleExtra}
-      {/* Collapsible metadata */}
-      {hasCollapsible && (
-        <div style={{
+    <div style={{ padding: 12, display: 'flex', flexDirection: 'column', borderTop: '1px solid #e2e8f0', flex: 1 }}>
+      {/* Measured content container */}
+      <div
+        ref={contentRef}
+        style={{
+          display: 'flex', flexDirection: 'column', gap: 6,
+          maxHeight: expanded ? 9999 : COLLAPSED_META_HEIGHT,
           overflow: 'hidden',
-          maxHeight: expanded ? 2000 : 0,
           transition: 'max-height 0.3s ease',
-        }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {collapsibleContent}
-            <VisibilityFlags pageSpecific={pageSpecific} appWide={appWide} />
-          </div>
+        }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={labelStyle}>{nameLabel}:</span>
+          <span style={valueStyle}>{nameValue}</span>
         </div>
-      )}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={labelStyle}>Locations:</span>
+          <span style={valueStyle}>{locations}</span>
+        </div>
+        {children}
+        <VisibilityFlags pageSpecific={pageSpecific} appWide={appWide} />
+      </div>
       {/* Fixed-height toggle row — always present for uniform sizing */}
       <div style={{ position: 'relative', zIndex: 10, height: 24, display: 'flex', alignItems: 'center', marginTop: 'auto' }}>
-        {hasCollapsible && (
+        {isOverflowing && (
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
