@@ -1564,7 +1564,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <ButtonCardV2
               buttonName="Card Hover Buttons — Edit / Delete / Play"
               buttonColor="Edit: #ffffff — bg-white. Delete: hsl(var(--destructive)) — bg-[hsl(var(--destructive))]. Play: #3b82f6 — bg-blue-600"
-              textColor="Edit: #0f172a — text-slate-900. Delete/Play: #ffffff — text-white"
+              textColor="Edit: hsl(228,7%,20%) — text-[hsl(var(--ui-surface-2))]. Delete/Play: #ffffff — text-white"
               size="h-8 px-4 — rounded-xl (12px)"
               purpose="Compact card variant for story card hover overlay actions"
               visualEffects="shadow-2xl · text-[10px] font-bold leading-none uppercase tracking-wider"
@@ -1572,7 +1572,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               pageSpecific={true}
               appWide={false}
               preview={<div className="flex gap-2">
-                <button className="h-8 px-4 rounded-xl bg-white text-slate-900 text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl" style={{ cursor: 'default' }}>EDIT</button>
+                <button className="h-8 px-4 rounded-xl bg-white text-[hsl(var(--ui-surface-2))] text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl" style={{ cursor: 'default' }}>EDIT</button>
                 <button className="h-8 px-4 rounded-xl bg-[hsl(var(--destructive))] text-white text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl" style={{ cursor: 'default' }}>DELETE</button>
                 <button className="h-8 px-4 rounded-xl bg-blue-600 text-white text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl" style={{ cursor: 'default' }}>PLAY</button>
               </div>}
