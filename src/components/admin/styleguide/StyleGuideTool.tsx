@@ -3432,7 +3432,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 notes="Images: object-cover object-center. Text color via getTimeTextColor() helper."
                 preview={
                   <div className="relative rounded-lg overflow-hidden shadow-lg" style={{ width: '100%', height: 56 }}>
-                    <div className="absolute inset-0 bg-gradient-to-r from-orange-400 via-pink-300 to-blue-400" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-orange-400 via-pink-300 to-blue-500" />
                     <div className="absolute inset-0 bg-black/20" />
                     <div className="relative flex items-center justify-center h-full">
                       <span className="text-white text-[9px] font-bold">Day 1 · Sunrise</span>
