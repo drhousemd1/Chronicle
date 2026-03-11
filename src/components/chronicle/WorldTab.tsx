@@ -819,7 +819,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                                 sections[sIdx] = { ...sections[sIdx], items: [...sections[sIdx].items, { id: uid('wci'), label: '', value: '' }] };
                                 updateCore({ customWorldSections: sections });
                               }}
-                              className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm transition-colors"
+                              className="flex items-center gap-2 text-blue-500 hover:text-blue-300 text-sm transition-colors"
                             >
                               <Plus size={16} />
                               <span>Add Item</span>
