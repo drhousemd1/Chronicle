@@ -3552,7 +3552,7 @@ const updatedChar: SideCharacter = {
                   bubblesTransparent
                     ? 'bg-black/50'
                     : 'bg-[#1c1f26]'
-                } ${!isAi ? 'border-2 border-blue-400' : 'border border-white/5 hover:border-white/20'}`}>
+                } ${!isAi ? 'border-2 border-blue-500' : 'border border-white/5 hover:border-white/20'}`}>
                   
                   {/* Action buttons - top right corner */}
                   <div className={`absolute top-4 right-4 flex items-center gap-1 transition-opacity ${
