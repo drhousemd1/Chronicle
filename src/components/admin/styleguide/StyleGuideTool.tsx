@@ -3480,11 +3480,33 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 pageSpecific appWide={false}
                 notes="Images: object-cover object-center. Text color via getTimeTextColor() helper."
                 preview={
-                  <div className="relative rounded-lg overflow-hidden shadow-lg" style={{ width: '100%', height: 56 }}>
-                    <div className="absolute inset-0 bg-gradient-to-r from-orange-400 via-pink-300 to-blue-500" />
-                    <div className="absolute inset-0 bg-black/20" />
-                    <div className="relative flex items-center justify-center h-full">
-                      <span className="text-white text-[9px] font-bold">Day 1 · Sunrise</span>
+                  <div className="relative rounded-xl border border-slate-200 overflow-hidden shadow-lg" style={{ width: '100%' }}>
+                    {/* Sky image placeholder */}
+                    <div className="relative" style={{ height: 52, background: 'linear-gradient(180deg, #87CEEB 0%, #FDB99B 100%)' }}>
+                      <div className="absolute inset-0 bg-black/20" />
+                      {/* Day counter */}
+                      <div className="absolute top-1 left-1/2 -translate-x-1/2 flex flex-col items-center z-10">
+                        <div className="bg-white rounded-lg border border-black px-2 py-0.5 flex flex-col items-center" style={{ minWidth: 28 }}>
+                          <ChevronUp className="w-2.5 h-2.5 text-black" />
+                          <span className="text-[8px] font-bold text-black leading-none">1</span>
+                          <ChevronDown className="w-2.5 h-2.5 text-black" />
+                        </div>
+                      </div>
+                    </div>
+                    {/* Time selector buttons */}
+                    <div className="flex items-center justify-center gap-1.5 py-1.5 bg-white">
+                      <button className="w-6 h-6 rounded-lg bg-blue-100 border-2 border-blue-500 text-blue-500 flex items-center justify-center" style={{ cursor: 'default' }}>
+                        <Sunrise className="w-3 h-3" />
+                      </button>
+                      <button className="w-6 h-6 rounded-lg bg-white border border-black text-black flex items-center justify-center" style={{ cursor: 'default' }}>
+                        <Sun className="w-3 h-3" />
+                      </button>
+                      <button className="w-6 h-6 rounded-lg bg-white border border-black text-black flex items-center justify-center" style={{ cursor: 'default' }}>
+                        <Sunset className="w-3 h-3" />
+                      </button>
+                      <button className="w-6 h-6 rounded-lg bg-white border border-black text-black flex items-center justify-center" style={{ cursor: 'default' }}>
+                        <Moon className="w-3 h-3" />
+                      </button>
                     </div>
                   </div>
                 }
