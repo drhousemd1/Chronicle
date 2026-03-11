@@ -276,7 +276,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                     <span className={cn(
                       "px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f]",
                       contentThemes.storyType === 'NSFW'
-                        ? "text-red-400"
+                        ? "text-red-500"
                         : "text-blue-500"
                     )}>
                       {contentThemes.storyType}
@@ -519,7 +519,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                     {contentThemes.triggerWarnings.length > 0 && (
                       <div className="mt-6">
                         <h4 className="text-xs font-bold text-white/40 uppercase mb-2">Trigger Warnings</h4>
-                        <p className="text-sm text-red-400 leading-relaxed font-medium">
+                        <p className="text-sm text-red-500 leading-relaxed font-medium">
                           {contentThemes.triggerWarnings.join(', ')}
                         </p>
                       </div>

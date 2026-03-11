@@ -1380,7 +1380,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                 {hasPublishErrors(publishErrors) && (
                   <div className="p-4 bg-red-500/10 rounded-xl border border-red-500/20">
                     <div className="flex items-start gap-3">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-400 flex-shrink-0 mt-0.5"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-500 flex-shrink-0 mt-0.5"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
                       <div className="text-sm space-y-1">
                         <p className="font-medium text-red-300">Please fix the following before publishing:</p>
                         <ul className="list-disc list-inside space-y-0.5 text-red-200/70">

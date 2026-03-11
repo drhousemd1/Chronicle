@@ -1072,8 +1072,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <SwatchCardV2 color="#4a5f7f" name="Slate Blue" locations="Active tab pill, story card border" value="#4a5f7f" token="bg-[#4a5f7f]" pageSpecific={false} appWide={true} />
               
               <SwatchCardV2 color="#2a2a2f" name="Dark Charcoal" locations="SFW/NSFW badge backgrounds on story cards" value="#2a2a2f" token="bg-[#2a2a2f]" pageSpecific={false} appWide={true} />
-              <SwatchCardV2 color="#f87171" name="Coral Red" locations="NSFW badge text" value="#f87171" token="text-red-400" pageSpecific={false} appWide={true} />
-              <SwatchCardV2 color="#ef4444" name="Bright Red" locations="Delete button on card hover" value="#ef4444" token="bg-[hsl(var(--destructive))]" pageSpecific={false} appWide={true} />
+              <SwatchCardV2 color="#ef4444" name="Bright Red" locations="Delete button on card hover, NSFW badge text, delete button hover icon, cancel edit icon, rigid personality trait, trigger warnings text, unfollow hover, validation errors, warning icons" value="#ef4444" token="text-red-500 / bg-[hsl(var(--destructive))]" pageSpecific={false} appWide={true} />
               
               <SwatchCardV2 color="#52525b" name="Ash Gray" locations='"Create New Story" card border' value="#52525b" token="border-zinc-600" pageSpecific={true} appWide={false} />
               
@@ -1127,7 +1126,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <SwatchCardV2 color="#4a5f7f" name="Slate Blue" locations="Session card border, empty state border, thumbnail border" value="#4a5f7f" token="border-[#4a5f7f]" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#27272a" name="Dark Zinc" locations="Thumbnail fallback background" value="#27272a" token="bg-zinc-800" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="rgba(255,255,255,0.15)" name="Dim White" locations="Delete button hover background" value="rgba(255,255,255,0.15)" token="bg-white/15" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
-              <SwatchCardV2 color="#f87171" name="Coral Red" locations="Delete button hover icon color" value="#f87171" token="text-red-400" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="#ef4444" name="Bright Red" locations="Delete button hover icon color" value="#ef4444" token="text-red-500" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="rgba(239,68,68,0.3)" name="Faint Red" locations="Delete button hover border" value="rgba(239,68,68,0.3)" token="border-red-500/30" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
             </div>
 
@@ -1811,7 +1810,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <ButtonCardV2
               buttonName="Chat Message Action Icons"
               buttonColor="transparent — hover:bg-white/10"
-              textColor="Default: #94a3b8 — text-slate-400. Hover: text-white. Save: text-green-400. Cancel: text-red-400"
+              textColor="Default: #94a3b8 — text-slate-400. Hover: text-white. Save: text-green-400. Cancel: text-red-500"
               size="p-2 — rounded-lg"
               purpose="Per-message actions visible on hover (regenerate, menu, save edit, cancel edit)"
               visualEffects="transition-colors"
@@ -1823,7 +1822,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                   <button className="p-2 rounded-lg text-slate-400" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>↻</button>
                   <button className="p-2 rounded-lg text-slate-400" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>⋮</button>
                   <button className="p-2 rounded-lg text-green-400" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>✓</button>
-                  <button className="p-2 rounded-lg text-red-400" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>✕</button>
+                  <button className="p-2 rounded-lg text-red-500" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>✕</button>
                 </div>
               }
             />
@@ -1940,7 +1939,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               textColor="text-zinc-400"
               size="p-2 rounded-lg"
               purpose="Delete a saved conversation session"
-              visualEffects="Hover: bg-white/15 text-red-400 border-red-500/30"
+              visualEffects="Hover: bg-white/15 text-red-500 border-red-500/30"
               locations="ConversationsTab — action column on each session card"
               pageSpecific
               preview={
@@ -2063,13 +2062,13 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               buttonColor="Follow: bg-[#4a5f7f] text-white. Following: bg-white/10 text-white"
               size="w-full px-4 py-2.5 rounded-xl — text-sm font-semibold"
               purpose="Toggle follow state on creator profiles"
-              visualEffects="Following hover: bg-red-500/20 text-red-400 (shows 'Unfollow' on hover). Uses UserPlus / UserMinus icons"
+              visualEffects="Following hover: bg-red-500/20 text-red-500 (shows 'Unfollow' on hover). Uses UserPlus / UserMinus icons"
               locations="CreatorProfile.tsx — profile header"
               pageSpecific
               preview={<>
                 <button className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold bg-[#4a5f7f] text-white" style={{ cursor: 'default' }}>+ Follow</button>
                 <button className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold bg-white/10 text-white" style={{ cursor: 'default' }}>✓ Following</button>
-                <button className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold bg-red-500/20 text-red-400" style={{ cursor: 'default' }}>− Unfollow</button>
+                <button className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold bg-red-500/20 text-red-500" style={{ cursor: 'default' }}>− Unfollow</button>
               </>}
             />
 
@@ -2163,7 +2162,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
             <ButtonCardV2
               buttonName="ExtraRow Delete Button"
-              buttonColor="text-red-400 hover:text-red-300 hover:bg-red-900/30"
+              buttonColor="text-red-500 hover:text-red-400 hover:bg-red-900/30"
               size="Section delete: p-1 rounded-md. Item delete: p-1.5 rounded-md"
               purpose="Remove user-created custom trait rows and sections"
               visualEffects="transition-colors. Uses X icon"
@@ -2171,9 +2170,9 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               pageSpecific
               preview={
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <button className="p-1 rounded-md text-red-400 hover:text-red-300 hover:bg-red-900/30 transition-colors" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>✕</button>
+                  <button className="p-1 rounded-md text-red-500 hover:text-red-400 hover:bg-red-900/30 transition-colors" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>✕</button>
                   <span className="text-zinc-500 text-xs">p-1</span>
-                  <button className="p-1.5 rounded-md text-red-400 hover:text-red-300 hover:bg-red-900/30 transition-colors" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>✕</button>
+                  <button className="p-1.5 rounded-md text-red-500 hover:text-red-400 hover:bg-red-900/30 transition-colors" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>✕</button>
                   <span className="text-zinc-500 text-xs">p-1.5</span>
                 </div>
               }
@@ -2261,7 +2260,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
             <ButtonCardV2
               buttonName="Review Submit / Delete Buttons"
-              buttonColor="Submit: bg-[#4a5f7f] text-white. Delete: bg-red-600/20 border-red-500/30 text-red-400"
+              buttonColor="Submit: bg-[#4a5f7f] text-white. Delete: bg-red-600/20 border-red-500/30 text-red-500"
               size="h-11 px-6 rounded-xl — text-sm font-semibold"
               purpose="Submit or delete a scenario review"
               visualEffects="Non-standard h-11 (standard is h-10)"
@@ -2270,7 +2269,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               preview={
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   <button className="h-11 px-6 rounded-xl bg-[#4a5f7f] text-white text-sm font-semibold" style={{ cursor: 'default' }}>Submit Review</button>
-                  <button className="h-11 px-6 rounded-xl bg-red-600/20 border border-red-500/30 text-red-400 text-sm font-semibold" style={{ cursor: 'default' }}>Delete Review</button>
+                  <button className="h-11 px-6 rounded-xl bg-red-600/20 border border-red-500/30 text-red-500 text-sm font-semibold" style={{ cursor: 'default' }}>Delete Review</button>
                 </div>
               }
             />
@@ -2304,14 +2303,14 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
             <ButtonCardV2
               buttonName="Arc Phase Delete Button"
-              buttonColor="border-red-400/50 bg-transparent text-red-300"
+              buttonColor="border-red-500/50 bg-transparent text-red-300"
               size="w-[30px] h-[30px] rounded-[10px]"
               purpose="Delete a narrative arc phase"
               visualEffects="hover:bg-red-500/20 transition-colors"
               locations="ArcPhaseCard — phase card header"
               pageSpecific
               preview={
-                <button className="w-[30px] h-[30px] rounded-[10px] border border-red-400/50 bg-transparent text-red-300 flex items-center justify-center text-xs hover:bg-red-500/20 transition-colors" style={{ cursor: 'default' }}>✕</button>
+                <button className="w-[30px] h-[30px] rounded-[10px] border border-red-500/50 bg-transparent text-red-300 flex items-center justify-center text-xs hover:bg-red-500/20 transition-colors" style={{ cursor: 'default' }}>✕</button>
               }
             />
             <InconsistencyNote items={[
@@ -2837,7 +2836,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <BadgeCardV2
                 badgeName="SFW / NSFW Badge"
                 background="bg-[#2a2a2f]"
-                textColor="SFW: text-blue-500 · NSFW: text-red-400"
+                textColor="SFW: text-blue-500 · NSFW: text-red-500"
                 size="text-xs font-bold uppercase tracking-wide"
                 borderRadius="rounded-lg"
                 padding="px-2.5 py-1"
@@ -2845,11 +2844,11 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 locations="GalleryStoryCard (top-right), StoryHub (top-right)"
                 appWide
                 notes="backdrop-blur-sm shadow-lg. Positioned absolute top-4 right-4 z-10."
-                states="SFW = text-blue-500, NSFW = text-red-400"
+                states="SFW = text-blue-500, NSFW = text-red-500"
                 preview={
                   <div style={{ display: 'flex', gap: 8 }}>
                     <span className="px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f] text-blue-500 uppercase tracking-wide">SFW</span>
-                    <span className="px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f] text-red-400 uppercase tracking-wide">NSFW</span>
+                    <span className="px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f] text-red-500 uppercase tracking-wide">NSFW</span>
                   </div>
                 }
               />
@@ -4363,7 +4362,7 @@ w-8 h-8  → 32px  — Empty state placeholders`}
             <div style={{ marginTop: 16 }} />
 
             <EntryCard name="Icon Colors" pageTag="Global"
-              specs='<strong>Default:</strong> text-white, text-zinc-400. <strong>Accent:</strong> text-blue-500, text-purple-400, text-cyan-200. <strong>Destructive:</strong> text-red-400.'
+              specs='<strong>Default:</strong> text-white, text-zinc-400. <strong>Accent:</strong> text-blue-500, text-purple-400, text-cyan-200. <strong>Destructive:</strong> text-red-500.'
               preview={
                 <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                   {[
@@ -4371,7 +4370,7 @@ w-8 h-8  → 32px  — Empty state placeholders`}
                     { color: '#a1a1aa', label: 'text-zinc-400', role: 'Muted', needsBorder: false },
                     { color: '#3b82f6', label: 'text-blue-500', role: 'Accent', needsBorder: false },
                     { color: '#c084fc', label: 'text-purple-400', role: 'Accent', needsBorder: false },
-                    { color: '#f87171', label: 'text-red-400', role: 'Destructive', needsBorder: false },
+                    { color: '#ef4444', label: 'text-red-500', role: 'Destructive', needsBorder: false },
                     { color: 'rgba(255,255,255,0.4)', label: 'text-white/40', role: 'Disabled', needsBorder: true },
                   ].map(c => (
                     <div key={c.label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>

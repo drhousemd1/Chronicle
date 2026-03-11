@@ -106,7 +106,7 @@ export function ConversationsTab({
                                         e.stopPropagation();
                                         onDelete(entry.scenarioId, entry.conversationId);
                                       }}
-                                      className="p-2 rounded-lg bg-white/10 border border-white/10 text-zinc-400 hover:bg-white/15 hover:text-red-400 hover:border-red-500/30 transition-colors"
+                                      className="p-2 rounded-lg bg-white/10 border border-white/10 text-zinc-400 hover:bg-white/15 hover:text-red-500 hover:border-red-500/30 transition-colors"
                                     >
                                       <Trash2 className="w-4 h-4" />
                                     </button>

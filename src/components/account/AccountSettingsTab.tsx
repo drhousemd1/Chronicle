@@ -99,7 +99,7 @@ export const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({ user }) 
             />
           </div>
           {statusMessage && (
-            <p className={`text-sm ${statusMessage.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+            <p className={`text-sm ${statusMessage.type === 'success' ? 'text-green-400' : 'text-red-500'}`}>
               {statusMessage.text}
             </p>
           )}

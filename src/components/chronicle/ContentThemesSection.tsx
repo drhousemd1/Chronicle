@@ -183,7 +183,7 @@ const StoryTypeSelector: React.FC<{
                   "px-3 py-1.5 rounded-lg text-xs font-medium border transition-all",
                   isSelected
                     ? type === 'NSFW'
-                      ? "bg-red-500/20 text-red-400 border-red-500/30"
+                      ? "bg-red-500/20 text-red-500 border-red-500/30"
                       : "bg-blue-500/20 text-blue-500 border-blue-500/30"
                     : "bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700 hover:text-zinc-300"
                 )}

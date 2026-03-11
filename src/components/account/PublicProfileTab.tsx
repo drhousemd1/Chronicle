@@ -394,7 +394,7 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
                     {profile.preferred_genres.map(genre => (
                       <span key={genre} className="px-2.5 py-1 bg-[#4a5f7f]/20 text-[#7ba3d4] rounded-lg text-xs font-bold flex items-center gap-1">
                         {genre}
-                        <button onClick={() => removeGenre(genre)} className="hover:text-red-400 transition-colors">×</button>
+                        <button onClick={() => removeGenre(genre)} className="hover:text-red-500 transition-colors">×</button>
                       </span>
                     ))}
                   </div>
@@ -481,7 +481,7 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
                     {work.storyType && (
                       <div className={cn(
                         "absolute top-4 right-4 px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f]",
-                        work.storyType === 'NSFW' ? "text-red-400" : "text-blue-500"
+                        work.storyType === 'NSFW' ? "text-red-500" : "text-blue-500"
                       )}>
                         {work.storyType}
                       </div>

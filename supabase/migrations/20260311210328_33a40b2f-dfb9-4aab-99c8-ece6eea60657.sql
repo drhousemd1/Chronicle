@@ -1,0 +1,1 @@
+UPDATE app_settings SET setting_value = '[]'::jsonb, updated_at = now() WHERE setting_key = 'styleguide_edits';

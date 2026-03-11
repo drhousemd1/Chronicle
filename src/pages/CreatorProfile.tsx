@@ -204,7 +204,7 @@ export default function CreatorProfile() {
                     className={cn(
                       "w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors",
                       isFollowing
-                        ? 'bg-white/10 text-white hover:bg-red-500/20 hover:text-red-400'
+                        ? 'bg-white/10 text-white hover:bg-red-500/20 hover:text-red-500'
                         : 'bg-[#4a5f7f] text-white hover:bg-[#5a6f8f]'
                     )}
                   >
@@ -304,7 +304,7 @@ export default function CreatorProfile() {
                         {work.storyType && (
                           <div className={cn(
                             "absolute top-4 right-4 px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f]",
-                            work.storyType === 'NSFW' ? "text-red-400" : "text-blue-500"
+                            work.storyType === 'NSFW' ? "text-red-500" : "text-blue-500"
                           )}>
                             {work.storyType}
                           </div>

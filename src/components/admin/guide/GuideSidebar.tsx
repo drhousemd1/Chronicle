@@ -87,7 +87,7 @@ export const GuideSidebar: React.FC<GuideSidebarProps> = ({
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); onDeleteDoc(doc.id); }}
-                className="p-1 mr-1 opacity-0 group-hover:opacity-100 hover:text-red-400 transition-all shrink-0"
+                className="p-1 mr-1 opacity-0 group-hover:opacity-100 hover:text-red-500 transition-all shrink-0"
                 title="Delete document"
               >
                 <Trash2 className="w-3 h-3" />

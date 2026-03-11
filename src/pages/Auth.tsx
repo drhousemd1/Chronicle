@@ -117,7 +117,7 @@ export default function Auth() {
                 className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-500"
                 disabled={isLoading}
               />
-              {errors.email && <p className="text-red-400 text-sm">{errors.email}</p>}
+              {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
             </div>
 
             <div className="space-y-2">
@@ -131,7 +131,7 @@ export default function Auth() {
                 className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-500"
                 disabled={isLoading}
               />
-              {errors.password && <p className="text-red-400 text-sm">{errors.password}</p>}
+              {errors.password && <p className="text-red-500 text-sm">{errors.password}</p>}
             </div>
 
             {isSignUp && (
@@ -146,12 +146,12 @@ export default function Auth() {
                   className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-500"
                   disabled={isLoading}
                 />
-                {errors.confirmPassword && <p className="text-red-400 text-sm">{errors.confirmPassword}</p>}
+                {errors.confirmPassword && <p className="text-red-500 text-sm">{errors.confirmPassword}</p>}
               </div>
             )}
 
             {errors.form && (
-              <p className="text-red-400 text-sm text-center">{errors.form}</p>
+              <p className="text-red-500 text-sm text-center">{errors.form}</p>
             )}
 
             <Button

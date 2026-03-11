@@ -176,7 +176,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
                   <button
                     onClick={() => setShowDeleteConfirm(true)}
                     disabled={isDeleting}
-                    className="flex-1 h-11 bg-red-600/20 border border-red-500/30 text-red-400 hover:bg-red-600/30 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2"
+                    className="flex-1 h-11 bg-red-600/20 border border-red-500/30 text-red-500 hover:bg-red-600/30 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2"
                   >
                     {isDeleting && <Loader2 className="w-4 h-4 animate-spin" />}
                     Delete Review
