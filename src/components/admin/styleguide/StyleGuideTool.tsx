@@ -3780,7 +3780,10 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                       <span className="text-[9px] font-semibold text-white">Reviewer</span>
                       <span className="text-[7px] text-white/40">2d ago</span>
                     </div>
-                    <div className="flex gap-2 mb-1"><span style={{ fontSize: 9 }}>⭐⭐⭐⭐☆</span><span style={{ fontSize: 9 }}>🔥🔥</span></div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <StarRating rating={4} maxStars={5} size={10} />
+                      <SpiceRating rating={2} maxLevel={5} size={10} />
+                    </div>
                     <p className="text-[8px] text-white/70">Great story!</p>
                   </div>
                 }
