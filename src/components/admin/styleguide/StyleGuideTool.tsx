@@ -1077,7 +1077,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <SwatchCardV2 color="#ef4444" name="Bright Red" locations="Delete button on card hover" value="#ef4444" token="bg-[hsl(var(--destructive))]" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#2563eb" name="Royal Blue" locations="Play button on card hover" value="#2563eb" token="bg-blue-600" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#52525b" name="Ash Gray" locations='"Create New Story" card border' value="#52525b" token="border-zinc-600" pageSpecific={true} appWide={false} />
-              <SwatchCardV2 color="rgba(255,255,255,0.6)" name="Hazy White" locations="Story card description text" value="rgba(255,255,255,0.6)" token="text-white/60" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              
               
               <SwatchCardV2 color="rgba(0,0,0,0.5)" name="Half Black" locations="Story card and panel shadow" value="rgba(0,0,0,0.5)" token="shadow-[0_12px_32px_-2px_rgba(0,0,0,0.5)]" pageSpecific={false} appWide={true} />
             </div>
