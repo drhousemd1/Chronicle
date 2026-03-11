@@ -174,7 +174,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); onSetActiveTool(tool.id); }}
-                  className="px-4 py-2 bg-blue-600 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-xl hover:bg-blue-700 transition-colors"
+                  className="px-4 py-2 bg-blue-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-xl hover:bg-blue-600 transition-colors"
                 >
                   Open
                 </button>

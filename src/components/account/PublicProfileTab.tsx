@@ -323,7 +323,7 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
                 <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
                   <div className="w-full h-[1px] bg-blue-500/30 absolute" />
                   <div className="h-full w-[1px] bg-blue-500/30 absolute" />
-                  <div className="bg-blue-600 text-white text-[9px] font-black uppercase px-2 py-1 rounded absolute bottom-2 tracking-widest">Drag to Refocus</div>
+                  <div className="bg-blue-500 text-white text-[9px] font-black uppercase px-2 py-1 rounded absolute bottom-2 tracking-widest">Drag to Refocus</div>
                 </div>
               )}
             </div>
@@ -341,7 +341,7 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
                 <Button
                   variant={isRepositioning ? 'primary' : 'secondary'}
                   onClick={handleRepositionToggle}
-                  className={`w-full text-[10px] font-bold leading-none ${isRepositioning ? 'bg-blue-600 text-white' : ''}`}
+                  className={`w-full text-[10px] font-bold leading-none ${isRepositioning ? 'bg-blue-500 text-white' : ''}`}
                 >
                   {isRepositioning ? "Save Position" : "Reposition"}
                 </Button>

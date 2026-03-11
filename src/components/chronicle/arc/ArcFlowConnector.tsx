@@ -93,7 +93,7 @@ export const ArcFlowConnector: React.FC<ArcFlowConnectorProps> = ({
       <path
         d={path}
         fill="none"
-        stroke="#2563eb"
+        stroke="#3b82f6"
         strokeWidth="1"
         filter={`url(#glow-${sourceStepId}-${targetStepId})`}
       />

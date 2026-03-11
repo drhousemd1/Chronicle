@@ -3296,7 +3296,7 @@ const updatedChar: SideCharacter = {
               onClick={onBack}
               className={`flex items-center gap-2 text-xs font-black uppercase tracking-widest transition-colors ${
                 sidebarBgIsLight 
-                  ? 'text-black hover:text-blue-600' 
+                  ? 'text-black hover:text-blue-500' 
                   : 'text-white hover:text-blue-300'
               }`}
             >
@@ -3380,14 +3380,14 @@ const updatedChar: SideCharacter = {
                   <div className="flex flex-col border-l border-black">
                     <button 
                       onClick={incrementDay}
-                      className="px-1.5 py-0.5 hover:bg-slate-100 transition-colors text-black hover:text-blue-600"
+                      className="px-1.5 py-0.5 hover:bg-slate-100 transition-colors text-black hover:text-blue-500"
                     >
                       <ChevronUp className="w-3 h-3" />
                     </button>
                     <button 
                       onClick={decrementDay}
                       disabled={currentDay <= 1}
-                      className="px-1.5 py-0.5 hover:bg-slate-100 transition-colors text-black hover:text-blue-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                      className="px-1.5 py-0.5 hover:bg-slate-100 transition-colors text-black hover:text-blue-500 disabled:opacity-30 disabled:cursor-not-allowed"
                     >
                       <ChevronDown className="w-3 h-3" />
                     </button>
@@ -3405,7 +3405,7 @@ const updatedChar: SideCharacter = {
                       onClick={() => selectTime(time)}
                       className={`p-2 rounded-lg transition-all ${
                         currentTimeOfDay === time
-                          ? 'bg-blue-100 border-2 border-blue-400 text-blue-600 shadow-sm'
+                          ? 'bg-blue-100 border-2 border-blue-400 text-blue-500 shadow-sm'
                           : 'bg-white border border-black text-black hover:bg-slate-100'
                       }`}
                       title={time.charAt(0).toUpperCase() + time.slice(1)}

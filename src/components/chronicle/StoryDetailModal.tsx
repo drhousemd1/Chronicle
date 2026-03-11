@@ -309,7 +309,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                     )}
                     <button
                       onClick={handlePlay}
-                      className="flex-1 h-12 bg-[#3b82f6] hover:bg-[#2563eb] rounded-xl flex items-center justify-center gap-2 text-white shadow-md transition-colors"
+                      className="flex-1 h-12 bg-[#3b82f6] hover:bg-[#2d6fdb] rounded-xl flex items-center justify-center gap-2 text-white shadow-md transition-colors"
                     >
                       <Play className="w-5 h-5 fill-current" />
                       <span className="text-sm font-semibold">Play</span>
@@ -349,7 +349,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                     )}
                     <button
                       onClick={handlePlay}
-                      className="flex-1 h-12 bg-[#3b82f6] hover:bg-[#2563eb] rounded-xl flex items-center justify-center gap-2 text-white shadow-md transition-colors"
+                      className="flex-1 h-12 bg-[#3b82f6] hover:bg-[#2d6fdb] rounded-xl flex items-center justify-center gap-2 text-white shadow-md transition-colors"
                     >
                       <Play className="w-5 h-5 fill-current" />
                       <span className="text-sm font-semibold">Play</span>

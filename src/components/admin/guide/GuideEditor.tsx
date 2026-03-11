@@ -44,7 +44,7 @@ function createMarkdownComponents(isDark: boolean): Record<string, React.FC<any>
   const inlineCodeBg = isDark ? '#1e293b' : '#e2e8f0';
   const theadBg = isDark ? '#1e293b' : '#e2e8f0';
   const thText = isDark ? '#94a3b8' : '#1e293b';
-  const linkColor = isDark ? '#60a5fa' : '#2563eb';
+  const linkColor = isDark ? '#60a5fa' : '#3b82f6';
   const blockquoteBorder = isDark ? '#00F0FF' : '#3b82f6';
   const blockquoteText = isDark ? '#9CA3AF' : '#6B7280';
   const bold = isDark ? '#ffffff' : '#111827';
@@ -272,7 +272,7 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
   const pageBg = isDark ? '#000000' : '#ffffff';
   const titleBarBorder = isDark ? '#222' : '#e5e7eb';
   const titleColor = isDark ? '#ffffff' : '#111827';
-  const titleHover = isDark ? '#00F0FF' : '#2563eb';
+  const titleHover = isDark ? '#00F0FF' : '#3b82f6';
   const btnBg = isDark ? '#1a1a1a' : '#f3f4f6';
   const btnBorder = isDark ? '#333' : '#d1d5db';
   const btnText = isDark ? '#9CA3AF' : '#6B7280';
@@ -324,7 +324,7 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
               <>
                 <button
                   onClick={handleSave}
-                  className="flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium bg-blue-500 hover:bg-blue-600 text-white transition-colors"
                 >
                   <Save size={12} />
                   Save

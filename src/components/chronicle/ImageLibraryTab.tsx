@@ -477,7 +477,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
 
                       <div className="absolute inset-x-0 bottom-0 p-6">
                         <div className="flex items-center gap-2 mb-2">
-                          <span className="bg-blue-600 text-[9px] font-black text-white px-2 py-1 rounded-md uppercase tracking-widest shadow-lg">
+                          <span className="bg-blue-500 text-[9px] font-black text-white px-2 py-1 rounded-md uppercase tracking-widest shadow-lg">
                             {folder.imageCount} {folder.imageCount === 1 ? 'image' : 'images'}
                           </span>
                         </div>
@@ -509,7 +509,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
                             e.stopPropagation();
                             handleOpenFolder(folder);
                           }}
-                          className="px-4 py-2 bg-blue-600 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-xl hover:bg-blue-700 transition-colors"
+                          className="px-4 py-2 bg-blue-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-xl hover:bg-blue-600 transition-colors"
                         >
                           Open
                         </button>

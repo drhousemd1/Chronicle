@@ -9,7 +9,7 @@ export default function ChronicleApp() {
       <aside className="w-[280px] flex-shrink-0 bg-[#1a1a1a] flex flex-col border-r border-black shadow-2xl z-50">
         <div className="p-8">
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black text-2xl italic shadow-xl shadow-blue-500/30">C</div>
+            <div className="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center text-white font-black text-2xl italic shadow-xl shadow-blue-500/30">C</div>
             <div className="font-black uppercase tracking-tighter text-2xl leading-none text-white">Chronicle</div>
           </div>
         </div>

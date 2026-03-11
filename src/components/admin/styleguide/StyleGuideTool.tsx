@@ -1051,7 +1051,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <SwatchCardV2 color="rgba(24,24,27,0.5)" name="Smoke Black" locations="All text inputs, textareas, bullet-list containers" value="rgba(24,24,27,0.5)" token="bg-zinc-900/50" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#3f3f46" name="Mid Charcoal" locations="Input borders, textarea borders, tag chip borders" value="#3f3f46" token="border-zinc-700" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#60a5fa" name="Sky Blue" locations='"+ Add Location" links, "+ Add custom" text, active slider labels, SFW badge text' value="#60a5fa" token="text-blue-400" pageSpecific={false} appWide={true} />
-              <SwatchCardV2 color="#3b82f6" name="True Blue" locations="Art Style checkmark badge, guidance box border" value="#3b82f6" token="text-blue-500" pageSpecific={false} appWide={true} />
+              <SwatchCardV2 color="#3b82f6" name="True Blue" locations="Art Style checkmark badge, guidance box border, Play button on card hover, tag badges, Open buttons, Plus buttons, reposition overlay, Chronicle logo, Provider label, Learn More link, day counter arrows, time-of-day active state, arc flow connectors, Save buttons" value="#3b82f6" token="bg-blue-500" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#a1a1aa" name="Silver Gray" locations="Trash icons, tag chip text, inactive tab text" value="#a1a1aa" token="text-zinc-400" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#71717a" name="Stone Gray" locations='Dashed "add" button borders, inactive slider labels' value="#71717a" token="border-zinc-500" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#27272a" name="Dark Zinc" locations="Genre/Origin/Type tag chips, art style card backgrounds, character avatar, Story card gradient overlay, admin card gradient, folder card gradient, loading screen background" value="#27272a" token="bg-zinc-800" pageSpecific={false} appWide={true} />
@@ -1075,7 +1075,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <SwatchCardV2 color="#2a2a2f" name="Dark Charcoal" locations="SFW/NSFW badge backgrounds on story cards" value="#2a2a2f" token="bg-[#2a2a2f]" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#f87171" name="Coral Red" locations="NSFW badge text" value="#f87171" token="text-red-400" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#ef4444" name="Bright Red" locations="Delete button on card hover" value="#ef4444" token="bg-[hsl(var(--destructive))]" pageSpecific={false} appWide={true} />
-              <SwatchCardV2 color="#2563eb" name="Royal Blue" locations="Play button on card hover" value="#2563eb" token="bg-blue-600" pageSpecific={false} appWide={true} />
+              
               <SwatchCardV2 color="#52525b" name="Ash Gray" locations='"Create New Story" card border' value="#52525b" token="border-zinc-600" pageSpecific={true} appWide={false} />
               
               
@@ -1564,7 +1564,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
             <ButtonCardV2
               buttonName="Card Hover Buttons — Edit / Delete / Play"
-              buttonColor="Edit: #ffffff — bg-white. Delete: hsl(var(--destructive)) — bg-[hsl(var(--destructive))]. Play: #3b82f6 — bg-blue-600"
+              buttonColor="Edit: #ffffff — bg-white. Delete: hsl(var(--destructive)) — bg-[hsl(var(--destructive))]. Play: #3b82f6 — bg-blue-500"
               textColor="Edit: hsl(228,7%,20%) — text-[hsl(var(--ui-surface-2))]. Delete/Play: #ffffff — text-white"
               size="h-8 px-4 — rounded-xl (12px)"
               purpose="Compact card variant for story card hover overlay actions"
@@ -1575,7 +1575,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               preview={<div className="flex gap-2">
                 <button className="h-8 px-4 rounded-xl bg-white text-[hsl(var(--ui-surface-2))] text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl" style={{ cursor: 'default' }}>EDIT</button>
                 <button className="h-8 px-4 rounded-xl bg-[hsl(var(--destructive))] text-white text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl" style={{ cursor: 'default' }}>DELETE</button>
-                <button className="h-8 px-4 rounded-xl bg-blue-600 text-white text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl" style={{ cursor: 'default' }}>PLAY</button>
+                <button className="h-8 px-4 rounded-xl bg-blue-500 text-white text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl" style={{ cursor: 'default' }}>PLAY</button>
               </div>}
             />
             <ButtonCardV2
@@ -1646,13 +1646,13 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               textColor="#ffffff — text-white"
               size="flex-1 h-12 — rounded-xl"
               purpose="Play/resume story from detail modal"
-              visualEffects="shadow-md. Hover: bg-[#2563eb]"
+              visualEffects="shadow-md. Hover: bg-[#2d6fdb]"
               locations="StoryDetailModal — both owned and gallery modes"
               pageSpecific={true}
               appWide={false}
               preview={
                 <div style={{ background: '#1a1a2e', borderRadius: 12, padding: '16px 20px', width: '100%', display: 'flex', justifyContent: 'center' }}>
-                  <button className="h-12 bg-[#3b82f6] rounded-xl text-white shadow-md text-sm font-semibold flex items-center justify-center gap-2 hover:bg-[#2563eb] transition-colors" style={{ cursor: 'default', minWidth: 140 }}>▶ Play</button>
+                  <button className="h-12 bg-[#3b82f6] rounded-xl text-white shadow-md text-sm font-semibold flex items-center justify-center gap-2 hover:bg-[#2d6fdb] transition-colors" style={{ cursor: 'default', minWidth: 140 }}>▶ Play</button>
                 </div>
               }
             />
@@ -1729,7 +1729,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             />
             <ButtonCardV2
               buttonName="Gallery PLAY Button"
-              buttonColor="#3b82f6 — bg-blue-600"
+              buttonColor="#3b82f6 — bg-blue-500"
               textColor="#ffffff — text-white"
               size="h-8 px-4 — rounded-xl (12px)"
               purpose="Compact play action on gallery story card hover overlay"
@@ -1738,7 +1738,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               pageSpecific={true}
               appWide={false}
               preview={
-                <button className="h-8 px-4 rounded-xl bg-blue-600 text-white text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl" style={{ cursor: 'default' }}>PLAY</button>
+                <button className="h-8 px-4 rounded-xl bg-blue-500 text-white text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl" style={{ cursor: 'default' }}>PLAY</button>
               }
             />
             <ButtonCardV2
@@ -1847,7 +1847,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <ButtonCardV2
               buttonName="Exit Scenario"
               buttonColor="transparent — text link with icon"
-              textColor="Dark bg: text-white hover:text-blue-300. Light bg: text-black hover:text-blue-600"
+              textColor="Dark bg: text-white hover:text-blue-300. Light bg: text-black hover:text-blue-500"
               size="text-xs font-black uppercase tracking-widest"
               purpose="Navigate back from chat to story hub"
               visualEffects="Adaptive color based on sidebar background luminosity (sidebarBgIsLight)"
@@ -1868,7 +1868,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <ButtonCardV2
               buttonName="Time of Day Selectors"
               buttonColor="Active: #dbeafe — bg-blue-100 border-2 border-blue-400. Inactive: bg-white border border-black"
-              textColor="Active: #2563eb — text-blue-600. Inactive: #000000 — text-black"
+              textColor="Active: #3b82f6 — text-blue-500. Inactive: #000000 — text-black"
               size="p-2 — rounded-lg"
               purpose="Set the current time of day for the story (Sunrise / Day / Sunset / Night)"
               visualEffects="Active: shadow-sm. Inactive: hover:bg-slate-100"
@@ -1878,7 +1878,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               preview={
                 <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
                   <button className="p-2 rounded-lg bg-white border border-black text-black" style={{ cursor: 'default' }}><Sunrise className="w-4 h-4" /></button>
-                  <button className="p-2 rounded-lg bg-blue-100 border-2 border-blue-400 text-blue-600 shadow-sm" style={{ cursor: 'default' }}><Sun className="w-4 h-4" /></button>
+                  <button className="p-2 rounded-lg bg-blue-100 border-2 border-blue-400 text-blue-500 shadow-sm" style={{ cursor: 'default' }}><Sun className="w-4 h-4" /></button>
                   <button className="p-2 rounded-lg bg-white border border-black text-black" style={{ cursor: 'default' }}><Sunset className="w-4 h-4" /></button>
                   <button className="p-2 rounded-lg bg-white border border-black text-black" style={{ cursor: 'default' }}><Moon className="w-4 h-4" /></button>
                 </div>
@@ -1887,7 +1887,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <ButtonCardV2
               buttonName="Day Counter Stepper"
               buttonColor="transparent — hover:bg-slate-100"
-              textColor="#000000 — text-black font-bold text-sm. Arrows: hover:text-blue-600. Down disabled at day 1: opacity-30"
+              textColor="#000000 — text-black font-bold text-sm. Arrows: hover:text-blue-500. Down disabled at day 1: opacity-30"
               size="Container: rounded-lg border border-black shadow-sm. Number: px-3 py-1.5. Arrows: px-1.5 py-0.5"
               purpose="Increment/decrement the in-story day counter"
               visualEffects="Container: bg-white shadow-sm. Vertical divider: border-l border-black"
@@ -1966,7 +1966,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
             <ButtonCardV2
               buttonName="Folder Hover Buttons — Edit / Open"
-              buttonColor="Edit: bg-white text-[hsl(var(--ui-surface-2))]. Open: bg-blue-600 text-white"
+              buttonColor="Edit: bg-white text-[hsl(var(--ui-surface-2))]. Open: bg-blue-500 text-white"
               size="px-4 py-2 rounded-xl — font-bold text-xs uppercase tracking-wider"
               purpose="Overlay actions on folder card hover"
               visualEffects="shadow-xl on both"
@@ -1974,7 +1974,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               pageSpecific
               preview={<>
                 <button className="px-4 py-2 bg-white text-[hsl(var(--ui-surface-2))] font-bold text-xs uppercase tracking-wider rounded-xl shadow-xl" style={{ cursor: 'default' }}>Edit</button>
-                <button className="px-4 py-2 bg-blue-600 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-xl" style={{ cursor: 'default' }}>Open</button>
+                <button className="px-4 py-2 bg-blue-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-xl" style={{ cursor: 'default' }}>Open</button>
               </>}
             />
 
