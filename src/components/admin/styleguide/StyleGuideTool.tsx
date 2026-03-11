@@ -2836,7 +2836,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <BadgeCardV2
                 badgeName="SFW / NSFW Badge"
                 background="bg-[#2a2a2f]"
-                textColor="SFW: text-blue-500 · NSFW: text-red-400"
+                textColor="SFW: text-blue-500 · NSFW: text-red-500"
                 size="text-xs font-bold uppercase tracking-wide"
                 borderRadius="rounded-lg"
                 padding="px-2.5 py-1"
