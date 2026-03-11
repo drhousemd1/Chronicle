@@ -1652,7 +1652,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               appWide={false}
               preview={
                 <div style={{ background: '#1a1a2e', borderRadius: 12, padding: '16px 20px', width: '100%', display: 'flex', justifyContent: 'center' }}>
-                  <button className="h-12 bg-[#3b82f6] rounded-xl text-white shadow-md text-sm font-semibold flex items-center justify-center gap-2 hover:bg-[#2563eb] transition-colors" style={{ cursor: 'default', minWidth: 140 }}>▶ Play</button>
+                  <button className="h-12 bg-[#3b82f6] rounded-xl text-white shadow-md text-sm font-semibold flex items-center justify-center gap-2 hover:bg-[#2d6fdb] transition-colors" style={{ cursor: 'default', minWidth: 140 }}>▶ Play</button>
                 </div>
               }
             />
