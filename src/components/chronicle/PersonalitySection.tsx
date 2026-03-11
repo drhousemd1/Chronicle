@@ -299,7 +299,7 @@ export const PersonalitySection: React.FC<PersonalitySectionProps> = ({
                     className={cn(
                       "px-3.5 py-1.5 text-[10px] font-black uppercase tracking-widest rounded border-none cursor-pointer transition-all",
                       personality.splitMode
-                        ? "bg-zinc-700 text-blue-400 shadow-sm"
+                        ? "bg-zinc-700 text-blue-500 shadow-sm"
                         : "bg-transparent text-zinc-500 hover:text-zinc-300"
                     )}
                   >
