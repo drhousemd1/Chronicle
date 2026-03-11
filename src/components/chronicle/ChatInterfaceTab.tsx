@@ -3387,7 +3387,7 @@ const updatedChar: SideCharacter = {
                     <button 
                       onClick={decrementDay}
                       disabled={currentDay <= 1}
-                      className="px-1.5 py-0.5 hover:bg-slate-100 transition-colors text-black hover:text-blue-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                      className="px-1.5 py-0.5 hover:bg-slate-100 transition-colors text-black hover:text-blue-500 disabled:opacity-30 disabled:cursor-not-allowed"
                     >
                       <ChevronDown className="w-3 h-3" />
                     </button>
