@@ -217,7 +217,7 @@ const CollapsibleCardBody: React.FC<{
         </div>
       )}
       {/* Fixed-height toggle row — always present for uniform sizing */}
-      <div style={{ height: 24, display: 'flex', alignItems: 'center', marginTop: 'auto' }}>
+      <div style={{ position: 'relative', zIndex: 10, height: 24, display: 'flex', alignItems: 'center', marginTop: 'auto' }}>
         {hasCollapsible && (
           <button
             type="button"
