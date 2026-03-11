@@ -165,6 +165,79 @@ const valueStyle: React.CSSProperties = {
   fontSize: 12, color: '#334155', fontFamily: 'Inter, system-ui, sans-serif',
 };
 
+/* ═══════════════════════ SHARED COLLAPSIBLE CARD BODY ═══════════════════════ */
+const VisibilityFlags: React.FC<{ pageSpecific?: boolean; appWide?: boolean }> = ({ pageSpecific, appWide }) => (
+  <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
+    <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#334155', cursor: 'default' }}>
+      <input type="checkbox" checked={pageSpecific} disabled style={{ accentColor: '#3b82f6', width: 14, height: 14 }} />
+      Page Specific
+    </label>
+    <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#334155', cursor: 'default' }}>
+      <input type="checkbox" checked={appWide} disabled style={{ accentColor: '#3b82f6', width: 14, height: 14 }} />
+      App Wide
+    </label>
+  </div>
+);
+
+const CollapsibleCardBody: React.FC<{
+  nameLabel: string;
+  nameValue: string;
+  locations: string;
+  collapsibleContent: React.ReactNode;
+  hasCollapsible: boolean;
+  pageSpecific?: boolean;
+  appWide?: boolean;
+}> = ({ nameLabel, nameValue, locations, collapsibleContent, hasCollapsible, pageSpecific, appWide }) => {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 6, borderTop: '1px solid #e2e8f0' }}>
+      {/* Always visible: Name + Locations */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>{nameLabel}:</span>
+        <span style={valueStyle}>{nameValue}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={labelStyle}>Locations:</span>
+        <span style={{
+          ...valueStyle,
+          ...(!expanded ? { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' } : {}),
+        }}>{locations}</span>
+      </div>
+      {/* Collapsible metadata */}
+      {hasCollapsible && (
+        <div style={{
+          overflow: 'hidden',
+          maxHeight: expanded ? 2000 : 0,
+          transition: 'max-height 0.3s ease',
+        }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {collapsibleContent}
+            <VisibilityFlags pageSpecific={pageSpecific} appWide={appWide} />
+          </div>
+        </div>
+      )}
+      {/* Fixed-height toggle row — always present for uniform sizing */}
+      <div style={{ height: 24, display: 'flex', alignItems: 'center', marginTop: 'auto' }}>
+        {hasCollapsible && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
+            style={{
+              background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+              fontSize: 11, fontWeight: 600, color: '#3b82f6',
+              display: 'flex', alignItems: 'center', gap: 4,
+            }}
+          >
+            {expanded ? 'Show less' : 'Show more'}
+            <ChevronDown size={12} style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+
 const SwatchCardV2: React.FC<SwatchV2Props> = (props) => {
   const { color, name, locations, value, token, pageSpecific, appWide, effect, extraPreviewStyle } = props;
   const details = { Value: value, Token: token, Locations: locations, ...(effect ? { Effect: effect } : {}) };
