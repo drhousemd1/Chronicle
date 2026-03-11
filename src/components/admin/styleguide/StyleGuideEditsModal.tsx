@@ -444,7 +444,11 @@ export const EditsListModal: React.FC<EditsListModalProps> = ({ open, onOpenChan
           details={editingEntry.details}
           existingComment={editingEntry.comment}
           existingId={editingEntry.id}
+          existingPageSpecificChange={editingEntry.pageSpecificChange}
+          existingAppWideChange={editingEntry.appWideChange}
+          existingChangeTo={editingEntry.changeTo}
           onSave={handleUpdateEntry}
+          allSwatches={allSwatches}
         />
       )}
     </>
