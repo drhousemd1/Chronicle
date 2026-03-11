@@ -9,6 +9,11 @@ import { Trash2, Pencil, Check, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 /* ═══════════════════════ TYPES ═══════════════════════ */
+export interface SwatchOption {
+  color: string;
+  name: string;
+}
+
 export interface EditEntry {
   id: string;
   cardType: string;
@@ -16,6 +21,9 @@ export interface EditEntry {
   details: Record<string, string>;
   comment: string;
   savedAt: number;
+  pageSpecificChange?: boolean;
+  appWideChange?: boolean;
+  changeTo?: string;
 }
 
 /* ═══════════════════════ SUPABASE HELPERS ═══════════════════════ */
