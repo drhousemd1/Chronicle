@@ -1693,7 +1693,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <ButtonCardV2
               buttonName="Story Detail — Remove from Gallery"
               buttonColor="rgba(255,255,255,0.05) — bg-white/5"
-              textColor="rgba(255,255,255,0.6) — text-white/60"
+              textColor="rgba(248,250,252,0.3) — text-[rgba(248,250,252,0.3)]"
               size="w-full h-10 — rounded-xl"
               purpose="Unpublish owned story from community gallery"
               visualEffects="border: 1px solid rgba(255,255,255,0.1) — border-white/10"
@@ -1702,7 +1702,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               appWide={false}
               preview={
                 <div style={{ background: '#1a1a2e', borderRadius: 12, padding: '16px 20px', width: '100%', display: 'flex', justifyContent: 'center' }}>
-                  <button className="h-10 bg-white/5 border border-white/10 text-white/60 rounded-xl font-semibold text-sm flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 220 }}>🌐 Remove from Gallery</button>
+                  <button className="h-10 bg-white/5 border border-white/10 text-[rgba(248,250,252,0.3)] rounded-xl font-semibold text-sm flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 220 }}>🌐 Remove from Gallery</button>
                 </div>
               }
             />
