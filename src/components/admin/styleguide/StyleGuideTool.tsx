@@ -1878,7 +1878,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               preview={
                 <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
                   <button className="p-2 rounded-lg bg-white border border-black text-black" style={{ cursor: 'default' }}><Sunrise className="w-4 h-4" /></button>
-                  <button className="p-2 rounded-lg bg-blue-100 border-2 border-blue-400 text-blue-600 shadow-sm" style={{ cursor: 'default' }}><Sun className="w-4 h-4" /></button>
+                  <button className="p-2 rounded-lg bg-blue-100 border-2 border-blue-400 text-blue-500 shadow-sm" style={{ cursor: 'default' }}><Sun className="w-4 h-4" /></button>
                   <button className="p-2 rounded-lg bg-white border border-black text-black" style={{ cursor: 'default' }}><Sunset className="w-4 h-4" /></button>
                   <button className="p-2 rounded-lg bg-white border border-black text-black" style={{ cursor: 'default' }}><Moon className="w-4 h-4" /></button>
                 </div>
