@@ -105,16 +105,16 @@ const CategorySection: React.FC<CategorySectionProps> = ({
       <CollapsibleTrigger className="flex items-center justify-between w-full py-3 px-4 hover:bg-white/5 transition-colors">
         <span className="text-sm font-semibold text-white">{title}</span>
         {isOpen ? (
-          <ChevronDown className="w-4 h-4 text-white/60" />
+          <ChevronDown className="w-4 h-4 text-[rgba(248,250,252,0.3)]" />
         ) : (
-          <ChevronRight className="w-4 h-4 text-white/60" />
+          <ChevronRight className="w-4 h-4 text-[rgba(248,250,252,0.3)]" />
         )}
       </CollapsibleTrigger>
       <CollapsibleContent>
         <div className="pl-4 pr-2 pb-2 space-y-0.5">
           {items.map((item) => {
             const Icon = getIcon ? getIcon(item) : Tag;
-            const iconColor = getIconColor ? getIconColor(item) : 'text-white/60';
+            const iconColor = getIconColor ? getIconColor(item) : 'text-[rgba(248,250,252,0.3)]';
             const isSelected = selectedItems.includes(item);
             
             return (
@@ -188,7 +188,7 @@ export const GalleryCategorySidebar: React.FC<GalleryCategorySidebarProps> = ({
           onClick={onClose}
           className="p-1 rounded-lg hover:bg-white/10 transition-colors"
         >
-          <X className="w-4 h-4 text-white/60" />
+          <X className="w-4 h-4 text-[rgba(248,250,252,0.3)]" />
         </button>
       </div>
       

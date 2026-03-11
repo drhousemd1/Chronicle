@@ -1046,7 +1046,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <SwatchCardV2 color="#2a2a2f" name="Dark Charcoal" locations="Panel containers, Character Roster sidebar, character cards" value="#2a2a2f" token="bg-[#2a2a2f]" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#1a1a1a" name="Soft Black" locations="Left icon navigation sidebar" value="#1a1a1a" token="bg-[#1a1a1a]" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="hsl(228, 7%, 20%)" name="Graphite" locations="Story Setup heading, header titles, DRAFTS, SAVE AND CLOSE, SAVE DRAFT, Upload Image, header action buttons, secondary button text, ghost button hover" value="hsl(228 7% 20%)" token="text-[hsl(var(--ui-surface-2))]" pageSpecific={false} appWide={true} />
-              <SwatchCardV2 color="rgba(248,250,252,0.3)" name="Ghost White" locations="Top header bar backgrounds, Main content area behind panels, Story card stats, 'Created by' text, form labels, loading text, checkbox labels" value="rgba(248,250,252,0.3)" token="text-[rgba(248,250,252,0.3)] / bg-[rgba(248,250,252,0.3)]" pageSpecific={false} appWide={true} extraPreviewStyle={{ border: '1px dashed #ccc' }} />
+              <SwatchCardV2 color="rgba(248,250,252,0.3)" name="Ghost White" locations="Top header bar backgrounds, Main content area behind panels, Story card stats, 'Created by' text, form labels, loading text, checkbox labels, Story card description, folder description, sidebar chevrons, empty state text, unpublish button, character labels, model subtitle, review score" value="rgba(248,250,252,0.3)" token="text-[rgba(248,250,252,0.3)] / bg-[rgba(248,250,252,0.3)]" pageSpecific={false} appWide={true} extraPreviewStyle={{ border: '1px dashed #ccc' }} />
               <SwatchCardV2 color="#64748b" name="Cool Gray" locations="Subtitle text below page headings" value="#64748b" token="text-slate-500" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="rgba(24,24,27,0.5)" name="Smoke Black" locations="All text inputs, textareas, bullet-list containers" value="rgba(24,24,27,0.5)" token="bg-zinc-900/50" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#3f3f46" name="Mid Charcoal" locations="Input borders, textarea borders, tag chip borders" value="#3f3f46" token="border-zinc-700" pageSpecific={false} appWide={true} />
@@ -1077,7 +1077,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <SwatchCardV2 color="#ef4444" name="Bright Red" locations="Delete button on card hover" value="#ef4444" token="bg-[hsl(var(--destructive))]" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#2563eb" name="Royal Blue" locations="Play button on card hover" value="#2563eb" token="bg-blue-600" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#52525b" name="Ash Gray" locations='"Create New Story" card border' value="#52525b" token="border-zinc-600" pageSpecific={true} appWide={false} />
-              <SwatchCardV2 color="rgba(255,255,255,0.6)" name="Hazy White" locations="Story card description text" value="rgba(255,255,255,0.6)" token="text-white/60" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              
               
               <SwatchCardV2 color="rgba(0,0,0,0.5)" name="Half Black" locations="Story card and panel shadow" value="rgba(0,0,0,0.5)" token="shadow-[0_12px_32px_-2px_rgba(0,0,0,0.5)]" pageSpecific={false} appWide={true} />
             </div>
@@ -1324,9 +1324,9 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             />
             <TypoCardV2 fontName="System Sans-Serif"
               exampleBg="#2a2a2f"
-              exampleContent={<span className="text-xs text-white/60 italic leading-relaxed">A romantic fantasy adventure in the fae lands...</span>}
+              exampleContent={<span className="text-xs text-[rgba(248,250,252,0.3)] italic leading-relaxed">A romantic fantasy adventure in the fae lands...</span>}
               fontSize="12px (text-xs)" fontWeight="400 (normal, italic)"
-              color="rgba(255,255,255,0.6) (white/60)" lineHeight="relaxed (leading-relaxed)"
+              color="rgba(248,250,252,0.3) (Ghost White)" lineHeight="relaxed (leading-relaxed)"
               locations="Card description — story description below title on gallery cards. line-clamp-2."
               pageSpecific={true} appWide={false}
             />
@@ -1693,7 +1693,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <ButtonCardV2
               buttonName="Story Detail — Remove from Gallery"
               buttonColor="rgba(255,255,255,0.05) — bg-white/5"
-              textColor="rgba(255,255,255,0.6) — text-white/60"
+              textColor="rgba(248,250,252,0.3) — text-[rgba(248,250,252,0.3)]"
               size="w-full h-10 — rounded-xl"
               purpose="Unpublish owned story from community gallery"
               visualEffects="border: 1px solid rgba(255,255,255,0.1) — border-white/10"
@@ -1702,7 +1702,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               appWide={false}
               preview={
                 <div style={{ background: '#1a1a2e', borderRadius: 12, padding: '16px 20px', width: '100%', display: 'flex', justifyContent: 'center' }}>
-                  <button className="h-10 bg-white/5 border border-white/10 text-white/60 rounded-xl font-semibold text-sm flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 220 }}>🌐 Remove from Gallery</button>
+                  <button className="h-10 bg-white/5 border border-white/10 text-[rgba(248,250,252,0.3)] rounded-xl font-semibold text-sm flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 220 }}>🌐 Remove from Gallery</button>
                 </div>
               }
             />
@@ -3279,7 +3279,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                   <div className="rounded-[16px] border border-white/10 overflow-hidden" style={{ background: '#2a2a2f', width: '100%', boxShadow: '0 8px 20px -2px rgba(0,0,0,0.4)' }}>
                     <div className="px-3 py-1.5 border-b border-white/20 flex items-center justify-between" style={{ background: '#4a5f7f' }}>
                       <span className="text-white text-[9px] font-bold uppercase tracking-wider">Appearance</span>
-                      <span className="text-white/60 text-[10px]">▾</span>
+                      <span className="text-[rgba(248,250,252,0.3)] text-[10px]">▾</span>
                     </div>
                     <div className="p-2">
                       <div className="rounded-lg p-2" style={{ background: 'rgba(58,58,63,0.3)', border: '1px solid rgba(255,255,255,0.05)' }}>
@@ -3687,11 +3687,11 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 purpose="Character listing within Story Detail modal"
                 locations="StoryDetailModal.tsx"
                 pageSpecific appWide={false}
-                notes="Avatar: w-12 h-12 rounded-xl. Name: font-semibold text-white. Role: text-xs text-white/60."
+                notes="Avatar: w-12 h-12 rounded-xl. Name: font-semibold text-white. Role: text-xs text-[rgba(248,250,252,0.3)]."
                 preview={
                   <div className="bg-white/5 rounded-xl p-2 flex items-center gap-2" style={{ maxWidth: 200 }}>
                     <div className="w-8 h-8 rounded-lg bg-zinc-700 flex items-center justify-center text-zinc-400 text-[10px]">👤</div>
-                    <div><div className="text-white font-semibold text-[9px]">Elena</div><div className="text-white/60 text-[7px]">Protagonist</div></div>
+                    <div><div className="text-white font-semibold text-[9px]">Elena</div><div className="text-[rgba(248,250,252,0.3)] text-[7px]">Protagonist</div></div>
                   </div>
                 }
               />
@@ -3889,7 +3889,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                   <div className="bg-[#1e1e22] rounded-2xl border border-white/10 p-3" style={{ width: '100%' }}>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                       <div className="w-10 h-10 rounded-xl bg-zinc-700" />
-                      <div><div className="text-white font-bold text-[9px]">Creator</div><div className="text-white/60 text-[7px]">@user</div></div>
+                      <div><div className="text-white font-bold text-[9px]">Creator</div><div className="text-[rgba(248,250,252,0.3)] text-[7px]">@user</div></div>
                     </div>
                     <div style={{ display: 'flex', gap: 4, marginTop: 8 }}>
                       <div className="bg-white/5 rounded-lg px-2 py-1 text-[7px] text-white/70">👁 1.2k</div>
@@ -3915,7 +3915,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                   <div className="bg-slate-900 text-white rounded-lg p-3 relative overflow-hidden" style={{ width: '100%', minHeight: 50 }}>
                     <div className="relative z-10">
                       <div className="font-black text-[9px] tracking-tight">Narrative Core</div>
-                      <div className="text-[7px] text-white/60">Powered by AI</div>
+                      <div className="text-[7px] text-[rgba(248,250,252,0.3)]">Powered by AI</div>
                     </div>
                     <div className="absolute -right-1 -bottom-1 text-[36px] font-black text-white/5 italic select-none">AI</div>
                   </div>
