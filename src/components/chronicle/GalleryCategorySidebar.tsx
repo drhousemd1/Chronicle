@@ -124,7 +124,7 @@ const CategorySection: React.FC<CategorySectionProps> = ({
                 className={cn(
                   "flex items-center gap-2 w-full px-3 py-2 rounded-lg text-left text-sm transition-colors",
                   isSelected 
-                    ? "bg-blue-500/20 text-blue-400" 
+                    ? "bg-blue-500/20 text-blue-500" 
                     : "text-white/70 hover:bg-white/5 hover:text-white"
                 )}
               >
