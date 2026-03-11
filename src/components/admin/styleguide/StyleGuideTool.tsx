@@ -1037,7 +1037,10 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <PageSubheading>Story Builder Page</PageSubheading>
             <PageDesc>Colors used across the Story Builder / Story Setup interface.</PageDesc>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 14 }}>
-              <SwatchCardV2 color="#4a5f7f" name="Slate Blue" locations="Panel header bars, MAIN CHARACTERS pill" value="#4a5f7f" token="bg-[#4a5f7f]" pageSpecific={false} appWide={true} />
+              <SwatchCardV2 color="#4a5f7f" name="Slate Blue" locations="Panel header bars, MAIN CHARACTERS pill" value="#4a5f7f" token="bg-[#4a5f7f]" pageSpecific={false} appWide={true} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/slate-blue/panel-headers.png', location: 'Panel header bars', function: 'Background color for section header bars (Story Card, World Core, etc.) in the Story Builder page' },
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/slate-blue/main-chars-pill.png', location: 'MAIN CHARACTERS pill', function: 'Background color for the MAIN CHARACTERS and SIDE CHARACTERS category pills in the Character Roster sidebar' },
+              ]} />
               <SwatchCardV2 color="#2a2a2f" name="Dark Charcoal" locations="Panel containers, Character Roster sidebar, character cards" value="#2a2a2f" token="bg-[#2a2a2f]" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#1a1a1a" name="Soft Black" locations="Left icon navigation sidebar" value="#1a1a1a" token="bg-[#1a1a1a]" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="hsl(228, 7%, 20%)" name="Graphite" locations="Story Setup heading, header titles, DRAFTS, SAVE AND CLOSE, SAVE DRAFT, Upload Image, header action buttons, secondary button text, ghost button hover" value="hsl(228 7% 20%)" token="text-[hsl(var(--ui-surface-2))]" pageSpecific={false} appWide={true} />
