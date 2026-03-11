@@ -99,7 +99,7 @@ export function ModelSettingsTab({ selectedModelId, onSelectModel }: ModelSettin
                       <Zap className={`w-4 h-4 ${selectedModelId === model.id ? 'text-emerald-400' : 'text-emerald-500'}`} />
                     </div>
                     <div>
-                      <div className={`font-bold ${selectedModelId === model.id ? 'text-white' : 'text-slate-900'}`}>
+                      <div className={`font-bold ${selectedModelId === model.id ? 'text-white' : 'text-[hsl(var(--ui-surface-2))]'}`}>
                         {model.name}
                       </div>
                       <div className={`text-xs mt-0.5 ${selectedModelId === model.id ? 'text-slate-400' : 'text-slate-500'}`}>
