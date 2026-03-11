@@ -187,10 +187,11 @@ const CollapsibleCardBody: React.FC<{
   hasCollapsible: boolean;
   pageSpecific?: boolean;
   appWide?: boolean;
-}> = ({ nameLabel, nameValue, locations, collapsibleContent, hasCollapsible, pageSpecific, appWide }) => {
+  alwaysVisibleExtra?: React.ReactNode;
+}> = ({ nameLabel, nameValue, locations, collapsibleContent, hasCollapsible, pageSpecific, appWide, alwaysVisibleExtra }) => {
   const [expanded, setExpanded] = useState(false);
   return (
-    <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 6, borderTop: '1px solid #e2e8f0' }}>
+    <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 6, borderTop: '1px solid #e2e8f0', flex: 1 }}>
       {/* Always visible: Name + Locations */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         <span style={labelStyle}>{nameLabel}:</span>
@@ -203,6 +204,7 @@ const CollapsibleCardBody: React.FC<{
           ...(!expanded ? { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' } : {}),
         }}>{locations}</span>
       </div>
+      {alwaysVisibleExtra}
       {/* Collapsible metadata */}
       {hasCollapsible && (
         <div style={{
