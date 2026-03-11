@@ -36,7 +36,7 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
       return 'text-slate-400';
     }
     if (clampedValue >= 100) return 'text-green-600';
-    if (clampedValue > 0) return 'text-blue-600';
+    if (clampedValue > 0) return 'text-blue-500';
     return 'text-slate-400';
   };
 

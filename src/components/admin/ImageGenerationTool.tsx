@@ -232,7 +232,7 @@ export const ImageGenerationTool: React.FC = () => {
                   className={cn(
                     "w-full py-2.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all",
                     draft.isDirty
-                      ? "bg-blue-600 text-white hover:brightness-125 active:brightness-150"
+                      ? "bg-blue-500 text-white hover:brightness-125 active:brightness-150"
                       : "bg-zinc-800 text-zinc-500 cursor-not-allowed",
                     "disabled:pointer-events-none disabled:opacity-50"
                   )}
