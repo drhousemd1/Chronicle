@@ -99,7 +99,7 @@ export function SidebarThemeModal({
               onClick={() => onSelectBackground(null)}
               className={`group relative aspect-[1/3] rounded-xl border shadow-sm bg-zinc-800/50 transition-all cursor-pointer ${
                 selectedBackgroundId === null
-                  ? 'ring-2 ring-blue-400 ring-inset border-blue-400/30' 
+                  ? 'ring-2 ring-blue-500 ring-inset border-blue-500/30' 
                   : 'border-white/10 hover:border-white/20'
               }`}
             >
