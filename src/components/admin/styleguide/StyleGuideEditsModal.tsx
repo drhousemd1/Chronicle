@@ -346,7 +346,7 @@ interface EditsListModalProps {
   allSwatches?: SwatchOption[];
 }
 
-export const EditsListModal: React.FC<EditsListModalProps> = ({ open, onOpenChange, onCountChange }) => {
+export const EditsListModal: React.FC<EditsListModalProps> = ({ open, onOpenChange, onCountChange, allSwatches }) => {
   const [edits, setEdits] = useState<EditEntry[]>([]);
   const [editingEntry, setEditingEntry] = useState<EditEntry | null>(null);
   const [loading, setLoading] = useState(false);
