@@ -1106,7 +1106,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <SwatchCardV2 color="rgba(0,0,0,0.5)" name="Half Black" locations="Chat message bubble, transparent mode ON" value="rgba(0,0,0,0.5)" token="bg-black/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
               <SwatchCardV2 color="#94a3b8" name="Muted Slate" locations="Italic action text in chat (*actions*)" value="#94a3b8" token="text-slate-400" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="rgba(199,210,254,0.9)" name="Soft Indigo" locations="Thought text in chat (parenthetical)" value="rgba(199,210,254,0.9)" token="text-indigo-200/90" effect="textShadow: indigo glow" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
-              <SwatchCardV2 color="#60a5fa" name="Sky Blue" locations="User message bubble border" value="#60a5fa" token="border-blue-400" pageSpecific={true} appWide={false} />
+              <SwatchCardV2 color="#3b82f6" name="True Blue" locations="User message bubble border" value="#3b82f6" token="border-blue-500" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="rgba(255,255,255,0.3)" name="Milky White" locations="SideCharacterCard when sidebar bg is dark (isDarkBg=true)" value="rgba(255,255,255,0.3)" token="bg-white/30" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
               <SwatchCardV2 color="rgba(0,0,0,0.3)" name="Smoke Black" locations="SideCharacterCard when sidebar bg is light (isDarkBg=false)" value="rgba(0,0,0,0.3)" token="bg-black/30" pageSpecific={true} appWide={false} />
             </div>
