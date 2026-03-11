@@ -3405,7 +3405,7 @@ const updatedChar: SideCharacter = {
                       onClick={() => selectTime(time)}
                       className={`p-2 rounded-lg transition-all ${
                         currentTimeOfDay === time
-                          ? 'bg-blue-100 border-2 border-blue-400 text-blue-500 shadow-sm'
+                          ? 'bg-blue-100 border-2 border-blue-500 text-blue-500 shadow-sm'
                           : 'bg-white border border-black text-black hover:bg-slate-100'
                       }`}
                       title={time.charAt(0).toUpperCase() + time.slice(1)}
