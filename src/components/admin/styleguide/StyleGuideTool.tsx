@@ -3753,7 +3753,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                       <div style={{ width: '100%', aspectRatio: '1/1', borderRadius: 6, background: '#e2e8f0' }} />
                       <p style={{ fontSize: 8, fontWeight: 600, textAlign: 'center', marginTop: 4, color: '#111827' }}>Style A</p>
                     </div>
-                    <div style={{ width: 70, padding: 6, borderRadius: 10, background: '#fff', boxShadow: '0 0 0 2px #60a5fa', position: 'relative' }}>
+                    <div style={{ width: 70, padding: 6, borderRadius: 10, background: '#fff', boxShadow: '0 0 0 2px #3b82f6', position: 'relative' }}>
                       <div style={{ width: '100%', aspectRatio: '1/1', borderRadius: 6, background: '#e2e8f0' }} />
                       <p style={{ fontSize: 8, fontWeight: 600, textAlign: 'center', marginTop: 4, color: '#111827' }}>Style B</p>
                       <div style={{ position: 'absolute', top: 2, right: 2, width: 14, height: 14, borderRadius: '50%', background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 8, fontWeight: 700 }}>✓</div>
