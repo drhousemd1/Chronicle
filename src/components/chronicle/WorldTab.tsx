@@ -779,7 +779,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                                         "p-1.5 rounded-md transition-all flex-shrink-0",
                                         enhancingField === `world_custom_${item.id}`
                                           ? "text-blue-500 animate-pulse cursor-wait"
-                                          : "text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10"
+                                          : "text-zinc-400 hover:text-blue-500 hover:bg-blue-500/10"
                                       )}
                                     >
                                       <Sparkles size={14} />
