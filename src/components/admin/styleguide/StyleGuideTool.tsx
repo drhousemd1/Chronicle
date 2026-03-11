@@ -1548,13 +1548,13 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <ButtonCardV2
               buttonName="Dashed Add"
               preview={
-                <button style={{ width: '100%', minHeight: 64, padding: '12px 18px', borderRadius: 12, border: '2px dashed #71717a', background: 'transparent', color: '#60a5fa', fontSize: 14, fontWeight: 500, cursor: 'default', fontFamily: 'inherit' }}>+ Add Custom Content</button>
+                <button style={{ width: '100%', minHeight: 64, padding: '12px 18px', borderRadius: 12, border: '2px dashed #71717a', background: 'transparent', color: '#3b82f6', fontSize: 14, fontWeight: 500, cursor: 'default', fontFamily: 'inherit' }}>+ Add Custom Content</button>
               }
               buttonColor="transparent — bg-transparent"
-              textColor="#60a5fa — text-blue-400"
+              textColor="#3b82f6 — text-blue-500"
               size="full-width × min-h-[64px] × px-[18px] py-[12px] — rounded-[12px]"
               purpose="Add new items — story arcs, characters, custom content sections"
-              visualEffects="border: 2px dashed #71717a (zinc-500). Hover: border-color #60a5fa, bg rgba(96,165,250,0.12)."
+              visualEffects="border: 2px dashed #71717a (zinc-500). Hover: border-color #3b82f6, bg rgba(59,130,246,0.05)."
               locations="Story Builder — Add New Story Arc, Add Character, Add Custom Content, Add Next Phase."
               pageSpecific={true} appWide={false}
             />
