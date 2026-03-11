@@ -2078,15 +2078,15 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <ButtonCardV2
               buttonName="UploadSourceMenu Dropdown (Light Theme)"
               buttonColor="Dropdown: bg-white border-slate-200"
-              size="Dropdown items: px-2 py-1.5 text-sm text-slate-900"
+              size="Dropdown items: px-2 py-1.5 text-sm text-[hsl(var(--ui-surface-2))]"
               purpose="Source selection for image uploads (Device or Library)"
               visualEffects="shadow-lg. Trigger uses Chronicle UI.tsx Button"
               locations="AvatarGenerationModal, CoverImageGenerationModal, SceneImageGenerationModal"
               appWide
               preview={
                 <div className="bg-white border border-slate-200 rounded-md shadow-lg p-1" style={{ width: 180 }}>
-                  <div className="px-2 py-1.5 text-sm text-slate-900 rounded-sm" style={{ cursor: 'default' }}>📤 From Device</div>
-                  <div className="px-2 py-1.5 text-sm text-slate-900 rounded-sm" style={{ cursor: 'default' }}>🖼 From Library</div>
+                  <div className="px-2 py-1.5 text-sm text-[hsl(var(--ui-surface-2))] rounded-sm" style={{ cursor: 'default' }}>📤 From Device</div>
+                  <div className="px-2 py-1.5 text-sm text-[hsl(var(--ui-surface-2))] rounded-sm" style={{ cursor: 'default' }}>🖼 From Library</div>
                 </div>
               }
             />
