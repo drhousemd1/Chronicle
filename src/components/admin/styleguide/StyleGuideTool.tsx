@@ -369,79 +369,31 @@ const InputCardV2: React.FC<InputV2Props> = (props) => {
     onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadowHover; }}
     onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadow; }}
   >
-    {/* Preview strip */}
     <div style={{
       background: '#fff', padding: '16px 20px',
       display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'center', gap: 12, minHeight: 64,
       boxShadow: 'inset 0 -1px 0 #e2e8f0',
     }}>{preview}</div>
-
-    <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 6, borderTop: '1px solid #e2e8f0' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <span style={labelStyle}>Input Name:</span>
-        <span style={valueStyle}>{inputName}</span>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <span style={labelStyle}>Background:</span>
-        <span style={monoStyle}>{background}</span>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <span style={labelStyle}>Border:</span>
-        <span style={monoStyle}>{border}</span>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <span style={labelStyle}>Border Radius:</span>
-        <span style={monoStyle}>{borderRadius}</span>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <span style={labelStyle}>Text Color:</span>
-        <span style={monoStyle}>{textColor}</span>
-      </div>
-      {placeholderColor && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <span style={labelStyle}>Placeholder Color:</span>
-          <span style={monoStyle}>{placeholderColor}</span>
-        </div>
-      )}
-      {focusStyle && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <span style={labelStyle}>Focus Style:</span>
-          <span style={monoStyle}>{focusStyle}</span>
-        </div>
-      )}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <span style={labelStyle}>Font Size:</span>
-        <span style={monoStyle}>{fontSize}</span>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <span style={labelStyle}>Padding:</span>
-        <span style={monoStyle}>{padding}</span>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <span style={labelStyle}>Purpose:</span>
-        <span style={valueStyle}>{purpose}</span>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <span style={labelStyle}>Locations:</span>
-        <span style={valueStyle}>{locations}</span>
-      </div>
-      {notes && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <span style={labelStyle}>Notes:</span>
-          <span style={valueStyle}>{notes}</span>
-        </div>
-      )}
-      <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#334155', cursor: 'default' }}>
-          <input type="checkbox" checked={pageSpecific} disabled style={{ accentColor: '#3b82f6', width: 14, height: 14 }} />
-          Page Specific
-        </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#334155', cursor: 'default' }}>
-          <input type="checkbox" checked={appWide} disabled style={{ accentColor: '#3b82f6', width: 14, height: 14 }} />
-          App Wide
-        </label>
-      </div>
-    </div>
+    <CollapsibleCardBody
+      nameLabel="Input Name"
+      nameValue={inputName}
+      locations={locations}
+      pageSpecific={pageSpecific}
+      appWide={appWide}
+      hasCollapsible={true}
+      collapsibleContent={<>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Background:</span><span style={monoStyle}>{background}</span></div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Border:</span><span style={monoStyle}>{border}</span></div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Border Radius:</span><span style={monoStyle}>{borderRadius}</span></div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Text Color:</span><span style={monoStyle}>{textColor}</span></div>
+        {placeholderColor && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Placeholder Color:</span><span style={monoStyle}>{placeholderColor}</span></div>}
+        {focusStyle && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Focus Style:</span><span style={monoStyle}>{focusStyle}</span></div>}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Font Size:</span><span style={monoStyle}>{fontSize}</span></div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Padding:</span><span style={monoStyle}>{padding}</span></div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Purpose:</span><span style={valueStyle}>{purpose}</span></div>
+        {notes && <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><span style={labelStyle}>Notes:</span><span style={valueStyle}>{notes}</span></div>}
+      </>}
+    />
   </div>
   </CardEditOverlay>
   );
