@@ -991,7 +991,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             {/* ─── Community Gallery ─── */}
             <PageSubheading>Community Gallery</PageSubheading>
             <PageDesc>Colors specific to the Community Gallery page and gallery cards.</PageDesc>
-             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
+             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 14 }}>
               <SwatchCardV2 color="#121214" name="Near Black" locations="GalleryHub main wrapper, Account page background" value="#121214" token="bg-[#121214]" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="rgba(18,18,20,0.8)" name="Glass Black" locations="Gallery sticky header" value="rgba(18,18,20,0.8)" token="bg-[#121214]/80" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
               <SwatchCardV2 color="rgba(58,58,63,0.5)" name="Smoke Charcoal" locations="Gallery search input background" value="rgba(58,58,63,0.5)" token="bg-[#3a3a3f]/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
