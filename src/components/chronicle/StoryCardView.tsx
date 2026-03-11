@@ -181,7 +181,7 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
               locs.push({ id: uid('loc'), label: '', description: '' });
               updateField('structuredLocations', locs);
             }}
-            className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm transition-colors"
+            className="flex items-center gap-2 text-blue-500 hover:text-blue-300 text-sm transition-colors"
           >
             <Plus size={16} />
             <span>Add Location</span>
