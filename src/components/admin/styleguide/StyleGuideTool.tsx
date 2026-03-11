@@ -246,6 +246,7 @@ const SwatchCardV2: React.FC<SwatchV2Props> = (props) => {
   <div style={{
     background: sg.surface, border: '2px solid #000', borderRadius: 10, overflow: 'hidden',
     boxShadow: sg.shadow, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+    minHeight: 260, display: 'flex', flexDirection: 'column',
   }}
     onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadowHover; }}
     onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = sg.shadow; }}
@@ -257,8 +258,8 @@ const SwatchCardV2: React.FC<SwatchV2Props> = (props) => {
       locations={locations}
       pageSpecific={pageSpecific}
       appWide={appWide}
-      hasCollapsible={true}
-      collapsibleContent={<>
+      hasCollapsible={!!(effect)}
+      alwaysVisibleExtra={<>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <span style={labelStyle}>Value:</span>
           <span style={monoStyle}>{value}</span>
@@ -267,13 +268,13 @@ const SwatchCardV2: React.FC<SwatchV2Props> = (props) => {
           <span style={labelStyle}>Token:</span>
           <span style={monoStyle}>{token}</span>
         </div>
-        {effect && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <span style={labelStyle}>Effect:</span>
-            <span style={monoStyle}>{effect}</span>
-          </div>
-        )}
       </>}
+      collapsibleContent={effect ? <>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <span style={labelStyle}>Effect:</span>
+          <span style={monoStyle}>{effect}</span>
+        </div>
+      </> : undefined}
     />
   </div>
   </CardEditOverlay>
