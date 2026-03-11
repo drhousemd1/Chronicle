@@ -831,8 +831,8 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
   const contentRef = useRef<HTMLDivElement>(null);
 
   // Edits system state
-  const [keeps, setKeeps] = useState<Set<string>>(() => getKeeps());
-  const [editNames, setEditNames] = useState<Set<string>>(() => new Set(getEditsRegistry().map(e => e.cardName)));
+  const [keeps, setKeeps] = useState<Set<string>>(new Set());
+  const [editNames, setEditNames] = useState<Set<string>>(new Set());
   const [showEditsListModal, setShowEditsListModal] = useState(false);
   const [keepOrEditTarget, setKeepOrEditTarget] = useState<{ cardName: string; cardType: string; details: Record<string, string> } | null>(null);
   const [editDetailTarget, setEditDetailTarget] = useState<{ cardName: string; cardType: string; details: Record<string, string>; existingComment?: string; existingId?: string } | null>(null);
@@ -840,17 +840,17 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
   const onEditsCountChangeRef = useRef(onEditsCountChange);
   onEditsCountChangeRef.current = onEditsCountChange;
 
-  const refreshEditsState = useCallback(() => {
-    setKeeps(getKeeps());
-    const registry = getEditsRegistry();
+  const refreshEditsState = useCallback(async () => {
+    const [keepsData, registry] = await Promise.all([getKeeps(), getEditsRegistry()]);
+    setKeeps(keepsData);
     setEditNames(new Set(registry.map(e => e.cardName)));
     onEditsCountChangeRef.current?.(registry.length);
   }, []);
 
   // Initial sync on mount
   useEffect(() => {
-    onEditsCountChangeRef.current?.(getEditsRegistry().length);
-  }, []);
+    refreshEditsState();
+  }, [refreshEditsState]);
 
   const handleCardAction = useCallback((cardName: string, cardType: string, details: Record<string, string>) => {
     setKeepOrEditTarget({ cardName, cardType, details });
