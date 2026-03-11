@@ -1046,8 +1046,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <SwatchCardV2 color="#2a2a2f" name="Dark Charcoal" locations="Panel containers, Character Roster sidebar, character cards" value="#2a2a2f" token="bg-[#2a2a2f]" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#1a1a1a" name="Soft Black" locations="Left icon navigation sidebar" value="#1a1a1a" token="bg-[#1a1a1a]" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="hsl(228, 7%, 20%)" name="Graphite" locations="DRAFTS, SAVE AND CLOSE, SAVE DRAFT, Upload Image, header action buttons" value="hsl(228 7% 20%)" token="bg-[hsl(var(--ui-surface-2))]" pageSpecific={false} appWide={true} />
-              <SwatchCardV2 color="#ffffff" name="White" locations="Top header bar background" value="#ffffff" token="bg-white" pageSpecific={false} appWide={true} />
-              <SwatchCardV2 color="rgba(248,250,252,0.3)" name="Ghost White" locations="Main content area behind panels" value="rgba(248,250,252,0.3)" token="bg-slate-50/30" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #ccc' }} />
+              <SwatchCardV2 color="rgba(248,250,252,0.3)" name="Ghost White" locations="Top header bar backgrounds, Main content area behind panels" value="rgba(248,250,252,0.3)" token="bg-[rgba(248,250,252,0.3)]" pageSpecific={false} appWide={true} extraPreviewStyle={{ border: '1px dashed #ccc' }} />
               <SwatchCardV2 color="#0f172a" name="Deep Navy" locations='"Story Setup" heading, "STORY BUILDER" header title' value="#0f172a" token="text-slate-900" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#64748b" name="Cool Gray" locations="Subtitle text below page headings" value="#64748b" token="text-slate-500" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="rgba(24,24,27,0.5)" name="Smoke Black" locations="All text inputs, textareas, bullet-list containers" value="rgba(24,24,27,0.5)" token="bg-zinc-900/50" pageSpecific={false} appWide={true} />
@@ -1170,12 +1169,11 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 14 }}>
               <SwatchCardV2 color="#121214" name="Near Black" locations="Full page background (same as Gallery/Account)" value="#121214" token="bg-[#121214]" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="#1e1e22" name="Charcoal" locations="Profile info card, bio section" value="#1e1e22" token="bg-[#1e1e22]" pageSpecific={true} appWide={false} />
-              <SwatchCardV2 color="#ffffff" name="White" locations="Top header bar on Creator Profile — light on dark page" value="#ffffff" token="bg-white" pageSpecific={true} appWide={false} />
+              
               <SwatchCardV2 color="rgba(255,255,255,0.05)" name="Ghost White" locations="Stat pills (followers, plays, etc.) on Creator Profile" value="rgba(255,255,255,0.05)" token="bg-white/5" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
               <SwatchCardV2 color="rgba(255,255,255,0.1)" name="Faint White" locations="Unfollow button (toggle state)" value="rgba(255,255,255,0.1)" token="bg-white/10" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
             </div>
             <InconsistencyNote items={[
-              { file: 'CreatorProfile.tsx', note: 'Uses bg-white header bar on bg-[#121214] dark page — jarring light/dark contrast.' },
               { file: 'CreatorProfile.tsx', note: 'Uses bg-[#1e1e22] surface which doesn\'t match bg-[#2a2a2f] or bg-zinc-900 used elsewhere.' },
             ]} />
 
