@@ -282,7 +282,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
                     {/* Steps Section */}
                     <div className="mt-4 pt-4 border-t border-white/5">
                       <h4 className="text-[10px] font-bold text-white uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
-                        <CheckSquare className="h-4 w-4 text-blue-400" />
+                        <CheckSquare className="h-4 w-4 text-blue-500" />
                         Steps
                       </h4>
 
