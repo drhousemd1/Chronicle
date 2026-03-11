@@ -101,7 +101,7 @@ export const ShareScenarioModal: React.FC<ShareScenarioModalProps> = ({
 
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
+            <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
           </div>
         ) : (
           <div className="space-y-6 py-4">
