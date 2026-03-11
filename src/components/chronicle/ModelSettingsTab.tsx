@@ -234,7 +234,7 @@ export function ModelSettingsTab({ selectedModelId, onSelectModel }: ModelSettin
           </Card>
 
           <Card className="p-8 bg-white border-blue-100 border-2">
-            <h4 className="font-bold text-slate-900 mb-2">About Grok</h4>
+            <h4 className="font-bold text-[hsl(var(--ui-surface-2))] mb-2">About Grok</h4>
             <p className="text-sm text-slate-500 leading-relaxed mb-4">
               Grok models have fewer content restrictions, making them ideal for mature roleplay scenarios and creative freedom.
             </p>

@@ -1755,7 +1755,7 @@ const IndexContent = () => {
               )}
               {tab === "gallery" && (
                 <div className="flex items-center gap-6">
-                  <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
+                  <h1 className="text-lg font-black text-[hsl(var(--ui-surface-2))] uppercase tracking-tight">
                     Community Gallery
                   </h1>
                   <div className="overflow-x-auto scrollbar-none flex-shrink-0">

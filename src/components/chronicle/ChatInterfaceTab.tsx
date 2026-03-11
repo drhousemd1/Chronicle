@@ -3229,7 +3229,7 @@ const updatedChar: SideCharacter = {
           <div className="absolute top-2 right-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className={`p-1.5 rounded-lg transition-colors ${!sidebarBgIsLight ? 'hover:bg-slate-200 text-slate-700 hover:text-slate-900' : 'hover:bg-white/20 text-white/70 hover:text-white'}`}>
+                <button className={`p-1.5 rounded-lg transition-colors ${!sidebarBgIsLight ? 'hover:bg-slate-200 text-slate-700 hover:text-[hsl(var(--ui-surface-2))]' : 'hover:bg-white/20 text-white/70 hover:text-white'}`}>
                   <MoreVertical className="w-4 h-4" />
                 </button>
               </DropdownMenuTrigger>

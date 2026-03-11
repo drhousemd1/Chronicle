@@ -14,7 +14,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       primary: "bg-slate-900 text-white border-slate-900 hover:bg-slate-800 shadow-md hover:shadow-lg",
       secondary: "bg-white text-[hsl(var(--ui-surface-2))] border-slate-200 hover:bg-slate-50 shadow-sm",
       danger: "bg-rose-600 text-white border-rose-600 hover:bg-rose-500 shadow-md",
-      ghost: "bg-transparent text-slate-500 border-transparent hover:bg-slate-100 hover:text-slate-900",
+      ghost: "bg-transparent text-slate-500 border-transparent hover:bg-slate-100 hover:text-[hsl(var(--ui-surface-2))]",
       brand: "bg-[#4a5f7f] text-white border-[#4a5f7f] hover:bg-[#5a6f8f] shadow-md hover:shadow-lg",
       outlineDark: "bg-zinc-900/80 text-white border border-zinc-600 hover:bg-zinc-800 hover:border-zinc-500",
       gradient: "bg-gradient-to-r from-purple-600 via-violet-500 to-blue-500 text-white border-0 hover:from-purple-500 hover:via-violet-400 hover:to-blue-400 shadow-lg",
