@@ -832,7 +832,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                           <div className="flex p-1 bg-zinc-800 rounded-xl">
                             <button 
                               onClick={() => onUpdate(selected.id, { controlledBy: 'AI' })}
-                              className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.controlledBy === 'AI' ? 'bg-zinc-700 text-blue-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+                              className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.controlledBy === 'AI' ? 'bg-zinc-700 text-blue-500 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
                             >
                               AI
                             </button>
