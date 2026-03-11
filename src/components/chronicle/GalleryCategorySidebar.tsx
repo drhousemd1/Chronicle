@@ -128,7 +128,7 @@ const CategorySection: React.FC<CategorySectionProps> = ({
                     : "text-white/70 hover:bg-white/5 hover:text-white"
                 )}
               >
-                <Icon className={cn("w-4 h-4 flex-shrink-0", isSelected ? "text-blue-400" : iconColor)} />
+                <Icon className={cn("w-4 h-4 flex-shrink-0", isSelected ? "text-blue-500" : iconColor)} />
                 <span className="truncate">{item}</span>
               </button>
             );
