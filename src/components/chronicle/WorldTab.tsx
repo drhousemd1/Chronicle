@@ -846,7 +846,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                     <button
                       type="button"
                       onClick={() => setShowContentTypeModal(true)}
-                      className="w-full py-3 bg-transparent border-2 border-dashed border-zinc-500 text-blue-400 hover:border-blue-400 hover:bg-blue-500/5 font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
+                      className="w-full py-3 bg-transparent border-2 border-dashed border-zinc-500 text-blue-500 hover:border-blue-500 hover:bg-blue-500/5 font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
                     >
                       <Plus size={16} />
                       Add Custom Content
