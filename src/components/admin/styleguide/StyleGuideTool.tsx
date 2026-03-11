@@ -1822,7 +1822,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                   <button className="p-2 rounded-lg text-slate-400" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>↻</button>
                   <button className="p-2 rounded-lg text-slate-400" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>⋮</button>
                   <button className="p-2 rounded-lg text-green-400" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>✓</button>
-                  <button className="p-2 rounded-lg text-red-400" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>✕</button>
+                  <button className="p-2 rounded-lg text-red-500" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>✕</button>
                 </div>
               }
             />
