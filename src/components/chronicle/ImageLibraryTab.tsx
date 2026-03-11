@@ -522,7 +522,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
                           e.stopPropagation();
                           handleDeleteFolder(folder.id);
                         }}
-                        className="absolute top-4 right-4 p-3 bg-black/40 text-white/50 hover:text-rose-500 hover:bg-black/60 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 hover:rotate-12 z-20"
+                        className="absolute top-4 right-4 p-3 bg-black/40 text-[rgba(248,250,252,0.3)] hover:text-rose-500 hover:bg-black/60 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 hover:rotate-12 z-20"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>

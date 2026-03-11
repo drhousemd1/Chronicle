@@ -163,7 +163,7 @@ export const GalleryScenarioCard: React.FC<GalleryScenarioCardProps> = ({
               {published.play_count}
             </span>
           </div>
-          <span className="text-[11px] text-white/50 font-medium mt-1">
+          <span className="text-[11px] text-[rgba(248,250,252,0.3)] font-medium mt-1">
             Created by: {publisher?.display_name || publisher?.username || 'Anonymous'}
           </span>
         </div>

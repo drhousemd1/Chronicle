@@ -520,7 +520,7 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
                           {work.play_count}
                         </span>
                       </div>
-                      <span className="text-[11px] text-white/50 font-medium mt-1">
+                      <span className="text-[11px] text-[rgba(248,250,252,0.3)] font-medium mt-1">
                         Written by: {profile.display_name || 'Anonymous'}
                       </span>
                     </div>

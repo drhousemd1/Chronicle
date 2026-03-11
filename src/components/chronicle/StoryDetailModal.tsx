@@ -646,7 +646,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                         <button
                           onClick={loadMoreReviews}
                           disabled={loadingMoreReviews}
-                          className="px-4 py-2 text-xs font-medium text-white/50 hover:text-white/80 transition-colors disabled:opacity-50"
+                          className="px-4 py-2 text-xs font-medium text-[rgba(248,250,252,0.3)] hover:text-white/80 transition-colors disabled:opacity-50"
                         >
                           {loadingMoreReviews ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
