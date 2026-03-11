@@ -1223,9 +1223,9 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                           "relative rounded-xl p-2 transition-all duration-200 cursor-pointer outline-none",
                           "bg-zinc-800 hover:bg-zinc-700",
                           selectedArtStyle === style.id
-                            ? "ring-2 ring-blue-400 shadow-md shadow-blue-500/20"
+                            ? "ring-2 ring-blue-500 shadow-md shadow-blue-500/20"
                             : "ring-1 ring-zinc-600 hover:ring-zinc-500",
-                          "focus:ring-2 focus:ring-blue-400 focus:ring-offset-0"
+                          "focus:ring-2 focus:ring-blue-500 focus:ring-offset-0"
                         )}
                       >
                         <div className="aspect-square rounded-lg overflow-hidden bg-zinc-900">
