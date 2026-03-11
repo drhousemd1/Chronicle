@@ -2211,7 +2211,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               buttonColor="border-zinc-600 (dashed). bg-gradient-to-br from-zinc-800 to-zinc-900"
               size="rounded-[2rem] aspect-[2/3] — border-2 border-dashed"
               purpose="Create a new image folder"
-              visualEffects="Hover: border-blue-400 transition-colors"
+              visualEffects="Hover: border-blue-500 transition-colors"
               locations="ImageLibraryTab — first card in folder grid"
               pageSpecific
               preview={
