@@ -2202,7 +2202,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               </>}
             />
             <InconsistencyNote items={[
-              { file: 'ModelSettingsTab.tsx', note: 'LIGHT THEME page (bg-white, text-slate-900) while every other page uses dark theme. Major inconsistency.' },
+              { file: 'ModelSettingsTab.tsx', note: 'LIGHT THEME page (bg-white, text-[hsl(var(--ui-surface-2))]) while every other page uses dark theme. Major inconsistency.' },
             ]} />
 
             <div style={fullSpan}><PageSubheading>Image Library</PageSubheading></div>
