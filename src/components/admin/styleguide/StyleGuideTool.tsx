@@ -313,7 +313,8 @@ const CollapsibleCardBody: React.FC<{
 
 
 const SwatchCardV2: React.FC<SwatchV2Props> = (props) => {
-  const { color, name, locations, value, token, pageSpecific, appWide, effect, extraPreviewStyle } = props;
+  const { color, name, locations, value, token, pageSpecific, appWide, effect, extraPreviewStyle, locationImages } = props;
+  const [viewerOpen, setViewerOpen] = useState(false);
   const details = { Value: value, Token: token, Locations: locations, ...(effect ? { Effect: effect } : {}) };
   return (
   <CardEditOverlay cardName={name} cardType="Swatch" details={details}>
@@ -328,6 +329,7 @@ const SwatchCardV2: React.FC<SwatchV2Props> = (props) => {
       locations={locations}
       pageSpecific={pageSpecific}
       appWide={appWide}
+      onViewLocations={locationImages && locationImages.length > 0 ? () => setViewerOpen(true) : undefined}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         <span style={labelStyle}>Value:</span>
@@ -343,6 +345,7 @@ const SwatchCardV2: React.FC<SwatchV2Props> = (props) => {
       </div>}
     </CollapsibleCardBody>
   </div>
+  {locationImages && <LocationViewerModal open={viewerOpen} onClose={() => setViewerOpen(false)} title={name} images={locationImages} />}
   </CardEditOverlay>
   );
 };
