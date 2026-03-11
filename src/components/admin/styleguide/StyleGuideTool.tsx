@@ -3247,7 +3247,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
               <PanelCardV2
                 panelName="Story Card"
-                background="gradient overlay: from-slate-950 via-slate-900/60 to-transparent"
+                background="gradient overlay: from-zinc-800 via-slate-900/60 to-transparent"
                 border="border border-[#4a5f7f]"
                 borderRadius="rounded-[2rem]"
                 shadow="0 12px 32px -2px rgba(0,0,0,0.5)"
@@ -3257,7 +3257,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 preview={
                   <div className="relative overflow-hidden rounded-[2rem] border border-[#4a5f7f]" style={{ width: 90, aspectRatio: '2/3', boxShadow: '0 12px 32px -2px rgba(0,0,0,0.5)' }}>
                     <div className="absolute inset-0 bg-slate-700" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/60 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-800 via-slate-900/60 to-transparent" />
                     <div className="absolute bottom-2 left-2 right-2">
                       <div className="text-white text-[8px] font-bold">Story Title</div>
                     </div>
