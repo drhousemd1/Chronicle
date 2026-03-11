@@ -74,7 +74,7 @@ export function ModelSettingsTab({ selectedModelId, onSelectModel }: ModelSettin
           
           <Card className="p-8">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-slate-900">Select Grok Model</h3>
+              <h3 className="text-xl font-bold text-[hsl(var(--ui-surface-2))]">Select Grok Model</h3>
               <span className="inline-flex items-center gap-1.5 text-emerald-600 text-xs">
                 <Zap className="w-3 h-3" /> Powered by xAI
               </span>
@@ -99,7 +99,7 @@ export function ModelSettingsTab({ selectedModelId, onSelectModel }: ModelSettin
                       <Zap className={`w-4 h-4 ${selectedModelId === model.id ? 'text-emerald-400' : 'text-emerald-500'}`} />
                     </div>
                     <div>
-                      <div className={`font-bold ${selectedModelId === model.id ? 'text-white' : 'text-slate-900'}`}>
+                      <div className={`font-bold ${selectedModelId === model.id ? 'text-white' : 'text-[hsl(var(--ui-surface-2))]'}`}>
                         {model.name}
                       </div>
                       <div className={`text-xs mt-0.5 ${selectedModelId === model.id ? 'text-slate-400' : 'text-slate-500'}`}>
@@ -119,7 +119,7 @@ export function ModelSettingsTab({ selectedModelId, onSelectModel }: ModelSettin
             <div className="flex items-center justify-between mb-6">
               <div>
                 <Label>Current Configuration</Label>
-                <h3 className="text-2xl font-black text-slate-900 tracking-tight">{selectedModel?.name}</h3>
+                <h3 className="text-2xl font-black text-[hsl(var(--ui-surface-2))] tracking-tight">{selectedModel?.name}</h3>
                 <p className="text-blue-600 font-bold text-xs uppercase tracking-widest mt-1">
                   Provider: xAI
                 </p>
@@ -145,7 +145,7 @@ export function ModelSettingsTab({ selectedModelId, onSelectModel }: ModelSettin
             </p>
 
             <div className="pt-6 border-t border-slate-100">
-              <h4 className="font-bold text-slate-900 mb-4">Connection Setup</h4>
+              <h4 className="font-bold text-[hsl(var(--ui-surface-2))] mb-4">Connection Setup</h4>
               <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200">
                 <div className="space-y-4">
                   {/* Admin-only toggle */}
@@ -234,7 +234,7 @@ export function ModelSettingsTab({ selectedModelId, onSelectModel }: ModelSettin
           </Card>
 
           <Card className="p-8 bg-white border-blue-100 border-2">
-            <h4 className="font-bold text-slate-900 mb-2">About Grok</h4>
+            <h4 className="font-bold text-[hsl(var(--ui-surface-2))] mb-2">About Grok</h4>
             <p className="text-sm text-slate-500 leading-relaxed mb-4">
               Grok models have fewer content restrictions, making them ideal for mature roleplay scenarios and creative freedom.
             </p>

@@ -12,9 +12,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     const base = "inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold transition-all border active:scale-95 cursor-pointer duration-200";
     const styles: Record<ButtonVariant, string> = {
       primary: "bg-slate-900 text-white border-slate-900 hover:bg-slate-800 shadow-md hover:shadow-lg",
-      secondary: "bg-white text-slate-900 border-slate-200 hover:bg-slate-50 shadow-sm",
+      secondary: "bg-white text-[hsl(var(--ui-surface-2))] border-slate-200 hover:bg-slate-50 shadow-sm",
       danger: "bg-rose-600 text-white border-rose-600 hover:bg-rose-500 shadow-md",
-      ghost: "bg-transparent text-slate-500 border-transparent hover:bg-slate-100 hover:text-slate-900",
+      ghost: "bg-transparent text-slate-500 border-transparent hover:bg-slate-100 hover:text-[hsl(var(--ui-surface-2))]",
       brand: "bg-[#4a5f7f] text-white border-[#4a5f7f] hover:bg-[#5a6f8f] shadow-md hover:shadow-lg",
       outlineDark: "bg-zinc-900/80 text-white border border-zinc-600 hover:bg-zinc-800 hover:border-zinc-500",
       gradient: "bg-gradient-to-r from-purple-600 via-violet-500 to-blue-500 text-white border-0 hover:from-purple-500 hover:via-violet-400 hover:to-blue-400 shadow-lg",
@@ -140,7 +140,7 @@ export function TextArea({
 export function SectionTitle({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
     <div className="mb-8">
-      <div className="text-3xl font-black text-slate-900 tracking-tight">{title}</div>
+      <div className="text-3xl font-black text-[hsl(var(--ui-surface-2))] tracking-tight">{title}</div>
       {subtitle ? <div className="text-sm font-medium text-slate-500 mt-1">{subtitle}</div> : null}
     </div>
   );

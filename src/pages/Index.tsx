@@ -1517,7 +1517,15 @@ const IndexContent = () => {
     );
   }
 
-  if (fatal) return <div className="h-screen bg-slate-900 flex items-center justify-center p-6 text-white text-center"><div><h1 className="text-3xl font-black mb-4 text-rose-500">CRITICAL ERROR</h1><p className="max-w-md mb-8">{fatal}</p><button onClick={() => { localStorage.clear(); location.reload(); }} className="px-6 py-3 bg-white text-slate-900 rounded-2xl font-bold">Clear All Data & Restart</button></div></div>;
+  if (fatal) return (
+    <div className="h-screen bg-slate-900 flex items-center justify-center p-6 text-white text-center">
+      <div>
+        <h1 className="text-3xl font-black mb-4 text-rose-500">CRITICAL ERROR</h1>
+        <p className="max-w-md mb-8">{fatal}</p>
+        <button onClick={() => { localStorage.clear(); location.reload(); }} className={`px-6 py-3 bg-white text-[hsl(var(--ui-surface-2))] rounded-2xl font-bold`}>Clear All Data &amp; Restart</button>
+      </div>
+    </div>
+  );
 
   const isDraft = activeId ? !registry.some(r => r.id === activeId) : false;
   const activeMeta = registry.find(m => m.id === activeId);
@@ -1598,7 +1606,7 @@ const IndexContent = () => {
                       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                     </button>
                   )}
-                  <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
+                  <h1 className="text-lg font-black text-[hsl(var(--ui-surface-2))] uppercase tracking-tight">
                     Character Library
                   </h1>
                   {!selectedCharacterId && (
@@ -1631,19 +1639,19 @@ const IndexContent = () => {
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                   </button>
-                  <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
+                  <h1 className="text-lg font-black text-[hsl(var(--ui-surface-2))] uppercase tracking-tight">
                     Story Builder
                   </h1>
                 </div>
               )}
               {tab === "conversations" && (
-                <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
+                <h1 className="text-lg font-black text-[hsl(var(--ui-surface-2))] uppercase tracking-tight">
                   Chat History
                 </h1>
               )}
               {tab === "hub" && (
                 <div className="flex items-center gap-6">
-                  <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
+                  <h1 className="text-lg font-black text-[hsl(var(--ui-surface-2))] uppercase tracking-tight">
                     My Stories
                   </h1>
                   <div className="overflow-x-auto scrollbar-none flex-shrink-0">
@@ -1707,7 +1715,7 @@ const IndexContent = () => {
                       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                     </button>
                   )}
-                  <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
+                  <h1 className="text-lg font-black text-[hsl(var(--ui-surface-2))] uppercase tracking-tight">
                     Image Library
                   </h1>
                   {isInImageFolder && (
@@ -1734,7 +1742,7 @@ const IndexContent = () => {
                       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                     </button>
                   )}
-                  <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
+                  <h1 className="text-lg font-black text-[hsl(var(--ui-surface-2))] uppercase tracking-tight">
                     Admin Panel
                   </h1>
                 </div>
@@ -1748,14 +1756,14 @@ const IndexContent = () => {
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                   </button>
-                  <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
+                  <h1 className="text-lg font-black text-[hsl(var(--ui-surface-2))] uppercase tracking-tight">
                     Account
                   </h1>
                 </div>
               )}
               {tab === "gallery" && (
                 <div className="flex items-center gap-6">
-                  <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">
+                  <h1 className="text-lg font-black text-[hsl(var(--ui-surface-2))] uppercase tracking-tight">
                     Community Gallery
                   </h1>
                   <div className="overflow-x-auto scrollbar-none flex-shrink-0">

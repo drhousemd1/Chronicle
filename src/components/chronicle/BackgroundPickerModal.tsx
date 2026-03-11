@@ -64,7 +64,7 @@ export function BackgroundPickerModal({
         <Card className="p-8 !shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)] border-transparent ring-1 ring-slate-900/5">
           {/* Header - matches Scene Gallery exactly */}
           <div className="flex justify-between items-center mb-8 pb-4 border-b border-slate-100">
-            <h2 className="text-lg font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight">
+            <h2 className="text-lg font-black text-[hsl(var(--ui-surface-2))] flex items-center gap-2 uppercase tracking-tight">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
                 <circle cx="9" cy="9" r="2"/>

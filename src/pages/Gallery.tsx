@@ -49,7 +49,7 @@ const Gallery: React.FC = () => {
               <ArrowLeft className="w-5 h-5 text-slate-600" />
             </button>
             <div className="flex items-center gap-6">
-              <h1 className="text-xl font-black text-slate-900 uppercase tracking-tight">
+              <h1 className="text-xl font-black text-[hsl(var(--ui-surface-2))] uppercase tracking-tight">
                 Community Gallery
               </h1>
               <div className="flex items-center bg-[#2b2b2e] rounded-full p-1 gap-0.5 border border-[#2b2b2e]">

@@ -88,7 +88,7 @@ const sg = {
   primary: '#4a5f7f',
   bg: '#f3f4f6',
   surface: '#ffffff',
-  text: '#0f172a',
+  text: 'hsl(228, 7%, 20%)',
   muted: '#64748b',
   border: '#d9dee6',
   borderStrong: '#c6ced9',
@@ -1045,9 +1045,8 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <SwatchCardV2 color="#4a5f7f" name="Slate Blue" locations="Panel header bars, MAIN CHARACTERS pill" value="#4a5f7f" token="bg-[#4a5f7f]" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#2a2a2f" name="Dark Charcoal" locations="Panel containers, Character Roster sidebar, character cards" value="#2a2a2f" token="bg-[#2a2a2f]" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#1a1a1a" name="Soft Black" locations="Left icon navigation sidebar" value="#1a1a1a" token="bg-[#1a1a1a]" pageSpecific={true} appWide={false} />
-              <SwatchCardV2 color="hsl(228, 7%, 20%)" name="Graphite" locations="DRAFTS, SAVE AND CLOSE, SAVE DRAFT, Upload Image, header action buttons" value="hsl(228 7% 20%)" token="bg-[hsl(var(--ui-surface-2))]" pageSpecific={false} appWide={true} />
+              <SwatchCardV2 color="hsl(228, 7%, 20%)" name="Graphite" locations="Story Setup heading, header titles, DRAFTS, SAVE AND CLOSE, SAVE DRAFT, Upload Image, header action buttons, secondary button text, ghost button hover" value="hsl(228 7% 20%)" token="text-[hsl(var(--ui-surface-2))]" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="rgba(248,250,252,0.3)" name="Ghost White" locations="Top header bar backgrounds, Main content area behind panels" value="rgba(248,250,252,0.3)" token="bg-[rgba(248,250,252,0.3)]" pageSpecific={false} appWide={true} extraPreviewStyle={{ border: '1px dashed #ccc' }} />
-              <SwatchCardV2 color="#0f172a" name="Deep Navy" locations='"Story Setup" heading, "STORY BUILDER" header title' value="#0f172a" token="text-slate-900" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#64748b" name="Cool Gray" locations="Subtitle text below page headings" value="#64748b" token="text-slate-500" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="rgba(24,24,27,0.5)" name="Smoke Black" locations="All text inputs, textareas, bullet-list containers" value="rgba(24,24,27,0.5)" token="bg-zinc-900/50" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#3f3f46" name="Mid Charcoal" locations="Input borders, textarea borders, tag chip borders" value="#3f3f46" token="border-zinc-700" pageSpecific={false} appWide={true} />
@@ -1211,7 +1210,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <SwatchCardV2 color="#f8fafc" name="Ice White" locations="Connection setup container within Model Settings" value="#f8fafc" token="bg-slate-50" pageSpecific={true} appWide={false} />
             </div>
             <InconsistencyNote items={[
-              { file: 'ModelSettingsTab.tsx', note: 'Uses LIGHT THEME (bg-white, text-slate-900, border-slate-200) while every other page in the app uses dark theme. Major design inconsistency.' },
+              { file: 'ModelSettingsTab.tsx', note: 'Uses LIGHT THEME (bg-white, text-[hsl(var(--ui-surface-2))], border-slate-200) while every other page in the app uses dark theme. Major design inconsistency.' },
               { file: 'ModelSettingsTab.tsx', note: 'Card hover uses scale-[1.02] transition — unique to this page, not used elsewhere.' },
             ]} />
 
@@ -1235,18 +1234,18 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <div style={fullSpan}><PageSubheading>Story Builder Page</PageSubheading></div>
 
             <TypoCardV2 fontName="System Sans-Serif" exampleBg="#fff"
-              exampleContent={<span className="text-lg font-black text-slate-900 uppercase tracking-tight">STORY BUILDER</span>}
+              exampleContent={<span className="text-lg font-black text-[hsl(var(--ui-surface-2))] uppercase tracking-tight">STORY BUILDER</span>}
               fontSize="18px (text-lg)" fontWeight="900 (font-black)"
               letterSpacing="-0.5px (tracking-tight)" textTransform="uppercase"
-              color="#0f172a (slate-900)"
+              color="hsl(228,7%,20%) (Graphite)"
               locations='Page title — top-left of the white header bar on every page ("STORY BUILDER", "ACCOUNT", "MY STORIES"). Always uppercase, next to the back arrow.'
               pageSpecific={false} appWide={true}
             />
             <TypoCardV2 fontName="System Sans-Serif" exampleBg="#fff"
-              exampleContent={<span style={{ fontSize: 36, fontWeight: 900, color: '#0f172a', letterSpacing: '-0.9px' }}>Story Setup</span>}
+              exampleContent={<span style={{ fontSize: 36, fontWeight: 900, color: 'hsl(228,7%,20%)', letterSpacing: '-0.9px' }}>Story Setup</span>}
               fontSize="36px" fontWeight="900 (font-black)"
               letterSpacing="-0.9px"
-              color="#0f172a (slate-900)"
+              color="hsl(228,7%,20%) (Graphite)"
               locations="Section heading — large heading at top of the content area on Story Builder page."
               pageSpecific={true} appWide={false}
             />
@@ -1566,7 +1565,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <ButtonCardV2
               buttonName="Card Hover Buttons — Edit / Delete / Play"
               buttonColor="Edit: #ffffff — bg-white. Delete: hsl(var(--destructive)) — bg-[hsl(var(--destructive))]. Play: #3b82f6 — bg-blue-600"
-              textColor="Edit: #0f172a — text-slate-900. Delete/Play: #ffffff — text-white"
+              textColor="Edit: hsl(228,7%,20%) — text-[hsl(var(--ui-surface-2))]. Delete/Play: #ffffff — text-white"
               size="h-8 px-4 — rounded-xl (12px)"
               purpose="Compact card variant for story card hover overlay actions"
               visualEffects="shadow-2xl · text-[10px] font-bold leading-none uppercase tracking-wider"
@@ -1574,7 +1573,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               pageSpecific={true}
               appWide={false}
               preview={<div className="flex gap-2">
-                <button className="h-8 px-4 rounded-xl bg-white text-slate-900 text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl" style={{ cursor: 'default' }}>EDIT</button>
+                <button className="h-8 px-4 rounded-xl bg-white text-[hsl(var(--ui-surface-2))] text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl" style={{ cursor: 'default' }}>EDIT</button>
                 <button className="h-8 px-4 rounded-xl bg-[hsl(var(--destructive))] text-white text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl" style={{ cursor: 'default' }}>DELETE</button>
                 <button className="h-8 px-4 rounded-xl bg-blue-600 text-white text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl" style={{ cursor: 'default' }}>PLAY</button>
               </div>}
@@ -1967,14 +1966,14 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
             <ButtonCardV2
               buttonName="Folder Hover Buttons — Edit / Open"
-              buttonColor="Edit: bg-white text-slate-900. Open: bg-blue-600 text-white"
+              buttonColor="Edit: bg-white text-[hsl(var(--ui-surface-2))]. Open: bg-blue-600 text-white"
               size="px-4 py-2 rounded-xl — font-bold text-xs uppercase tracking-wider"
               purpose="Overlay actions on folder card hover"
               visualEffects="shadow-xl on both"
               locations="ImageLibraryTab — folder card hover overlay"
               pageSpecific
               preview={<>
-                <button className="px-4 py-2 bg-white text-slate-900 font-bold text-xs uppercase tracking-wider rounded-xl shadow-xl" style={{ cursor: 'default' }}>Edit</button>
+                <button className="px-4 py-2 bg-white text-[hsl(var(--ui-surface-2))] font-bold text-xs uppercase tracking-wider rounded-xl shadow-xl" style={{ cursor: 'default' }}>Edit</button>
                 <button className="px-4 py-2 bg-blue-600 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-xl" style={{ cursor: 'default' }}>Open</button>
               </>}
             />
@@ -2080,15 +2079,15 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <ButtonCardV2
               buttonName="UploadSourceMenu Dropdown (Light Theme)"
               buttonColor="Dropdown: bg-white border-slate-200"
-              size="Dropdown items: px-2 py-1.5 text-sm text-slate-900"
+              size="Dropdown items: px-2 py-1.5 text-sm text-[hsl(var(--ui-surface-2))]"
               purpose="Source selection for image uploads (Device or Library)"
               visualEffects="shadow-lg. Trigger uses Chronicle UI.tsx Button"
               locations="AvatarGenerationModal, CoverImageGenerationModal, SceneImageGenerationModal"
               appWide
               preview={
                 <div className="bg-white border border-slate-200 rounded-md shadow-lg p-1" style={{ width: 180 }}>
-                  <div className="px-2 py-1.5 text-sm text-slate-900 rounded-sm" style={{ cursor: 'default' }}>📤 From Device</div>
-                  <div className="px-2 py-1.5 text-sm text-slate-900 rounded-sm" style={{ cursor: 'default' }}>🖼 From Library</div>
+                  <div className="px-2 py-1.5 text-sm text-[hsl(var(--ui-surface-2))] rounded-sm" style={{ cursor: 'default' }}>📤 From Device</div>
+                  <div className="px-2 py-1.5 text-sm text-[hsl(var(--ui-surface-2))] rounded-sm" style={{ cursor: 'default' }}>🖼 From Library</div>
                 </div>
               }
             />
@@ -2185,7 +2184,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
             <ButtonCardV2
               buttonName="Model Selection Card (Active / Inactive)"
-              buttonColor="Active: bg-slate-900 border-slate-900 text-white. Inactive: bg-white border-slate-200 text-slate-900"
+              buttonColor="Active: bg-slate-900 border-slate-900 text-white. Inactive: bg-white border-slate-200 text-[hsl(var(--ui-surface-2))]"
               size="p-3 rounded-xl"
               purpose="Select AI model for story generation"
               visualEffects="Active: shadow-xl scale-[1.02]. Inactive hover: border-blue-400 shadow-lg scale-[1.01]"
@@ -2197,13 +2196,13 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                   <div className="text-slate-400 text-[9px] mt-0.5">Selected model</div>
                 </button>
                 <button className="text-left p-3 rounded-xl border bg-white border-slate-200" style={{ cursor: 'default', width: 160 }}>
-                  <div className="text-slate-900 font-bold text-xs">Grok 2</div>
+                  <div className="text-[hsl(var(--ui-surface-2))] font-bold text-xs">Grok 2</div>
                   <div className="text-slate-500 text-[9px] mt-0.5">Inactive model</div>
                 </button>
               </>}
             />
             <InconsistencyNote items={[
-              { file: 'ModelSettingsTab.tsx', note: 'LIGHT THEME page (bg-white, text-slate-900) while every other page uses dark theme. Major inconsistency.' },
+              { file: 'ModelSettingsTab.tsx', note: 'LIGHT THEME page (bg-white, text-[hsl(var(--ui-surface-2))]) while every other page uses dark theme. Major inconsistency.' },
             ]} />
 
             <div style={fullSpan}><PageSubheading>Image Library</PageSubheading></div>
@@ -2684,7 +2683,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 background="bg-slate-50"
                 border="border-slate-200"
                 borderRadius="rounded-2xl (16px)"
-                textColor="text-slate-900 (inherited)"
+                textColor="text-[hsl(var(--ui-surface-2))] (inherited)"
                 placeholderColor="text-slate-400"
                 focusStyle="ring-2 ring-blue-100 border-blue-400"
                 fontSize="14px / text-sm"
@@ -2706,7 +2705,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 background="bg-slate-50"
                 border="border-slate-200"
                 borderRadius="rounded-2xl (16px)"
-                textColor="text-slate-900 (inherited)"
+                textColor="text-[hsl(var(--ui-surface-2))] (inherited)"
                 placeholderColor="text-slate-400"
                 focusStyle="ring-2 ring-blue-100 border-blue-400"
                 fontSize="14px / text-sm"
@@ -3816,7 +3815,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 notes="⚠ Light theme — conflicts with dark panel standard (bg-[#2a2a2f])."
                 preview={
                   <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm" style={{ width: '100%' }}>
-                    <div className="text-[9px] font-bold text-slate-900">Chronicle Card</div>
+                    <div className="text-[9px] font-bold text-[hsl(var(--ui-surface-2))]">Chronicle Card</div>
                     <div className="text-[7px] text-slate-500 mt-0.5">Light-theme from UI.tsx</div>
                   </div>
                 }
