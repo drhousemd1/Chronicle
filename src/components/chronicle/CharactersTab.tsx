@@ -881,7 +881,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                               "p-1 rounded-md transition-all",
                               enhancingField === 'roleDescription'
                                 ? "text-blue-500 animate-pulse cursor-wait"
-                                : "text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10"
+                                : "text-zinc-400 hover:text-blue-500 hover:bg-blue-500/10"
                             )}
                           >
                             <Sparkles size={14} />
