@@ -105,9 +105,9 @@ const CategorySection: React.FC<CategorySectionProps> = ({
       <CollapsibleTrigger className="flex items-center justify-between w-full py-3 px-4 hover:bg-white/5 transition-colors">
         <span className="text-sm font-semibold text-white">{title}</span>
         {isOpen ? (
-          <ChevronDown className="w-4 h-4 text-white/60" />
+          <ChevronDown className="w-4 h-4 text-[rgba(248,250,252,0.3)]" />
         ) : (
-          <ChevronRight className="w-4 h-4 text-white/60" />
+          <ChevronRight className="w-4 h-4 text-[rgba(248,250,252,0.3)]" />
         )}
       </CollapsibleTrigger>
       <CollapsibleContent>
