@@ -1575,7 +1575,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               preview={<div className="flex gap-2">
                 <button className="h-8 px-4 rounded-xl bg-white text-[hsl(var(--ui-surface-2))] text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl" style={{ cursor: 'default' }}>EDIT</button>
                 <button className="h-8 px-4 rounded-xl bg-[hsl(var(--destructive))] text-white text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl" style={{ cursor: 'default' }}>DELETE</button>
-                <button className="h-8 px-4 rounded-xl bg-blue-600 text-white text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl" style={{ cursor: 'default' }}>PLAY</button>
+                <button className="h-8 px-4 rounded-xl bg-blue-500 text-white text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl" style={{ cursor: 'default' }}>PLAY</button>
               </div>}
             />
             <ButtonCardV2
