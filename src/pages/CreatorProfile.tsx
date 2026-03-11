@@ -204,7 +204,7 @@ export default function CreatorProfile() {
                     className={cn(
                       "w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors",
                       isFollowing
-                        ? 'bg-white/10 text-white hover:bg-red-500/20 hover:text-red-400'
+                        ? 'bg-white/10 text-white hover:bg-red-500/20 hover:text-red-500'
                         : 'bg-[#4a5f7f] text-white hover:bg-[#5a6f8f]'
                     )}
                   >
