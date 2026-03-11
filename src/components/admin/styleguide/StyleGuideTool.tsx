@@ -3889,7 +3889,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                   <div className="bg-[#1e1e22] rounded-2xl border border-white/10 p-3" style={{ width: '100%' }}>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                       <div className="w-10 h-10 rounded-xl bg-zinc-700" />
-                      <div><div className="text-white font-bold text-[9px]">Creator</div><div className="text-white/60 text-[7px]">@user</div></div>
+                      <div><div className="text-white font-bold text-[9px]">Creator</div><div className="text-[rgba(248,250,252,0.3)] text-[7px]">@user</div></div>
                     </div>
                     <div style={{ display: 'flex', gap: 4, marginTop: 8 }}>
                       <div className="bg-white/5 rounded-lg px-2 py-1 text-[7px] text-white/70">👁 1.2k</div>
