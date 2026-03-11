@@ -2224,14 +2224,14 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             />
             <ButtonCardV2
               buttonName="Folder Delete Button (Circular)"
-              buttonColor="bg-black/40 text-white/50 hover:text-rose-500"
+              buttonColor="bg-black/40 text-[rgba(248,250,252,0.3)] hover:text-rose-500"
               size="p-3 rounded-full"
               purpose="Delete an image folder"
               visualEffects="hover:bg-black/60 transition-all. Positioned absolute top-right on folder cards"
               locations="ImageLibraryTab — folder card overlay"
               pageSpecific
               preview={
-                <button className="p-3 bg-black/40 text-white/50 hover:text-rose-500 rounded-full transition-all" style={{ cursor: 'default', border: 'none' }}>🗑</button>
+                <button className="p-3 bg-black/40 text-[rgba(248,250,252,0.3)] hover:text-rose-500 rounded-full transition-all" style={{ cursor: 'default', border: 'none' }}>🗑</button>
               }
             />
             <InconsistencyNote items={[
