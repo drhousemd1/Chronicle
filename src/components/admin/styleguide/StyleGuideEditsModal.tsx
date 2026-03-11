@@ -6,6 +6,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Trash2, Pencil, Check, X } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 /* ═══════════════════════ TYPES ═══════════════════════ */
 export interface EditEntry {
@@ -17,61 +18,75 @@ export interface EditEntry {
   savedAt: number;
 }
 
-/* ═══════════════════════ LOCAL STORAGE HELPERS ═══════════════════════ */
-const EDITS_KEY = 'styleguide_edits_registry';
-const KEEPS_KEY = 'styleguide_keeps';
+/* ═══════════════════════ SUPABASE HELPERS ═══════════════════════ */
 
-export function getEditsRegistry(): EditEntry[] {
+async function readSetting<T>(key: string, fallback: T): Promise<T> {
   try {
-    const raw = localStorage.getItem(EDITS_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    const { data, error } = await supabase
+      .from('app_settings')
+      .select('setting_value')
+      .eq('setting_key', key)
+      .single();
+    if (error || !data) return fallback;
+    return data.setting_value as T;
   } catch {
-    return [];
+    return fallback;
   }
 }
 
-export function upsertEdit(entry: EditEntry) {
-  const registry = getEditsRegistry();
+async function writeSetting(key: string, value: unknown): Promise<void> {
+  try {
+    await supabase
+      .from('app_settings')
+      .update({ setting_value: value as any, updated_at: new Date().toISOString() })
+      .eq('setting_key', key);
+  } catch (e) {
+    console.error(`Failed to write setting ${key}:`, e);
+  }
+}
+
+/* ═══════════════════════ PUBLIC ASYNC API ═══════════════════════ */
+
+export async function getEditsRegistry(): Promise<EditEntry[]> {
+  const val = await readSetting<EditEntry[]>('styleguide_edits', []);
+  return Array.isArray(val) ? val : [];
+}
+
+export async function upsertEdit(entry: EditEntry): Promise<void> {
+  const registry = await getEditsRegistry();
   const idx = registry.findIndex(d => d.id === entry.id);
   if (idx >= 0) {
     registry[idx] = entry;
   } else {
     registry.unshift(entry);
   }
-  localStorage.setItem(EDITS_KEY, JSON.stringify(registry));
+  await writeSetting('styleguide_edits', registry);
 }
 
-export function removeEdit(id: string) {
-  const registry = getEditsRegistry().filter(d => d.id !== id);
-  localStorage.setItem(EDITS_KEY, JSON.stringify(registry));
+export async function removeEdit(id: string): Promise<void> {
+  const registry = (await getEditsRegistry()).filter(d => d.id !== id);
+  await writeSetting('styleguide_edits', registry);
 }
 
-export function getKeeps(): Set<string> {
-  try {
-    const raw = localStorage.getItem(KEEPS_KEY);
-    if (!raw) return new Set();
-    return new Set(JSON.parse(raw));
-  } catch {
-    return new Set();
-  }
+export async function getKeeps(): Promise<Set<string>> {
+  const val = await readSetting<string[]>('styleguide_keeps', []);
+  return new Set(Array.isArray(val) ? val : []);
 }
 
-export function addKeep(cardName: string) {
-  const keeps = getKeeps();
+export async function addKeep(cardName: string): Promise<void> {
+  const keeps = await getKeeps();
   keeps.add(cardName);
-  localStorage.setItem(KEEPS_KEY, JSON.stringify([...keeps]));
+  await writeSetting('styleguide_keeps', [...keeps]);
 }
 
-export function removeKeep(cardName: string) {
-  const keeps = getKeeps();
+export async function removeKeep(cardName: string): Promise<void> {
+  const keeps = await getKeeps();
   keeps.delete(cardName);
-  localStorage.setItem(KEEPS_KEY, JSON.stringify([...keeps]));
+  await writeSetting('styleguide_keeps', [...keeps]);
 }
 
-export function getEditsCount(): number {
-  return getEditsRegistry().length;
+export async function getEditsCount(): Promise<number> {
+  return (await getEditsRegistry()).length;
 }
 
 /* ═══════════════════════ KEEP OR EDIT MODAL ═══════════════════════ */
@@ -225,20 +240,26 @@ interface EditsListModalProps {
 export const EditsListModal: React.FC<EditsListModalProps> = ({ open, onOpenChange, onCountChange }) => {
   const [edits, setEdits] = useState<EditEntry[]>([]);
   const [editingEntry, setEditingEntry] = useState<EditEntry | null>(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (open) setEdits(getEditsRegistry());
+    if (open) {
+      setLoading(true);
+      getEditsRegistry().then(r => { setEdits(r); setLoading(false); });
+    }
   }, [open]);
 
-  const handleDelete = (id: string) => {
-    removeEdit(id);
-    setEdits(getEditsRegistry());
+  const handleDelete = async (id: string) => {
+    await removeEdit(id);
+    const updated = await getEditsRegistry();
+    setEdits(updated);
     onCountChange?.();
   };
 
-  const handleUpdateEntry = (entry: EditEntry) => {
-    upsertEdit(entry);
-    setEdits(getEditsRegistry());
+  const handleUpdateEntry = async (entry: EditEntry) => {
+    await upsertEdit(entry);
+    const updated = await getEditsRegistry();
+    setEdits(updated);
     setEditingEntry(null);
     onCountChange?.();
   };
@@ -258,7 +279,9 @@ export const EditsListModal: React.FC<EditsListModalProps> = ({ open, onOpenChan
           </DialogHeader>
 
           <div className="px-5 pb-5 overflow-y-auto flex-1 min-h-0">
-            {edits.length === 0 ? (
+            {loading ? (
+              <p className="text-[hsl(var(--ui-text-muted))] text-sm text-center py-8">Loading…</p>
+            ) : edits.length === 0 ? (
               <p className="text-[hsl(var(--ui-text-muted))] text-sm text-center py-8">No edits flagged yet.</p>
             ) : (
               <div className="flex flex-col gap-2">
