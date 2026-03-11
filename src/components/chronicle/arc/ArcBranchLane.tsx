@@ -265,7 +265,7 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
           <button
             type="button"
             onClick={onAddStep}
-            className="flex items-center justify-center gap-2 text-blue-400 hover:text-blue-300 text-sm mt-3 transition-colors w-full"
+            className="flex items-center justify-center gap-2 text-blue-500 hover:text-blue-300 text-sm mt-3 transition-colors w-full"
           >
             <Plus className="h-4 w-4" />
             <span>Add Step</span>

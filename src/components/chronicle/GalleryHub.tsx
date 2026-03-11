@@ -437,7 +437,7 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
                   </span>
                 ))}
                 {categoryFilters.storyTypes.map(item => (
-                  <span key={`type-${item}`} className="px-2 py-1 bg-blue-500/20 text-blue-400 rounded-full text-xs font-medium flex items-center gap-1">
+                  <span key={`type-${item}`} className="px-2 py-1 bg-blue-500/20 text-blue-500 rounded-full text-xs font-medium flex items-center gap-1">
                     {item}
                     <button onClick={() => setCategoryFilters(prev => ({ ...prev, storyTypes: prev.storyTypes.filter(t => t !== item) }))} className="hover:text-red-300">
                       <X className="w-3 h-3" />

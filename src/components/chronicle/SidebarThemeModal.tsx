@@ -124,7 +124,7 @@ export function SidebarThemeModal({
                 onClick={() => onSelectBackground(bg.id)}
                 className={`group relative aspect-[1/3] rounded-xl border shadow-sm bg-zinc-800/50 cursor-pointer transition-all ${
                   selectedBackgroundId === bg.id
-                    ? 'ring-2 ring-blue-400 ring-inset border-blue-400/30' 
+                    ? 'ring-2 ring-blue-500 ring-inset border-blue-500/30' 
                     : 'border-white/10 hover:border-white/20'
                 }`}
               >

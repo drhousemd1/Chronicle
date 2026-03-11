@@ -167,7 +167,7 @@ export const ShareScenarioModal: React.FC<ShareScenarioModalProps> = ({
                 variant="primary"
                 onClick={handlePublish}
                 disabled={isPublishing}
-                className="flex-1 !bg-blue-500 hover:!bg-blue-400"
+                className="flex-1 !bg-blue-500 hover:!bg-blue-600"
               >
                 {isPublishing ? (
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />

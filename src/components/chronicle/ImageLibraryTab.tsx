@@ -539,7 +539,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
                   <div className="w-16 h-16 rounded-full bg-zinc-700/50 flex items-center justify-center group-hover:bg-blue-900/30 transition-colors">
                     <Plus className="w-8 h-8 text-zinc-500 group-hover:text-blue-500" />
                   </div>
-                  <span className="text-sm font-black text-zinc-500 group-hover:text-blue-400 uppercase tracking-widest">
+                  <span className="text-sm font-black text-zinc-500 group-hover:text-blue-500 uppercase tracking-widest">
                     New Folder
                   </span>
                 </button>
