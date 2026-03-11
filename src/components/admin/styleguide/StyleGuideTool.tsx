@@ -1847,7 +1847,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <ButtonCardV2
               buttonName="Exit Scenario"
               buttonColor="transparent — text link with icon"
-              textColor="Dark bg: text-white hover:text-blue-300. Light bg: text-black hover:text-blue-600"
+              textColor="Dark bg: text-white hover:text-blue-300. Light bg: text-black hover:text-blue-500"
               size="text-xs font-black uppercase tracking-widest"
               purpose="Navigate back from chat to story hub"
               visualEffects="Adaptive color based on sidebar background luminosity (sidebarBgIsLight)"
