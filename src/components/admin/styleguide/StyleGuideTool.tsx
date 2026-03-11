@@ -169,7 +169,7 @@ const valueStyle: React.CSSProperties = {
 const COLLAPSED_META_HEIGHT = 130;
 
 const VisibilityFlags: React.FC<{ pageSpecific?: boolean; appWide?: boolean }> = ({ pageSpecific, appWide }) => (
-  <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
+  <div style={{ display: 'flex', gap: 16, flexShrink: 0 }}>
     <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#334155', cursor: 'default' }}>
       <input type="checkbox" checked={pageSpecific} disabled style={{ accentColor: '#3b82f6', width: 14, height: 14 }} />
       Page Specific
