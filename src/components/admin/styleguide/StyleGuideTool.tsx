@@ -2248,7 +2248,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             </div>
 
             <PageSubheading>Community Gallery</PageSubheading>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14 }}>
               <InputCardV2
                 inputName="Gallery Search Input"
                 background="#3a3a3f/50 / bg-[#3a3a3f]/50"
