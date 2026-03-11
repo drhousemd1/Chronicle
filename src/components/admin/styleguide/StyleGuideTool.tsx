@@ -1008,7 +1008,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             {/* ─── Account Page ─── */}
             <PageSubheading>Account Page</PageSubheading>
             <PageDesc>Colors for the dark-themed Account settings page.</PageDesc>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 14 }}>
               <SwatchCardV2 color="#121214" name="Near Black" locations="Full page background for Account section" value="#121214" token="bg-[#121214]" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="#1e1e22" name="Charcoal" locations="Email, Plan, Password setting cards" value="#1e1e22" token="bg-[#1e1e22]" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="#2b2b2e" name="Warm Charcoal" locations="Pill tab container on Account and Gallery pages" value="#2b2b2e" token="bg-[#2b2b2e]" pageSpecific={false} appWide={true} />
