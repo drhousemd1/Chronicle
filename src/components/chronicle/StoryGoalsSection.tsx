@@ -465,7 +465,7 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                   <button
                     type="button"
                     onClick={() => addPhase(goal.id)}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 text-sm bg-transparent border-2 border-dashed border-zinc-500 text-blue-400 hover:border-blue-400 hover:bg-blue-500/5 font-medium rounded-xl transition-colors cursor-pointer mt-5"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 text-sm bg-transparent border-2 border-dashed border-zinc-500 text-blue-500 hover:border-blue-500 hover:bg-blue-500/5 font-medium rounded-xl transition-colors cursor-pointer mt-5"
                   >
                     <Plus className="w-5 h-5" />
                     Add Next Phase
