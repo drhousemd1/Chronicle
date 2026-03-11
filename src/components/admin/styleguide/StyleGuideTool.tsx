@@ -2260,7 +2260,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
             <ButtonCardV2
               buttonName="Review Submit / Delete Buttons"
-              buttonColor="Submit: bg-[#4a5f7f] text-white. Delete: bg-red-600/20 border-red-500/30 text-red-400"
+              buttonColor="Submit: bg-[#4a5f7f] text-white. Delete: bg-red-600/20 border-red-500/30 text-red-500"
               size="h-11 px-6 rounded-xl — text-sm font-semibold"
               purpose="Submit or delete a scenario review"
               visualEffects="Non-standard h-11 (standard is h-10)"
