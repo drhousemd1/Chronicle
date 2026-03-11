@@ -8,7 +8,7 @@ import { StyleGuideDownloadModal } from './StyleGuideDownloadModal';
 import {
   KeepOrEditModal, EditDetailModal, EditsListModal,
   getEditsRegistry, upsertEdit, removeKeep, addKeep, getKeeps, getEditsCount,
-  type EditEntry,
+  type EditEntry, type SwatchOption,
 } from './StyleGuideEditsModal';
 
 /* ═══════════════════════ EDITS CONTEXT ═══════════════════════ */
