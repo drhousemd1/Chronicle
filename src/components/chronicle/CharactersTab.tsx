@@ -931,7 +931,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
         {/* Right Column - Trait Sections */}
         <div className="lg:col-span-2 space-y-6">
           <div className="flex justify-between items-center h-9">
-            <h2 className="text-xl font-bold text-slate-900">Character Traits</h2>
+            <h2 className="text-xl font-bold text-[hsl(var(--ui-surface-2))]">Character Traits</h2>
           </div>
 
           {/* HARDCODED SECTION 1: Physical Appearance */}
