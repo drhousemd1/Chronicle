@@ -82,7 +82,7 @@ export const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({ user }) 
               <button
                 type="button"
                 onClick={() => setShowNewPassword(!showNewPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-[rgba(248,250,252,0.3)]"
               >
                 {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>

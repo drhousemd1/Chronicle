@@ -575,7 +575,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                               </div>
                             )}
                           </div>
-                          <span className="text-[10px] text-white/60 group-hover:text-white text-center max-w-[4rem] truncate transition-colors">
+                          <span className="text-[10px] text-[rgba(248,250,252,0.3)] group-hover:text-white text-center max-w-[4rem] truncate transition-colors">
                             {char.name}
                           </span>
                         </div>
