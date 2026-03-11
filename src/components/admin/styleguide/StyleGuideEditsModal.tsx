@@ -160,17 +160,35 @@ interface EditDetailModalProps {
   details: Record<string, string>;
   existingComment?: string;
   existingId?: string;
+  existingPageSpecificChange?: boolean;
+  existingAppWideChange?: boolean;
+  existingChangeTo?: string;
   onSave: (entry: EditEntry) => void;
+  allSwatches?: SwatchOption[];
 }
 
 export const EditDetailModal: React.FC<EditDetailModalProps> = ({
-  open, onOpenChange, cardName, cardType, details, existingComment, existingId, onSave,
+  open, onOpenChange, cardName, cardType, details, existingComment, existingId,
+  existingPageSpecificChange, existingAppWideChange, existingChangeTo,
+  onSave, allSwatches,
 }) => {
   const [comment, setComment] = useState(existingComment || '');
+  const [pageSpecificChange, setPageSpecificChange] = useState(existingPageSpecificChange || false);
+  const [appWideChange, setAppWideChange] = useState(existingAppWideChange || false);
+  const [changeTo, setChangeTo] = useState(existingChangeTo || '');
+  const [changeToDropdownOpen, setChangeToDropdownOpen] = useState(false);
+
+  const isSwatch = cardType === 'SWATCH';
 
   useEffect(() => {
-    if (open) setComment(existingComment || '');
-  }, [open, existingComment]);
+    if (open) {
+      setComment(existingComment || '');
+      setPageSpecificChange(existingPageSpecificChange || false);
+      setAppWideChange(existingAppWideChange || false);
+      setChangeTo(existingChangeTo || '');
+      setChangeToDropdownOpen(false);
+    }
+  }, [open, existingComment, existingPageSpecificChange, existingAppWideChange, existingChangeTo]);
 
   const handleSave = () => {
     const entry: EditEntry = {
@@ -180,12 +198,20 @@ export const EditDetailModal: React.FC<EditDetailModalProps> = ({
       details,
       comment,
       savedAt: Date.now(),
+      ...(isSwatch ? { pageSpecificChange, appWideChange, changeTo: changeTo || undefined } : {}),
     };
     onSave(entry);
     onOpenChange(false);
   };
 
   const detailEntries = Object.entries(details).filter(([, v]) => v && v.trim());
+
+  // Deduplicate swatches by name for dropdown
+  const uniqueSwatches = allSwatches
+    ? Array.from(new Map(allSwatches.map(s => [s.name, s])).values())
+    : [];
+
+  const selectedSwatch = uniqueSwatches.find(s => s.name === changeTo);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -208,6 +234,80 @@ export const EditDetailModal: React.FC<EditDetailModalProps> = ({
               ))}
             </div>
           </div>
+
+          {/* Swatch-specific: Scope checkboxes */}
+          {isSwatch && (
+            <div className="mb-4">
+              <div className="text-[hsl(var(--ui-text-muted))] text-[10px] font-bold uppercase tracking-wider mb-2">Change Scope</div>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <div
+                    onClick={() => setPageSpecificChange(!pageSpecificChange)}
+                    className={`w-4 h-4 rounded-sm border flex items-center justify-center shrink-0 transition-colors ${pageSpecificChange ? 'bg-[hsl(var(--ui-accent))] border-[hsl(var(--ui-accent))]' : 'border-[hsl(var(--ui-border-hover))] bg-transparent'}`}
+                  >
+                    {pageSpecificChange && <Check className="w-3 h-3 text-[hsl(var(--ui-text))]" />}
+                  </div>
+                  <span className="text-[hsl(var(--ui-text))] text-xs">Page specific change</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <div
+                    onClick={() => setAppWideChange(!appWideChange)}
+                    className={`w-4 h-4 rounded-sm border flex items-center justify-center shrink-0 transition-colors ${appWideChange ? 'bg-[hsl(var(--ui-accent))] border-[hsl(var(--ui-accent))]' : 'border-[hsl(var(--ui-border-hover))] bg-transparent'}`}
+                  >
+                    {appWideChange && <Check className="w-3 h-3 text-[hsl(var(--ui-text))]" />}
+                  </div>
+                  <span className="text-[hsl(var(--ui-text))] text-xs">App wide change</span>
+                </label>
+              </div>
+            </div>
+          )}
+
+          {/* Swatch-specific: Change To dropdown */}
+          {isSwatch && uniqueSwatches.length > 0 && (
+            <div className="mb-4">
+              <div className="text-[hsl(var(--ui-text-muted))] text-[10px] font-bold uppercase tracking-wider mb-2">Change To</div>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setChangeToDropdownOpen(!changeToDropdownOpen)}
+                  className="w-full flex items-center gap-2.5 rounded-xl bg-[hsl(var(--ui-surface))] border border-[hsl(var(--ui-border))] text-sm px-3 py-2.5 text-left hover:border-[hsl(var(--ui-border-hover))] transition-colors"
+                >
+                  {selectedSwatch ? (
+                    <>
+                      <div className="w-4 h-4 rounded-full shrink-0 border border-[hsl(0_0%_100%_/_0.15)]" style={{ backgroundColor: selectedSwatch.color }} />
+                      <span className="text-[hsl(var(--ui-text))]">{selectedSwatch.name}</span>
+                    </>
+                  ) : (
+                    <span className="text-[hsl(var(--ui-text-muted))]">Select a color…</span>
+                  )}
+                  <svg className={`ml-auto w-4 h-4 text-[hsl(var(--ui-text-muted))] transition-transform ${changeToDropdownOpen ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                {changeToDropdownOpen && (
+                  <div className="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto rounded-xl bg-[hsl(240_6%_14%)] border border-[hsl(var(--ui-border))] shadow-[0_10px_30px_hsl(0_0%_0%_/_0.5)] py-1">
+                    {/* Clear option */}
+                    <button
+                      type="button"
+                      onClick={() => { setChangeTo(''); setChangeToDropdownOpen(false); }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-[hsl(var(--ui-text-muted))] hover:bg-[hsl(var(--ui-border))] transition-colors"
+                    >
+                      <X className="w-3.5 h-3.5" /> Clear selection
+                    </button>
+                    {uniqueSwatches.map((sw) => (
+                      <button
+                        key={sw.name}
+                        type="button"
+                        onClick={() => { setChangeTo(sw.name); setChangeToDropdownOpen(false); }}
+                        className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-xs hover:bg-[hsl(var(--ui-border))] transition-colors ${changeTo === sw.name ? 'bg-[hsl(var(--ui-border))]' : ''}`}
+                      >
+                        <div className="w-3.5 h-3.5 rounded-full shrink-0 border border-[hsl(0_0%_100%_/_0.15)]" style={{ backgroundColor: sw.color }} />
+                        <span className="text-[hsl(var(--ui-text))]">{sw.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Comment */}
           <div>
