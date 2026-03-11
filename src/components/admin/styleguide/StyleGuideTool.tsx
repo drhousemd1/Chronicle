@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback, createContext, useContext } from 'react';
-import { Sparkles, Pencil, Lock, X, Plus, Sunrise, Sun, Sunset, Moon, Eye, Heart, Bookmark, Play, ChevronUp, ChevronDown } from 'lucide-react';
+import { Sparkles, Pencil, Lock, X, Plus, Sunrise, Sun, Sunset, Moon, Eye, Heart, Bookmark, Play, ChevronUp, ChevronDown, ArrowLeft, ArrowRight } from 'lucide-react';
 import { StarRating } from '@/components/chronicle/StarRating';
 import { SpiceRating } from '@/components/chronicle/SpiceRating';
 import { CircularProgress } from '@/components/chronicle/CircularProgress';
@@ -145,6 +145,61 @@ const SwatchCard: React.FC<SwatchProps> = ({ color, name, rows, extraPreviewStyl
   </div>
 );
 
+/* ═══════════════════════ LOCATION VIEWER MODAL ═══════════════════════ */
+interface LocationImage { url: string; location: string; function: string }
+
+const LocationViewerModal: React.FC<{
+  open: boolean; onClose: () => void; title: string; images: LocationImage[];
+}> = ({ open, onClose, title, images }) => {
+  const [idx, setIdx] = useState(0);
+  if (!open || images.length === 0) return null;
+  const img = images[idx];
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.7)' }} onClick={onClose}>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: 'hsl(240 6% 10%)', borderRadius: 16, border: '1px solid hsl(0 0% 100% / 0.10)',
+          boxShadow: '0 10px 30px hsl(0 0% 0% / 0.5)', width: '90%', maxWidth: 700, padding: 24,
+          display: 'flex', flexDirection: 'column', gap: 16, position: 'relative',
+        }}
+      >
+        {/* Close */}
+        <button type="button" onClick={onClose} style={{ position: 'absolute', top: 12, right: 12, background: 'none', border: 'none', cursor: 'pointer', color: '#a1a1aa' }}><X size={18} /></button>
+
+        {/* Title */}
+        <h3 style={{ color: '#fff', fontSize: 16, fontWeight: 700, margin: 0 }}>{title} — Locations</h3>
+
+        {/* Image */}
+        <div style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', background: '#18181b', minHeight: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <img src={img.url} alt={img.location} style={{ width: '100%', height: 'auto', maxHeight: 420, objectFit: 'contain' }} />
+          {images.length > 1 && (
+            <>
+              <button type="button" onClick={() => setIdx((idx - 1 + images.length) % images.length)} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', background: 'hsl(240 6% 18%)', border: '1px solid hsl(0 0% 100% / 0.15)', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff' }}><ArrowLeft size={14} /></button>
+              <button type="button" onClick={() => setIdx((idx + 1) % images.length)} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'hsl(240 6% 18%)', border: '1px solid hsl(0 0% 100% / 0.15)', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff' }}><ArrowRight size={14} /></button>
+            </>
+          )}
+        </div>
+
+        {/* Dot indicators */}
+        {images.length > 1 && (
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 6 }}>
+            {images.map((_, i) => (
+              <button key={i} type="button" onClick={() => setIdx(i)} style={{ width: 8, height: 8, borderRadius: '50%', border: 'none', cursor: 'pointer', background: i === idx ? '#3b82f6' : '#52525b', transition: 'background 0.2s' }} />
+            ))}
+          </div>
+        )}
+
+        {/* Location + Function text */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div><span style={{ fontSize: 12, fontWeight: 700, color: '#a1a1aa' }}>Location: </span><span style={{ fontSize: 12, color: '#e4e4e7' }}>{img.location}</span></div>
+          <div><span style={{ fontSize: 12, fontWeight: 700, color: '#a1a1aa' }}>Function: </span><span style={{ fontSize: 12, color: '#e4e4e7' }}>{img.function}</span></div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 /* ═══════════════════════ SWATCH CARD V2 (Standardized) ═══════════════════════ */
 interface SwatchV2Props {
   color: string;
@@ -156,6 +211,7 @@ interface SwatchV2Props {
   appWide: boolean;
   effect?: string;
   extraPreviewStyle?: React.CSSProperties;
+  locationImages?: LocationImage[];
 }
 
 const labelStyle: React.CSSProperties = {
@@ -188,7 +244,8 @@ const CollapsibleCardBody: React.FC<{
   children: React.ReactNode;
   pageSpecific?: boolean;
   appWide?: boolean;
-}> = ({ nameLabel, nameValue, locations, children, pageSpecific, appWide }) => {
+  onViewLocations?: () => void;
+}> = ({ nameLabel, nameValue, locations, children, pageSpecific, appWide, onViewLocations }) => {
   const [expanded, setExpanded] = useState(false);
   const [isOverflowing, setIsOverflowing] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -220,7 +277,15 @@ const CollapsibleCardBody: React.FC<{
           <VisibilityFlags pageSpecific={pageSpecific} appWide={appWide} />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <span style={labelStyle}>Locations:</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={labelStyle}>Locations:</span>
+            {onViewLocations && (
+              <span
+                onClick={(e) => { e.stopPropagation(); onViewLocations(); }}
+                style={{ fontSize: 11, fontWeight: 600, color: '#3b82f6', cursor: 'pointer' }}
+              >View</span>
+            )}
+          </div>
           <span style={valueStyle}>{locations}</span>
         </div>
         {children}
@@ -248,7 +313,8 @@ const CollapsibleCardBody: React.FC<{
 
 
 const SwatchCardV2: React.FC<SwatchV2Props> = (props) => {
-  const { color, name, locations, value, token, pageSpecific, appWide, effect, extraPreviewStyle } = props;
+  const { color, name, locations, value, token, pageSpecific, appWide, effect, extraPreviewStyle, locationImages } = props;
+  const [viewerOpen, setViewerOpen] = useState(false);
   const details = { Value: value, Token: token, Locations: locations, ...(effect ? { Effect: effect } : {}) };
   return (
   <CardEditOverlay cardName={name} cardType="Swatch" details={details}>
@@ -263,6 +329,7 @@ const SwatchCardV2: React.FC<SwatchV2Props> = (props) => {
       locations={locations}
       pageSpecific={pageSpecific}
       appWide={appWide}
+      onViewLocations={locationImages && locationImages.length > 0 ? () => setViewerOpen(true) : undefined}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         <span style={labelStyle}>Value:</span>
@@ -278,6 +345,7 @@ const SwatchCardV2: React.FC<SwatchV2Props> = (props) => {
       </div>}
     </CollapsibleCardBody>
   </div>
+  {locationImages && <LocationViewerModal open={viewerOpen} onClose={() => setViewerOpen(false)} title={name} images={locationImages} />}
   </CardEditOverlay>
   );
 };
@@ -969,7 +1037,10 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <PageSubheading>Story Builder Page</PageSubheading>
             <PageDesc>Colors used across the Story Builder / Story Setup interface.</PageDesc>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 14 }}>
-              <SwatchCardV2 color="#4a5f7f" name="Slate Blue" locations="Panel header bars, MAIN CHARACTERS pill" value="#4a5f7f" token="bg-[#4a5f7f]" pageSpecific={false} appWide={true} />
+              <SwatchCardV2 color="#4a5f7f" name="Slate Blue" locations="Panel header bars, MAIN CHARACTERS pill" value="#4a5f7f" token="bg-[#4a5f7f]" pageSpecific={false} appWide={true} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/slate-blue/panel-headers.png', location: 'Panel header bars', function: 'Background color for section header bars (Story Card, World Core, etc.) in the Story Builder page' },
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/slate-blue/main-chars-pill.png', location: 'MAIN CHARACTERS pill', function: 'Background color for the MAIN CHARACTERS and SIDE CHARACTERS category pills in the Character Roster sidebar' },
+              ]} />
               <SwatchCardV2 color="#2a2a2f" name="Dark Charcoal" locations="Panel containers, Character Roster sidebar, character cards" value="#2a2a2f" token="bg-[#2a2a2f]" pageSpecific={false} appWide={true} />
               <SwatchCardV2 color="#1a1a1a" name="Soft Black" locations="Left icon navigation sidebar" value="#1a1a1a" token="bg-[#1a1a1a]" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="hsl(228, 7%, 20%)" name="Graphite" locations="Story Setup heading, header titles, DRAFTS, SAVE AND CLOSE, SAVE DRAFT, Upload Image, header action buttons, secondary button text, ghost button hover" value="hsl(228 7% 20%)" token="text-[hsl(var(--ui-surface-2))]" pageSpecific={false} appWide={true} />
