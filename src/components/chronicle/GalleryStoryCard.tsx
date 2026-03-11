@@ -89,7 +89,7 @@ export const GalleryScenarioCard: React.FC<GalleryScenarioCardProps> = ({
             "absolute top-4 right-4 px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f]",
             published.contentThemes.storyType === 'NSFW'
               ? "text-red-400"
-              : "text-blue-400"
+              : "text-blue-500"
           )}>
             {published.contentThemes.storyType}
           </div>
