@@ -146,7 +146,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
               <button
                 type="button"
                 onClick={() => setShowInput(true)}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-transparent text-blue-400 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 transition-all flex items-center gap-1"
+                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-transparent text-blue-500 border-2 border-dashed border-zinc-500 hover:border-blue-500 hover:bg-blue-500/5 transition-all flex items-center gap-1"
               >
                 <Plus className="w-3 h-3" />
                 Add custom
