@@ -2845,10 +2845,10 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 locations="GalleryStoryCard (top-right), StoryHub (top-right)"
                 appWide
                 notes="backdrop-blur-sm shadow-lg. Positioned absolute top-4 right-4 z-10."
-                states="SFW = text-blue-400, NSFW = text-red-400"
+                states="SFW = text-blue-500, NSFW = text-red-400"
                 preview={
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <span className="px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f] text-blue-400 uppercase tracking-wide">SFW</span>
+                    <span className="px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f] text-blue-500 uppercase tracking-wide">SFW</span>
                     <span className="px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f] text-red-400 uppercase tracking-wide">NSFW</span>
                   </div>
                 }
