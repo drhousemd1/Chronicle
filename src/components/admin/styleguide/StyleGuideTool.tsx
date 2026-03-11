@@ -2162,7 +2162,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
             <ButtonCardV2
               buttonName="ExtraRow Delete Button"
-              buttonColor="text-red-400 hover:text-red-300 hover:bg-red-900/30"
+              buttonColor="text-red-500 hover:text-red-400 hover:bg-red-900/30"
               size="Section delete: p-1 rounded-md. Item delete: p-1.5 rounded-md"
               purpose="Remove user-created custom trait rows and sections"
               visualEffects="transition-colors. Uses X icon"
@@ -2170,9 +2170,9 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               pageSpecific
               preview={
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <button className="p-1 rounded-md text-red-400 hover:text-red-300 hover:bg-red-900/30 transition-colors" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>✕</button>
+                  <button className="p-1 rounded-md text-red-500 hover:text-red-400 hover:bg-red-900/30 transition-colors" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>✕</button>
                   <span className="text-zinc-500 text-xs">p-1</span>
-                  <button className="p-1.5 rounded-md text-red-400 hover:text-red-300 hover:bg-red-900/30 transition-colors" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>✕</button>
+                  <button className="p-1.5 rounded-md text-red-500 hover:text-red-400 hover:bg-red-900/30 transition-colors" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>✕</button>
                   <span className="text-zinc-500 text-xs">p-1.5</span>
                 </div>
               }
