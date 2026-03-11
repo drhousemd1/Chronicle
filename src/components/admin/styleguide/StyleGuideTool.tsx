@@ -3279,7 +3279,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                   <div className="rounded-[16px] border border-white/10 overflow-hidden" style={{ background: '#2a2a2f', width: '100%', boxShadow: '0 8px 20px -2px rgba(0,0,0,0.4)' }}>
                     <div className="px-3 py-1.5 border-b border-white/20 flex items-center justify-between" style={{ background: '#4a5f7f' }}>
                       <span className="text-white text-[9px] font-bold uppercase tracking-wider">Appearance</span>
-                      <span className="text-white/60 text-[10px]">▾</span>
+                      <span className="text-[rgba(248,250,252,0.3)] text-[10px]">▾</span>
                     </div>
                     <div className="p-2">
                       <div className="rounded-lg p-2" style={{ background: 'rgba(58,58,63,0.3)', border: '1px solid rgba(255,255,255,0.05)' }}>
