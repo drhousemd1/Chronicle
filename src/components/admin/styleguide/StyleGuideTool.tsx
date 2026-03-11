@@ -169,7 +169,7 @@ const valueStyle: React.CSSProperties = {
 const COLLAPSED_META_HEIGHT = 130;
 
 const VisibilityFlags: React.FC<{ pageSpecific?: boolean; appWide?: boolean }> = ({ pageSpecific, appWide }) => (
-  <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
+  <div style={{ display: 'flex', gap: 16, flexShrink: 0 }}>
     <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#334155', cursor: 'default' }}>
       <input type="checkbox" checked={pageSpecific} disabled style={{ accentColor: '#3b82f6', width: 14, height: 14 }} />
       Page Specific
@@ -212,16 +212,18 @@ const CollapsibleCardBody: React.FC<{
           transition: 'max-height 0.3s ease',
         }}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <span style={labelStyle}>{nameLabel}:</span>
-          <span style={valueStyle}>{nameValue}</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <span style={labelStyle}>{nameLabel}:</span>
+            <span style={valueStyle}>{nameValue}</span>
+          </div>
+          <VisibilityFlags pageSpecific={pageSpecific} appWide={appWide} />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <span style={labelStyle}>Locations:</span>
           <span style={valueStyle}>{locations}</span>
         </div>
         {children}
-        <VisibilityFlags pageSpecific={pageSpecific} appWide={appWide} />
       </div>
       {/* Fixed-height toggle row — always present for uniform sizing */}
       <div style={{ position: 'relative', zIndex: 10, height: 24, display: 'flex', alignItems: 'center', marginTop: 'auto' }}>
