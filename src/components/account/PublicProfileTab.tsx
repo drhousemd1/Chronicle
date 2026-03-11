@@ -270,7 +270,7 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
   };
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-64 text-white/50">Loading profile...</div>;
+    return <div className="flex items-center justify-center h-64 text-[rgba(248,250,252,0.3)]">Loading profile...</div>;
   }
 
   const initials = (profile.display_name || 'U').slice(0, 2).toUpperCase();
