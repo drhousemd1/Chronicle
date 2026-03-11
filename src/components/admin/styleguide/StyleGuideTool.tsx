@@ -1324,9 +1324,9 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             />
             <TypoCardV2 fontName="System Sans-Serif"
               exampleBg="#2a2a2f"
-              exampleContent={<span className="text-xs text-white/60 italic leading-relaxed">A romantic fantasy adventure in the fae lands...</span>}
+              exampleContent={<span className="text-xs text-[rgba(248,250,252,0.3)] italic leading-relaxed">A romantic fantasy adventure in the fae lands...</span>}
               fontSize="12px (text-xs)" fontWeight="400 (normal, italic)"
-              color="rgba(255,255,255,0.6) (white/60)" lineHeight="relaxed (leading-relaxed)"
+              color="rgba(248,250,252,0.3) (Ghost White)" lineHeight="relaxed (leading-relaxed)"
               locations="Card description — story description below title on gallery cards. line-clamp-2."
               pageSpecific={true} appWide={false}
             />
