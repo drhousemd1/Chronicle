@@ -957,7 +957,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
               const args = buildExtraEnhanceArgs('extra_pa', `extra_pa_${extra.id}`, extra, 'physicalAppearance', 'physical appearance detail');
               return <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('physicalAppearance', extra.id, patch)} onDelete={() => handleDeleteExtra('physicalAppearance', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_pa_${extra.id}`, 'custom', () => extra.value, args.setValue, args.customLabel)} isEnhancing={enhancingField === `extra_pa_${extra.id}`} />;
             })}
-            <button type="button" onClick={() => handleAddExtra('physicalAppearance')} className="w-full py-2.5 text-sm font-medium text-blue-400 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-400 hover:bg-blue-500/5 rounded-xl transition-all">
+            <button type="button" onClick={() => handleAddExtra('physicalAppearance')} className="w-full py-2.5 text-sm font-medium text-blue-500 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-500 hover:bg-blue-500/5 rounded-xl transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
             </button>
           </HardcodedSection>
