@@ -117,6 +117,10 @@ const IndexContent = () => {
   
   const { modelId: globalModelId, setModelId: setGlobalModelId } = useModelSettings();
 
+  // Stable reference for default scenario data - prevents infinite re-render loops
+  // when activeData is null during the loading transition to chat_interface
+  const defaultScenarioData = useMemo(() => createDefaultScenarioData(), []);
+
   const [registry, setRegistry] = useState<ScenarioMetadata[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeData, setActiveData] = useState<ScenarioData | null>(null);
@@ -2285,7 +2289,7 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
           {tab === "chat_interface" && activeId && playingConversationId && (
             <ChatInterfaceTab
               scenarioId={activeId}
-              appData={activeData || createDefaultScenarioData()}
+              appData={activeData || defaultScenarioData}
               conversationId={playingConversationId}
               modelId={globalModelId}
               onUpdate={(convs) => handleUpdateActive({ conversations: convs })}
