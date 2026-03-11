@@ -3915,7 +3915,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                   <div className="bg-slate-900 text-white rounded-lg p-3 relative overflow-hidden" style={{ width: '100%', minHeight: 50 }}>
                     <div className="relative z-10">
                       <div className="font-black text-[9px] tracking-tight">Narrative Core</div>
-                      <div className="text-[7px] text-white/60">Powered by AI</div>
+                      <div className="text-[7px] text-[rgba(248,250,252,0.3)]">Powered by AI</div>
                     </div>
                     <div className="absolute -right-1 -bottom-1 text-[36px] font-black text-white/5 italic select-none">AI</div>
                   </div>
