@@ -44,7 +44,7 @@ function createMarkdownComponents(isDark: boolean): Record<string, React.FC<any>
   const inlineCodeBg = isDark ? '#1e293b' : '#e2e8f0';
   const theadBg = isDark ? '#1e293b' : '#e2e8f0';
   const thText = isDark ? '#94a3b8' : '#1e293b';
-  const linkColor = isDark ? '#60a5fa' : '#2563eb';
+  const linkColor = isDark ? '#60a5fa' : '#3b82f6';
   const blockquoteBorder = isDark ? '#00F0FF' : '#3b82f6';
   const blockquoteText = isDark ? '#9CA3AF' : '#6B7280';
   const bold = isDark ? '#ffffff' : '#111827';
