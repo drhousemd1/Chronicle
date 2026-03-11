@@ -94,7 +94,7 @@ export const ShareScenarioModal: React.FC<ShareScenarioModalProps> = ({
       <DialogContent className="bg-[#2a2a2f] border-white/10 text-white max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3 text-xl font-bold">
-            <Share2 className="w-6 h-6 text-blue-400" />
+            <Share2 className="w-6 h-6 text-blue-500" />
             Share Your Story
           </DialogTitle>
         </DialogHeader>
