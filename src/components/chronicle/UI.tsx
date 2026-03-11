@@ -140,7 +140,7 @@ export function TextArea({
 export function SectionTitle({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
     <div className="mb-8">
-      <div className="text-3xl font-black text-slate-900 tracking-tight">{title}</div>
+      <div className="text-3xl font-black text-[hsl(var(--ui-surface-2))] tracking-tight">{title}</div>
       {subtitle ? <div className="text-sm font-medium text-slate-500 mt-1">{subtitle}</div> : null}
     </div>
   );
