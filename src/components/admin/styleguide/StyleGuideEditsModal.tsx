@@ -178,7 +178,7 @@ export const EditDetailModal: React.FC<EditDetailModalProps> = ({
   const [changeTo, setChangeTo] = useState(existingChangeTo || '');
   const [changeToDropdownOpen, setChangeToDropdownOpen] = useState(false);
 
-  const isSwatch = cardType === 'SWATCH';
+  const isSwatch = cardType.toLowerCase() === 'swatch';
 
   useEffect(() => {
     if (open) {
