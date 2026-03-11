@@ -1564,7 +1564,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
             <ButtonCardV2
               buttonName="Card Hover Buttons — Edit / Delete / Play"
-              buttonColor="Edit: #ffffff — bg-white. Delete: hsl(var(--destructive)) — bg-[hsl(var(--destructive))]. Play: #3b82f6 — bg-blue-600"
+              buttonColor="Edit: #ffffff — bg-white. Delete: hsl(var(--destructive)) — bg-[hsl(var(--destructive))]. Play: #3b82f6 — bg-blue-500"
               textColor="Edit: hsl(228,7%,20%) — text-[hsl(var(--ui-surface-2))]. Delete/Play: #ffffff — text-white"
               size="h-8 px-4 — rounded-xl (12px)"
               purpose="Compact card variant for story card hover overlay actions"
