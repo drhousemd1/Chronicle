@@ -3296,7 +3296,7 @@ const updatedChar: SideCharacter = {
               onClick={onBack}
               className={`flex items-center gap-2 text-xs font-black uppercase tracking-widest transition-colors ${
                 sidebarBgIsLight 
-                  ? 'text-black hover:text-blue-600' 
+                  ? 'text-black hover:text-blue-500' 
                   : 'text-white hover:text-blue-300'
               }`}
             >
