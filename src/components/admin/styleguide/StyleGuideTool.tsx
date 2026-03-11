@@ -2068,7 +2068,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               preview={<>
                 <button className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold bg-[#4a5f7f] text-white" style={{ cursor: 'default' }}>+ Follow</button>
                 <button className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold bg-white/10 text-white" style={{ cursor: 'default' }}>✓ Following</button>
-                <button className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold bg-red-500/20 text-red-400" style={{ cursor: 'default' }}>− Unfollow</button>
+                <button className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold bg-red-500/20 text-red-500" style={{ cursor: 'default' }}>− Unfollow</button>
               </>}
             />
 
