@@ -856,15 +856,16 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
     setKeepOrEditTarget({ cardName, cardType, details });
   }, []);
 
-  const handleKeep = useCallback(() => {
+  const handleKeep = useCallback(async () => {
     if (!keepOrEditTarget) return;
-    addKeep(keepOrEditTarget.cardName);
+    await addKeep(keepOrEditTarget.cardName);
     refreshEditsState();
   }, [keepOrEditTarget, refreshEditsState]);
 
-  const handleEditOpen = useCallback(() => {
+  const handleEditOpen = useCallback(async () => {
     if (!keepOrEditTarget) return;
-    const existing = getEditsRegistry().find(e => e.cardName === keepOrEditTarget.cardName);
+    const registry = await getEditsRegistry();
+    const existing = registry.find(e => e.cardName === keepOrEditTarget.cardName);
     setEditDetailTarget({
       cardName: keepOrEditTarget.cardName,
       cardType: keepOrEditTarget.cardType,
@@ -874,13 +875,13 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
     });
   }, [keepOrEditTarget]);
 
-  const handleSaveEdit = useCallback((entry: EditEntry) => {
-    upsertEdit(entry);
+  const handleSaveEdit = useCallback(async (entry: EditEntry) => {
+    await upsertEdit(entry);
     refreshEditsState();
   }, [refreshEditsState]);
 
-  const handleRemoveKeep = useCallback((cardName: string) => {
-    removeKeep(cardName);
+  const handleRemoveKeep = useCallback(async (cardName: string) => {
+    await removeKeep(cardName);
     refreshEditsState();
   }, [refreshEditsState]);
 
