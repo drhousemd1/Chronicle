@@ -4448,7 +4448,7 @@ text-white/40    — Disabled`}
               }
               code={`/* Sparkles size={14} — Lucide React */
 /* Default: text-zinc-400 */
-/* Hover: text-blue-400, container bg-blue-500/10 */
+/* Hover: text-blue-500, container bg-blue-500/10 */
 /* Container: p-1.5 rounded-md */`}
             />
           </Section>
