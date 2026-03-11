@@ -4441,7 +4441,7 @@ text-white/40    — Disabled`}
                     <span style={{ fontSize: 8, color: '#64748b' }}>Default</span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                    <div className="p-1.5 rounded-md text-blue-400 bg-blue-500/10">✨</div>
+                    <div className="p-1.5 rounded-md text-blue-500 bg-blue-500/10">✨</div>
                     <span style={{ fontSize: 8, color: '#64748b' }}>Hover</span>
                   </div>
                 </div>
