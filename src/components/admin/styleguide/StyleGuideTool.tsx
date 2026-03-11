@@ -2196,7 +2196,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                   <div className="text-slate-400 text-[9px] mt-0.5">Selected model</div>
                 </button>
                 <button className="text-left p-3 rounded-xl border bg-white border-slate-200" style={{ cursor: 'default', width: 160 }}>
-                  <div className="text-slate-900 font-bold text-xs">Grok 2</div>
+                  <div className="text-[hsl(var(--ui-surface-2))] font-bold text-xs">Grok 2</div>
                   <div className="text-slate-500 text-[9px] mt-0.5">Inactive model</div>
                 </button>
               </>}
