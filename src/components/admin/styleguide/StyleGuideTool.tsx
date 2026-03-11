@@ -3310,7 +3310,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                       <div className="text-[8px] font-black uppercase tracking-widest text-slate-500 mb-0.5">AI</div>
                       <div className="text-[9px] text-white">Message...</div>
                     </div>
-                    <div className="flex-1 bg-[#1c1f26] rounded-[2rem] border-2 border-blue-400 p-3" style={{ minHeight: 48 }}>
+                    <div className="flex-1 bg-[#1c1f26] rounded-[2rem] border-2 border-blue-500 p-3" style={{ minHeight: 48 }}>
                       <div className="text-[8px] font-black uppercase tracking-widest text-blue-300 mb-0.5">USER</div>
                       <div className="text-[9px] text-white">Reply...</div>
                     </div>
