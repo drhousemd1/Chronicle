@@ -348,7 +348,7 @@ export const MemoriesModal: React.FC<MemoriesModalProps> = ({
                             </button>
                             <button
                               onClick={() => handleDelete(memory.id)}
-                              className="p-1.5 rounded hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors"
+                              className="p-1.5 rounded hover:bg-red-500/20 text-slate-400 hover:text-red-500 transition-colors"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
