@@ -2215,7 +2215,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               locations="ImageLibraryTab — first card in folder grid"
               pageSpecific
               preview={
-                <div className="border-2 border-dashed border-zinc-600 bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-[2rem] flex flex-col items-center justify-center gap-2 hover:border-blue-400 transition-colors" style={{ width: 100, aspectRatio: '2/3', cursor: 'default' }}>
+                <div className="border-2 border-dashed border-zinc-600 bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-[2rem] flex flex-col items-center justify-center gap-2 hover:border-blue-500 transition-colors" style={{ width: 100, aspectRatio: '2/3', cursor: 'default' }}>
                   <span className="text-zinc-400 text-lg">+</span>
                   <span className="text-zinc-400 text-[9px] font-bold uppercase tracking-wider">New Folder</span>
                 </div>
