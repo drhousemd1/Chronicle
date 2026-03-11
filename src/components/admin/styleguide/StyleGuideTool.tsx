@@ -1074,7 +1074,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             {/* ─── Model Settings ─── */}
             <PageSubheading>Model Settings</PageSubheading>
             <PageDesc>Colors used on the Model Settings page — NOTE: this page uses a LIGHT THEME unlike the rest of the app.</PageDesc>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 14 }}>
               <SwatchCardV2 color="#ffffff" name="White" locations="Inactive model selection card background" value="#ffffff" token="bg-white" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="#0f172a" name="Deep Navy" locations="Active/selected model card background, scale-[1.02]" value="#0f172a" token="bg-slate-900" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="#faf5ff" name="Pale Lavender" locations="Admin-only share toggle row background, border-purple-200" value="#faf5ff" token="bg-purple-50" pageSpecific={true} appWide={false} />
