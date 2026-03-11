@@ -74,7 +74,7 @@ export function ModelSettingsTab({ selectedModelId, onSelectModel }: ModelSettin
           
           <Card className="p-8">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-slate-900">Select Grok Model</h3>
+              <h3 className="text-xl font-bold text-[hsl(var(--ui-surface-2))]">Select Grok Model</h3>
               <span className="inline-flex items-center gap-1.5 text-emerald-600 text-xs">
                 <Zap className="w-3 h-3" /> Powered by xAI
               </span>
