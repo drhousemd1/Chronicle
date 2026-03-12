@@ -494,7 +494,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                       )}
                       {contentThemes.characterTypes.length > 0 && (
                         <div>
-                          <div className="bg-[#4a5f7f]/30 rounded px-3 py-1.5 mb-2 inline-block">
+                          <div className="bg-[#4a5f7f] rounded-xl px-4 py-2 mb-2 inline-block shadow-sm">
                             <h4 className="text-xs font-bold text-[rgba(248,250,252,0.9)] uppercase">Character Types</h4>
                           </div>
                           <p className="text-sm text-[rgba(248,250,252,0.8)]">{contentThemes.characterTypes.join(', ')}</p>
