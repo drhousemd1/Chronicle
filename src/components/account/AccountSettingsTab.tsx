@@ -41,7 +41,7 @@ export const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({ user }) 
   return (
     <div className="max-w-2xl mx-auto space-y-8">
       {/* Email Section */}
-      <div className="bg-[#1e1e22] rounded-2xl border border-white/10 p-6">
+      <div className="bg-[#1e1e22] rounded-2xl border border-ghost-white p-6">
         <div className="flex items-center gap-3 mb-4">
           <Mail className="w-5 h-5 text-[#4a5f7f]" />
           <h3 className="text-lg font-bold text-white">Email Address</h3>
