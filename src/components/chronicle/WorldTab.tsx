@@ -261,7 +261,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
               ? "text-cyan-400 animate-pulse cursor-wait" 
               : enhancingField !== null
               ? "text-zinc-600 cursor-not-allowed"
-              : "text-zinc-400 hover:text-cyan-400 hover:bg-white/5"
+              : "text-zinc-400 hover:text-cyan-400 hover:bg-ghost-white"
           )}
         >
           <Sparkles size={14} />
