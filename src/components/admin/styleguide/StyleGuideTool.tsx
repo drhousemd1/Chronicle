@@ -1109,9 +1109,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <SwatchCardV2 color="#d4d4d8" name="Light Zinc" locations="Bright text on dark containers, active toggle labels" value="#d4d4d8" token="text-zinc-300" pageSpecific={false} appWide={true} locationImages={[
                 { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/story-builder/story-card-panel.png', location: 'Bright text on containers', function: 'Brighter text color used for emphasized labels and active toggle text on dark backgrounds' },
               ]} />
-              <SwatchCardV2 color="rgba(248,250,252,0.5)" name="Frosted White" locations="Focused/active text state, hover text brightness" value="rgba(248,250,252,0.5)" token="text-slate-50/50" pageSpecific={false} appWide={true} extraPreviewStyle={{ border: '1px dashed #ccc' }} locationImages={[
-                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/story-builder/story-card-panel.png', location: 'Focused/active text', function: 'Semi-opaque white used for text in focused or active states on dark surfaces' },
-              ]} />
+              {/* Frosted White migrated → Ghost White */}
               <SwatchCardV2 color="#ef4444" name="Bright Red" locations="Validation error borders, error text, required field indicators" value="#ef4444" token="text-red-500 / border-red-500" pageSpecific={false} appWide={true} locationImages={[
                 { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/story-builder/story-card-panel.png', location: 'Validation errors', function: 'Border and text color for validation error states on required fields (e.g., missing Main Characters)' },
               ]} />
