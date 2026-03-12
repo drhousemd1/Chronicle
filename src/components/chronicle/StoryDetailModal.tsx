@@ -515,8 +515,8 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                     {/* Custom Tags */}
                     {contentThemes.customTags.length > 0 && (
                       <div className="mt-6">
-                        <h4 className="text-xs font-bold text-white/40 uppercase mb-2">Custom Tags</h4>
-                        <p className="text-sm text-white">{contentThemes.customTags.join(', ')}</p>
+                        <h4 className="text-xs font-bold text-[rgba(248,250,252,1)] uppercase mb-2">Custom Tags</h4>
+                        <p className="text-sm text-[rgba(248,250,252,0.8)]">{contentThemes.customTags.join(', ')}</p>
                       </div>
                     )}
                   </>
