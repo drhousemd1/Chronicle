@@ -374,7 +374,7 @@ const IndexContent = () => {
     
     switch (hubFilter) {
       case "my":
-        return registry.filter(s => !s.isDraft);
+        return registry;
       case "bookmarked":
         return bookmarkedScenarios;
       case "published":
