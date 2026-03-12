@@ -784,7 +784,7 @@ const ALL_SWATCHES: SwatchOption[] = [
   { color: '#ffffff', name: 'White' },
   { color: '#0f172a', name: 'Deep Navy' },
   { color: '#faf5ff', name: 'Pale Lavender' },
-  { color: '#f8fafc', name: 'Ice White' },
+  // Ice White removed — migrated to Ghost White
   { color: 'rgba(0,0,0,0.8)', name: 'Near Black Glass' },
   { color: 'rgba(96,165,250,0.1)', name: 'Faint Blue (Hover)' },
   { color: '#f43f5e', name: 'Rose' },
