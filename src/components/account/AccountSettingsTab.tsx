@@ -66,7 +66,7 @@ export const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({ user }) 
       </div>
 
       {/* Change Password */}
-      <div className="bg-[#1e1e22] rounded-2xl border border-white/10 p-6">
+      <div className="bg-[#1e1e22] rounded-2xl border border-ghost-white p-6">
         <h3 className="text-lg font-bold text-white mb-4">Change Password</h3>
         <form onSubmit={handleChangePassword} className="space-y-4">
           <div>
