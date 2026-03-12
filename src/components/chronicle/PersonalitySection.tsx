@@ -156,7 +156,7 @@ const TraitList: React.FC<{
 }> = ({ heading, traits, onUpdateTrait, onDeleteTrait, onAddTrait, readOnly, onEnhanceTrait, enhancingField }) => (
   <div className="space-y-3">
     {heading && (
-      <h4 className="text-[10px] font-bold text-zinc-300 uppercase tracking-[0.15em] border-b border-ghost-white pb-2">{heading}</h4>
+      <h4 className="text-[10px] font-bold text-zinc-300 uppercase tracking-[0.15em] border-b border-[#4a5f7f] pb-2">{heading}</h4>
     )}
     {traits.length > 0 ? (
       <div className="space-y-3">
