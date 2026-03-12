@@ -3193,7 +3193,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <InputCardV2
                 inputName="Chronicle UI TextArea"
                 
-                background="bg-slate-50"
+                background="bg-ghost-white"
                 border="border-slate-200"
                 borderRadius="rounded-2xl (16px)"
                 textColor="text-[hsl(var(--ui-surface-2))] (inherited)"
