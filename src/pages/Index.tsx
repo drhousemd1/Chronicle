@@ -1515,7 +1515,7 @@ const IndexContent = () => {
   }
 
   // Show loading state
-  if (authLoading || isLoading) {
+  if (authLoading) {
     return (
       <div className="h-screen bg-slate-900 flex items-center justify-center">
         <div className="text-white text-center">
