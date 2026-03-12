@@ -1325,16 +1325,11 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery%2Fgallery-card-badges.png', location: 'Remix pencil icon (card)', function: 'Purple pencil icon inside the remix badge on gallery story cards' },
               ]} />
 
-              {/* --- Dim White (filter badges) --- */}
-              <SwatchCardV2 color="rgba(255,255,255,0.2)" name="Dim White" locations="Filter count badge bg, search tag chip bg, text search chip bg" value="rgba(255,255,255,0.2)" token="bg-white/20" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} locationImages={[
-                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery%2Fgallery-search-bar.png', location: 'Browse Categories filter count badge', function: 'Semi-transparent white background for the filter count pill on Browse Categories button' },
+              {/* Dim White & Faint White gallery cards removed — now Ghost White */}
+              <SwatchCardV2 color="rgba(248,250,252,0.3)" name="Ghost White" locations="Filter count badge bg, search tag chip bg, text search chip bg, search input border, sidebar border-right, modal border, detail modal content divider" value="rgba(248,250,252,0.3)" token="bg-ghost-white / border-ghost-white" pageSpecific={false} appWide={true} extraPreviewStyle={{ border: '1px dashed #ccc' }} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery%2Fgallery-search-bar.png', location: 'Browse Categories filter count badge + search input border', function: 'Ghost White background for filter count pill and subtle border on search input' },
                 { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery%2Fgallery-filter-chips.png', location: 'Search tag/text filter chip bg', function: 'Background for active search text and hashtag chips in the filter bar' },
-              ]} />
-
-              {/* --- Faint White (borders) --- */}
-              <SwatchCardV2 color="rgba(255,255,255,0.1)" name="Faint White" locations="Search input border, sidebar border-right, modal border, detail modal content divider" value="rgba(255,255,255,0.1)" token="border-white/10" pageSpecific={false} appWide={true} extraPreviewStyle={{ border: '1px dashed #999' }} locationImages={[
-                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery%2Fgallery-search-bar.png', location: 'Search input border', function: 'Subtle white border on the gallery search input field' },
-                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery%2Fgallery-sidebar.png', location: 'Sidebar border-right + section borders', function: 'Subtle white border on the right edge of sidebar and between header sections' },
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery%2Fgallery-sidebar.png', location: 'Sidebar border-right + section borders', function: 'Subtle border on the right edge of sidebar and between header sections' },
               ]} />
 
               {/* --- Light Steel (synopsis) --- */}
