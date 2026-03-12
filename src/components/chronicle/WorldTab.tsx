@@ -1261,7 +1261,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                 <h2 className="text-white text-xl font-bold tracking-tight">World Codex</h2>
               </div>
               <div className="p-6">
-                <div className="p-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
+                <div className="p-6 bg-[#3a3a3f]/30 rounded-2xl border border-ghost-white">
                   <div className="space-y-8">
                     
                     <div>
