@@ -3069,7 +3069,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14 }}>
               <InputCardV2
                 inputName="Review Textarea (Frosted)"
-                background="bg-white/5"
+                background="bg-ghost-white"
                 border="border-ghost-white"
                 borderRadius="rounded-lg (8px)"
                 textColor="white"
