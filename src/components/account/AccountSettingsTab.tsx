@@ -61,7 +61,7 @@ export const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({ user }) 
           <span className="px-3 py-1.5 bg-[#4a5f7f]/20 text-[#7ba3d4] rounded-lg text-sm font-bold">
             Free
           </span>
-          <span className="text-[rgba(248,250,252,0.3)] text-sm">Basic access to all features</span>
+          <span className="text-[rgba(248,250,252,0.7)] text-sm">Basic access to all features</span>
         </div>
       </div>
 

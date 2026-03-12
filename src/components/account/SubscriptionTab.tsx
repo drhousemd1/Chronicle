@@ -60,7 +60,7 @@ export const SubscriptionTab: React.FC = () => {
     <div className="max-w-5xl mx-auto">
       <div className="text-center mb-10">
         <h2 className="text-2xl font-bold text-white mb-2">Choose Your Plan</h2>
-        <p className="text-[rgba(248,250,252,0.3)] text-sm">Upgrade to unlock more powerful features</p>
+        <p className="text-[rgba(248,250,252,0.7)] text-sm">Upgrade to unlock more powerful features</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

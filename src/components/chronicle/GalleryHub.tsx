@@ -502,7 +502,7 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
                 <h3 className="text-xl font-bold text-white mb-2">
                   {sortBy === 'following' ? 'No stories from followed creators' : 'No stories found'}
                 </h3>
-                <p className="text-[rgba(248,250,252,0.3)] max-w-md">
+                <p className="text-[rgba(248,250,252,0.7)] max-w-md">
                   {sortBy === 'following'
                     ? "Follow creators to see their stories here."
                     : searchTags.length > 0 || searchText || activeFilterCount > 0

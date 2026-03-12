@@ -343,7 +343,7 @@ export default function CreatorProfile() {
                               {work.play_count}
                             </span>
                           </div>
-                          <span className="text-[11px] text-[rgba(248,250,252,0.3)] font-medium mt-1">
+                          <span className="text-[11px] text-[rgba(248,250,252,0.7)] font-medium mt-1">
                             Written by: {displayName}
                           </span>
                         </div>
