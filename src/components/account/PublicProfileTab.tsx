@@ -379,7 +379,7 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
               <textarea
                 value={profile.about_me}
                 onChange={(e) => setProfile(prev => ({ ...prev, about_me: e.target.value }))}
-                className="flex-1 bg-[#2a2a2f] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#4a5f7f] resize-none h-20"
+                className="flex-1 bg-[#2a2a2f] border border-ghost-white rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#4a5f7f] resize-none h-20"
                 placeholder="Tell others about yourself..."
                 maxLength={500}
               />
