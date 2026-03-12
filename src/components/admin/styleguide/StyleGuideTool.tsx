@@ -4428,7 +4428,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                   <div style={{ position: 'relative', width: '100%', height: 60, borderRadius: 6, overflow: 'hidden' }}>
                     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #334155, #475569)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, color: '#94a3b8' }}>App Content</div>
                     <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.8)' }} />
-                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#18181b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '6px 14px', color: '#fff', fontSize: 8, fontWeight: 600 }}>Modal</div>
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#18181b', border: '1px solid rgba(248,250,252,0.3)', borderRadius: 6, padding: '6px 14px', color: '#fff', fontSize: 8, fontWeight: 600 }}>Modal</div>
                   </div>
                 }
               />
