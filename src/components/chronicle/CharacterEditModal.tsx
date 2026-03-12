@@ -1883,7 +1883,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
           </div>
         </ScrollArea>
 
-        <DialogFooter className="px-6 py-5 border-t border-white/10 bg-[#2a2a2f] gap-3 flex-shrink-0">
+        <DialogFooter className="px-6 py-5 border-t border-ghost-white bg-[#2a2a2f] gap-3 flex-shrink-0">
           <button
             type="button"
             onClick={() => onOpenChange(false)}
