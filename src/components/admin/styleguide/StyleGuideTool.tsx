@@ -2234,13 +2234,13 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               textColor="Default: #ffffff — text-white. Active: #fb7185 — text-rose-400"
               size="flex-1 h-12 — rounded-xl"
               purpose="Like a story — toggle button with filled heart when active"
-              visualEffects="Default: border-white/10. Active: border-rose-500/50. fill-current on icon when active"
+              visualEffects="Default: border-ghost-white. Active: border-rose-500/50. fill-current on icon when active"
               locations="StoryDetailModal — gallery mode (non-owned)"
               pageSpecific={true}
               appWide={false}
               preview={
                 <div style={{ background: '#1a1a2e', borderRadius: 12, padding: '16px 20px', width: '100%', display: 'flex', justifyContent: 'center', gap: 8 }}>
-                  <button className="h-12 bg-white/5 border border-white/10 rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 100 }}>♡ Like</button>
+                  <button className="h-12 bg-white/5 border border-ghost-white rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 100 }}>♡ Like</button>
                   <button className="h-12 bg-rose-500/20 border border-rose-500/50 rounded-xl text-rose-400 text-sm font-semibold flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 100 }}>❤ Liked</button>
                 </div>
               }
