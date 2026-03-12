@@ -4210,7 +4210,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 pageSpecific appWide={false}
                 notes="Avatar: w-12 h-12 rounded-xl. Name: font-semibold text-white. Role: text-xs text-[rgba(248,250,252,0.3)]."
                 preview={
-                  <div className="bg-white/5 rounded-xl p-2 flex items-center gap-2" style={{ maxWidth: 200 }}>
+                  <div className="bg-ghost-white rounded-xl p-2 flex items-center gap-2" style={{ maxWidth: 200 }}>
                     <div className="w-8 h-8 rounded-lg bg-zinc-700 flex items-center justify-center text-zinc-400 text-[10px]">👤</div>
                     <div><div className="text-white font-semibold text-[9px]">Elena</div><div className="text-[rgba(248,250,252,0.3)] text-[7px]">Protagonist</div></div>
                   </div>
