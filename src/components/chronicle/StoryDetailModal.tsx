@@ -445,13 +445,6 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                             <p className="text-sm text-[#94a3b8] group-hover:text-white transition-colors">
                               Created by: <span className="text-[#4a5f7f] font-medium">{publisher.display_name || publisher.username || 'Anonymous'}</span>
                             </p>
-                            {creatorRating && (
-                              <div className="flex items-center gap-1.5 mt-0.5">
-                                <span className="text-sm text-white/40">Creator rating:</span>
-                                <StarRating rating={creatorRating.rating} size={16} color="slate" />
-                                <span className="text-sm text-[rgba(248,250,252,0.7)]">{creatorRating.rating.toFixed(1)} ({creatorRating.totalReviews} review{creatorRating.totalReviews !== 1 ? 's' : ''})</span>
-                              </div>
-                            )}
                           </div>
                         </button>
                       </div>

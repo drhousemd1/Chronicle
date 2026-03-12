@@ -228,6 +228,19 @@ export default function CreatorProfile() {
                 <span className="text-white text-sm font-semibold">{displayName}</span>
               </div>
 
+              {/* Creator Rating */}
+              {creatorRating && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-white/40 uppercase tracking-wider w-28 shrink-0">Rating</span>
+                  <div className="flex items-center gap-1.5">
+                    <StarRating rating={creatorRating.rating} size={16} color="slate" />
+                    <span className="text-sm text-ghost-white">
+                      {creatorRating.rating.toFixed(1)} ({creatorRating.totalReviews} review{creatorRating.totalReviews !== 1 ? 's' : ''})
+                    </span>
+                  </div>
+                </div>
+              )}
+
               {/* About Me */}
               <div className="flex items-start gap-2">
                 <span className="text-xs font-bold text-white/40 uppercase tracking-wider w-28 shrink-0 pt-1">About Me</span>
