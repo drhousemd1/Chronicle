@@ -76,7 +76,7 @@ export const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({ user }) 
                 type={showNewPassword ? 'text' : 'password'}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full bg-[#2a2a2f] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#4a5f7f] pr-10"
+                className="w-full bg-[#2a2a2f] border border-ghost-white rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#4a5f7f] pr-10"
                 placeholder="••••••••"
               />
               <button
