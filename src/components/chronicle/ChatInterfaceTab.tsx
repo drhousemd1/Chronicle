@@ -3646,7 +3646,7 @@ const updatedChar: SideCharacter = {
                           <button
                             onClick={handleGenerateSceneImage}
                             disabled={isGeneratingImage}
-                            className="p-3 bg-white/20 rounded-lg hover:bg-white/30 transition-colors"
+                            className="p-3 bg-ghost-white rounded-lg hover:bg-white/30 transition-colors"
                             title="Generate new image"
                           >
                             <RefreshCw className={`w-5 h-5 text-white ${isGeneratingImage ? 'animate-spin' : ''}`} />
