@@ -17,6 +17,7 @@ interface ScenarioCardProps {
   onDelete: (id: string) => void;
   onViewDetails: (id: string) => void;
   isPublished?: boolean;
+  isDraft?: boolean;
   contentThemes?: ContentThemes;
   publishedData?: PublishedScenario;
   displayAuthor?: string;
