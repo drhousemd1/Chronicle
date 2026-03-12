@@ -3311,7 +3311,7 @@ const updatedChar: SideCharacter = {
                   <Settings className="w-4 h-4" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 bg-zinc-800 border-white/10 text-zinc-200">
+              <DropdownMenuContent align="end" className="w-48 bg-zinc-800 border-ghost-white text-zinc-200">
                 <DropdownMenuItem onClick={() => setIsSidebarThemeOpen(true)} className="cursor-pointer hover:!bg-zinc-700 focus:!bg-zinc-700 focus:!text-white">
                   <ImageIcon className="w-4 h-4 mr-2" />
                   Set Theme
