@@ -361,7 +361,7 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Search titles, descriptions, or #tags..."
-            className="w-full pl-12 pr-24 py-3 bg-[#3a3a3f]/50 border border-white/10 rounded-xl text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#4a5f7f] focus:border-transparent"
+            className="w-full pl-12 pr-24 py-3 bg-[#3a3a3f]/50 border border-ghost-white rounded-xl text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#4a5f7f] focus:border-transparent"
           />
           <button
             onClick={handleSearch}
