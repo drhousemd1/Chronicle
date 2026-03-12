@@ -2755,7 +2755,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
             <ButtonCardV2
               buttonName="Story Detail Action Buttons"
-              buttonColor="Base: bg-white/5 border-ghost-white. Liked: bg-rose-500/20 border-rose-500/50 text-rose-400. Saved: bg-amber-500/20 border-amber-500/50 text-amber-400. Play: bg-[#3b82f6] text-white"
+              buttonColor="Base: bg-ghost-white border-ghost-white. Liked: bg-rose-500/20 border-rose-500/50 text-rose-400. Saved: bg-amber-500/20 border-amber-500/50 text-amber-400. Play: bg-[#3b82f6] text-white"
               size="h-12 px-6 rounded-xl — text-sm font-semibold"
               purpose="Like, Save, Play actions on story detail view"
               visualEffects="Taller than standard (h-12 vs h-10). Toggle states with color transitions"
