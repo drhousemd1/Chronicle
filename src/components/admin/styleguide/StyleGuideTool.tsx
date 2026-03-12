@@ -1078,6 +1078,52 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/story-builder/header-bar.png', location: 'Header bar background', function: 'Semi-transparent background tint for the top header bar containing STORY BUILDER title and action buttons' },
                 { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/story-builder/story-card-panel.png', location: 'Form labels + header bar bottom border', function: 'Text color for field labels and border separating the slate-blue header bar from panel body' },
                 { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/story-builder/character-roster.png', location: 'Panel outer borders + character card borders', function: 'Subtle outer border on panel containers (Story Card, World Core) and character cards in the roster sidebar' },
+               ]} />
+              <SwatchCardV2 color="#64748b" name="Cool Gray" locations="Sidebar subtitles (scenario name), description helper text" value="#64748b" token="text-slate-500" pageSpecific={false} appWide={true} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/story-builder/left-sidebar.png', location: 'Sidebar subtitles', function: 'Scenario name subtitle text beneath active sidebar tab' },
+              ]} />
+              <SwatchCardV2 color="rgba(24,24,27,0.5)" name="Smoke Black" locations="Input field backgrounds (title, description, textarea)" value="rgba(24,24,27,0.5)" token="bg-zinc-900/50" pageSpecific={false} appWide={true} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/story-builder/story-card-panel.png', location: 'Input field backgrounds', function: 'Semi-transparent background for text inputs and textareas inside Story Card and World Core panels' },
+              ]} />
+              <SwatchCardV2 color="#3f3f46" name="Mid Charcoal" locations="Input field borders, select borders, textarea borders" value="#3f3f46" token="border-zinc-700" pageSpecific={false} appWide={true} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/story-builder/story-card-panel.png', location: 'Input field borders', function: 'Border color for text inputs, selects, and textareas throughout Story Builder panels' },
+              ]} />
+              <SwatchCardV2 color="#3b82f6" name="True Blue" locations="Add buttons (+ Add Location, + Add Entry), links, focus rings, active filter pills, tag pills" value="#3b82f6" token="text-blue-500 / bg-blue-500" pageSpecific={false} appWide={true} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/story-builder/story-card-panel.png', location: 'Add buttons and links', function: 'Text color for inline add-action links (+ Add Location, + Add Entry) and focus ring color on inputs' },
+              ]} />
+              <SwatchCardV2 color="#a1a1aa" name="Silver Gray" locations="Form labels, placeholder text, helper descriptions" value="#a1a1aa" token="text-zinc-400" pageSpecific={false} appWide={true} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/story-builder/story-card-panel.png', location: 'Form labels and placeholders', function: 'Text color for field labels (TITLE, DESCRIPTION) and placeholder text inside inputs' },
+              ]} />
+              <SwatchCardV2 color="#71717a" name="Stone Gray" locations="Secondary text, chevron icons, collapsed section hints" value="#71717a" token="text-zinc-500" pageSpecific={false} appWide={true} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/story-builder/story-card-panel.png', location: 'Secondary text and chevrons', function: 'Color for secondary descriptive text and expand/collapse chevron icons on panel headers' },
+              ]} />
+              <SwatchCardV2 color="#27272a" name="Dark Zinc" locations="Dropdown/select backgrounds, popover backgrounds" value="#27272a" token="bg-zinc-800" pageSpecific={false} appWide={true} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/story-builder/story-card-panel.png', location: 'Dropdown backgrounds', function: 'Background color for select dropdowns and popover menus in Story Builder forms' },
+              ]} />
+              <SwatchCardV2 color="hsl(210, 20%, 93%)" name="Pale Silver" locations="Section body text, character card names, panel content text" value="hsl(210 20% 93%)" token="text-[hsl(210,20%,93%)]" pageSpecific={false} appWide={true} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/story-builder/story-card-panel.png', location: 'Panel content text', function: 'Light text color used for content inside dark panels (names, descriptions, body text)' },
+              ]} />
+              <SwatchCardV2 color="#e2e8f0" name="Light Steel" locations="Divider lines, secondary text on light surfaces" value="#e2e8f0" token="text-slate-200 / border-slate-200" pageSpecific={false} appWide={true} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/story-builder/story-card-panel.png', location: 'Divider lines', function: 'Color for horizontal dividers and secondary text elements on dark panel surfaces' },
+              ]} />
+              <SwatchCardV2 color="rgba(58,58,63,0.3)" name="Muted Charcoal" locations="Card inner backgrounds, nested content containers" value="rgba(58,58,63,0.3)" token="bg-[#3a3a3f]/30" pageSpecific={false} appWide={true} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/story-builder/story-card-panel.png', location: 'Card inner backgrounds', function: 'Semi-transparent background for nested content areas within dark panels' },
+              ]} />
+              <SwatchCardV2 color="#d4d4d8" name="Light Zinc" locations="Bright text on dark containers, active toggle labels" value="#d4d4d8" token="text-zinc-300" pageSpecific={false} appWide={true} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/story-builder/story-card-panel.png', location: 'Bright text on containers', function: 'Brighter text color used for emphasized labels and active toggle text on dark backgrounds' },
+              ]} />
+              <SwatchCardV2 color="rgba(248,250,252,0.5)" name="Frosted White" locations="Focused/active text state, hover text brightness" value="rgba(248,250,252,0.5)" token="text-slate-50/50" pageSpecific={false} appWide={true} extraPreviewStyle={{ border: '1px dashed #ccc' }} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/story-builder/story-card-panel.png', location: 'Focused/active text', function: 'Semi-opaque white used for text in focused or active states on dark surfaces' },
+              ]} />
+              <SwatchCardV2 color="#ef4444" name="Bright Red" locations="Validation error borders, error text, required field indicators" value="#ef4444" token="text-red-500 / border-red-500" pageSpecific={false} appWide={true} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/story-builder/story-card-panel.png', location: 'Validation errors', function: 'Border and text color for validation error states on required fields (e.g., missing Main Characters)' },
+              ]} />
+              <SwatchCardV2 color="#52525b" name="Ash Gray" locations="Dashed add-button borders, separator lines" value="#52525b" token="border-zinc-600" pageSpecific={false} appWide={true} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/story-builder/character-roster.png', location: 'Dashed add-button borders', function: 'Border color for dashed-outline add/create buttons in the Character Roster sidebar' },
+              ]} />
+              <SwatchCardV2 color="#ffffff" name="White" locations="Header text (STORY BUILDER), button text, panel titles, character names" value="#ffffff" token="text-white" pageSpecific={false} appWide={true} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/story-builder/header-bar.png', location: 'Header text', function: 'Pure white text for the STORY BUILDER page title and primary button labels' },
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/story-builder/story-card-panel.png', location: 'Panel titles and character names', function: 'White text for panel header titles (STORY CARD, WORLD CORE) and character display names' },
               ]} />
             </div>
 
