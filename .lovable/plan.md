@@ -1,19 +1,11 @@
 
 
-# Make Text Shadow Actually Visible on My Stories Cards
+## Plan: Persist Style Guide Edits to Supabase — Complete ✅
 
-## Problem
-The bottom info container already had `textShadow: '0 2px 6px rgba(0,0,0,0.7)'` before our change — so nothing visually changed.
+### What was done:
 
-## Solution
-Replace the subtle shadow with a much more aggressive one to actually test the effect:
-
-**File: `src/components/chronicle/StoryHub.tsx`** — line 104
-
-```
-- style={{ textShadow: '0 2px 6px rgba(0,0,0,0.7)' }}
-+ style={{ textShadow: '0 2px 8px rgba(0,0,0,1), 0 0 20px rgba(0,0,0,0.9)' }}
-```
-
-This uses a double-layered, fully opaque black shadow that should be noticeably different. Still easy to revert — same single `style` prop.
-
+1. **Seeded `app_settings` rows** — `styleguide_edits` and `styleguide_keeps` rows inserted into the database
+2. **Rewrote all storage helpers** in `StyleGuideEditsModal.tsx` from sync localStorage to async Supabase operations (`getEditsRegistry`, `upsertEdit`, `removeEdit`, `getKeeps`, `addKeep`, `removeKeep`, `getEditsCount`)
+3. **Updated all consumers** in `StyleGuideTool.tsx` — `refreshEditsState`, `handleKeep`, `handleEditOpen`, `handleSaveEdit`, `handleRemoveKeep` are all async now
+4. **Updated `Index.tsx`** — `getEditsCount()` call now uses `.then()` since it's async
+5. **Every edit, keep, and delete auto-saves to Supabase immediately** — no data loss on domain changes
