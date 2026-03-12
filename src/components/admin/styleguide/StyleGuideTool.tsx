@@ -1654,10 +1654,87 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <PageSubheading>Account Page</PageSubheading>
             <PageDesc>Colors for the dark-themed Account settings page.</PageDesc>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 14 }}>
-              <SwatchCardV2 color="#121214" name="Near Black" locations="Full page background for Account section" value="#121214" token="bg-[#121214]" pageSpecific={true} appWide={false} />
-              <SwatchCardV2 color="#1e1e22" name="Charcoal" locations="Email, Plan, Password setting cards" value="#1e1e22" token="bg-[#1e1e22]" pageSpecific={true} appWide={false} />
-              <SwatchCardV2 color="#2b2b2e" name="Warm Charcoal" locations="Pill tab container on Account and Gallery pages" value="#2b2b2e" token="bg-[#2b2b2e]" pageSpecific={false} appWide={true} />
-              <SwatchCardV2 color="rgba(74,95,127,0.2)" name="Frosted Slate" locations="Subscription plan badge background" value="rgba(74,95,127,0.2)" token="bg-[#4a5f7f]/20" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              <SwatchCardV2 color="#121214" name="Near Black" locations="Full page background for Account section" value="#121214" token="bg-[#121214]" pageSpecific={true} appWide={false}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/account-page%2Faccount-settings-tab.png', location: 'Page background', function: 'Dark near-black background behind all Account tab content' },
+                ]}
+              />
+              <SwatchCardV2 color="#1e1e22" name="Charcoal" locations="Email, Plan, Password setting cards" value="#1e1e22" token="bg-[#1e1e22]" pageSpecific={true} appWide={false}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/account-page%2Faccount-settings-tab.png', location: 'Setting cards', function: 'Background of Email Address, Current Plan, and Change Password cards' },
+                ]}
+              />
+              <SwatchCardV2 color="#2b2b2e" name="Warm Charcoal" locations="Pill tab container on Account and Gallery pages" value="#2b2b2e" token="bg-[#2b2b2e]" pageSpecific={false} appWide={true}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/account-page%2Faccount-settings-tab.png', location: 'Tab pill container', function: 'Rounded-full container behind Account Settings / Subscription / Public Profile tab pills' },
+                ]}
+              />
+              <SwatchCardV2 color="rgba(74,95,127,0.2)" name="Frosted Slate" locations="Subscription plan badge bg, Free tier label" value="rgba(74,95,127,0.2)" token="bg-[#4a5f7f]/20" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/account-page%2Faccount-settings-tab.png', location: 'Free plan badge', function: 'Semi-transparent blue bg behind "Free" label on Current Plan card' },
+                ]}
+              />
+              <SwatchCardV2 color="#4a5f7f" name="Slate Blue" locations="Active tab pill, Mail/Shield icon accents, focus ring, Update Password/Add/Save buttons, Coming Soon badge" value="#4a5f7f" token="bg-[#4a5f7f]" pageSpecific={false} appWide={true}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/account-page%2Faccount-settings-tab.png', location: 'Active tab pill & icons', function: 'Active tab background, Mail/Shield icon color, Update Password button bg, input focus ring' },
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/account-page%2Faccount-subscription-tab.png', location: 'Coming Soon badge', function: 'Background of Coming Soon badges on Pro/Premium tier cards' },
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/account-page%2Faccount-profile-tab.png', location: 'Add & Save buttons', function: 'Add genre button and Save Profile button background' },
+                ]}
+              />
+              <SwatchCardV2 color="#5a6f8f" name="Light Slate Blue" locations="Button hover states (Update Password, Add, Save Profile)" value="#5a6f8f" token="hover:bg-[#5a6f8f]" pageSpecific={false} appWide={true}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/account-page%2Faccount-settings-tab.png', location: 'Button hover', function: 'Hover state for all Slate Blue buttons across Account tabs' },
+                ]}
+              />
+              <SwatchCardV2 color="#2a2a2f" name="Dark Charcoal" locations="Input field backgrounds, email display bg" value="#2a2a2f" token="bg-[#2a2a2f]" pageSpecific={false} appWide={true}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/account-page%2Faccount-settings-tab.png', location: 'Input & email bg', function: 'Background of password inputs and email address display box' },
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/account-page%2Faccount-profile-tab.png', location: 'Profile input bg', function: 'Background of Display Name, About Me, and Preferred Genres inputs' },
+                ]}
+              />
+              <SwatchCardV2 color="#7ba3d4" name="Steel Blue" locations="Genre tag text color, Pro tier name/icon color" value="#7ba3d4" token="text-[#7ba3d4]" pageSpecific={true} appWide={false}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/account-page%2Faccount-subscription-tab.png', location: 'Pro tier accent', function: 'Text color for Pro tier name and Sparkles icon' },
+                ]}
+              />
+              <SwatchCardV2 color="#a1a1aa" name="Silver Gray" locations="Inactive tab pill text" value="#a1a1aa" token="text-[#a1a1aa]" pageSpecific={false} appWide={true}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/account-page%2Faccount-settings-tab.png', location: 'Inactive pills', function: 'Text color of non-active tab pills (Subscription, Public Profile when not selected)' },
+                ]}
+              />
+              <SwatchCardV2 color="#ffffff" name="White" locations="Heading text, input text, button text, price text" value="#ffffff" token="text-white" pageSpecific={false} appWide={true}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/account-page%2Faccount-settings-tab.png', location: 'Headings & text', function: 'Email Address, Current Plan, Change Password headings and input text' },
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/account-page%2Faccount-subscription-tab.png', location: 'Price & title text', function: 'Price values ($0, $9.99, $19.99), Choose Your Plan heading, feature list text' },
+                ]}
+              />
+              <SwatchCardV2 color="rgba(255,255,255,0.1)" name="Faint White" locations="Card borders, input borders (border-white/10)" value="rgba(255,255,255,0.1)" token="border-white/10" pageSpecific={false} appWide={true} extraPreviewStyle={{ border: '1px dashed #999' }}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/account-page%2Faccount-settings-tab.png', location: 'Card & input borders', function: 'Subtle border on setting cards and input fields' },
+                ]}
+              />
+              <SwatchCardV2 color="rgba(248,250,252,0.3)" name="Ghost White" locations="Subtitle text, description text, plan description, label text" value="rgba(248,250,252,0.3)" token="text-[rgba(248,250,252,0.3)]" pageSpecific={false} appWide={true} extraPreviewStyle={{ border: '1px dashed #999' }}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/account-page%2Faccount-settings-tab.png', location: 'Plan description', function: '"Basic access to all features" text on Current Plan card' },
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/account-page%2Faccount-subscription-tab.png', location: 'Upgrade subtitle', function: '"Upgrade to unlock more powerful features" subtitle under Choose Your Plan' },
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/account-page%2Faccount-profile-tab.png', location: 'Labels & stats', function: 'Form labels, stat values, and "Hide Published Works" text' },
+                ]}
+              />
+              <SwatchCardV2 color="#34d399" name="Emerald" locations="Current Plan badge text (text-emerald-400)" value="#34d399" token="text-emerald-400" pageSpecific={true} appWide={false}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/account-page%2Faccount-subscription-tab.png', location: 'Current Plan badge text', function: 'Green text on the "Current Plan" badge for the Free tier' },
+                ]}
+              />
+              <SwatchCardV2 color="rgba(16,185,129,0.2)" name="Emerald Badge" locations="Current Plan badge bg (bg-emerald-500/20)" value="rgba(16,185,129,0.2)" token="bg-emerald-500/20" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/account-page%2Faccount-subscription-tab.png', location: 'Current Plan badge bg', function: 'Semi-transparent emerald background behind Current Plan badge' },
+                ]}
+              />
+              <SwatchCardV2 color="#fbbf24" name="Amber 400" locations="Premium tier icon/name accent (text-amber-400)" value="#fbbf24" token="text-amber-400" pageSpecific={true} appWide={false}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/account-page%2Faccount-subscription-tab.png', location: 'Premium tier accent', function: 'Crown icon and "Premium" name text color on the third subscription tier card' },
+                ]}
+              />
             </div>
 
             <Divider />
