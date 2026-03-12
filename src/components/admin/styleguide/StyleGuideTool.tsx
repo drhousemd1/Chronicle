@@ -4466,10 +4466,10 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 notes="Uses AlertDialog (not Dialog). Cancel: bg-[hsl(240_6%_18%)]. Delete: bg-[hsl(var(--destructive))]."
                 preview={
                   <div style={{ position: 'relative', width: '100%', height: 60, borderRadius: 6, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
-                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: 'hsl(240,6%,10%)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '8px 16px' }}>
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: 'hsl(240,6%,10%)', border: '1px solid rgba(248,250,252,0.3)', borderRadius: 12, padding: '8px 16px' }}>
                       <div style={{ fontSize: 8, fontWeight: 700, color: '#e8eef8', marginBottom: 4 }}>Delete this?</div>
                       <div style={{ display: 'flex', gap: 4 }}>
-                        <button style={{ padding: '2px 8px', borderRadius: 8, background: 'hsl(240,6%,18%)', border: '1px solid rgba(255,255,255,0.1)', color: '#e8eef8', fontSize: 7, fontWeight: 700, textTransform: 'uppercase', cursor: 'default' }}>Cancel</button>
+                        <button style={{ padding: '2px 8px', borderRadius: 8, background: 'hsl(240,6%,18%)', border: '1px solid rgba(248,250,252,0.3)', color: '#e8eef8', fontSize: 7, fontWeight: 700, textTransform: 'uppercase', cursor: 'default' }}>Cancel</button>
                         <button style={{ padding: '2px 8px', borderRadius: 8, background: '#ef4444', color: '#fff', fontSize: 7, fontWeight: 700, textTransform: 'uppercase', cursor: 'default', border: 'none' }}>Delete</button>
                       </div>
                     </div>
