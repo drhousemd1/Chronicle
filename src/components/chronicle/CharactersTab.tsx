@@ -81,7 +81,7 @@ const HardcodedSection: React.FC<{
     {/* Content */}
     <div className="p-5">
       {/* Inner card for visual depth */}
-      <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-ghost-white">
+      <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl border border-[#4a5f7f]">
         {isExpanded ? (
           <div className="space-y-4">
             {children}
