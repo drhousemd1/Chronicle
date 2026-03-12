@@ -3563,7 +3563,7 @@ const updatedChar: SideCharacter = {
                         {/* Save (checkmark) */}
                         <button
                           onClick={handleInlineEditSave}
-                          className="p-2 rounded-lg hover:bg-white/10 text-green-400 hover:text-green-300 transition-colors"
+                          className="p-2 rounded-lg hover:bg-ghost-white text-green-400 hover:text-green-300 transition-colors"
                           title="Save changes"
                         >
                           <Check className="w-4 h-4" />
