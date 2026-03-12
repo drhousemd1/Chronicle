@@ -801,7 +801,6 @@ const ALL_SWATCHES: SwatchOption[] = [
   { color: '#c084fc', name: 'Purple' },
   { color: '#5a6f8f', name: 'Light Slate Blue' },
   { color: '#2d6fdb', name: 'Dark Blue' },
-  { color: '#e2e8f0', name: 'Light Steel' },
   { color: '#000000', name: 'Black' },
 ];
 
