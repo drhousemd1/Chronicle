@@ -4585,7 +4585,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <PanelCardV2
                 panelName="StoryDetailModal"
                 background="#121214"
-                border="border-white/10"
+                border="border-ghost-white"
                 borderRadius="rounded-[32px]"
                 shadow="0 20px 50px rgba(0,0,0,0.5)"
                 purpose="Full story detail view with action bar, characters, reviews"
