@@ -1061,7 +1061,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
               
               {/* View Mode Toggle - Gallery Hub pill style */}
               {scenarioWorldCore && (
-                <div className="flex items-center bg-white/10 rounded-full p-1 gap-0.5 border border-white/10">
+                <div className="flex items-center bg-ghost-white rounded-full p-1 gap-0.5 border border-ghost-white">
                   <button
                     type="button"
                     onClick={() => setViewMode('character')}
