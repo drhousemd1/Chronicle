@@ -110,7 +110,7 @@ export const DraftsModal: React.FC<DraftsModalProps> = ({ open, onOpenChange, on
                   <button
                     type="button"
                     onClick={() => handleDelete(draft.id)}
-                    className="flex items-center justify-center h-8 w-8 rounded-lg text-zinc-500 hover:text-red-500 hover:bg-white/5 transition-colors shrink-0"
+                    className="flex items-center justify-center h-8 w-8 rounded-lg text-zinc-500 hover:text-red-500 hover:bg-ghost-white transition-colors shrink-0"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
