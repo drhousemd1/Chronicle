@@ -4567,7 +4567,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <PanelCardV2
                 panelName="ShareStoryModal"
                 background="#2a2a2f"
-                border="border-white/10"
+                border="border-ghost-white"
                 borderRadius="rounded-lg"
                 purpose="Publish/share settings with permission toggles and !important button overrides"
                 locations="ShareStoryModal.tsx"
