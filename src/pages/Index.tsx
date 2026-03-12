@@ -1624,8 +1624,8 @@ const IndexContent = () => {
                       {!sidebarCollapsed && (
                         <>
                           <div className="min-w-0 flex-1">
-                            <p className="text-[11px] font-bold text-white truncate">{displayName}</p>
-                            <p className="text-[10px] text-white/30 truncate">{user.email}</p>
+                            <p className="text-sm font-bold text-white truncate">{displayName}</p>
+                            <p className="text-xs text-white/30 truncate">{user.email}</p>
                           </div>
                           <ChevronDown className={cn("w-4 h-4 text-white/30 shrink-0 transition-transform duration-200", userMenuOpen && "rotate-180")} />
                         </>
