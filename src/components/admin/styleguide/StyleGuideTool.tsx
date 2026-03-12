@@ -4501,7 +4501,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <PanelCardV2
                 panelName="Two-Option Selection Modal"
                 background="bg-zinc-900"
-                border="border-white/10"
+                border="border-ghost-white"
                 borderRadius="rounded-lg"
                 purpose="Shared 2-column option picker pattern (blue/purple accent cards)"
                 locations="CharacterCreationModal, EnhanceModeModal, CustomContentTypeModal"
