@@ -3784,7 +3784,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <PanelCardV2
                 panelName="Builder Collapsible Section"
                 background="#2a2a2f (outer), #3a3a3f/30 (inner)"
-                border="border-ghost-white (outer), border-white/5 (inner)"
+                border="border-ghost-white (outer), border-ghost-white (inner)"
                 borderRadius="rounded-[24px]"
                 shadow="0 12px 32px -2px rgba(0,0,0,0.5)"
                 purpose="Collapsible character trait sections with header bar and nested inner cards"
