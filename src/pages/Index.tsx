@@ -1617,15 +1617,15 @@ const IndexContent = () => {
                         {userProfile?.avatar_url ? (
                           <AvatarImage src={userProfile.avatar_url} alt={displayName} />
                         ) : null}
-                        <AvatarFallback className="bg-[#4a5f7f] text-white text-[10px] font-bold">
+                        <AvatarFallback className="bg-[#4a5f7f] text-white text-xs font-bold">
                           {initials}
                         </AvatarFallback>
                       </Avatar>
                       {!sidebarCollapsed && (
                         <>
                           <div className="min-w-0 flex-1">
-                            <p className="text-[11px] font-bold text-white truncate">{displayName}</p>
-                            <p className="text-[10px] text-white/30 truncate">{user.email}</p>
+                            <p className="text-sm font-bold text-white truncate">{displayName}</p>
+                            <p className="text-xs text-white/30 truncate">{user.email}</p>
                           </div>
                           <ChevronDown className={cn("w-4 h-4 text-white/30 shrink-0 transition-transform duration-200", userMenuOpen && "rotate-180")} />
                         </>
@@ -1637,7 +1637,7 @@ const IndexContent = () => {
                           type="button"
                           onClick={() => { setAccountActiveTab('profile'); setTab("account"); setUserMenuOpen(false); }}
                           className={cn(
-                            "flex items-center gap-2 w-full rounded-lg px-2 py-1.5 hover:bg-white/5 transition-colors text-white/70 hover:text-white text-[11px]",
+                            "flex items-center gap-2 w-full rounded-lg px-2 py-1.5 hover:bg-white/5 transition-colors text-white/70 hover:text-white text-sm font-bold",
                             sidebarCollapsed && "justify-center px-0"
                           )}
                         >
@@ -1648,7 +1648,7 @@ const IndexContent = () => {
                           type="button"
                           onClick={() => { setAccountActiveTab('settings'); setTab("account"); setUserMenuOpen(false); }}
                           className={cn(
-                            "flex items-center gap-2 w-full rounded-lg px-2 py-1.5 hover:bg-white/5 transition-colors text-white/70 hover:text-white text-[11px]",
+                            "flex items-center gap-2 w-full rounded-lg px-2 py-1.5 hover:bg-white/5 transition-colors text-white/70 hover:text-white text-sm font-bold",
                             sidebarCollapsed && "justify-center px-0"
                           )}
                         >
@@ -1659,7 +1659,7 @@ const IndexContent = () => {
                           type="button"
                           onClick={() => { handleSignOut(); setUserMenuOpen(false); }}
                           className={cn(
-                            "flex items-center gap-2 w-full rounded-lg px-2 py-1.5 hover:bg-white/5 transition-colors text-red-500 text-[11px]",
+                            "flex items-center gap-2 w-full rounded-lg px-2 py-1.5 hover:bg-white/5 transition-colors text-red-500 text-sm font-bold",
                             sidebarCollapsed && "justify-center px-0"
                           )}
                         >
@@ -1680,7 +1680,7 @@ const IndexContent = () => {
                   )}
                 >
                   <LogIn className="w-5 h-5 shrink-0" />
-                  {!sidebarCollapsed && <span className="text-[11px] font-bold uppercase tracking-wider">Sign In</span>}
+                  {!sidebarCollapsed && <span className="text-sm font-bold">Sign In</span>}
                 </button>
               )}
             </div>
