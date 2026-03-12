@@ -430,7 +430,7 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
                 {searchTags.map(tag => (
                   <span
                     key={`search-${tag}`}
-                    className="px-2 py-1 bg-white/20 text-white rounded-full text-xs font-medium flex items-center gap-1"
+                    className="px-2 py-1 bg-ghost-white text-white rounded-full text-xs font-medium flex items-center gap-1"
                   >
                     {tag}
                     <button
