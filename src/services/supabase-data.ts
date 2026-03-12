@@ -482,7 +482,8 @@ export async function saveScenario(
   id: string,
   data: ScenarioData,
   metadata: { title: string; description: string; coverImage: string; coverImagePosition?: { x: number; y: number }; tags: string[] },
-  userId: string
+  userId: string,
+  options?: { isDraft?: boolean }
 ): Promise<void> {
   // Safety net: intercept base64 cover images before saving
   const safeCoverImage = await ensureStorageUrl(metadata.coverImage, 'covers', userId);
