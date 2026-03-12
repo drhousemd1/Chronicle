@@ -511,7 +511,8 @@ export async function saveScenario(
       opening_dialog: data.story.openingDialog,
       selected_model: data.selectedModel,
       selected_art_style: data.selectedArtStyle || 'cinematic-2-5d',
-      version: data.version
+      version: data.version,
+      is_draft: options?.isDraft ?? false
     });
 
   if (scenarioError) throw scenarioError;

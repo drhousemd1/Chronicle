@@ -454,6 +454,7 @@ export type ScenarioMetadata = {
   createdAt: number;
   updatedAt: number;
   isBookmarked?: boolean;  // For distinguishing saved scenarios from other users
+  isDraft?: boolean;  // True when story is saved as draft (incomplete)
 };
 
 export type AppState = {
