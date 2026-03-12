@@ -1273,7 +1273,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                       </label>
                       
                       {/* Critical rules - always present, read-only */}
-                      <div className="bg-zinc-900/50 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-300">
+                      <div className="bg-zinc-900/50 border border-[#4a5f7f] rounded-lg px-3 py-2 text-sm text-zinc-300">
                         <ul className="list-disc list-inside space-y-1">
                           <li>Enclose all spoken dialogue in " "</li>
                           <li>Enclose all physical actions or descriptions in * *</li>
