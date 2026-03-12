@@ -1190,8 +1190,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
 
           {/* Art Style Preference Section - Dark Theme */}
           <section>
-            <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-ghost-white overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
-              <div className="bg-[#4a5f7f] border-b border-ghost-white px-6 py-4 flex items-center gap-3 shadow-lg">
+            <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-[#4a5f7f] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
+              <div className="bg-[#4a5f7f] border-b border-[#4a5f7f] px-6 py-4 flex items-center gap-3 shadow-lg">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-white">
                   <circle cx="13.5" cy="6.5" r="2.5"/>
                   <circle cx="6" cy="12" r="2.5"/>
