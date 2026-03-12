@@ -186,7 +186,7 @@ export const GalleryCategorySidebar: React.FC<GalleryCategorySidebarProps> = ({
         <span className="text-sm font-bold text-white">Browse Categories</span>
         <button
           onClick={onClose}
-          className="p-1 rounded-lg hover:bg-white/10 transition-colors"
+          className="p-1 rounded-lg hover:bg-ghost-white transition-colors"
         >
           <X className="w-4 h-4 text-[rgba(248,250,252,0.3)]" />
         </button>
