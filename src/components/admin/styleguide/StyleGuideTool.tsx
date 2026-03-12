@@ -802,6 +802,14 @@ const ALL_SWATCHES: SwatchOption[] = [
   { color: '#5a6f8f', name: 'Light Slate Blue' },
   { color: '#2d6fdb', name: 'Dark Blue' },
   { color: '#000000', name: 'Black' },
+  { color: '#cbd5e1', name: 'Slate 300' },
+  { color: '#93c5fd', name: 'Light Blue' },
+  { color: '#4ade80', name: 'Green 400' },
+  { color: '#dbeafe', name: 'Blue 100' },
+  { color: 'rgba(0,0,0,0.2)', name: 'Black/20' },
+  { color: 'rgba(39,39,42,0.5)', name: 'Zinc 800/50' },
+  { color: '#e4e4e7', name: 'Zinc 200' },
+  { color: 'hsl(240,7%,16%)', name: 'UI Surface' },
 ];
 
 export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownload, onRegisterEdits, onEditsCountChange }) => {
@@ -1350,13 +1358,185 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <PageSubheading>Chat Interface</PageSubheading>
             <PageDesc>Colors unique to the chat/conversation view.</PageDesc>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 14 }}>
-              <SwatchCardV2 color="#1c1f26" name="Ink Blue" locations="Chat message bubble, transparent mode OFF" value="#1c1f26" token="bg-[#1c1f26]" pageSpecific={true} appWide={false} />
-              <SwatchCardV2 color="rgba(0,0,0,0.5)" name="Half Black" locations="Chat message bubble, transparent mode ON" value="rgba(0,0,0,0.5)" token="bg-black/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
-              <SwatchCardV2 color="#94a3b8" name="Muted Slate" locations="Italic action text in chat (*actions*)" value="#94a3b8" token="text-slate-400" pageSpecific={true} appWide={false} />
-              <SwatchCardV2 color="rgba(199,210,254,0.9)" name="Soft Indigo" locations="Thought text in chat (parenthetical)" value="rgba(199,210,254,0.9)" token="text-indigo-200/90" effect="textShadow: indigo glow" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
-              <SwatchCardV2 color="#3b82f6" name="True Blue" locations="User message bubble border" value="#3b82f6" token="border-blue-500" pageSpecific={true} appWide={false} />
-              <SwatchCardV2 color="rgba(255,255,255,0.3)" name="Milky White" locations="SideCharacterCard when sidebar bg is dark (isDarkBg=true)" value="rgba(255,255,255,0.3)" token="bg-white/30" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
-              <SwatchCardV2 color="rgba(0,0,0,0.3)" name="Smoke Black" locations="SideCharacterCard when sidebar bg is light (isDarkBg=false)" value="rgba(0,0,0,0.3)" token="bg-black/30" pageSpecific={true} appWide={false} />
+              {/* ── Message Bubble Area ── */}
+              <SwatchCardV2 color="#1c1f26" name="Ink Blue" locations="AI message bubble background (transparent mode OFF)" value="#1c1f26" token="bg-[#1c1f26]" pageSpecific={true} appWide={false}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-message-bubble.png', location: 'AI message bubble bg', function: 'Dark bubble background when transparent bubbles toggle is OFF' },
+                ]}
+              />
+              <SwatchCardV2 color="rgba(0,0,0,0.5)" name="Half Black" locations="AI message bubble background (transparent mode ON), Timer countdown badge bg" value="rgba(0,0,0,0.5)" token="bg-black/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-message-bubble.png', location: 'AI message bubble bg (transparent)', function: 'Semi-transparent bubble when transparent bubbles toggle is ON' },
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-day-time-panel.png', location: 'Timer countdown badge', function: 'Background for the auto-timer countdown (e.g. 03:05)' },
+                ]}
+              />
+              <SwatchCardV2 color="#cbd5e1" name="Slate 300" locations="Plain narrative text in AI messages" value="#cbd5e1" token="text-slate-300" pageSpecific={true} appWide={false}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-message-bubble.png', location: 'Narrative text', function: 'Default text color for non-dialog, non-action narrative prose' },
+                ]}
+              />
+              <SwatchCardV2 color="#ffffff" name="White" locations="Dialog/speech text in messages, Sidebar bg, Day counter bg, Text input field bg" value="#ffffff" token="text-white / bg-white" pageSpecific={true} appWide={false}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-message-bubble.png', location: 'Dialog speech text', function: 'Bold quoted dialog text ("...") in AI messages' },
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-sidebar-chars.png', location: 'Sidebar background', function: 'Sidebar panel background (bg-white / bg-white/90 with bg image)' },
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-input-bar.png', location: 'Text input field', function: 'Textarea background color for message composition' },
+                ]}
+              />
+              <SwatchCardV2 color="#94a3b8" name="Muted Slate" locations="Italic action text (*actions*), Action icons (regen/menu/continue), Day/Time badge text, Loading state text" value="#94a3b8" token="text-slate-400" pageSpecific={true} appWide={false}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-message-bubble.png', location: 'Action text & icons', function: 'Italic action text (*actions*) and message action icon default state' },
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-user-bubble.png', location: 'Day/Time badge', function: '"Day: 4 ☀" badge text at bottom of messages' },
+                ]}
+              />
+              <SwatchCardV2 color="rgba(199,210,254,0.9)" name="Soft Indigo" locations="Thought text in chat (parenthetical)" value="rgba(199,210,254,0.9)" token="text-indigo-200/90" effect="textShadow: indigo glow" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-message-bubble.png', location: 'Thought text', function: 'Italic indigo text for internal character thoughts: If only she could...' },
+                ]}
+              />
+              <SwatchCardV2 color="#3b82f6" name="True Blue" locations="User message bubble border, User-controlled badge, Active time icon, Active POV/Verbosity pill, Loading spinner ring, Info tooltip icon" value="#3b82f6" token="border-blue-500 / bg-blue-500 / text-blue-500" pageSpecific={true} appWide={false}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-user-bubble.png', location: 'User bubble border', function: 'Blue left/right border distinguishing user messages from AI messages' },
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-sidebar-chars.png', location: 'User-controlled badge', function: 'Blue "User" badge on character avatar (bg-blue-500)' },
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-day-time-panel.png', location: 'Active time icon', function: 'Blue background + border on currently selected time-of-day icon' },
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-settings-modal.png', location: 'Active settings pill', function: 'Blue background on active POV/Verbosity pill (e.g. "3rd Person", "Balanced")' },
+                ]}
+              />
+              <SwatchCardV2 color="rgba(255,255,255,0.05)" name="Ghost White" locations="AI message bubble border (default state)" value="rgba(255,255,255,0.05)" token="border-white/5" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-message-bubble.png', location: 'AI bubble border', function: 'Very faint white border on AI message bubbles (default)' },
+                ]}
+              />
+              <SwatchCardV2 color="rgba(255,255,255,0.1)" name="Faint White" locations="Avatar border, Scene image overlay border, Empty state circle bg/border, Settings modal border/dividers" value="rgba(255,255,255,0.1)" token="border-white/10 / bg-white/10" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-message-bubble.png', location: 'Avatar border', function: 'Subtle border ring around speaker avatars' },
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-settings-modal.png', location: 'Settings modal border', function: 'Border and dividers inside Chat Settings modal' },
+                ]}
+              />
+
+              {/* ── Speaker Labels ── */}
+              <SwatchCardV2 color="#64748b" name="Stone Gray" locations="Speaker name label (AI messages, e.g. 'TAMLIN')" value="#64748b" token="text-slate-500" pageSpecific={true} appWide={false}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-message-bubble.png', location: 'AI speaker name', function: 'Gray "TAMLIN" label under speaker avatar' },
+                ]}
+              />
+              <SwatchCardV2 color="#93c5fd" name="Light Blue" locations="Speaker name label (User messages, e.g. 'YOU')" value="#93c5fd" token="text-blue-300" pageSpecific={true} appWide={false}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-user-bubble.png', location: 'User speaker name', function: 'Blue "YOU" label under user avatar in messages' },
+                ]}
+              />
+
+              {/* ── Inline Edit Icons ── */}
+              <SwatchCardV2 color="#4ade80" name="Green 400" locations="Inline edit save (checkmark) icon" value="#4ade80" token="text-green-400" pageSpecific={true} appWide={false}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-user-bubble.png', location: 'Edit save icon', function: 'Green checkmark icon to confirm inline message edit' },
+                ]}
+              />
+              <SwatchCardV2 color="#ef4444" name="Bright Red" locations="Inline edit cancel (X) icon, Delete message menu item, Delete character menu item" value="#ef4444" token="text-red-500 / text-red-600" pageSpecific={true} appWide={false}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-user-bubble.png', location: 'Edit cancel & delete', function: 'Red X icon for canceling edit, red text on delete menu items' },
+                ]}
+              />
+
+              {/* ── Avatar Fallbacks ── */}
+              <SwatchCardV2 color="#27272a" name="Dark Zinc" locations="Avatar fallback background, Loading spinner background" value="#27272a" token="bg-zinc-800" pageSpecific={true} appWide={false}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-user-bubble.png', location: 'Avatar fallback bg', function: 'Dark background for avatar circle when no image is set' },
+                ]}
+              />
+
+              {/* ── Sidebar ── */}
+              <SwatchCardV2 color="#4a5f7f" name="Slate Blue" locations="'Main Characters' / 'Side Characters' pill headers, Send button (active state)" value="#4a5f7f" token="bg-[#4a5f7f]" pageSpecific={true} appWide={false}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-sidebar-chars.png', location: 'Section pill headers', function: 'Blue pill bg for MAIN CHARACTERS / SIDE CHARACTERS section headers' },
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-input-bar.png', location: 'Send button', function: 'Active Send button background (bg-[#4a5f7f])' },
+                ]}
+              />
+              <SwatchCardV2 color="#64748b" name="Slate 500" locations="AI-controlled badge background on character cards" value="#64748b" token="bg-slate-500" pageSpecific={true} appWide={false}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-sidebar-chars.png', location: 'AI badge', function: 'Gray "AI" badge on character avatar (bg-slate-500)' },
+                ]}
+              />
+              <SwatchCardV2 color="rgba(255,255,255,0.3)" name="Milky White" locations="Character card bg when sidebar bg is dark (isDarkBg=true)" value="rgba(255,255,255,0.3)" token="bg-white/30" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-sidebar-chars.png', location: 'Card bg (dark sidebar)', function: 'Frosted white character card on dark sidebar background' },
+                ]}
+              />
+              <SwatchCardV2 color="rgba(0,0,0,0.3)" name="Smoke Black" locations="Character card bg when sidebar bg is light (isDarkBg=false)" value="rgba(0,0,0,0.3)" token="bg-black/30" pageSpecific={true} appWide={false}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-sidebar-chars.png', location: 'Card bg (light sidebar)', function: 'Dark frosted character card on light sidebar background' },
+                ]}
+              />
+
+              {/* ── Day/Time Panel ── */}
+              <SwatchCardV2 color="rgba(0,0,0,0.2)" name="Black/20" locations="Sky panel overlay on day/time area" value="rgba(0,0,0,0.2)" token="bg-black/20" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-day-time-panel.png', location: 'Sky panel overlay', function: 'Semi-transparent dark overlay on sky background image' },
+                ]}
+              />
+              <SwatchCardV2 color="#dbeafe" name="Blue 100" locations="Active time icon button background" value="#dbeafe" token="bg-blue-100" pageSpecific={true} appWide={false}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-day-time-panel.png', location: 'Active time icon bg', function: 'Light blue background on the currently selected time-of-day icon (e.g. Sun)' },
+                ]}
+              />
+              <SwatchCardV2 color="#000000" name="Black" locations="Day counter border (border-black), Inactive time icon text, Chat main area bg" value="#000000" token="border-black / text-black / bg-black" pageSpecific={true} appWide={false}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-day-time-panel.png', location: 'Day counter border', function: 'Black border on the day counter stepper and inactive time icon buttons' },
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-message-bubble.png', location: 'Chat area bg', function: 'Main chat area background color' },
+                ]}
+              />
+
+              {/* ── Input Bar ── */}
+              <SwatchCardV2 color="hsl(240,7%,16%)" name="UI Surface" locations="Input bar background" value="hsl(240,7%,16%)" token="bg-[hsl(var(--ui-surface))]" pageSpecific={true} appWide={false}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-input-bar.png', location: 'Input bar bg', function: 'Dark surface background for the bottom input/action bar area' },
+                ]}
+              />
+              <SwatchCardV2 color="hsl(228,7%,20%)" name="UI Surface 2" locations="Action buttons bg (Chat Settings, Generate Image), Input wrapper" value="hsl(228,7%,20%)" token="bg-[hsl(var(--ui-surface-2))]" pageSpecific={true} appWide={false}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-input-bar.png', location: 'Action buttons', function: 'Background for CHAT SETTINGS and GENERATE IMAGE buttons' },
+                ]}
+              />
+
+              {/* ── Chat Settings Modal ── */}
+              <SwatchCardV2 color="#18181b" name="Zinc 900" locations="Chat Settings modal background" value="#18181b" token="bg-zinc-900" pageSpecific={true} appWide={false}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-settings-modal.png', location: 'Settings modal bg', function: 'Very dark zinc background for the full Chat Settings modal' },
+                ]}
+              />
+              <SwatchCardV2 color="rgba(39,39,42,0.5)" name="Zinc 800/50" locations="Settings row container backgrounds" value="rgba(39,39,42,0.5)" token="bg-zinc-800/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-settings-modal.png', location: 'Settings row bg', function: 'Semi-transparent container for each settings row (Dynamic Backgrounds, Offset Bubbles, etc.)' },
+                ]}
+              />
+              <SwatchCardV2 color="#e4e4e7" name="Zinc 200" locations="Settings label text (e.g. 'Character Discovery', 'Narrative POV')" value="#e4e4e7" token="text-zinc-200" pageSpecific={true} appWide={false}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-settings-modal.png', location: 'Settings labels', function: 'Light text for setting names and section headings' },
+                ]}
+              />
+              <SwatchCardV2 color="#a1a1aa" name="Zinc 400" locations="Settings description text (e.g. 'AI may introduce characters...')" value="#a1a1aa" token="text-zinc-400" pageSpecific={true} appWide={false}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-settings-modal.png', location: 'Settings descriptions', function: 'Gray helper text under setting labels' },
+                ]}
+              />
+              <SwatchCardV2 color="#3f3f46" name="Zinc 700" locations="Inactive POV/Verbosity pill background" value="#3f3f46" token="bg-zinc-700" pageSpecific={true} appWide={false}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-settings-modal.png', location: 'Inactive pill bg', function: 'Dark pill for unselected options (e.g. "1st Person", "Concise", "Detailed")' },
+                ]}
+              />
+
+              {/* ── Empty State ── */}
+              <SwatchCardV2 color="#0f172a" name="Slate 900" locations="Chat main area background (darkMode ON)" value="#0f172a" token="bg-slate-900" pageSpecific={true} appWide={false}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-message-bubble.png', location: 'Dark mode chat bg', function: 'Deep navy background when dark mode toggle is ON' },
+                ]}
+              />
+
+              {/* ── Character Card Dropdown ── */}
+              <SwatchCardV2 color="#27272a" name="Dark Zinc (Dropdown)" locations="Character card dropdown menu background" value="#27272a" token="bg-zinc-800" pageSpecific={true} appWide={false}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-sidebar-chars.png', location: 'Dropdown menu bg', function: 'Dark background for the ⋮ menu dropdown on character cards' },
+                ]}
+              />
             </div>
 
             <Divider />
