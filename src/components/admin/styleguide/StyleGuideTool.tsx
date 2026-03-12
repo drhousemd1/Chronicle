@@ -4594,7 +4594,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 notes="⚠ Unique 32px radius — standard modals use rounded-lg. Custom overlay."
                 preview={
                   <div style={{ position: 'relative', width: '100%', height: 56, borderRadius: 6, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
-                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#121214', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 24, padding: '8px 20px', color: '#fff', fontSize: 8, fontWeight: 600, boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }}>
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#121214', border: '1px solid rgba(248,250,252,0.3)', borderRadius: 24, padding: '8px 20px', color: '#fff', fontSize: 8, fontWeight: 600, boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }}>
                       Story Detail — rounded-[32px]
                     </div>
                   </div>
