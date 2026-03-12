@@ -54,7 +54,7 @@ export function ConversationsTab({
                     className="bg-[#2a2a2f] rounded-2xl border border-[#4a5f7f] overflow-hidden group"
                   >
                     <div className="p-4">
-                      <div className="bg-[#3a3a3f]/30 rounded-2xl border border-ghost-white p-4">
+                      <div className="bg-[#3a3a3f]/30 rounded-2xl border border-[#4a5f7f] p-4">
                         <div className="flex gap-4">
                           {/* Scenario thumbnail - clickable */}
                           <button
