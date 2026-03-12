@@ -1243,7 +1243,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                         value={section.freeformValue || ''}
                         onChange={(v) => handleUpdateSection(selected.id, section.id, { freeformValue: v })}
                         placeholder="Write your content here..."
-                        className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-ghost-white text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                        className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                         rows={4}
                       />
                     ) : (
