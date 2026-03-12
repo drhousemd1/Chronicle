@@ -1427,11 +1427,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                   { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-sidebar-chars.png', location: 'AI badge', function: 'Gray "AI" badge on character avatar (bg-slate-500)' },
                 ]}
               />
-              <SwatchCardV2 color="rgba(255,255,255,0.3)" name="Milky White" locations="Character card bg when sidebar bg is dark (isDarkBg=true)" value="rgba(255,255,255,0.3)" token="bg-white/30" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }}
-                locationImages={[
-                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-sidebar-chars.png', location: 'Card bg (dark sidebar)', function: 'Frosted white character card on dark sidebar background' },
-                ]}
-              />
+              {/* Milky White migrated → Ghost White (absorbed into Ghost White card above) */}
               <SwatchCardV2 color="rgba(0,0,0,0.3)" name="Smoke Black" locations="Character card bg when sidebar bg is light (isDarkBg=false)" value="rgba(0,0,0,0.3)" token="bg-black/30" pageSpecific={true} appWide={false}
                 locationImages={[
                   { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-sidebar-chars.png', location: 'Card bg (light sidebar)', function: 'Dark frosted character card on light sidebar background' },
