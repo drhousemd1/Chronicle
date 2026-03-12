@@ -1299,7 +1299,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                         <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Additional Entries</h3>
                         <div className="grid grid-cols-1 gap-6">
                           {world.entries.map(entry => (
-                            <div key={entry.id} className="p-6 space-y-4 group rounded-2xl bg-zinc-800/50 border border-zinc-700">
+                            <div key={entry.id} className="p-6 space-y-4 group rounded-2xl bg-zinc-800/50 border border-[#4a5f7f]">
                               <div className="flex justify-between items-center">
                                 <div className="flex-1">
                                   <AutoResizeTextarea 
