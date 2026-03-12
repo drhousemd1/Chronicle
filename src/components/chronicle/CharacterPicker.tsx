@@ -46,12 +46,12 @@ export function CharacterPicker({ summaries, onSelect, onClose }: CharacterPicke
           </Button>
         </div>
         
-        <div className="p-4 bg-zinc-800/50 border-b border-white/10">
+        <div className="p-4 bg-zinc-800/50 border-b border-ghost-white">
           <Input 
             value={search} 
             onChange={setSearch} 
             placeholder="Search by name or tags..." 
-            className="!bg-zinc-800 !text-white !border-white/10"
+            className="!bg-zinc-800 !text-white !border-ghost-white"
           />
         </div>
 
