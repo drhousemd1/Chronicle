@@ -895,7 +895,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                   /* Collapsed Avatar View */
                   <div className="flex items-start gap-4">
                     {/* Small avatar thumbnail */}
-                    <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-white/10">
+                    <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-ghost-white">
                       {selected.avatarDataUrl ? (
                         <img 
                           src={selected.avatarDataUrl} 

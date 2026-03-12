@@ -3716,7 +3716,7 @@ const updatedChar: SideCharacter = {
                       <div key={segIndex} className={`relative ${segIndex > 0 && showAvatar ? 'mt-2.5 pt-2.5 border-t border-white/5' : ''}`}>
                         {showAvatar && (
                           <div className="float-left mr-4 mb-2 flex flex-col items-center gap-1.5 w-16">
-                            <div className={`w-12 h-12 rounded-full border-2 border-white/10 shadow-lg overflow-hidden flex items-center justify-center ${segmentAvatar ? '' : 'bg-slate-800'}`}>
+                            <div className={`w-12 h-12 rounded-full border-2 border-ghost-white shadow-lg overflow-hidden flex items-center justify-center ${segmentAvatar ? '' : 'bg-slate-800'}`}>
                               {isGenerating ? (
                                 <Loader2 className="w-5 h-5 text-purple-400 animate-spin" />
                               ) : segmentAvatar ? (
