@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogOverlay, DialogPortal } from '@/components
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { fetchScenarioCharacters, ScenarioCharacter, fetchScenarioReviews, fetchUserReview, fetchCreatorOverallRating, type ScenarioReview } from '@/services/gallery-data';
+import { fetchScenarioCharacters, ScenarioCharacter, fetchScenarioReviews, fetchUserReview, type ScenarioReview } from '@/services/gallery-data';
 import { StarRating } from './StarRating';
 import { SpiceRating } from './SpiceRating';
 import { ReviewModal } from './ReviewModal';
