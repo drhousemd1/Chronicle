@@ -1621,7 +1621,7 @@ const IndexContent = () => {
                       type="button"
                       onClick={() => setUserMenuOpen(prev => !prev)}
                       className={cn(
-                        "flex items-center gap-3 w-full rounded-xl px-2 py-2 hover:bg-white/5 active:bg-white/10 transition-all text-left",
+                        "flex items-center gap-3 w-full rounded-xl px-2 py-2 hover:bg-white/5 active:bg-ghost-white transition-all text-left",
                         sidebarCollapsed && "justify-center px-0"
                       )}
                     >
