@@ -1289,7 +1289,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     <div className="space-y-1.5">
                       <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Name</Label>
                       <div className="flex items-center gap-2">
-                        <div className="flex-1 px-3 py-2 bg-zinc-900/50 rounded-md text-sm text-white font-medium border border-white/10">
+                        <div className="flex-1 px-3 py-2 bg-zinc-900/50 rounded-md text-sm text-white font-medium border border-ghost-white">
                           {draft.name || character?.name || 'Unnamed'}
                         </div>
                         <button
