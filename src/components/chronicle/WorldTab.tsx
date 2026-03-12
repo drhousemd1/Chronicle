@@ -1314,7 +1314,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                                   onUpdateWorld({ entries: next });
                                 }}><Icons.Trash /></Button>
                               </div>
-                              <AutoResizeTextarea value={entry.body} onChange={(v) => handleUpdateEntry(entry.id, { body: v })} placeholder="Detail the specifics..." rows={4} className="px-3 py-2 text-sm bg-transparent border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                              <AutoResizeTextarea value={entry.body} onChange={(v) => handleUpdateEntry(entry.id, { body: v })} placeholder="Detail the specifics..." rows={4} className="px-3 py-2 text-sm bg-transparent border border-[#4a5f7f] text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                             </div>
                           ))}
                         </div>

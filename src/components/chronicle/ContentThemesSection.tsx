@@ -263,7 +263,7 @@ const CustomTagsSection: React.FC<{
                 }}
                 placeholder="Custom..."
                 autoFocus
-                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 text-white border border-zinc-600 focus:border-blue-500 focus:outline-none w-28"
+                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 text-white border border-[#4a5f7f] focus:border-blue-500 focus:outline-none w-28"
               />
               <button
                 type="button"
