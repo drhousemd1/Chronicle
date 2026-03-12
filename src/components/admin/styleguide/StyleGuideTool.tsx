@@ -1741,7 +1741,8 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <SwatchCardV2 color="#ffffff" name="White" locations="Inactive model selection card background" value="#ffffff" token="bg-white" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="#0f172a" name="Deep Navy" locations="Active/selected model card background, scale-[1.02]" value="#0f172a" token="bg-slate-900" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="#faf5ff" name="Pale Lavender" locations="Admin-only share toggle row background, border-purple-200" value="#faf5ff" token="bg-purple-50" pageSpecific={true} appWide={false} />
-              <SwatchCardV2 color="#f8fafc" name="Ice White" locations="Connection setup container within Model Settings" value="#f8fafc" token="bg-slate-50" pageSpecific={true} appWide={false} />
+              {/* Ice White migrated → Ghost White */}
+              <SwatchCardV2 color="rgba(248,250,252,0.3)" name="Ghost White" locations="Connection setup container within Model Settings (formerly Ice White bg-slate-50)" value="rgba(248,250,252,0.3)" token="bg-ghost-white" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #ccc' }} />
             </div>
             <InconsistencyNote items={[
               { file: 'ModelSettingsTab.tsx', note: 'Uses LIGHT THEME (bg-white, text-[hsl(var(--ui-surface-2))], border-slate-200) while every other page in the app uses dark theme. Major design inconsistency.' },
