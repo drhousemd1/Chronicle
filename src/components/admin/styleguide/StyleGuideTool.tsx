@@ -3738,12 +3738,13 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
               <PanelCardV2
                 panelName="Story Card"
-                background="gradient overlay: from-zinc-800 via-slate-900/60 to-transparent"
+                background="flat overlay: bg-black/40 (uniform 40% black, no gradient)"
                 border="border border-[#4a5f7f]"
                 borderRadius="rounded-[2rem]"
                 shadow="0 12px 32px -2px rgba(0,0,0,0.5)"
-                purpose="Card for stories in My Stories grid and Gallery. Aspect 2/3."
-                locations="StoryHub.tsx, GalleryStoryCard.tsx, ImageLibraryTab.tsx"
+                purpose="Card for stories across My Stories, Gallery, Creator Profile, and Account pages. Aspect 2/3. Flat dark overlay ensures text readability over cover images."
+                locations="StoryHub.tsx, GalleryStoryCard.tsx, CreatorProfile.tsx, PublicProfileTab.tsx, CharactersTab.tsx, ImageLibraryTab.tsx"
+                notes="Overlay is a uniform bg-black/40 — NOT a gradient. Placeholder cards (New Story, New Folder) use bg-gradient-to-br for background fill, which is different."
                 appWide pageSpecific={false}
                 preview={
                   <div className="group relative overflow-hidden rounded-[2rem] border border-[#4a5f7f] bg-slate-200" style={{ width: 140, aspectRatio: '2/3', boxShadow: '0 12px 32px -2px rgba(0,0,0,0.5)' }}>
@@ -3751,8 +3752,8 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                     <div className="flex h-full w-full items-center justify-center bg-slate-900 p-4 text-center">
                       <div className="font-black text-ghost-white text-3xl uppercase tracking-tighter italic">S</div>
                     </div>
-                    {/* Gradient overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-800 via-slate-900/60 to-transparent opacity-90" />
+                    {/* Flat dark overlay for text readability */}
+                    <div className="absolute inset-0 bg-black/40 pointer-events-none" />
                     {/* Top-left badges */}
                     <div className="absolute top-2 left-2 flex items-center gap-1 z-10">
                       <div className="px-1.5 py-0.5 backdrop-blur-sm rounded-md text-[6px] font-bold shadow-lg bg-[#2a2a2f] text-emerald-400 uppercase tracking-wide">Published</div>
