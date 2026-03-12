@@ -1383,7 +1383,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Character Type</Label>
-                        <div className="flex p-1 bg-zinc-900/50 rounded-lg border border-white/10">
+                        <div className="flex p-1 bg-zinc-900/50 rounded-lg border border-ghost-white">
                           <button 
                             type="button"
                             onClick={() => updateField('characterRole', 'Main')}
