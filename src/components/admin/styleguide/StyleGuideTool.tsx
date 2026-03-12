@@ -3786,7 +3786,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                   <div className="group relative overflow-hidden rounded-[2rem] border border-[#4a5f7f] bg-slate-200" style={{ width: 140, aspectRatio: '2/3', boxShadow: '0 12px 32px -2px rgba(0,0,0,0.5)' }}>
                     {/* Cover image fallback */}
                     <div className="flex h-full w-full items-center justify-center bg-slate-900 p-4 text-center">
-                      <div className="font-black text-white/10 text-3xl uppercase tracking-tighter italic">S</div>
+                      <div className="font-black text-ghost-white text-3xl uppercase tracking-tighter italic">S</div>
                     </div>
                     {/* Gradient overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-zinc-800 via-slate-900/60 to-transparent opacity-90" />
