@@ -110,7 +110,8 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
   onUnpublish,
   canUnpublish,
   isOwned = false,
-  isPublished = false
+  isPublished = false,
+  isDraft = false
 }) => {
   const [characters, setCharacters] = useState<ScenarioCharacter[]>([]);
   const [isLoadingCharacters, setIsLoadingCharacters] = useState(false);
