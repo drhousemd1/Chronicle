@@ -1294,10 +1294,10 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                                     }}
                                     disabled={enhancingField === `custom-${section.id}-${item.id}`}
                                     className={cn(
-                                      "shrink-0 w-7 h-7 flex items-center justify-center rounded-lg transition-all duration-200",
+                                      "p-1.5 rounded-md transition-all flex-shrink-0",
                                       enhancingField === `custom-${section.id}-${item.id}`
-                                        ? "bg-yellow-500/20 text-yellow-400 animate-pulse"
-                                        : "bg-zinc-700/50 text-zinc-500 hover:bg-blue-500/20 hover:text-blue-300"
+                                        ? "text-blue-500 animate-pulse cursor-wait"
+                                        : "text-zinc-400 hover:text-blue-500 hover:bg-blue-500/10"
                                     )}
                                   >
                                     <Sparkles size={14} />
