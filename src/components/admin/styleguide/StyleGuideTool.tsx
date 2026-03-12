@@ -3821,24 +3821,24 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <PanelCardV2
                 panelName="Builder Collapsible Section"
                 background="#2a2a2f (outer), #3a3a3f/30 (inner)"
-                border="border-white/10 (outer), border-white/5 (inner)"
+                border="border-ghost-white (outer), border-white/5 (inner)"
                 borderRadius="rounded-[24px]"
                 shadow="0 12px 32px -2px rgba(0,0,0,0.5)"
                 purpose="Collapsible character trait sections with header bar and nested inner cards"
                 locations="CharactersTab.tsx"
                 pageSpecific appWide={false}
-                notes="Uses rounded-[24px] — yet another radius variant. Form inputs: bg-zinc-900/50 border-white/10 rounded-lg"
+                notes="Uses rounded-[24px] — yet another radius variant. Form inputs: bg-zinc-900/50 border-ghost-white rounded-lg"
                 preview={
-                  <div className="rounded-[16px] border border-white/10 overflow-hidden" style={{ background: '#2a2a2f', width: '100%', boxShadow: '0 8px 20px -2px rgba(0,0,0,0.4)' }}>
-                    <div className="px-3 py-1.5 border-b border-white/20 flex items-center justify-between" style={{ background: '#4a5f7f' }}>
+                  <div className="rounded-[16px] border border-ghost-white overflow-hidden" style={{ background: '#2a2a2f', width: '100%', boxShadow: '0 8px 20px -2px rgba(0,0,0,0.4)' }}>
+                    <div className="px-3 py-1.5 border-b border-ghost-white flex items-center justify-between" style={{ background: '#4a5f7f' }}>
                       <span className="text-white text-[9px] font-bold uppercase tracking-wider">Appearance</span>
                       <span className="text-[rgba(248,250,252,0.3)] text-[10px]">▾</span>
                     </div>
                     <div className="p-2">
                       <div className="rounded-lg p-2" style={{ background: 'rgba(58,58,63,0.3)', border: '1px solid rgba(255,255,255,0.05)' }}>
                         <div style={{ display: 'flex', gap: 4 }}>
-                          <input readOnly className="w-2/5 px-2 py-1 bg-zinc-900/50 border border-white/10 rounded-lg text-white text-[9px]" value="Hair" />
-                          <input readOnly className="flex-1 px-2 py-1 bg-zinc-900/50 border border-white/10 rounded-lg text-white text-[9px]" value="Silver strands" />
+                          <input readOnly className="w-2/5 px-2 py-1 bg-zinc-900/50 border border-ghost-white rounded-lg text-white text-[9px]" value="Hair" />
+                          <input readOnly className="flex-1 px-2 py-1 bg-zinc-900/50 border border-ghost-white rounded-lg text-white text-[9px]" value="Silver strands" />
                         </div>
                       </div>
                     </div>
