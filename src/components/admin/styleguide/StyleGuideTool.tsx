@@ -2340,7 +2340,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               preview={
                 <button className="flex items-center gap-2 px-4 py-3 rounded-lg bg-[#4a5f7f] text-white font-semibold text-sm" style={{ cursor: 'default' }}>
                   ▦ Browse Categories
-                  <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded-full text-xs">3</span>
+                  <span className="ml-1 px-1.5 py-0.5 bg-ghost-white rounded-full text-xs">3</span>
                 </button>
               }
             />
