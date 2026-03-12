@@ -325,7 +325,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                           "flex-1 h-12 border rounded-xl flex items-center justify-center gap-2 transition-all",
                           isLiked 
                             ? "bg-rose-500/20 border-rose-500/50 text-rose-400" 
-                            : "bg-white/5 hover:bg-ghost-white border-ghost-white text-white"
+                            : "bg-ghost-white hover:bg-ghost-white border-ghost-white text-white"
                         )}
                       >
                         <Heart className={cn("w-5 h-5", isLiked && "fill-current")} />
