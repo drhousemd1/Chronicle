@@ -1,13 +1,25 @@
 
 
-## Plan: Revamp Drafts — localStorage → Database-Backed System ✅
+# Fix: Drafts Not Visible After Saving
 
-### What was done:
+## Root Cause
 
-1. **Database migration** — Added `is_draft boolean NOT NULL DEFAULT false` column to `stories` table
-2. **Updated `ScenarioMetadata` type** — Added `isDraft?: boolean` field
-3. **Updated `supabase-data.ts`** — `dbToScenarioMetadata` now maps `is_draft`, `fetchMyScenarios` selects `is_draft`, `saveScenario` accepts `options.isDraft` parameter
-4. **Updated `StoryHub.tsx`** — Cards show amber "Draft" badge, Play button hidden for drafts, `isDraft` passed to detail modal
-5. **Updated `StoryDetailModal.tsx`** — Accepts `isDraft` prop, hides Play button for owned drafts
-6. **Updated `Index.tsx`** — Added "Drafts" filter pill, "My Stories" excludes drafts, "All" excludes drafts, Save Draft now saves to DB with `isDraft: true`, removed Drafts button/modal/localStorage logic
-7. **Cleanup** — Removed DraftsModal import and render, removed localStorage draft registry functions
+Two bugs in the filter logic in `src/pages/Index.tsx`:
+
+1. **"All" filter excludes drafts** — Line 385 does `registry.filter(s => !s.isDraft)`, but per the original plan, "All" should include drafts.
+2. **Default filter is "all"** — After saving a draft from the builder, the user returns to the hub which defaults to "all" (or stays on whatever filter they were on). Since drafts are excluded from both "My Stories" and "All", the draft is invisible unless the user manually clicks the "Drafts" pill.
+
+The draft IS saving to the database successfully (no network errors). It just doesn't show due to filtering.
+
+## Fix
+
+**File: `src/pages/Index.tsx`**
+
+1. **Include drafts in "My Stories" filter** — Remove the `!s.isDraft` exclusion from the "my" case. These are the user's stories regardless of draft status. This is more intuitive — users expect their own stories page to show everything they own.
+
+2. **Include drafts in "All" filter** — Remove the `!s.isDraft` exclusion from the "all" case, matching the original plan.
+
+3. **After saving a draft, auto-switch filter to "my"** — In the Save Draft button handler, after refreshing the registry, set `hubFilter` to `"my"` so the user immediately sees their draft card with the amber "Draft" badge.
+
+The "Drafts" pill remains useful as a focused view showing only drafts.
+
