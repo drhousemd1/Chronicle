@@ -189,28 +189,46 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
 
             <div className="space-y-1.5">
               <label className="text-[hsl(0_0%_100%_/_0.5)] text-xs font-bold uppercase tracking-wider">Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full px-4 py-3 bg-[#2a2a2f] border border-[hsl(0_0%_100%_/_0.10)] rounded-xl text-white placeholder:text-[hsl(0_0%_100%_/_0.25)] focus:outline-none focus:ring-2 focus:ring-[#4a5f7f] focus:border-transparent text-sm"
-                disabled={isLoading}
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full px-4 py-3 pr-10 bg-[#2a2a2f] border border-[hsl(0_0%_100%_/_0.10)] rounded-xl text-white placeholder:text-[hsl(0_0%_100%_/_0.25)] focus:outline-none focus:ring-2 focus:ring-[#4a5f7f] focus:border-transparent text-sm"
+                  disabled={isLoading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[hsl(0_0%_100%_/_0.3)] hover:text-[hsl(0_0%_100%_/_0.5)] transition-colors"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
               {errors.password && <p className="text-red-400 text-xs">{errors.password}</p>}
             </div>
 
             {isSignUp && (
               <div className="space-y-1.5">
                 <label className="text-[hsl(0_0%_100%_/_0.5)] text-xs font-bold uppercase tracking-wider">Confirm Password</label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full px-4 py-3 bg-[#2a2a2f] border border-[hsl(0_0%_100%_/_0.10)] rounded-xl text-white placeholder:text-[hsl(0_0%_100%_/_0.25)] focus:outline-none focus:ring-2 focus:ring-[#4a5f7f] focus:border-transparent text-sm"
-                  disabled={isLoading}
-                />
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full px-4 py-3 pr-10 bg-[#2a2a2f] border border-[hsl(0_0%_100%_/_0.10)] rounded-xl text-white placeholder:text-[hsl(0_0%_100%_/_0.25)] focus:outline-none focus:ring-2 focus:ring-[#4a5f7f] focus:border-transparent text-sm"
+                    disabled={isLoading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[hsl(0_0%_100%_/_0.3)] hover:text-[hsl(0_0%_100%_/_0.5)] transition-colors"
+                  >
+                    {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
                 {errors.confirmPassword && <p className="text-red-400 text-xs">{errors.confirmPassword}</p>}
               </div>
             )}
