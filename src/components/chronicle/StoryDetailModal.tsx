@@ -578,7 +578,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                     <div className="h-px bg-gradient-to-r from-transparent via-[#4a5f7f] to-transparent mb-6" />
 
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-xs font-bold text-white/40 uppercase tracking-widest">Reviews ({reviewCount})</h3>
+                      <h3 className="text-xs font-bold text-[rgba(248,250,252,1)] uppercase tracking-widest">Reviews ({reviewCount})</h3>
                       {user && (
                         <button
                           onClick={() => setIsReviewModalOpen(true)}
