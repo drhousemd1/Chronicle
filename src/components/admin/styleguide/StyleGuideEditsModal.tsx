@@ -113,7 +113,7 @@ export const KeepOrEditModal: React.FC<KeepOrEditModalProps> = ({
 }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md bg-zinc-900 border-white/10 p-0 gap-0 [&>button]:hidden">
+      <DialogContent className="sm:max-w-md bg-zinc-900 border-ghost-white p-0 gap-0 [&>button]:hidden">
         <div className="px-6 pt-5 pb-3">
           <h3 className="text-white text-lg font-bold tracking-tight truncate">{cardName}</h3>
           <p className="text-zinc-400 text-sm mt-1">Select an option below to continue.</p>
