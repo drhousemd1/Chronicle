@@ -3202,7 +3202,7 @@ const updatedChar: SideCharacter = {
         <div className="relative">
           <div className="w-full flex flex-col items-center gap-2 p-3 text-center">
             <div className="relative">
-              <div className={`w-20 h-20 rounded-full border-2 shadow-sm overflow-hidden transition-all duration-300 ${!sidebarBgIsLight ? 'bg-slate-50 border-slate-100' : 'bg-zinc-800 border-ghost-white'}`}>
+              <div className={`w-20 h-20 rounded-full border-2 shadow-sm overflow-hidden transition-all duration-300 ${!sidebarBgIsLight ? 'bg-ghost-white border-slate-100' : 'bg-zinc-800 border-ghost-white'}`}>
                 {char.avatarDataUrl ? (
                   <img src={char.avatarDataUrl} alt={char.name} className="w-full h-full object-cover" />
                 ) : (

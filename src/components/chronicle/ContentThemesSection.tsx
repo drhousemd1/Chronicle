@@ -231,7 +231,7 @@ const CustomTagsSection: React.FC<{
         Custom Tags
       </h4>
       
-      <div className="bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-xl p-4 border border-white/5">
+      <div className="bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-xl p-4 border border-ghost-white">
         <div className="flex flex-wrap gap-2">
           {tags.map(tag => (
             <div

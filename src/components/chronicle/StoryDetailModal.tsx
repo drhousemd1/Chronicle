@@ -607,7 +607,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                     ) : (
                       <div className="space-y-4">
                         {reviews.map((review) => (
-                          <div key={review.id} className="p-3 rounded-xl bg-white/5 border border-white/5">
+                          <div key={review.id} className="p-3 rounded-xl bg-ghost-white border border-ghost-white">
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center gap-2">
                                 <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 overflow-hidden flex-shrink-0">
