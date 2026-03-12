@@ -2509,6 +2509,8 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
           }
         }}
       />
+
+      <AuthModal open={authModalOpen} onClose={() => setAuthModalOpen(false)} />
       </div>
     </TooltipProvider>
   );
