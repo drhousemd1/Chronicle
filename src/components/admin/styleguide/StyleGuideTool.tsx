@@ -4070,13 +4070,13 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <PanelCardV2
                 panelName="Settings Card"
                 background="#1e1e22"
-                border="border-white/10"
+                border="border-ghost-white"
                 borderRadius="rounded-2xl"
                 purpose="Account settings section card with icon, title, and content area"
                 locations="AccountSettingsTab.tsx"
                 pageSpecific appWide={false}
                 preview={
-                  <div className="w-full bg-[#1e1e22] rounded-2xl border border-white/10 p-3">
+                  <div className="w-full bg-[#1e1e22] rounded-2xl border border-ghost-white p-3">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-[#4a5f7f] text-[10px]">✉</span>
                       <span className="text-[10px] font-bold text-white">Email</span>
