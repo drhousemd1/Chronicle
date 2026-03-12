@@ -89,7 +89,7 @@ export const DraftsModal: React.FC<DraftsModalProps> = ({ open, onOpenChange, on
               {drafts.map((draft) => (
                 <div
                   key={draft.id}
-                  className="flex items-center gap-3 rounded-xl bg-zinc-800/60 border border-white/5 px-4 py-3 group"
+                  className="flex items-center gap-3 rounded-xl bg-zinc-800/60 border border-ghost-white px-4 py-3 group"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="text-white text-sm font-semibold truncate">
