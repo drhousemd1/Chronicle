@@ -4457,7 +4457,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <PanelCardV2
                 panelName="DeleteConfirmDialog"
                 background="hsl(240, 6%, 10%)"
-                border="border-white/10"
+                border="border-ghost-white"
                 borderRadius="rounded-2xl"
                 shadow="0 10px 30px rgba(0,0,0,0.5)"
                 purpose="AlertDialog for all destructive actions (characters, sessions, stories)"
