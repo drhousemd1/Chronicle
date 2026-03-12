@@ -2576,30 +2576,8 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               }
             />
 
-            <div style={fullSpan}><PageSubheading>Auth Page</PageSubheading></div>
 
-            <ButtonCardV2
-              buttonName="Auth Submit Button"
-              buttonColor="bg-purple-600 hover:bg-purple-700 text-white"
-              size="w-full — shadcn Button default (h-10 px-4 py-2 rounded-md text-sm font-medium)"
-              purpose="Sign In / Create Account form submission"
-              locations="Auth.tsx — form submit"
-              pageSpecific
-              preview={
-                <button className="w-full py-2.5 px-4 bg-purple-600 text-white rounded-md text-sm font-medium" style={{ cursor: 'default' }}>Sign In</button>
-              }
-            />
-            <ButtonCardV2
-              buttonName="Auth Toggle Link"
-              buttonColor="text-purple-400 hover:text-purple-300"
-              size="text-sm — unstyled button (no bg, no border)"
-              purpose="Toggle between Sign In and Sign Up forms"
-              locations="Auth.tsx — below form"
-              pageSpecific
-              preview={
-                <button className="text-purple-400 hover:text-purple-300 text-sm" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>{"Don't have an account? Sign up"}</button>
-              }
-            />
+
 
             <div style={fullSpan}><PageSubheading>Chronicle UI.tsx — Parallel Button System</PageSubheading></div>
             <div style={fullSpan}>
