@@ -3186,7 +3186,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 preview={
                   <div style={{ width: '100%' }}>
                     <label className="block text-xs font-bold uppercase mb-1 text-slate-500">Label</label>
-                    <input readOnly className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none" placeholder="Chronicle UI Input..." />
+                    <input readOnly className="w-full rounded-2xl border border-slate-200 bg-ghost-white px-4 py-3 text-sm outline-none" placeholder="Chronicle UI Input..." />
                   </div>
                 }
               />
