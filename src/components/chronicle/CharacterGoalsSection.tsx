@@ -315,7 +315,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
                                 </span>
                               )}
                               {isEditMode && (
-                                <button onClick={() => deleteStep(goal.id, step.id)} className="mt-2 text-zinc-500 hover:text-rose-400 transition-colors p-1">
+                                <button onClick={() => deleteStep(goal.id, step.id)} className="mt-2 text-red-500 hover:text-red-400 transition-colors p-1">
                                   <X className="h-4 w-4" />
                                 </button>
                               )}
