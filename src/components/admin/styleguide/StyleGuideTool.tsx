@@ -4136,7 +4136,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <PanelCardV2
                 panelName="HintBox"
                 background="bg-zinc-900"
-                border="border border-white/5"
+                border="border border-ghost-white"
                 borderRadius="rounded-xl"
                 purpose="Contextual guidance text with diamond bullet points"
                 locations="WorldTab.tsx"
