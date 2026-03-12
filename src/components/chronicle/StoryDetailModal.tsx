@@ -505,7 +505,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                     {/* Trigger Warnings - Separate Row */}
                     {contentThemes.triggerWarnings.length > 0 && (
                       <div className="mt-6">
-                        <h4 className="text-xs font-bold text-[rgba(248,250,252,1)] uppercase mb-2">Trigger Warnings</h4>
+                        <h4 className="text-xs font-bold text-[#4a5f7f] uppercase mb-2">Trigger Warnings</h4>
                         <p className="text-sm text-[rgba(248,250,252,0.8)] leading-relaxed font-medium">
                           {contentThemes.triggerWarnings.join(', ')}
                         </p>
