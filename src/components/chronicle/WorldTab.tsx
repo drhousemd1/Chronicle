@@ -602,17 +602,17 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                         <div className="flex flex-wrap gap-3">
                           <button 
                             onClick={() => setIsRepositioningCover(!isRepositioningCover)}
-                            className={`h-10 px-5 rounded-xl text-[10px] font-bold transition-colors ${
+                            className={`h-10 px-5 rounded-xl text-[10px] font-bold leading-none uppercase tracking-wider transition-colors ${
                               isRepositioningCover 
                                 ? 'bg-blue-500 text-white' 
-                                : 'bg-zinc-700 text-zinc-200 hover:bg-zinc-600 border border-zinc-600'
+                                : 'bg-[hsl(240_6%_18%)] border border-[hsl(0_0%_100%_/_0.10)] text-[hsl(var(--ui-text))] hover:bg-[hsl(240_6%_22%)] shadow-[0_10px_30px_hsl(0_0%_0%_/_0.35)]'
                             }`}
                           >
                             {isRepositioningCover ? "Done" : "Reposition"}
                           </button>
                           <button 
                             onClick={handleDeleteCover}
-                            className="h-10 px-5 rounded-xl text-[10px] font-bold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition-colors"
+                            className="h-10 px-5 rounded-xl text-[10px] font-bold leading-none uppercase tracking-wider bg-[hsl(var(--destructive))] hover:brightness-110 text-[hsl(var(--destructive-foreground))] border-0 shadow-[0_10px_30px_hsl(0_0%_0%_/_0.35)] transition-colors"
                           >
                             Remove
                           </button>
