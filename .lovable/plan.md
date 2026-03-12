@@ -1,20 +1,11 @@
 
 
-# Remove Solid Border from Avatar Placeholder When Empty
+## Plan: Persist Style Guide Edits to Supabase — Complete ✅
 
-Same double-border issue as the cover image. The outer container (line 686) always applies `border-2 border-ghost-white`, and the inner empty-state div (line 706) adds `border-2 border-dashed border-zinc-600`.
+### What was done:
 
-## Fix: `src/components/chronicle/CharactersTab.tsx`
-
-**Line 686** — Make the solid border conditional on having an avatar:
-
-```tsx
-// From:
-className={`relative group w-48 h-48 rounded-2xl overflow-hidden shadow-lg select-none ${isRepositioning ? 'ring-4 ring-blue-500 cursor-move' : 'border-2 border-ghost-white'}`}
-
-// To:
-className={`relative group w-48 h-48 rounded-2xl overflow-hidden shadow-lg select-none ${isRepositioning ? 'ring-4 ring-blue-500 cursor-move' : selected.avatarDataUrl ? 'border-2 border-ghost-white' : ''}`}
-```
-
-When no avatar exists, the outer container has no border, leaving only the inner dashed border visible.
-
+1. **Seeded `app_settings` rows** — `styleguide_edits` and `styleguide_keeps` rows inserted into the database
+2. **Rewrote all storage helpers** in `StyleGuideEditsModal.tsx` from sync localStorage to async Supabase operations (`getEditsRegistry`, `upsertEdit`, `removeEdit`, `getKeeps`, `addKeep`, `removeKeep`, `getEditsCount`)
+3. **Updated all consumers** in `StyleGuideTool.tsx` — `refreshEditsState`, `handleKeep`, `handleEditOpen`, `handleSaveEdit`, `handleRemoveKeep` are all async now
+4. **Updated `Index.tsx`** — `getEditsCount()` call now uses `.then()` since it's async
+5. **Every edit, keep, and delete auto-saves to Supabase immediately** — no data loss on domain changes
