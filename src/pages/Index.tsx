@@ -374,7 +374,7 @@ const IndexContent = () => {
     
     switch (hubFilter) {
       case "my":
-        return registry.filter(s => !s.isDraft);
+        return registry;
       case "bookmarked":
         return bookmarkedScenarios;
       case "published":
@@ -382,7 +382,7 @@ const IndexContent = () => {
       case "drafts":
         return registry.filter(s => s.isDraft);
       case "all":
-        return [...registry.filter(s => !s.isDraft), ...bookmarkedScenarios];
+        return [...registry, ...bookmarkedScenarios];
     }
   }, [registry, savedScenarios, hubFilter, publishedScenarioIds]);
 
@@ -1934,7 +1934,7 @@ const IndexContent = () => {
                         await supabaseData.saveScenario(activeId, activeData, metadata, user.id, { isDraft: true });
                         // Refresh registry so hub shows the draft
                         supabaseData.fetchMyScenarios(user.id)
-                          .then(r => setRegistry(r))
+                          .then(r => { setRegistry(r); setHubFilter("my"); })
                           .catch(e => console.warn('Registry refresh failed:', e));
                         setTimeout(() => setIsSaving(false), 1200);
                       } catch (e) {
