@@ -2763,7 +2763,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               pageSpecific
               preview={
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <button className="h-12 px-6 rounded-xl bg-white/5 border border-ghost-white text-white text-sm font-semibold" style={{ cursor: 'default' }}>♡ Like</button>
+                  <button className="h-12 px-6 rounded-xl bg-ghost-white border border-ghost-white text-white text-sm font-semibold" style={{ cursor: 'default' }}>♡ Like</button>
                   <button className="h-12 px-6 rounded-xl bg-rose-500/20 border border-rose-500/50 text-rose-400 text-sm font-semibold" style={{ cursor: 'default' }}>♥ Liked</button>
                   <button className="h-12 px-6 rounded-xl bg-amber-500/20 border border-amber-500/50 text-amber-400 text-sm font-semibold" style={{ cursor: 'default' }}>★ Saved</button>
                   <button className="h-12 px-6 rounded-xl bg-[#3b82f6] text-white text-sm font-bold" style={{ cursor: 'default' }}>▶ PLAY</button>
