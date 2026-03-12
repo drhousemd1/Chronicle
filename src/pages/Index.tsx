@@ -41,6 +41,7 @@ import { DeleteConfirmDialog } from "@/components/chronicle/DeleteConfirmDialog"
 import { ChangeNameModal } from "@/components/chronicle/ChangeNameModal";
 import { DraftsModal, upsertDraftRegistry, removeDraftFromRegistry, getDraftRegistry } from "@/components/chronicle/DraftsModal";
 import { getEditsCount } from "@/components/admin/styleguide/StyleGuideEditsModal";
+import { AuthModal } from "@/components/auth/AuthModal";
 
 const IconsList = {
   Gallery: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>,
@@ -129,7 +130,7 @@ const IndexContent = () => {
   const [activeContentThemes, setActiveContentThemes] = useState<ContentThemes>(defaultContentThemes);
   const [playingConversationId, setPlayingConversationId] = useState<string | null>(null);
   const [library, setLibrary] = useState<Character[]>([]);
-  const [tab, setTab] = useState<TabKey | "library">("hub");
+  const [tab, setTab] = useState<TabKey | "library">("gallery");
   const [fatal, setFatal] = useState<string>("");
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
   const [isAiFilling, setIsAiFilling] = useState(false);
@@ -181,7 +182,7 @@ const IndexContent = () => {
   const styleGuideEditsRef = React.useRef<(() => void) | null>(null);
   const [styleGuideEditsCount, setStyleGuideEditsCount] = useState(0);
   const imageLibraryUploadRef = React.useRef<(() => void) | null>(null);
-  
+  const [authModalOpen, setAuthModalOpen] = useState(false);
   // Pagination state
   const SCENARIO_PAGE_SIZE = 50;
   const [hasMoreScenarios, setHasMoreScenarios] = useState(true);
@@ -230,12 +231,12 @@ const IndexContent = () => {
     return () => mql.removeEventListener('change', onChange as (e: MediaQueryListEvent) => void);
   }, []);
 
-  // Redirect to auth if not authenticated
+  // Guest users: redirect to gallery if they try to access protected tabs
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      navigate('/auth');
+    if (!authLoading && !isAuthenticated && tab !== "gallery") {
+      setTab("gallery");
     }
-  }, [authLoading, isAuthenticated, navigate]);
+  }, [authLoading, isAuthenticated, tab]);
 
   // Check admin status from database
   useEffect(() => {
@@ -473,8 +474,16 @@ const IndexContent = () => {
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/auth');
+    setTab("gallery");
   };
+
+  const requireAuth = useCallback((action: () => void) => {
+    if (!isAuthenticated) {
+      setAuthModalOpen(true);
+      return;
+    }
+    action();
+  }, [isAuthenticated]);
 
   // Hub Background Handlers
   const handleUploadBackground = async (file: File) => {
@@ -1506,7 +1515,7 @@ const IndexContent = () => {
   }
 
   // Show loading state
-  if (authLoading || isLoading) {
+  if (authLoading) {
     return (
       <div className="h-screen bg-slate-900 flex items-center justify-center">
         <div className="text-white text-center">
@@ -1560,34 +1569,34 @@ const IndexContent = () => {
           </div>
           <nav className={`flex-1 overflow-y-auto pb-4 mt-4 space-y-1 ${sidebarCollapsed ? 'px-2' : 'px-4'}`}>
             <SidebarItem active={tab === "gallery"} label="Community Gallery" icon={<IconsList.Gallery />} onClick={() => handleNavigateAway("gallery")} collapsed={sidebarCollapsed} />
-            <SidebarItem active={tab === "hub"} label="My Stories" icon={<IconsList.Hub />} onClick={() => handleNavigateAway("hub")} collapsed={sidebarCollapsed} />
-            <SidebarItem active={tab === "library"} label="Character Library" icon={<IconsList.Library />} onClick={() => handleNavigateAway("library")} collapsed={sidebarCollapsed} />
-            <SidebarItem active={tab === "image_library"} label="Image Library" icon={<IconsList.ImageLibrary />} onClick={() => handleNavigateAway("image_library")} collapsed={sidebarCollapsed} />
+            <SidebarItem active={tab === "hub"} label="My Stories" icon={<IconsList.Hub />} onClick={() => requireAuth(() => handleNavigateAway("hub"))} collapsed={sidebarCollapsed} />
+            <SidebarItem active={tab === "library"} label="Character Library" icon={<IconsList.Library />} onClick={() => requireAuth(() => handleNavigateAway("library"))} collapsed={sidebarCollapsed} />
+            <SidebarItem active={tab === "image_library"} label="Image Library" icon={<IconsList.ImageLibrary />} onClick={() => requireAuth(() => handleNavigateAway("image_library"))} collapsed={sidebarCollapsed} />
             
-            <SidebarItem active={tab === "conversations"} label="Chat History" icon={<IconsList.Chat />} onClick={() => handleNavigateAway("conversations")} collapsed={sidebarCollapsed} />
+            <SidebarItem active={tab === "conversations"} label="Chat History" icon={<IconsList.Chat />} onClick={() => requireAuth(() => handleNavigateAway("conversations"))} collapsed={sidebarCollapsed} />
             
             <SidebarItem 
               active={tab === "world" || tab === "characters"} 
               label="Story Builder"
               subtitle={activeId ? (activeMeta?.title || "Unsaved Draft") : undefined}
               icon={<IconsList.Builder />} 
-              onClick={() => {
+              onClick={() => requireAuth(() => {
                 if (playingConversationId) handleCreateNewScenario();
                 else if (activeId) setTab("world");
                 else handleCreateNewScenario();
-              }}
+              })}
               className={!activeId ? "opacity-80" : ""}
               collapsed={sidebarCollapsed}
             />
 
             {isAdminState && (
               <div className="pt-4 mt-4 border-t border-white/10">
-                <SidebarItem active={tab === "admin"} label="Admin" icon={<Settings className="w-5 h-5" />} onClick={() => { setAdminActiveTool('hub'); setTab("admin"); }} collapsed={sidebarCollapsed} />
+                <SidebarItem active={tab === "admin"} label="Admin" icon={<Settings className="w-5 h-5" />} onClick={() => requireAuth(() => { setAdminActiveTool('hub'); setTab("admin"); })} collapsed={sidebarCollapsed} />
               </div>
             )}
 
             <div className="pt-4 mt-4 border-t border-white/10">
-              <SidebarItem active={tab === "account"} label="Account" icon={<UserCircle className="w-5 h-5" />} onClick={() => setTab("account")} collapsed={sidebarCollapsed} />
+              <SidebarItem active={tab === "account"} label={isAuthenticated ? "Account" : "Log In"} icon={<UserCircle className="w-5 h-5" />} onClick={() => requireAuth(() => setTab("account"))} collapsed={sidebarCollapsed} />
             </div>
           </nav>
         </aside>
@@ -2162,7 +2171,7 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
           )}
 
           {tab === "gallery" && (
-            <GalleryHub onPlay={handleGalleryPlay} onSaveChange={handleGallerySaveChange} sortBy={gallerySortBy} onSortChange={setGallerySortBy} />
+            <GalleryHub onPlay={handleGalleryPlay} onSaveChange={handleGallerySaveChange} sortBy={gallerySortBy} onSortChange={setGallerySortBy} onAuthRequired={() => setAuthModalOpen(true)} />
           )}
 
           <div 
@@ -2500,6 +2509,8 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
           }
         }}
       />
+
+      <AuthModal open={authModalOpen} onClose={() => setAuthModalOpen(false)} />
       </div>
     </TooltipProvider>
   );
