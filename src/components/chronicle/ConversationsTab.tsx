@@ -121,7 +121,7 @@ export function ConversationsTab({
                               onClick={() => onResume(entry.scenarioId, entry.conversationId)}
                               className="w-full text-left mt-2"
                             >
-                              <div className="bg-zinc-900/50 border border-ghost-white rounded-lg px-3 py-1.5">
+                              <div className="bg-zinc-900/50 border border-[#4a5f7f] rounded-lg px-3 py-1.5">
                                 <p className="text-sm text-zinc-400 line-clamp-2 leading-relaxed">
                                   {entry.lastMessage || "No messages yet"}
                                 </p>
