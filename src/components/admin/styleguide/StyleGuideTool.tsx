@@ -3986,7 +3986,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <PanelCardV2
                 panelName="Session Card (Double-nested)"
                 background="Outer: #2a2a2f · Inner: #3a3a3f/30"
-                border="Outer: border-[#4a5f7f] · Inner: border-white/5"
+                border="Outer: border-[#4a5f7f] · Inner: border-ghost-white"
                 borderRadius="rounded-2xl"
                 purpose="Chat session card with nested inner card for conversation preview"
                 locations="ConversationsTab.tsx"
