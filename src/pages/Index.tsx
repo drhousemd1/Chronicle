@@ -1611,7 +1611,7 @@ const IndexContent = () => {
               </div>
             )}
 
-            <div className="pt-4 mt-4 border-t border-white/10">
+            <div className="pt-4 mt-4 border-t border-ghost-white">
               {isAuthenticated && user ? (() => {
                 const displayName = userProfile?.display_name || user.email?.split('@')[0] || 'User';
                 const initials = displayName.slice(0, 2).toUpperCase();
