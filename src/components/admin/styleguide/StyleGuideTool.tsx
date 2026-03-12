@@ -1529,9 +1529,10 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                   { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-history%2Fchat-history-full.png', location: 'Inner nested card', function: 'Semi-transparent inner content area within each session card' },
                 ]}
               />
-              <SwatchCardV2 color="rgba(255,255,255,0.05)" name="Whisper White" locations="Inner card subtle border" value="rgba(255,255,255,0.05)" token="border-white/5" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }}
+              {/* Whisper White migrated → Ghost White */}
+              <SwatchCardV2 color="rgba(248,250,252,0.3)" name="Ghost White" locations="Inner card subtle border (formerly Whisper White)" value="rgba(248,250,252,0.3)" token="border-ghost-white" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #ccc' }}
                 locationImages={[
-                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-history%2Fchat-history-full.png', location: 'Inner card border', function: 'Barely-visible border on inner content panel' },
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-history%2Fchat-history-full.png', location: 'Inner card border', function: 'Subtle border on inner content panel' },
                 ]}
               />
               <SwatchCardV2 color="#4a5f7f" name="Slate Blue" locations="Session card border, empty state border, thumbnail border, thumbnail hover ring" value="#4a5f7f" token="border-[#4a5f7f]" pageSpecific={false} appWide={true}
