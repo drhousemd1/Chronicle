@@ -592,7 +592,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                     className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                   />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-slate-900 p-10 text-center">
+                  <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900 p-10 text-center">
                      <div className="font-black text-ghost-white text-6xl uppercase tracking-tighter italic break-words">{c.name.charAt(0) || '?'}</div>
                   </div>
                 )}
