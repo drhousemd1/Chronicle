@@ -146,7 +146,7 @@ export function ModelSettingsTab({ selectedModelId, onSelectModel }: ModelSettin
 
             <div className="pt-6 border-t border-slate-100">
               <h4 className="font-bold text-[hsl(var(--ui-surface-2))] mb-4">Connection Setup</h4>
-              <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200">
+              <div className="bg-ghost-white rounded-2xl p-6 border border-slate-200">
                 <div className="space-y-4">
                   {/* Admin-only toggle */}
                   {isAdmin && (

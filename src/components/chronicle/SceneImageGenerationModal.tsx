@@ -68,7 +68,7 @@ export const SceneImageGenerationModal: React.FC<SceneImageGenerationModalProps>
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               placeholder="A cozy medieval tavern with warm candlelight, wooden beams, and patrons gathered around tables..."
-              className="min-h-[100px] resize-none bg-slate-50 border-slate-200 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 focus-visible:ring-0 focus-visible:ring-offset-0"
+              className="min-h-[100px] resize-none bg-ghost-white border-slate-200 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 focus-visible:ring-0 focus-visible:ring-offset-0"
               disabled={isGenerating}
             />
             <p className="text-xs text-muted-foreground">

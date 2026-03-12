@@ -171,7 +171,7 @@ export function BackgroundPickerModal({
               <div
                 key={bg.id}
                 onClick={() => onSelectBackground(bg.id)}
-                className={`group relative aspect-video rounded-xl overflow-hidden border shadow-sm bg-slate-50 cursor-pointer transition-all ${
+                className={`group relative aspect-video rounded-xl overflow-hidden border shadow-sm bg-ghost-white cursor-pointer transition-all ${
                   selectedBackgroundId === bg.id 
                     ? 'ring-2 ring-blue-500 ring-offset-2 border-blue-200' 
                     : 'border-slate-200 hover:border-slate-300'
