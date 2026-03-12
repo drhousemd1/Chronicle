@@ -3037,7 +3037,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <InputCardV2
                 inputName="Builder Form Row Input"
                 background="bg-zinc-900/50"
-                border="border-white/10"
+                border="border-ghost-white"
                 borderRadius="rounded-lg (8px)"
                 textColor="white"
                 fontSize="14px / text-sm"
@@ -3050,9 +3050,9 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                   <div style={{ display: 'flex', gap: 8, width: '100%' }}>
                     <div style={{ width: '40%', display: 'flex', alignItems: 'center', gap: 6 }}>
                       <span style={{ color: '#a1a1aa', fontSize: 10 }}>🔒</span>
-                      <input readOnly className="w-full px-3 py-2 bg-zinc-900/50 border border-white/10 rounded-lg text-white text-sm" value="Physical Appearance" />
+                      <input readOnly className="w-full px-3 py-2 bg-zinc-900/50 border border-ghost-white rounded-lg text-white text-sm" value="Physical Appearance" />
                     </div>
-                    <input readOnly className="flex-1 px-3 py-2 bg-zinc-900/50 border border-white/10 rounded-lg text-white text-sm" placeholder="Describe appearance..." />
+                    <input readOnly className="flex-1 px-3 py-2 bg-zinc-900/50 border border-ghost-white rounded-lg text-white text-sm" placeholder="Describe appearance..." />
                   </div>
                 }
               />
