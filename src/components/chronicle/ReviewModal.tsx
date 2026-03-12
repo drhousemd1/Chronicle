@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogOverlay, DialogPortal } from '@/components/ui/dialog';
 
@@ -95,9 +94,9 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
         <DialogPortal>
           <DialogOverlay className="bg-black/90 backdrop-blur-sm" />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="relative w-full max-w-xl max-h-[90vh] bg-[#121214] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10 overflow-hidden flex flex-col">
+            <div className="relative w-full max-w-xl max-h-[90vh] bg-[#121214] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-ghost-white overflow-hidden flex flex-col">
               {/* Header */}
-              <div className="flex items-center justify-between p-5 border-b border-white/10">
+              <div className="flex items-center justify-between p-5 border-b border-ghost-white">
                 <h2 className="text-lg font-bold text-white">Rate This Scenario</h2>
                 <button onClick={() => onOpenChange(false)} className="text-white/40 hover:text-white transition-colors">
                   <X className="w-5 h-5" />
@@ -123,7 +122,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
                   ))}
 
                   {/* Spice Level */}
-                  <div className="pt-2 border-t border-white/10">
+                  <div className="pt-2 border-t border-ghost-white">
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-white">Spice Level</p>
@@ -140,7 +139,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
 
                   {/* Overall Score Preview */}
                   {overallScore && (
-                    <div className="pt-2 border-t border-white/10">
+                    <div className="pt-2 border-t border-ghost-white">
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-white/40 font-bold uppercase tracking-wider">Overall</span>
                         <StarRating rating={overallScore.display} size={16} />
@@ -155,7 +154,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
                       value={comment}
                       onChange={(e) => setComment(e.target.value)}
                       placeholder="Share your thoughts... (optional)"
-                      className="bg-white/5 border-white/10 text-white placeholder:text-white/30 min-h-[80px] resize-none"
+                      className="bg-white/5 border-ghost-white text-white placeholder:text-white/30 min-h-[80px] resize-none"
                       maxLength={1000}
                     />
                   </div>
@@ -163,7 +162,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
               </div>
 
               {/* Footer */}
-              <div className="p-5 border-t border-white/10 flex gap-3">
+              <div className="p-5 border-t border-ghost-white flex gap-3">
                 <button
                   onClick={handleSubmit}
                   disabled={!allRated || isSubmitting}

@@ -19,13 +19,13 @@ const CollapsibleSection: React.FC<{
   children: React.ReactNode;
   collapsedContent?: React.ReactNode;
 }> = ({ title, isExpanded, onToggle, children, collapsedContent }) => (
-  <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
-    <div className="bg-[#4a5f7f] border-b border-white/20 px-5 py-3 flex items-center justify-between shadow-lg">
+  <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-ghost-white overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
+    <div className="bg-[#4a5f7f] border-b border-ghost-white px-5 py-3 flex items-center justify-between shadow-lg">
       <h2 className="text-white text-xl font-bold tracking-tight">{title}</h2>
       <button 
         type="button"
         onClick={onToggle} 
-        className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-white/10"
+        className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-ghost-white"
       >
         {isExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
       </button>
@@ -117,7 +117,7 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
             onChange={(e) => updateField('storyPremise', e.target.value)}
             placeholder="The central situation, conflict, or premise..."
             rows={4}
-            className="text-sm resize-none bg-zinc-900/50 border-white/10 text-white placeholder:text-zinc-500 focus:ring-blue-500/20 focus:border-blue-500"
+            className="text-sm resize-none bg-zinc-900/50 border-ghost-white text-white placeholder:text-zinc-500 focus:ring-blue-500/20 focus:border-blue-500"
           />
         </div>
       </CollapsibleSection>
@@ -150,7 +150,7 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
                   updateField('structuredLocations', locs);
                 }}
                 placeholder={idx === 0 ? "e.g. The Lakehouse" : "Location name..."}
-                className="w-2/5 bg-zinc-900/50 border-white/10 text-white placeholder:text-zinc-500 text-sm"
+                className="w-2/5 bg-zinc-900/50 border-ghost-white text-white placeholder:text-zinc-500 text-sm"
               />
               <AutoResizeTextarea
                 value={loc.description}
@@ -160,7 +160,7 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
                   updateField('structuredLocations', locs);
                 }}
                 placeholder={idx === 0 ? "A secluded cabin by the lake..." : "Describe this location..."}
-                className="flex-1 px-3 py-2 rounded-lg text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
+                className="flex-1 px-3 py-2 rounded-lg text-sm bg-zinc-900/50 border border-ghost-white text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
               />
               <button
                 type="button"
@@ -235,7 +235,7 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
                             updateField('customWorldSections', updated);
                           }}
                           placeholder="Label..."
-                          className="w-2/5 bg-zinc-900/50 border-white/10 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-500 placeholder:normal-case placeholder:tracking-normal text-sm"
+                          className="w-2/5 bg-zinc-900/50 border-ghost-white text-zinc-400 uppercase tracking-widest placeholder:text-zinc-500 placeholder:normal-case placeholder:tracking-normal text-sm"
                         />
                         <AutoResizeTextarea
                           value={item.value}
@@ -247,7 +247,7 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
                             updateField('customWorldSections', updated);
                           }}
                           placeholder="Value..."
-                          className="flex-1 px-3 py-2 rounded-lg text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
+                          className="flex-1 px-3 py-2 rounded-lg text-sm bg-zinc-900/50 border border-ghost-white text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
                         />
                         <button
                           type="button"
@@ -286,7 +286,7 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
                       updateField('customWorldSections', updated);
                     }}
                     placeholder="Write freely..."
-                    className="w-full px-3 py-2 rounded-lg text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
+                    className="w-full px-3 py-2 rounded-lg text-sm bg-zinc-900/50 border border-ghost-white text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
                   />
                 )}
               </div>
