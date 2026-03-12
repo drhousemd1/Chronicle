@@ -1,16 +1,11 @@
 
 
-# Change StoryDetailModal Border & Divider to Slate Blue
+## Plan: Persist Style Guide Edits to Supabase — Complete ✅
 
-## Problem
-The "View More" detail modal uses `border-ghost-white` (white/30%) for both its outer border and the vertical divider between the cover image and content columns. Per the brand system, these should use Slate Blue (#4a5f7f).
+### What was done:
 
-## Changes
-
-**File: `src/components/chronicle/StoryDetailModal.tsx`**
-
-1. **Line 240** — Outer modal border: change `border border-ghost-white` to `border border-[#4a5f7f]`
-2. **Line 380** — Vertical divider (right column border-left): change `md:border-l border-ghost-white` to `md:border-l border-[#4a5f7f]`
-
-Two single-token swaps, no other elements affected.
-
+1. **Seeded `app_settings` rows** — `styleguide_edits` and `styleguide_keeps` rows inserted into the database
+2. **Rewrote all storage helpers** in `StyleGuideEditsModal.tsx` from sync localStorage to async Supabase operations (`getEditsRegistry`, `upsertEdit`, `removeEdit`, `getKeeps`, `addKeep`, `removeKeep`, `getEditsCount`)
+3. **Updated all consumers** in `StyleGuideTool.tsx` — `refreshEditsState`, `handleKeep`, `handleEditOpen`, `handleSaveEdit`, `handleRemoveKeep` are all async now
+4. **Updated `Index.tsx`** — `getEditsCount()` call now uses `.then()` since it's async
+5. **Every edit, keep, and delete auto-saves to Supabase immediately** — no data loss on domain changes
