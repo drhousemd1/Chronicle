@@ -4631,7 +4631,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 notes="max-w-md p-0. Uses rounded-xl (unique among modals)."
                 preview={
                   <div style={{ position: 'relative', width: '100%', height: 56, borderRadius: 6, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
-                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#18181b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '8px 16px', color: '#fff', fontSize: 8, fontWeight: 600, boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#18181b', border: '1px solid rgba(248,250,252,0.3)', borderRadius: 10, padding: '8px 16px', color: '#fff', fontSize: 8, fontWeight: 600, boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
                       Drafts — rounded-xl
                     </div>
                   </div>
