@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { Heart, Bookmark, Play, Eye, FileText, Users, ArrowLeft, UserPlus, UserMinus, Loader2, Pencil } from 'lucide-react';
+import { fetchCreatorOverallRating } from '@/services/gallery-data';
+import { StarRating } from '@/components/chronicle/StarRating';
 import { cn } from '@/lib/utils';
 
 interface CreatorProfileData {
@@ -53,6 +55,7 @@ export default function CreatorProfile() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [creatorRating, setCreatorRating] = useState<{ rating: number; totalReviews: number } | null>(null);
 
   useEffect(() => {
     if (!userId) return;
@@ -99,6 +102,8 @@ export default function CreatorProfile() {
           storyType: themesMap.get(w.scenario_id) || null,
         })));
       }
+
+      fetchCreatorOverallRating(userId).then(setCreatorRating).catch(console.error);
 
       if (user) {
         const { data: followData } = await supabase.from('creator_follows')
@@ -222,6 +227,19 @@ export default function CreatorProfile() {
                 <span className="text-xs font-bold text-white/40 uppercase tracking-wider w-28 shrink-0">Creator</span>
                 <span className="text-white text-sm font-semibold">{displayName}</span>
               </div>
+
+              {/* Creator Rating */}
+              {creatorRating && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-white/40 uppercase tracking-wider w-28 shrink-0">Rating</span>
+                  <div className="flex items-center gap-1.5">
+                    <StarRating rating={creatorRating.rating} size={16} color="slate" />
+                    <span className="text-sm text-ghost-white">
+                      {creatorRating.rating.toFixed(1)} ({creatorRating.totalReviews} review{creatorRating.totalReviews !== 1 ? 's' : ''})
+                    </span>
+                  </div>
+                </div>
+              )}
 
               {/* About Me */}
               <div className="flex items-start gap-2">

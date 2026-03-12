@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogOverlay, DialogPortal } from '@/components
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { fetchScenarioCharacters, ScenarioCharacter, fetchScenarioReviews, fetchUserReview, fetchCreatorOverallRating, type ScenarioReview } from '@/services/gallery-data';
+import { fetchScenarioCharacters, ScenarioCharacter, fetchScenarioReviews, fetchUserReview, type ScenarioReview } from '@/services/gallery-data';
 import { StarRating } from './StarRating';
 import { SpiceRating } from './SpiceRating';
 import { ReviewModal } from './ReviewModal';
@@ -119,7 +119,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
   const [reviews, setReviews] = useState<ScenarioReview[]>([]);
   const [userReview, setUserReview] = useState<ScenarioReview | null>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
-  const [creatorRating, setCreatorRating] = useState<{ rating: number; totalReviews: number } | null>(null);
+  
   const [hasMoreReviews, setHasMoreReviews] = useState(false);
   const [loadingMoreReviews, setLoadingMoreReviews] = useState(false);
   const navigate = useNavigate();
@@ -170,12 +170,6 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
     }
   }, [open, publishedScenarioId, user?.id]);
 
-  // Fetch creator overall rating
-  useEffect(() => {
-    if (open && publisherId && !isOwned) {
-      fetchCreatorOverallRating(publisherId).then(setCreatorRating).catch(console.error);
-    }
-  }, [open, publisherId, isOwned]);
 
   const handleLike = async () => {
     if (!onLike || isLiking) return;
@@ -451,13 +445,6 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                             <p className="text-sm text-[#94a3b8] group-hover:text-white transition-colors">
                               Created by: <span className="text-[#4a5f7f] font-medium">{publisher.display_name || publisher.username || 'Anonymous'}</span>
                             </p>
-                            {creatorRating && (
-                              <div className="flex items-center gap-1.5 mt-0.5">
-                                <span className="text-sm text-white/40">Creator rating:</span>
-                                <StarRating rating={creatorRating.rating} size={16} color="slate" />
-                                <span className="text-sm text-[rgba(248,250,252,0.7)]">{creatorRating.rating.toFixed(1)} ({creatorRating.totalReviews} review{creatorRating.totalReviews !== 1 ? 's' : ''})</span>
-                              </div>
-                            )}
                           </div>
                         </button>
                       </div>
