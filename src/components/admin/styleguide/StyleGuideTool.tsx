@@ -4120,25 +4120,8 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 }
               />
 
-              {/* ─── Auth Page ─── */}
-              <PageSubheading fullSpan>Auth Page</PageSubheading>
 
-              <PanelCardV2
-                panelName="Auth Card"
-                background="bg-slate-800/50"
-                border="border-slate-700"
-                borderRadius="rounded-lg"
-                purpose="Login/signup card with frosted glass on gradient background"
-                locations="Auth.tsx"
-                pageSpecific appWide={false}
-                notes="backdrop-blur-sm. Max-width: max-w-md. Uses shadcn Card with overrides."
-                preview={
-                  <div className="rounded-lg border border-slate-700 p-3" style={{ background: 'rgba(30,41,59,0.5)', backdropFilter: 'blur(4px)', width: 160 }}>
-                    <div className="text-[10px] font-bold text-white text-center">Chronicle Studio</div>
-                    <div className="text-[7px] text-slate-400 text-center">Sign in</div>
-                  </div>
-                }
-              />
+
 
               {/* ─── Global ─── */}
               <PageSubheading fullSpan>Global</PageSubheading>
