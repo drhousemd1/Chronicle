@@ -234,7 +234,8 @@ function dbToScenarioMetadata(row: any): ScenarioMetadata {
     coverImagePosition: row.cover_image_position || { x: 50, y: 50 },
     tags: row.tags || [],
     createdAt: new Date(row.created_at).getTime(),
-    updatedAt: new Date(row.updated_at).getTime()
+    updatedAt: new Date(row.updated_at).getTime(),
+    isDraft: row.is_draft ?? false
   };
 }
 
