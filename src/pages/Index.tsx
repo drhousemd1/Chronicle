@@ -1985,7 +1985,7 @@ const IndexContent = () => {
                 <button
                   type="button"
                   onClick={() => setConvDeleteAllOpen(true)}
-                  className="inline-flex items-center justify-center rounded-xl h-10 px-6 border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-ghost-white transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
+                  className="inline-flex items-center justify-center rounded-xl h-10 px-6 border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-ghost-white active:bg-ghost-white transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
                 >
                   Delete All
                 </button>
