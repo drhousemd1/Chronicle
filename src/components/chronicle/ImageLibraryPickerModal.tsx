@@ -231,7 +231,7 @@ export const ImageLibraryPickerModal: React.FC<ImageLibraryPickerModalProps> = (
           </div>
         </ScrollArea>
 
-        <div className="px-6 py-4 border-t bg-slate-50 flex justify-end gap-3">
+        <div className="px-6 py-4 border-t bg-ghost-white flex justify-end gap-3">
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
