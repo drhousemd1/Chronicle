@@ -472,7 +472,9 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
 
                 {/* Synopsis Section */}
                 <div className="mt-6">
-                  <h3 className="text-xs font-bold text-[#4a5f7f] uppercase tracking-widest mb-3">Synopsis</h3>
+                  <div className="bg-[#4a5f7f]/30 rounded px-3 py-1.5 mb-3 inline-block">
+                    <h3 className="text-xs font-bold text-[rgba(248,250,252,0.9)] uppercase tracking-widest">Synopsis</h3>
+                  </div>
                   <p className="text-[rgba(248,250,252,0.8)] leading-relaxed max-w-2xl whitespace-pre-wrap">
                     {description || "No description provided."}
                   </p>
