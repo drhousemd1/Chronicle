@@ -230,11 +230,6 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
             const progress = calculateProgress(goal);
             return (
               <div key={goal.id} className={cn("p-5 pb-6 bg-[#2e2e33] rounded-2xl border relative", isEditMode ? "border-blue-500/20" : "border-[#4a5f7f]")}>
-                {isEditMode && (
-                  <button onClick={() => deleteGoal(goal.id)} className="absolute top-4 right-4 text-zinc-500 hover:text-rose-400 transition-colors" title="Delete goal">
-                    <Trash2 className="h-5 w-5" />
-                  </button>
-                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
                   <div className="md:col-span-9 space-y-4">
@@ -320,7 +315,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
                                 </span>
                               )}
                               {isEditMode && (
-                                <button onClick={() => deleteStep(goal.id, step.id)} className="mt-2 text-zinc-500 hover:text-rose-400 transition-colors p-1">
+                                <button onClick={() => deleteStep(goal.id, step.id)} className="mt-2 text-red-500 hover:text-red-400 transition-colors p-1">
                                   <X className="h-4 w-4" />
                                 </button>
                               )}
