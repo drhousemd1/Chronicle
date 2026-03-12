@@ -597,7 +597,8 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                   </div>
                 )}
                 
-                
+                {/* Flat dark overlay for text readability */}
+                <div className="absolute inset-0 bg-black/40 pointer-events-none" />
                 
                 <div className="absolute inset-x-0 bottom-0 p-6">
                   <div className="flex flex-wrap gap-2 mb-2">

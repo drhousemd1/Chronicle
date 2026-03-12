@@ -75,7 +75,8 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDel
           </div>
         )}
         
-        
+        {/* Flat dark overlay for text readability */}
+        <div className="absolute inset-0 bg-black/40 pointer-events-none" />
         
         {/* Hover Actions - Edit, Delete, Play */}
         <div className="absolute inset-0 flex items-center justify-center gap-2 px-4 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 scale-90 group-hover:scale-100 flex-wrap">

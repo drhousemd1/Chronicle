@@ -297,6 +297,8 @@ export default function CreatorProfile() {
                           </div>
                         )}
 
+                        {/* Flat dark overlay for text readability */}
+                        <div className="absolute inset-0 bg-black/40 pointer-events-none" />
 
                         {/* SFW/NSFW Badge */}
                         {work.storyType && (
