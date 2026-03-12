@@ -1334,7 +1334,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                   { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-settings-modal.png', location: 'Active settings pill', function: 'Blue background on active POV/Verbosity pill (e.g. "3rd Person", "Balanced")' },
                 ]}
               />
-              <SwatchCardV2 color="rgba(255,255,255,0.05)" name="Ghost White" locations="AI message bubble border (default state)" value="rgba(255,255,255,0.05)" token="border-white/5" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }}
+              <SwatchCardV2 color="rgba(255,255,255,0.05)" name="Whisper White" locations="AI message bubble border (default state)" value="rgba(255,255,255,0.05)" token="border-white/5" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }}
                 locationImages={[
                   { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-message-bubble.png', location: 'AI bubble border', function: 'Very faint white border on AI message bubbles (default)' },
                 ]}
