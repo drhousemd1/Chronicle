@@ -535,7 +535,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                 {/* Characters Section */}
                 <div className="pt-8">
                   <div className="flex items-center justify-between mb-4">
-                    <div className="bg-[#4a5f7f] rounded-xl px-4 py-2 inline-block shadow-sm">
+                    <div className="border-b-2 border-[#4a5f7f] pb-1 inline-block">
                       <h3 className="text-xs font-bold text-[rgba(248,250,252,0.9)] uppercase tracking-widest">Characters</h3>
                     </div>
                     {characters.length > 4 && (
