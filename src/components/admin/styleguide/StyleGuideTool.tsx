@@ -4140,7 +4140,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <PanelCardV2
                 panelName="World Tab Two-Pane Layout"
                 background="Sidebar: #2a2a2f · Content: Chronicle UI light Cards"
-                border="border-r border-white/10"
+                border="border-r border-ghost-white"
                 borderRadius="N/A"
                 purpose="Two-pane layout with dark sidebar and light-theme Chronicle UI Cards on right"
                 locations="WorldTab.tsx"
