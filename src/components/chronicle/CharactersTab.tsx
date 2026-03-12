@@ -676,7 +676,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
             </div>
             {/* Content */}
             <div className="p-5">
-              <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
+              <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-ghost-white">
                 {expandedSections.avatar ? (
                   <div className="space-y-4">
                     <div className="flex flex-col items-center gap-4">
