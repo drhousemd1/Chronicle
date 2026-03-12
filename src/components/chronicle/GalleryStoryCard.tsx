@@ -142,7 +142,7 @@ export const GalleryScenarioCard: React.FC<GalleryScenarioCardProps> = ({
           <h3 className="text-lg font-black text-white leading-tight tracking-tight group-hover:text-blue-300 transition-colors truncate">
             {scenario?.title || "Untitled Story"}
           </h3>
-          <p className="text-xs text-[rgba(248,250,252,0.3)] line-clamp-2 leading-relaxed italic min-h-[2.5rem]">
+          <p className="text-xs text-[rgba(248,250,252,0.7)] line-clamp-2 leading-relaxed italic min-h-[2.5rem]">
             {scenario?.description || "No description provided."}
           </p>
           <div className="flex items-center gap-3 text-[10px] text-[rgba(248,250,252,0.3)] mt-1">
