@@ -4046,7 +4046,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <PanelCardV2
                 panelName="Category Sidebar"
                 background="#18181b"
-                border="border-r border-white/10"
+                border="border-r border-ghost-white"
                 borderRadius="N/A"
                 purpose="Left sidebar with collapsible category filters and yellow accent bar"
                 locations="GalleryCategorySidebar.tsx"
