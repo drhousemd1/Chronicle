@@ -59,7 +59,12 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDel
         
         {/* Top-left badge container - flows horizontally */}
         <div className="absolute top-4 left-4 flex items-center gap-2 z-10">
-          {!scen.isBookmarked && isPublished && (
+          {!scen.isBookmarked && isDraft && (
+            <div className="px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f] text-amber-400 uppercase tracking-wide">
+              Draft
+            </div>
+          )}
+          {!scen.isBookmarked && !isDraft && isPublished && (
             <div className="px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f] text-emerald-400 uppercase tracking-wide">
               Published
             </div>
