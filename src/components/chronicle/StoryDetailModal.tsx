@@ -486,7 +486,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mt-8">
                       {contentThemes.genres.length > 0 && (
                         <div>
-                          <div className="bg-[#4a5f7f] rounded-xl px-4 py-2 mb-2 inline-block shadow-sm">
+                          <div className="border-b-2 border-[#4a5f7f] pb-1 mb-2 inline-block">
                             <h4 className="text-xs font-bold text-[rgba(248,250,252,0.9)] uppercase">Genre</h4>
                           </div>
                           <p className="text-sm text-[rgba(248,250,252,0.8)]">{contentThemes.genres.join(', ')}</p>
