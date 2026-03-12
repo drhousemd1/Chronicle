@@ -41,7 +41,7 @@ export const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({ user }) 
   return (
     <div className="max-w-2xl mx-auto space-y-8">
       {/* Email Section */}
-      <div className="bg-[#1e1e22] rounded-2xl border border-white/10 p-6">
+      <div className="bg-[#1e1e22] rounded-2xl border border-ghost-white p-6">
         <div className="flex items-center gap-3 mb-4">
           <Mail className="w-5 h-5 text-[#4a5f7f]" />
           <h3 className="text-lg font-bold text-white">Email Address</h3>
@@ -52,7 +52,7 @@ export const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({ user }) 
       </div>
 
       {/* Subscription Section */}
-      <div className="bg-[#1e1e22] rounded-2xl border border-white/10 p-6">
+      <div className="bg-[#1e1e22] rounded-2xl border border-ghost-white p-6">
         <div className="flex items-center gap-3 mb-4">
           <Shield className="w-5 h-5 text-[#4a5f7f]" />
           <h3 className="text-lg font-bold text-white">Current Plan</h3>
@@ -66,7 +66,7 @@ export const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({ user }) 
       </div>
 
       {/* Change Password */}
-      <div className="bg-[#1e1e22] rounded-2xl border border-white/10 p-6">
+      <div className="bg-[#1e1e22] rounded-2xl border border-ghost-white p-6">
         <h3 className="text-lg font-bold text-white mb-4">Change Password</h3>
         <form onSubmit={handleChangePassword} className="space-y-4">
           <div>
@@ -76,7 +76,7 @@ export const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({ user }) 
                 type={showNewPassword ? 'text' : 'password'}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full bg-[#2a2a2f] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#4a5f7f] pr-10"
+                className="w-full bg-[#2a2a2f] border border-ghost-white rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#4a5f7f] pr-10"
                 placeholder="••••••••"
               />
               <button
@@ -94,7 +94,7 @@ export const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({ user }) 
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full bg-[#2a2a2f] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#4a5f7f]"
+              className="w-full bg-[#2a2a2f] border border-ghost-white rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#4a5f7f]"
               placeholder="••••••••"
             />
           </div>

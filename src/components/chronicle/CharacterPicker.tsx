@@ -35,8 +35,8 @@ export function CharacterPicker({ summaries, onSelect, onClose }: CharacterPicke
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-6">
-      <div className="bg-zinc-900 w-full max-w-4xl rounded-3xl shadow-2xl flex flex-col max-h-full border border-white/10">
-        <div className="p-6 border-b border-white/10 flex items-center justify-between">
+      <div className="bg-zinc-900 w-full max-w-4xl rounded-3xl shadow-2xl flex flex-col max-h-full border border-ghost-white">
+        <div className="p-6 border-b border-ghost-white flex items-center justify-between">
           <div>
             <h2 className="text-xl font-black text-white">Global Character Library</h2>
             <p className="text-sm text-zinc-400">Select a character to import into this scenario.</p>
@@ -46,12 +46,12 @@ export function CharacterPicker({ summaries, onSelect, onClose }: CharacterPicke
           </Button>
         </div>
         
-        <div className="p-4 bg-zinc-800/50 border-b border-white/10">
+        <div className="p-4 bg-zinc-800/50 border-b border-ghost-white">
           <Input 
             value={search} 
             onChange={setSearch} 
             placeholder="Search by name or tags..." 
-            className="!bg-zinc-800 !text-white !border-white/10"
+            className="!bg-zinc-800 !text-white !border-ghost-white"
           />
         </div>
 
@@ -61,9 +61,9 @@ export function CharacterPicker({ summaries, onSelect, onClose }: CharacterPicke
               <div 
                 key={c.id} 
                 onClick={() => handleSelect(c)}
-                className={`group cursor-pointer rounded-2xl bg-zinc-800/50 border border-white/10 p-4 transition-all hover:shadow-xl hover:border-blue-500/30 flex items-center gap-4 ${loadingId === c.id ? 'opacity-70 pointer-events-none' : ''}`}
+                className={`group cursor-pointer rounded-2xl bg-zinc-800/50 border border-ghost-white p-4 transition-all hover:shadow-xl hover:border-blue-500/30 flex items-center gap-4 ${loadingId === c.id ? 'opacity-70 pointer-events-none' : ''}`}
               >
-                <div className="w-16 h-16 shrink-0 rounded-xl bg-zinc-700 overflow-hidden border border-white/10">
+                <div className="w-16 h-16 shrink-0 rounded-xl bg-zinc-700 overflow-hidden border border-ghost-white">
                    {c.avatarUrl ? (
                      <img src={c.avatarUrl} className="w-full h-full object-cover" alt={c.name} />
                    ) : (

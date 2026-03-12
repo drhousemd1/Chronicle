@@ -80,7 +80,7 @@ function SidebarItem({
 }) {
   const activeClasses = active 
     ? "bg-[#4a5f7f] shadow-lg shadow-black/40 text-white"
-    : "text-slate-400 hover:bg-white/10 hover:text-white hover:shadow-md hover:shadow-black/20";
+    : "text-slate-400 hover:bg-ghost-white hover:text-white hover:shadow-md hover:shadow-black/20";
   
   const content = (
     <button 
@@ -1572,7 +1572,7 @@ const IndexContent = () => {
                 <TooltipTrigger asChild>
                   <button
                     onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                    className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                    className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-ghost-white transition-colors"
                   >
                     {sidebarCollapsed ? <PanelLeft className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
                   </button>
@@ -1606,12 +1606,12 @@ const IndexContent = () => {
             />
 
             {isAdminState && (
-              <div className="pt-4 mt-4 border-t border-white/10">
+              <div className="pt-4 mt-4 border-t border-ghost-white">
                 <SidebarItem active={tab === "admin"} label="Admin" icon={<Settings className="w-5 h-5" />} onClick={() => requireAuth(() => { setAdminActiveTool('hub'); setTab("admin"); })} collapsed={sidebarCollapsed} />
               </div>
             )}
 
-            <div className="pt-4 mt-4 border-t border-white/10">
+            <div className="pt-4 mt-4 border-t border-ghost-white">
               {isAuthenticated && user ? (() => {
                 const displayName = userProfile?.display_name || user.email?.split('@')[0] || 'User';
                 const initials = displayName.slice(0, 2).toUpperCase();
@@ -1621,7 +1621,7 @@ const IndexContent = () => {
                       type="button"
                       onClick={() => setUserMenuOpen(prev => !prev)}
                       className={cn(
-                        "flex items-center gap-3 w-full rounded-xl px-2 py-2 hover:bg-white/5 active:bg-white/10 transition-all text-left",
+                        "flex items-center gap-3 w-full rounded-xl px-2 py-2 hover:bg-white/5 active:bg-ghost-white transition-all text-left",
                         sidebarCollapsed && "justify-center px-0"
                       )}
                     >
@@ -1687,7 +1687,7 @@ const IndexContent = () => {
                   type="button"
                   onClick={() => setAuthModalOpen(true)}
                   className={cn(
-                    "flex items-center gap-3 w-full rounded-xl px-2 py-2 hover:bg-white/5 active:bg-white/10 transition-all text-[#4a5f7f]",
+                    "flex items-center gap-3 w-full rounded-xl px-2 py-2 hover:bg-white/5 active:bg-ghost-white transition-all text-[#4a5f7f]",
                     sidebarCollapsed && "justify-center px-0"
                   )}
                 >
@@ -1985,7 +1985,7 @@ const IndexContent = () => {
                 <button
                   type="button"
                   onClick={() => setConvDeleteAllOpen(true)}
-                  className="inline-flex items-center justify-center rounded-xl h-10 px-6 border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-white/10 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
+                  className="inline-flex items-center justify-center rounded-xl h-10 px-6 border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-ghost-white transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
                 >
                   Delete All
                 </button>
@@ -1996,7 +1996,7 @@ const IndexContent = () => {
                     <DropdownMenuTrigger asChild>
                       <button
                         type="button"
-                        className="inline-flex items-center justify-center rounded-xl px-3 py-2 border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-white/10 transition-all active:scale-95"
+                        className="inline-flex items-center justify-center rounded-xl px-3 py-2 border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-ghost-white transition-all active:scale-95"
                       >
                         <Settings className="w-5 h-5" />
                       </button>
@@ -2076,7 +2076,7 @@ const IndexContent = () => {
                     <DropdownMenuTrigger asChild>
                       <button
                         type="button"
-                        className="inline-flex items-center justify-center rounded-xl px-3 py-2 border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-white/10 transition-all active:scale-95"
+                        className="inline-flex items-center justify-center rounded-xl px-3 py-2 border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-ghost-white transition-all active:scale-95"
                       >
                         <Settings className="w-5 h-5" />
                       </button>

@@ -175,7 +175,7 @@ export default function CreatorProfile() {
 
       <div className="px-6 py-10 space-y-6">
         {/* Profile Card — mirrors PublicProfileTab Section 1 */}
-        <div className="bg-[#1e1e22] rounded-2xl border border-white/10 p-6">
+        <div className="bg-[#1e1e22] rounded-2xl border border-ghost-white p-6">
           <div className="flex gap-6">
             {/* Avatar column — same w-72 as PublicProfileTab */}
             <div className="flex-shrink-0 flex flex-col items-center gap-3 w-72">
@@ -204,7 +204,7 @@ export default function CreatorProfile() {
                     className={cn(
                       "w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors",
                       isFollowing
-                        ? 'bg-white/10 text-white hover:bg-red-500/20 hover:text-red-500'
+                        ? 'bg-ghost-white text-white hover:bg-red-500/20 hover:text-red-500'
                         : 'bg-[#4a5f7f] text-white hover:bg-[#5a6f8f]'
                     )}
                   >
@@ -248,7 +248,7 @@ export default function CreatorProfile() {
 
         {/* Published Works — mirrors PublicProfileTab Section 2 exactly */}
         {!profile.hide_published_works && (
-          <div className="bg-[#1e1e22] rounded-2xl border border-white/10 p-6">
+          <div className="bg-[#1e1e22] rounded-2xl border border-ghost-white p-6">
             {/* Header row — same as PublicProfileTab lines 427-452 */}
             <div className="flex items-center flex-wrap gap-x-6 gap-y-2 mb-5">
               <h3 className="text-sm font-black text-white uppercase tracking-wider">Published Works</h3>
@@ -291,7 +291,7 @@ export default function CreatorProfile() {
                           />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900 p-10 text-center">
-                            <div className="font-black text-white/10 text-6xl uppercase tracking-tighter italic break-words p-4 text-center">
+                            <div className="font-black text-ghost-white text-6xl uppercase tracking-tighter italic break-words p-4 text-center">
                               {work.scenario?.title?.charAt(0) || '?'}
                             </div>
                           </div>

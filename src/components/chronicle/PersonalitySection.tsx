@@ -97,7 +97,7 @@ const TraitRow: React.FC<{
             value={trait.label}
             onChange={(v) => onUpdate({ label: v })}
             placeholder="Trait name"
-            className="flex-1 px-3 py-2 text-xs font-bold bg-zinc-900/50 border border-white/10 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 placeholder:normal-case placeholder:tracking-normal rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
+            className="flex-1 px-3 py-2 text-xs font-bold bg-zinc-900/50 border border-ghost-white text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 placeholder:normal-case placeholder:tracking-normal rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
           />
           {onEnhance && (
             <button
@@ -120,14 +120,14 @@ const TraitRow: React.FC<{
           value={trait.value}
           onChange={(v) => onUpdate({ value: v })}
           placeholder="Description..."
-          className="flex-1 px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
+          className="flex-1 px-3 py-2 text-sm bg-zinc-900/50 border border-ghost-white text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
         />
       </div>
       {/* Flexibility dropdown */}
       <select
         value={trait.flexibility}
         onChange={(e) => onUpdate({ flexibility: e.target.value as PersonalityTraitFlexibility })}
-        className="mt-1 text-[10px] font-bold uppercase bg-zinc-900/50 border border-white/10 text-zinc-300 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+        className="mt-1 text-[10px] font-bold uppercase bg-zinc-900/50 border border-ghost-white text-zinc-300 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
       >
         {FLEX_OPTIONS.map(opt => (
           <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -262,11 +262,11 @@ export const PersonalitySection: React.FC<PersonalitySectionProps> = ({
   };
 
   return (
-    <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
-      <div className="bg-[#4a5f7f] border-b border-white/20 px-5 py-3 flex items-center justify-between shadow-lg">
+    <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-ghost-white overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
+      <div className="bg-[#4a5f7f] border-b border-ghost-white px-5 py-3 flex items-center justify-between shadow-lg">
         <h2 className="text-white text-xl font-bold tracking-tight">Personality</h2>
         {onToggle && (
-          <button onClick={onToggle} className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-white/10">
+          <button onClick={onToggle} className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-ghost-white">
             {isExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
           </button>
         )}
@@ -280,7 +280,7 @@ export const PersonalitySection: React.FC<PersonalitySectionProps> = ({
             <div className="space-y-5">
               {/* Split toggle */}
               {!readOnly && (
-                <div className="flex p-1 bg-zinc-900/50 rounded-lg border border-white/10 w-fit">
+                <div className="flex p-1 bg-zinc-900/50 rounded-lg border border-ghost-white w-fit">
                   <button
                     type="button"
                     onClick={() => onChange({ ...personality, splitMode: false })}

@@ -9,7 +9,7 @@ const tiers = [
     icon: Zap,
     color: 'text-slate-400',
     bgColor: 'bg-white/5',
-    borderColor: 'border-white/10',
+    borderColor: 'border-ghost-white',
     current: true,
     features: [
       'Create unlimited scenarios',

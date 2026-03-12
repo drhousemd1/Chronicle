@@ -55,7 +55,7 @@ export const SideCharacterCard: React.FC<SideCharacterCardProps> = ({
       <div className="relative">
         <div className="w-full flex flex-col items-center gap-2 p-3 text-center">
           <div className="relative">
-            <div className={`w-20 h-20 rounded-full border-2 shadow-sm overflow-hidden transition-all duration-300 ${isDarkBg ? 'bg-purple-50 border-purple-100' : 'bg-zinc-800 border-white/20'}`}>
+            <div className={`w-20 h-20 rounded-full border-2 shadow-sm overflow-hidden transition-all duration-300 ${isDarkBg ? 'bg-purple-50 border-purple-100' : 'bg-zinc-800 border-ghost-white'}`}>
               {character.isAvatarGenerating ? (
                 <div className="w-full h-full flex items-center justify-center bg-purple-100">
                   <Loader2 className="w-6 h-6 text-purple-500 animate-spin" />
@@ -89,11 +89,11 @@ export const SideCharacterCard: React.FC<SideCharacterCardProps> = ({
           <div className="absolute top-2 right-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className={`p-1.5 rounded-lg transition-colors ${isDarkBg ? 'hover:bg-slate-200 text-slate-700 hover:text-[hsl(var(--ui-surface-2))]' : 'hover:bg-white/20 text-white/70 hover:text-white'}`}>
+                <button className={`p-1.5 rounded-lg transition-colors ${isDarkBg ? 'hover:bg-slate-200 text-slate-700 hover:text-[hsl(var(--ui-surface-2))]' : 'hover:bg-ghost-white text-white/70 hover:text-white'}`}>
                   <MoreVertical className="w-4 h-4" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className={`shadow-lg z-50 ${isDarkBg ? 'bg-white border-slate-200' : 'bg-zinc-800 border-white/10 text-zinc-200'}`}>
+              <DropdownMenuContent align="end" className={`shadow-lg z-50 ${isDarkBg ? 'bg-white border-slate-200' : 'bg-zinc-800 border-ghost-white text-zinc-200'}`}>
                 <DropdownMenuItem onClick={onStartEdit} className={`${!isDarkBg ? 'hover:!bg-zinc-700 focus:!bg-zinc-700 focus:!text-white' : ''}`}>
                   <Pencil className="w-4 h-4 mr-2" />
                   Edit character

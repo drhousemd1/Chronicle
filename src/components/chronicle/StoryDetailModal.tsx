@@ -237,7 +237,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
         <DialogOverlay className="bg-black/90 backdrop-blur-sm" />
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div 
-            className="relative w-full max-w-6xl max-h-[90vh] bg-[#121214] rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10 overflow-hidden flex flex-col md:flex-row"
+            className="relative w-full max-w-6xl max-h-[90vh] bg-[#121214] rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-ghost-white overflow-hidden flex flex-col md:flex-row"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close Button */}
@@ -261,7 +261,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#2a2a2f] to-[#1a1a1f]">
-                    <span className="font-black text-white/20 text-7xl uppercase">
+                    <span className="font-black text-ghost-white text-7xl uppercase">
                       {title?.charAt(0) || '?'}
                     </span>
                   </div>
@@ -301,7 +301,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                     {onEdit && (
                       <button
                         onClick={handleEdit}
-                        className="flex-1 h-12 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl flex items-center justify-center gap-2 text-white transition-colors"
+                        className="flex-1 h-12 bg-white/5 hover:bg-ghost-white border border-ghost-white rounded-xl flex items-center justify-center gap-2 text-white transition-colors"
                       >
                         <Edit className="w-5 h-5" />
                         <span className="text-sm font-semibold">Edit</span>
@@ -325,7 +325,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                           "flex-1 h-12 border rounded-xl flex items-center justify-center gap-2 transition-all",
                           isLiked 
                             ? "bg-rose-500/20 border-rose-500/50 text-rose-400" 
-                            : "bg-white/5 hover:bg-white/10 border-white/10 text-white"
+                            : "bg-white/5 hover:bg-ghost-white border-ghost-white text-white"
                         )}
                       >
                         <Heart className={cn("w-5 h-5", isLiked && "fill-current")} />
@@ -340,7 +340,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                           "flex-1 h-12 border rounded-xl flex items-center justify-center gap-2 transition-all",
                           isSaved 
                             ? "bg-amber-500/20 border-amber-500/50 text-amber-400" 
-                            : "bg-white/5 hover:bg-white/10 border-white/10 text-white"
+                            : "bg-white/5 hover:bg-ghost-white border-ghost-white text-white"
                         )}
                       >
                         <Bookmark className={cn("w-5 h-5", isSaved && "fill-current")} />
@@ -363,7 +363,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                 <button
                   onClick={handleUnpublish}
                   disabled={isUnpublishing}
-                  className="w-full h-10 bg-white/5 hover:bg-white/10 border border-white/10 text-[rgba(248,250,252,0.3)] hover:text-white rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50 mt-2"
+                  className="w-full h-10 bg-white/5 hover:bg-ghost-white border border-ghost-white text-[rgba(248,250,252,0.3)] hover:text-white rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50 mt-2"
                 >
                   {isUnpublishing ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -561,7 +561,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                     <div className="flex flex-wrap gap-4">
                       {characters.slice(0, 8).map((char) => (
                         <div key={char.id} className="flex flex-col items-center gap-2 group cursor-pointer">
-                          <div className="w-14 h-14 rounded-full border-2 border-white/10 p-0.5 group-hover:border-[#3b82f6] transition-all">
+                          <div className="w-14 h-14 rounded-full border-2 border-ghost-white p-0.5 group-hover:border-[#3b82f6] transition-all">
                             {char.avatarUrl ? (
                               <img
                                 src={char.avatarUrl}

@@ -467,8 +467,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
 
   return (
     <div className="flex flex-1 h-full overflow-hidden">
-      <aside className="w-[260px] flex-shrink-0 bg-[#2a2a2f] border-r border-white/10 flex flex-col h-full">
-        <div className="p-6 border-b border-white/10 bg-[#4a5f7f]">
+      <aside className="w-[260px] flex-shrink-0 bg-[#2a2a2f] border-r border-ghost-white flex flex-col h-full">
+        <div className="p-6 border-b border-ghost-white bg-[#4a5f7f]">
           <div className="text-[10px] font-black text-white uppercase tracking-widest">Character Roster</div>
         </div>
         
@@ -506,9 +506,9 @@ export const WorldTab: React.FC<WorldTabProps> = ({
 
           {/* Cover Image Section - Dark Theme */}
           <section>
-            <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
+            <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-ghost-white overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
               {/* Section Header - Steel Blue */}
-              <div className="bg-[#4a5f7f] border-b border-white/20 px-6 py-4 flex items-center gap-3 shadow-lg">
+              <div className="bg-[#4a5f7f] border-b border-ghost-white px-6 py-4 flex items-center gap-3 shadow-lg">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-white"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
                 <h2 className="text-white text-xl font-bold tracking-tight">Story Card</h2>
               </div>
@@ -535,7 +535,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                           ? 'ring-4 ring-blue-500 cursor-move shadow-xl shadow-blue-500/20' 
                           : publishErrors.coverImage
                             ? 'border-2 border-red-500 ring-2 ring-red-500'
-                            : 'border-2 border-white/10 shadow-lg'
+                            : 'border-2 border-ghost-white shadow-lg'
                       )}
                     >
                       {coverImage ? (
@@ -633,8 +633,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
 
           {/* World Core Section - Dark Theme */}
           <section>
-            <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
-              <div className="bg-[#4a5f7f] border-b border-white/20 px-6 py-4 flex items-center gap-3 shadow-lg">
+            <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-ghost-white overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
+              <div className="bg-[#4a5f7f] border-b border-ghost-white px-6 py-4 flex items-center gap-3 shadow-lg">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
                 <h2 className="text-white text-xl font-bold tracking-tight">World Core</h2>
               </div>
@@ -883,8 +883,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
 
           {/* Opening Dialog Section - Dark Theme */}
           <section>
-            <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
-              <div className="bg-[#4a5f7f] border-b border-white/20 px-6 py-4 flex items-center gap-3 shadow-lg">
+            <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-ghost-white overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
+              <div className="bg-[#4a5f7f] border-b border-ghost-white px-6 py-4 flex items-center gap-3 shadow-lg">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                 <h2 className="text-white text-xl font-bold tracking-tight">Opening Dialog</h2>
               </div>
@@ -1012,7 +1012,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                             </TooltipContent>
                           </Tooltip>
                         </div>
-                        <div className="flex p-1 bg-zinc-900/50 rounded-xl border border-white/10">
+                        <div className="flex p-1 bg-zinc-900/50 rounded-xl border border-ghost-white">
                           <button
                             type="button"
                             onClick={() => onUpdateOpening({ timeProgressionMode: 'manual' })}
@@ -1067,8 +1067,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
 
           {/* Scene Gallery Section - Dark Theme */}
           <section>
-            <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
-              <div className="bg-[#4a5f7f] border-b border-white/20 px-6 py-4 flex items-center gap-3 shadow-lg">
+            <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-ghost-white overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
+              <div className="bg-[#4a5f7f] border-b border-ghost-white px-6 py-4 flex items-center gap-3 shadow-lg">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-white"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
                 <h2 className="text-white text-xl font-bold tracking-tight">Scene Gallery</h2>
               </div>
@@ -1188,8 +1188,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
 
           {/* Art Style Preference Section - Dark Theme */}
           <section>
-            <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
-              <div className="bg-[#4a5f7f] border-b border-white/20 px-6 py-4 flex items-center gap-3 shadow-lg">
+            <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-ghost-white overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
+              <div className="bg-[#4a5f7f] border-b border-ghost-white px-6 py-4 flex items-center gap-3 shadow-lg">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-white">
                   <circle cx="13.5" cy="6.5" r="2.5"/>
                   <circle cx="6" cy="12" r="2.5"/>
@@ -1255,8 +1255,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
 
           {/* World Codex Section - Dark Theme */}
           <section>
-            <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
-              <div className="bg-[#4a5f7f] border-b border-white/20 px-6 py-4 flex items-center gap-3 shadow-lg">
+            <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-ghost-white overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
+              <div className="bg-[#4a5f7f] border-b border-ghost-white px-6 py-4 flex items-center gap-3 shadow-lg">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>
                 <h2 className="text-white text-xl font-bold tracking-tight">World Codex</h2>
               </div>

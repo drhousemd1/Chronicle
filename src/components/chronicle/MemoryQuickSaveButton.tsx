@@ -75,7 +75,7 @@ export const MemoryQuickSaveButton: React.FC<MemoryQuickSaveButtonProps> = ({
       className={`p-1.5 rounded-lg transition-colors ${
         hasExistingMemory 
           ? 'text-purple-400 hover:bg-purple-500/20 cursor-default' 
-          : 'text-slate-500 hover:text-purple-400 hover:bg-white/10'
+          : 'text-slate-500 hover:text-purple-400 hover:bg-ghost-white'
       }`}
       title={hasExistingMemory ? 'Memory saved' : 'Save as memory'}
     >

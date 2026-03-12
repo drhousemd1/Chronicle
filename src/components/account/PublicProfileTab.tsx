@@ -289,7 +289,7 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
       />
 
       {/* Section 1: Profile Info */}
-      <div className="bg-[#1e1e22] rounded-2xl border border-white/10 p-6">
+      <div className="bg-[#1e1e22] rounded-2xl border border-ghost-white p-6">
         <div className="flex gap-6">
           {/* Avatar column - w-64 for enough button room */}
           <div className="flex-shrink-0 flex flex-col items-center gap-3 w-72">
@@ -367,7 +367,7 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
                 type="text"
                 value={profile.display_name}
                 onChange={(e) => setProfile(prev => ({ ...prev, display_name: e.target.value }))}
-                className="flex-1 bg-[#2a2a2f] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#4a5f7f]"
+                className="flex-1 bg-[#2a2a2f] border border-ghost-white rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#4a5f7f]"
                 placeholder="Your display name"
                 maxLength={30}
               />
@@ -379,7 +379,7 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
               <textarea
                 value={profile.about_me}
                 onChange={(e) => setProfile(prev => ({ ...prev, about_me: e.target.value }))}
-                className="flex-1 bg-[#2a2a2f] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#4a5f7f] resize-none h-20"
+                className="flex-1 bg-[#2a2a2f] border border-ghost-white rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#4a5f7f] resize-none h-20"
                 placeholder="Tell others about yourself..."
                 maxLength={500}
               />
@@ -405,7 +405,7 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
                     value={genreInput}
                     onChange={(e) => setGenreInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addGenre())}
-                    className="flex-1 bg-[#2a2a2f] border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#4a5f7f]"
+                    className="flex-1 bg-[#2a2a2f] border border-ghost-white rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#4a5f7f]"
                     placeholder="Add a genre..."
                   />
                   <button onClick={addGenre} className="px-3 py-2 bg-[#4a5f7f] hover:bg-[#5a6f8f] text-white rounded-xl text-sm font-semibold transition-colors">
@@ -419,7 +419,7 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
       </div>
 
       {/* Section 2: Published Works */}
-      <div className="bg-[#1e1e22] rounded-2xl border border-white/10 p-6">
+      <div className="bg-[#1e1e22] rounded-2xl border border-ghost-white p-6">
         {/* Header row */}
         <div className="flex items-center flex-wrap gap-x-6 gap-y-2 mb-5">
           <h3 className="text-sm font-black text-white uppercase tracking-wider">Published Works</h3>
@@ -468,7 +468,7 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900 p-10 text-center">
-                        <div className="font-black text-white/10 text-6xl uppercase tracking-tighter italic break-words p-4 text-center">
+                        <div className="font-black text-ghost-white text-6xl uppercase tracking-tighter italic break-words p-4 text-center">
                           {work.scenario?.title?.charAt(0) || '?'}
                         </div>
                       </div>
