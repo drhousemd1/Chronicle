@@ -455,7 +455,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                               <div className="flex items-center gap-1.5 mt-0.5">
                                 <span className="text-sm text-white/40">Creator rating:</span>
                                 <StarRating rating={creatorRating.rating} size={16} color="slate" />
-                                <span className="text-sm text-[rgba(248,250,252,0.3)]">{creatorRating.rating.toFixed(1)} ({creatorRating.totalReviews} review{creatorRating.totalReviews !== 1 ? 's' : ''})</span>
+                                <span className="text-sm text-[rgba(248,250,252,0.7)]">{creatorRating.rating.toFixed(1)} ({creatorRating.totalReviews} review{creatorRating.totalReviews !== 1 ? 's' : ''})</span>
                               </div>
                             )}
                           </div>
@@ -575,7 +575,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                               </div>
                             )}
                           </div>
-                          <span className="text-[10px] text-[rgba(248,250,252,0.3)] group-hover:text-white text-center max-w-[4rem] truncate transition-colors">
+                          <span className="text-[10px] text-[rgba(248,250,252,0.7)] group-hover:text-white text-center max-w-[4rem] truncate transition-colors">
                             {char.name}
                           </span>
                         </div>

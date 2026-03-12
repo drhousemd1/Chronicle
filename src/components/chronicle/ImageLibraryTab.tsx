@@ -611,7 +611,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
           <div className="flex items-baseline gap-3">
               <h1 className="text-2xl font-black text-white">{selectedFolder.name}</h1>
               {selectedFolder.description && (
-                <p className="text-sm text-[rgba(248,250,252,0.3)]">{selectedFolder.description}</p>
+                <p className="text-sm text-[rgba(248,250,252,0.7)]">{selectedFolder.description}</p>
               )}
           </div>
           <input

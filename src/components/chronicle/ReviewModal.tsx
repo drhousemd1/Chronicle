@@ -143,7 +143,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-white/40 font-bold uppercase tracking-wider">Overall</span>
                         <StarRating rating={overallScore.display} size={16} />
-                        <span className="text-sm text-[rgba(248,250,252,0.3)]">{overallScore.display.toFixed(1)}</span>
+                        <span className="text-sm text-[rgba(248,250,252,0.7)]">{overallScore.display.toFixed(1)}</span>
                       </div>
                     </div>
                   )}
