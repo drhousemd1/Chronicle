@@ -426,7 +426,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                               navigate(`/creator/${publisherId}`);
                             }
                           }}
-                          className="flex items-start gap-2 group"
+                          className="flex items-center gap-2 group"
                         >
                           <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 overflow-hidden flex-shrink-0 group-hover:ring-2 group-hover:ring-[#4a5f7f] transition-all">
                             {publisher.avatar_url ? (
@@ -442,8 +442,8 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                             )}
                           </div>
                           <div className="text-left">
-                            <p className="text-sm text-[#94a3b8] group-hover:text-white transition-colors">
-                              Created by: <span className="text-[#4a5f7f] font-medium">{publisher.display_name || publisher.username || 'Anonymous'}</span>
+                            <p className="text-sm text-[rgba(248,250,252,0.7)] group-hover:text-white transition-colors">
+                              Created by: <span className="text-[rgba(248,250,252,0.7)] font-medium">{publisher.display_name || publisher.username || 'Anonymous'}</span>
                             </p>
                           </div>
                         </button>
