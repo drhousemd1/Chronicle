@@ -1659,7 +1659,7 @@ const IndexContent = () => {
                           type="button"
                           onClick={() => { handleSignOut(); setUserMenuOpen(false); }}
                           className={cn(
-                            "flex items-center gap-2 w-full rounded-lg px-2 py-1.5 hover:bg-white/5 transition-colors text-red-500 text-[11px]",
+                            "flex items-center gap-2 w-full rounded-lg px-2 py-1.5 hover:bg-white/5 transition-colors text-red-500 text-sm font-bold",
                             sidebarCollapsed && "justify-center px-0"
                           )}
                         >
