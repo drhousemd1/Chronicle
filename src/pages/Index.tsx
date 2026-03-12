@@ -1606,7 +1606,7 @@ const IndexContent = () => {
             />
 
             {isAdminState && (
-              <div className="pt-4 mt-4 border-t border-white/10">
+              <div className="pt-4 mt-4 border-t border-ghost-white">
                 <SidebarItem active={tab === "admin"} label="Admin" icon={<Settings className="w-5 h-5" />} onClick={() => requireAuth(() => { setAdminActiveTool('hub'); setTab("admin"); })} collapsed={sidebarCollapsed} />
               </div>
             )}
