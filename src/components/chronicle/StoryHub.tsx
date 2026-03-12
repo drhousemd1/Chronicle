@@ -23,7 +23,7 @@ interface ScenarioCardProps {
   displayAuthor?: string;
 }
 
-const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDelete, onViewDetails, isPublished, contentThemes, publishedData, displayAuthor }) => {
+const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDelete, onViewDetails, isPublished, isDraft, contentThemes, publishedData, displayAuthor }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const infoRef = useRef<HTMLDivElement>(null);
   const [overlayTop, setOverlayTop] = useState<number | null>(null);
