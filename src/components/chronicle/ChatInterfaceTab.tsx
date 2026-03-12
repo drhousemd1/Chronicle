@@ -3639,7 +3639,7 @@ const updatedChar: SideCharacter = {
                         <img 
                           src={msg.imageUrl} 
                           alt="Generated scene" 
-                          className="rounded-xl shadow-lg border border-white/10 w-full h-auto"
+                          className="rounded-xl shadow-lg border border-ghost-white w-full h-auto"
                         />
                         {/* Regenerate overlay on hover */}
                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/image:opacity-100 transition-opacity rounded-xl flex items-center justify-center gap-2">
