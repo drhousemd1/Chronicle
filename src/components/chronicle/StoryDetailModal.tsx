@@ -301,7 +301,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                     {onEdit && (
                       <button
                         onClick={handleEdit}
-                        className="flex-1 h-12 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl flex items-center justify-center gap-2 text-white transition-colors"
+                        className="flex-1 h-12 bg-white/5 hover:bg-ghost-white border border-ghost-white rounded-xl flex items-center justify-center gap-2 text-white transition-colors"
                       >
                         <Edit className="w-5 h-5" />
                         <span className="text-sm font-semibold">Edit</span>
