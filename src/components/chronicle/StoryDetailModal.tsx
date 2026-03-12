@@ -229,7 +229,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
         <DialogOverlay className="bg-black/90 backdrop-blur-sm" />
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => onOpenChange(false)}>
           <div 
             className="relative w-full max-w-6xl max-h-[90vh] bg-[#121214] rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-[#4a5f7f] overflow-hidden flex flex-col md:flex-row"
             onClick={(e) => e.stopPropagation()}
