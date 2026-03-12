@@ -1299,7 +1299,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                             rounded-xl border border-[hsl(var(--ui-border))] 
                             bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
                             text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider
-                            hover:bg-white/5 active:bg-ghost-white
+                            hover:bg-ghost-white active:bg-ghost-white
                             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ghost-white
                             transition-colors"
                         >
