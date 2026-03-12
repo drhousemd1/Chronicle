@@ -760,8 +760,7 @@ const ALL_SWATCHES: SwatchOption[] = [
   { color: '#e2e8f0', name: 'Light Steel' },
   { color: 'rgba(58,58,63,0.3)', name: 'Muted Charcoal' },
   { color: '#d4d4d8', name: 'Light Zinc' },
-  // Faint White and Dim White removed — migrated to Ghost White
-  { color: 'rgba(248,250,252,0.5)', name: 'Frosted White' },
+  // Faint White, Dim White, Frosted White removed — migrated to Ghost White
   { color: '#ef4444', name: 'Bright Red' },
   { color: '#52525b', name: 'Ash Gray' },
   { color: 'rgba(0,0,0,0.5)', name: 'Half Black' },
