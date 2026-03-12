@@ -94,7 +94,7 @@ export const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({ user }) 
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full bg-[#2a2a2f] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#4a5f7f]"
+              className="w-full bg-[#2a2a2f] border border-ghost-white rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#4a5f7f]"
               placeholder="••••••••"
             />
           </div>
