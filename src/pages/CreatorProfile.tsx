@@ -318,7 +318,7 @@ export default function CreatorProfile() {
                         )}
 
                         {/* Bottom Info */}
-                        <div className="absolute inset-x-0 bottom-0 p-4 pb-5 pointer-events-none flex flex-col">
+                        <div className="absolute inset-x-0 bottom-0 p-4 pb-5 pointer-events-none flex flex-col" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.7), 0 0 1px rgba(0,0,0,0.9)' }}>
                           <h3 className="text-lg font-black text-white leading-tight tracking-tight truncate">
                             {work.scenario?.title || 'Untitled Story'}
                           </h3>
