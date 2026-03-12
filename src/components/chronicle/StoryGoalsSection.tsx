@@ -290,9 +290,9 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
   return (
     <section data-publish-error={hasError || undefined}>
       {/* Outer shell */}
-      <div className={cn("bg-[#2a2a2f] rounded-[24px] border overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]", hasError ? 'border-red-500 ring-2 ring-red-500' : 'border-ghost-white')}>
+      <div className={cn("bg-[#2a2a2f] rounded-[24px] border overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]", hasError ? 'border-red-500 ring-2 ring-red-500' : 'border-[#4a5f7f]')}>
         {/* Header */}
-        <div className="bg-[#4a5f7f] border-b border-ghost-white px-5 py-3 flex items-center gap-3">
+        <div className="bg-[#4a5f7f] border-b border-[#4a5f7f] px-5 py-3 flex items-center gap-3">
           <GitBranch className="w-4 h-4 text-white" />
           <h2 className="text-white text-xl font-bold tracking-tight m-0">
             Story Arcs
@@ -379,7 +379,7 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                   />
 
                   {/* Steps Section */}
-                  <div className="mt-4 pt-5 border-t border-ghost-white">
+                  <div className="mt-4 pt-5 border-t border-[#4a5f7f]">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <CheckSquare size={14} className="text-blue-500" />
