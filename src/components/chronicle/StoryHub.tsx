@@ -88,7 +88,7 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDel
           </button>
           <button 
             onClick={handleDeleteClick}
-            className="h-8 px-4 rounded-xl bg-[hsl(var(--destructive))] text-white hover:brightness-110 text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl transition-colors"
+            className="h-8 px-3 rounded-xl bg-[hsl(var(--destructive))] text-white hover:brightness-110 text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl transition-colors"
           >
             Delete
           </button>
