@@ -4976,7 +4976,7 @@ text-white/40    — Disabled`}
             <InconsistencyNote items={[
               { file: 'Modals', note: '5 different modal backgrounds: bg-zinc-900, bg-[#2a2a2f], bg-[#121214], bg-slate-900, default light (shadcn).' },
               { file: 'Dark surfaces', note: '4+ dark surface colors: #2a2a2f, #1e1e22, #18181b, zinc-900, slate-900 — no unified token.' },
-              { file: 'Borders', note: '3 modal border styles: border-white/10 (standard), border-[#4a5f7f] (accent), border-slate-700 (Memories).' },
+              { file: 'Borders', note: '3 modal border styles: border-ghost-white (standard), border-[#4a5f7f] (accent), border-slate-700 (Memories).' },
             ]} />
 
             <PageSubheading>Overlay & Dialog Systems</PageSubheading>
