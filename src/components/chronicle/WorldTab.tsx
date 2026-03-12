@@ -605,7 +605,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                             className={`h-10 px-5 rounded-xl text-[10px] font-bold leading-none uppercase tracking-wider transition-colors ${
                               isRepositioningCover 
                                 ? 'bg-blue-500 text-white' 
-                                : 'bg-[hsl(240_6%_18%)] border border-[hsl(0_0%_100%_/_0.10)] text-[hsl(var(--ui-text))] hover:bg-[hsl(240_6%_22%)] shadow-[0_10px_30px_hsl(0_0%_0%_/_0.35)]'
+                                : 'bg-[hsl(240_6%_18%)] border border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] hover:bg-[hsl(240_6%_22%)] shadow-[0_10px_30px_hsl(0_0%_0%_/_0.35)]'
                             }`}
                           >
                             {isRepositioningCover ? "Done" : "Reposition"}
