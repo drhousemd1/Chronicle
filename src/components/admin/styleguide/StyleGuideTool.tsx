@@ -2193,35 +2193,35 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             />
             <ButtonCardV2
               buttonName="Story Detail — Like"
-              buttonColor="Default: rgba(248,250,252,0.3) — bg-ghost-white. Active: rgba(244,63,94,0.2) — bg-rose-500/20"
-              textColor="Default: #ffffff — text-white. Active: #fb7185 — text-rose-400"
-              size="flex-1 h-12 — rounded-xl"
-              purpose="Like a story — toggle button with filled heart when active"
-              visualEffects="Default: border-ghost-white. Active: border-rose-500/50. fill-current on icon when active"
+              buttonColor="Inactive: hsl(var(--ui-surface-2)). Active: #f43f5e — bg-rose-500 (solid, matching card tiles)"
+              textColor="Inactive: hsl(var(--ui-text)). Active: #ffffff — text-white"
+              size="flex-1 h-10 — rounded-xl — text-[10px] font-bold uppercase tracking-wider"
+              purpose="Like a story — toggle button with filled heart when active. Matches solid rose-500 on gallery card tiles."
+              visualEffects="Inactive: border-[hsl(var(--ui-border))], hover:bg-rose-500/20 hover:text-rose-400. Active: border-rose-500. shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
               locations="StoryDetailModal — gallery mode (non-owned)"
               pageSpecific={true}
               appWide={false}
               preview={
                 <div style={{ background: '#1a1a2e', borderRadius: 12, padding: '16px 20px', width: '100%', display: 'flex', justifyContent: 'center', gap: 8 }}>
-                  <button className="h-12 bg-ghost-white border border-ghost-white rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 100 }}>♡ Like</button>
-                  <button className="h-12 bg-rose-500/20 border border-rose-500/50 rounded-xl text-rose-400 text-sm font-semibold flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 100 }}>❤ Liked</button>
+                  <button className="h-10 bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] rounded-xl text-[hsl(var(--ui-text))] text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default', minWidth: 100 }}>♡ LIKE</button>
+                  <button className="h-10 bg-rose-500 border border-rose-500 rounded-xl text-white text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default', minWidth: 100 }}>❤ LIKED</button>
                 </div>
               }
             />
             <ButtonCardV2
               buttonName="Story Detail — Save"
-              buttonColor="Default: rgba(248,250,252,0.3) — bg-ghost-white. Active: rgba(245,158,11,0.2) — bg-amber-500/20"
-              textColor="Default: #ffffff — text-white. Active: #fbbf24 — text-amber-400"
-              size="flex-1 h-12 — rounded-xl"
-              purpose="Save/bookmark a story — toggle button with filled bookmark when active"
-              visualEffects="Default: border-ghost-white. Active: border-amber-500/50. fill-current on icon when active"
+              buttonColor="Inactive: hsl(var(--ui-surface-2)). Active: #f59e0b — bg-amber-500 (solid, matching card tiles)"
+              textColor="Inactive: hsl(var(--ui-text)). Active: #ffffff — text-white"
+              size="flex-1 h-10 — rounded-xl — text-[10px] font-bold uppercase tracking-wider"
+              purpose="Save/bookmark a story — toggle button with filled bookmark when active. Matches solid amber-500 on gallery card tiles."
+              visualEffects="Inactive: border-[hsl(var(--ui-border))], hover:bg-amber-500/20 hover:text-amber-400. Active: border-amber-500. shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
               locations="StoryDetailModal — gallery mode (non-owned)"
               pageSpecific={true}
               appWide={false}
               preview={
                 <div style={{ background: '#1a1a2e', borderRadius: 12, padding: '16px 20px', width: '100%', display: 'flex', justifyContent: 'center', gap: 8 }}>
-                  <button className="h-12 bg-ghost-white border border-ghost-white rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 100 }}>🔖 Save</button>
-                  <button className="h-12 bg-amber-500/20 border border-amber-500/50 rounded-xl text-amber-400 text-sm font-semibold flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 100 }}>🔖 Saved</button>
+                  <button className="h-10 bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] rounded-xl text-[hsl(var(--ui-text))] text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default', minWidth: 100 }}>🔖 SAVE</button>
+                  <button className="h-10 bg-amber-500 border border-amber-500 rounded-xl text-white text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default', minWidth: 100 }}>🔖 SAVED</button>
                 </div>
               }
             />
@@ -2755,18 +2755,18 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
             <ButtonCardV2
               buttonName="Story Detail Action Buttons"
-              buttonColor="Base: bg-ghost-white border-ghost-white. Liked: bg-rose-500/20 border-rose-500/50 text-rose-400. Saved: bg-amber-500/20 border-amber-500/50 text-amber-400. Play: bg-[#3b82f6] text-white"
-              size="h-12 px-6 rounded-xl — text-sm font-semibold"
-              purpose="Like, Save, Play actions on story detail view"
-              visualEffects="Taller than standard (h-12 vs h-10). Toggle states with color transitions"
+              buttonColor="Inactive: hsl(var(--ui-surface-2)). Liked: bg-rose-500 (solid). Saved: bg-amber-500 (solid). Play: bg-[#3b82f6] text-white"
+              size="h-10 rounded-xl — text-[10px] font-bold uppercase tracking-wider"
+              purpose="Like, Save, Play actions on story detail view — matches card tile active colors"
+              visualEffects="Shadow Surface spec. shadow-[0_10px_30px_rgba(0,0,0,0.35)]. Solid toggle states matching gallery card tiles."
               locations="StoryDetailModal — action bar"
               pageSpecific
               preview={
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <button className="h-12 px-6 rounded-xl bg-ghost-white border border-ghost-white text-white text-sm font-semibold" style={{ cursor: 'default' }}>♡ Like</button>
-                  <button className="h-12 px-6 rounded-xl bg-rose-500/20 border border-rose-500/50 text-rose-400 text-sm font-semibold" style={{ cursor: 'default' }}>♥ Liked</button>
-                  <button className="h-12 px-6 rounded-xl bg-amber-500/20 border border-amber-500/50 text-amber-400 text-sm font-semibold" style={{ cursor: 'default' }}>★ Saved</button>
-                  <button className="h-12 px-6 rounded-xl bg-[#3b82f6] text-white text-sm font-bold" style={{ cursor: 'default' }}>▶ PLAY</button>
+                  <button className="h-10 px-6 rounded-xl bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] text-[10px] font-bold uppercase tracking-wider shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default' }}>♡ LIKE</button>
+                  <button className="h-10 px-6 rounded-xl bg-rose-500 border border-rose-500 text-white text-[10px] font-bold uppercase tracking-wider shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default' }}>♥ LIKED</button>
+                  <button className="h-10 px-6 rounded-xl bg-amber-500 border border-amber-500 text-white text-[10px] font-bold uppercase tracking-wider shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default' }}>★ SAVED</button>
+                  <button className="h-10 px-6 rounded-xl bg-[#3b82f6] text-white text-[10px] font-bold uppercase tracking-wider shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default' }}>▶ PLAY</button>
                 </div>
               }
             />
