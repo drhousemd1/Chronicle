@@ -472,8 +472,8 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
 
                 {/* Synopsis Section */}
                 <div className="mt-6">
-                  <h3 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-3">Synopsis</h3>
-                  <p className="text-[#e2e8f0] leading-relaxed max-w-2xl whitespace-pre-wrap">
+                  <h3 className="text-xs font-bold text-[rgba(248,250,252,1)] uppercase tracking-widest mb-3">Synopsis</h3>
+                  <p className="text-[rgba(248,250,252,0.8)] leading-relaxed max-w-2xl whitespace-pre-wrap">
                     {description || "No description provided."}
                   </p>
                 </div>
@@ -484,20 +484,20 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mt-8">
                       {contentThemes.genres.length > 0 && (
                         <div>
-                          <h4 className="text-xs font-bold text-white/40 uppercase mb-2">Genre</h4>
-                          <p className="text-sm text-white">{contentThemes.genres.join(', ')}</p>
+                          <h4 className="text-xs font-bold text-[rgba(248,250,252,1)] uppercase mb-2">Genre</h4>
+                          <p className="text-sm text-[rgba(248,250,252,0.8)]">{contentThemes.genres.join(', ')}</p>
                         </div>
                       )}
                       {contentThemes.characterTypes.length > 0 && (
                         <div>
-                          <h4 className="text-xs font-bold text-white/40 uppercase mb-2">Character Types</h4>
-                          <p className="text-sm text-white">{contentThemes.characterTypes.join(', ')}</p>
+                          <h4 className="text-xs font-bold text-[rgba(248,250,252,1)] uppercase mb-2">Character Types</h4>
+                          <p className="text-sm text-[rgba(248,250,252,0.8)]">{contentThemes.characterTypes.join(', ')}</p>
                         </div>
                       )}
                       {contentThemes.origin.length > 0 && (
                         <div>
-                          <h4 className="text-xs font-bold text-white/40 uppercase mb-2">Story Origin</h4>
-                          <p className="text-sm text-white">{contentThemes.origin.join(', ')}</p>
+                          <h4 className="text-xs font-bold text-[rgba(248,250,252,1)] uppercase mb-2">Story Origin</h4>
+                          <p className="text-sm text-[rgba(248,250,252,0.8)]">{contentThemes.origin.join(', ')}</p>
                         </div>
                       )}
                     </div>
@@ -505,7 +505,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                     {/* Trigger Warnings - Separate Row */}
                     {contentThemes.triggerWarnings.length > 0 && (
                       <div className="mt-6">
-                        <h4 className="text-xs font-bold text-white/40 uppercase mb-2">Trigger Warnings</h4>
+                        <h4 className="text-xs font-bold text-[rgba(248,250,252,1)] uppercase mb-2">Trigger Warnings</h4>
                         <p className="text-sm text-red-500 leading-relaxed font-medium">
                           {contentThemes.triggerWarnings.join(', ')}
                         </p>
@@ -515,8 +515,8 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                     {/* Custom Tags */}
                     {contentThemes.customTags.length > 0 && (
                       <div className="mt-6">
-                        <h4 className="text-xs font-bold text-white/40 uppercase mb-2">Custom Tags</h4>
-                        <p className="text-sm text-white">{contentThemes.customTags.join(', ')}</p>
+                        <h4 className="text-xs font-bold text-[rgba(248,250,252,1)] uppercase mb-2">Custom Tags</h4>
+                        <p className="text-sm text-[rgba(248,250,252,0.8)]">{contentThemes.customTags.join(', ')}</p>
                       </div>
                     )}
                   </>
@@ -525,7 +525,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                 {/* Characters Section */}
                 <div className="pt-8">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xs font-bold text-white/40 uppercase tracking-widest">Characters</h3>
+                    <h3 className="text-xs font-bold text-[rgba(248,250,252,1)] uppercase tracking-widest">Characters</h3>
                     {characters.length > 4 && (
                       <button className="text-[10px] font-bold text-[#3b82f6] hover:underline uppercase">
                         View All
@@ -562,7 +562,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                               </div>
                             )}
                           </div>
-                          <span className="text-[10px] text-[rgba(248,250,252,0.7)] group-hover:text-white text-center max-w-[4rem] truncate transition-colors">
+                          <span className="text-[10px] text-[rgba(248,250,252,0.8)] group-hover:text-white text-center max-w-[4rem] truncate transition-colors">
                             {char.name}
                           </span>
                         </div>
@@ -578,7 +578,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                     <div className="h-px bg-gradient-to-r from-transparent via-[#4a5f7f] to-transparent mb-6" />
 
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-xs font-bold text-white/40 uppercase tracking-widest">Reviews ({reviewCount})</h3>
+                      <h3 className="text-xs font-bold text-[rgba(248,250,252,1)] uppercase tracking-widest">Reviews ({reviewCount})</h3>
                       {user && (
                         <button
                           onClick={() => setIsReviewModalOpen(true)}
