@@ -198,7 +198,7 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
         >
           <div className="space-y-6">
             {customSections.map((section, sIdx) => (
-              <div key={section.id} className="p-4 bg-blue-900/40 rounded-2xl border border-ghost-white space-y-3">
+              <div key={section.id} className="p-4 bg-blue-900/40 rounded-2xl border border-[#4a5f7f] space-y-3">
                 <div className="flex items-center justify-between">
                   <Input
                     value={section.title}
