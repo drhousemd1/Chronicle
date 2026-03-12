@@ -4226,7 +4226,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 locations="StoryDetailModal.tsx"
                 pageSpecific appWide={false}
                 preview={
-                  <div className="bg-white/5 rounded-xl p-3" style={{ maxWidth: 220 }}>
+                  <div className="bg-ghost-white rounded-xl p-3" style={{ maxWidth: 220 }}>
                     <div className="flex justify-between mb-1">
                       <span className="text-[9px] font-semibold text-white">Reviewer</span>
                       <span className="text-[7px] text-white/40">2d ago</span>
