@@ -292,7 +292,7 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
       {/* Outer shell */}
       <div className={cn("bg-[#2a2a2f] rounded-[24px] border overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]", hasError ? 'border-red-500 ring-2 ring-red-500' : 'border-[#4a5f7f]')}>
         {/* Header */}
-        <div className="bg-[#4a5f7f] border-b border-ghost-white px-5 py-3 flex items-center gap-3">
+        <div className="bg-[#4a5f7f] border-b border-[#4a5f7f] px-5 py-3 flex items-center gap-3">
           <GitBranch className="w-4 h-4 text-white" />
           <h2 className="text-white text-xl font-bold tracking-tight m-0">
             Story Arcs
