@@ -86,13 +86,13 @@ export function ConversationsTab({
                                   <h3 className="font-bold text-white truncate">
                                     {entry.scenarioTitle}
                                   </h3>
-                                  <span className="flex items-center gap-1 text-sm text-zinc-500">
+                                  <span className="flex items-center gap-1 text-sm text-[rgba(248,250,252,0.8)]">
                                     💬 {entry.messageCount}
                                   </span>
-                                  <span className="text-sm text-zinc-500">•</span>
-                                  <span className="text-sm text-zinc-500">{dateStr}</span>
+                                  <span className="text-sm text-[rgba(248,250,252,0.8)]">•</span>
+                                  <span className="text-sm text-[rgba(248,250,252,0.8)]">{dateStr}</span>
                                 </div>
-                                <p className="text-xs text-zinc-500 mt-0.5">
+                                <p className="text-xs text-[rgba(248,250,252,0.8)] mt-0.5">
                                   Created by: {entry.creatorName || 'You'}
                                 </p>
                               </button>
