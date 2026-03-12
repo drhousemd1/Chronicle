@@ -486,7 +486,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mt-8">
                       {contentThemes.genres.length > 0 && (
                         <div>
-                          <div className="bg-[#4a5f7f] rounded-xl px-4 py-2 mb-2 inline-block shadow-sm">
+                          <div className="border-b-2 border-[#4a5f7f] pb-1 mb-2 inline-block">
                             <h4 className="text-xs font-bold text-[rgba(248,250,252,0.9)] uppercase">Genre</h4>
                           </div>
                           <p className="text-sm text-[rgba(248,250,252,0.8)]">{contentThemes.genres.join(', ')}</p>
@@ -494,7 +494,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                       )}
                       {contentThemes.characterTypes.length > 0 && (
                         <div>
-                          <div className="bg-[#4a5f7f] rounded-xl px-4 py-2 mb-2 inline-block shadow-sm">
+                          <div className="border-b-2 border-[#4a5f7f] pb-1 mb-2 inline-block">
                             <h4 className="text-xs font-bold text-[rgba(248,250,252,0.9)] uppercase">Character Types</h4>
                           </div>
                           <p className="text-sm text-[rgba(248,250,252,0.8)]">{contentThemes.characterTypes.join(', ')}</p>
@@ -502,7 +502,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                       )}
                       {contentThemes.origin.length > 0 && (
                         <div>
-                          <div className="bg-[#4a5f7f] rounded-xl px-4 py-2 mb-2 inline-block shadow-sm">
+                          <div className="border-b-2 border-[#4a5f7f] pb-1 mb-2 inline-block">
                             <h4 className="text-xs font-bold text-[rgba(248,250,252,0.9)] uppercase">Story Origin</h4>
                           </div>
                           <p className="text-sm text-[rgba(248,250,252,0.8)]">{contentThemes.origin.join(', ')}</p>
@@ -513,7 +513,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                     {/* Trigger Warnings - Separate Row */}
                     {contentThemes.triggerWarnings.length > 0 && (
                       <div className="mt-6">
-                        <div className="bg-[#4a5f7f] rounded-xl px-4 py-2 mb-2 inline-block shadow-sm">
+                        <div className="border-b-2 border-[#4a5f7f] pb-1 mb-2 inline-block">
                           <h4 className="text-xs font-bold text-[rgba(248,250,252,0.9)] uppercase">Trigger Warnings</h4>
                         </div>
                         <p className="text-sm text-[rgba(248,250,252,0.8)] leading-relaxed font-medium">
@@ -535,7 +535,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                 {/* Characters Section */}
                 <div className="pt-8">
                   <div className="flex items-center justify-between mb-4">
-                    <div className="bg-[#4a5f7f] rounded-xl px-4 py-2 inline-block shadow-sm">
+                    <div className="border-b-2 border-[#4a5f7f] pb-1 inline-block">
                       <h3 className="text-xs font-bold text-[rgba(248,250,252,0.9)] uppercase tracking-widest">Characters</h3>
                     </div>
                     {characters.length > 4 && (
