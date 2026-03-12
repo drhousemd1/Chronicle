@@ -170,7 +170,7 @@ export const ImageLibraryPickerModal: React.FC<ImageLibraryPickerModalProps> = (
                             <FolderOpen className="w-12 h-12 text-slate-500" />
                           </div>
                         )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-800 via-slate-900/20 to-transparent" />
+                        
                         <div className="absolute inset-x-0 bottom-0 p-5 flex flex-col gap-1">
                           <span className="inline-flex self-start items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-500/90 text-white text-[11px] font-semibold tracking-wide shadow">
                             <ImageIcon className="w-3 h-3" />

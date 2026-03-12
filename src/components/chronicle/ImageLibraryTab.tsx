@@ -473,7 +473,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
                         </div>
                       )}
 
-                      <div className="absolute inset-0 bg-gradient-to-t from-zinc-800 via-slate-900/20 to-transparent opacity-90 group-hover:opacity-95 transition-opacity" />
+                      
 
                       <div className="absolute inset-x-0 bottom-0 p-6">
                         <div className="flex items-center gap-2 mb-2">
