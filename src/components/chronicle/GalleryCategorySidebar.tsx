@@ -182,7 +182,7 @@ export const GalleryCategorySidebar: React.FC<GalleryCategorySidebarProps> = ({
       <div className="h-0.5 bg-yellow-400" />
       
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-ghost-white">
         <span className="text-sm font-bold text-white">Browse Categories</span>
         <button
           onClick={onClose}
