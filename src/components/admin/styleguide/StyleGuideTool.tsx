@@ -2161,7 +2161,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             />
             <ButtonCardV2
               buttonName="Story Detail — Edit"
-              buttonColor="rgba(255,255,255,0.05) — bg-white/5"
+              buttonColor="rgba(248,250,252,0.3) — bg-ghost-white"
               textColor="#ffffff — text-white"
               size="flex-1 h-12 — rounded-xl"
               purpose="Edit owned story from detail modal"
