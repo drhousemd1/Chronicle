@@ -76,7 +76,7 @@ export function AIPromptModal({
           </div>
 
           {/* Use Existing Details Checkbox */}
-          <div className="flex items-start gap-3 p-3 bg-zinc-900/30 rounded-lg border border-white/5">
+          <div className="flex items-start gap-3 p-3 bg-zinc-900/30 rounded-lg border border-ghost-white">
             <Checkbox
               id="useExistingDetails"
               checked={useExistingDetails}
