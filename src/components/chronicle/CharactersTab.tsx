@@ -663,13 +663,13 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
             <h2 className="text-xl font-bold text-[hsl(var(--ui-surface-2))]">Profile</h2>
           </div>
           <div className="pb-4 px-2">
-          <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
+          <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-ghost-white overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
             {/* Section Header */}
-            <div className="bg-[#4a5f7f] border-b border-white/20 px-5 py-3 flex items-center justify-between shadow-lg">
+            <div className="bg-[#4a5f7f] border-b border-ghost-white px-5 py-3 flex items-center justify-between shadow-lg">
               <h2 className="text-white text-xl font-bold tracking-tight">Avatar</h2>
               <button 
                 onClick={() => toggleSection('avatar')} 
-                className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-white/10"
+                className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-ghost-white"
               >
                 {expandedSections.avatar ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
               </button>
