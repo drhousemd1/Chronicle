@@ -1,19 +1,11 @@
 
 
-# Test: Add Text Drop Shadow to My Stories Cards
+## Plan: Persist Style Guide Edits to Supabase — Complete ✅
 
-## What We're Testing
-Adding a CSS `text-shadow` to the bottom info section of story cards (title, description, stats, attribution) to see if it improves readability against cover images.
+### What was done:
 
-## Change
-**File: `src/components/chronicle/StoryHub.tsx`** — one line change
-
-Add `drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]` (or use inline `style={{ textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}`) to the bottom info container at **line 104**:
-
-```
-- <div className="absolute inset-x-0 bottom-0 p-4 pb-5 pointer-events-none flex flex-col">
-+ <div className="absolute inset-x-0 bottom-0 p-4 pb-5 pointer-events-none flex flex-col" style={{ textShadow: '0 2px 6px rgba(0,0,0,0.7)' }}>
-```
-
-This single inline style on the parent will cascade to the title, description, stats icons/text, and "Created by" — all elements get the shadow. Easy to revert by removing that one `style` prop.
-
+1. **Seeded `app_settings` rows** — `styleguide_edits` and `styleguide_keeps` rows inserted into the database
+2. **Rewrote all storage helpers** in `StyleGuideEditsModal.tsx` from sync localStorage to async Supabase operations (`getEditsRegistry`, `upsertEdit`, `removeEdit`, `getKeeps`, `addKeep`, `removeKeep`, `getEditsCount`)
+3. **Updated all consumers** in `StyleGuideTool.tsx` — `refreshEditsState`, `handleKeep`, `handleEditOpen`, `handleSaveEdit`, `handleRemoveKeep` are all async now
+4. **Updated `Index.tsx`** — `getEditsCount()` call now uses `.then()` since it's async
+5. **Every edit, keep, and delete auto-saves to Supabase immediately** — no data loss on domain changes
