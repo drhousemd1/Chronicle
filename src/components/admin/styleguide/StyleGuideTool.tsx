@@ -2975,7 +2975,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <InputCardV2
                 inputName="Account Password Input"
                 background="#2a2a2f / bg-[#2a2a2f]"
-                border="border-white/10"
+                border="border-ghost-white"
                 borderRadius="rounded-xl (12px)"
                 textColor="white"
                 placeholderColor="text-zinc-500"
@@ -2986,7 +2986,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 locations="Account Settings — Change Password section"
                 pageSpecific
                 preview={
-                  <input readOnly type="password" className="w-full bg-[#2a2a2f] border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none" placeholder="••••••••" />
+                  <input readOnly type="password" className="w-full bg-[#2a2a2f] border border-ghost-white rounded-xl px-4 py-3 text-white text-sm outline-none" placeholder="••••••••" />
                 }
               />
             </div>
