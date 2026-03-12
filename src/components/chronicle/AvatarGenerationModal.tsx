@@ -185,7 +185,7 @@ export const AvatarGenerationModal: React.FC<AvatarGenerationModalProps> = ({
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               placeholder="Describe your character's appearance..."
-              className="min-h-[100px] resize-none bg-slate-50 border-slate-200 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 focus-visible:ring-0 focus-visible:ring-offset-0"
+              className="min-h-[100px] resize-none bg-ghost-white border-slate-200 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 focus-visible:ring-0 focus-visible:ring-offset-0"
             />
             <p className="text-xs text-muted-foreground">
               Tip: Include physical features like hair color, eye color, clothing, and expression.
