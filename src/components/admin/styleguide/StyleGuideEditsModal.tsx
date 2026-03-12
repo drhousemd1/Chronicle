@@ -135,7 +135,7 @@ export const KeepOrEditModal: React.FC<KeepOrEditModalProps> = ({
           <button
             type="button"
             onClick={() => { onEdit(); onOpenChange(false); }}
-            className="group flex flex-col items-center gap-3 p-5 rounded-2xl border border-white/10 bg-zinc-800/50 hover:border-purple-500/50 hover:bg-purple-500/10 transition-all cursor-pointer text-center"
+            className="group flex flex-col items-center gap-3 p-5 rounded-2xl border border-ghost-white bg-zinc-800/50 hover:border-purple-500/50 hover:bg-purple-500/10 transition-all cursor-pointer text-center"
           >
             <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center group-hover:bg-purple-500/30 transition-colors">
               <Pencil className="w-5 h-5 text-purple-400" />

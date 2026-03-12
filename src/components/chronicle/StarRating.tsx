@@ -6,8 +6,8 @@ import { cn } from '@/lib/utils';
 type StarColor = 'amber' | 'slate';
 
 const colorClasses: Record<StarColor, { filled: string; empty: string }> = {
-  amber: { filled: 'text-amber-400 fill-amber-400', empty: 'text-white/20' },
-  slate: { filled: 'text-[hsl(215,25%,40%)] fill-[hsl(215,25%,40%)]', empty: 'text-white/20' },
+  amber: { filled: 'text-amber-400 fill-amber-400', empty: 'text-ghost-white' },
+  slate: { filled: 'text-[hsl(215,25%,40%)] fill-[hsl(215,25%,40%)]', empty: 'text-ghost-white' },
 };
 
 interface StarRatingProps {

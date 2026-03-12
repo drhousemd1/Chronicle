@@ -63,7 +63,7 @@ export function CoverImageActionButtons({
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => setIsPickerOpen(true)}
-              className="cursor-pointer hover:bg-white/10 focus:bg-white/10 text-[10px]"
+              className="cursor-pointer hover:bg-ghost-white focus:bg-ghost-white text-[10px]"
             >
               <ImageIcon className="w-3.5 h-3.5 mr-2" />
               From Library

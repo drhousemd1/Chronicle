@@ -496,7 +496,7 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
               </div>
             ) : scenarios.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-64 text-center">
-                <div className="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center mb-4">
+                <div className="w-20 h-20 bg-ghost-white rounded-full flex items-center justify-center mb-4">
                   <Globe className="w-10 h-10 text-white/30" />
                 </div>
                 <h3 className="text-xl font-bold text-white mb-2">
