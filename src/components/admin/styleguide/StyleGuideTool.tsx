@@ -2193,18 +2193,18 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             />
             <ButtonCardV2
               buttonName="Story Detail — Like"
-              buttonColor="Default: rgba(248,250,252,0.3) — bg-ghost-white. Active: rgba(244,63,94,0.2) — bg-rose-500/20"
-              textColor="Default: #ffffff — text-white. Active: #fb7185 — text-rose-400"
-              size="flex-1 h-12 — rounded-xl"
-              purpose="Like a story — toggle button with filled heart when active"
-              visualEffects="Default: border-ghost-white. Active: border-rose-500/50. fill-current on icon when active"
+              buttonColor="Inactive: hsl(var(--ui-surface-2)). Active: #f43f5e — bg-rose-500 (solid, matching card tiles)"
+              textColor="Inactive: hsl(var(--ui-text)). Active: #ffffff — text-white"
+              size="flex-1 h-10 — rounded-xl — text-[10px] font-bold uppercase tracking-wider"
+              purpose="Like a story — toggle button with filled heart when active. Matches solid rose-500 on gallery card tiles."
+              visualEffects="Inactive: border-[hsl(var(--ui-border))], hover:bg-rose-500/20 hover:text-rose-400. Active: border-rose-500. shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
               locations="StoryDetailModal — gallery mode (non-owned)"
               pageSpecific={true}
               appWide={false}
               preview={
                 <div style={{ background: '#1a1a2e', borderRadius: 12, padding: '16px 20px', width: '100%', display: 'flex', justifyContent: 'center', gap: 8 }}>
-                  <button className="h-12 bg-ghost-white border border-ghost-white rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 100 }}>♡ Like</button>
-                  <button className="h-12 bg-rose-500/20 border border-rose-500/50 rounded-xl text-rose-400 text-sm font-semibold flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 100 }}>❤ Liked</button>
+                  <button className="h-10 bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] rounded-xl text-[hsl(var(--ui-text))] text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default', minWidth: 100 }}>♡ LIKE</button>
+                  <button className="h-10 bg-rose-500 border border-rose-500 rounded-xl text-white text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default', minWidth: 100 }}>❤ LIKED</button>
                 </div>
               }
             />
