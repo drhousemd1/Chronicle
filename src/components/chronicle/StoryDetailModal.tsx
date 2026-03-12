@@ -119,7 +119,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
   const [reviews, setReviews] = useState<ScenarioReview[]>([]);
   const [userReview, setUserReview] = useState<ScenarioReview | null>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
-  const [creatorRating, setCreatorRating] = useState<{ rating: number; totalReviews: number } | null>(null);
+  
   const [hasMoreReviews, setHasMoreReviews] = useState(false);
   const [loadingMoreReviews, setLoadingMoreReviews] = useState(false);
   const navigate = useNavigate();
