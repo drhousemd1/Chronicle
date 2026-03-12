@@ -2792,7 +2792,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
             <ButtonCardV2
               buttonName="Story Detail Action Buttons"
-              buttonColor="Base: bg-white/5 border-white/10. Liked: bg-rose-500/20 border-rose-500/50 text-rose-400. Saved: bg-amber-500/20 border-amber-500/50 text-amber-400. Play: bg-[#3b82f6] text-white"
+              buttonColor="Base: bg-white/5 border-ghost-white. Liked: bg-rose-500/20 border-rose-500/50 text-rose-400. Saved: bg-amber-500/20 border-amber-500/50 text-amber-400. Play: bg-[#3b82f6] text-white"
               size="h-12 px-6 rounded-xl — text-sm font-semibold"
               purpose="Like, Save, Play actions on story detail view"
               visualEffects="Taller than standard (h-12 vs h-10). Toggle states with color transitions"
@@ -2800,7 +2800,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               pageSpecific
               preview={
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <button className="h-12 px-6 rounded-xl bg-white/5 border border-white/10 text-white text-sm font-semibold" style={{ cursor: 'default' }}>♡ Like</button>
+                  <button className="h-12 px-6 rounded-xl bg-white/5 border border-ghost-white text-white text-sm font-semibold" style={{ cursor: 'default' }}>♡ Like</button>
                   <button className="h-12 px-6 rounded-xl bg-rose-500/20 border border-rose-500/50 text-rose-400 text-sm font-semibold" style={{ cursor: 'default' }}>♥ Liked</button>
                   <button className="h-12 px-6 rounded-xl bg-amber-500/20 border border-amber-500/50 text-amber-400 text-sm font-semibold" style={{ cursor: 'default' }}>★ Saved</button>
                   <button className="h-12 px-6 rounded-xl bg-[#3b82f6] text-white text-sm font-bold" style={{ cursor: 'default' }}>▶ PLAY</button>
