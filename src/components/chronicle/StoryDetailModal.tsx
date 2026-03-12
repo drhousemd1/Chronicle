@@ -303,13 +303,15 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                         <span className="text-sm font-semibold">Edit</span>
                       </button>
                     )}
-                    <button
-                      onClick={handlePlay}
-                      className="flex-1 h-10 bg-[#3b82f6] hover:bg-[#2d6fdb] rounded-xl flex items-center justify-center gap-2 text-white shadow-[0_10px_30px_rgba(0,0,0,0.35)] text-[10px] font-bold leading-none uppercase tracking-wider transition-colors"
-                    >
-                      <Play className="w-4 h-4 fill-current" />
-                      <span>Play</span>
-                    </button>
+                    {!isDraft && (
+                      <button
+                        onClick={handlePlay}
+                        className="flex-1 h-10 bg-[#3b82f6] hover:bg-[#2d6fdb] rounded-xl flex items-center justify-center gap-2 text-white shadow-[0_10px_30px_rgba(0,0,0,0.35)] text-[10px] font-bold leading-none uppercase tracking-wider transition-colors"
+                      >
+                        <Play className="w-4 h-4 fill-current" />
+                        <span>Play</span>
+                      </button>
+                    )}
                   </>
                 ) : (
                   <>
