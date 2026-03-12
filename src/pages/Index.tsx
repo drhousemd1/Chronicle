@@ -1617,7 +1617,7 @@ const IndexContent = () => {
                         {userProfile?.avatar_url ? (
                           <AvatarImage src={userProfile.avatar_url} alt={displayName} />
                         ) : null}
-                        <AvatarFallback className="bg-[#4a5f7f] text-white text-[10px] font-bold">
+                        <AvatarFallback className="bg-[#4a5f7f] text-white text-xs font-bold">
                           {initials}
                         </AvatarFallback>
                       </Avatar>
