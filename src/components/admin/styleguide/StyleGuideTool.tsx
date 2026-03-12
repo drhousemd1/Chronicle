@@ -2509,15 +2509,15 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
             <ButtonCardV2
               buttonName="Session Delete Button"
-              buttonColor="bg-white/10 border-white/10"
+              buttonColor="bg-ghost-white border-ghost-white"
               textColor="text-zinc-400"
               size="p-2 rounded-lg"
               purpose="Delete a saved conversation session"
-              visualEffects="Hover: bg-white/15 text-red-500 border-red-500/30"
+              visualEffects="Hover: bg-ghost-white text-red-500 border-red-500/30"
               locations="ConversationsTab — action column on each session card"
               pageSpecific
               preview={
-                <button className="p-2 rounded-lg bg-white/10 border border-white/10 text-zinc-400" style={{ cursor: 'default' }}>🗑</button>
+                <button className="p-2 rounded-lg bg-ghost-white border border-ghost-white text-zinc-400" style={{ cursor: 'default' }}>🗑</button>
               }
             />
             <ButtonCardV2
