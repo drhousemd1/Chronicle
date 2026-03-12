@@ -1633,14 +1633,9 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                   { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/account-page%2Faccount-subscription-tab.png', location: 'Price & title text', function: 'Price values ($0, $9.99, $19.99), Choose Your Plan heading, feature list text' },
                 ]}
               />
-              <SwatchCardV2 color="rgba(248,250,252,0.3)" name="Ghost White" locations="Card borders, input borders" value="rgba(248,250,252,0.3)" token="border-ghost-white" pageSpecific={false} appWide={true} extraPreviewStyle={{ border: '1px dashed #ccc' }}
+              <SwatchCardV2 color="rgba(248,250,252,0.3)" name="Ghost White" locations="Card borders, input borders, subtitle text, description text, plan description, label text" value="rgba(248,250,252,0.3)" token="text-ghost-white / border-ghost-white" pageSpecific={false} appWide={true} extraPreviewStyle={{ border: '1px dashed #ccc' }}
                 locationImages={[
-                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/account-page%2Faccount-settings-tab.png', location: 'Card & input borders', function: 'Subtle border on setting cards and input fields' },
-                ]}
-              />
-              <SwatchCardV2 color="rgba(248,250,252,0.3)" name="Ghost White" locations="Subtitle text, description text, plan description, label text" value="rgba(248,250,252,0.3)" token="text-[rgba(248,250,252,0.3)]" pageSpecific={false} appWide={true} extraPreviewStyle={{ border: '1px dashed #999' }}
-                locationImages={[
-                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/account-page%2Faccount-settings-tab.png', location: 'Plan description', function: '"Basic access to all features" text on Current Plan card' },
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/account-page%2Faccount-settings-tab.png', location: 'Card/input borders + plan description', function: 'Subtle border on setting cards and input fields, plus "Basic access to all features" text' },
                   { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/account-page%2Faccount-subscription-tab.png', location: 'Upgrade subtitle', function: '"Upgrade to unlock more powerful features" subtitle under Choose Your Plan' },
                   { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/account-page%2Faccount-profile-tab.png', location: 'Labels & stats', function: 'Form labels, stat values, and "Hide Published Works" text' },
                 ]}
