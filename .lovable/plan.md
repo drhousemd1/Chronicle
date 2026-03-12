@@ -1,12 +1,11 @@
 
 
-# Soften the Slide-Up Overlay Top Edge
+## Plan: Persist Style Guide Edits to Supabase — Complete ✅
 
-Replace the solid `bg-black/70` on the hover slide-up overlay with a vertical gradient so the top edge fades in gradually instead of a harsh line.
+### What was done:
 
-## Change
-
-**File**: `src/components/chronicle/StoryHub.tsx` — the hover slide-up overlay div
-
-Replace `bg-black/70` with `bg-gradient-to-b from-transparent to-black/70`. Everything else (dynamic top position, animation, z-index) stays the same.
-
+1. **Seeded `app_settings` rows** — `styleguide_edits` and `styleguide_keeps` rows inserted into the database
+2. **Rewrote all storage helpers** in `StyleGuideEditsModal.tsx` from sync localStorage to async Supabase operations (`getEditsRegistry`, `upsertEdit`, `removeEdit`, `getKeeps`, `addKeep`, `removeKeep`, `getEditsCount`)
+3. **Updated all consumers** in `StyleGuideTool.tsx` — `refreshEditsState`, `handleKeep`, `handleEditOpen`, `handleSaveEdit`, `handleRemoveKeep` are all async now
+4. **Updated `Index.tsx`** — `getEditsCount()` call now uses `.then()` since it's async
+5. **Every edit, keep, and delete auto-saves to Supabase immediately** — no data loss on domain changes
