@@ -1687,7 +1687,7 @@ const IndexContent = () => {
                   type="button"
                   onClick={() => setAuthModalOpen(true)}
                   className={cn(
-                    "flex items-center gap-3 w-full rounded-xl px-2 py-2 hover:bg-white/5 active:bg-white/10 transition-all text-[#4a5f7f]",
+                    "flex items-center gap-3 w-full rounded-xl px-2 py-2 hover:bg-white/5 active:bg-ghost-white transition-all text-[#4a5f7f]",
                     sidebarCollapsed && "justify-center px-0"
                   )}
                 >
