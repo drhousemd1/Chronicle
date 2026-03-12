@@ -744,11 +744,10 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                         />
                         {selected.avatarDataUrl && (
                           <Button 
-                            variant={isRepositioning ? 'primary' : 'secondary'} 
                             onClick={() => setIsRepositioning(!isRepositioning)}
-                            className={`w-full text-[10px] font-bold leading-none ${isRepositioning ? 'bg-blue-500 text-white' : ''}`}
+                            className={`w-full text-[10px] font-bold leading-none uppercase tracking-wider ${isRepositioning ? 'bg-blue-500 text-white border-blue-500' : 'bg-[hsl(240_6%_18%)] border-[hsl(0_0%_100%_/_0.10)] text-[hsl(var(--ui-text))] hover:bg-[hsl(240_6%_22%)] shadow-[0_10px_30px_hsl(0_0%_0%_/_0.35)]'}`}
                           >
-                            {isRepositioning ? "Save Position" : "Reposition"}
+                            {isRepositioning ? "Save Position" : "REPOSITION"}
                           </Button>
                         )}
                       </div>
