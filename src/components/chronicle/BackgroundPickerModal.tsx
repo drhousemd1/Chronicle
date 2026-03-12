@@ -93,7 +93,7 @@ export function BackgroundPickerModal({
 
           {/* Overlay Controls - only show when a background is selected */}
           {selectedBackgroundId && onOverlayChange && (
-            <div className="mb-6 p-4 bg-slate-50 rounded-xl border border-slate-100">
+            <div className="mb-6 p-4 bg-ghost-white rounded-xl border border-slate-100">
               <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-3">Overlay Settings</h3>
               <div className="flex items-center gap-6">
                 {/* Color toggle */}
