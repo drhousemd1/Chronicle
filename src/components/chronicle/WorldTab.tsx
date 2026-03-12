@@ -535,7 +535,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                           ? 'ring-4 ring-blue-500 cursor-move shadow-xl shadow-blue-500/20' 
                           : publishErrors.coverImage
                             ? 'border-2 border-red-500 ring-2 ring-red-500'
-                            : 'border-2 border-white/10 shadow-lg'
+                            : 'border-2 border-ghost-white shadow-lg'
                       )}
                     >
                       {coverImage ? (
