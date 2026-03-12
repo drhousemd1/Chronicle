@@ -3174,7 +3174,7 @@ const updatedChar: SideCharacter = {
     return (
       <div
         key={char.id}
-        className={`min-h-[140px] rounded-2xl transition-all duration-300 border-2 backdrop-blur-sm relative ${!sidebarBgIsLight ? 'bg-white/30 border-transparent hover:bg-white' : 'bg-black/30 border-transparent hover:bg-black/50'} ${isUpdating ? 'ring-2 ring-blue-500/60' : ''}`}
+        className={`min-h-[140px] rounded-2xl transition-all duration-300 border-2 backdrop-blur-sm relative ${!sidebarBgIsLight ? 'bg-ghost-white border-transparent hover:bg-ghost-white' : 'bg-black/30 border-transparent hover:bg-black/50'} ${isUpdating ? 'ring-2 ring-blue-500/60' : ''}`}
       >
         {/* Blue vignette overlay - scoped to this card */}
         {isUpdating && (
