@@ -175,7 +175,7 @@ export default function CreatorProfile() {
 
       <div className="px-6 py-10 space-y-6">
         {/* Profile Card — mirrors PublicProfileTab Section 1 */}
-        <div className="bg-[#1e1e22] rounded-2xl border border-white/10 p-6">
+        <div className="bg-[#1e1e22] rounded-2xl border border-ghost-white p-6">
           <div className="flex gap-6">
             {/* Avatar column — same w-72 as PublicProfileTab */}
             <div className="flex-shrink-0 flex flex-col items-center gap-3 w-72">
