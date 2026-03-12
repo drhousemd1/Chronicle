@@ -1757,7 +1757,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     </div>
                     {/* Content */}
                     <div className="p-5">
-                      <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
+                      <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-ghost-white">
                         {(expandedCustomSections[section.id] ?? true) ? (
                           <div className="space-y-4">
                             {section.type === 'freeform' ? (
