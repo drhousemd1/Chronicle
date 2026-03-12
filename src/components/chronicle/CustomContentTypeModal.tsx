@@ -28,7 +28,7 @@ export const CustomContentTypeModal: React.FC<CustomContentTypeModalProps> = ({ 
             type="button"
             onClick={() => handleSelect('structured')}
             className={cn(
-              "group flex flex-col items-center gap-3 p-5 rounded-2xl border border-white/10 bg-zinc-800/50",
+              "group flex flex-col items-center gap-3 p-5 rounded-2xl border border-ghost-white bg-zinc-800/50",
               "hover:border-blue-500/50 hover:bg-blue-500/10 transition-all cursor-pointer text-center"
             )}
           >
