@@ -19,7 +19,7 @@ export const EnhanceModeModal: React.FC<EnhanceModeModalProps> = ({ open, onClos
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-md bg-zinc-900 border-white/10 p-0 gap-0 [&>button]:hidden">
+      <DialogContent className="sm:max-w-md bg-zinc-900 border-ghost-white p-0 gap-0 [&>button]:hidden">
         <div className="px-6 pt-5 pb-3">
           <h3 className="text-white text-lg font-bold tracking-tight">Enhancement Style</h3>
           <p className="text-zinc-400 text-sm mt-1">Choose how the AI should expand this field.</p>
