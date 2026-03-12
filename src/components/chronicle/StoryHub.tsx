@@ -79,22 +79,22 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDel
         <div className="absolute inset-0 bg-black/40 pointer-events-none" />
         
         {/* Hover Actions - Edit, Delete, Play */}
-        <div className="absolute inset-0 flex items-center justify-center gap-2 px-4 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 scale-90 group-hover:scale-100 flex-wrap">
+        <div className="absolute inset-0 flex items-center justify-center gap-2 px-4 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 scale-90 group-hover:scale-100">
           <button 
             onClick={(e) => { e.stopPropagation(); onEdit(scen.id); }}
-            className="h-8 px-4 rounded-xl bg-white text-[hsl(var(--ui-surface-2))] hover:bg-ghost-white text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl transition-colors"
+            className="h-8 px-3 rounded-xl bg-white text-[hsl(var(--ui-surface-2))] hover:bg-ghost-white text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl transition-colors"
           >
             Edit
           </button>
           <button 
             onClick={handleDeleteClick}
-            className="h-8 px-4 rounded-xl bg-[hsl(var(--destructive))] text-white hover:brightness-110 text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl transition-colors"
+            className="h-8 px-3 rounded-xl bg-[hsl(var(--destructive))] text-white hover:brightness-110 text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl transition-colors"
           >
             Delete
           </button>
           <button 
             onClick={(e) => { e.stopPropagation(); onPlay(scen.id); }}
-            className="h-8 px-4 rounded-xl bg-blue-500 text-white hover:bg-blue-600 text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl transition-colors"
+            className="h-8 px-3 rounded-xl bg-blue-500 text-white hover:bg-blue-600 text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl transition-colors"
           >
             Play
           </button>
