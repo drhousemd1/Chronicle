@@ -4142,7 +4142,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 locations="WorldTab.tsx"
                 pageSpecific appWide={false}
                 preview={
-                  <div className="bg-zinc-900 rounded-xl p-3 border border-white/5" style={{ width: '100%' }}>
+                  <div className="bg-zinc-900 rounded-xl p-3 border border-ghost-white" style={{ width: '100%' }}>
                     <div className="text-[8px] text-zinc-400 leading-relaxed">
                       <span className="text-zinc-500 mr-1">◆</span> Hint text<br/>
                       <span className="text-zinc-500 mr-1">◆</span> Guidance line
