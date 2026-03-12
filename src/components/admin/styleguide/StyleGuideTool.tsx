@@ -4044,7 +4044,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                       <span className="text-[#4a5f7f] text-[10px]">✉</span>
                       <span className="text-[10px] font-bold text-white">Email</span>
                     </div>
-                    <div className="text-[8px] text-white/70 bg-[#2a2a2f] rounded-lg px-2 py-1.5 border border-white/5">user@email.com</div>
+                    <div className="text-[8px] text-white/70 bg-[#2a2a2f] rounded-lg px-2 py-1.5 border border-ghost-white">user@email.com</div>
                   </div>
                 }
               />
