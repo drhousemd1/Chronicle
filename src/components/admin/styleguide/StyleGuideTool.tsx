@@ -2664,14 +2664,14 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             />
             <ButtonCardV2
               buttonName="Sidebar Collapse Toggle"
-              buttonColor="text-slate-400 hover:text-white hover:bg-white/10"
+              buttonColor="text-slate-400 hover:text-white hover:bg-ghost-white"
               size="p-2 rounded-lg"
               purpose="Toggle sidebar between expanded and collapsed states"
               visualEffects="transition-colors. Uses PanelLeft / PanelLeftClose icons"
               locations="Index.tsx — sidebar header"
               appWide
               preview={
-                <button className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>◀</button>
+                <button className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-ghost-white" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>◀</button>
               }
             />
 
