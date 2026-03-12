@@ -3461,7 +3461,7 @@ const updatedChar: SideCharacter = {
               </div>
               {/* Full-width card-like overflow indicator */}
               {mainCharactersForDisplay.length > 3 && canScrollDownMainChars && (
-                 <div className={`mt-0 w-full rounded-2xl backdrop-blur-sm border border-ghost-white flex items-center justify-center py-1.5 ${!sidebarBgIsLight ? 'bg-white/30' : 'bg-black/30'}`}>
+                 <div className={`mt-0 w-full rounded-2xl backdrop-blur-sm border border-ghost-white flex items-center justify-center py-1.5 ${!sidebarBgIsLight ? 'bg-ghost-white' : 'bg-black/30'}`}>
                    <ChevronDown className={`w-4 h-4 ${!sidebarBgIsLight ? 'text-black/80' : 'text-white/80'}`} />
                    <span className={`text-xs font-medium ml-1 ${!sidebarBgIsLight ? 'text-black/80' : 'text-white/80'}`}>
                      {mainCharactersForDisplay.length - 3}
