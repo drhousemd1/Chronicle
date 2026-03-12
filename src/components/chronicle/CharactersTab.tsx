@@ -1211,7 +1211,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                   <button 
                     type="button"
                     onClick={() => toggleCustomSection(section.id)} 
-                    className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-white/10"
+                    className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-ghost-white"
                   >
                     {(expandedCustomSections[section.id] ?? true) ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
                   </button>
