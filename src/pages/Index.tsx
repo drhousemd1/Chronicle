@@ -2215,7 +2215,7 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
                       <button
                         type="button"
                         onClick={() => setIsCharacterPickerOpen(true)}
-                        className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-ghost-white transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
+                        className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-ghost-white active:bg-ghost-white transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
                       >
                         Import from Library
                       </button>
