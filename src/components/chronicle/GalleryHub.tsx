@@ -247,7 +247,7 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
 
   const handleLike = async (published: PublishedScenario) => {
     if (!user) {
-      console.error('Please sign in to like stories');
+      onAuthRequired?.();
       return;
     }
 
