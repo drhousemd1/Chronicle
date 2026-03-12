@@ -91,7 +91,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
                   "px-3 py-1.5 rounded-lg text-xs font-medium border transition-all",
                   isSelected
                     ? "bg-blue-500/20 text-blue-300 border-blue-500/30"
-                    : "bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700 hover:text-zinc-300"
+                    : "bg-zinc-800 text-zinc-400 border-[#4a5f7f] hover:bg-zinc-700 hover:text-zinc-300"
                 )}
               >
                 {option}
@@ -132,7 +132,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
                   }}
                   placeholder="Custom..."
                   autoFocus
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 text-white border border-zinc-600 focus:border-blue-500 focus:outline-none w-28"
+                                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 text-white border border-[#4a5f7f] focus:border-blue-500 focus:outline-none w-28"
                 />
                 <button
                   type="button"
@@ -185,7 +185,7 @@ const StoryTypeSelector: React.FC<{
                     ? type === 'NSFW'
                       ? "bg-red-500/20 text-red-500 border-red-500/30"
                       : "bg-blue-500/20 text-blue-500 border-blue-500/30"
-                    : "bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700 hover:text-zinc-300"
+                    : "bg-zinc-800 text-zinc-400 border-[#4a5f7f] hover:bg-zinc-700 hover:text-zinc-300"
                 )}
               >
                 {type}
@@ -263,7 +263,7 @@ const CustomTagsSection: React.FC<{
                 }}
                 placeholder="Custom..."
                 autoFocus
-                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 text-white border border-zinc-600 focus:border-blue-500 focus:outline-none w-28"
+                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 text-white border border-[#4a5f7f] focus:border-blue-500 focus:outline-none w-28"
               />
               <button
                 type="button"
