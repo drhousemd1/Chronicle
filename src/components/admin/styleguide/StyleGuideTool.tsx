@@ -4266,7 +4266,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 preview={
                   <div style={{ position: 'relative', width: '100%', height: 60, borderRadius: 6, overflow: 'hidden' }}>
                     <div style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.5)', backdropFilter: 'blur(2px)' }} />
-                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#18181b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 18, padding: '8px 16px', color: '#fff', fontSize: 9, fontWeight: 600 }}>
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#18181b', border: '1px solid rgba(248,250,252,0.3)', borderRadius: 18, padding: '8px 16px', color: '#fff', fontSize: 9, fontWeight: 600 }}>
                       Picker — rounded-3xl
                     </div>
                   </div>
