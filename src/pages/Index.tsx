@@ -1569,34 +1569,34 @@ const IndexContent = () => {
           </div>
           <nav className={`flex-1 overflow-y-auto pb-4 mt-4 space-y-1 ${sidebarCollapsed ? 'px-2' : 'px-4'}`}>
             <SidebarItem active={tab === "gallery"} label="Community Gallery" icon={<IconsList.Gallery />} onClick={() => handleNavigateAway("gallery")} collapsed={sidebarCollapsed} />
-            <SidebarItem active={tab === "hub"} label="My Stories" icon={<IconsList.Hub />} onClick={() => handleNavigateAway("hub")} collapsed={sidebarCollapsed} />
-            <SidebarItem active={tab === "library"} label="Character Library" icon={<IconsList.Library />} onClick={() => handleNavigateAway("library")} collapsed={sidebarCollapsed} />
-            <SidebarItem active={tab === "image_library"} label="Image Library" icon={<IconsList.ImageLibrary />} onClick={() => handleNavigateAway("image_library")} collapsed={sidebarCollapsed} />
+            <SidebarItem active={tab === "hub"} label="My Stories" icon={<IconsList.Hub />} onClick={() => requireAuth(() => handleNavigateAway("hub"))} collapsed={sidebarCollapsed} />
+            <SidebarItem active={tab === "library"} label="Character Library" icon={<IconsList.Library />} onClick={() => requireAuth(() => handleNavigateAway("library"))} collapsed={sidebarCollapsed} />
+            <SidebarItem active={tab === "image_library"} label="Image Library" icon={<IconsList.ImageLibrary />} onClick={() => requireAuth(() => handleNavigateAway("image_library"))} collapsed={sidebarCollapsed} />
             
-            <SidebarItem active={tab === "conversations"} label="Chat History" icon={<IconsList.Chat />} onClick={() => handleNavigateAway("conversations")} collapsed={sidebarCollapsed} />
+            <SidebarItem active={tab === "conversations"} label="Chat History" icon={<IconsList.Chat />} onClick={() => requireAuth(() => handleNavigateAway("conversations"))} collapsed={sidebarCollapsed} />
             
             <SidebarItem 
               active={tab === "world" || tab === "characters"} 
               label="Story Builder"
               subtitle={activeId ? (activeMeta?.title || "Unsaved Draft") : undefined}
               icon={<IconsList.Builder />} 
-              onClick={() => {
+              onClick={() => requireAuth(() => {
                 if (playingConversationId) handleCreateNewScenario();
                 else if (activeId) setTab("world");
                 else handleCreateNewScenario();
-              }}
+              })}
               className={!activeId ? "opacity-80" : ""}
               collapsed={sidebarCollapsed}
             />
 
             {isAdminState && (
               <div className="pt-4 mt-4 border-t border-white/10">
-                <SidebarItem active={tab === "admin"} label="Admin" icon={<Settings className="w-5 h-5" />} onClick={() => { setAdminActiveTool('hub'); setTab("admin"); }} collapsed={sidebarCollapsed} />
+                <SidebarItem active={tab === "admin"} label="Admin" icon={<Settings className="w-5 h-5" />} onClick={() => requireAuth(() => { setAdminActiveTool('hub'); setTab("admin"); })} collapsed={sidebarCollapsed} />
               </div>
             )}
 
             <div className="pt-4 mt-4 border-t border-white/10">
-              <SidebarItem active={tab === "account"} label="Account" icon={<UserCircle className="w-5 h-5" />} onClick={() => setTab("account")} collapsed={sidebarCollapsed} />
+              <SidebarItem active={tab === "account"} label={isAuthenticated ? "Account" : "Log In"} icon={<UserCircle className="w-5 h-5" />} onClick={() => requireAuth(() => setTab("account"))} collapsed={sidebarCollapsed} />
             </div>
           </nav>
         </aside>
