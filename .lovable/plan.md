@@ -1,28 +1,11 @@
 
 
-# Remove Container Borders, Keep Dashed Placeholder Borders
+## Plan: Persist Style Guide Edits to Supabase — Complete ✅
 
-Remove `border border-ghost-white` from all section containers and inner content cards in `WorldTab.tsx`, while preserving dashed borders on placeholder elements.
+### What was done:
 
-## Changes: `src/components/chronicle/WorldTab.tsx`
-
-Remove `border border-ghost-white` from these locations:
-
-**Outer section containers** (the `rounded-[24px]` wrappers):
-- Line 509 — Cover Image section
-- Line 638 — World Core section
-- Line 888 — Opening Dialog section
-- Line 1072 — Scene Gallery section
-- Line 1193 — Art Style section
-- Line 1260 area — World Codex section (and any others)
-
-**Section headers** (`border-b border-ghost-white` on the steel-blue headers):
-- Lines 511, 639, 889, 1073, 1194, etc.
-
-**Inner content cards** (`bg-[#3a3a3f]/30 rounded-2xl border border-ghost-white`):
-- Lines 518, 644, 894, etc.
-
-**Keep untouched**: All `border-dashed` elements (image placeholder, character placeholder, add buttons).
-
-This is a visual test — if you like the cleaner look we keep it, otherwise we revert.
-
+1. **Seeded `app_settings` rows** — `styleguide_edits` and `styleguide_keeps` rows inserted into the database
+2. **Rewrote all storage helpers** in `StyleGuideEditsModal.tsx` from sync localStorage to async Supabase operations (`getEditsRegistry`, `upsertEdit`, `removeEdit`, `getKeeps`, `addKeep`, `removeKeep`, `getEditsCount`)
+3. **Updated all consumers** in `StyleGuideTool.tsx` — `refreshEditsState`, `handleKeep`, `handleEditOpen`, `handleSaveEdit`, `handleRemoveKeep` are all async now
+4. **Updated `Index.tsx`** — `getEditsCount()` call now uses `.then()` since it's async
+5. **Every edit, keep, and delete auto-saves to Supabase immediately** — no data loss on domain changes
