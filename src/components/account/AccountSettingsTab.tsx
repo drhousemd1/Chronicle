@@ -52,7 +52,7 @@ export const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({ user }) 
       </div>
 
       {/* Subscription Section */}
-      <div className="bg-[#1e1e22] rounded-2xl border border-white/10 p-6">
+      <div className="bg-[#1e1e22] rounded-2xl border border-ghost-white p-6">
         <div className="flex items-center gap-3 mb-4">
           <Shield className="w-5 h-5 text-[#4a5f7f]" />
           <h3 className="text-lg font-bold text-white">Current Plan</h3>
