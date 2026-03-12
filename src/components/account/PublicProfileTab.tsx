@@ -289,7 +289,7 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
       />
 
       {/* Section 1: Profile Info */}
-      <div className="bg-[#1e1e22] rounded-2xl border border-white/10 p-6">
+      <div className="bg-[#1e1e22] rounded-2xl border border-ghost-white p-6">
         <div className="flex gap-6">
           {/* Avatar column - w-64 for enough button room */}
           <div className="flex-shrink-0 flex flex-col items-center gap-3 w-72">
