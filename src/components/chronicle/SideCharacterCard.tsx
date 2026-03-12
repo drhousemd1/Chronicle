@@ -55,7 +55,7 @@ export const SideCharacterCard: React.FC<SideCharacterCardProps> = ({
       <div className="relative">
         <div className="w-full flex flex-col items-center gap-2 p-3 text-center">
           <div className="relative">
-            <div className={`w-20 h-20 rounded-full border-2 shadow-sm overflow-hidden transition-all duration-300 ${isDarkBg ? 'bg-purple-50 border-purple-100' : 'bg-zinc-800 border-white/20'}`}>
+            <div className={`w-20 h-20 rounded-full border-2 shadow-sm overflow-hidden transition-all duration-300 ${isDarkBg ? 'bg-purple-50 border-purple-100' : 'bg-zinc-800 border-ghost-white'}`}>
               {character.isAvatarGenerating ? (
                 <div className="w-full h-full flex items-center justify-center bg-purple-100">
                   <Loader2 className="w-6 h-6 text-purple-500 animate-spin" />
