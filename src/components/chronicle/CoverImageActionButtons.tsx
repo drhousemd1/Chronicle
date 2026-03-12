@@ -56,7 +56,7 @@ export function CoverImageActionButtons({
           >
             <DropdownMenuItem
               onClick={onUploadFromDevice}
-              className="cursor-pointer hover:bg-white/10 focus:bg-white/10 text-[10px]"
+              className="cursor-pointer hover:bg-ghost-white focus:bg-ghost-white text-[10px]"
             >
               <Upload className="w-3.5 h-3.5 mr-2" />
               From Device
