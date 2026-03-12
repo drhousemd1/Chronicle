@@ -2202,13 +2202,13 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               textColor="#ffffff — text-white"
               size="flex-1 h-12 — rounded-xl"
               purpose="Edit owned story from detail modal"
-              visualEffects="border: 1px solid rgba(255,255,255,0.1) — border-white/10. Hover: bg-white/10"
+              visualEffects="border: 1px solid ghost-white — border-ghost-white. Hover: bg-ghost-white"
               locations="StoryDetailModal — owned mode only"
               pageSpecific={true}
               appWide={false}
               preview={
                 <div style={{ background: '#1a1a2e', borderRadius: 12, padding: '16px 20px', width: '100%', display: 'flex', justifyContent: 'center' }}>
-                  <button className="h-12 bg-white/5 border border-white/10 rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2 hover:bg-white/10 transition-colors" style={{ cursor: 'default', minWidth: 140 }}>✏ Edit</button>
+                  <button className="h-12 bg-white/5 border border-ghost-white rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2 hover:bg-ghost-white transition-colors" style={{ cursor: 'default', minWidth: 140 }}>✏ Edit</button>
                 </div>
               }
             />
