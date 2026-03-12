@@ -94,7 +94,7 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDel
           </button>
           <button 
             onClick={(e) => { e.stopPropagation(); onPlay(scen.id); }}
-            className="h-8 px-4 rounded-xl bg-blue-500 text-white hover:bg-blue-600 text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl transition-colors"
+            className="h-8 px-3 rounded-xl bg-blue-500 text-white hover:bg-blue-600 text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl transition-colors"
           >
             Play
           </button>
