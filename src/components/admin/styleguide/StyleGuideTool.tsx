@@ -4508,7 +4508,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 appWide={false} pageSpecific
                 notes="p-0 gap-0 [&>button]:hidden. Option cards: p-5 rounded-2xl bg-zinc-800/50. ⚠ 3 identical layouts — should be shared component."
                 preview={
-                  <div className="rounded-lg overflow-hidden" style={{ background: '#18181b', border: '1px solid rgba(255,255,255,0.1)', width: '100%' }}>
+                  <div className="rounded-lg overflow-hidden" style={{ background: '#18181b', border: '1px solid rgba(248,250,252,0.3)', width: '100%' }}>
                     <div style={{ padding: '8px 12px 4px' }}>
                       <div className="text-white text-[9px] font-bold">Select Option</div>
                       <div className="text-zinc-400 text-[7px] mt-0.5">Choose below.</div>
