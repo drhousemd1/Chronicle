@@ -2998,30 +2998,8 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               />
             </div>
 
-            <PageSubheading>Auth Page</PageSubheading>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14 }}>
-              <InputCardV2
-                inputName="Auth Input (Dark Slate)"
-                background="bg-slate-700/50"
-                border="border-slate-600"
-                borderRadius="rounded-md (6px — shadcn default)"
-                textColor="white"
-                placeholderColor="text-slate-400 / text-slate-500"
-                focusStyle="shadcn default ring behavior"
-                fontSize="14px / text-sm"
-                padding="px-3 py-2 (h-10)"
-                purpose="Login/signup form fields using shadcn Input with className overrides"
-                locations="Auth Page — email, password, and display name fields"
-                pageSpecific
-                notes="⚠ Uses slate-* palette (unique to Auth) vs zinc-* (rest of app). Third input color system alongside zinc-* (dark) and slate-50 (Chronicle UI)."              preview={<>
-                  <input readOnly className="w-full rounded-md border border-slate-600 bg-slate-700/50 text-white text-sm px-3 py-2 outline-none placeholder:text-slate-500" placeholder="you@example.com" />
-                  <input readOnly type="password" className="w-full rounded-md border border-slate-600 bg-slate-700/50 text-white text-sm px-3 py-2 outline-none placeholder:text-slate-500" placeholder="••••••••" />
-                </>}
-              />
-            </div>
-            <InconsistencyNote items={[
-              { file: 'Auth.tsx', note: 'Uses bg-slate-700/50 border-slate-600 — a third input color system alongside zinc-* (dark) and slate-50 (Chronicle UI).' },
-            ]} />
+
+
 
             <PageSubheading>Character Library Search</PageSubheading>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14 }}>
