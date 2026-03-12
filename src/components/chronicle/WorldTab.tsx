@@ -455,7 +455,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
           : "border-2 border-dashed border-[#4a5f7f] hover:border-[#5a7a9f]"
       )}
     >
-      <div className="w-14 h-14 shrink-0 rounded-xl bg-[#1a1a1f] border-2 border-dashed border-zinc-600 flex items-center justify-center text-zinc-500 transition-all duration-300 group-hover/add:border-zinc-400 group-hover/add:bg-[#3a3a3f]/70 group-hover/add:text-zinc-300">
+      <div className="w-14 h-14 shrink-0 rounded-xl bg-[#1a1a1f] border-2 border-dashed border-[#4a5f7f] flex items-center justify-center text-zinc-500 transition-all duration-300 group-hover/add:border-[#5a7a9f] group-hover/add:bg-[#3a3a3f]/70 group-hover/add:text-zinc-300">
          <span className="text-2xl font-light">+</span>
       </div>
       <div className="text-left">
