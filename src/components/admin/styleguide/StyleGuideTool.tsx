@@ -2489,7 +2489,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               textColor="text-[hsl(var(--ui-text))]"
               size="px-6 py-2 rounded-xl — text-sm font-bold"
               purpose="Paginated loading of additional conversation sessions"
-              visualEffects="Shadow Surface: shadow-[0_10px_30px_rgba(0,0,0,0.35)]. Hover: bg-white/5. Active: bg-ghost-white scale-95"
+              visualEffects="Shadow Surface: shadow-[0_10px_30px_rgba(0,0,0,0.35)]. Hover: bg-ghost-white. Active: bg-ghost-white scale-95"
               locations="ConversationsTab — bottom of session list"
               pageSpecific
               preview={
