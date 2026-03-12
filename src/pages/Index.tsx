@@ -257,37 +257,7 @@ const IndexContent = () => {
     if (user?.id) checkIsAdmin(user.id).then(setIsAdminState);
   }, [user?.id]);
 
-  // Refresh draft count from registry + scan localStorage for orphaned drafts
-  const refreshDraftCount = React.useCallback(() => {
-    let registry = getDraftRegistry();
-    // Scan localStorage for orphaned draft_* keys not in registry
-    const registryIds = new Set(registry.map(d => d.id));
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith('draft_') && key !== 'draft_registry') {
-        const id = key.replace('draft_', '');
-        if (!registryIds.has(id)) {
-          try {
-            const raw = localStorage.getItem(key);
-            if (raw) {
-              const parsed = JSON.parse(raw);
-              upsertDraftRegistry({
-                id,
-                title: parsed?.world?.core?.scenarioName || parsed?.title || 'Untitled',
-                savedAt: parsed?.savedAt || Date.now(),
-              });
-            }
-          } catch (_) { /* ignore corrupt entries */ }
-        }
-      }
-    }
-    registry = getDraftRegistry();
-    setDraftCount(registry.length);
-  }, []);
-
-  useEffect(() => {
-    refreshDraftCount();
-  }, [refreshDraftCount]);
+  // (Draft count refresh removed - drafts are now DB-backed and shown in the hub)
 
   // Track whether conversation previews have been enriched
   const [conversationsEnriched, setConversationsEnriched] = useState(false);
