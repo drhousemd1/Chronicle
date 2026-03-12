@@ -4549,7 +4549,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <PanelCardV2
                 panelName="CharacterEditModal"
                 background="#2a2a2f"
-                border="border-white/10"
+                border="border-ghost-white"
                 borderRadius="rounded-lg"
                 purpose="Full character editing modal with dark header and form sections"
                 locations="CharacterEditModal.tsx"
