@@ -316,14 +316,14 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                         onClick={handleLike}
                         disabled={isLiking}
                         className={cn(
-                          "flex-1 h-12 border rounded-xl flex items-center justify-center gap-2 transition-all",
+                          "flex-1 h-10 border rounded-xl flex items-center justify-center gap-2 shadow-[0_10px_30px_rgba(0,0,0,0.35)] text-[10px] font-bold leading-none uppercase tracking-wider transition-all",
                           isLiked 
-                            ? "bg-rose-500/20 border-rose-500/50 text-rose-400" 
-                            : "bg-ghost-white hover:bg-ghost-white border-ghost-white text-white"
+                            ? "bg-rose-500 border-rose-500 text-white" 
+                            : "bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] hover:bg-rose-500/20 hover:text-rose-400"
                         )}
                       >
-                        <Heart className={cn("w-5 h-5", isLiked && "fill-current")} />
-                        <span className="text-sm font-semibold">Like</span>
+                        <Heart className={cn("w-4 h-4", isLiked && "fill-current")} />
+                        <span>Like</span>
                       </button>
                     )}
                     {onSave && (
