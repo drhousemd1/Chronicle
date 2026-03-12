@@ -2361,7 +2361,7 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
             <div className="relative p-10 overflow-y-auto h-full bg-black">
               {showResumingOverlay && (
                 <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/70 backdrop-blur-sm">
-                  <div className="w-10 h-10 border-4 border-white/20 border-t-white rounded-full animate-spin mb-4" />
+                  <div className="w-10 h-10 border-4 border-ghost-white border-t-white rounded-full animate-spin mb-4" />
                   <p className="text-white font-medium text-lg">Loading session...</p>
                 </div>
               )}

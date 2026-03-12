@@ -95,7 +95,7 @@ export function ModelSettingsTab({ selectedModelId, onSelectModel }: ModelSettin
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg ${selectedModelId === model.id ? 'bg-white/10' : 'bg-emerald-50'}`}>
+                    <div className={`p-2 rounded-lg ${selectedModelId === model.id ? 'bg-ghost-white' : 'bg-emerald-50'}`}>
                       <Zap className={`w-4 h-4 ${selectedModelId === model.id ? 'text-emerald-400' : 'text-emerald-500'}`} />
                     </div>
                     <div>
