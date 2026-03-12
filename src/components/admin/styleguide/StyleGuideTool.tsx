@@ -4148,7 +4148,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 notes="⚠ Right pane uses light-theme Cards (bg-white) on dark background"
                 preview={
                   <div style={{ display: 'flex', width: '100%', height: 70, borderRadius: 6, overflow: 'hidden' }}>
-                    <div style={{ width: 80, background: '#2a2a2f', borderRight: '1px solid rgba(255,255,255,0.1)', padding: 6 }}>
+                    <div style={{ width: 80, background: '#2a2a2f', borderRight: '1px solid rgba(248,250,252,0.3)', padding: 6 }}>
                       <div className="text-[7px] font-black uppercase text-white/70 px-1 py-0.5 rounded mb-1" style={{ background: '#4a5f7f' }}>Chars</div>
                       <div className="rounded p-1" style={{ background: 'rgba(58,58,63,0.3)', border: '1px solid rgba(255,255,255,0.05)' }}>
                         <div className="text-[7px] text-white font-semibold">Hero</div>
