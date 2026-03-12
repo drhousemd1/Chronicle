@@ -2171,7 +2171,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               appWide={false}
               preview={
                 <div style={{ background: '#1a1a2e', borderRadius: 12, padding: '16px 20px', width: '100%', display: 'flex', justifyContent: 'center' }}>
-                  <button className="h-12 bg-white/5 border border-ghost-white rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2 hover:bg-ghost-white transition-colors" style={{ cursor: 'default', minWidth: 140 }}>✏ Edit</button>
+                  <button className="h-12 bg-ghost-white border border-ghost-white rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2 hover:bg-ghost-white transition-colors" style={{ cursor: 'default', minWidth: 140 }}>✏ Edit</button>
                 </div>
               }
             />
