@@ -810,6 +810,7 @@ const ALL_SWATCHES: SwatchOption[] = [
   { color: 'rgba(39,39,42,0.5)', name: 'Zinc 800/50' },
   { color: '#e4e4e7', name: 'Zinc 200' },
   { color: 'hsl(240,7%,16%)', name: 'UI Surface' },
+  { color: 'rgba(0,0,0,0.4)', name: 'Shadow Black' },
 ];
 
 export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownload, onRegisterEdits, onEditsCountChange }) => {
@@ -1543,20 +1544,106 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
             {/* ─── Chat History ─── */}
             <PageSubheading>Chat History</PageSubheading>
-            <PageDesc>Colors for the conversation session cards.</PageDesc>
+            <PageDesc>Colors for the conversation session cards, header, and empty/loading states.</PageDesc>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 14 }}>
-              <SwatchCardV2 color="#2a2a2f" name="Dark Charcoal" locations="Session card outer background, empty state card" value="#2a2a2f" token="bg-[#2a2a2f]" pageSpecific={false} appWide={true} />
-              <SwatchCardV2 color="rgba(58,58,63,0.3)" name="Muted Charcoal" locations="Inner nested card in session entries" value="rgba(58,58,63,0.3)" token="bg-[#3a3a3f]/30" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
-              <SwatchCardV2 color="rgba(255,255,255,0.05)" name="Ghost White" locations="Inner card subtle border" value="rgba(255,255,255,0.05)" token="border-white/5" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
-              <SwatchCardV2 color="rgba(255,255,255,0.1)" name="Faint White" locations="Session delete button background" value="rgba(255,255,255,0.1)" token="bg-white/10" pageSpecific={false} appWide={true} extraPreviewStyle={{ border: '1px dashed #999' }} />
-              <SwatchCardV2 color="rgba(24,24,27,0.5)" name="Smoke Black" locations="Last message preview box in session cards" value="rgba(24,24,27,0.5)" token="bg-zinc-900/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
-              <SwatchCardV2 color="#71717a" name="Stone Gray" locations="Message count, date, Created by attribution" value="#71717a" token="text-zinc-500" pageSpecific={true} appWide={false} />
-              <SwatchCardV2 color="#a1a1aa" name="Silver Gray" locations="Last message preview text, delete icon default" value="#a1a1aa" token="text-zinc-400" pageSpecific={true} appWide={false} />
-              <SwatchCardV2 color="#4a5f7f" name="Slate Blue" locations="Session card border, empty state border, thumbnail border" value="#4a5f7f" token="border-[#4a5f7f]" pageSpecific={false} appWide={true} />
-              <SwatchCardV2 color="#27272a" name="Dark Zinc" locations="Thumbnail fallback background" value="#27272a" token="bg-zinc-800" pageSpecific={false} appWide={true} />
-              <SwatchCardV2 color="rgba(255,255,255,0.15)" name="Dim White" locations="Delete button hover background" value="rgba(255,255,255,0.15)" token="bg-white/15" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
-              <SwatchCardV2 color="#ef4444" name="Bright Red" locations="Delete button hover icon color" value="#ef4444" token="text-red-500" pageSpecific={true} appWide={false} />
-              <SwatchCardV2 color="rgba(239,68,68,0.3)" name="Faint Red" locations="Delete button hover border" value="rgba(239,68,68,0.3)" token="border-red-500/30" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              {/* Page-level backgrounds */}
+              <SwatchCardV2 color="#000000" name="Black" locations="Page background wrapper" value="#000000" token="bg-black" pageSpecific={true} appWide={false}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-history%2Fchat-history-full.png', location: 'Page background', function: 'Full-bleed black behind all session cards' },
+                ]}
+              />
+              {/* Session card structure */}
+              <SwatchCardV2 color="#2a2a2f" name="Dark Charcoal" locations="Session card outer background, empty state card" value="#2a2a2f" token="bg-[#2a2a2f]" pageSpecific={false} appWide={true}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-history%2Fchat-history-full.png', location: 'Session card outer bg', function: 'Rounded card container wrapping each session entry' },
+                ]}
+              />
+              <SwatchCardV2 color="rgba(58,58,63,0.3)" name="Muted Charcoal" locations="Inner nested card in session entries" value="rgba(58,58,63,0.3)" token="bg-[#3a3a3f]/30" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-history%2Fchat-history-full.png', location: 'Inner nested card', function: 'Semi-transparent inner content area within each session card' },
+                ]}
+              />
+              <SwatchCardV2 color="rgba(255,255,255,0.05)" name="Ghost White" locations="Inner card subtle border" value="rgba(255,255,255,0.05)" token="border-white/5" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-history%2Fchat-history-full.png', location: 'Inner card border', function: 'Barely-visible border on inner content panel' },
+                ]}
+              />
+              <SwatchCardV2 color="#4a5f7f" name="Slate Blue" locations="Session card border, empty state border, thumbnail border, thumbnail hover ring" value="#4a5f7f" token="border-[#4a5f7f]" pageSpecific={false} appWide={true}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-history%2Fchat-history-full.png', location: 'Session card / thumbnail border', function: 'Slate blue border on outer card, thumbnail, and empty state container' },
+                ]}
+              />
+              {/* Thumbnail */}
+              <SwatchCardV2 color="#27272a" name="Dark Zinc" locations="Thumbnail fallback background" value="#27272a" token="bg-zinc-800" pageSpecific={false} appWide={true}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-history%2Fchat-history-full.png', location: 'Thumbnail fallback', function: 'Background when scenario has no cover image' },
+                ]}
+              />
+              <SwatchCardV2 color="rgba(0,0,0,0.4)" name="Shadow Black" locations="Thumbnail card drop shadow" value="rgba(0,0,0,0.4)" token="shadow-[0_4px_12px_rgba(0,0,0,0.4)]" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-history%2Fchat-history-full.png', location: 'Thumbnail shadow', function: 'Deep drop shadow cast by the scenario thumbnail image' },
+                ]}
+              />
+              {/* Text colors */}
+              <SwatchCardV2 color="#ffffff" name="White" locations="Session title text" value="#ffffff" token="text-white" pageSpecific={false} appWide={true}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-history%2Fchat-history-full.png', location: 'Session title', function: 'Bold white scenario title in each session card' },
+                ]}
+              />
+              <SwatchCardV2 color="#71717a" name="Stone Gray" locations="Message count emoji+number, date, Created by attribution" value="#71717a" token="text-zinc-500" pageSpecific={true} appWide={false}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-history%2Fchat-history-full.png', location: 'Meta text', function: 'Message count, dot separator, date, and "Created by" label' },
+                ]}
+              />
+              <SwatchCardV2 color="#a1a1aa" name="Silver Gray" locations="Last message preview text, delete icon default state" value="#a1a1aa" token="text-zinc-400" pageSpecific={true} appWide={false}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-history%2Fchat-history-full.png', location: 'Preview text + delete icon', function: 'Last message preview and un-hovered trash icon color' },
+                ]}
+              />
+              {/* Message preview box */}
+              <SwatchCardV2 color="rgba(24,24,27,0.5)" name="Smoke Black" locations="Last message preview box background" value="rgba(24,24,27,0.5)" token="bg-zinc-900/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-history%2Fchat-history-full.png', location: 'Preview box bg', function: 'Semi-transparent dark box containing last message text' },
+                ]}
+              />
+              <SwatchCardV2 color="rgba(255,255,255,0.1)" name="Faint White" locations="Preview box border, delete button background" value="rgba(255,255,255,0.1)" token="bg-white/10, border-white/10" pageSpecific={false} appWide={true} extraPreviewStyle={{ border: '1px dashed #999' }}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-history%2Fchat-history-full.png', location: 'Preview box border + delete btn bg', function: 'Subtle border on message preview box, and default delete button background' },
+                ]}
+              />
+              {/* Delete button states */}
+              <SwatchCardV2 color="rgba(255,255,255,0.15)" name="Dim White" locations="Delete button hover background" value="rgba(255,255,255,0.15)" token="bg-white/15" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-history%2Fchat-history-card-hover.png', location: 'Delete hover bg', function: 'Slightly brighter background when hovering the trash button' },
+                ]}
+              />
+              <SwatchCardV2 color="#ef4444" name="Bright Red" locations="Delete button hover icon color" value="#ef4444" token="text-red-500" pageSpecific={true} appWide={false}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-history%2Fchat-history-card-hover.png', location: 'Delete hover icon', function: 'Red trash icon on hover state' },
+                ]}
+              />
+              <SwatchCardV2 color="rgba(239,68,68,0.3)" name="Faint Red" locations="Delete button hover border" value="rgba(239,68,68,0.3)" token="border-red-500/30" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-history%2Fchat-history-card-hover.png', location: 'Delete hover border', function: 'Red-tinted border on hover state' },
+                ]}
+              />
+              {/* Header buttons (Delete All + Load More) */}
+              <SwatchCardV2 color="hsl(228, 7%, 20%)" name="Graphite" locations="Delete All button bg, Load More button bg" value="hsl(228,7%,20%)" token="bg-[hsl(var(--ui-surface-2))]" pageSpecific={true} appWide={false}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-history%2Fchat-history-full.png', location: 'Header + pagination buttons', function: 'Dark surface background on Delete All and Load More buttons' },
+                ]}
+              />
+              <SwatchCardV2 color="hsl(210, 20%, 93%)" name="Pale Silver" locations="Delete All button text, Load More button text" value="hsl(210,20%,93%)" token="text-[hsl(var(--ui-text))]" pageSpecific={true} appWide={false}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-history%2Fchat-history-full.png', location: 'Button text color', function: 'Light text in the Delete All and Load More buttons' },
+                ]}
+              />
+              {/* Loading overlay */}
+              <SwatchCardV2 color="rgba(0,0,0,0.7)" name="Near Black Glass" locations="Loading overlay background (when resuming session)" value="rgba(0,0,0,0.7)" token="bg-black/70" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }}
+                locationImages={[
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-history%2Fchat-history-full.png', location: 'Loading overlay', function: 'Semi-opaque black overlay with spinner when resuming a session' },
+                ]}
+              />
             </div>
 
             <Divider />
