@@ -1,11 +1,26 @@
 
 
-## Plan: Persist Style Guide Edits to Supabase — Complete ✅
+# Add Hover Effect to AI Generate & AI Fill Buttons
 
-### What was done:
+## Problem
+The premium 8-layer AI Generate buttons (Character Builder, Story Builder) and the AI Fill button (header) have no hover effect — they feel static and unresponsive.
 
-1. **Seeded `app_settings` rows** — `styleguide_edits` and `styleguide_keeps` rows inserted into the database
-2. **Rewrote all storage helpers** in `StyleGuideEditsModal.tsx` from sync localStorage to async Supabase operations (`getEditsRegistry`, `upsertEdit`, `removeEdit`, `getKeeps`, `addKeep`, `removeKeep`, `getEditsCount`)
-3. **Updated all consumers** in `StyleGuideTool.tsx` — `refreshEditsState`, `handleKeep`, `handleEditOpen`, `handleSaveEdit`, `handleRemoveKeep` are all async now
-4. **Updated `Index.tsx`** — `getEditsCount()` call now uses `.then()` since it's async
-5. **Every edit, keep, and delete auto-saves to Supabase immediately** — no data loss on domain changes
+## Approach
+Add `hover:brightness-125` to the outer `<button>` element on all four instances. This brightens the entire layered stack on hover without needing to modify individual layers, and it matches the hover pattern already used on nearby buttons (e.g., the Save button at Index.tsx line 2159).
+
+## Changes
+
+### 1. `src/components/chronicle/AvatarActionButtons.tsx` (line 83)
+Add `hover:brightness-125` to the button className.
+
+### 2. `src/components/chronicle/CoverImageActionButtons.tsx` (line 83)
+Same — add `hover:brightness-125`.
+
+### 3. `src/components/chronicle/SceneGalleryActionButtons.tsx` (line 82)
+Same — add `hover:brightness-125`.
+
+### 4. `src/pages/Index.tsx` (line 2108)
+Add `hover:brightness-125` to the AI Fill button className.
+
+All four buttons get the same single-class addition. Nothing else changes.
+
