@@ -535,7 +535,9 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                 {/* Characters Section */}
                 <div className="pt-8">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xs font-bold text-[#4a5f7f] uppercase tracking-widest">Characters</h3>
+                    <div className="bg-[#4a5f7f]/30 rounded px-3 py-1.5 inline-block">
+                      <h3 className="text-xs font-bold text-[rgba(248,250,252,0.9)] uppercase tracking-widest">Characters</h3>
+                    </div>
                     {characters.length > 4 && (
                       <button className="text-[10px] font-bold text-[#3b82f6] hover:underline uppercase">
                         View All
