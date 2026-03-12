@@ -280,7 +280,7 @@ export const PersonalitySection: React.FC<PersonalitySectionProps> = ({
             <div className="space-y-5">
               {/* Split toggle */}
               {!readOnly && (
-                <div className="flex p-1 bg-zinc-900/50 rounded-lg border border-white/10 w-fit">
+                <div className="flex p-1 bg-zinc-900/50 rounded-lg border border-ghost-white w-fit">
                   <button
                     type="button"
                     onClick={() => onChange({ ...personality, splitMode: false })}

@@ -304,9 +304,9 @@ export const ContentThemesSection: React.FC<ContentThemesSectionProps> = ({
 
   return (
     <section>
-      <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
+      <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-ghost-white overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
         {/* Section Header - Steel Blue */}
-        <div className="bg-[#4a5f7f] border-b border-white/20 px-6 py-4 flex items-center gap-3 shadow-lg">
+        <div className="bg-[#4a5f7f] border-b border-ghost-white px-6 py-4 flex items-center gap-3 shadow-lg">
           <Tags className="w-[18px] h-[18px] text-white" />
           <h2 className="text-white text-xl font-bold tracking-tight">Content Themes</h2>
         </div>
