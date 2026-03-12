@@ -217,7 +217,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
       {/* Collapsed view */}
       {!isExpanded && (
         <div className="p-5">
-          <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
+          <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-ghost-white">
             <CollapsedGoalsView />
           </div>
         </div>
@@ -229,7 +229,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
           {sortedGoals.map((goal) => {
             const progress = calculateProgress(goal);
             return (
-              <div key={goal.id} className={cn("p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border relative", isEditMode ? "border-blue-500/20" : "border-white/5")}>
+              <div key={goal.id} className={cn("p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border relative", isEditMode ? "border-blue-500/20" : "border-ghost-white")}>
                 {isEditMode && (
                   <button onClick={() => deleteGoal(goal.id)} className="absolute top-4 right-4 text-zinc-500 hover:text-rose-400 transition-colors" title="Delete goal">
                     <Trash2 className="h-5 w-5" />
@@ -280,7 +280,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
                     )}
 
                     {/* Steps Section */}
-                    <div className="mt-4 pt-4 border-t border-white/5">
+                    <div className="mt-4 pt-4 border-t border-ghost-white">
                       <h4 className="text-[10px] font-bold text-white uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
                         <CheckSquare className="h-4 w-4 text-blue-500" />
                         Steps

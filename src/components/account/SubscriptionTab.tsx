@@ -8,7 +8,7 @@ const tiers = [
     period: '/month',
     icon: Zap,
     color: 'text-slate-400',
-    bgColor: 'bg-white/5',
+    bgColor: 'bg-ghost-white',
     borderColor: 'border-ghost-white',
     current: true,
     features: [
@@ -109,9 +109,9 @@ export const SubscriptionTab: React.FC = () => {
                 disabled={tier.current || tier.comingSoon}
                 className={`mt-6 w-full py-3 rounded-xl font-semibold text-sm transition-colors ${
                   tier.current
-                    ? 'bg-white/5 text-white/40 cursor-default'
+                    ? 'bg-ghost-white text-white/40 cursor-default'
                     : tier.comingSoon
-                    ? 'bg-white/5 text-white/30 cursor-not-allowed'
+                    ? 'bg-ghost-white text-white/30 cursor-not-allowed'
                     : 'bg-[#4a5f7f] hover:bg-[#5a6f8f] text-white'
                 }`}
               >

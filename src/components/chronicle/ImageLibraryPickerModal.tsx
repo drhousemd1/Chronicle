@@ -117,7 +117,7 @@ export const ImageLibraryPickerModal: React.FC<ImageLibraryPickerModalProps> = (
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-3xl max-h-[80vh] p-0 gap-0 overflow-hidden">
-        <DialogHeader className="px-6 py-4 border-b bg-slate-50">
+        <DialogHeader className="px-6 py-4 border-b bg-ghost-white">
           <DialogTitle className="text-lg font-bold flex items-center gap-2">
             {selectedFolder && (
               <button
@@ -231,7 +231,7 @@ export const ImageLibraryPickerModal: React.FC<ImageLibraryPickerModalProps> = (
           </div>
         </ScrollArea>
 
-        <div className="px-6 py-4 border-t bg-slate-50 flex justify-end gap-3">
+        <div className="px-6 py-4 border-t bg-ghost-white flex justify-end gap-3">
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>

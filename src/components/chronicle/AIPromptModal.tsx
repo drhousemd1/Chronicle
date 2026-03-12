@@ -76,7 +76,7 @@ export function AIPromptModal({
           </div>
 
           {/* Use Existing Details Checkbox */}
-          <div className="flex items-start gap-3 p-3 bg-zinc-900/30 rounded-lg border border-white/5">
+          <div className="flex items-start gap-3 p-3 bg-zinc-900/30 rounded-lg border border-ghost-white">
             <Checkbox
               id="useExistingDetails"
               checked={useExistingDetails}
@@ -107,7 +107,7 @@ export function AIPromptModal({
               rounded-xl border border-[hsl(var(--ui-border))] 
               bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
               text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider
-              hover:bg-white/5 active:bg-ghost-white disabled:opacity-50
+              hover:bg-ghost-white active:bg-ghost-white disabled:opacity-50
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ghost-white
               transition-colors"
           >

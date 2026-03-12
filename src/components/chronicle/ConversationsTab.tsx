@@ -54,7 +54,7 @@ export function ConversationsTab({
                     className="bg-[#2a2a2f] rounded-2xl border border-[#4a5f7f] overflow-hidden group"
                   >
                     <div className="p-4">
-                      <div className="bg-[#3a3a3f]/30 rounded-2xl border border-white/5 p-4">
+                      <div className="bg-[#3a3a3f]/30 rounded-2xl border border-ghost-white p-4">
                         <div className="flex gap-4">
                           {/* Scenario thumbnail - clickable */}
                           <button
@@ -141,7 +141,7 @@ export function ConversationsTab({
               <div className="flex justify-center py-6">
                 <button
                   onClick={() => setVisibleCount(prev => prev + PAGE_SIZE)}
-                  className="px-6 py-2 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-ghost-white transition-all active:scale-95 text-sm font-bold"
+                  className="px-6 py-2 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-ghost-white active:bg-ghost-white transition-all active:scale-95 text-sm font-bold"
                 >
                   Load More ({sortedRegistry.length - visibleCount} remaining)
                 </button>

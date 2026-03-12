@@ -156,7 +156,7 @@ const TraitList: React.FC<{
 }> = ({ heading, traits, onUpdateTrait, onDeleteTrait, onAddTrait, readOnly, onEnhanceTrait, enhancingField }) => (
   <div className="space-y-3">
     {heading && (
-      <h4 className="text-[10px] font-bold text-zinc-300 uppercase tracking-[0.15em] border-b border-white/5 pb-2">{heading}</h4>
+      <h4 className="text-[10px] font-bold text-zinc-300 uppercase tracking-[0.15em] border-b border-ghost-white pb-2">{heading}</h4>
     )}
     {traits.length > 0 ? (
       <div className="space-y-3">
@@ -273,7 +273,7 @@ export const PersonalitySection: React.FC<PersonalitySectionProps> = ({
       </div>
 
       <div className="p-5">
-        <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
+        <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-ghost-white">
           {!isExpanded ? (
             <CollapsedView />
           ) : (

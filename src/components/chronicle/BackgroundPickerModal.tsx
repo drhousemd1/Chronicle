@@ -93,7 +93,7 @@ export function BackgroundPickerModal({
 
           {/* Overlay Controls - only show when a background is selected */}
           {selectedBackgroundId && onOverlayChange && (
-            <div className="mb-6 p-4 bg-slate-50 rounded-xl border border-slate-100">
+            <div className="mb-6 p-4 bg-ghost-white rounded-xl border border-slate-100">
               <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-3">Overlay Settings</h3>
               <div className="flex items-center gap-6">
                 {/* Color toggle */}
@@ -143,7 +143,7 @@ export function BackgroundPickerModal({
             <button
               type="button"
               onClick={() => onSelectBackground(null)}
-              className={`group relative aspect-video rounded-xl overflow-hidden border shadow-sm bg-slate-50 transition-all cursor-pointer ${
+              className={`group relative aspect-video rounded-xl overflow-hidden border shadow-sm bg-ghost-white transition-all cursor-pointer ${
                 selectedBackgroundId === null 
                   ? 'ring-2 ring-blue-500 ring-offset-2 border-blue-200' 
                   : 'border-slate-200 hover:border-slate-300'
@@ -171,7 +171,7 @@ export function BackgroundPickerModal({
               <div
                 key={bg.id}
                 onClick={() => onSelectBackground(bg.id)}
-                className={`group relative aspect-video rounded-xl overflow-hidden border shadow-sm bg-slate-50 cursor-pointer transition-all ${
+                className={`group relative aspect-video rounded-xl overflow-hidden border shadow-sm bg-ghost-white cursor-pointer transition-all ${
                   selectedBackgroundId === bg.id 
                     ? 'ring-2 ring-blue-500 ring-offset-2 border-blue-200' 
                     : 'border-slate-200 hover:border-slate-300'

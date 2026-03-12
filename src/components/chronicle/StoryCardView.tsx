@@ -31,7 +31,7 @@ const CollapsibleSection: React.FC<{
       </button>
     </div>
     <div className="p-5">
-      <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
+      <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-ghost-white">
         {isExpanded ? (
           <div className="space-y-4">
             {children}
@@ -198,7 +198,7 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
         >
           <div className="space-y-6">
             {customSections.map((section, sIdx) => (
-              <div key={section.id} className="p-4 bg-blue-900/40 rounded-2xl border border-white/5 space-y-3">
+              <div key={section.id} className="p-4 bg-blue-900/40 rounded-2xl border border-ghost-white space-y-3">
                 <div className="flex items-center justify-between">
                   <Input
                     value={section.title}

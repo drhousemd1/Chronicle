@@ -89,7 +89,7 @@ export const DraftsModal: React.FC<DraftsModalProps> = ({ open, onOpenChange, on
               {drafts.map((draft) => (
                 <div
                   key={draft.id}
-                  className="flex items-center gap-3 rounded-xl bg-zinc-800/60 border border-white/5 px-4 py-3 group"
+                  className="flex items-center gap-3 rounded-xl bg-zinc-800/60 border border-ghost-white px-4 py-3 group"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="text-white text-sm font-semibold truncate">
@@ -110,7 +110,7 @@ export const DraftsModal: React.FC<DraftsModalProps> = ({ open, onOpenChange, on
                   <button
                     type="button"
                     onClick={() => handleDelete(draft.id)}
-                    className="flex items-center justify-center h-8 w-8 rounded-lg text-zinc-500 hover:text-red-500 hover:bg-white/5 transition-colors shrink-0"
+                    className="flex items-center justify-center h-8 w-8 rounded-lg text-zinc-500 hover:text-red-500 hover:bg-ghost-white transition-colors shrink-0"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
