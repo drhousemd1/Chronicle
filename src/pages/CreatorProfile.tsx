@@ -325,7 +325,7 @@ export default function CreatorProfile() {
                           <p className="text-xs text-[rgba(248,250,252,0.7)] line-clamp-2 leading-relaxed italic min-h-[2.5rem]">
                             {work.scenario?.description || 'No description provided.'}
                           </p>
-                          <div className="flex items-center gap-3 text-[10px] text-[rgba(248,250,252,0.3)] mt-1">
+                          <div className="flex items-center gap-3 text-[10px] text-[rgba(248,250,252,0.7)] mt-1">
                             <span className="flex items-center gap-1">
                               <Eye className="w-3 h-3" />
                               {work.view_count}
