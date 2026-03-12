@@ -4077,7 +4077,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <PanelCardV2
                 panelName="Dropdown Menu"
                 background="bg-zinc-800"
-                border="border-white/10"
+                border="border-ghost-white"
                 borderRadius="rounded-md"
                 shadow="shadow-lg"
                 purpose="Context menus for character cards, theme settings, etc."
