@@ -82,7 +82,7 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDel
         <div className="absolute inset-0 flex items-center justify-center gap-2 px-4 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 scale-90 group-hover:scale-100">
           <button 
             onClick={(e) => { e.stopPropagation(); onEdit(scen.id); }}
-            className="h-8 px-4 rounded-xl bg-white text-[hsl(var(--ui-surface-2))] hover:bg-ghost-white text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl transition-colors"
+            className="h-8 px-3 rounded-xl bg-white text-[hsl(var(--ui-surface-2))] hover:bg-ghost-white text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl transition-colors"
           >
             Edit
           </button>
