@@ -1,18 +1,11 @@
 
 
-# Add Crisp Text Shadow to All Card Pages
+## Plan: Persist Style Guide Edits to Supabase — Complete ✅
 
-## Scope
-Three files need the same `textShadow` style applied to their bottom info containers, matching what's already on `StoryHub.tsx`:
+### What was done:
 
-### 1. `src/components/chronicle/GalleryStoryCard.tsx` — line 141
-Add `style={{ textShadow: '0 1px 2px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.7), 0 0 1px rgba(0,0,0,0.9)' }}` to the bottom info `<div>`.
-
-### 2. `src/pages/CreatorProfile.tsx` — line 321
-Same `style` prop on the bottom info `<div>`.
-
-### 3. `src/components/account/PublicProfileTab.tsx` — line 498
-Same `style` prop on the bottom info `<div>`.
-
-All three are identical one-line additions — no other changes needed.
-
+1. **Seeded `app_settings` rows** — `styleguide_edits` and `styleguide_keeps` rows inserted into the database
+2. **Rewrote all storage helpers** in `StyleGuideEditsModal.tsx` from sync localStorage to async Supabase operations (`getEditsRegistry`, `upsertEdit`, `removeEdit`, `getKeeps`, `addKeep`, `removeKeep`, `getEditsCount`)
+3. **Updated all consumers** in `StyleGuideTool.tsx` — `refreshEditsState`, `handleKeep`, `handleEditOpen`, `handleSaveEdit`, `handleRemoveKeep` are all async now
+4. **Updated `Index.tsx`** — `getEditsCount()` call now uses `.then()` since it's async
+5. **Every edit, keep, and delete auto-saves to Supabase immediately** — no data loss on domain changes
