@@ -2191,7 +2191,7 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
                               bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
                               text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider
                               hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-events-none
-                              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20
+                              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ghost-white
                               transition-colors"
                           >
                             {isSavingToLibrary ? 'Saving...' : selectedCharacterIsInLibrary ? 'Update Character' : '+ Character Library'}
