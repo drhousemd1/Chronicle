@@ -1,21 +1,11 @@
 
 
-# Vertically Center "Created by" Text & Unify to Ghost White 70%
+## Plan: Persist Style Guide Edits to Supabase — Complete ✅
 
-## Problem
-The "Created by: Dr. House" text sits top-aligned (`items-start`) next to the avatar circle, and uses mixed colors (`#94a3b8` for label, `#4a5f7f` for name). It should be vertically centered with the avatar, and all text should be ghost white at 70% opacity.
+### What was done:
 
-## Changes
-
-**File: `src/components/chronicle/StoryDetailModal.tsx`**
-
-1. **Line 429** — Change `items-start` to `items-center` on the button flex container
-2. **Lines 445-447** — Change both text colors to `rgba(248,250,252,0.7)`:
-   ```tsx
-   <p className="text-sm text-[rgba(248,250,252,0.7)] group-hover:text-white transition-colors">
-     Created by: <span className="text-[rgba(248,250,252,0.7)] font-medium">{publisher.display_name || publisher.username || 'Anonymous'}</span>
-   </p>
-   ```
-
-Two small edits in one file.
-
+1. **Seeded `app_settings` rows** — `styleguide_edits` and `styleguide_keeps` rows inserted into the database
+2. **Rewrote all storage helpers** in `StyleGuideEditsModal.tsx` from sync localStorage to async Supabase operations (`getEditsRegistry`, `upsertEdit`, `removeEdit`, `getKeeps`, `addKeep`, `removeKeep`, `getEditsCount`)
+3. **Updated all consumers** in `StyleGuideTool.tsx` — `refreshEditsState`, `handleKeep`, `handleEditOpen`, `handleSaveEdit`, `handleRemoveKeep` are all async now
+4. **Updated `Index.tsx`** — `getEditsCount()` call now uses `.then()` since it's async
+5. **Every edit, keep, and delete auto-saves to Supabase immediately** — no data loss on domain changes
