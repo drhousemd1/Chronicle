@@ -4167,7 +4167,7 @@ const updatedChar: SideCharacter = {
             </div>
             
             {/* TIME PROGRESSION Section */}
-            <div className="space-y-3 pt-4 border-t border-white/10">
+            <div className="space-y-3 pt-4 border-t border-ghost-white">
               <div>
                 <h3 className="text-sm font-black text-white uppercase tracking-tight">Time Progression</h3>
                 <p className="text-xs text-zinc-400 mt-0.5">Automatically advance the time of day while in a chat session</p>
