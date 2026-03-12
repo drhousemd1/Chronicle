@@ -2171,7 +2171,7 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
           )}
 
           {tab === "gallery" && (
-            <GalleryHub onPlay={handleGalleryPlay} onSaveChange={handleGallerySaveChange} sortBy={gallerySortBy} onSortChange={setGallerySortBy} />
+            <GalleryHub onPlay={handleGalleryPlay} onSaveChange={handleGallerySaveChange} sortBy={gallerySortBy} onSortChange={setGallerySortBy} onAuthRequired={() => setAuthModalOpen(true)} />
           )}
 
           <div 
