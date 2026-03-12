@@ -4805,7 +4805,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 { file: 'Global', note: '5 different modal backgrounds: bg-zinc-900, bg-[#2a2a2f], bg-[#121214], bg-slate-900, default light (shadcn).' },
                 { file: 'Global', note: '3 different modal border-radius values: rounded-lg (standard), rounded-2xl (Review/Delete), rounded-[32px] (Story Detail).' },
                 { file: 'Global', note: 'Button sizing varies: h-10 (standard), h-11 (Review), h-12 (Story Detail actions).' },
-                { file: 'Global', note: '3 modal border styles: border-white/10 (standard), border-[#4a5f7f] (accent), border-slate-700 (Memories).' },
+                { file: 'Global', note: '3 modal border styles: border-ghost-white (standard), border-[#4a5f7f] (accent), border-slate-700 (Memories).' },
                 { file: 'Global', note: '2 dialog systems: Radix Dialog (standard) vs custom fixed inset-0 (SceneTagEditor, CharacterPicker).' },
                 { file: 'CharacterCreation / EnhanceMode / CustomContentType', note: '3 identical Two-Option modal layouts — should be shared component.' },
                 { file: 'AvatarGen / CoverGen / SceneGen / ChangeNameModal', note: 'Light-theme modals in otherwise dark-themed app.' },
