@@ -3171,7 +3171,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14 }}>
               <InputCardV2
                 inputName="Chronicle UI Input"
-                background="bg-slate-50"
+                background="bg-ghost-white"
                 border="border-slate-200"
                 borderRadius="rounded-2xl (16px)"
                 textColor="text-[hsl(var(--ui-surface-2))] (inherited)"
