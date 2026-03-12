@@ -8,7 +8,7 @@ const tiers = [
     period: '/month',
     icon: Zap,
     color: 'text-slate-400',
-    bgColor: 'bg-white/5',
+    bgColor: 'bg-ghost-white',
     borderColor: 'border-ghost-white',
     current: true,
     features: [
