@@ -3021,7 +3021,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <InputCardV2
                 inputName="HardcodedRow Textarea"
                 background="bg-zinc-900/50"
-                border="border-white/10 (very subtle)"
+                border="border-ghost-white (very subtle)"
                 borderRadius="rounded-lg (8px)"
                 textColor="text-zinc-300"
                 placeholderColor="text-zinc-500"
@@ -3031,7 +3031,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 locations="Character Builder — collapsible sections (Physical Appearance, Background, etc.)"
                 pageSpecific
                 preview={
-                  <textarea readOnly className="w-full rounded-lg border border-white/10 bg-zinc-900/50 text-zinc-300 text-sm px-3 py-2 outline-none resize-none" rows={2} placeholder="Athletic build; tall; sharp jawline..." />
+                  <textarea readOnly className="w-full rounded-lg border border-ghost-white bg-zinc-900/50 text-zinc-300 text-sm px-3 py-2 outline-none resize-none" rows={2} placeholder="Athletic build; tall; sharp jawline..." />
                 }
               />
               <InputCardV2
