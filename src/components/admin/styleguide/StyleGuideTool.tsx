@@ -4085,10 +4085,10 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 appWide pageSpecific={false}
                 notes="Items: hover:bg-zinc-700 text-white. Destructive: text-red-600 hover:bg-zinc-700."
                 preview={
-                  <div className="bg-zinc-800 border border-white/10 rounded-md p-1 shadow-lg" style={{ width: 140 }}>
+                  <div className="bg-zinc-800 border border-ghost-white rounded-md p-1 shadow-lg" style={{ width: 140 }}>
                     <div className="px-2 py-1 text-[9px] text-white rounded-sm" style={{ cursor: 'default' }}>Edit</div>
                     <div className="px-2 py-1 text-[9px] text-white rounded-sm" style={{ cursor: 'default' }}>Duplicate</div>
-                    <div className="h-px bg-white/10 my-0.5" />
+                    <div className="h-px bg-ghost-white my-0.5" />
                     <div className="px-2 py-1 text-[9px] text-red-600 rounded-sm" style={{ cursor: 'default' }}>Delete</div>
                   </div>
                 }
