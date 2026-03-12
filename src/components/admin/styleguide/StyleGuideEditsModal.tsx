@@ -113,7 +113,7 @@ export const KeepOrEditModal: React.FC<KeepOrEditModalProps> = ({
 }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md bg-zinc-900 border-white/10 p-0 gap-0 [&>button]:hidden">
+      <DialogContent className="sm:max-w-md bg-zinc-900 border-ghost-white p-0 gap-0 [&>button]:hidden">
         <div className="px-6 pt-5 pb-3">
           <h3 className="text-white text-lg font-bold tracking-tight truncate">{cardName}</h3>
           <p className="text-zinc-400 text-sm mt-1">Select an option below to continue.</p>
@@ -122,7 +122,7 @@ export const KeepOrEditModal: React.FC<KeepOrEditModalProps> = ({
           <button
             type="button"
             onClick={() => { onKeep(); onOpenChange(false); }}
-            className="group flex flex-col items-center gap-3 p-5 rounded-2xl border border-white/10 bg-zinc-800/50 hover:border-blue-500/50 hover:bg-blue-500/10 transition-all cursor-pointer text-center"
+            className="group flex flex-col items-center gap-3 p-5 rounded-2xl border border-ghost-white bg-zinc-800/50 hover:border-blue-500/50 hover:bg-blue-500/10 transition-all cursor-pointer text-center"
           >
             <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center group-hover:bg-blue-500/30 transition-colors">
               <Check className="w-5 h-5 text-blue-500" />
@@ -135,7 +135,7 @@ export const KeepOrEditModal: React.FC<KeepOrEditModalProps> = ({
           <button
             type="button"
             onClick={() => { onEdit(); onOpenChange(false); }}
-            className="group flex flex-col items-center gap-3 p-5 rounded-2xl border border-white/10 bg-zinc-800/50 hover:border-purple-500/50 hover:bg-purple-500/10 transition-all cursor-pointer text-center"
+            className="group flex flex-col items-center gap-3 p-5 rounded-2xl border border-ghost-white bg-zinc-800/50 hover:border-purple-500/50 hover:bg-purple-500/10 transition-all cursor-pointer text-center"
           >
             <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center group-hover:bg-purple-500/30 transition-colors">
               <Pencil className="w-5 h-5 text-purple-400" />

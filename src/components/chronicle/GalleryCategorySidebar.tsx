@@ -177,16 +177,16 @@ export const GalleryCategorySidebar: React.FC<GalleryCategorySidebarProps> = ({
     selectedFilters.customTags.length > 0;
 
   return (
-    <div className="w-72 flex-shrink-0 bg-[#18181b] border-r border-white/10 flex flex-col h-full">
+    <div className="w-72 flex-shrink-0 bg-[#18181b] border-r border-ghost-white flex flex-col h-full">
       {/* Yellow accent border */}
       <div className="h-0.5 bg-yellow-400" />
       
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-ghost-white">
         <span className="text-sm font-bold text-white">Browse Categories</span>
         <button
           onClick={onClose}
-          className="p-1 rounded-lg hover:bg-white/10 transition-colors"
+          className="p-1 rounded-lg hover:bg-ghost-white transition-colors"
         >
           <X className="w-4 h-4 text-[rgba(248,250,252,0.3)]" />
         </button>
@@ -194,7 +194,7 @@ export const GalleryCategorySidebar: React.FC<GalleryCategorySidebarProps> = ({
       
       {/* Clear filters button */}
       {hasActiveFilters && (
-        <div className="px-4 py-2 border-b border-white/10">
+        <div className="px-4 py-2 border-b border-ghost-white">
           <button
             onClick={clearAllFilters}
             className="text-xs text-blue-500 hover:text-blue-300 font-medium"

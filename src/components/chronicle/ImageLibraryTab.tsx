@@ -469,7 +469,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
                         />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center bg-slate-900 p-10 text-center">
-                          <FolderOpen className="w-16 h-16 text-white/10" />
+                          <FolderOpen className="w-16 h-16 text-ghost-white" />
                         </div>
                       )}
 

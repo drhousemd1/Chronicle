@@ -133,14 +133,14 @@ const HardcodedRow: React.FC<{
   placeholder?: string;
 }> = ({ label, value, onChange, placeholder }) => (
   <div className="flex items-start gap-2">
-    <div className="w-2/5 px-3 py-2 text-xs font-bold bg-zinc-900/50 border border-white/10 text-zinc-400 rounded-lg uppercase tracking-widest min-w-0 break-words">
+    <div className="w-2/5 px-3 py-2 text-xs font-bold bg-zinc-900/50 border border-ghost-white text-zinc-400 rounded-lg uppercase tracking-widest min-w-0 break-words">
       {label}
     </div>
     <AutoResizeTextarea
       value={value}
       onChange={onChange}
       placeholder={placeholder}
-      className="flex-1 px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
+      className="flex-1 px-3 py-2 text-sm bg-zinc-900/50 border border-ghost-white text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
     />
     <div className="w-7 flex-shrink-0 flex items-center justify-center">
       <Lock className="w-3.5 h-3.5 text-zinc-400" />
@@ -159,13 +159,13 @@ const ModalExtraRow: React.FC<{
       value={extra.label}
       onChange={(v) => onUpdate({ label: v })}
       placeholder="Label"
-      className="w-2/5 px-3 py-2 text-xs font-bold bg-zinc-900/50 border border-white/10 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 placeholder:normal-case placeholder:tracking-normal rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
+      className="w-2/5 px-3 py-2 text-xs font-bold bg-zinc-900/50 border border-ghost-white text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 placeholder:normal-case placeholder:tracking-normal rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
     />
     <AutoResizeTextarea
       value={extra.value}
       onChange={(v) => onUpdate({ value: v })}
       placeholder="Description"
-      className="flex-1 px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
+      className="flex-1 px-3 py-2 text-sm bg-zinc-900/50 border border-ghost-white text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
     />
     <button
       type="button"
@@ -190,7 +190,7 @@ const FieldInput: React.FC<{
       value={value}
       onChange={onChange}
       placeholder={placeholder}
-      className="px-3 py-2 rounded-lg text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
+      className="px-3 py-2 rounded-lg text-sm bg-zinc-900/50 border border-ghost-white text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
     />
   </div>
 );
@@ -210,7 +210,7 @@ const FieldTextarea: React.FC<{
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       rows={rows}
-      className="text-sm resize-none bg-zinc-900/50 border-white/10 text-white placeholder:text-zinc-500 focus:ring-blue-500/20 focus:border-blue-500 whitespace-pre-wrap break-words"
+      className="text-sm resize-none bg-zinc-900/50 border-ghost-white text-white placeholder:text-zinc-500 focus:ring-blue-500/20 focus:border-blue-500 whitespace-pre-wrap break-words"
     />
   </div>
 );
@@ -223,14 +223,14 @@ const CollapsibleSection: React.FC<{
   children: React.ReactNode;
   collapsedContent?: React.ReactNode;  // Summary to show when collapsed
 }> = ({ title, isExpanded, onToggle, children, collapsedContent }) => (
-  <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
+  <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-ghost-white overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
     {/* Slate blue header with collapse arrow */}
-    <div className="bg-[#4a5f7f] border-b border-white/20 px-5 py-3 flex items-center justify-between shadow-lg">
+    <div className="bg-[#4a5f7f] border-b border-ghost-white px-5 py-3 flex items-center justify-between shadow-lg">
       <h2 className="text-white text-xl font-bold tracking-tight">{title}</h2>
       <button 
         type="button"
         onClick={onToggle} 
-        className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-white/10"
+        className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-ghost-white"
       >
         {isExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
       </button>
@@ -1044,8 +1044,8 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] p-0 gap-0 overflow-hidden bg-[#2a2a2f] border-white/10">
-        <DialogHeader className="px-6 py-4 border-b border-white/20 bg-black">
+      <DialogContent className="max-w-6xl max-h-[90vh] p-0 gap-0 overflow-hidden bg-[#2a2a2f] border-ghost-white">
+        <DialogHeader className="px-6 py-4 border-b border-ghost-white bg-black">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div>
@@ -1061,7 +1061,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
               
               {/* View Mode Toggle - Gallery Hub pill style */}
               {scenarioWorldCore && (
-                <div className="flex items-center bg-white/10 rounded-full p-1 gap-0.5 border border-white/10">
+                <div className="flex items-center bg-ghost-white rounded-full p-1 gap-0.5 border border-ghost-white">
                   <button
                     type="button"
                     onClick={() => setViewMode('character')}
@@ -1235,7 +1235,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                 >
                   {/* Avatar Display */}
                   <div className="flex flex-col items-center gap-4">
-                    <div className="w-48 h-48 rounded-2xl overflow-hidden bg-zinc-800 border-2 border-white/10 shadow-sm relative">
+                    <div className="w-48 h-48 rounded-2xl overflow-hidden bg-zinc-800 border-2 border-ghost-white shadow-sm relative">
                       {(isUploadingAvatar || isRegeneratingAvatar) ? (
                         <div className="w-full h-full flex items-center justify-center bg-zinc-900">
                           <Loader2 className="w-8 h-8 animate-spin text-zinc-400" />
@@ -1289,7 +1289,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     <div className="space-y-1.5">
                       <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Name</Label>
                       <div className="flex items-center gap-2">
-                        <div className="flex-1 px-3 py-2 bg-zinc-900/50 rounded-md text-sm text-white font-medium border border-white/10">
+                        <div className="flex-1 px-3 py-2 bg-zinc-900/50 rounded-md text-sm text-white font-medium border border-ghost-white">
                           {draft.name || character?.name || 'Unnamed'}
                         </div>
                         <button
@@ -1299,8 +1299,8 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                             rounded-xl border border-[hsl(var(--ui-border))] 
                             bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
                             text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider
-                            hover:bg-white/5 active:bg-white/10
-                            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20
+                            hover:bg-white/5 active:bg-ghost-white
+                            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ghost-white
                             transition-colors"
                         >
                           <Pencil className="w-3 h-3" />
@@ -1353,10 +1353,10 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     />
 
                     {/* Control toggles - inside Avatar section */}
-                    <div className="space-y-3 pt-2 border-t border-white/10 mt-4">
+                    <div className="space-y-3 pt-2 border-t border-ghost-white mt-4">
                       <div className="space-y-1.5">
                         <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Controlled By</Label>
-                        <div className="flex p-1 bg-zinc-900/50 rounded-lg border border-white/10">
+                        <div className="flex p-1 bg-zinc-900/50 rounded-lg border border-ghost-white">
                           <button 
                             type="button"
                             onClick={() => updateField('controlledBy', 'AI')}
@@ -1383,7 +1383,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Character Type</Label>
-                        <div className="flex p-1 bg-zinc-900/50 rounded-lg border border-white/10">
+                        <div className="flex p-1 bg-zinc-900/50 rounded-lg border border-ghost-white">
                           <button 
                             type="button"
                             onClick={() => updateField('characterRole', 'Main')}
@@ -1729,9 +1729,9 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
 
                 {/* Custom Sections (Main characters only) - Each as its own container */}
                 {!isSideCharacter && draft.sections?.map((section) => (
-                  <div key={section.id} className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
+                  <div key={section.id} className="w-full bg-[#2a2a2f] rounded-[24px] border border-ghost-white overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
                     {/* Dark blue header with editable title */}
-                    <div className="bg-[#4a5f7f] border-b border-white/20 px-5 py-3 flex items-center justify-between shadow-lg">
+                    <div className="bg-[#4a5f7f] border-b border-ghost-white px-5 py-3 flex items-center justify-between shadow-lg">
                       <AutoResizeTextarea
                         value={section.title}
                         onChange={(v) => updateSectionTitle(section.id, v)}
@@ -1742,7 +1742,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                         <button 
                           type="button"
                           onClick={() => toggleCustomSection(section.id)} 
-                          className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-white/10"
+                          className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-ghost-white"
                         >
                           {(expandedCustomSections[section.id] ?? true) ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
                         </button>
@@ -1770,7 +1770,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                                   }));
                                 }}
                                 placeholder="Write your content here..."
-                                className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-ghost-white text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                                 rows={4}
                               />
                             ) : (
@@ -1784,14 +1784,14 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                                         value={item.label}
                                         onChange={(v) => updateSectionItem(section.id, item.id, 'label', v)}
                                         placeholder="Label"
-                                        className="w-full px-3 py-2 rounded-lg text-xs font-bold bg-zinc-900/50 border border-white/10 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 placeholder:normal-case placeholder:tracking-normal focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
+                                        className="w-full px-3 py-2 rounded-lg text-xs font-bold bg-zinc-900/50 border border-ghost-white text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 placeholder:normal-case placeholder:tracking-normal focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
                                       />
                                     </div>
                                     <AutoResizeTextarea
                                       value={item.value}
                                       onChange={(v) => updateSectionItem(section.id, item.id, 'value', v)}
                                       placeholder="Description"
-                                      className="flex-1 min-w-0 px-3 py-2 rounded-lg text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
+                                      className="flex-1 min-w-0 px-3 py-2 rounded-lg text-sm bg-zinc-900/50 border border-ghost-white text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
                                     />
                                   </div>
                                   <button

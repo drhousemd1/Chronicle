@@ -3202,7 +3202,7 @@ const updatedChar: SideCharacter = {
         <div className="relative">
           <div className="w-full flex flex-col items-center gap-2 p-3 text-center">
             <div className="relative">
-              <div className={`w-20 h-20 rounded-full border-2 shadow-sm overflow-hidden transition-all duration-300 ${!sidebarBgIsLight ? 'bg-slate-50 border-slate-100' : 'bg-zinc-800 border-white/20'}`}>
+              <div className={`w-20 h-20 rounded-full border-2 shadow-sm overflow-hidden transition-all duration-300 ${!sidebarBgIsLight ? 'bg-slate-50 border-slate-100' : 'bg-zinc-800 border-ghost-white'}`}>
                 {char.avatarDataUrl ? (
                   <img src={char.avatarDataUrl} alt={char.name} className="w-full h-full object-cover" />
                 ) : (
@@ -3229,11 +3229,11 @@ const updatedChar: SideCharacter = {
           <div className="absolute top-2 right-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className={`p-1.5 rounded-lg transition-colors ${!sidebarBgIsLight ? 'hover:bg-slate-200 text-slate-700 hover:text-[hsl(var(--ui-surface-2))]' : 'hover:bg-white/20 text-white/70 hover:text-white'}`}>
+                <button className={`p-1.5 rounded-lg transition-colors ${!sidebarBgIsLight ? 'hover:bg-slate-200 text-slate-700 hover:text-[hsl(var(--ui-surface-2))]' : 'hover:bg-ghost-white text-white/70 hover:text-white'}`}>
                   <MoreVertical className="w-4 h-4" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="shadow-lg z-50 bg-zinc-800 border-white/10 text-zinc-200">
+              <DropdownMenuContent align="end" className="shadow-lg z-50 bg-zinc-800 border-ghost-white text-zinc-200">
                 <DropdownMenuItem onClick={() => openCharacterEditModal(char)} className="hover:!bg-zinc-700 focus:!bg-zinc-700 focus:!text-white">
                   <Pencil className="w-4 h-4 mr-2" />
                   Edit character
@@ -3311,7 +3311,7 @@ const updatedChar: SideCharacter = {
                   <Settings className="w-4 h-4" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 bg-zinc-800 border-white/10 text-zinc-200">
+              <DropdownMenuContent align="end" className="w-48 bg-zinc-800 border-ghost-white text-zinc-200">
                 <DropdownMenuItem onClick={() => setIsSidebarThemeOpen(true)} className="cursor-pointer hover:!bg-zinc-700 focus:!bg-zinc-700 focus:!text-white">
                   <ImageIcon className="w-4 h-4 mr-2" />
                   Set Theme
@@ -3461,7 +3461,7 @@ const updatedChar: SideCharacter = {
               </div>
               {/* Full-width card-like overflow indicator */}
               {mainCharactersForDisplay.length > 3 && canScrollDownMainChars && (
-                 <div className={`mt-0 w-full rounded-2xl backdrop-blur-sm border border-white/10 flex items-center justify-center py-1.5 ${!sidebarBgIsLight ? 'bg-white/30' : 'bg-black/30'}`}>
+                 <div className={`mt-0 w-full rounded-2xl backdrop-blur-sm border border-ghost-white flex items-center justify-center py-1.5 ${!sidebarBgIsLight ? 'bg-white/30' : 'bg-black/30'}`}>
                    <ChevronDown className={`w-4 h-4 ${!sidebarBgIsLight ? 'text-black/80' : 'text-white/80'}`} />
                    <span className={`text-xs font-medium ml-1 ${!sidebarBgIsLight ? 'text-black/80' : 'text-white/80'}`}>
                      {mainCharactersForDisplay.length - 3}
@@ -3523,7 +3523,7 @@ const updatedChar: SideCharacter = {
           <div ref={scrollRef} onScroll={handleScroll} className="relative z-10 h-full overflow-y-auto px-6 md:px-14 lg:px-20 py-8 space-y-10 custom-scrollbar scrollbar-thin">
           {conversation?.messages.length === 0 && !streamingContent && (
              <div className="h-full flex flex-col items-center justify-center text-slate-500 space-y-6">
-               <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center text-4xl shadow-sm border border-white/10">✨</div>
+               <div className="w-20 h-20 rounded-full bg-ghost-white flex items-center justify-center text-4xl shadow-sm border border-ghost-white">✨</div>
                <div className="text-center max-w-sm">
                  <p className="font-black uppercase tracking-[0.2em] text-sm text-slate-300">The stage is set</p>
                  <p className="text-xs mt-2 italic text-slate-500">Waiting for your first act. You can start by typing a prompt or action below.</p>
@@ -3552,7 +3552,7 @@ const updatedChar: SideCharacter = {
                   bubblesTransparent
                     ? 'bg-black/50'
                     : 'bg-[#1c1f26]'
-                } ${!isAi ? 'border-2 border-blue-500' : 'border border-white/5 hover:border-white/20'}`}>
+                } ${!isAi ? 'border-2 border-blue-500' : 'border border-white/5 hover:border-ghost-white'}`}>
                   
                   {/* Action buttons - top right corner */}
                   <div className={`absolute top-4 right-4 flex items-center gap-1 transition-opacity ${
@@ -3563,7 +3563,7 @@ const updatedChar: SideCharacter = {
                         {/* Save (checkmark) */}
                         <button
                           onClick={handleInlineEditSave}
-                          className="p-2 rounded-lg hover:bg-white/10 text-green-400 hover:text-green-300 transition-colors"
+                          className="p-2 rounded-lg hover:bg-ghost-white text-green-400 hover:text-green-300 transition-colors"
                           title="Save changes"
                         >
                           <Check className="w-4 h-4" />
@@ -3571,7 +3571,7 @@ const updatedChar: SideCharacter = {
                         {/* Cancel (X) */}
                         <button
                           onClick={handleInlineEditCancel}
-                          className="p-2 rounded-lg hover:bg-white/10 text-red-500 hover:text-red-400 transition-colors"
+                          className="p-2 rounded-lg hover:bg-ghost-white text-red-500 hover:text-red-400 transition-colors"
                           title="Cancel editing"
                         >
                           <X className="w-4 h-4" />
@@ -3584,7 +3584,7 @@ const updatedChar: SideCharacter = {
                           <button
                             onClick={handleContinueConversation}
                             disabled={isStreaming || isRegenerating}
-                            className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors disabled:opacity-30"
+                            className="p-2 rounded-lg hover:bg-ghost-white text-slate-400 hover:text-white transition-colors disabled:opacity-30"
                             title="Continue"
                           >
                             <StepForward className="w-4 h-4" />
@@ -3596,7 +3596,7 @@ const updatedChar: SideCharacter = {
                           <button
                             onClick={() => handleRegenerateMessage(msg.id)}
                             disabled={isStreaming || isRegenerating}
-                            className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors disabled:opacity-30"
+                            className="p-2 rounded-lg hover:bg-ghost-white text-slate-400 hover:text-white transition-colors disabled:opacity-30"
                             title="Regenerate response"
                           >
                             <RefreshCw className={`w-4 h-4 ${regeneratingMessageId === msg.id ? 'animate-spin' : ''}`} />
@@ -3606,7 +3606,7 @@ const updatedChar: SideCharacter = {
                         {/* Three-dot menu - all messages */}
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <button className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+                            <button className="p-2 rounded-lg hover:bg-ghost-white text-slate-400 hover:text-white transition-colors">
                               <MoreVertical className="w-4 h-4" />
                             </button>
                           </DropdownMenuTrigger>
@@ -3639,14 +3639,14 @@ const updatedChar: SideCharacter = {
                         <img 
                           src={msg.imageUrl} 
                           alt="Generated scene" 
-                          className="rounded-xl shadow-lg border border-white/10 w-full h-auto"
+                          className="rounded-xl shadow-lg border border-ghost-white w-full h-auto"
                         />
                         {/* Regenerate overlay on hover */}
                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/image:opacity-100 transition-opacity rounded-xl flex items-center justify-center gap-2">
                           <button
                             onClick={handleGenerateSceneImage}
                             disabled={isGeneratingImage}
-                            className="p-3 bg-white/20 rounded-lg hover:bg-white/30 transition-colors"
+                            className="p-3 bg-ghost-white rounded-lg hover:bg-white/30 transition-colors"
                             title="Generate new image"
                           >
                             <RefreshCw className={`w-5 h-5 text-white ${isGeneratingImage ? 'animate-spin' : ''}`} />

@@ -69,7 +69,7 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDel
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-slate-900 p-10 text-center">
-             <div className="font-black text-white/10 text-6xl uppercase tracking-tighter italic break-words p-4 text-center">
+             <div className="font-black text-ghost-white text-6xl uppercase tracking-tighter italic break-words p-4 text-center">
                {scen.title.charAt(0) || '?'}
              </div>
           </div>

@@ -42,7 +42,7 @@ export function CoverImageActionButtons({
                 rounded-xl border border-[hsl(var(--ui-border))] 
                 bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
                 text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none
-                hover:bg-white/5 active:bg-white/10 disabled:opacity-50
+                hover:bg-white/5 active:bg-ghost-white disabled:opacity-50
                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40
                 transition-colors"
             >
@@ -56,14 +56,14 @@ export function CoverImageActionButtons({
           >
             <DropdownMenuItem
               onClick={onUploadFromDevice}
-              className="cursor-pointer hover:bg-white/10 focus:bg-white/10 text-[10px]"
+              className="cursor-pointer hover:bg-ghost-white focus:bg-ghost-white text-[10px]"
             >
               <Upload className="w-3.5 h-3.5 mr-2" />
               From Device
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => setIsPickerOpen(true)}
-              className="cursor-pointer hover:bg-white/10 focus:bg-white/10 text-[10px]"
+              className="cursor-pointer hover:bg-ghost-white focus:bg-ghost-white text-[10px]"
             >
               <ImageIcon className="w-3.5 h-3.5 mr-2" />
               From Library

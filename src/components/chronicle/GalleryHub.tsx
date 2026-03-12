@@ -361,7 +361,7 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Search titles, descriptions, or #tags..."
-            className="w-full pl-12 pr-24 py-3 bg-[#3a3a3f]/50 border border-white/10 rounded-xl text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#4a5f7f] focus:border-transparent"
+            className="w-full pl-12 pr-24 py-3 bg-[#3a3a3f]/50 border border-ghost-white rounded-xl text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#4a5f7f] focus:border-transparent"
           />
           <button
             onClick={handleSearch}
@@ -384,7 +384,7 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
           <LayoutGrid className="w-4 h-4" />
           <span>Browse Categories</span>
           {activeFilterCount > 0 && (
-            <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded-full text-xs">
+            <span className="ml-1 px-1.5 py-0.5 bg-ghost-white rounded-full text-xs">
               {activeFilterCount}
             </span>
           )}
@@ -417,7 +417,7 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
               <div className="flex items-center gap-2 mb-4 flex-wrap">
                 <span className="text-sm text-white/70">Filtering by:</span>
                 {searchText && (
-                  <span className="px-2 py-1 bg-white/20 text-white rounded-full text-xs font-medium flex items-center gap-1">
+                  <span className="px-2 py-1 bg-ghost-white text-white rounded-full text-xs font-medium flex items-center gap-1">
                     "{searchText}"
                     <button
                       onClick={() => { setSearchText(''); setSearchQuery(searchTags.map(t => `#${t}`).join(' ')); }}
@@ -430,7 +430,7 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
                 {searchTags.map(tag => (
                   <span
                     key={`search-${tag}`}
-                    className="px-2 py-1 bg-white/20 text-white rounded-full text-xs font-medium flex items-center gap-1"
+                    className="px-2 py-1 bg-ghost-white text-white rounded-full text-xs font-medium flex items-center gap-1"
                   >
                     {tag}
                     <button
@@ -496,7 +496,7 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
               </div>
             ) : scenarios.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-64 text-center">
-                <div className="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center mb-4">
+                <div className="w-20 h-20 bg-ghost-white rounded-full flex items-center justify-center mb-4">
                   <Globe className="w-10 h-10 text-white/30" />
                 </div>
                 <h3 className="text-xl font-bold text-white mb-2">

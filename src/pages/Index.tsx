@@ -2157,7 +2157,7 @@ const IndexContent = () => {
                           bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
                           text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider
 hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-events-none
-                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20
+                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ghost-white
                           transition-colors"
                       >
                         {isSaving ? 'Saving...' : 'Save'}
@@ -2172,8 +2172,8 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
                           rounded-xl border border-[hsl(var(--ui-border))] 
                           bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
                           text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider
-                          hover:bg-white/5 active:bg-white/10
-                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20
+                          hover:bg-white/5 active:bg-ghost-white
+                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ghost-white
                           transition-colors"
                       >
                         Cancel
@@ -2191,7 +2191,7 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
                               bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
                               text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider
                               hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-events-none
-                              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20
+                              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ghost-white
                               transition-colors"
                           >
                             {isSavingToLibrary ? 'Saving...' : selectedCharacterIsInLibrary ? 'Update Character' : '+ Character Library'}
@@ -2208,21 +2208,21 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
                       <button
                         type="button"
                         onClick={() => setTab("world")}
-                        className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-white/10 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
+                        className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-ghost-white transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
                       >
                         Cancel
                       </button>
                       <button
                         type="button"
                         onClick={() => setIsCharacterPickerOpen(true)}
-                        className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-white/10 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
+                        className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-ghost-white transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
                       >
                         Import from Library
                       </button>
                       <button
                         type="button"
                         onClick={handleCreateCharacter}
-                        className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-white/10 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
+                        className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-ghost-white transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
                       >
                         + New Character
                       </button>
@@ -2361,7 +2361,7 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
             <div className="relative p-10 overflow-y-auto h-full bg-black">
               {showResumingOverlay && (
                 <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/70 backdrop-blur-sm">
-                  <div className="w-10 h-10 border-4 border-white/20 border-t-white rounded-full animate-spin mb-4" />
+                  <div className="w-10 h-10 border-4 border-ghost-white border-t-white rounded-full animate-spin mb-4" />
                   <p className="text-white font-medium text-lg">Loading session...</p>
                 </div>
               )}
