@@ -1495,7 +1495,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                   { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-history%2Fchat-history-full.png', location: 'Inner nested card', function: 'Semi-transparent inner content area within each session card' },
                 ]}
               />
-              <SwatchCardV2 color="rgba(255,255,255,0.05)" name="Ghost White" locations="Inner card subtle border" value="rgba(255,255,255,0.05)" token="border-white/5" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }}
+              <SwatchCardV2 color="rgba(255,255,255,0.05)" name="Whisper White" locations="Inner card subtle border" value="rgba(255,255,255,0.05)" token="border-white/5" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }}
                 locationImages={[
                   { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-history%2Fchat-history-full.png', location: 'Inner card border', function: 'Barely-visible border on inner content panel' },
                 ]}
