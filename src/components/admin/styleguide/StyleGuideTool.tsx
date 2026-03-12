@@ -2611,7 +2611,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
             <ButtonCardV2
               buttonName="Follow / Unfollow Toggle"
-              buttonColor="Follow: bg-[#4a5f7f] text-white. Following: bg-white/10 text-white"
+              buttonColor="Follow: bg-[#4a5f7f] text-white. Following: bg-ghost-white text-white"
               size="w-full px-4 py-2.5 rounded-xl — text-sm font-semibold"
               purpose="Toggle follow state on creator profiles"
               visualEffects="Following hover: bg-red-500/20 text-red-500 (shows 'Unfollow' on hover). Uses UserPlus / UserMinus icons"
@@ -2619,7 +2619,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               pageSpecific
               preview={<>
                 <button className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold bg-[#4a5f7f] text-white" style={{ cursor: 'default' }}>+ Follow</button>
-                <button className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold bg-white/10 text-white" style={{ cursor: 'default' }}>✓ Following</button>
+                <button className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold bg-ghost-white text-white" style={{ cursor: 'default' }}>✓ Following</button>
                 <button className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold bg-red-500/20 text-red-500" style={{ cursor: 'default' }}>− Unfollow</button>
               </>}
             />
