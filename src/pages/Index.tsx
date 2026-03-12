@@ -1680,7 +1680,7 @@ const IndexContent = () => {
                   )}
                 >
                   <LogIn className="w-5 h-5 shrink-0" />
-                  {!sidebarCollapsed && <span className="text-[11px] font-bold uppercase tracking-wider">Sign In</span>}
+                  {!sidebarCollapsed && <span className="text-sm font-bold">Sign In</span>}
                 </button>
               )}
             </div>
