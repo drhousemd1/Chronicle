@@ -4408,7 +4408,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 purpose="Creator profile display with avatar, bio, stats pills, follow button"
                 locations="CreatorProfile.tsx"
                 pageSpecific appWide={false}
-                notes="Stats: bg-white/5 rounded-xl. ⚠ #1e1e22 — yet another dark surface color."
+                notes="Stats: bg-ghost-white rounded-xl. ⚠ #1e1e22 — yet another dark surface color."
                 preview={
                   <div className="bg-[#1e1e22] rounded-2xl border border-ghost-white p-3" style={{ width: '100%' }}>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
