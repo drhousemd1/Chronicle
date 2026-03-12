@@ -267,7 +267,7 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
 
   const handleSave = async (published: PublishedScenario) => {
     if (!user) {
-      console.error('Please sign in to save stories');
+      onAuthRequired?.();
       return;
     }
 
