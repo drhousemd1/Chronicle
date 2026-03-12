@@ -889,7 +889,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                 <h2 className="text-white text-xl font-bold tracking-tight">Opening Dialog</h2>
               </div>
               <div className="p-6">
-                <div className="p-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
+                <div className="p-6 bg-[#3a3a3f]/30 rounded-2xl border border-ghost-white">
                   <div className="space-y-6">
                     <div data-publish-error={!!publishErrors.openingDialog || undefined}>
                       <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1 flex items-center gap-1.5">
