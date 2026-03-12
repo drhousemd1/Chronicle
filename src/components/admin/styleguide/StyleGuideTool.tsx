@@ -1110,16 +1110,29 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <PageSubheading>My Stories Page</PageSubheading>
             <PageDesc>Colors used on the My Stories gallery/card grid.</PageDesc>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 14 }}>
-              <SwatchCardV2 color="rgba(248,250,252,0.5)" name="Frosted White" locations="Full page background" value="rgba(248,250,252,0.5)" token="bg-slate-50/50" pageSpecific={false} appWide={true} extraPreviewStyle={{ border: '1px dashed #ccc' }} />
-              <SwatchCardV2 color="#4a5f7f" name="Slate Blue" locations="Active tab pill, story card border" value="#4a5f7f" token="bg-[#4a5f7f]" pageSpecific={false} appWide={true} />
-              
-              <SwatchCardV2 color="#2a2a2f" name="Dark Charcoal" locations="SFW/NSFW badge backgrounds on story cards" value="#2a2a2f" token="bg-[#2a2a2f]" pageSpecific={false} appWide={true} />
-              <SwatchCardV2 color="#ef4444" name="Bright Red" locations="Delete button on card hover, NSFW badge text, delete button hover icon, cancel edit icon, rigid personality trait, trigger warnings text, unfollow hover, validation errors, warning icons" value="#ef4444" token="text-red-500 / bg-[hsl(var(--destructive))]" pageSpecific={false} appWide={true} />
-              
-              <SwatchCardV2 color="#52525b" name="Ash Gray" locations='"Create New Story" card border' value="#52525b" token="border-zinc-600" pageSpecific={true} appWide={false} />
-              
-              
-              <SwatchCardV2 color="rgba(0,0,0,0.5)" name="Half Black" locations="Story card and panel shadow" value="rgba(0,0,0,0.5)" token="shadow-[0_12px_32px_-2px_rgba(0,0,0,0.5)]" pageSpecific={false} appWide={true} />
+              <SwatchCardV2 color="rgba(248,250,252,0.5)" name="Frosted White" locations="Full page background" value="rgba(248,250,252,0.5)" token="bg-slate-50/50" pageSpecific={false} appWide={true} extraPreviewStyle={{ border: '1px dashed #ccc' }} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/my-stories/my-stories-full.png', location: 'Full page background', function: 'Semi-transparent white tint behind the entire story card grid' },
+              ]} />
+              <SwatchCardV2 color="#4a5f7f" name="Slate Blue" locations="Active tab pill, story card border" value="#4a5f7f" token="bg-[#4a5f7f]" pageSpecific={false} appWide={true} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/my-stories/my-stories-full.png', location: 'Active tab pill', function: 'Background for the currently active filter tab (e.g. "All") in the MY STORIES header' },
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/my-stories/my-stories-cards-badges.png', location: 'Story card border', function: 'Default border color on story cards in the grid' },
+              ]} />
+
+              <SwatchCardV2 color="#2a2a2f" name="Dark Charcoal" locations="SFW/NSFW badge backgrounds on story cards" value="#2a2a2f" token="bg-[#2a2a2f]" pageSpecific={false} appWide={true} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/my-stories/my-stories-cards-badges.png', location: 'SFW/NSFW badge backgrounds', function: 'Dark background behind the SFW and NSFW badge text on story cards' },
+              ]} />
+              <SwatchCardV2 color="#ef4444" name="Bright Red" locations="Delete button on card hover, NSFW badge text, delete button hover icon, cancel edit icon, rigid personality trait, trigger warnings text, unfollow hover, validation errors, warning icons" value="#ef4444" token="text-red-500 / bg-[hsl(var(--destructive))]" pageSpecific={false} appWide={true} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/my-stories/my-stories-card-hover.png', location: 'DELETE button on card hover', function: 'Red background on the DELETE button shown when hovering over a story card' },
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/my-stories/my-stories-cards-badges.png', location: 'NSFW badge text', function: 'Red text color for the NSFW badge label on story cards' },
+              ]} />
+
+              <SwatchCardV2 color="#52525b" name="Ash Gray" locations='"Create New Story" card border' value="#52525b" token="border-zinc-600" pageSpecific={true} appWide={false} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/my-stories/my-stories-cards-badges.png', location: '"Create New Story" card border', function: 'Dashed border on the "NEW STORY" skeleton card at the end of the grid' },
+              ]} />
+
+              <SwatchCardV2 color="rgba(0,0,0,0.5)" name="Half Black" locations="Story card and panel shadow" value="rgba(0,0,0,0.5)" token="shadow-[0_12px_32px_-2px_rgba(0,0,0,0.5)]" pageSpecific={false} appWide={true} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/my-stories/my-stories-full.png', location: 'Story card drop shadow', function: 'Heavy drop shadow beneath each story card in the grid (shadow-[0_12px_32px_-2px_rgba(0,0,0,0.5)])' },
+              ]} />
             </div>
 
             <Divider />
