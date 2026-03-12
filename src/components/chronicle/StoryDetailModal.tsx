@@ -69,6 +69,7 @@ export interface ScenarioDetailModalProps {
   // Display mode
   isOwned?: boolean; // Shows Edit button instead of Like/Save
   isPublished?: boolean; // Shows unpublish button for owned scenarios
+  isDraft?: boolean; // Hides Play button for draft stories
 }
 
 // Helper function for count formatting
@@ -109,7 +110,8 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
   onUnpublish,
   canUnpublish,
   isOwned = false,
-  isPublished = false
+  isPublished = false,
+  isDraft = false
 }) => {
   const [characters, setCharacters] = useState<ScenarioCharacter[]>([]);
   const [isLoadingCharacters, setIsLoadingCharacters] = useState(false);
@@ -301,13 +303,15 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                         <span className="text-sm font-semibold">Edit</span>
                       </button>
                     )}
-                    <button
-                      onClick={handlePlay}
-                      className="flex-1 h-10 bg-[#3b82f6] hover:bg-[#2d6fdb] rounded-xl flex items-center justify-center gap-2 text-white shadow-[0_10px_30px_rgba(0,0,0,0.35)] text-[10px] font-bold leading-none uppercase tracking-wider transition-colors"
-                    >
-                      <Play className="w-4 h-4 fill-current" />
-                      <span>Play</span>
-                    </button>
+                    {!isDraft && (
+                      <button
+                        onClick={handlePlay}
+                        className="flex-1 h-10 bg-[#3b82f6] hover:bg-[#2d6fdb] rounded-xl flex items-center justify-center gap-2 text-white shadow-[0_10px_30px_rgba(0,0,0,0.35)] text-[10px] font-bold leading-none uppercase tracking-wider transition-colors"
+                      >
+                        <Play className="w-4 h-4 fill-current" />
+                        <span>Play</span>
+                      </button>
+                    )}
                   </>
                 ) : (
                   <>

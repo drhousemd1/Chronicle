@@ -17,12 +17,13 @@ interface ScenarioCardProps {
   onDelete: (id: string) => void;
   onViewDetails: (id: string) => void;
   isPublished?: boolean;
+  isDraft?: boolean;
   contentThemes?: ContentThemes;
   publishedData?: PublishedScenario;
   displayAuthor?: string;
 }
 
-const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDelete, onViewDetails, isPublished, contentThemes, publishedData, displayAuthor }) => {
+const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDelete, onViewDetails, isPublished, isDraft, contentThemes, publishedData, displayAuthor }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const infoRef = useRef<HTMLDivElement>(null);
   const [overlayTop, setOverlayTop] = useState<number | null>(null);
@@ -58,7 +59,12 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDel
         
         {/* Top-left badge container - flows horizontally */}
         <div className="absolute top-4 left-4 flex items-center gap-2 z-10">
-          {!scen.isBookmarked && isPublished && (
+          {!scen.isBookmarked && isDraft && (
+            <div className="px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f] text-amber-400 uppercase tracking-wide">
+              Draft
+            </div>
+          )}
+          {!scen.isBookmarked && !isDraft && isPublished && (
             <div className="px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f] text-emerald-400 uppercase tracking-wide">
               Published
             </div>
@@ -122,12 +128,14 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDel
           >
             Delete
           </button>
-          <button 
-            onClick={(e) => { e.stopPropagation(); onPlay(scen.id); }}
-            className="h-8 px-3 rounded-xl bg-blue-500 text-white hover:bg-blue-600 text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl transition-colors"
-          >
-            Play
-          </button>
+          {!isDraft && (
+            <button 
+              onClick={(e) => { e.stopPropagation(); onPlay(scen.id); }}
+              className="h-8 px-3 rounded-xl bg-blue-500 text-white hover:bg-blue-600 text-[10px] font-bold leading-none uppercase tracking-wider shadow-2xl transition-colors"
+            >
+              Play
+            </button>
+          )}
         </div>
         
         {/* Bottom Info */}
@@ -283,6 +291,7 @@ export function ScenarioHub({
             onDelete={onDelete}
             onViewDetails={handleViewDetails}
             isPublished={publishedScenarioIds?.has(scen.id)}
+            isDraft={scen.isDraft}
             contentThemes={contentThemesMap?.get(scen.id)}
             publishedData={publishedScenariosData?.get(scen.id)}
             displayAuthor={getDisplayAuthor(scen)}
@@ -324,7 +333,8 @@ export function ScenarioHub({
             contentThemes={selectedContentThemes || undefined}
             isOwned={!selectedScenario.isBookmarked}
             isPublished={!!publicationStatus?.is_published}
-          allowRemix={publicationStatus?.allow_remix}
+            isDraft={selectedScenario.isDraft}
+            allowRemix={publicationStatus?.allow_remix}
             onPlay={() => {
               onPlay(selectedScenario.id);
               setDetailModalOpen(false);

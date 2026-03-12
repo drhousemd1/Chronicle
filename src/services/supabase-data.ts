@@ -234,7 +234,8 @@ function dbToScenarioMetadata(row: any): ScenarioMetadata {
     coverImagePosition: row.cover_image_position || { x: 50, y: 50 },
     tags: row.tags || [],
     createdAt: new Date(row.created_at).getTime(),
-    updatedAt: new Date(row.updated_at).getTime()
+    updatedAt: new Date(row.updated_at).getTime(),
+    isDraft: row.is_draft ?? false
   };
 }
 
@@ -295,7 +296,7 @@ function dbToConversation(row: any, messages: any[]): Conversation {
 export async function fetchMyScenarios(userId: string): Promise<ScenarioMetadata[]> {
   const { data, error } = await supabase
     .from('stories' as any)
-    .select('id, title, description, cover_image_url, cover_image_position, tags, created_at, updated_at')
+    .select('id, title, description, cover_image_url, cover_image_position, tags, created_at, updated_at, is_draft')
     .eq('user_id', userId)
     .order('updated_at', { ascending: false });
 
@@ -481,7 +482,8 @@ export async function saveScenario(
   id: string,
   data: ScenarioData,
   metadata: { title: string; description: string; coverImage: string; coverImagePosition?: { x: number; y: number }; tags: string[] },
-  userId: string
+  userId: string,
+  options?: { isDraft?: boolean }
 ): Promise<void> {
   // Safety net: intercept base64 cover images before saving
   const safeCoverImage = await ensureStorageUrl(metadata.coverImage, 'covers', userId);
@@ -509,7 +511,8 @@ export async function saveScenario(
       opening_dialog: data.story.openingDialog,
       selected_model: data.selectedModel,
       selected_art_style: data.selectedArtStyle || 'cinematic-2-5d',
-      version: data.version
+      version: data.version,
+      is_draft: options?.isDraft ?? false
     });
 
   if (scenarioError) throw scenarioError;

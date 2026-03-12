@@ -42,7 +42,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import * as supabaseData from "@/services/supabase-data";
 import { DeleteConfirmDialog } from "@/components/chronicle/DeleteConfirmDialog";
 import { ChangeNameModal } from "@/components/chronicle/ChangeNameModal";
-import { DraftsModal, upsertDraftRegistry, removeDraftFromRegistry, getDraftRegistry } from "@/components/chronicle/DraftsModal";
+// DraftsModal removed - drafts are now DB-backed
 import { getEditsCount } from "@/components/admin/styleguide/StyleGuideEditsModal";
 import { AuthModal } from "@/components/auth/AuthModal";
 
@@ -147,8 +147,6 @@ const IndexContent = () => {
   const [storyNameError, setStoryNameError] = useState(false);
   const [isSavingToLibrary, setIsSavingToLibrary] = useState(false);
   const [isResuming, setIsResuming] = useState(false);
-  const [draftsModalOpen, setDraftsModalOpen] = useState(false);
-  const [draftCount, setDraftCount] = useState(0);
   // Track which conversations have more older messages to load
   const [hasMoreMessagesMap, setHasMoreMessagesMap] = useState<Record<string, boolean>>({});
   const [aiPromptModal, setAiPromptModal] = useState<{ mode: 'fill' | 'generate' } | null>(null);
@@ -203,7 +201,7 @@ const IndexContent = () => {
   const [isImageLibraryBackgroundModalOpen, setIsImageLibraryBackgroundModalOpen] = useState(false);
 
   // Hub filter state for "Your Stories" tab
-  type HubFilter = "my" | "bookmarked" | "published" | "all";
+  type HubFilter = "my" | "bookmarked" | "published" | "drafts" | "all";
   const [hubFilter, setHubFilter] = useState<HubFilter>("all");
 
   // Gallery sort state (lifted from GalleryHub)
@@ -259,37 +257,7 @@ const IndexContent = () => {
     if (user?.id) checkIsAdmin(user.id).then(setIsAdminState);
   }, [user?.id]);
 
-  // Refresh draft count from registry + scan localStorage for orphaned drafts
-  const refreshDraftCount = React.useCallback(() => {
-    let registry = getDraftRegistry();
-    // Scan localStorage for orphaned draft_* keys not in registry
-    const registryIds = new Set(registry.map(d => d.id));
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith('draft_') && key !== 'draft_registry') {
-        const id = key.replace('draft_', '');
-        if (!registryIds.has(id)) {
-          try {
-            const raw = localStorage.getItem(key);
-            if (raw) {
-              const parsed = JSON.parse(raw);
-              upsertDraftRegistry({
-                id,
-                title: parsed?.world?.core?.scenarioName || parsed?.title || 'Untitled',
-                savedAt: parsed?.savedAt || Date.now(),
-              });
-            }
-          } catch (_) { /* ignore corrupt entries */ }
-        }
-      }
-    }
-    registry = getDraftRegistry();
-    setDraftCount(registry.length);
-  }, []);
-
-  useEffect(() => {
-    refreshDraftCount();
-  }, [refreshDraftCount]);
+  // (Draft count refresh removed - drafts are now DB-backed and shown in the hub)
 
   // Track whether conversation previews have been enriched
   const [conversationsEnriched, setConversationsEnriched] = useState(false);
@@ -406,13 +374,15 @@ const IndexContent = () => {
     
     switch (hubFilter) {
       case "my":
-        return registry;
+        return registry.filter(s => !s.isDraft);
       case "bookmarked":
         return bookmarkedScenarios;
       case "published":
         return registry.filter(s => publishedScenarioIds.has(s.id));
+      case "drafts":
+        return registry.filter(s => s.isDraft);
       case "all":
-        return [...registry, ...bookmarkedScenarios];
+        return [...registry.filter(s => !s.isDraft), ...bookmarkedScenarios];
     }
   }, [registry, savedScenarios, hubFilter, publishedScenarioIds]);
 
@@ -962,10 +932,8 @@ const IndexContent = () => {
         setSelectedCharacterId(null);
         setTab("hub");
       }
-      // Clear localStorage draft and registry entry on successful DB save
+      // Clear any leftover localStorage drafts on successful DB save
       try { localStorage.removeItem(`draft_${scenarioIdToSave}`); } catch (_) { /* ignore */ }
-      removeDraftFromRegistry(scenarioIdToSave);
-      refreshDraftCount();
 
       return true;
     } catch (e: any) {
@@ -1797,6 +1765,17 @@ const IndexContent = () => {
                         Published
                       </button>
                       <button
+                        onClick={() => setHubFilter("drafts")}
+                        className={cn(
+                          "px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap",
+                          hubFilter === "drafts" 
+                            ? "bg-[#4a5f7f] text-white shadow-sm" 
+                            : "text-[#a1a1aa] hover:text-[#e4e4e7]"
+                        )}
+                      >
+                        Drafts
+                      </button>
+                      <button
                         onClick={() => setHubFilter("all")}
                         className={cn(
                           "px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap",
@@ -1906,18 +1885,6 @@ const IndexContent = () => {
                 <>
                   <button
                     type="button"
-                    onClick={() => setDraftsModalOpen(true)}
-                    className="relative inline-flex items-center justify-center h-10 px-5 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
-                  >
-                    Drafts
-                    {draftCount > 0 && (
-                      <span className="ml-1.5 inline-flex items-center justify-center h-4 min-w-[16px] rounded-full bg-zinc-600 text-[9px] font-bold px-1">
-                        {draftCount}
-                      </span>
-                    )}
-                  </button>
-                  <button
-                    type="button"
                     onClick={async () => {
                       if (!activeId || !activeData) return;
                       // Run validation before saving to DB
@@ -1951,27 +1918,28 @@ const IndexContent = () => {
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      if (!activeId || !activeData) return;
-                      const savedAt = Date.now();
+                    onClick={async () => {
+                      if (!activeId || !activeData || !user) return;
+                      setIsSaving(true);
                       try {
-                        localStorage.setItem(`draft_${activeId}`, JSON.stringify({
-                          data: activeData,
+                        const derivedTitle = activeData.world.core.scenarioName || 'Untitled';
+                        const metadata = {
+                          title: derivedTitle,
+                          description: activeData.world.core.briefDescription || 
+                                       truncateLine(activeData.world.core.storyPremise || 'Created via Builder', 120),
                           coverImage: activeCoverImage,
-                          coverPosition: activeCoverPosition,
-                          contentThemes: activeContentThemes,
-                          savedAt,
-                        }));
-                        upsertDraftRegistry({
-                          id: activeId,
-                          title: activeData.world.core.scenarioName || 'Untitled',
-                          savedAt,
-                        });
-                        refreshDraftCount();
-                        setIsSaving(true);
+                          coverImagePosition: activeCoverPosition,
+                          tags: ['Custom']
+                        };
+                        await supabaseData.saveScenario(activeId, activeData, metadata, user.id, { isDraft: true });
+                        // Refresh registry so hub shows the draft
+                        supabaseData.fetchMyScenarios(user.id)
+                          .then(r => setRegistry(r))
+                          .catch(e => console.warn('Registry refresh failed:', e));
                         setTimeout(() => setIsSaving(false), 1200);
                       } catch (e) {
-                        console.warn('Could not save draft to localStorage:', e);
+                        console.warn('Could not save draft:', e);
+                        setIsSaving(false);
                       }
                     }}
                     disabled={isSaving || isSavingAndClosing}
@@ -2585,29 +2553,7 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
         isProcessing={isAiFilling || isAiGenerating}
       />
 
-      {/* Drafts Modal */}
-      <DraftsModal
-        open={draftsModalOpen}
-        onOpenChange={(open) => { setDraftsModalOpen(open); if (!open) refreshDraftCount(); }}
-        onLoadDraft={(draftId) => {
-          try {
-            const raw = localStorage.getItem(`draft_${draftId}`);
-            if (!raw) return;
-            const draft = JSON.parse(raw);
-            const data = draft.data || draft;
-            setActiveId(draftId);
-            setActiveData(data);
-            setActiveCoverImage(draft.coverImage ?? null);
-            setActiveCoverPosition(draft.coverPosition ?? null);
-            setActiveContentThemes(draft.contentThemes ?? defaultContentThemes);
-            setTab("world");
-            setSelectedCharacterId(null);
-            setPlayingConversationId(null);
-          } catch (e) {
-            console.warn('Could not load draft:', e);
-          }
-        }}
-      />
+      {/* DraftsModal removed - drafts are now DB-backed and shown in the hub */}
 
       <AuthModal open={authModalOpen} onClose={() => setAuthModalOpen(false)} />
       </div>
