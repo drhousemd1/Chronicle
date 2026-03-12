@@ -180,7 +180,7 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
                       "w-[26px] h-[26px] rounded-[8px] flex items-center justify-center cursor-pointer transition-all",
                       step.status === 'deviated'
                         ? "border border-orange-500/60 bg-orange-500/20 text-orange-300"
-                        : "border border-white/20 bg-white/5 text-white/40"
+                        : "border border-ghost-white bg-white/5 text-white/40"
                     )}
                   >
                     <ArrowUpRight size={13} />
