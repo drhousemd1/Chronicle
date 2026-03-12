@@ -4575,7 +4575,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 notes="max-w-lg. Info card: bg-zinc-900/50 rounded-xl border-zinc-700. ⚠ !important CSS overrides on buttons."
                 preview={
                   <div style={{ position: 'relative', width: '100%', height: 56, borderRadius: 6, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
-                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#2a2a2f', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, padding: '8px 16px', color: '#fff', fontSize: 8, fontWeight: 600 }}>
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#2a2a2f', border: '1px solid rgba(248,250,252,0.3)', borderRadius: 6, padding: '8px 16px', color: '#fff', fontSize: 8, fontWeight: 600 }}>
                       Share Story
                     </div>
                   </div>
