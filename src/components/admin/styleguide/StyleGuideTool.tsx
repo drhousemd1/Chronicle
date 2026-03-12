@@ -3465,11 +3465,11 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 purpose="Active filter indicators in gallery with X dismiss"
                 locations="GalleryHub — active filters bar"
                 pageSpecific
-                notes="Search text: bg-white/20 text-white. Story Type: blue. Genre: purple. Origin: green. Warnings: amber. Search tags: bg-white/20 text-white. Each has X dismiss button (Lucide X w-3 h-3, hover:text-red-300)."
+                notes="Search text: bg-ghost-white text-white. Story Type: blue. Genre: purple. Origin: green. Warnings: amber. Search tags: bg-ghost-white text-white. Each has X dismiss button (Lucide X w-3 h-3, hover:text-red-300)."
                 states="5 color variants by category type"
                 preview={
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    <span className="px-2 py-1 bg-white/20 text-white rounded-full text-xs font-medium flex items-center gap-1">"search" <X className="w-3 h-3" /></span>
+                    <span className="px-2 py-1 bg-ghost-white text-white rounded-full text-xs font-medium flex items-center gap-1">"search" <X className="w-3 h-3" /></span>
                     <span className="px-2 py-1 bg-blue-500/20 text-blue-500 rounded-full text-xs font-medium flex items-center gap-1">SFW <X className="w-3 h-3" /></span>
                     <span className="px-2 py-1 bg-purple-500/20 text-purple-400 rounded-full text-xs font-medium flex items-center gap-1">Romance <X className="w-3 h-3" /></span>
                     <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-medium flex items-center gap-1">Original <X className="w-3 h-3" /></span>
