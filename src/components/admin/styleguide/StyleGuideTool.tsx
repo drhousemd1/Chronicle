@@ -3815,7 +3815,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <PanelCardV2
                 panelName="Chat Message Bubble"
                 background="AI: #1c1f26 · User: #1c1f26 · Transparent: bg-black/50"
-                border="AI: border-white/5 · User: border-2 border-blue-500"
+                border="AI: border-ghost-white · User: border-2 border-blue-500"
                 borderRadius="rounded-[2rem]"
                 purpose="Chat message containers. AI and User variants with optional transparent mode."
                 locations="ChatInterfaceTab.tsx"
