@@ -130,7 +130,7 @@ const IndexContent = () => {
   const [activeContentThemes, setActiveContentThemes] = useState<ContentThemes>(defaultContentThemes);
   const [playingConversationId, setPlayingConversationId] = useState<string | null>(null);
   const [library, setLibrary] = useState<Character[]>([]);
-  const [tab, setTab] = useState<TabKey | "library">("hub");
+  const [tab, setTab] = useState<TabKey | "library">("gallery");
   const [fatal, setFatal] = useState<string>("");
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
   const [isAiFilling, setIsAiFilling] = useState(false);
