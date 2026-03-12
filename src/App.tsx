@@ -3,9 +3,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ArtStylesProvider } from "@/contexts/ArtStylesContext";
 import Index from "./pages/Index";
-import Auth from "./pages/Auth";
 import CreatorProfile from "./pages/CreatorProfile";
 import NotFound from "./pages/NotFound";
+import { Navigate } from "react-router-dom";
 
 const queryClient = new QueryClient();
 
