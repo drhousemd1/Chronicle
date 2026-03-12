@@ -242,7 +242,19 @@ const IndexContent = () => {
     }
   }, [authLoading, isAuthenticated, tab]);
 
-  // Check admin status from database
+  // Handle ?auth=1 query param — open auth modal and clean URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('auth') === '1') {
+      setAuthModalOpen(true);
+      params.delete('auth');
+      const newUrl = params.toString()
+        ? `${window.location.pathname}?${params.toString()}`
+        : window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, []);
+
   useEffect(() => {
     if (user?.id) checkIsAdmin(user.id).then(setIsAdminState);
   }, [user?.id]);
