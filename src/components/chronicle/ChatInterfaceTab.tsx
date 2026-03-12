@@ -3523,7 +3523,7 @@ const updatedChar: SideCharacter = {
           <div ref={scrollRef} onScroll={handleScroll} className="relative z-10 h-full overflow-y-auto px-6 md:px-14 lg:px-20 py-8 space-y-10 custom-scrollbar scrollbar-thin">
           {conversation?.messages.length === 0 && !streamingContent && (
              <div className="h-full flex flex-col items-center justify-center text-slate-500 space-y-6">
-               <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center text-4xl shadow-sm border border-white/10">✨</div>
+               <div className="w-20 h-20 rounded-full bg-ghost-white flex items-center justify-center text-4xl shadow-sm border border-ghost-white">✨</div>
                <div className="text-center max-w-sm">
                  <p className="font-black uppercase tracking-[0.2em] text-sm text-slate-300">The stage is set</p>
                  <p className="text-xs mt-2 italic text-slate-500">Waiting for your first act. You can start by typing a prompt or action below.</p>
