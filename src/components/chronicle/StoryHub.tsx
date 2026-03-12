@@ -333,7 +333,8 @@ export function ScenarioHub({
             contentThemes={selectedContentThemes || undefined}
             isOwned={!selectedScenario.isBookmarked}
             isPublished={!!publicationStatus?.is_published}
-          allowRemix={publicationStatus?.allow_remix}
+            isDraft={selectedScenario.isDraft}
+            allowRemix={publicationStatus?.allow_remix}
             onPlay={() => {
               onPlay(selectedScenario.id);
               setDetailModalOpen(false);
