@@ -69,6 +69,7 @@ export interface ScenarioDetailModalProps {
   // Display mode
   isOwned?: boolean; // Shows Edit button instead of Like/Save
   isPublished?: boolean; // Shows unpublish button for owned scenarios
+  isDraft?: boolean; // Hides Play button for draft stories
 }
 
 // Helper function for count formatting
