@@ -177,7 +177,7 @@ export const GalleryCategorySidebar: React.FC<GalleryCategorySidebarProps> = ({
     selectedFilters.customTags.length > 0;
 
   return (
-    <div className="w-72 flex-shrink-0 bg-[#18181b] border-r border-white/10 flex flex-col h-full">
+    <div className="w-72 flex-shrink-0 bg-[#18181b] border-r border-ghost-white flex flex-col h-full">
       {/* Yellow accent border */}
       <div className="h-0.5 bg-yellow-400" />
       
