@@ -778,7 +778,7 @@ const ALL_SWATCHES: SwatchOption[] = [
   { color: 'rgba(255,255,255,0.3)', name: 'Milky White' },
   { color: 'rgba(0,0,0,0.3)', name: 'Smoke Black (Light)' },
   { color: 'rgba(255,255,255,0.05)', name: 'Ghost White (Border)' },
-  { color: 'rgba(255,255,255,0.15)', name: 'Dim White (Hover)' },
+  // Dim White (Hover) removed — migrated to Ghost White
   { color: 'rgba(239,68,68,0.3)', name: 'Faint Red' },
   { color: '#1e1e22', name: 'Charcoal' },
   { color: '#2b2b2e', name: 'Warm Charcoal' },
