@@ -68,7 +68,7 @@ export function AIPromptModal({
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               placeholder="Describe the character you want to create. For example: A mysterious elven mage with a dark past, secretive and distrustful of strangers..."
-              className="min-h-[120px] bg-zinc-900/50 border-white/10 text-white placeholder:text-zinc-500 focus:ring-2 focus:ring-blue-500/20"
+              className="min-h-[120px] bg-zinc-900/50 border-ghost-white text-white placeholder:text-zinc-500 focus:ring-2 focus:ring-blue-500/20"
             />
             <p className="text-xs text-zinc-500">
               Leave empty to let AI generate based on existing details and world context.
