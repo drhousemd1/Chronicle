@@ -3596,7 +3596,7 @@ const updatedChar: SideCharacter = {
                           <button
                             onClick={() => handleRegenerateMessage(msg.id)}
                             disabled={isStreaming || isRegenerating}
-                            className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors disabled:opacity-30"
+                            className="p-2 rounded-lg hover:bg-ghost-white text-slate-400 hover:text-white transition-colors disabled:opacity-30"
                             title="Regenerate response"
                           >
                             <RefreshCw className={`w-4 h-4 ${regeneratingMessageId === msg.id ? 'animate-spin' : ''}`} />
