@@ -4322,7 +4322,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 pageSpecific appWide={false}
                 notes="Phases inline separated by border-t. Contains CircularProgress component."
                 preview={
-                  <div className="bg-[#2a2a2f] rounded-2xl border border-white/10 p-3" style={{ width: '100%' }}>
+                  <div className="bg-[#2a2a2f] rounded-2xl border border-ghost-white p-3" style={{ width: '100%' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
                       <svg width={24} height={24} style={{ transform: 'rotate(-90deg)' }}>
                         <circle cx={12} cy={12} r={9} stroke="#334155" strokeWidth={3} fill="none" />
