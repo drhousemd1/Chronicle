@@ -160,7 +160,7 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
                   updateField('structuredLocations', locs);
                 }}
                 placeholder={idx === 0 ? "A secluded cabin by the lake..." : "Describe this location..."}
-                className="flex-1 px-3 py-2 rounded-lg text-sm bg-zinc-900/50 border border-ghost-white text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
+                className="flex-1 px-3 py-2 rounded-lg text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
               />
               <button
                 type="button"
