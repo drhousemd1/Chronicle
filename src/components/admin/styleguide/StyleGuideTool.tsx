@@ -4604,7 +4604,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <PanelCardV2
                 panelName="ReviewModal"
                 background="#121214"
-                border="border-white/10"
+                border="border-ghost-white"
                 borderRadius="rounded-2xl"
                 purpose="Review submission/editing with star + spice ratings"
                 locations="ReviewModal.tsx"
