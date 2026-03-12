@@ -3642,7 +3642,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <BadgeCardV2
                 badgeName="Star Rating"
                 background="(transparent)"
-                textColor="Filled: text-amber-400 fill-amber-400 · Empty: text-white/20"
+                textColor="Filled: text-amber-400 fill-amber-400 · Empty: text-ghost-white"
                 size="16px default, 20px review display"
                 borderRadius="n/a"
                 padding="gap-0.5"
