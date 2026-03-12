@@ -48,7 +48,7 @@ export function AIPromptModal({
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px] bg-[hsl(var(--ui-surface))] border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))]">
-        <DialogHeader className="bg-[#4a5f7f] -mx-6 -mt-6 px-6 py-4 rounded-t-lg border-b border-white/20">
+        <DialogHeader className="bg-[#4a5f7f] -mx-6 -mt-6 px-6 py-4 rounded-t-lg border-b border-ghost-white">
           <DialogTitle className="flex items-center gap-2 text-white text-lg font-bold">
             <Sparkles className="w-5 h-5 text-cyan-200" />
             {title}
