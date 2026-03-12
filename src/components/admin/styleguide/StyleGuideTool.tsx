@@ -4612,7 +4612,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 notes="Custom overlay: bg-black/90 backdrop-blur-sm. Buttons: h-11 text-sm (non-standard). Submit: bg-[#4a5f7f]. Delete: bg-red-600/20."
                 preview={
                   <div style={{ position: 'relative', width: '100%', height: 56, borderRadius: 6, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
-                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#121214', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '8px 16px', color: '#fff', fontSize: 8, fontWeight: 600 }}>
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#121214', border: '1px solid rgba(248,250,252,0.3)', borderRadius: 12, padding: '8px 16px', color: '#fff', fontSize: 8, fontWeight: 600 }}>
                       Review — rounded-2xl
                     </div>
                   </div>
