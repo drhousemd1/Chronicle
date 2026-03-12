@@ -1116,11 +1116,10 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <SwatchCardV2 color="#d4d4d8" name="Light Zinc" locations="Bullet list text in World Codex Dialog Formatting" value="#d4d4d8" token="text-zinc-300" pageSpecific={false} appWide={true} locationImages={[
                 { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/story-builder/world-codex.png', location: 'Bullet list text', function: 'Text color for the dialog formatting bullet list in World Codex (e.g. "Enclose all spoken dialogue in \" \"")' },
               ]} />
-              <SwatchCardV2 color="rgba(255,255,255,0.1)" name="Faint White" locations="Button borders, panel outer borders, character card borders" value="rgba(255,255,255,0.1)" token="border-white/10" pageSpecific={false} appWide={true} extraPreviewStyle={{ border: '1px dashed #999' }} locationImages={[
+              {/* Faint White & Dim White removed — all borders now use Ghost White (rgba(248,250,252,0.3)) via border-ghost-white token */}
+              <SwatchCardV2 color="rgba(248,250,252,0.3)" name="Ghost White" locations="Button borders, panel outer borders, character card borders, panel header bar bottom border, input borders, modal borders, dividers" value="rgba(248,250,252,0.3)" token="border-ghost-white" pageSpecific={false} appWide={true} extraPreviewStyle={{ border: '1px dashed #ccc' }} locationImages={[
                 { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/story-builder/character-roster.png', location: 'Panel outer borders', function: 'Subtle outer border on panel containers (Story Card, World Core) and character cards in the roster sidebar' },
-              ]} />
-              <SwatchCardV2 color="rgba(255,255,255,0.2)" name="Dim White" locations="Panel header bar bottom border" value="rgba(255,255,255,0.2)" token="border-white/20" pageSpecific={false} appWide={true} extraPreviewStyle={{ border: '1px dashed #999' }} locationImages={[
-                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/story-builder/story-card-panel.png', location: 'Panel header bar bottom border', function: 'Border separating the slate-blue header bar from the panel body content below (e.g. Story Card header from form fields)' },
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/story-builder/story-card-panel.png', location: 'Panel header bar bottom border', function: 'Border separating the slate-blue header bar from the panel body content below' },
               ]} />
             </div>
 
