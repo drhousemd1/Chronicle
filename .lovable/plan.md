@@ -1,11 +1,18 @@
 
 
-## Plan: Persist Style Guide Edits to Supabase — Complete ✅
+# Fix Reposition Button Styling on Character Builder
 
-### What was done:
+## Problem
+The Reposition button in CharactersTab uses the Chronicle `Button` component with `variant="secondary"` which renders as a white/light button. It should use the Shadow Surface dark styling matching the Story Builder's Reposition button.
 
-1. **Seeded `app_settings` rows** — `styleguide_edits` and `styleguide_keeps` rows inserted into the database
-2. **Rewrote all storage helpers** in `StyleGuideEditsModal.tsx` from sync localStorage to async Supabase operations (`getEditsRegistry`, `upsertEdit`, `removeEdit`, `getKeeps`, `addKeep`, `removeKeep`, `getEditsCount`)
-3. **Updated all consumers** in `StyleGuideTool.tsx` — `refreshEditsState`, `handleKeep`, `handleEditOpen`, `handleSaveEdit`, `handleRemoveKeep` are all async now
-4. **Updated `Index.tsx`** — `getEditsCount()` call now uses `.then()` since it's async
-5. **Every edit, keep, and delete auto-saves to Supabase immediately** — no data loss on domain changes
+## Change
+
+**File**: `src/components/chronicle/CharactersTab.tsx` (line 746-752)
+
+Keep the `Button` component and its current sizing (`w-full`), but override the colors via className:
+
+- **Default state**: Add `bg-[hsl(240_6%_18%)] border-[hsl(0_0%_100%_/_0.10)] text-[hsl(var(--ui-text))] hover:bg-[hsl(240_6%_22%)] shadow-[0_10px_30px_hsl(0_0%_0%_/_0.35)] uppercase tracking-wider`
+- **Active (repositioning) state**: Keep `bg-blue-500 text-white`
+
+The `w-full text-[10px] font-bold leading-none` sizing stays exactly as-is.
+
