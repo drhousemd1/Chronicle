@@ -3606,7 +3606,7 @@ const updatedChar: SideCharacter = {
                         {/* Three-dot menu - all messages */}
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <button className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+                            <button className="p-2 rounded-lg hover:bg-ghost-white text-slate-400 hover:text-white transition-colors">
                               <MoreVertical className="w-4 h-4" />
                             </button>
                           </DropdownMenuTrigger>
