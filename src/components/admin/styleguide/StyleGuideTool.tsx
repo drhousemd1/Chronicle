@@ -3228,7 +3228,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               />
             </div>
             <InconsistencyNote items={[
-              { file: 'UI.tsx', note: 'Defines Input/TextArea with bg-slate-50 border-slate-200 styling. Components in dark contexts need !important overrides.' },
+              { file: 'UI.tsx', note: 'Defines Input/TextArea with bg-ghost-white border-slate-200 styling. Components in dark contexts need !important overrides.' },
             ]} />
 
           </Section>
