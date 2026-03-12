@@ -1572,7 +1572,7 @@ const IndexContent = () => {
                 <TooltipTrigger asChild>
                   <button
                     onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                    className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                    className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-ghost-white transition-colors"
                   >
                     {sidebarCollapsed ? <PanelLeft className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
                   </button>
