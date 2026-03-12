@@ -515,7 +515,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
               
               {/* Content */}
               <div className="p-6">
-                <div className="p-6 bg-[#3a3a3f]/30 rounded-2xl border border-[#4a5f7f]">
+                <div className="p-6 bg-[#2e2e33] rounded-2xl border border-[#4a5f7f]">
                       <div className="flex flex-col md:flex-row gap-8">
                     {/* Preview Container - Portrait aspect ratio for story cards */}
                     <div data-publish-error={!!publishErrors.coverImage || undefined}>
