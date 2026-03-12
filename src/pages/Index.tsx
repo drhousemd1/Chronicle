@@ -28,14 +28,17 @@ import { useAuth } from "@/hooks/use-auth";
 
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { PanelLeftClose, PanelLeft, Settings, Image as ImageIcon, Sparkles, ArrowLeft, UserCircle, Sun, Moon, Download, Pencil } from "lucide-react";
+import { PanelLeftClose, PanelLeft, Settings, Image as ImageIcon, Sparkles, ArrowLeft, UserCircle, Sun, Moon, Download, Pencil, LogIn, LogOut } from "lucide-react";
 import { AIPromptModal } from "@/components/chronicle/AIPromptModal";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import * as supabaseData from "@/services/supabase-data";
 import { DeleteConfirmDialog } from "@/components/chronicle/DeleteConfirmDialog";
 import { ChangeNameModal } from "@/components/chronicle/ChangeNameModal";
@@ -209,7 +212,7 @@ const IndexContent = () => {
   const [savedScenarios, setSavedScenarios] = useState<SavedScenario[]>([]);
   const [publishedScenariosData, setPublishedScenariosData] = useState<Map<string, PublishedScenario>>(new Map());
   const [contentThemesMap, setContentThemesMap] = useState<Map<string, ContentThemes>>(new Map());
-  const [userProfile, setUserProfile] = useState<{ username: string | null; display_name: string | null } | null>(null);
+  const [userProfile, setUserProfile] = useState<{ username: string | null; display_name: string | null; avatar_url: string | null } | null>(null);
 
   // Derive publishedScenarioIds from publishedScenariosData
   const publishedScenarioIds = useMemo(() => {
@@ -1596,7 +1599,72 @@ const IndexContent = () => {
             )}
 
             <div className="pt-4 mt-4 border-t border-white/10">
-              <SidebarItem active={tab === "account"} label={isAuthenticated ? "Account" : "Log In"} icon={<UserCircle className="w-5 h-5" />} onClick={() => requireAuth(() => setTab("account"))} collapsed={sidebarCollapsed} />
+              {isAuthenticated && user ? (() => {
+                const displayName = userProfile?.display_name || user.email?.split('@')[0] || 'User';
+                const initials = displayName.slice(0, 2).toUpperCase();
+                return (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        className={cn(
+                          "flex items-center gap-3 w-full rounded-xl px-2 py-2 hover:bg-white/5 active:bg-white/10 transition-all text-left",
+                          sidebarCollapsed && "justify-center px-0"
+                        )}
+                      >
+                        <Avatar className="h-8 w-8 shrink-0">
+                          {userProfile?.avatar_url ? (
+                            <AvatarImage src={userProfile.avatar_url} alt={displayName} />
+                          ) : null}
+                          <AvatarFallback className="bg-[#4a5f7f] text-white text-[10px] font-bold">
+                            {initials}
+                          </AvatarFallback>
+                        </Avatar>
+                        {!sidebarCollapsed && (
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[11px] font-bold text-white truncate">{displayName}</p>
+                            <p className="text-[10px] text-white/30 truncate">{user.email}</p>
+                          </div>
+                        )}
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" side="right" className="w-56">
+                      <DropdownMenuLabel className="font-normal">
+                        <div className="flex flex-col space-y-1">
+                          <p className="text-sm font-medium leading-none">{displayName}</p>
+                          <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                        </div>
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => { setAccountActiveTab('profile'); setTab("account"); }} className="cursor-pointer">
+                        <UserCircle className="w-4 h-4 mr-2" />
+                        Public Profile
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => { setAccountActiveTab('settings'); setTab("account"); }} className="cursor-pointer">
+                        <Settings className="w-4 h-4 mr-2" />
+                        Account Settings
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-red-500 focus:text-red-500">
+                        <LogOut className="w-4 h-4 mr-2" />
+                        Sign Out
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                );
+              })() : (
+                <button
+                  type="button"
+                  onClick={() => setAuthModalOpen(true)}
+                  className={cn(
+                    "flex items-center gap-3 w-full rounded-xl px-2 py-2 hover:bg-white/5 active:bg-white/10 transition-all text-[#4a5f7f]",
+                    sidebarCollapsed && "justify-center px-0"
+                  )}
+                >
+                  <LogIn className="w-5 h-5 shrink-0" />
+                  {!sidebarCollapsed && <span className="text-[11px] font-bold uppercase tracking-wider">Log In</span>}
+                </button>
+              )}
             </div>
           </nav>
         </aside>
