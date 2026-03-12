@@ -67,9 +67,9 @@ const HardcodedSection: React.FC<{
   children: React.ReactNode;
   collapsedContent: React.ReactNode;
 }> = ({ title, isExpanded, onToggle, children, collapsedContent }) => (
-  <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-ghost-white overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
+  <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-[#4a5f7f] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
     {/* Section Header */}
-    <div className="bg-[#4a5f7f] border-b border-ghost-white px-5 py-3 flex items-center justify-between shadow-lg">
+    <div className="bg-[#4a5f7f] border-b border-[#4a5f7f] px-5 py-3 flex items-center justify-between shadow-lg">
       <h2 className="text-white text-xl font-bold tracking-tight">{title}</h2>
       <button 
         onClick={onToggle} 
@@ -81,7 +81,7 @@ const HardcodedSection: React.FC<{
     {/* Content */}
     <div className="p-5">
       {/* Inner card for visual depth */}
-      <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-ghost-white">
+      <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl border border-[#4a5f7f]">
         {isExpanded ? (
           <div className="space-y-4">
             {children}
@@ -105,7 +105,7 @@ const HardcodedRow: React.FC<{
 }> = ({ label, value, onChange, placeholder, onEnhance, isEnhancing }) => (
   <div className="flex items-start gap-2">
     <div className="w-2/5 flex items-center gap-1.5 min-w-0">
-      <div className="flex-1 px-3 py-2 text-xs font-bold bg-zinc-900/50 border border-ghost-white text-zinc-400 rounded-lg uppercase tracking-widest min-w-0 break-words">
+      <div className="flex-1 px-3 py-2 text-xs font-bold bg-zinc-900/50 border border-[#4a5f7f] text-zinc-400 rounded-lg uppercase tracking-widest min-w-0 break-words">
         {label}
       </div>
       {onEnhance && (
@@ -129,7 +129,7 @@ const HardcodedRow: React.FC<{
       value={value}
       onChange={onChange}
       placeholder={placeholder}
-      className="flex-1 px-3 py-2 text-sm bg-zinc-900/50 border border-ghost-white text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
+      className="flex-1 px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
     />
     <div className="w-7 flex-shrink-0 flex items-center justify-center">
       <Lock className="w-3.5 h-3.5 text-zinc-400" />
@@ -151,7 +151,7 @@ const ExtraRow: React.FC<{
         value={extra.label}
         onChange={(v) => onUpdate({ label: v })}
         placeholder="Label"
-        className="flex-1 px-3 py-2 text-xs font-bold bg-zinc-900/50 border border-ghost-white text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 placeholder:normal-case placeholder:tracking-normal rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
+        className="flex-1 px-3 py-2 text-xs font-bold bg-zinc-900/50 border border-[#4a5f7f] text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 placeholder:normal-case placeholder:tracking-normal rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
       />
       {onEnhance && (
         <button
@@ -174,7 +174,7 @@ const ExtraRow: React.FC<{
       value={extra.value}
       onChange={(v) => onUpdate({ value: v })}
       placeholder="Description"
-      className="flex-1 px-3 py-2 text-sm bg-zinc-900/50 border border-ghost-white text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
+      className="flex-1 px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
     />
     <button
       type="button"
