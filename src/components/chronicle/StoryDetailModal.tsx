@@ -484,8 +484,8 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mt-8">
                       {contentThemes.genres.length > 0 && (
                         <div>
-                          <h4 className="text-xs font-bold text-white/40 uppercase mb-2">Genre</h4>
-                          <p className="text-sm text-white">{contentThemes.genres.join(', ')}</p>
+                          <h4 className="text-xs font-bold text-[rgba(248,250,252,1)] uppercase mb-2">Genre</h4>
+                          <p className="text-sm text-[rgba(248,250,252,0.8)]">{contentThemes.genres.join(', ')}</p>
                         </div>
                       )}
                       {contentThemes.characterTypes.length > 0 && (
