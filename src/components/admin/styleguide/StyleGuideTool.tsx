@@ -1402,7 +1402,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                   { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-message-bubble.png', location: 'AI bubble border', function: 'Very faint white border on AI message bubbles (default)' },
                 ]}
               />
-              <SwatchCardV2 color="rgba(255,255,255,0.1)" name="Faint White" locations="Avatar border, Scene image overlay border, Empty state circle bg/border, Settings modal border/dividers" value="rgba(255,255,255,0.1)" token="border-white/10 / bg-white/10" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }}
+              <SwatchCardV2 color="rgba(248,250,252,0.3)" name="Ghost White" locations="Avatar border, Scene image overlay border, Empty state circle bg/border, Settings modal border/dividers" value="rgba(248,250,252,0.3)" token="border-ghost-white / bg-ghost-white" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #ccc' }}
                 locationImages={[
                   { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-message-bubble.png', location: 'Avatar border', function: 'Subtle border ring around speaker avatars' },
                   { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-settings-modal.png', location: 'Settings modal border', function: 'Border and dividers inside Chat Settings modal' },
