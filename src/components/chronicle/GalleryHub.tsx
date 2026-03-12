@@ -42,7 +42,7 @@ const defaultFilters: CategoryFilters = {
   customTags: [],
 };
 
-export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, sortBy, onSortChange }) => {
+export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, sortBy, onSortChange, onAuthRequired }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
