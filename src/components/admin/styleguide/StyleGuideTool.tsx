@@ -2931,7 +2931,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <InputCardV2
                 inputName="Gallery Search Input"
                 background="#3a3a3f/50 / bg-[#3a3a3f]/50"
-                border="border-white/10"
+                border="border-ghost-white"
                 borderRadius="rounded-xl (12px)"
                 textColor="white"
                 placeholderColor="text-zinc-500"
@@ -2942,7 +2942,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 locations="Community Gallery — top search bar"
                 pageSpecific
                 preview={
-                  <input readOnly className="w-full pl-12 pr-24 py-3 bg-[#3a3a3f]/50 border border-white/10 rounded-xl text-white placeholder:text-zinc-500 outline-none" placeholder="Search titles, descriptions, or #tags..." />
+                  <input readOnly className="w-full pl-12 pr-24 py-3 bg-[#3a3a3f]/50 border border-ghost-white rounded-xl text-white placeholder:text-zinc-500 outline-none" placeholder="Search titles, descriptions, or #tags..." />
                 }
               />
             </div>
