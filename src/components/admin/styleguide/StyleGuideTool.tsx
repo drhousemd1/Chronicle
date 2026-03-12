@@ -4051,7 +4051,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
               <PanelCardV2
                 panelName="Subscription Tier Cards"
-                background="Free: bg-white/5 · Pro: bg-[#4a5f7f]/10 · Premium: bg-amber-500/10"
+                background="Free: bg-ghost-white · Pro: bg-[#4a5f7f]/10 · Premium: bg-amber-500/10"
                 border="Free: border-ghost-white · Pro: border-[#4a5f7f]/30 · Premium: border-amber-500/20"
                 borderRadius="rounded-2xl"
                 purpose="Pricing tier comparison cards with badges (Current Plan, Coming Soon)"
