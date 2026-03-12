@@ -419,7 +419,7 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
       </div>
 
       {/* Section 2: Published Works */}
-      <div className="bg-[#1e1e22] rounded-2xl border border-white/10 p-6">
+      <div className="bg-[#1e1e22] rounded-2xl border border-ghost-white p-6">
         {/* Header row */}
         <div className="flex items-center flex-wrap gap-x-6 gap-y-2 mb-5">
           <h3 className="text-sm font-black text-white uppercase tracking-wider">Published Works</h3>
