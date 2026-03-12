@@ -9,7 +9,7 @@ interface ArcModeToggleProps {
 
 export const ArcModeToggle: React.FC<ArcModeToggleProps> = ({ mode, onChange }) => {
   return (
-    <div className="flex p-1 bg-zinc-900/50 rounded-lg border border-white/10">
+    <div className="flex p-1 bg-zinc-900/50 rounded-lg border border-ghost-white">
       <button
         type="button"
         onClick={() => onChange('simple')}

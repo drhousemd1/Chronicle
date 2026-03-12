@@ -76,7 +76,7 @@ export const DraftsModal: React.FC<DraftsModalProps> = ({ open, onOpenChange, on
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="rounded-xl bg-zinc-900 border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)] max-w-md p-0 gap-0">
+      <DialogContent className="rounded-xl bg-zinc-900 border border-ghost-white shadow-[0_10px_30px_rgba(0,0,0,0.5)] max-w-md p-0 gap-0">
         <DialogHeader className="px-5 pt-5 pb-3">
           <DialogTitle className="text-white text-base font-bold">Drafts</DialogTitle>
         </DialogHeader>

@@ -93,7 +93,7 @@ export const SideCharacterCard: React.FC<SideCharacterCardProps> = ({
                   <MoreVertical className="w-4 h-4" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className={`shadow-lg z-50 ${isDarkBg ? 'bg-white border-slate-200' : 'bg-zinc-800 border-white/10 text-zinc-200'}`}>
+              <DropdownMenuContent align="end" className={`shadow-lg z-50 ${isDarkBg ? 'bg-white border-slate-200' : 'bg-zinc-800 border-ghost-white text-zinc-200'}`}>
                 <DropdownMenuItem onClick={onStartEdit} className={`${!isDarkBg ? 'hover:!bg-zinc-700 focus:!bg-zinc-700 focus:!text-white' : ''}`}>
                   <Pencil className="w-4 h-4 mr-2" />
                   Edit character

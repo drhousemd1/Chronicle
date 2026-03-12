@@ -121,7 +121,7 @@ export const SceneTagEditorModal: React.FC<SceneTagEditorModalProps> = ({
           </button>
           <button
             onClick={handleSave}
-            className="px-4 py-2 text-sm font-medium text-white bg-white/10 hover:bg-white/20 rounded-lg transition-colors shadow-[0_2px_8px_rgba(0,0,0,0.3)]"
+            className="px-4 py-2 text-sm font-medium text-white bg-ghost-white hover:bg-ghost-white rounded-lg transition-colors shadow-[0_2px_8px_rgba(0,0,0,0.3)]"
           >
             Save
           </button>
