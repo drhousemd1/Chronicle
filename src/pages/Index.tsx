@@ -1765,6 +1765,17 @@ const IndexContent = () => {
                         Published
                       </button>
                       <button
+                        onClick={() => setHubFilter("drafts")}
+                        className={cn(
+                          "px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap",
+                          hubFilter === "drafts" 
+                            ? "bg-[#4a5f7f] text-white shadow-sm" 
+                            : "text-[#a1a1aa] hover:text-[#e4e4e7]"
+                        )}
+                      >
+                        Drafts
+                      </button>
+                      <button
                         onClick={() => setHubFilter("all")}
                         className={cn(
                           "px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap",
