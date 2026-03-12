@@ -208,7 +208,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
       <div className="bg-[#4a5f7f] border-b border-ghost-white px-5 py-3 flex items-center justify-between shadow-lg">
         <h2 className="text-white text-xl font-bold tracking-tight">Goals and Desires</h2>
         {onToggle && (
-          <button onClick={onToggle} className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-white/10">
+          <button onClick={onToggle} className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-ghost-white">
             {isExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
           </button>
         )}
