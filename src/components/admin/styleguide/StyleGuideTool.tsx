@@ -4367,7 +4367,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <PanelCardV2
                 panelName="Creator Profile Card"
                 background="#1e1e22"
-                border="border-white/10"
+                border="border-ghost-white"
                 borderRadius="rounded-2xl"
                 purpose="Creator profile display with avatar, bio, stats pills, follow button"
                 locations="CreatorProfile.tsx"
