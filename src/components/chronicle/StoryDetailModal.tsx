@@ -170,12 +170,6 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
     }
   }, [open, publishedScenarioId, user?.id]);
 
-  // Fetch creator overall rating
-  useEffect(() => {
-    if (open && publisherId && !isOwned) {
-      fetchCreatorOverallRating(publisherId).then(setCreatorRating).catch(console.error);
-    }
-  }, [open, publisherId, isOwned]);
 
   const handleLike = async () => {
     if (!onLike || isLiking) return;
