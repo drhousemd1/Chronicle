@@ -760,8 +760,7 @@ const ALL_SWATCHES: SwatchOption[] = [
   { color: '#e2e8f0', name: 'Light Steel' },
   { color: 'rgba(58,58,63,0.3)', name: 'Muted Charcoal' },
   { color: '#d4d4d8', name: 'Light Zinc' },
-  // Faint White and Dim White removed — migrated to Ghost White
-  { color: 'rgba(248,250,252,0.5)', name: 'Frosted White' },
+  // Faint White, Dim White, Frosted White removed — migrated to Ghost White
   { color: '#ef4444', name: 'Bright Red' },
   { color: '#52525b', name: 'Ash Gray' },
   { color: 'rgba(0,0,0,0.5)', name: 'Half Black' },
@@ -775,10 +774,8 @@ const ALL_SWATCHES: SwatchOption[] = [
   { color: '#1c1f26', name: 'Ink Blue' },
   { color: '#94a3b8', name: 'Muted Slate' },
   { color: 'rgba(199,210,254,0.9)', name: 'Soft Indigo' },
-  { color: 'rgba(255,255,255,0.3)', name: 'Milky White' },
+  // Milky White, Whisper White, Dim White (Hover) removed — migrated to Ghost White
   { color: 'rgba(0,0,0,0.3)', name: 'Smoke Black (Light)' },
-  { color: 'rgba(255,255,255,0.05)', name: 'Whisper White' },
-  // Dim White (Hover) removed — migrated to Ghost White
   { color: 'rgba(239,68,68,0.3)', name: 'Faint Red' },
   { color: '#1e1e22', name: 'Charcoal' },
   { color: '#2b2b2e', name: 'Warm Charcoal' },
@@ -788,7 +785,7 @@ const ALL_SWATCHES: SwatchOption[] = [
   { color: '#ffffff', name: 'White' },
   { color: '#0f172a', name: 'Deep Navy' },
   { color: '#faf5ff', name: 'Pale Lavender' },
-  { color: '#f8fafc', name: 'Ice White' },
+  // Ice White removed — migrated to Ghost White
   { color: 'rgba(0,0,0,0.8)', name: 'Near Black Glass' },
   { color: 'rgba(96,165,250,0.1)', name: 'Faint Blue (Hover)' },
   { color: '#f43f5e', name: 'Rose' },
@@ -1112,9 +1109,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <SwatchCardV2 color="#d4d4d8" name="Light Zinc" locations="Bright text on dark containers, active toggle labels" value="#d4d4d8" token="text-zinc-300" pageSpecific={false} appWide={true} locationImages={[
                 { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/story-builder/story-card-panel.png', location: 'Bright text on containers', function: 'Brighter text color used for emphasized labels and active toggle text on dark backgrounds' },
               ]} />
-              <SwatchCardV2 color="rgba(248,250,252,0.5)" name="Frosted White" locations="Focused/active text state, hover text brightness" value="rgba(248,250,252,0.5)" token="text-slate-50/50" pageSpecific={false} appWide={true} extraPreviewStyle={{ border: '1px dashed #ccc' }} locationImages={[
-                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/story-builder/story-card-panel.png', location: 'Focused/active text', function: 'Semi-opaque white used for text in focused or active states on dark surfaces' },
-              ]} />
+              {/* Frosted White migrated → Ghost White */}
               <SwatchCardV2 color="#ef4444" name="Bright Red" locations="Validation error borders, error text, required field indicators" value="#ef4444" token="text-red-500 / border-red-500" pageSpecific={false} appWide={true} locationImages={[
                 { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/story-builder/story-card-panel.png', location: 'Validation errors', function: 'Border and text color for validation error states on required fields (e.g., missing Main Characters)' },
               ]} />
@@ -1380,15 +1375,12 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                   { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-settings-modal.png', location: 'Active settings pill', function: 'Blue background on active POV/Verbosity pill (e.g. "3rd Person", "Balanced")' },
                 ]}
               />
-              <SwatchCardV2 color="rgba(255,255,255,0.05)" name="Whisper White" locations="AI message bubble border (default state)" value="rgba(255,255,255,0.05)" token="border-white/5" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }}
+              {/* Whisper White migrated → Ghost White (AI bubble border now uses border-ghost-white) */}
+              <SwatchCardV2 color="rgba(248,250,252,0.3)" name="Ghost White" locations="Avatar border, Scene image overlay border, Empty state circle bg/border, Settings modal border/dividers, AI message bubble border (default state), Character card bg (dark sidebar), Overflow indicator bg" value="rgba(248,250,252,0.3)" token="border-ghost-white / bg-ghost-white" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #ccc' }}
                 locationImages={[
-                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-message-bubble.png', location: 'AI bubble border', function: 'Very faint white border on AI message bubbles (default)' },
-                ]}
-              />
-              <SwatchCardV2 color="rgba(248,250,252,0.3)" name="Ghost White" locations="Avatar border, Scene image overlay border, Empty state circle bg/border, Settings modal border/dividers" value="rgba(248,250,252,0.3)" token="border-ghost-white / bg-ghost-white" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #ccc' }}
-                locationImages={[
-                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-message-bubble.png', location: 'Avatar border', function: 'Subtle border ring around speaker avatars' },
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-message-bubble.png', location: 'Avatar border & AI bubble border', function: 'Subtle border ring around speaker avatars and AI message bubbles' },
                   { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-settings-modal.png', location: 'Settings modal border', function: 'Border and dividers inside Chat Settings modal' },
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-sidebar-chars.png', location: 'Card bg (dark sidebar)', function: 'Ghost white character card on dark sidebar background' },
                 ]}
               />
 
@@ -1435,11 +1427,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                   { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-sidebar-chars.png', location: 'AI badge', function: 'Gray "AI" badge on character avatar (bg-slate-500)' },
                 ]}
               />
-              <SwatchCardV2 color="rgba(255,255,255,0.3)" name="Milky White" locations="Character card bg when sidebar bg is dark (isDarkBg=true)" value="rgba(255,255,255,0.3)" token="bg-white/30" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }}
-                locationImages={[
-                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-sidebar-chars.png', location: 'Card bg (dark sidebar)', function: 'Frosted white character card on dark sidebar background' },
-                ]}
-              />
+              {/* Milky White migrated → Ghost White (absorbed into Ghost White card above) */}
               <SwatchCardV2 color="rgba(0,0,0,0.3)" name="Smoke Black" locations="Character card bg when sidebar bg is light (isDarkBg=false)" value="rgba(0,0,0,0.3)" token="bg-black/30" pageSpecific={true} appWide={false}
                 locationImages={[
                   { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-sidebar-chars.png', location: 'Card bg (light sidebar)', function: 'Dark frosted character card on light sidebar background' },
@@ -1541,9 +1529,10 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                   { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-history%2Fchat-history-full.png', location: 'Inner nested card', function: 'Semi-transparent inner content area within each session card' },
                 ]}
               />
-              <SwatchCardV2 color="rgba(255,255,255,0.05)" name="Whisper White" locations="Inner card subtle border" value="rgba(255,255,255,0.05)" token="border-white/5" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }}
+              {/* Whisper White migrated → Ghost White */}
+              <SwatchCardV2 color="rgba(248,250,252,0.3)" name="Ghost White" locations="Inner card subtle border (formerly Whisper White)" value="rgba(248,250,252,0.3)" token="border-ghost-white" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #ccc' }}
                 locationImages={[
-                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-history%2Fchat-history-full.png', location: 'Inner card border', function: 'Barely-visible border on inner content panel' },
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-history%2Fchat-history-full.png', location: 'Inner card border', function: 'Subtle border on inner content panel' },
                 ]}
               />
               <SwatchCardV2 color="#4a5f7f" name="Slate Blue" locations="Session card border, empty state border, thumbnail border, thumbnail hover ring" value="#4a5f7f" token="border-[#4a5f7f]" pageSpecific={false} appWide={true}
@@ -1714,8 +1703,8 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <SwatchCardV2 color="#121214" name="Near Black" locations="Full page background (same as Gallery/Account)" value="#121214" token="bg-[#121214]" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="#1e1e22" name="Charcoal" locations="Profile info card, bio section" value="#1e1e22" token="bg-[#1e1e22]" pageSpecific={true} appWide={false} />
               
-              <SwatchCardV2 color="rgba(255,255,255,0.05)" name="Whisper White" locations="Stat pills (followers, plays, etc.) on Creator Profile" value="rgba(255,255,255,0.05)" token="bg-white/5" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
-              <SwatchCardV2 color="rgba(248,250,252,0.3)" name="Ghost White" locations="Unfollow button (toggle state)" value="rgba(248,250,252,0.3)" token="bg-ghost-white" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #ccc' }} />
+              {/* Whisper White migrated → Ghost White */}
+              <SwatchCardV2 color="rgba(248,250,252,0.3)" name="Ghost White" locations="Stat pills, Unfollow button (toggle state)" value="rgba(248,250,252,0.3)" token="bg-ghost-white" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #ccc' }} />
             </div>
             <InconsistencyNote items={[
               { file: 'CreatorProfile.tsx', note: 'Uses bg-[#1e1e22] surface which doesn\'t match bg-[#2a2a2f] or bg-zinc-900 used elsewhere.' },
@@ -1752,7 +1741,8 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <SwatchCardV2 color="#ffffff" name="White" locations="Inactive model selection card background" value="#ffffff" token="bg-white" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="#0f172a" name="Deep Navy" locations="Active/selected model card background, scale-[1.02]" value="#0f172a" token="bg-slate-900" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="#faf5ff" name="Pale Lavender" locations="Admin-only share toggle row background, border-purple-200" value="#faf5ff" token="bg-purple-50" pageSpecific={true} appWide={false} />
-              <SwatchCardV2 color="#f8fafc" name="Ice White" locations="Connection setup container within Model Settings" value="#f8fafc" token="bg-slate-50" pageSpecific={true} appWide={false} />
+              {/* Ice White migrated → Ghost White */}
+              <SwatchCardV2 color="rgba(248,250,252,0.3)" name="Ghost White" locations="Connection setup container within Model Settings (formerly Ice White bg-slate-50)" value="rgba(248,250,252,0.3)" token="bg-ghost-white" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #ccc' }} />
             </div>
             <InconsistencyNote items={[
               { file: 'ModelSettingsTab.tsx', note: 'Uses LIGHT THEME (bg-white, text-[hsl(var(--ui-surface-2))], border-slate-200) while every other page in the app uses dark theme. Major design inconsistency.' },
@@ -2171,7 +2161,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             />
             <ButtonCardV2
               buttonName="Story Detail — Edit"
-              buttonColor="rgba(255,255,255,0.05) — bg-white/5"
+              buttonColor="rgba(248,250,252,0.3) — bg-ghost-white"
               textColor="#ffffff — text-white"
               size="flex-1 h-12 — rounded-xl"
               purpose="Edit owned story from detail modal"
@@ -2181,7 +2171,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               appWide={false}
               preview={
                 <div style={{ background: '#1a1a2e', borderRadius: 12, padding: '16px 20px', width: '100%', display: 'flex', justifyContent: 'center' }}>
-                  <button className="h-12 bg-white/5 border border-ghost-white rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2 hover:bg-ghost-white transition-colors" style={{ cursor: 'default', minWidth: 140 }}>✏ Edit</button>
+                  <button className="h-12 bg-ghost-white border border-ghost-white rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2 hover:bg-ghost-white transition-colors" style={{ cursor: 'default', minWidth: 140 }}>✏ Edit</button>
                 </div>
               }
             />
@@ -2203,7 +2193,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             />
             <ButtonCardV2
               buttonName="Story Detail — Like"
-              buttonColor="Default: rgba(255,255,255,0.05) — bg-white/5. Active: rgba(244,63,94,0.2) — bg-rose-500/20"
+              buttonColor="Default: rgba(248,250,252,0.3) — bg-ghost-white. Active: rgba(244,63,94,0.2) — bg-rose-500/20"
               textColor="Default: #ffffff — text-white. Active: #fb7185 — text-rose-400"
               size="flex-1 h-12 — rounded-xl"
               purpose="Like a story — toggle button with filled heart when active"
@@ -2213,14 +2203,14 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               appWide={false}
               preview={
                 <div style={{ background: '#1a1a2e', borderRadius: 12, padding: '16px 20px', width: '100%', display: 'flex', justifyContent: 'center', gap: 8 }}>
-                  <button className="h-12 bg-white/5 border border-ghost-white rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 100 }}>♡ Like</button>
+                  <button className="h-12 bg-ghost-white border border-ghost-white rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 100 }}>♡ Like</button>
                   <button className="h-12 bg-rose-500/20 border border-rose-500/50 rounded-xl text-rose-400 text-sm font-semibold flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 100 }}>❤ Liked</button>
                 </div>
               }
             />
             <ButtonCardV2
               buttonName="Story Detail — Save"
-              buttonColor="Default: rgba(255,255,255,0.05) — bg-white/5. Active: rgba(245,158,11,0.2) — bg-amber-500/20"
+              buttonColor="Default: rgba(248,250,252,0.3) — bg-ghost-white. Active: rgba(245,158,11,0.2) — bg-amber-500/20"
               textColor="Default: #ffffff — text-white. Active: #fbbf24 — text-amber-400"
               size="flex-1 h-12 — rounded-xl"
               purpose="Save/bookmark a story — toggle button with filled bookmark when active"
@@ -2230,14 +2220,14 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               appWide={false}
               preview={
                 <div style={{ background: '#1a1a2e', borderRadius: 12, padding: '16px 20px', width: '100%', display: 'flex', justifyContent: 'center', gap: 8 }}>
-                  <button className="h-12 bg-white/5 border border-ghost-white rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 100 }}>🔖 Save</button>
+                  <button className="h-12 bg-ghost-white border border-ghost-white rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 100 }}>🔖 Save</button>
                   <button className="h-12 bg-amber-500/20 border border-amber-500/50 rounded-xl text-amber-400 text-sm font-semibold flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 100 }}>🔖 Saved</button>
                 </div>
               }
             />
             <ButtonCardV2
               buttonName="Story Detail — Remove from Gallery"
-              buttonColor="rgba(255,255,255,0.05) — bg-white/5"
+              buttonColor="rgba(248,250,252,0.3) — bg-ghost-white"
               textColor="rgba(248,250,252,0.3) — text-[rgba(248,250,252,0.3)]"
               size="w-full h-10 — rounded-xl"
               purpose="Unpublish owned story from community gallery"
@@ -2247,7 +2237,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               appWide={false}
               preview={
                 <div style={{ background: '#1a1a2e', borderRadius: 12, padding: '16px 20px', width: '100%', display: 'flex', justifyContent: 'center' }}>
-                  <button className="h-10 bg-white/5 border border-ghost-white text-[rgba(248,250,252,0.3)] rounded-xl font-semibold text-sm flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 220 }}>🌐 Remove from Gallery</button>
+                  <button className="h-10 bg-ghost-white border border-ghost-white text-[rgba(248,250,252,0.3)] rounded-xl font-semibold text-sm flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 220 }}>🌐 Remove from Gallery</button>
                 </div>
               }
             />
@@ -2499,7 +2489,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               textColor="text-[hsl(var(--ui-text))]"
               size="px-6 py-2 rounded-xl — text-sm font-bold"
               purpose="Paginated loading of additional conversation sessions"
-              visualEffects="Shadow Surface: shadow-[0_10px_30px_rgba(0,0,0,0.35)]. Hover: bg-white/5. Active: bg-ghost-white scale-95"
+              visualEffects="Shadow Surface: shadow-[0_10px_30px_rgba(0,0,0,0.35)]. Hover: bg-ghost-white. Active: bg-ghost-white scale-95"
               locations="ConversationsTab — bottom of session list"
               pageSpecific
               preview={
@@ -2765,7 +2755,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
             <ButtonCardV2
               buttonName="Story Detail Action Buttons"
-              buttonColor="Base: bg-white/5 border-ghost-white. Liked: bg-rose-500/20 border-rose-500/50 text-rose-400. Saved: bg-amber-500/20 border-amber-500/50 text-amber-400. Play: bg-[#3b82f6] text-white"
+              buttonColor="Base: bg-ghost-white border-ghost-white. Liked: bg-rose-500/20 border-rose-500/50 text-rose-400. Saved: bg-amber-500/20 border-amber-500/50 text-amber-400. Play: bg-[#3b82f6] text-white"
               size="h-12 px-6 rounded-xl — text-sm font-semibold"
               purpose="Like, Save, Play actions on story detail view"
               visualEffects="Taller than standard (h-12 vs h-10). Toggle states with color transitions"
@@ -2773,7 +2763,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               pageSpecific
               preview={
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <button className="h-12 px-6 rounded-xl bg-white/5 border border-ghost-white text-white text-sm font-semibold" style={{ cursor: 'default' }}>♡ Like</button>
+                  <button className="h-12 px-6 rounded-xl bg-ghost-white border border-ghost-white text-white text-sm font-semibold" style={{ cursor: 'default' }}>♡ Like</button>
                   <button className="h-12 px-6 rounded-xl bg-rose-500/20 border border-rose-500/50 text-rose-400 text-sm font-semibold" style={{ cursor: 'default' }}>♥ Liked</button>
                   <button className="h-12 px-6 rounded-xl bg-amber-500/20 border border-amber-500/50 text-amber-400 text-sm font-semibold" style={{ cursor: 'default' }}>★ Saved</button>
                   <button className="h-12 px-6 rounded-xl bg-[#3b82f6] text-white text-sm font-bold" style={{ cursor: 'default' }}>▶ PLAY</button>
@@ -3079,7 +3069,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14 }}>
               <InputCardV2
                 inputName="Review Textarea (Frosted)"
-                background="bg-white/5"
+                background="bg-ghost-white"
                 border="border-ghost-white"
                 borderRadius="rounded-lg (8px)"
                 textColor="white"
@@ -3091,7 +3081,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 pageSpecific
                 notes="Yet another dark textarea variant distinct from Story Builder (bg-zinc-900/50 border-zinc-700)."
                 preview={
-                  <textarea readOnly className="w-full min-h-[60px] rounded-lg bg-white/5 border border-ghost-white text-white placeholder:text-white/30 px-3 py-2 text-sm" placeholder="Share your thoughts..." />
+                  <textarea readOnly className="w-full min-h-[60px] rounded-lg bg-ghost-white border border-ghost-white text-white placeholder:text-white/30 px-3 py-2 text-sm" placeholder="Share your thoughts..." />
                 }
               />
             </div>
@@ -3110,7 +3100,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 purpose="Custom 3-point slider for AI guidance strength (Rigid / Normal / Flexible)"
                 locations="Story Builder — Model Settings section"
                 pageSpecific
-                notes="Fill gradient: linear-gradient(90deg, #2b4e8d, #4b79d8 60%, #7dadf5). Knob: w-6 h-6 bg-white border-[3px] border-blue-500. Description box: bg-zinc-900 rounded-xl p-4 border-white/5."
+                notes="Fill gradient: linear-gradient(90deg, #2b4e8d, #4b79d8 60%, #7dadf5). Knob: w-6 h-6 bg-white border-[3px] border-blue-500. Description box: bg-zinc-900 rounded-xl p-4 border-ghost-white."
                 preview={
                   <div style={{ width: '100%' }}>
                     <div style={{ position: 'relative', height: 12, borderRadius: 999, background: 'rgba(21,25,34,0.95)' }}>
@@ -3181,7 +3171,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14 }}>
               <InputCardV2
                 inputName="Chronicle UI Input"
-                background="bg-slate-50"
+                background="bg-ghost-white"
                 border="border-slate-200"
                 borderRadius="rounded-2xl (16px)"
                 textColor="text-[hsl(var(--ui-surface-2))] (inherited)"
@@ -3196,14 +3186,14 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 preview={
                   <div style={{ width: '100%' }}>
                     <label className="block text-xs font-bold uppercase mb-1 text-slate-500">Label</label>
-                    <input readOnly className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none" placeholder="Chronicle UI Input..." />
+                    <input readOnly className="w-full rounded-2xl border border-slate-200 bg-ghost-white px-4 py-3 text-sm outline-none" placeholder="Chronicle UI Input..." />
                   </div>
                 }
               />
               <InputCardV2
                 inputName="Chronicle UI TextArea"
                 
-                background="bg-slate-50"
+                background="bg-ghost-white"
                 border="border-slate-200"
                 borderRadius="rounded-2xl (16px)"
                 textColor="text-[hsl(var(--ui-surface-2))] (inherited)"
@@ -3216,7 +3206,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 appWide
                 notes="Same styling as Chronicle Input. Supports autoResize prop."
                 preview={
-                  <textarea readOnly className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none resize-none" rows={2} placeholder="Chronicle UI TextArea..." />
+                  <textarea readOnly className="w-full rounded-2xl border border-slate-200 bg-ghost-white px-4 py-3 text-sm outline-none resize-none" rows={2} placeholder="Chronicle UI TextArea..." />
                 }
               />
               <InputCardV2
@@ -3238,7 +3228,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               />
             </div>
             <InconsistencyNote items={[
-              { file: 'UI.tsx', note: 'Defines Input/TextArea with bg-slate-50 border-slate-200 styling. Components in dark contexts need !important overrides.' },
+              { file: 'UI.tsx', note: 'Defines Input/TextArea with bg-ghost-white border-slate-200 styling. Components in dark contexts need !important overrides.' },
             ]} />
 
           </Section>
@@ -3794,7 +3784,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <PanelCardV2
                 panelName="Builder Collapsible Section"
                 background="#2a2a2f (outer), #3a3a3f/30 (inner)"
-                border="border-ghost-white (outer), border-white/5 (inner)"
+                border="border-ghost-white (outer), border-ghost-white (inner)"
                 borderRadius="rounded-[24px]"
                 shadow="0 12px 32px -2px rgba(0,0,0,0.5)"
                 purpose="Collapsible character trait sections with header bar and nested inner cards"
@@ -3825,7 +3815,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <PanelCardV2
                 panelName="Chat Message Bubble"
                 background="AI: #1c1f26 · User: #1c1f26 · Transparent: bg-black/50"
-                border="AI: border-white/5 · User: border-2 border-blue-500"
+                border="AI: border-ghost-white · User: border-2 border-blue-500"
                 borderRadius="rounded-[2rem]"
                 purpose="Chat message containers. AI and User variants with optional transparent mode."
                 locations="ChatInterfaceTab.tsx"
@@ -3833,7 +3823,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 notes="bg #1c1f26 is unique — doesn't match any panel token"
                 preview={
                   <div style={{ display: 'flex', gap: 8, width: '100%' }}>
-                    <div className="flex-1 bg-[#1c1f26] rounded-[2rem] border border-white/5 p-3" style={{ minHeight: 48 }}>
+                    <div className="flex-1 bg-[#1c1f26] rounded-[2rem] border border-ghost-white p-3" style={{ minHeight: 48 }}>
                       <div className="text-[8px] font-black uppercase tracking-widest text-slate-500 mb-0.5">AI</div>
                       <div className="text-[9px] text-white">Message...</div>
                     </div>
@@ -3847,7 +3837,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
               <PanelCardV2
                 panelName="Frosted Glass Character Card"
-                background="Dark BG: bg-white/30 · Light BG: bg-black/30"
+                background="Dark BG: bg-ghost-white · Light BG: bg-black/30"
                 border="border-transparent"
                 borderRadius="rounded-2xl"
                 purpose="Adaptive frosted glass card. Switches tint based on sidebar brightness threshold (128)."
@@ -3856,7 +3846,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 notes="backdrop-blur-sm. Avatar: w-20 h-20 rounded-full — only circular avatar in app."
                 preview={
                   <div style={{ display: 'flex', gap: 8, width: '100%' }}>
-                    <div className="flex-1 rounded-2xl p-2 text-center backdrop-blur-sm" style={{ background: 'rgba(255,255,255,0.3)', minHeight: 48 }}>
+                    <div className="flex-1 rounded-2xl p-2 text-center backdrop-blur-sm bg-ghost-white" style={{ minHeight: 48 }}>
                       <div className="text-[9px] font-bold text-slate-800">Light card</div>
                       <div className="text-[8px] text-slate-600">Dark bg</div>
                     </div>
@@ -3996,14 +3986,14 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <PanelCardV2
                 panelName="Session Card (Double-nested)"
                 background="Outer: #2a2a2f · Inner: #3a3a3f/30"
-                border="Outer: border-[#4a5f7f] · Inner: border-white/5"
+                border="Outer: border-[#4a5f7f] · Inner: border-ghost-white"
                 borderRadius="rounded-2xl"
                 purpose="Chat session card with nested inner card for conversation preview"
                 locations="ConversationsTab.tsx"
                 pageSpecific appWide={false}
                 preview={
                   <div className="w-full bg-[#2a2a2f] rounded-2xl border border-[#4a5f7f] p-2">
-                    <div className="bg-[#3a3a3f]/30 rounded-xl border border-white/5 p-2">
+                    <div className="bg-[#3a3a3f]/30 rounded-xl border border-ghost-white p-2">
                       <div className="flex gap-2">
                         <div className="w-8 h-8 rounded-lg bg-zinc-800 border border-[#4a5f7f] flex-shrink-0" />
                         <div><div className="text-[9px] font-bold text-white">Story</div><div className="text-[7px] text-zinc-500">💬 24</div></div>
@@ -4054,14 +4044,14 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                       <span className="text-[#4a5f7f] text-[10px]">✉</span>
                       <span className="text-[10px] font-bold text-white">Email</span>
                     </div>
-                    <div className="text-[8px] text-white/70 bg-[#2a2a2f] rounded-lg px-2 py-1.5 border border-white/5">user@email.com</div>
+                    <div className="text-[8px] text-white/70 bg-[#2a2a2f] rounded-lg px-2 py-1.5 border border-ghost-white">user@email.com</div>
                   </div>
                 }
               />
 
               <PanelCardV2
                 panelName="Subscription Tier Cards"
-                background="Free: bg-white/5 · Pro: bg-[#4a5f7f]/10 · Premium: bg-amber-500/10"
+                background="Free: bg-ghost-white · Pro: bg-[#4a5f7f]/10 · Premium: bg-amber-500/10"
                 border="Free: border-ghost-white · Pro: border-[#4a5f7f]/30 · Premium: border-amber-500/20"
                 borderRadius="rounded-2xl"
                 purpose="Pricing tier comparison cards with badges (Current Plan, Coming Soon)"
@@ -4146,13 +4136,13 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <PanelCardV2
                 panelName="HintBox"
                 background="bg-zinc-900"
-                border="border border-white/5"
+                border="border border-ghost-white"
                 borderRadius="rounded-xl"
                 purpose="Contextual guidance text with diamond bullet points"
                 locations="WorldTab.tsx"
                 pageSpecific appWide={false}
                 preview={
-                  <div className="bg-zinc-900 rounded-xl p-3 border border-white/5" style={{ width: '100%' }}>
+                  <div className="bg-zinc-900 rounded-xl p-3 border border-ghost-white" style={{ width: '100%' }}>
                     <div className="text-[8px] text-zinc-400 leading-relaxed">
                       <span className="text-zinc-500 mr-1">◆</span> Hint text<br/>
                       <span className="text-zinc-500 mr-1">◆</span> Guidance line
@@ -4212,7 +4202,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
               <PanelCardV2
                 panelName="Story Detail Character Card"
-                background="bg-white/5"
+                background="bg-ghost-white"
                 border="N/A"
                 borderRadius="rounded-xl"
                 purpose="Character listing within Story Detail modal"
@@ -4220,7 +4210,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 pageSpecific appWide={false}
                 notes="Avatar: w-12 h-12 rounded-xl. Name: font-semibold text-white. Role: text-xs text-[rgba(248,250,252,0.3)]."
                 preview={
-                  <div className="bg-white/5 rounded-xl p-2 flex items-center gap-2" style={{ maxWidth: 200 }}>
+                  <div className="bg-ghost-white rounded-xl p-2 flex items-center gap-2" style={{ maxWidth: 200 }}>
                     <div className="w-8 h-8 rounded-lg bg-zinc-700 flex items-center justify-center text-zinc-400 text-[10px]">👤</div>
                     <div><div className="text-white font-semibold text-[9px]">Elena</div><div className="text-[rgba(248,250,252,0.3)] text-[7px]">Protagonist</div></div>
                   </div>
@@ -4229,14 +4219,14 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
               <PanelCardV2
                 panelName="Review Card"
-                background="bg-white/5"
+                background="bg-ghost-white"
                 border="N/A"
                 borderRadius="rounded-xl"
                 purpose="User review display with StarRating, SpiceRating, comment"
                 locations="StoryDetailModal.tsx"
                 pageSpecific appWide={false}
                 preview={
-                  <div className="bg-white/5 rounded-xl p-3" style={{ maxWidth: 220 }}>
+                  <div className="bg-ghost-white rounded-xl p-3" style={{ maxWidth: 220 }}>
                     <div className="flex justify-between mb-1">
                       <span className="text-[9px] font-semibold text-white">Reviewer</span>
                       <span className="text-[7px] text-white/40">2d ago</span>
@@ -4418,7 +4408,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 purpose="Creator profile display with avatar, bio, stats pills, follow button"
                 locations="CreatorProfile.tsx"
                 pageSpecific appWide={false}
-                notes="Stats: bg-white/5 rounded-xl. ⚠ #1e1e22 — yet another dark surface color."
+                notes="Stats: bg-ghost-white rounded-xl. ⚠ #1e1e22 — yet another dark surface color."
                 preview={
                   <div className="bg-[#1e1e22] rounded-2xl border border-ghost-white p-3" style={{ width: '100%' }}>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -4426,8 +4416,8 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                       <div><div className="text-white font-bold text-[9px]">Creator</div><div className="text-[rgba(248,250,252,0.3)] text-[7px]">@user</div></div>
                     </div>
                     <div style={{ display: 'flex', gap: 4, marginTop: 8 }}>
-                      <div className="bg-white/5 rounded-lg px-2 py-1 text-[7px] text-white/70">👁 1.2k</div>
-                      <div className="bg-white/5 rounded-lg px-2 py-1 text-[7px] text-white/70">❤ 340</div>
+                       <div className="bg-ghost-white rounded-lg px-2 py-1 text-[7px] text-white/70">👁 1.2k</div>
+                      <div className="bg-ghost-white rounded-lg px-2 py-1 text-[7px] text-white/70">❤ 340</div>
                     </div>
                   </div>
                 }
@@ -4750,7 +4740,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 purpose="Avatar, Cover Image, Scene Image generation. Only light-theme modals in app."
                 locations="AvatarGenerationModal, CoverImageGenerationModal, SceneImageGenerationModal"
                 pageSpecific appWide={false}
-                notes="⚠ Only light-theme modals in entire app. Inputs: bg-slate-50 border-slate-200."
+                notes="⚠ Only light-theme modals in entire app. Inputs: bg-ghost-white border-slate-200."
                 preview={
                   <div style={{ position: 'relative', width: '100%', height: 56, borderRadius: 6, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
                     <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 16px', color: '#111827', fontSize: 8, fontWeight: 600, boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
@@ -4804,7 +4794,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 purpose="Image selection from library folders"
                 locations="ImageLibraryPickerModal.tsx"
                 pageSpecific appWide={false}
-                notes="Header: bg-slate-50. Light-theme modal."
+                notes="Header: bg-ghost-white. Light-theme modal."
                 preview={
                   <div style={{ position: 'relative', width: '100%', height: 56, borderRadius: 6, overflow: 'hidden', background: 'rgba(0,0,0,0.8)' }}>
                     <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 6, overflow: 'hidden' }}>
@@ -5006,7 +4996,7 @@ text-white/40    — Disabled`}
               { file: 'UI.tsx vs ui/*', note: 'Two parallel component systems: shadcn/Radix (Auth, some modals) vs Chronicle UI.tsx (StoryHub, Chat, WorldTab, ~50% of app). Different styling, different APIs.' },
               { file: 'Buttons', note: 'shadcn Button (rounded-md, CVA variants) vs Chronicle Button (rounded-xl, 7 custom variants, active:scale-95).' },
               { file: 'Cards', note: 'shadcn Card (rounded-lg bg-card) vs Chronicle Card (rounded-3xl bg-white border-slate-200).' },
-              { file: 'Inputs', note: 'shadcn Input (rounded-md bg-background) vs Chronicle Input (rounded-2xl bg-slate-50 border-slate-200).' },
+              { file: 'Inputs', note: 'shadcn Input (rounded-md bg-background) vs Chronicle Input (rounded-2xl bg-ghost-white border-slate-200).' },
             ]} />
 
             <PageSubheading>Theme Inconsistencies</PageSubheading>
@@ -5049,8 +5039,8 @@ text-white/40    — Disabled`}
               { file: 'CharacterCreation / EnhanceMode / CustomContentType', note: 'Three modals share identical layout but are implemented as separate components with duplicated markup. Should be a shared TwoOptionModal component.' },
               { file: 'ChatInterfaceTab.tsx', note: 'White sidebar (bg-white) with light-theme typography (text-slate-700) inside a dark-themed application.' },
               { file: 'CharactersTab.tsx', note: 'Uses rounded-[24px] for builder sections — adding to the existing radius variance (rounded-2xl/rounded-3xl/rounded-[2rem]/rounded-[32px]).' },
-              { file: 'WorldTab.tsx', note: 'Right content pane uses Chronicle UI.tsx light-theme components (bg-white Cards, bg-slate-50 Inputs) on a bg-[#2a2a2f] dark background.' },
-              { file: 'Auth.tsx inputs', note: 'Third input color system: bg-slate-700/50 border-slate-600 (Auth) vs bg-zinc-900/50 border-ghost-white (builder) vs bg-slate-50 border-slate-200 (Chronicle).' },
+              { file: 'WorldTab.tsx', note: 'Right content pane uses Chronicle UI.tsx light-theme components (bg-white Cards, bg-ghost-white Inputs) on a bg-[#2a2a2f] dark background.' },
+              { file: 'Auth.tsx inputs', note: 'Third input color system: bg-slate-700/50 border-slate-600 (Auth) vs bg-zinc-900/50 border-ghost-white (builder) vs bg-ghost-white border-slate-200 (Chronicle).' },
             ]} />
           </div>
 
