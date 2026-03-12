@@ -405,7 +405,7 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
                     value={genreInput}
                     onChange={(e) => setGenreInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addGenre())}
-                    className="flex-1 bg-[#2a2a2f] border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#4a5f7f]"
+                    className="flex-1 bg-[#2a2a2f] border border-ghost-white rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#4a5f7f]"
                     placeholder="Add a genre..."
                   />
                   <button onClick={addGenre} className="px-3 py-2 bg-[#4a5f7f] hover:bg-[#5a6f8f] text-white rounded-xl text-sm font-semibold transition-colors">
