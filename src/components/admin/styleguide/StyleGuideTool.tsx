@@ -2227,17 +2227,17 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             />
             <ButtonCardV2
               buttonName="Story Detail — Remove from Gallery"
-              buttonColor="rgba(248,250,252,0.3) — bg-ghost-white"
-              textColor="rgba(248,250,252,0.3) — text-[rgba(248,250,252,0.3)]"
+              buttonColor="hsl(var(--ui-surface-2)) — bg-[hsl(var(--ui-surface-2))]"
+              textColor="hsl(var(--ui-text)) — text-[hsl(var(--ui-text))]"
               size="w-full h-10 — rounded-xl"
               purpose="Unpublish owned story from community gallery"
-              visualEffects="border: 1px solid ghost-white — border-ghost-white"
+              visualEffects="border: 1px solid hsl(var(--ui-border)) — shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
               locations="StoryDetailModal — owned + published stories only"
               pageSpecific={true}
               appWide={false}
               preview={
                 <div style={{ background: '#1a1a2e', borderRadius: 12, padding: '16px 20px', width: '100%', display: 'flex', justifyContent: 'center' }}>
-                  <button className="h-10 bg-ghost-white border border-ghost-white text-[rgba(248,250,252,0.3)] rounded-xl font-semibold text-sm flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 220 }}>🌐 Remove from Gallery</button>
+                  <button className="h-10 px-4 border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider rounded-xl flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 220 }}>🌐 Remove from Gallery</button>
                 </div>
               }
             />

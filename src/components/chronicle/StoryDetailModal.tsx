@@ -357,7 +357,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                 <button
                   onClick={handleUnpublish}
                   disabled={isUnpublishing}
-                  className="w-full h-10 bg-ghost-white hover:bg-ghost-white border border-ghost-white text-[rgba(248,250,252,0.3)] hover:text-white rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50 mt-2"
+                  className="w-full h-10 flex items-center justify-center gap-2 px-4 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider hover:bg-ghost-white active:bg-ghost-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40 transition-colors disabled:opacity-50 mt-2"
                 >
                   {isUnpublishing ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
