@@ -3584,7 +3584,7 @@ const updatedChar: SideCharacter = {
                           <button
                             onClick={handleContinueConversation}
                             disabled={isStreaming || isRegenerating}
-                            className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors disabled:opacity-30"
+                            className="p-2 rounded-lg hover:bg-ghost-white text-slate-400 hover:text-white transition-colors disabled:opacity-30"
                             title="Continue"
                           >
                             <StepForward className="w-4 h-4" />
