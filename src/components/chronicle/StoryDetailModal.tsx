@@ -377,7 +377,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
             </div>
 
             {/* Right Column - Content */}
-            <ScrollArea className="flex-1 md:border-l border-white/5">
+            <ScrollArea className="flex-1 md:border-l border-ghost-white">
               <div className="p-6 md:p-8 md:pr-12 flex flex-col min-h-full">
                 {/* Header: Title + Stats */}
                 <div className="flex flex-col gap-1 pr-8">
