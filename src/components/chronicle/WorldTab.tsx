@@ -940,7 +940,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                         </div>
                         <div className="flex items-center gap-3">
                           {/* Day Counter */}
-                          <div className="flex items-center gap-1.5 bg-zinc-800 rounded-xl px-3 py-1.5 border border-zinc-700">
+                          <div className="flex items-center gap-1.5 bg-zinc-800 rounded-xl px-3 py-1.5 border border-[#4a5f7f]">
                             <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Day</span>
                             <button
                               type="button"
