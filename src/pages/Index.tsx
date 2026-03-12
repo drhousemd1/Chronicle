@@ -474,8 +474,16 @@ const IndexContent = () => {
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/auth');
+    setTab("gallery");
   };
+
+  const requireAuth = useCallback((action: () => void) => {
+    if (!isAuthenticated) {
+      setAuthModalOpen(true);
+      return;
+    }
+    action();
+  }, [isAuthenticated]);
 
   // Hub Background Handlers
   const handleUploadBackground = async (file: File) => {
