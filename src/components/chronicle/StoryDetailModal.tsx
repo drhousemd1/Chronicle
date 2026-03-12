@@ -261,7 +261,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#2a2a2f] to-[#1a1a1f]">
-                    <span className="font-black text-white/20 text-7xl uppercase">
+                    <span className="font-black text-ghost-white text-7xl uppercase">
                       {title?.charAt(0) || '?'}
                     </span>
                   </div>
