@@ -2755,18 +2755,18 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
             <ButtonCardV2
               buttonName="Story Detail Action Buttons"
-              buttonColor="Base: bg-ghost-white border-ghost-white. Liked: bg-rose-500/20 border-rose-500/50 text-rose-400. Saved: bg-amber-500/20 border-amber-500/50 text-amber-400. Play: bg-[#3b82f6] text-white"
-              size="h-12 px-6 rounded-xl — text-sm font-semibold"
-              purpose="Like, Save, Play actions on story detail view"
-              visualEffects="Taller than standard (h-12 vs h-10). Toggle states with color transitions"
+              buttonColor="Inactive: hsl(var(--ui-surface-2)). Liked: bg-rose-500 (solid). Saved: bg-amber-500 (solid). Play: bg-[#3b82f6] text-white"
+              size="h-10 rounded-xl — text-[10px] font-bold uppercase tracking-wider"
+              purpose="Like, Save, Play actions on story detail view — matches card tile active colors"
+              visualEffects="Shadow Surface spec. shadow-[0_10px_30px_rgba(0,0,0,0.35)]. Solid toggle states matching gallery card tiles."
               locations="StoryDetailModal — action bar"
               pageSpecific
               preview={
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <button className="h-12 px-6 rounded-xl bg-ghost-white border border-ghost-white text-white text-sm font-semibold" style={{ cursor: 'default' }}>♡ Like</button>
-                  <button className="h-12 px-6 rounded-xl bg-rose-500/20 border border-rose-500/50 text-rose-400 text-sm font-semibold" style={{ cursor: 'default' }}>♥ Liked</button>
-                  <button className="h-12 px-6 rounded-xl bg-amber-500/20 border border-amber-500/50 text-amber-400 text-sm font-semibold" style={{ cursor: 'default' }}>★ Saved</button>
-                  <button className="h-12 px-6 rounded-xl bg-[#3b82f6] text-white text-sm font-bold" style={{ cursor: 'default' }}>▶ PLAY</button>
+                  <button className="h-10 px-6 rounded-xl bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] text-[10px] font-bold uppercase tracking-wider shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default' }}>♡ LIKE</button>
+                  <button className="h-10 px-6 rounded-xl bg-rose-500 border border-rose-500 text-white text-[10px] font-bold uppercase tracking-wider shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default' }}>♥ LIKED</button>
+                  <button className="h-10 px-6 rounded-xl bg-amber-500 border border-amber-500 text-white text-[10px] font-bold uppercase tracking-wider shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default' }}>★ SAVED</button>
+                  <button className="h-10 px-6 rounded-xl bg-[#3b82f6] text-white text-[10px] font-bold uppercase tracking-wider shadow-[0_10px_30px_rgba(0,0,0,0.35)]" style={{ cursor: 'default' }}>▶ PLAY</button>
                 </div>
               }
             />

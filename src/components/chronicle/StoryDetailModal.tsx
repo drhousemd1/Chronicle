@@ -331,14 +331,14 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                         onClick={handleSave}
                         disabled={isSaving}
                         className={cn(
-                          "flex-1 h-12 border rounded-xl flex items-center justify-center gap-2 transition-all",
+                          "flex-1 h-10 border rounded-xl flex items-center justify-center gap-2 shadow-[0_10px_30px_rgba(0,0,0,0.35)] text-[10px] font-bold leading-none uppercase tracking-wider transition-all",
                           isSaved 
-                            ? "bg-amber-500/20 border-amber-500/50 text-amber-400" 
-                            : "bg-ghost-white hover:bg-ghost-white border-ghost-white text-white"
+                            ? "bg-amber-500 border-amber-500 text-white" 
+                            : "bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] hover:bg-amber-500/20 hover:text-amber-400"
                         )}
                       >
-                        <Bookmark className={cn("w-5 h-5", isSaved && "fill-current")} />
-                        <span className="text-sm font-semibold">{isSaved ? 'Saved' : 'Save'}</span>
+                        <Bookmark className={cn("w-4 h-4", isSaved && "fill-current")} />
+                        <span>{isSaved ? 'Saved' : 'Save'}</span>
                       </button>
                     )}
                     <button
