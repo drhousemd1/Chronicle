@@ -61,9 +61,9 @@ export function CharacterPicker({ summaries, onSelect, onClose }: CharacterPicke
               <div 
                 key={c.id} 
                 onClick={() => handleSelect(c)}
-                className={`group cursor-pointer rounded-2xl bg-zinc-800/50 border border-white/10 p-4 transition-all hover:shadow-xl hover:border-blue-500/30 flex items-center gap-4 ${loadingId === c.id ? 'opacity-70 pointer-events-none' : ''}`}
+                className={`group cursor-pointer rounded-2xl bg-zinc-800/50 border border-ghost-white p-4 transition-all hover:shadow-xl hover:border-blue-500/30 flex items-center gap-4 ${loadingId === c.id ? 'opacity-70 pointer-events-none' : ''}`}
               >
-                <div className="w-16 h-16 shrink-0 rounded-xl bg-zinc-700 overflow-hidden border border-white/10">
+                <div className="w-16 h-16 shrink-0 rounded-xl bg-zinc-700 overflow-hidden border border-ghost-white">
                    {c.avatarUrl ? (
                      <img src={c.avatarUrl} className="w-full h-full object-cover" alt={c.name} />
                    ) : (

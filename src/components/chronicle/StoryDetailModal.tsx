@@ -561,7 +561,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                     <div className="flex flex-wrap gap-4">
                       {characters.slice(0, 8).map((char) => (
                         <div key={char.id} className="flex flex-col items-center gap-2 group cursor-pointer">
-                          <div className="w-14 h-14 rounded-full border-2 border-white/10 p-0.5 group-hover:border-[#3b82f6] transition-all">
+                          <div className="w-14 h-14 rounded-full border-2 border-ghost-white p-0.5 group-hover:border-[#3b82f6] transition-all">
                             {char.avatarUrl ? (
                               <img
                                 src={char.avatarUrl}
