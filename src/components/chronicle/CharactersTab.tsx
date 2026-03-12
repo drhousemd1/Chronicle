@@ -683,7 +683,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                     <div className="flex flex-col items-center gap-4">
                       <div 
                         ref={avatarContainerRef}
-                        className={`relative group w-48 h-48 rounded-2xl overflow-hidden shadow-lg select-none ${isRepositioning ? 'ring-4 ring-blue-500 cursor-move' : selected.avatarDataUrl ? 'border-2 border-ghost-white' : ''}`}
+                        className={`relative group w-48 h-48 rounded-2xl shadow-lg select-none ${isRepositioning ? 'ring-4 ring-blue-500 cursor-move overflow-hidden' : selected.avatarDataUrl ? 'border-2 border-ghost-white overflow-hidden' : ''}`}
                         onMouseDown={handleMouseDown}
                         onMouseMove={handleMouseMove}
                         onMouseUp={handleMouseUp}
