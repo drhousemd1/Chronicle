@@ -45,7 +45,7 @@ export const SpiceRating: React.FC<SpiceRatingProps> = ({
             <Flame
               style={{ width: size, height: size }}
               className={cn(
-                isFilled ? 'text-red-500 fill-red-500' : 'text-white/20'
+                isFilled ? 'text-red-500 fill-red-500' : 'text-ghost-white'
               )}
             />
           </button>

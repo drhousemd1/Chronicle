@@ -49,7 +49,7 @@ export const AccountButton: React.FC<AccountButtonProps> = ({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="flex items-center gap-2 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-white/10 transition-all active:scale-95 px-2 py-1.5"
+          className="flex items-center gap-2 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-ghost-white transition-all active:scale-95 px-2 py-1.5"
         >
           <Avatar className="h-7 w-7">
             {profile?.avatar_url ? (

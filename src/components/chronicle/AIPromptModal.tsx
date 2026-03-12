@@ -48,7 +48,7 @@ export function AIPromptModal({
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px] bg-[hsl(var(--ui-surface))] border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))]">
-        <DialogHeader className="bg-[#4a5f7f] -mx-6 -mt-6 px-6 py-4 rounded-t-lg border-b border-white/20">
+        <DialogHeader className="bg-[#4a5f7f] -mx-6 -mt-6 px-6 py-4 rounded-t-lg border-b border-ghost-white">
           <DialogTitle className="flex items-center gap-2 text-white text-lg font-bold">
             <Sparkles className="w-5 h-5 text-cyan-200" />
             {title}
@@ -68,7 +68,7 @@ export function AIPromptModal({
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               placeholder="Describe the character you want to create. For example: A mysterious elven mage with a dark past, secretive and distrustful of strangers..."
-              className="min-h-[120px] bg-zinc-900/50 border-white/10 text-white placeholder:text-zinc-500 focus:ring-2 focus:ring-blue-500/20"
+              className="min-h-[120px] bg-zinc-900/50 border-ghost-white text-white placeholder:text-zinc-500 focus:ring-2 focus:ring-blue-500/20"
             />
             <p className="text-xs text-zinc-500">
               Leave empty to let AI generate based on existing details and world context.
@@ -81,7 +81,7 @@ export function AIPromptModal({
               id="useExistingDetails"
               checked={useExistingDetails}
               onCheckedChange={(checked) => setUseExistingDetails(checked === true)}
-              className="mt-0.5 border-white/20 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
+              className="mt-0.5 border-ghost-white data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
             />
             <div className="space-y-1">
               <label
@@ -107,8 +107,8 @@ export function AIPromptModal({
               rounded-xl border border-[hsl(var(--ui-border))] 
               bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
               text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider
-              hover:bg-white/5 active:bg-white/10 disabled:opacity-50
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20
+              hover:bg-white/5 active:bg-ghost-white disabled:opacity-50
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ghost-white
               transition-colors"
           >
             Cancel

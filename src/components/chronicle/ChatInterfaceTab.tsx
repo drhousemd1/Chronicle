@@ -3716,7 +3716,7 @@ const updatedChar: SideCharacter = {
                       <div key={segIndex} className={`relative ${segIndex > 0 && showAvatar ? 'mt-2.5 pt-2.5 border-t border-white/5' : ''}`}>
                         {showAvatar && (
                           <div className="float-left mr-4 mb-2 flex flex-col items-center gap-1.5 w-16">
-                            <div className={`w-12 h-12 rounded-full border-2 border-white/10 shadow-lg overflow-hidden flex items-center justify-center ${segmentAvatar ? '' : 'bg-slate-800'}`}>
+                            <div className={`w-12 h-12 rounded-full border-2 border-ghost-white shadow-lg overflow-hidden flex items-center justify-center ${segmentAvatar ? '' : 'bg-slate-800'}`}>
                               {isGenerating ? (
                                 <Loader2 className="w-5 h-5 text-purple-400 animate-spin" />
                               ) : segmentAvatar ? (
@@ -3834,7 +3834,7 @@ const updatedChar: SideCharacter = {
                       <div key={segIndex} className={`relative ${segIndex > 0 && showAvatar ? 'mt-2.5 pt-2.5 border-t border-white/5' : ''}`}>
                         {showAvatar && (
                           <div className="float-left mr-4 mb-2 flex flex-col items-center gap-1.5 w-16">
-                            <div className={`w-12 h-12 rounded-full border-2 border-white/10 shadow-lg overflow-hidden flex items-center justify-center ${segmentAvatar ? '' : 'bg-slate-800 animate-pulse'}`}>
+                            <div className={`w-12 h-12 rounded-full border-2 border-ghost-white shadow-lg overflow-hidden flex items-center justify-center ${segmentAvatar ? '' : 'bg-slate-800 animate-pulse'}`}>
                               {isGenerating ? (
                                 <Loader2 className="w-5 h-5 text-purple-400 animate-spin" />
                               ) : segmentAvatar ? (
@@ -3968,8 +3968,8 @@ const updatedChar: SideCharacter = {
       
       {/* Chat Settings Modal */}
       <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-        <DialogContent className="max-w-2xl bg-zinc-900 border-white/10 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.5)]">
-          <DialogHeader className="border-b border-white/10 pb-4">
+        <DialogContent className="max-w-2xl bg-zinc-900 border-ghost-white shadow-[0_12px_32px_-2px_rgba(0,0,0,0.5)]">
+          <DialogHeader className="border-b border-ghost-white pb-4">
             <DialogTitle className="flex items-center gap-2 text-lg font-black text-white uppercase tracking-tight">
               <Settings className="w-5 h-5" />
               Chat Settings
@@ -4037,7 +4037,7 @@ const updatedChar: SideCharacter = {
             </div>
             
             {/* Visual Divider */}
-            <div className="border-t border-white/10" />
+            <div className="border-t border-ghost-white" />
             
             {/* AI Behavior Section */}
             <div className="space-y-4">
@@ -4167,7 +4167,7 @@ const updatedChar: SideCharacter = {
             </div>
             
             {/* TIME PROGRESSION Section */}
-            <div className="space-y-3 pt-4 border-t border-white/10">
+            <div className="space-y-3 pt-4 border-t border-ghost-white">
               <div>
                 <h3 className="text-sm font-black text-white uppercase tracking-tight">Time Progression</h3>
                 <p className="text-xs text-zinc-400 mt-0.5">Automatically advance the time of day while in a chat session</p>

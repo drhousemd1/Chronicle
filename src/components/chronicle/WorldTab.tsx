@@ -1334,8 +1334,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
 
           {/* Share Section */}
           <section>
-            <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-lg">
-              <div className="bg-[#4a5f7f] border-b border-white/20 px-6 py-4 flex items-center gap-3 shadow-lg">
+            <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-ghost-white overflow-hidden shadow-lg">
+              <div className="bg-[#4a5f7f] border-b border-ghost-white px-6 py-4 flex items-center gap-3 shadow-lg">
                 <Share2 className="w-5 h-5 text-white" />
                 <h2 className="text-white text-xl font-bold tracking-tight">Share Your Story</h2>
               </div>
@@ -1368,7 +1368,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                     rounded-xl border border-[hsl(var(--ui-border))] 
                     bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
                     text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none
-                    hover:bg-white/5 active:bg-white/10
+                    hover:bg-white/5 active:bg-ghost-white
                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40
                     transition-colors"
                 >

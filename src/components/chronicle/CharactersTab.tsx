@@ -887,7 +887,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                             <Sparkles size={14} />
                           </button>
                         </div>
-                        <AutoResizeTextarea value={selected.roleDescription || ''} onChange={(v) => onUpdate(selected.id, { roleDescription: v })} placeholder="Brief description of the character's role" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                        <AutoResizeTextarea value={selected.roleDescription || ''} onChange={(v) => onUpdate(selected.id, { roleDescription: v })} placeholder="Brief description of the character's role" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-ghost-white text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                       </div>
                     </div>
                   </div>
@@ -895,7 +895,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                   /* Collapsed Avatar View */
                   <div className="flex items-start gap-4">
                     {/* Small avatar thumbnail */}
-                    <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-white/10">
+                    <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-ghost-white">
                       {selected.avatarDataUrl ? (
                         <img 
                           src={selected.avatarDataUrl} 
