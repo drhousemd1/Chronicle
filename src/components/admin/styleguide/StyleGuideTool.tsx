@@ -4622,7 +4622,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <PanelCardV2
                 panelName="DraftsModal"
                 background="bg-zinc-900"
-                border="border border-white/10"
+                border="border border-ghost-white"
                 borderRadius="rounded-xl"
                 shadow="0 10px 30px rgba(0,0,0,0.5)"
                 purpose="Draft message list with restore/delete actions"
