@@ -1051,7 +1051,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                         <select
                           value={openingDialog.timeProgressionInterval || 15}
                           onChange={(e) => onUpdateOpening({ timeProgressionInterval: Number(e.target.value) })}
-                          className="bg-zinc-800 border border-zinc-700 rounded-xl text-xs text-white px-2.5 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          className="bg-zinc-800 border border-[#4a5f7f] rounded-xl text-xs text-white px-2.5 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
                         >
                           <option value={5}>5 minutes</option>
                           <option value={10}>10 minutes</option>
