@@ -4488,7 +4488,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 pageSpecific appWide={false}
                 notes="max-w-2xl. Toggle rows: p-3 bg-zinc-800/50 rounded-xl. Grid: grid-cols-2."
                 preview={
-                  <div className="bg-zinc-900 border border-white/10 rounded-lg p-3" style={{ width: '100%' }}>
+                  <div className="bg-zinc-900 border border-ghost-white rounded-lg p-3" style={{ width: '100%' }}>
                     <div className="text-[8px] font-black text-white uppercase tracking-tight mb-2">⚙ Chat Settings</div>
                     <div className="grid grid-cols-2 gap-1.5">
                       <div className="p-1.5 bg-zinc-800/50 rounded-lg"><span className="text-[7px] font-semibold text-zinc-200">Dynamic BG</span></div>
