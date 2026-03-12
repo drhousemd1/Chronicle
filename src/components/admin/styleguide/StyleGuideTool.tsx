@@ -3081,7 +3081,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 pageSpecific
                 notes="Yet another dark textarea variant distinct from Story Builder (bg-zinc-900/50 border-zinc-700)."
                 preview={
-                  <textarea readOnly className="w-full min-h-[60px] rounded-lg bg-white/5 border border-ghost-white text-white placeholder:text-white/30 px-3 py-2 text-sm" placeholder="Share your thoughts..." />
+                  <textarea readOnly className="w-full min-h-[60px] rounded-lg bg-ghost-white border border-ghost-white text-white placeholder:text-white/30 px-3 py-2 text-sm" placeholder="Share your thoughts..." />
                 }
               />
             </div>
