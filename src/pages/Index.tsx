@@ -42,7 +42,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import * as supabaseData from "@/services/supabase-data";
 import { DeleteConfirmDialog } from "@/components/chronicle/DeleteConfirmDialog";
 import { ChangeNameModal } from "@/components/chronicle/ChangeNameModal";
-import { DraftsModal, upsertDraftRegistry, removeDraftFromRegistry, getDraftRegistry } from "@/components/chronicle/DraftsModal";
+import { DraftsModal } from "@/components/chronicle/DraftsModal";
 import { getEditsCount } from "@/components/admin/styleguide/StyleGuideEditsModal";
 import { AuthModal } from "@/components/auth/AuthModal";
 
