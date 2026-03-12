@@ -382,7 +382,7 @@ const IndexContent = () => {
       case "drafts":
         return registry.filter(s => s.isDraft);
       case "all":
-        return [...registry.filter(s => !s.isDraft), ...bookmarkedScenarios];
+        return [...registry, ...bookmarkedScenarios];
     }
   }, [registry, savedScenarios, hubFilter, publishedScenarioIds]);
 
