@@ -1603,54 +1603,71 @@ const IndexContent = () => {
                 const displayName = userProfile?.display_name || user.email?.split('@')[0] || 'User';
                 const initials = displayName.slice(0, 2).toUpperCase();
                 return (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button
-                        type="button"
-                        className={cn(
-                          "flex items-center gap-3 w-full rounded-xl px-2 py-2 hover:bg-white/5 active:bg-white/10 transition-all text-left",
-                          sidebarCollapsed && "justify-center px-0"
-                        )}
-                      >
-                        <Avatar className="h-8 w-8 shrink-0">
-                          {userProfile?.avatar_url ? (
-                            <AvatarImage src={userProfile.avatar_url} alt={displayName} />
-                          ) : null}
-                          <AvatarFallback className="bg-[#4a5f7f] text-white text-[10px] font-bold">
-                            {initials}
-                          </AvatarFallback>
-                        </Avatar>
-                        {!sidebarCollapsed && (
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => setUserMenuOpen(prev => !prev)}
+                      className={cn(
+                        "flex items-center gap-3 w-full rounded-xl px-2 py-2 hover:bg-white/5 active:bg-white/10 transition-all text-left",
+                        sidebarCollapsed && "justify-center px-0"
+                      )}
+                    >
+                      <Avatar className="h-8 w-8 shrink-0">
+                        {userProfile?.avatar_url ? (
+                          <AvatarImage src={userProfile.avatar_url} alt={displayName} />
+                        ) : null}
+                        <AvatarFallback className="bg-[#4a5f7f] text-white text-[10px] font-bold">
+                          {initials}
+                        </AvatarFallback>
+                      </Avatar>
+                      {!sidebarCollapsed && (
+                        <>
                           <div className="min-w-0 flex-1">
                             <p className="text-[11px] font-bold text-white truncate">{displayName}</p>
                             <p className="text-[10px] text-white/30 truncate">{user.email}</p>
                           </div>
-                        )}
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" side="right" className="w-56">
-                      <DropdownMenuLabel className="font-normal">
-                        <div className="flex flex-col space-y-1">
-                          <p className="text-sm font-medium leading-none">{displayName}</p>
-                          <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
-                        </div>
-                      </DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => { setAccountActiveTab('profile'); setTab("account"); }} className="cursor-pointer">
-                        <UserCircle className="w-4 h-4 mr-2" />
-                        Public Profile
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => { setAccountActiveTab('settings'); setTab("account"); }} className="cursor-pointer">
-                        <Settings className="w-4 h-4 mr-2" />
-                        Account Settings
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-red-500 focus:text-red-500">
-                        <LogOut className="w-4 h-4 mr-2" />
-                        Sign Out
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                          <ChevronDown className={cn("w-4 h-4 text-white/30 shrink-0 transition-transform duration-200", userMenuOpen && "rotate-180")} />
+                        </>
+                      )}
+                    </button>
+                    {userMenuOpen && (
+                      <div className={cn("flex flex-col gap-0.5 mt-1", !sidebarCollapsed && "pl-4")}>
+                        <button
+                          type="button"
+                          onClick={() => { setAccountActiveTab('profile'); setTab("account"); setUserMenuOpen(false); }}
+                          className={cn(
+                            "flex items-center gap-2 w-full rounded-lg px-2 py-1.5 hover:bg-white/5 transition-colors text-white/70 hover:text-white text-[11px]",
+                            sidebarCollapsed && "justify-center px-0"
+                          )}
+                        >
+                          <UserCircle className="w-4 h-4 shrink-0" />
+                          {!sidebarCollapsed && <span>Public Profile</span>}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setAccountActiveTab('settings'); setTab("account"); setUserMenuOpen(false); }}
+                          className={cn(
+                            "flex items-center gap-2 w-full rounded-lg px-2 py-1.5 hover:bg-white/5 transition-colors text-white/70 hover:text-white text-[11px]",
+                            sidebarCollapsed && "justify-center px-0"
+                          )}
+                        >
+                          <Settings className="w-4 h-4 shrink-0" />
+                          {!sidebarCollapsed && <span>Account Settings</span>}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { handleSignOut(); setUserMenuOpen(false); }}
+                          className={cn(
+                            "flex items-center gap-2 w-full rounded-lg px-2 py-1.5 hover:bg-white/5 transition-colors text-red-500 text-[11px]",
+                            sidebarCollapsed && "justify-center px-0"
+                          )}
+                        >
+                          <LogOut className="w-4 h-4 shrink-0" />
+                          {!sidebarCollapsed && <span>Sign Out</span>}
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 );
               })() : (
                 <button
@@ -1662,7 +1679,7 @@ const IndexContent = () => {
                   )}
                 >
                   <LogIn className="w-5 h-5 shrink-0" />
-                  {!sidebarCollapsed && <span className="text-[11px] font-bold uppercase tracking-wider">Log In</span>}
+                  {!sidebarCollapsed && <span className="text-[11px] font-bold uppercase tracking-wider">Sign In</span>}
                 </button>
               )}
             </div>
