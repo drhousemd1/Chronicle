@@ -452,10 +452,10 @@ export const WorldTab: React.FC<WorldTabProps> = ({
         "group/add w-full flex items-center gap-4 p-3 rounded-2xl transition-all duration-300 bg-[#3a3a3f]/30 hover:bg-[#3a3a3f]/50 cursor-pointer",
         hasError
           ? "border-2 border-dashed border-red-500"
-          : "border-2 border-dashed border-zinc-600 hover:border-zinc-500"
+          : "border-2 border-dashed border-[#4a5f7f] hover:border-[#5a7a9f]"
       )}
     >
-      <div className="w-14 h-14 shrink-0 rounded-xl bg-[#1a1a1f] border-2 border-dashed border-zinc-600 flex items-center justify-center text-zinc-500 transition-all duration-300 group-hover/add:border-zinc-400 group-hover/add:bg-[#3a3a3f]/70 group-hover/add:text-zinc-300">
+      <div className="w-14 h-14 shrink-0 rounded-xl bg-[#1a1a1f] border-2 border-dashed border-[#4a5f7f] flex items-center justify-center text-zinc-500 transition-all duration-300 group-hover/add:border-[#5a7a9f] group-hover/add:bg-[#3a3a3f]/70 group-hover/add:text-zinc-300">
          <span className="text-2xl font-light">+</span>
       </div>
       <div className="text-left">
@@ -560,7 +560,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                           )}
                         </>
                       ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex flex-col items-center justify-center border-2 border-dashed border-zinc-600 gap-3 rounded-2xl">
+                        <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex flex-col items-center justify-center border-2 border-dashed border-[#4a5f7f] gap-3 rounded-2xl">
                           <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-500"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
                           <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">No Cover</span>
                         </div>
