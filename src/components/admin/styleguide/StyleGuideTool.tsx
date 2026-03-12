@@ -2193,7 +2193,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             />
             <ButtonCardV2
               buttonName="Story Detail — Like"
-              buttonColor="Default: rgba(255,255,255,0.05) — bg-white/5. Active: rgba(244,63,94,0.2) — bg-rose-500/20"
+              buttonColor="Default: rgba(248,250,252,0.3) — bg-ghost-white. Active: rgba(244,63,94,0.2) — bg-rose-500/20"
               textColor="Default: #ffffff — text-white. Active: #fb7185 — text-rose-400"
               size="flex-1 h-12 — rounded-xl"
               purpose="Like a story — toggle button with filled heart when active"
