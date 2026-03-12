@@ -2251,13 +2251,13 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               textColor="Default: #ffffff — text-white. Active: #fbbf24 — text-amber-400"
               size="flex-1 h-12 — rounded-xl"
               purpose="Save/bookmark a story — toggle button with filled bookmark when active"
-              visualEffects="Default: border-white/10. Active: border-amber-500/50. fill-current on icon when active"
+              visualEffects="Default: border-ghost-white. Active: border-amber-500/50. fill-current on icon when active"
               locations="StoryDetailModal — gallery mode (non-owned)"
               pageSpecific={true}
               appWide={false}
               preview={
                 <div style={{ background: '#1a1a2e', borderRadius: 12, padding: '16px 20px', width: '100%', display: 'flex', justifyContent: 'center', gap: 8 }}>
-                  <button className="h-12 bg-white/5 border border-white/10 rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 100 }}>🔖 Save</button>
+                  <button className="h-12 bg-white/5 border border-ghost-white rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 100 }}>🔖 Save</button>
                   <button className="h-12 bg-amber-500/20 border border-amber-500/50 rounded-xl text-amber-400 text-sm font-semibold flex items-center justify-center gap-2" style={{ cursor: 'default', minWidth: 100 }}>🔖 Saved</button>
                 </div>
               }
