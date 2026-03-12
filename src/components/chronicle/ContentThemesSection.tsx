@@ -91,7 +91,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
                   "px-3 py-1.5 rounded-lg text-xs font-medium border transition-all",
                   isSelected
                     ? "bg-blue-500/20 text-blue-300 border-blue-500/30"
-                    : "bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700 hover:text-zinc-300"
+                    : "bg-zinc-800 text-zinc-400 border-[#4a5f7f] hover:bg-zinc-700 hover:text-zinc-300"
                 )}
               >
                 {option}
