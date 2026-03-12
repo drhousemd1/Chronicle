@@ -80,7 +80,7 @@ function SidebarItem({
 }) {
   const activeClasses = active 
     ? "bg-[#4a5f7f] shadow-lg shadow-black/40 text-white"
-    : "text-slate-400 hover:bg-white/10 hover:text-white hover:shadow-md hover:shadow-black/20";
+    : "text-slate-400 hover:bg-ghost-white hover:text-white hover:shadow-md hover:shadow-black/20";
   
   const content = (
     <button 
