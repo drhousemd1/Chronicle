@@ -201,7 +201,7 @@ const IndexContent = () => {
   const [isImageLibraryBackgroundModalOpen, setIsImageLibraryBackgroundModalOpen] = useState(false);
 
   // Hub filter state for "Your Stories" tab
-  type HubFilter = "my" | "bookmarked" | "published" | "all";
+  type HubFilter = "my" | "bookmarked" | "published" | "drafts" | "all";
   const [hubFilter, setHubFilter] = useState<HubFilter>("all");
 
   // Gallery sort state (lifted from GalleryHub)
