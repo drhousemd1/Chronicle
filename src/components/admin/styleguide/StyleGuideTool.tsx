@@ -4315,7 +4315,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <PanelCardV2
                 panelName="Arc Phase Card"
                 background="#2a2a2f"
-                border="border-white/10"
+                border="border-ghost-white"
                 borderRadius="rounded-2xl"
                 purpose="Phase container with progress ring, phase title, branch lanes (success/fail)"
                 locations="ArcPhaseCard.tsx"
