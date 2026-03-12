@@ -12,10 +12,10 @@ const Gallery: React.FC = () => {
   const navigate = useNavigate();
   const [sortBy, setSortBy] = useState<SortOption>('all');
 
-  // Redirect to auth if not authenticated
+  // Redirect to home if not authenticated (auth modal will handle login)
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      navigate('/auth');
+      navigate('/?auth=1');
     }
   }, [authLoading, isAuthenticated, navigate]);
 

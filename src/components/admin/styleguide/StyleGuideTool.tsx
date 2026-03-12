@@ -1739,20 +1739,6 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
             <Divider />
 
-            {/* ─── Auth Page ─── */}
-            <PageSubheading>Auth Page</PageSubheading>
-            <PageDesc>The light-themed authentication page gradient and card colors.</PageDesc>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 14 }}>
-              <SwatchCardV2 color="linear-gradient(to bottom right, #0f172a, #581c87, #0f172a)" name="Navy-to-Purple Gradient" locations="Auth page full-screen background" value="from-slate-900 via-purple-900 to-slate-900" token="—" pageSpecific={true} appWide={false} extraPreviewStyle={{ background: 'linear-gradient(135deg, #0f172a, #581c87, #0f172a)' }} />
-              <SwatchCardV2 color="rgba(30,41,59,0.5)" name="Dark Slate Glass" locations="Login/signup Card component background" value="rgba(30,41,59,0.5)" token="bg-slate-800/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
-              <SwatchCardV2 color="rgba(51,65,85,0.5)" name="Slate Glass" locations="Email and password input fields on auth page" value="rgba(51,65,85,0.5)" token="bg-slate-700/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
-              <SwatchCardV2 color="#7c3aed" name="Vivid Purple" locations="Sign In / Create Account button" value="#7c3aed" token="bg-purple-600" pageSpecific={true} appWide={false} />
-              <SwatchCardV2 color="#a78bfa" name="Soft Purple" locations="'Don't have an account? Sign up' toggle text" value="#a78bfa" token="text-purple-400" pageSpecific={true} appWide={false} />
-            </div>
-            <InconsistencyNote items={[
-              { file: 'Auth.tsx', note: 'Uses purple accent (purple-600 button, purple-400 link) while rest of app uses blue #4a5f7f accent.' },
-            ]} />
-
             <Divider />
 
             {/* ─── Creator Profile ─── */}
@@ -2590,30 +2576,8 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               }
             />
 
-            <div style={fullSpan}><PageSubheading>Auth Page</PageSubheading></div>
 
-            <ButtonCardV2
-              buttonName="Auth Submit Button"
-              buttonColor="bg-purple-600 hover:bg-purple-700 text-white"
-              size="w-full — shadcn Button default (h-10 px-4 py-2 rounded-md text-sm font-medium)"
-              purpose="Sign In / Create Account form submission"
-              locations="Auth.tsx — form submit"
-              pageSpecific
-              preview={
-                <button className="w-full py-2.5 px-4 bg-purple-600 text-white rounded-md text-sm font-medium" style={{ cursor: 'default' }}>Sign In</button>
-              }
-            />
-            <ButtonCardV2
-              buttonName="Auth Toggle Link"
-              buttonColor="text-purple-400 hover:text-purple-300"
-              size="text-sm — unstyled button (no bg, no border)"
-              purpose="Toggle between Sign In and Sign Up forms"
-              locations="Auth.tsx — below form"
-              pageSpecific
-              preview={
-                <button className="text-purple-400 hover:text-purple-300 text-sm" style={{ cursor: 'default', background: 'transparent', border: 'none' }}>{"Don't have an account? Sign up"}</button>
-              }
-            />
+
 
             <div style={fullSpan}><PageSubheading>Chronicle UI.tsx — Parallel Button System</PageSubheading></div>
             <div style={fullSpan}>
@@ -3034,30 +2998,8 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               />
             </div>
 
-            <PageSubheading>Auth Page</PageSubheading>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14 }}>
-              <InputCardV2
-                inputName="Auth Input (Dark Slate)"
-                background="bg-slate-700/50"
-                border="border-slate-600"
-                borderRadius="rounded-md (6px — shadcn default)"
-                textColor="white"
-                placeholderColor="text-slate-400 / text-slate-500"
-                focusStyle="shadcn default ring behavior"
-                fontSize="14px / text-sm"
-                padding="px-3 py-2 (h-10)"
-                purpose="Login/signup form fields using shadcn Input with className overrides"
-                locations="Auth Page — email, password, and display name fields"
-                pageSpecific
-                notes="⚠ Uses slate-* palette (unique to Auth) vs zinc-* (rest of app). Third input color system alongside zinc-* (dark) and slate-50 (Chronicle UI)."              preview={<>
-                  <input readOnly className="w-full rounded-md border border-slate-600 bg-slate-700/50 text-white text-sm px-3 py-2 outline-none placeholder:text-slate-500" placeholder="you@example.com" />
-                  <input readOnly type="password" className="w-full rounded-md border border-slate-600 bg-slate-700/50 text-white text-sm px-3 py-2 outline-none placeholder:text-slate-500" placeholder="••••••••" />
-                </>}
-              />
-            </div>
-            <InconsistencyNote items={[
-              { file: 'Auth.tsx', note: 'Uses bg-slate-700/50 border-slate-600 — a third input color system alongside zinc-* (dark) and slate-50 (Chronicle UI).' },
-            ]} />
+
+
 
             <PageSubheading>Character Library Search</PageSubheading>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14 }}>
@@ -4178,25 +4120,8 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 }
               />
 
-              {/* ─── Auth Page ─── */}
-              <PageSubheading fullSpan>Auth Page</PageSubheading>
 
-              <PanelCardV2
-                panelName="Auth Card"
-                background="bg-slate-800/50"
-                border="border-slate-700"
-                borderRadius="rounded-lg"
-                purpose="Login/signup card with frosted glass on gradient background"
-                locations="Auth.tsx"
-                pageSpecific appWide={false}
-                notes="backdrop-blur-sm. Max-width: max-w-md. Uses shadcn Card with overrides."
-                preview={
-                  <div className="rounded-lg border border-slate-700 p-3" style={{ background: 'rgba(30,41,59,0.5)', backdropFilter: 'blur(4px)', width: 160 }}>
-                    <div className="text-[10px] font-bold text-white text-center">Chronicle Studio</div>
-                    <div className="text-[7px] text-slate-400 text-center">Sign in</div>
-                  </div>
-                }
-              />
+
 
               {/* ─── Global ─── */}
               <PageSubheading fullSpan>Global</PageSubheading>
