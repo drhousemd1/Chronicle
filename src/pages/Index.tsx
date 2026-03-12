@@ -374,13 +374,15 @@ const IndexContent = () => {
     
     switch (hubFilter) {
       case "my":
-        return registry;
+        return registry.filter(s => !s.isDraft);
       case "bookmarked":
         return bookmarkedScenarios;
       case "published":
         return registry.filter(s => publishedScenarioIds.has(s.id));
+      case "drafts":
+        return registry.filter(s => s.isDraft);
       case "all":
-        return [...registry, ...bookmarkedScenarios];
+        return [...registry.filter(s => !s.isDraft), ...bookmarkedScenarios];
     }
   }, [registry, savedScenarios, hubFilter, publishedScenarioIds]);
 
