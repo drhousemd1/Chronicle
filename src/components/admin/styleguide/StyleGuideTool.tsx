@@ -4257,7 +4257,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <PanelCardV2
                 panelName="CharacterPicker Overlay"
                 background="bg-zinc-900"
-                border="border-white/10"
+                border="border-ghost-white"
                 borderRadius="rounded-3xl"
                 purpose="Full-screen character picker with custom backdrop (bg-slate-900/50 backdrop-blur-sm)"
                 locations="CharacterPicker.tsx"
