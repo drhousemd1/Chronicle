@@ -1235,7 +1235,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                 >
                   {/* Avatar Display */}
                   <div className="flex flex-col items-center gap-4">
-                    <div className="w-48 h-48 rounded-2xl overflow-hidden bg-zinc-800 border-2 border-white/10 shadow-sm relative">
+                    <div className="w-48 h-48 rounded-2xl overflow-hidden bg-zinc-800 border-2 border-ghost-white shadow-sm relative">
                       {(isUploadingAvatar || isRegeneratingAvatar) ? (
                         <div className="w-full h-full flex items-center justify-center bg-zinc-900">
                           <Loader2 className="w-8 h-8 animate-spin text-zinc-400" />
