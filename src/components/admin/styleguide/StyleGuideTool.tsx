@@ -4416,8 +4416,8 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                       <div><div className="text-white font-bold text-[9px]">Creator</div><div className="text-[rgba(248,250,252,0.3)] text-[7px]">@user</div></div>
                     </div>
                     <div style={{ display: 'flex', gap: 4, marginTop: 8 }}>
-                      <div className="bg-white/5 rounded-lg px-2 py-1 text-[7px] text-white/70">👁 1.2k</div>
-                      <div className="bg-white/5 rounded-lg px-2 py-1 text-[7px] text-white/70">❤ 340</div>
+                       <div className="bg-ghost-white rounded-lg px-2 py-1 text-[7px] text-white/70">👁 1.2k</div>
+                      <div className="bg-ghost-white rounded-lg px-2 py-1 text-[7px] text-white/70">❤ 340</div>
                     </div>
                   </div>
                 }
