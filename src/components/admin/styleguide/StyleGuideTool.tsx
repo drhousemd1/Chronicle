@@ -3100,7 +3100,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 purpose="Custom 3-point slider for AI guidance strength (Rigid / Normal / Flexible)"
                 locations="Story Builder — Model Settings section"
                 pageSpecific
-                notes="Fill gradient: linear-gradient(90deg, #2b4e8d, #4b79d8 60%, #7dadf5). Knob: w-6 h-6 bg-white border-[3px] border-blue-500. Description box: bg-zinc-900 rounded-xl p-4 border-white/5."
+                notes="Fill gradient: linear-gradient(90deg, #2b4e8d, #4b79d8 60%, #7dadf5). Knob: w-6 h-6 bg-white border-[3px] border-blue-500. Description box: bg-zinc-900 rounded-xl p-4 border-ghost-white."
                 preview={
                   <div style={{ width: '100%' }}>
                     <div style={{ position: 'relative', height: 12, borderRadius: 999, background: 'rgba(21,25,34,0.95)' }}>
