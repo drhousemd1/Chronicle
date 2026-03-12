@@ -2691,18 +2691,18 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             />
             <ButtonCardV2
               buttonName="EnhanceModeModal Option Cards"
-              buttonColor="bg-zinc-800/50 border-white/10"
+              buttonColor="bg-zinc-800/50 border-ghost-white"
               size="p-5 rounded-2xl — w-10 h-10 rounded-xl icon containers"
               purpose="Choose between Precise and Detailed AI enhancement modes"
               visualEffects="Hover: border-blue-500/50 bg-blue-500/10. Icon bg: blue-500/20 (Precise) or purple-500/20 (Detailed)"
               locations="EnhanceModeModal — two-column option grid"
               pageSpecific
               preview={<>
-                <button className="flex flex-col items-center gap-2 p-4 rounded-2xl border border-white/10 bg-zinc-800/50 hover:border-blue-500/50" style={{ cursor: 'default', width: 120 }}>
+                <button className="flex flex-col items-center gap-2 p-4 rounded-2xl border border-ghost-white bg-zinc-800/50 hover:border-blue-500/50" style={{ cursor: 'default', width: 120 }}>
                   <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-500">✨</div>
                   <span className="text-white font-bold text-xs">Precise</span>
                 </button>
-                <button className="flex flex-col items-center gap-2 p-4 rounded-2xl border border-white/10 bg-zinc-800/50 hover:border-purple-500/50" style={{ cursor: 'default', width: 120 }}>
+                <button className="flex flex-col items-center gap-2 p-4 rounded-2xl border border-ghost-white bg-zinc-800/50 hover:border-purple-500/50" style={{ cursor: 'default', width: 120 }}>
                   <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-400">≡</div>
                   <span className="text-white font-bold text-xs">Detailed</span>
                 </button>
