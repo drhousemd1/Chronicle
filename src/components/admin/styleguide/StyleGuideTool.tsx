@@ -3993,7 +3993,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 pageSpecific appWide={false}
                 preview={
                   <div className="w-full bg-[#2a2a2f] rounded-2xl border border-[#4a5f7f] p-2">
-                    <div className="bg-[#3a3a3f]/30 rounded-xl border border-white/5 p-2">
+                    <div className="bg-[#3a3a3f]/30 rounded-xl border border-ghost-white p-2">
                       <div className="flex gap-2">
                         <div className="w-8 h-8 rounded-lg bg-zinc-800 border border-[#4a5f7f] flex-shrink-0" />
                         <div><div className="text-[9px] font-bold text-white">Story</div><div className="text-[7px] text-zinc-500">💬 24</div></div>
