@@ -3837,7 +3837,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
               <PanelCardV2
                 panelName="Frosted Glass Character Card"
-                background="Dark BG: bg-white/30 · Light BG: bg-black/30"
+                background="Dark BG: bg-ghost-white · Light BG: bg-black/30"
                 border="border-transparent"
                 borderRadius="rounded-2xl"
                 purpose="Adaptive frosted glass card. Switches tint based on sidebar brightness threshold (128)."
