@@ -802,6 +802,14 @@ const ALL_SWATCHES: SwatchOption[] = [
   { color: '#5a6f8f', name: 'Light Slate Blue' },
   { color: '#2d6fdb', name: 'Dark Blue' },
   { color: '#000000', name: 'Black' },
+  { color: '#cbd5e1', name: 'Slate 300' },
+  { color: '#93c5fd', name: 'Light Blue' },
+  { color: '#4ade80', name: 'Green 400' },
+  { color: '#dbeafe', name: 'Blue 100' },
+  { color: 'rgba(0,0,0,0.2)', name: 'Black/20' },
+  { color: 'rgba(39,39,42,0.5)', name: 'Zinc 800/50' },
+  { color: '#e4e4e7', name: 'Zinc 200' },
+  { color: 'hsl(240,7%,16%)', name: 'UI Surface' },
 ];
 
 export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownload, onRegisterEdits, onEditsCountChange }) => {
