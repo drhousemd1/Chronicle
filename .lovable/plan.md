@@ -1,11 +1,20 @@
 
 
-## Plan: Persist Style Guide Edits to Supabase — Complete ✅
+# Fix: Slide-Up Overlay Height
 
-### What was done:
+The overlay at `h-[45%]` is way too tall — it covers the text area and sits behind buttons, defeating its purpose. The bottom info section (title + description + stats + author) takes up roughly 25% of the card height. The overlay should only cover that area, sitting just above the title.
 
-1. **Seeded `app_settings` rows** — `styleguide_edits` and `styleguide_keeps` rows inserted into the database
-2. **Rewrote all storage helpers** in `StyleGuideEditsModal.tsx` from sync localStorage to async Supabase operations (`getEditsRegistry`, `upsertEdit`, `removeEdit`, `getKeeps`, `addKeep`, `removeKeep`, `getEditsCount`)
-3. **Updated all consumers** in `StyleGuideTool.tsx` — `refreshEditsState`, `handleKeep`, `handleEditOpen`, `handleSaveEdit`, `handleRemoveKeep` are all async now
-4. **Updated `Index.tsx`** — `getEditsCount()` call now uses `.then()` since it's async
-5. **Every edit, keep, and delete auto-saves to Supabase immediately** — no data loss on domain changes
+## Change in `src/components/chronicle/StoryHub.tsx`
+
+**Line 82**: Reduce overlay height from `h-[45%]` to `h-[25%]`:
+
+```tsx
+// FROM:
+<div className="absolute inset-x-0 bottom-0 h-[45%] bg-black/70 pointer-events-none translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out z-[1]" />
+
+// TO:
+<div className="absolute inset-x-0 bottom-0 h-[25%] bg-black/70 pointer-events-none translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out z-[1]" />
+```
+
+This keeps the overlay snug behind the text block without reaching the action buttons.
+
