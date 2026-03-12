@@ -4480,7 +4480,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <PanelCardV2
                 panelName="Chat Settings Modal"
                 background="bg-zinc-900"
-                border="border-white/10"
+                border="border-ghost-white"
                 borderRadius="rounded-lg"
                 shadow="0 12px 32px -2px rgba(0,0,0,0.5)"
                 purpose="Toggle grid for chat display options (Dynamic BG, Transparent, POV)"
