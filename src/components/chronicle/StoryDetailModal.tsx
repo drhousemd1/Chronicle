@@ -442,8 +442,8 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                             )}
                           </div>
                           <div className="text-left">
-                            <p className="text-sm text-[rgba(248,250,252,0.7)] group-hover:text-white transition-colors">
-                              Created by: <span className="text-[rgba(248,250,252,0.7)] font-medium">{publisher.display_name || publisher.username || 'Anonymous'}</span>
+                             <p className="text-sm text-[rgba(248,250,252,0.8)] group-hover:text-white transition-colors">
+                               Created by: <span className="text-[rgba(248,250,252,0.8)] font-medium">{publisher.display_name || publisher.username || 'Anonymous'}</span>
                             </p>
                           </div>
                         </button>
