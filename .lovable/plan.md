@@ -1,24 +1,11 @@
 
 
-# Change Synopsis Heading to Slate Blue Underline
+## Plan: Persist Style Guide Edits to Supabase — Complete ✅
 
-**File:** `src/components/chronicle/StoryDetailModal.tsx`
+### What was done:
 
-**Line 475-477** — Replace the banner wrapper with an underline style:
-
-From:
-```tsx
-<div className="bg-[#4a5f7f] rounded-xl px-4 py-2 mb-3 inline-block shadow-sm">
-  <h3 className="text-xs font-bold text-[rgba(248,250,252,0.9)] uppercase tracking-widest">Synopsis</h3>
-</div>
-```
-
-To:
-```tsx
-<div className="border-b-2 border-[#4a5f7f] pb-1 mb-3 inline-block">
-  <h3 className="text-xs font-bold text-[rgba(248,250,252,0.9)] uppercase tracking-widest">Synopsis</h3>
-</div>
-```
-
-Only the Synopsis heading changes. All other headings keep their banner style for comparison.
-
+1. **Seeded `app_settings` rows** — `styleguide_edits` and `styleguide_keeps` rows inserted into the database
+2. **Rewrote all storage helpers** in `StyleGuideEditsModal.tsx` from sync localStorage to async Supabase operations (`getEditsRegistry`, `upsertEdit`, `removeEdit`, `getKeeps`, `addKeep`, `removeKeep`, `getEditsCount`)
+3. **Updated all consumers** in `StyleGuideTool.tsx` — `refreshEditsState`, `handleKeep`, `handleEditOpen`, `handleSaveEdit`, `handleRemoveKeep` are all async now
+4. **Updated `Index.tsx`** — `getEditsCount()` call now uses `.then()` since it's async
+5. **Every edit, keep, and delete auto-saves to Supabase immediately** — no data loss on domain changes
