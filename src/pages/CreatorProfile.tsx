@@ -103,6 +103,8 @@ export default function CreatorProfile() {
         })));
       }
 
+      fetchCreatorOverallRating(userId).then(setCreatorRating).catch(console.error);
+
       if (user) {
         const { data: followData } = await supabase.from('creator_follows')
           .select('id').eq('follower_id', user.id).eq('creator_id', userId).maybeSingle();
