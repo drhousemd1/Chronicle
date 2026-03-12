@@ -103,7 +103,7 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDel
         {/* Hover slide-up dark overlay - positioned to actual info block */}
         {overlayTop !== null && (
           <div
-            className="absolute inset-x-0 bottom-0 bg-black/70 pointer-events-none translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out z-[1]"
+            className="absolute inset-x-0 bottom-0 bg-gradient-to-b from-transparent to-black/70 pointer-events-none translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out z-[1]"
             style={{ top: `${overlayTop}px` }}
           />
         )}
