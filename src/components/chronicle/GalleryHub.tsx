@@ -29,6 +29,7 @@ interface GalleryHubProps {
   onSaveChange?: () => void;
   sortBy: SortOption;
   onSortChange: (sort: SortOption) => void;
+  onAuthRequired?: () => void;
 }
 
 const PAGE_SIZE = 20;
