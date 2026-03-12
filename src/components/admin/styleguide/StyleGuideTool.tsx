@@ -2210,7 +2210,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             />
             <ButtonCardV2
               buttonName="Story Detail — Save"
-              buttonColor="Default: rgba(255,255,255,0.05) — bg-white/5. Active: rgba(245,158,11,0.2) — bg-amber-500/20"
+              buttonColor="Default: rgba(248,250,252,0.3) — bg-ghost-white. Active: rgba(245,158,11,0.2) — bg-amber-500/20"
               textColor="Default: #ffffff — text-white. Active: #fbbf24 — text-amber-400"
               size="flex-1 h-12 — rounded-xl"
               purpose="Save/bookmark a story — toggle button with filled bookmark when active"
