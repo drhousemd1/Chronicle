@@ -3823,7 +3823,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 notes="bg #1c1f26 is unique — doesn't match any panel token"
                 preview={
                   <div style={{ display: 'flex', gap: 8, width: '100%' }}>
-                    <div className="flex-1 bg-[#1c1f26] rounded-[2rem] border border-white/5 p-3" style={{ minHeight: 48 }}>
+                    <div className="flex-1 bg-[#1c1f26] rounded-[2rem] border border-ghost-white p-3" style={{ minHeight: 48 }}>
                       <div className="text-[8px] font-black uppercase tracking-widest text-slate-500 mb-0.5">AI</div>
                       <div className="text-[9px] text-white">Message...</div>
                     </div>
