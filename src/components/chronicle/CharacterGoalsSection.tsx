@@ -217,7 +217,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
       {/* Collapsed view */}
       {!isExpanded && (
         <div className="p-5">
-          <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-ghost-white">
+          <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl border border-[#4a5f7f]">
             <CollapsedGoalsView />
           </div>
         </div>
