@@ -1538,14 +1538,9 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                   { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-history%2Fchat-history-full.png', location: 'Preview box bg', function: 'Semi-transparent dark box containing last message text' },
                 ]}
               />
-              <SwatchCardV2 color="rgba(248,250,252,0.3)" name="Ghost White" locations="Preview box border, delete button background" value="rgba(248,250,252,0.3)" token="bg-ghost-white, border-ghost-white" pageSpecific={false} appWide={true} extraPreviewStyle={{ border: '1px dashed #ccc' }}
+              <SwatchCardV2 color="rgba(248,250,252,0.3)" name="Ghost White" locations="Preview box border, delete button default bg, delete button hover bg" value="rgba(248,250,252,0.3)" token="bg-ghost-white / border-ghost-white / hover:bg-ghost-white" pageSpecific={false} appWide={true} extraPreviewStyle={{ border: '1px dashed #ccc' }}
                 locationImages={[
                   { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-history%2Fchat-history-full.png', location: 'Preview box border + delete btn bg', function: 'Subtle border on message preview box, and default delete button background' },
-                ]}
-              />
-              {/* Delete button states */}
-              <SwatchCardV2 color="rgba(248,250,252,0.3)" name="Ghost White" locations="Delete button hover background" value="rgba(248,250,252,0.3)" token="hover:bg-ghost-white" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #ccc' }}
-                locationImages={[
                   { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-history%2Fchat-history-card-hover.png', location: 'Delete hover bg', function: 'Slightly brighter background when hovering the trash button' },
                 ]}
               />
