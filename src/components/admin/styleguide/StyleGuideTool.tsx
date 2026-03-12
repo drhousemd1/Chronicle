@@ -4202,7 +4202,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
               <PanelCardV2
                 panelName="Story Detail Character Card"
-                background="bg-white/5"
+                background="bg-ghost-white"
                 border="N/A"
                 borderRadius="rounded-xl"
                 purpose="Character listing within Story Detail modal"
