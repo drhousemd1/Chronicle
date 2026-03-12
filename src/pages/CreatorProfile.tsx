@@ -55,6 +55,7 @@ export default function CreatorProfile() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [creatorRating, setCreatorRating] = useState<{ rating: number; totalReviews: number } | null>(null);
 
   useEffect(() => {
     if (!userId) return;
