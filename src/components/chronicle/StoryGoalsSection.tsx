@@ -379,7 +379,7 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                   />
 
                   {/* Steps Section */}
-                  <div className="mt-4 pt-5 border-t border-ghost-white">
+                  <div className="mt-4 pt-5 border-t border-[#4a5f7f]">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <CheckSquare size={14} className="text-blue-500" />
