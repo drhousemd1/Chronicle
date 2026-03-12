@@ -3759,15 +3759,15 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <PanelCardV2
                 panelName="Panel Header Bar"
                 background="#4a5f7f"
-                border="border-b border-white/20"
+                border="border-b border-ghost-white"
                 borderRadius="rounded-t-[24px] (inherits from parent)"
                 shadow="shadow-lg"
                 purpose="Colored header banner for collapsible builder sections"
                 locations="CharactersTab.tsx"
                 pageSpecific appWide={false}
                 preview={
-                  <div className="w-full bg-[#4a5f7f] rounded-xl px-4 py-2 flex items-center gap-2 border-b border-white/20 shadow-lg">
-                    <div className="w-6 h-6 rounded-md bg-white/20 flex items-center justify-center text-white text-[10px]">⚙</div>
+                  <div className="w-full bg-[#4a5f7f] rounded-xl px-4 py-2 flex items-center gap-2 border-b border-ghost-white shadow-lg">
+                    <div className="w-6 h-6 rounded-md bg-ghost-white flex items-center justify-center text-white text-[10px]">⚙</div>
                     <span className="text-white text-sm font-bold tracking-tight">Section Title</span>
                   </div>
                 }
