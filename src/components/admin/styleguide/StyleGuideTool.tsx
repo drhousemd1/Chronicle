@@ -1703,8 +1703,8 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <SwatchCardV2 color="#121214" name="Near Black" locations="Full page background (same as Gallery/Account)" value="#121214" token="bg-[#121214]" pageSpecific={true} appWide={false} />
               <SwatchCardV2 color="#1e1e22" name="Charcoal" locations="Profile info card, bio section" value="#1e1e22" token="bg-[#1e1e22]" pageSpecific={true} appWide={false} />
               
-              <SwatchCardV2 color="rgba(255,255,255,0.05)" name="Whisper White" locations="Stat pills (followers, plays, etc.) on Creator Profile" value="rgba(255,255,255,0.05)" token="bg-white/5" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
-              <SwatchCardV2 color="rgba(248,250,252,0.3)" name="Ghost White" locations="Unfollow button (toggle state)" value="rgba(248,250,252,0.3)" token="bg-ghost-white" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #ccc' }} />
+              {/* Whisper White migrated → Ghost White */}
+              <SwatchCardV2 color="rgba(248,250,252,0.3)" name="Ghost White" locations="Stat pills, Unfollow button (toggle state)" value="rgba(248,250,252,0.3)" token="bg-ghost-white" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #ccc' }} />
             </div>
             <InconsistencyNote items={[
               { file: 'CreatorProfile.tsx', note: 'Uses bg-[#1e1e22] surface which doesn\'t match bg-[#2a2a2f] or bg-zinc-900 used elsewhere.' },
