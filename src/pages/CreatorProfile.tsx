@@ -265,7 +265,7 @@ export default function CreatorProfile() {
                 ].map(({ icon: Icon, value, label }) => (
                   <span key={label} className="flex items-center gap-1 text-xs">
                     <Icon className="w-3.5 h-3.5" />
-                    <span className="font-bold text-[rgba(248,250,252,0.3)]">{value}</span>
+                    <span className="font-bold text-[rgba(248,250,252,0.7)]">{value}</span>
                   </span>
                 ))}
               </div>
