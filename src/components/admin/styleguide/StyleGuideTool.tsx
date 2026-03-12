@@ -2227,7 +2227,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             />
             <ButtonCardV2
               buttonName="Story Detail — Remove from Gallery"
-              buttonColor="rgba(255,255,255,0.05) — bg-white/5"
+              buttonColor="rgba(248,250,252,0.3) — bg-ghost-white"
               textColor="rgba(248,250,252,0.3) — text-[rgba(248,250,252,0.3)]"
               size="w-full h-10 — rounded-xl"
               purpose="Unpublish owned story from community gallery"
