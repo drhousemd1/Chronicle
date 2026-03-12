@@ -1,11 +1,13 @@
 
 
-## Plan: Persist Style Guide Edits to Supabase — Complete ✅
+# Update Add/Create Icon Box Background
 
-### What was done:
+## Problem
+The `+` icon square inside the Add/Create character placeholders uses a flat `bg-[#1a1a1f]` background. It should use the same `bg-gradient-to-br from-zinc-800 to-zinc-900` gradient applied to the other placeholder elements.
 
-1. **Seeded `app_settings` rows** — `styleguide_edits` and `styleguide_keeps` rows inserted into the database
-2. **Rewrote all storage helpers** in `StyleGuideEditsModal.tsx` from sync localStorage to async Supabase operations (`getEditsRegistry`, `upsertEdit`, `removeEdit`, `getKeeps`, `addKeep`, `removeKeep`, `getEditsCount`)
-3. **Updated all consumers** in `StyleGuideTool.tsx` — `refreshEditsState`, `handleKeep`, `handleEditOpen`, `handleSaveEdit`, `handleRemoveKeep` are all async now
-4. **Updated `Index.tsx`** — `getEditsCount()` call now uses `.then()` since it's async
-5. **Every edit, keep, and delete auto-saves to Supabase immediately** — no data loss on domain changes
+## Change
+
+**File**: `src/components/chronicle/WorldTab.tsx`, line 458
+
+Replace `bg-[#1a1a1f]` with `bg-gradient-to-br from-zinc-800 to-zinc-900` on the icon container div.
+
