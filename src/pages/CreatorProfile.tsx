@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { Heart, Bookmark, Play, Eye, FileText, Users, ArrowLeft, UserPlus, UserMinus, Loader2, Pencil } from 'lucide-react';
+import { fetchCreatorOverallRating } from '@/services/gallery-data';
+import { StarRating } from '@/components/chronicle/StarRating';
 import { cn } from '@/lib/utils';
 
 interface CreatorProfileData {
