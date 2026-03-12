@@ -35,8 +35,8 @@ export function CharacterPicker({ summaries, onSelect, onClose }: CharacterPicke
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-6">
-      <div className="bg-zinc-900 w-full max-w-4xl rounded-3xl shadow-2xl flex flex-col max-h-full border border-white/10">
-        <div className="p-6 border-b border-white/10 flex items-center justify-between">
+      <div className="bg-zinc-900 w-full max-w-4xl rounded-3xl shadow-2xl flex flex-col max-h-full border border-ghost-white">
+        <div className="p-6 border-b border-ghost-white flex items-center justify-between">
           <div>
             <h2 className="text-xl font-black text-white">Global Character Library</h2>
             <p className="text-sm text-zinc-400">Select a character to import into this scenario.</p>
