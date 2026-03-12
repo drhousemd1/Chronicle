@@ -296,6 +296,10 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
   };
 
   const handlePlay = async (published: PublishedScenario) => {
+    if (!user) {
+      onAuthRequired?.();
+      return;
+    }
     incrementPlayCount(published.id).catch(console.error);
     onPlay(published.scenario_id, published.id);
   };
