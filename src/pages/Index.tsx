@@ -1885,18 +1885,6 @@ const IndexContent = () => {
                 <>
                   <button
                     type="button"
-                    onClick={() => setDraftsModalOpen(true)}
-                    className="relative inline-flex items-center justify-center h-10 px-5 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
-                  >
-                    Drafts
-                    {draftCount > 0 && (
-                      <span className="ml-1.5 inline-flex items-center justify-center h-4 min-w-[16px] rounded-full bg-zinc-600 text-[9px] font-bold px-1">
-                        {draftCount}
-                      </span>
-                    )}
-                  </button>
-                  <button
-                    type="button"
                     onClick={async () => {
                       if (!activeId || !activeData) return;
                       // Run validation before saving to DB
@@ -1930,27 +1918,28 @@ const IndexContent = () => {
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      if (!activeId || !activeData) return;
-                      const savedAt = Date.now();
+                    onClick={async () => {
+                      if (!activeId || !activeData || !user) return;
+                      setIsSaving(true);
                       try {
-                        localStorage.setItem(`draft_${activeId}`, JSON.stringify({
-                          data: activeData,
+                        const derivedTitle = activeData.world.core.scenarioName || 'Untitled';
+                        const metadata = {
+                          title: derivedTitle,
+                          description: activeData.world.core.briefDescription || 
+                                       truncateLine(activeData.world.core.storyPremise || 'Created via Builder', 120),
                           coverImage: activeCoverImage,
-                          coverPosition: activeCoverPosition,
-                          contentThemes: activeContentThemes,
-                          savedAt,
-                        }));
-                        upsertDraftRegistry({
-                          id: activeId,
-                          title: activeData.world.core.scenarioName || 'Untitled',
-                          savedAt,
-                        });
-                        refreshDraftCount();
-                        setIsSaving(true);
+                          coverImagePosition: activeCoverPosition,
+                          tags: ['Custom']
+                        };
+                        await supabaseData.saveScenario(activeId, activeData, metadata, user.id, { isDraft: true });
+                        // Refresh registry so hub shows the draft
+                        supabaseData.fetchMyScenarios(user.id)
+                          .then(r => setRegistry(r))
+                          .catch(e => console.warn('Registry refresh failed:', e));
                         setTimeout(() => setIsSaving(false), 1200);
                       } catch (e) {
-                        console.warn('Could not save draft to localStorage:', e);
+                        console.warn('Could not save draft:', e);
+                        setIsSaving(false);
                       }
                     }}
                     disabled={isSaving || isSavingAndClosing}
