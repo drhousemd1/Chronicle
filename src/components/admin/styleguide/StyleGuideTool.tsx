@@ -1192,13 +1192,147 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             <PageSubheading>Community Gallery</PageSubheading>
             <PageDesc>Colors specific to the Community Gallery page and gallery cards.</PageDesc>
              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 14 }}>
-              <SwatchCardV2 color="#121214" name="Near Black" locations="GalleryHub main wrapper, Account page background" value="#121214" token="bg-[#121214]" pageSpecific={true} appWide={false} />
-              <SwatchCardV2 color="rgba(18,18,20,0.8)" name="Glass Black" locations="Gallery sticky header" value="rgba(18,18,20,0.8)" token="bg-[#121214]/80" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
-              <SwatchCardV2 color="rgba(58,58,63,0.5)" name="Smoke Charcoal" locations="Gallery search input background" value="rgba(58,58,63,0.5)" token="bg-[#3a3a3f]/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
-              <SwatchCardV2 color="#18181b" name="Dark Zinc" locations="Gallery category filter sidebar" value="#18181b" token="bg-[#18181b]" pageSpecific={true} appWide={false} />
-              <SwatchCardV2 color="#facc15" name="Bright Yellow" locations="Category sidebar accent bar" value="#facc15" token="bg-yellow-400" pageSpecific={true} appWide={false} />
-              <SwatchCardV2 color="rgba(59,130,246,0.2)" name="Faint Blue" locations="Active story type filter chip background" value="rgba(59,130,246,0.2)" token="bg-blue-500/20" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
-              <SwatchCardV2 color="rgba(168,85,247,0.2)" name="Faint Purple" locations="Active genre filter chip background" value="rgba(168,85,247,0.2)" token="bg-purple-500/20" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} />
+              {/* --- Page-level backgrounds --- */}
+              <SwatchCardV2 color="#121214" name="Near Black" locations="GalleryHub main wrapper, StoryDetailModal background, Account page background" value="#121214" token="bg-[#121214]" pageSpecific={true} appWide={false} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-search-bar.png', location: 'GalleryHub main wrapper', function: 'Full page background color for the Community Gallery tab' },
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-detail-content.png', location: 'StoryDetailModal background', function: 'Modal container background color' },
+              ]} />
+              <SwatchCardV2 color="rgba(18,18,20,0.8)" name="Glass Black" locations="Gallery sticky header (glassmorphic)" value="rgba(18,18,20,0.8)" token="bg-[#121214]/80" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-search-bar.png', location: 'Gallery sticky header', function: 'Semi-transparent header background with backdrop-blur-12px for glassmorphic effect' },
+              ]} />
+              <SwatchCardV2 color="rgba(58,58,63,0.5)" name="Smoke Charcoal" locations="Gallery search input background" value="rgba(58,58,63,0.5)" token="bg-[#3a3a3f]/50" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-search-bar.png', location: 'Search input field', function: 'Background for the gallery search text input' },
+              ]} />
+              <SwatchCardV2 color="#18181b" name="Dark Zinc" locations="Gallery category filter sidebar background" value="#18181b" token="bg-[#18181b]" pageSpecific={true} appWide={false} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-sidebar.png', location: 'Category sidebar', function: 'Background color for the Browse Categories sidebar panel' },
+              ]} />
+              <SwatchCardV2 color="#facc15" name="Bright Yellow" locations="Category sidebar accent bar (top)" value="#facc15" token="bg-yellow-400" pageSpecific={true} appWide={false} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-sidebar.png', location: 'Sidebar yellow accent bar', function: 'Thin yellow line at top of the category sidebar for visual distinction' },
+              ]} />
+
+              {/* --- Slate Blue (multi-location) --- */}
+              <SwatchCardV2 color="#4a5f7f" name="Slate Blue" locations="Search button bg, Browse Categories button bg, card border, sort pill active bg, detail modal creator name, review section divider, review button bg, avatar hover ring, search focus ring" value="#4a5f7f" token="bg-[#4a5f7f] / border-[#4a5f7f]" pageSpecific={false} appWide={true} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-search-bar.png', location: 'Search button & Browse Categories button', function: 'Primary action button background in gallery header' },
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-sort-pills.png', location: 'Active sort pill background', function: 'Fill color for currently selected sort pill (e.g. "All")' },
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-card-badges.png', location: 'Gallery card border', function: 'Border color on each gallery story card (border-[#4a5f7f])' },
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-detail-content.png', location: 'Creator name text color', function: 'Text color for creator display name in detail modal' },
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-detail-reviews.png', location: 'Review section: divider, Write Review button', function: 'Border color for review divider and bg for Write a Review button' },
+              ]} />
+
+              {/* --- Sort pill track --- */}
+              <SwatchCardV2 color="#2b2b2e" name="Warm Charcoal" locations="Sort pill container track background" value="#2b2b2e" token="bg-[#2b2b2e]" pageSpecific={false} appWide={true} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-sort-pills.png', location: 'Sort pill container', function: 'Rounded track background behind the sort filter pills' },
+              ]} />
+
+              {/* --- Sort pill inactive text --- */}
+              <SwatchCardV2 color="#a1a1aa" name="Silver Gray" locations="Inactive sort pill text, sidebar close icon" value="#a1a1aa" token="text-[#a1a1aa]" pageSpecific={false} appWide={true} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-sort-pills.png', location: 'Inactive sort pill text', function: 'Text color for non-selected sort pills (e.g. "Recent", "Most Liked")' },
+              ]} />
+
+              {/* --- Dark Charcoal badges --- */}
+              <SwatchCardV2 color="#2a2a2f" name="Dark Charcoal" locations="SFW/NSFW badge bg (card), SFW/NSFW badge bg (modal), Remix badge bg (card + modal), Cover fallback bg, Skeleton bg, Character avatar fallback bg" value="#2a2a2f" token="bg-[#2a2a2f]" pageSpecific={false} appWide={true} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-card-badges.png', location: 'SFW/NSFW + Remix badge bg (card)', function: 'Dark background behind content type and remix badges on gallery story cards' },
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-detail-cover.png', location: 'SFW/NSFW + Remix badge bg (modal)', function: 'Dark background behind badges on StoryDetailModal cover image' },
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-detail-characters.png', location: 'Character avatar fallback bg', function: 'Dark background for character avatars without images in detail modal' },
+              ]} />
+
+              {/* --- Bright Red --- */}
+              <SwatchCardV2 color="#ef4444" name="Bright Red" locations="NSFW badge text (card), NSFW badge text (modal), Trigger Warnings text (modal)" value="#ef4444" token="text-red-500" pageSpecific={false} appWide={true} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-card-badges.png', location: 'NSFW badge text on gallery card', function: 'Red text for "NSFW" label on card badges (text-red-500)' },
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-detail-cover.png', location: 'NSFW badge text in Detail Modal', function: 'Red text for "NSFW" badge on modal cover image (text-red-500)' },
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-detail-content.png', location: 'Trigger Warnings text', function: 'Red text for trigger warning list in StoryDetailModal (text-red-500)' },
+              ]} />
+
+              {/* --- True Blue --- */}
+              <SwatchCardV2 color="#3b82f6" name="True Blue" locations="SFW badge text (card + modal), Play button bg (card + modal), blue gradient divider, 'View All' link, character hover ring, sidebar selected item, clear filters link" value="#3b82f6" token="bg-blue-500 / text-blue-500 / border-blue-500" pageSpecific={false} appWide={true} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-card-badges.png', location: 'SFW badge text on card', function: 'Blue text for "SFW" label on gallery card badges (text-blue-500)' },
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-card-hover.png', location: 'PLAY button on card hover', function: 'Blue background on the compact PLAY button shown on gallery card hover (bg-blue-500)' },
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-detail-cover.png', location: 'Play button in Detail Modal', function: 'Blue background on the Play action button in StoryDetailModal (bg-[#3b82f6])' },
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-detail-characters.png', location: '"View All" link + character hover ring', function: 'Blue text for "View All" link and blue ring on character avatar hover' },
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-sidebar.png', location: 'Sidebar selected item bg + text', function: 'Blue highlight background and text for selected filter items in sidebar (bg-blue-500/20 text-blue-500)' },
+              ]} />
+
+              {/* --- Card shadow --- */}
+              <SwatchCardV2 color="rgba(0,0,0,0.5)" name="Half Black" locations="Gallery card drop shadow" value="rgba(0,0,0,0.5)" token="shadow-[0_12px_32px_-2px_rgba(0,0,0,0.5)]" pageSpecific={false} appWide={true} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-card-badges.png', location: 'Gallery card drop shadow', function: 'Heavy drop shadow beneath each gallery story card' },
+              ]} />
+
+              {/* --- Rose (Like active) --- */}
+              <SwatchCardV2 color="#f43f5e" name="Rose" locations="Like button active bg (card), Like button active bg (modal: bg-rose-500/20)" value="#f43f5e" token="bg-rose-500 / bg-rose-500/20" pageSpecific={true} appWide={false} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-card-hover.png', location: 'Like button active (card)', function: 'Rose/pink background on active Like icon button on gallery card hover (bg-rose-500)' },
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-detail-cover.png', location: 'Like button active (modal)', function: 'Rose tinted background on active Like button in StoryDetailModal (bg-rose-500/20)' },
+              ]} />
+
+              {/* --- Amber (Save active) --- */}
+              <SwatchCardV2 color="#f59e0b" name="Amber" locations="Save button active bg (card), Save button active bg (modal: bg-amber-500/20)" value="#f59e0b" token="bg-amber-500 / bg-amber-500/20" pageSpecific={true} appWide={false} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-card-hover.png', location: 'Save button active (card)', function: 'Amber background on active Save/Bookmark icon button on gallery card hover (bg-amber-500)' },
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-detail-cover.png', location: 'Save button active (modal)', function: 'Amber tinted background on active Save button in StoryDetailModal (bg-amber-500/20)' },
+              ]} />
+
+              {/* --- Filter chips --- */}
+              <SwatchCardV2 color="rgba(59,130,246,0.2)" name="Faint Blue" locations="Active story type filter chip bg, sidebar selected item bg" value="rgba(59,130,246,0.2)" token="bg-blue-500/20" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-filter-chips.png', location: 'Active story type filter chip', function: 'Blue-tinted background for active SFW/NSFW filter chip in the filter bar' },
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-sidebar.png', location: 'Sidebar selected item bg', function: 'Blue-tinted background for selected category items in sidebar' },
+              ]} />
+              <SwatchCardV2 color="rgba(168,85,247,0.2)" name="Faint Purple" locations="Active genre filter chip bg" value="rgba(168,85,247,0.2)" token="bg-purple-500/20" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-filter-chips.png', location: 'Active genre filter chip', function: 'Purple-tinted background for active genre filter chips (e.g. Fantasy, Romance)' },
+              ]} />
+              <SwatchCardV2 color="rgba(34,197,94,0.2)" name="Faint Green" locations="Active origin filter chip bg" value="rgba(34,197,94,0.2)" token="bg-green-500/20" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-filter-chips.png', location: 'Active origin filter chip', function: 'Green-tinted background for active origin filter chips (e.g. Original, Game)' },
+              ]} />
+              <SwatchCardV2 color="rgba(245,158,11,0.2)" name="Faint Amber" locations="Active trigger warning filter chip bg" value="rgba(245,158,11,0.2)" token="bg-amber-500/20" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-filter-chips.png', location: 'Active trigger warning filter chip', function: 'Amber-tinted background for active trigger warning filter chips' },
+              ]} />
+
+              {/* --- Ghost White (card text) --- */}
+              <SwatchCardV2 color="rgba(248,250,252,0.3)" name="Ghost White" locations="Card description text, card stats text, card author text, 'Created by' prefix, empty state subtitle, sidebar chevron icons, sidebar X button, review score text" value="rgba(248,250,252,0.3)" token="text-[rgba(248,250,252,0.3)]" pageSpecific={false} appWide={true} extraPreviewStyle={{ border: '1px dashed #ccc' }} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-card-badges.png', location: 'Card description, stats, author text', function: 'Very faint white text for secondary info on gallery cards (description, stats row, "Created by" text)' },
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-empty-state.png', location: 'Empty state subtitle', function: 'Faint text for the empty state description message' },
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-sidebar.png', location: 'Sidebar chevron icons / X button', function: 'Faint white color for sidebar expand/collapse chevrons and close button' },
+              ]} />
+
+              {/* --- Muted Slate --- */}
+              <SwatchCardV2 color="#94a3b8" name="Muted Slate" locations="Detail modal stats row icons/text (views, likes, saves, plays), 'Created by:' prefix text" value="#94a3b8" token="text-[#94a3b8] / text-slate-400" pageSpecific={true} appWide={false} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-detail-content.png', location: 'Stats row in Detail Modal', function: 'Muted slate color for view/like/save/play stat icons and counts in the StoryDetailModal' },
+              ]} />
+
+              {/* --- Emerald --- */}
+              <SwatchCardV2 color="rgba(16,185,129,0.2)" name="Emerald" locations="PUBLISHED badge bg + text (detail modal)" value="rgba(16,185,129,0.2) / #34d399" token="bg-emerald-500/20 / text-emerald-400" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-detail-content.png', location: 'PUBLISHED badge', function: 'Green-tinted badge with emerald text for "PUBLISHED" status in StoryDetailModal' },
+              ]} />
+
+              {/* --- Soft Purple --- */}
+              <SwatchCardV2 color="rgba(168,85,247,0.2)" name="Soft Purple (Badge)" locations="EDITABLE badge bg + text (detail modal), Remix pencil icon (card + modal)" value="rgba(168,85,247,0.2) / #c084fc" token="bg-purple-500/20 / text-purple-400" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-detail-content.png', location: 'EDITABLE badge', function: 'Purple-tinted badge with purple text for "EDITABLE" status in StoryDetailModal' },
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-card-badges.png', location: 'Remix pencil icon (card)', function: 'Purple pencil icon inside the remix badge on gallery story cards' },
+              ]} />
+
+              {/* --- Dim White (filter badges) --- */}
+              <SwatchCardV2 color="rgba(255,255,255,0.2)" name="Dim White" locations="Filter count badge bg, search tag chip bg, text search chip bg" value="rgba(255,255,255,0.2)" token="bg-white/20" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-search-bar.png', location: 'Browse Categories filter count badge', function: 'Semi-transparent white background for the filter count pill on Browse Categories button' },
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-filter-chips.png', location: 'Search tag/text filter chip bg', function: 'Background for active search text and hashtag chips in the filter bar' },
+              ]} />
+
+              {/* --- Faint White (borders) --- */}
+              <SwatchCardV2 color="rgba(255,255,255,0.1)" name="Faint White" locations="Search input border, sidebar border-right, modal border, detail modal content divider" value="rgba(255,255,255,0.1)" token="border-white/10" pageSpecific={false} appWide={true} extraPreviewStyle={{ border: '1px dashed #999' }} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-search-bar.png', location: 'Search input border', function: 'Subtle white border on the gallery search input field' },
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-sidebar.png', location: 'Sidebar border-right + section borders', function: 'Subtle white border on the right edge of sidebar and between header sections' },
+              ]} />
+
+              {/* --- Light Steel (synopsis) --- */}
+              <SwatchCardV2 color="#e2e8f0" name="Light Steel" locations="Synopsis text in StoryDetailModal" value="#e2e8f0" token="text-[#e2e8f0]" pageSpecific={true} appWide={false} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-detail-content.png', location: 'Synopsis body text', function: 'Light steel text color for the story synopsis/description in detail modal' },
+              ]} />
+
+              {/* --- Dark Blue (hover) --- */}
+              <SwatchCardV2 color="#2d6fdb" name="Dark Blue" locations="Play button hover (card + modal)" value="#2d6fdb" token="hover:bg-[#2d6fdb]" pageSpecific={true} appWide={false} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-card-hover.png', location: 'Play button hover state', function: 'Darker blue hover color for Play buttons on cards and in detail modal' },
+              ]} />
+
+              {/* --- Light Slate Blue (hover) --- */}
+              <SwatchCardV2 color="#5a6f8f" name="Light Slate Blue" locations="Browse Categories active/hover bg, Search button hover bg" value="#5a6f8f" token="hover:bg-[#5a6f8f]" pageSpecific={true} appWide={false} locationImages={[
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery/gallery-search-bar.png', location: 'Search & Browse Categories hover', function: 'Lighter slate blue for hover state on Search button and Browse Categories button' },
+              ]} />
             </div>
 
             <Divider />
