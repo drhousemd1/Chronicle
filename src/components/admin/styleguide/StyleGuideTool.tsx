@@ -3752,8 +3752,8 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                     <div className="flex h-full w-full items-center justify-center bg-slate-900 p-4 text-center">
                       <div className="font-black text-ghost-white text-3xl uppercase tracking-tighter italic">S</div>
                     </div>
-                    {/* Gradient overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-800 via-slate-900/60 to-transparent opacity-90" />
+                    {/* Flat dark overlay for text readability */}
+                    <div className="absolute inset-0 bg-black/40 pointer-events-none" />
                     {/* Top-left badges */}
                     <div className="absolute top-2 left-2 flex items-center gap-1 z-10">
                       <div className="px-1.5 py-0.5 backdrop-blur-sm rounded-md text-[6px] font-bold shadow-lg bg-[#2a2a2f] text-emerald-400 uppercase tracking-wide">Published</div>
