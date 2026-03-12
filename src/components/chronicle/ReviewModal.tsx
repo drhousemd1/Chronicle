@@ -154,7 +154,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
                       value={comment}
                       onChange={(e) => setComment(e.target.value)}
                       placeholder="Share your thoughts... (optional)"
-                      className="bg-white/5 border-ghost-white text-white placeholder:text-white/30 min-h-[80px] resize-none"
+                      className="bg-ghost-white border-ghost-white text-white placeholder:text-white/30 min-h-[80px] resize-none"
                       maxLength={1000}
                     />
                   </div>
