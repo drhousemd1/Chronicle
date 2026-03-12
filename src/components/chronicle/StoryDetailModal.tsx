@@ -496,7 +496,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                       )}
                       {contentThemes.origin.length > 0 && (
                         <div>
-                          <h4 className="text-xs font-bold text-[rgba(248,250,252,1)] uppercase mb-2">Story Origin</h4>
+                          <h4 className="text-xs font-bold text-[#4a5f7f] uppercase mb-2">Story Origin</h4>
                           <p className="text-sm text-[rgba(248,250,252,0.8)]">{contentThemes.origin.join(', ')}</p>
                         </div>
                       )}
