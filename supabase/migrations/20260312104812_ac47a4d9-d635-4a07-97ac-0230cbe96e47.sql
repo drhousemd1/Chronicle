@@ -1,0 +1,1 @@
+ALTER TABLE public.stories ADD COLUMN is_draft boolean NOT NULL DEFAULT false;

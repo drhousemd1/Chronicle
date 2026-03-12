@@ -1114,6 +1114,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           id: string
+          is_draft: boolean
           opening_dialog: Json | null
           selected_art_style: string | null
           selected_model: string | null
@@ -1131,6 +1132,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          is_draft?: boolean
           opening_dialog?: Json | null
           selected_art_style?: string | null
           selected_model?: string | null
@@ -1148,6 +1150,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          is_draft?: boolean
           opening_dialog?: Json | null
           selected_art_style?: string | null
           selected_model?: string | null
