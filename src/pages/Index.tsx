@@ -182,7 +182,7 @@ const IndexContent = () => {
   const styleGuideEditsRef = React.useRef<(() => void) | null>(null);
   const [styleGuideEditsCount, setStyleGuideEditsCount] = useState(0);
   const imageLibraryUploadRef = React.useRef<(() => void) | null>(null);
-  
+  const [authModalOpen, setAuthModalOpen] = useState(false);
   // Pagination state
   const SCENARIO_PAGE_SIZE = 50;
   const [hasMoreScenarios, setHasMoreScenarios] = useState(true);
