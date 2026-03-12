@@ -467,8 +467,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
 
   return (
     <div className="flex flex-1 h-full overflow-hidden">
-      <aside className="w-[260px] flex-shrink-0 bg-[#2a2a2f] border-r border-ghost-white flex flex-col h-full">
-        <div className="p-6 border-b border-ghost-white bg-[#4a5f7f]">
+      <aside className="w-[260px] flex-shrink-0 bg-[#2a2a2f] border-r border-[#4a5f7f] flex flex-col h-full">
+        <div className="p-6 border-b border-[#4a5f7f] bg-[#4a5f7f]">
           <div className="text-[10px] font-black text-white uppercase tracking-widest">Character Roster</div>
         </div>
         
