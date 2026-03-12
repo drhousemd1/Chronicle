@@ -158,9 +158,10 @@ const IndexContent = () => {
   const [unsavedNewCharacterIds, setUnsavedNewCharacterIds] = useState<Set<string>>(new Set());
   // Search query for library tab
   const [librarySearchQuery, setLibrarySearchQuery] = useState("");
-  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
+   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     return localStorage.getItem('chronicle_sidebar_collapsed') === 'true';
   });
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [deleteConfirmType, setDeleteConfirmType] = useState<'character' | 'bookmark' | 'scenario'>('character');
   
