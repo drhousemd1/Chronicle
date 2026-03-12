@@ -472,7 +472,9 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
 
                 {/* Synopsis Section */}
                 <div className="mt-6">
-                  <h3 className="text-xs font-bold text-[#4a5f7f] uppercase tracking-widest mb-3">Synopsis</h3>
+                  <div className="bg-[#4a5f7f]/30 rounded px-3 py-1.5 mb-3 inline-block">
+                    <h3 className="text-xs font-bold text-[rgba(248,250,252,0.9)] uppercase tracking-widest">Synopsis</h3>
+                  </div>
                   <p className="text-[rgba(248,250,252,0.8)] leading-relaxed max-w-2xl whitespace-pre-wrap">
                     {description || "No description provided."}
                   </p>
@@ -484,19 +486,25 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mt-8">
                       {contentThemes.genres.length > 0 && (
                         <div>
-                          <h4 className="text-xs font-bold text-[#4a5f7f] uppercase mb-2">Genre</h4>
+                          <div className="bg-[#4a5f7f]/30 rounded px-3 py-1.5 mb-2 inline-block">
+                            <h4 className="text-xs font-bold text-[rgba(248,250,252,0.9)] uppercase">Genre</h4>
+                          </div>
                           <p className="text-sm text-[rgba(248,250,252,0.8)]">{contentThemes.genres.join(', ')}</p>
                         </div>
                       )}
                       {contentThemes.characterTypes.length > 0 && (
                         <div>
-                          <h4 className="text-xs font-bold text-[#4a5f7f] uppercase mb-2">Character Types</h4>
+                          <div className="bg-[#4a5f7f]/30 rounded px-3 py-1.5 mb-2 inline-block">
+                            <h4 className="text-xs font-bold text-[rgba(248,250,252,0.9)] uppercase">Character Types</h4>
+                          </div>
                           <p className="text-sm text-[rgba(248,250,252,0.8)]">{contentThemes.characterTypes.join(', ')}</p>
                         </div>
                       )}
                       {contentThemes.origin.length > 0 && (
                         <div>
-                          <h4 className="text-xs font-bold text-[#4a5f7f] uppercase mb-2">Story Origin</h4>
+                          <div className="bg-[#4a5f7f]/30 rounded px-3 py-1.5 mb-2 inline-block">
+                            <h4 className="text-xs font-bold text-[rgba(248,250,252,0.9)] uppercase">Story Origin</h4>
+                          </div>
                           <p className="text-sm text-[rgba(248,250,252,0.8)]">{contentThemes.origin.join(', ')}</p>
                         </div>
                       )}
@@ -505,7 +513,9 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                     {/* Trigger Warnings - Separate Row */}
                     {contentThemes.triggerWarnings.length > 0 && (
                       <div className="mt-6">
-                        <h4 className="text-xs font-bold text-[#4a5f7f] uppercase mb-2">Trigger Warnings</h4>
+                        <div className="bg-[#4a5f7f]/30 rounded px-3 py-1.5 mb-2 inline-block">
+                          <h4 className="text-xs font-bold text-[rgba(248,250,252,0.9)] uppercase">Trigger Warnings</h4>
+                        </div>
                         <p className="text-sm text-[rgba(248,250,252,0.8)] leading-relaxed font-medium">
                           {contentThemes.triggerWarnings.join(', ')}
                         </p>
@@ -525,7 +535,9 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                 {/* Characters Section */}
                 <div className="pt-8">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xs font-bold text-[#4a5f7f] uppercase tracking-widest">Characters</h3>
+                    <div className="bg-[#4a5f7f]/30 rounded px-3 py-1.5 inline-block">
+                      <h3 className="text-xs font-bold text-[rgba(248,250,252,0.9)] uppercase tracking-widest">Characters</h3>
+                    </div>
                     {characters.length > 4 && (
                       <button className="text-[10px] font-bold text-[#3b82f6] hover:underline uppercase">
                         View All
