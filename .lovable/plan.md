@@ -1,11 +1,10 @@
 
 
-## Plan: Persist Style Guide Edits to Supabase — Complete ✅
+# Make Inner Border Match Outer Border
 
-### What was done:
+The borders use the same hex (`#4a5f7f`), but the inner container's semi-transparent background (`bg-[#3a3a3f]/30`) makes the border appear dimmer due to contrast. Fix: make the inner background solid so the border renders identically.
 
-1. **Seeded `app_settings` rows** — `styleguide_edits` and `styleguide_keeps` rows inserted into the database
-2. **Rewrote all storage helpers** in `StyleGuideEditsModal.tsx` from sync localStorage to async Supabase operations (`getEditsRegistry`, `upsertEdit`, `removeEdit`, `getKeeps`, `addKeep`, `removeKeep`, `getEditsCount`)
-3. **Updated all consumers** in `StyleGuideTool.tsx` — `refreshEditsState`, `handleKeep`, `handleEditOpen`, `handleSaveEdit`, `handleRemoveKeep` are all async now
-4. **Updated `Index.tsx`** — `getEditsCount()` call now uses `.then()` since it's async
-5. **Every edit, keep, and delete auto-saves to Supabase immediately** — no data loss on domain changes
+## Change: `src/components/chronicle/WorldTab.tsx`
+
+**Line 518** — Change `bg-[#3a3a3f]/30` to a solid equivalent `bg-[#2e2e33]` so the `#4a5f7f` border looks the same as the outer one.
+
