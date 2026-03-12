@@ -1260,34 +1260,13 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery%2Fgallery-filter-chips.png', location: 'Active trigger warning filter chip', function: 'Amber-tinted background for active trigger warning filter chips' },
               ]} />
 
-              {/* --- Ghost White (card text) --- */}
-              <SwatchCardV2 color="rgba(248,250,252,0.3)" name="Ghost White" locations="Card description text, card stats text, card author text, 'Created by' prefix, empty state subtitle, sidebar chevron icons, sidebar X button, all borders, all hover/active backgrounds" value="rgba(248,250,252,0.3)" token="text-ghost-white / border-ghost-white / bg-ghost-white" pageSpecific={false} appWide={true} extraPreviewStyle={{ border: '1px dashed #ccc' }} locationImages={[
+              {/* --- Ghost White (consolidated: text + borders + backgrounds) --- */}
+              <SwatchCardV2 color="rgba(248,250,252,0.3)" name="Ghost White" locations="Card description/stats/author text, 'Created by' prefix, empty state subtitle, sidebar chevron icons, sidebar X button, filter count badge bg, search tag/text chip bg, search input border, sidebar border-right, modal border, detail modal content divider, all hover/active backgrounds" value="rgba(248,250,252,0.3)" token="text-ghost-white / border-ghost-white / bg-ghost-white" pageSpecific={false} appWide={true} extraPreviewStyle={{ border: '1px dashed #ccc' }} locationImages={[
                 { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery%2Fgallery-card-badges.png', location: 'Card description, stats, author text', function: 'Very faint white text for secondary info on gallery cards' },
                 { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery%2Fgallery-empty-state.png', location: 'Empty state subtitle', function: 'Faint text for the empty state description message' },
-                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery%2Fgallery-sidebar.png', location: 'Sidebar chevron icons / X button', function: 'Faint white color for sidebar expand/collapse chevrons and close button' },
-              ]} />
-
-              {/* --- Muted Slate --- */}
-              <SwatchCardV2 color="#94a3b8" name="Muted Slate" locations="Detail modal stats row icons/text (views, likes, saves, plays), 'Created by:' prefix text" value="#94a3b8" token="text-[#94a3b8] / text-slate-400" pageSpecific={true} appWide={false} locationImages={[
-                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery%2Fgallery-detail-content.png', location: 'Stats row in Detail Modal', function: 'Muted slate color for view/like/save/play stat icons and counts' },
-              ]} />
-
-              {/* --- Emerald --- */}
-              <SwatchCardV2 color="rgba(16,185,129,0.2)" name="Emerald" locations="PUBLISHED badge bg + text (detail modal)" value="rgba(16,185,129,0.2) / #34d399" token="bg-emerald-500/20 / text-emerald-400" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} locationImages={[
-                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery%2Fgallery-detail-content.png', location: 'PUBLISHED badge', function: 'Green-tinted badge with emerald text for "PUBLISHED" status in StoryDetailModal' },
-              ]} />
-
-              {/* --- Soft Purple --- */}
-              <SwatchCardV2 color="rgba(168,85,247,0.2)" name="Soft Purple (Badge)" locations="EDITABLE badge bg + text (detail modal), Remix pencil icon (card + modal)" value="rgba(168,85,247,0.2) / #c084fc" token="bg-purple-500/20 / text-purple-400" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #999' }} locationImages={[
-                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery%2Fgallery-detail-content.png', location: 'EDITABLE badge', function: 'Purple-tinted badge with purple text for "EDITABLE" status in StoryDetailModal' },
-                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery%2Fgallery-card-badges.png', location: 'Remix pencil icon (card)', function: 'Purple pencil icon inside the remix badge on gallery story cards' },
-              ]} />
-
-              {/* Dim White & Faint White gallery cards removed — now Ghost White */}
-              <SwatchCardV2 color="rgba(248,250,252,0.3)" name="Ghost White" locations="Filter count badge bg, search tag chip bg, text search chip bg, search input border, sidebar border-right, modal border, detail modal content divider" value="rgba(248,250,252,0.3)" token="bg-ghost-white / border-ghost-white" pageSpecific={false} appWide={true} extraPreviewStyle={{ border: '1px dashed #ccc' }} locationImages={[
-                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery%2Fgallery-search-bar.png', location: 'Browse Categories filter count badge + search input border', function: 'Ghost White background for filter count pill and subtle border on search input' },
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery%2Fgallery-sidebar.png', location: 'Sidebar chevrons / X button / border-right', function: 'Faint white for sidebar UI elements and right border' },
+                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery%2Fgallery-search-bar.png', location: 'Filter count badge + search input border', function: 'Ghost White background for filter count pill and subtle border on search input' },
                 { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery%2Fgallery-filter-chips.png', location: 'Search tag/text filter chip bg', function: 'Background for active search text and hashtag chips in the filter bar' },
-                { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/community-gallery%2Fgallery-sidebar.png', location: 'Sidebar border-right + section borders', function: 'Subtle border on the right edge of sidebar and between header sections' },
               ]} />
 
               {/* --- Light Steel (synopsis) --- */}
