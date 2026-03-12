@@ -203,9 +203,9 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
   };
 
   return (
-    <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-ghost-white overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
+    <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-[#4a5f7f] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
       {/* Section Header */}
-      <div className="bg-[#4a5f7f] border-b border-ghost-white px-5 py-3 flex items-center justify-between shadow-lg">
+      <div className="bg-[#4a5f7f] border-b border-[#4a5f7f] px-5 py-3 flex items-center justify-between shadow-lg">
         <h2 className="text-white text-xl font-bold tracking-tight">Goals and Desires</h2>
         {onToggle && (
           <button onClick={onToggle} className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-ghost-white">
@@ -217,7 +217,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
       {/* Collapsed view */}
       {!isExpanded && (
         <div className="p-5">
-          <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-ghost-white">
+          <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl border border-[#4a5f7f]">
             <CollapsedGoalsView />
           </div>
         </div>
@@ -229,7 +229,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
           {sortedGoals.map((goal) => {
             const progress = calculateProgress(goal);
             return (
-              <div key={goal.id} className={cn("p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border relative", isEditMode ? "border-blue-500/20" : "border-ghost-white")}>
+              <div key={goal.id} className={cn("p-5 pb-6 bg-[#2e2e33] rounded-2xl border relative", isEditMode ? "border-blue-500/20" : "border-[#4a5f7f]")}>
                 {isEditMode && (
                   <button onClick={() => deleteGoal(goal.id)} className="absolute top-4 right-4 text-zinc-500 hover:text-rose-400 transition-colors" title="Delete goal">
                     <Trash2 className="h-5 w-5" />
@@ -242,7 +242,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
                     <div>
                       <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Goal Name</label>
                       {isEditMode ? (
-                        <AutoResizeTextarea value={goal.title} onChange={(v) => updateGoal(goal.id, { title: v })} placeholder="Enter goal name..." className="mt-1 px-3 py-2 text-sm bg-zinc-900/50 border border-ghost-white text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
+                        <AutoResizeTextarea value={goal.title} onChange={(v) => updateGoal(goal.id, { title: v })} placeholder="Enter goal name..." className="mt-1 px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
                       ) : (
                         <h3 className="text-lg font-bold text-white mt-0.5">{goal.title || 'No goal name set'}</h3>
                       )}
@@ -265,7 +265,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
                         )}
                       </div>
                       {isEditMode ? (
-                        <AutoResizeTextarea value={goal.desiredOutcome} onChange={(v) => updateGoal(goal.id, { desiredOutcome: v })} placeholder="What success looks like..." className="mt-1 px-3 py-2 text-sm bg-zinc-900/50 border border-ghost-white text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20" rows={2} />
+                        <AutoResizeTextarea value={goal.desiredOutcome} onChange={(v) => updateGoal(goal.id, { desiredOutcome: v })} placeholder="What success looks like..." className="mt-1 px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20" rows={2} />
                       ) : (
                         <p className="text-sm text-zinc-300 mt-0.5">{goal.desiredOutcome || 'No outcome defined'}</p>
                       )}
@@ -280,7 +280,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
                     )}
 
                     {/* Steps Section */}
-                    <div className="mt-4 pt-4 border-t border-ghost-white">
+                    <div className="mt-4 pt-4 border-t border-[#4a5f7f]">
                       <h4 className="text-[10px] font-bold text-white uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
                         <CheckSquare className="h-4 w-4 text-blue-500" />
                         Steps
@@ -302,7 +302,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
                                     value={step.description}
                                     onChange={(v) => updateStep(goal.id, step.id, { description: v })}
                                     placeholder={`Step ${stepIdx + 1}: Describe this step...`}
-                                    className={cn("flex-1 px-3 py-2 bg-zinc-900/50 border border-ghost-white text-white placeholder:text-zinc-600 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20", step.completed && "line-through text-zinc-500")}
+                                    className={cn("flex-1 px-3 py-2 bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20", step.completed && "line-through text-zinc-500")}
                                   />
                                   <SparkleButton
                                     fieldKey={`goal_step_${step.id}`}
