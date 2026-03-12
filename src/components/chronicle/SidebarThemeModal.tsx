@@ -51,9 +51,9 @@ export function SidebarThemeModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="w-[min(96vw,1280px)] max-w-none p-0 bg-zinc-900 border-white/10 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.5)] [&>button]:hidden">
+      <DialogContent className="w-[min(96vw,1280px)] max-w-none p-0 bg-zinc-900 border-ghost-white shadow-[0_12px_32px_-2px_rgba(0,0,0,0.5)] [&>button]:hidden">
         {/* Header */}
-        <div className="flex justify-between items-center px-6 pt-6 pb-4 border-b border-white/10">
+        <div className="flex justify-between items-center px-6 pt-6 pb-4 border-b border-ghost-white">
           <DialogTitle className="text-lg font-black text-white flex items-center gap-2 uppercase tracking-tight">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
@@ -71,7 +71,7 @@ export function SidebarThemeModal({
                 {isUploading ? "Uploading..." : "+ Upload Image"} <ChevronDown className="w-3 h-3" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44 bg-zinc-800 border-white/10 z-50">
+            <DropdownMenuContent align="end" className="w-44 bg-zinc-800 border-ghost-white z-50">
               <DropdownMenuItem onClick={() => fileInputRef.current?.click()} className="cursor-pointer text-zinc-200 hover:!bg-zinc-700 focus:!bg-zinc-700 focus:!text-white">
                 <Upload className="w-4 h-4 mr-2" /> From Device
               </DropdownMenuItem>
@@ -100,7 +100,7 @@ export function SidebarThemeModal({
               className={`group relative aspect-[1/3] rounded-xl border shadow-sm bg-zinc-800/50 transition-all cursor-pointer ${
                 selectedBackgroundId === null
                   ? 'ring-2 ring-blue-500 ring-inset border-blue-500/30' 
-                  : 'border-white/10 hover:border-white/20'
+                  : 'border-ghost-white hover:border-ghost-white'
               }`}
             >
               <div className="absolute inset-0 rounded-xl overflow-hidden bg-gradient-to-br from-zinc-800 via-zinc-800/80 to-zinc-800" />
@@ -125,7 +125,7 @@ export function SidebarThemeModal({
                 className={`group relative aspect-[1/3] rounded-xl border shadow-sm bg-zinc-800/50 cursor-pointer transition-all ${
                   selectedBackgroundId === bg.id
                     ? 'ring-2 ring-blue-500 ring-inset border-blue-500/30' 
-                    : 'border-white/10 hover:border-white/20'
+                    : 'border-ghost-white hover:border-ghost-white'
                 }`}
               >
                 <div className="absolute inset-0 rounded-xl overflow-hidden">

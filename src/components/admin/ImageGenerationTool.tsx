@@ -117,7 +117,7 @@ export const ImageGenerationTool: React.FC = () => {
           {drafts.map((draft) => (
             <div
               key={draft.id}
-              className="w-[320px] flex-shrink-0 rounded-2xl border border-white/10 bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] flex flex-col"
+              className="w-[320px] flex-shrink-0 rounded-2xl border border-ghost-white bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] flex flex-col"
             >
               {/* Thumbnail */}
               <div className="p-4 pb-0">
@@ -137,7 +137,7 @@ export const ImageGenerationTool: React.FC = () => {
                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
                     <button
                       onClick={() => handleThumbnailUpload(draft.id)}
-                      className="p-2.5 rounded-xl bg-white/20 hover:brightness-125 active:brightness-150 transition-all"
+                      className="p-2.5 rounded-xl bg-ghost-white hover:brightness-125 active:brightness-150 transition-all"
                       title="Upload"
                     >
                       <Upload className="w-4 h-4" />

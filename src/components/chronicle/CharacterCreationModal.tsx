@@ -23,7 +23,7 @@ export const CharacterCreationModal: React.FC<CharacterCreationModalProps> = ({ 
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-md bg-zinc-900 border-white/10 p-0 gap-0 [&>button]:hidden">
+      <DialogContent className="sm:max-w-md bg-zinc-900 border-ghost-white p-0 gap-0 [&>button]:hidden">
         <div className="px-6 pt-5 pb-3">
           <h3 className="text-white text-lg font-bold tracking-tight">Character Creation</h3>
           <p className="text-zinc-400 text-sm mt-1">Select an option below to continue.</p>
@@ -33,7 +33,7 @@ export const CharacterCreationModal: React.FC<CharacterCreationModalProps> = ({ 
             type="button"
             onClick={handleImport}
             className={cn(
-              "group flex flex-col items-center gap-3 p-5 rounded-2xl border border-white/10 bg-zinc-800/50",
+              "group flex flex-col items-center gap-3 p-5 rounded-2xl border border-ghost-white bg-zinc-800/50",
               "hover:border-blue-500/50 hover:bg-blue-500/10 transition-all cursor-pointer text-center"
             )}
           >
@@ -52,7 +52,7 @@ export const CharacterCreationModal: React.FC<CharacterCreationModalProps> = ({ 
             type="button"
             onClick={handleCreate}
             className={cn(
-              "group flex flex-col items-center gap-3 p-5 rounded-2xl border border-white/10 bg-zinc-800/50",
+              "group flex flex-col items-center gap-3 p-5 rounded-2xl border border-ghost-white bg-zinc-800/50",
               "hover:border-purple-500/50 hover:bg-purple-500/10 transition-all cursor-pointer text-center"
             )}
           >
