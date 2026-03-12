@@ -384,7 +384,7 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
           <LayoutGrid className="w-4 h-4" />
           <span>Browse Categories</span>
           {activeFilterCount > 0 && (
-            <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded-full text-xs">
+            <span className="ml-1 px-1.5 py-0.5 bg-ghost-white rounded-full text-xs">
               {activeFilterCount}
             </span>
           )}
