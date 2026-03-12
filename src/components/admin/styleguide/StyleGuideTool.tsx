@@ -3747,13 +3747,13 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <PanelCardV2
                 panelName="Panel Container"
                 background="#2a2a2f"
-                border="border-white/10"
+                border="border-ghost-white"
                 borderRadius="rounded-[24px]"
                 shadow="0 12px 32px -2px rgba(0,0,0,0.5)"
                 purpose="Primary dark container for builder sections (Characters, World, Arc)"
                 locations="CharactersTab.tsx, WorldTab.tsx"
                 pageSpecific appWide={false}
-                preview={<div className="w-full h-16 bg-[#2a2a2f] rounded-[24px] border border-white/10" style={{ boxShadow: '0 12px 32px -2px rgba(0,0,0,0.5)' }} />}
+                preview={<div className="w-full h-16 bg-[#2a2a2f] rounded-[24px] border border-ghost-white" style={{ boxShadow: '0 12px 32px -2px rgba(0,0,0,0.5)' }} />}
               />
 
               <PanelCardV2
