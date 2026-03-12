@@ -80,8 +80,6 @@ export const GalleryScenarioCard: React.FC<GalleryScenarioCardProps> = ({
           </div>
         )}
         
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-800 via-slate-900/60 to-transparent opacity-90 group-hover:opacity-95 transition-opacity" />
 
         {/* SFW/NSFW Badge */}
         {published.contentThemes?.storyType && (

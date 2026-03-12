@@ -154,7 +154,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
                 </div>
               )}
 
-              <div className="absolute inset-0 bg-gradient-to-t from-zinc-800 via-slate-900/60 to-transparent pointer-events-none" />
+              
 
               <div className="absolute inset-x-0 bottom-0 p-5">
                 <h3 className="text-white font-bold text-base truncate">{tool.title}</h3>

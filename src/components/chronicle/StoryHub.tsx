@@ -75,7 +75,7 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDel
           </div>
         )}
         
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-800 via-slate-900/60 to-transparent opacity-90 group-hover:opacity-95 transition-opacity" />
+        
         
         {/* Hover Actions - Edit, Delete, Play */}
         <div className="absolute inset-0 flex items-center justify-center gap-2 px-4 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 scale-90 group-hover:scale-100 flex-wrap">
