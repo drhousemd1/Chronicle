@@ -4037,7 +4037,7 @@ const updatedChar: SideCharacter = {
             </div>
             
             {/* Visual Divider */}
-            <div className="border-t border-white/10" />
+            <div className="border-t border-ghost-white" />
             
             {/* AI Behavior Section */}
             <div className="space-y-4">
