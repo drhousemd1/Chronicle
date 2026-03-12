@@ -229,7 +229,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
           {sortedGoals.map((goal) => {
             const progress = calculateProgress(goal);
             return (
-              <div key={goal.id} className={cn("p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border relative", isEditMode ? "border-blue-500/20" : "border-ghost-white")}>
+              <div key={goal.id} className={cn("p-5 pb-6 bg-[#2e2e33] rounded-2xl border relative", isEditMode ? "border-blue-500/20" : "border-[#4a5f7f]")}>
                 {isEditMode && (
                   <button onClick={() => deleteGoal(goal.id)} className="absolute top-4 right-4 text-zinc-500 hover:text-rose-400 transition-colors" title="Delete goal">
                     <Trash2 className="h-5 w-5" />
