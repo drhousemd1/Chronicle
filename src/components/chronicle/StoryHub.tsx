@@ -291,6 +291,7 @@ export function ScenarioHub({
             onDelete={onDelete}
             onViewDetails={handleViewDetails}
             isPublished={publishedScenarioIds?.has(scen.id)}
+            isDraft={scen.isDraft}
             contentThemes={contentThemesMap?.get(scen.id)}
             publishedData={publishedScenariosData?.get(scen.id)}
             displayAuthor={getDisplayAuthor(scen)}
