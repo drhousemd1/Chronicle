@@ -792,6 +792,17 @@ const ALL_SWATCHES: SwatchOption[] = [
   { color: '#f8fafc', name: 'Ice White' },
   { color: 'rgba(0,0,0,0.8)', name: 'Near Black Glass' },
   { color: 'rgba(96,165,250,0.1)', name: 'Faint Blue (Hover)' },
+  { color: '#f43f5e', name: 'Rose' },
+  { color: '#f59e0b', name: 'Amber' },
+  { color: 'rgba(34,197,94,0.2)', name: 'Faint Green' },
+  { color: 'rgba(245,158,11,0.2)', name: 'Faint Amber' },
+  { color: 'rgba(16,185,129,0.2)', name: 'Emerald (Badge)' },
+  { color: '#34d399', name: 'Emerald' },
+  { color: '#c084fc', name: 'Purple' },
+  { color: '#5a6f8f', name: 'Light Slate Blue' },
+  { color: '#2d6fdb', name: 'Dark Blue' },
+  { color: '#e2e8f0', name: 'Light Steel' },
+  { color: '#000000', name: 'Black' },
 ];
 
 export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownload, onRegisterEdits, onEditsCountChange }) => {
