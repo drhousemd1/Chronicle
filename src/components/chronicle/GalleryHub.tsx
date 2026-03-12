@@ -417,7 +417,7 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
               <div className="flex items-center gap-2 mb-4 flex-wrap">
                 <span className="text-sm text-white/70">Filtering by:</span>
                 {searchText && (
-                  <span className="px-2 py-1 bg-white/20 text-white rounded-full text-xs font-medium flex items-center gap-1">
+                  <span className="px-2 py-1 bg-ghost-white text-white rounded-full text-xs font-medium flex items-center gap-1">
                     "{searchText}"
                     <button
                       onClick={() => { setSearchText(''); setSearchQuery(searchTags.map(t => `#${t}`).join(' ')); }}
