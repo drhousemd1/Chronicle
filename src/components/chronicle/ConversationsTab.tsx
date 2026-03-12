@@ -54,7 +54,7 @@ export function ConversationsTab({
                     className="bg-[#2a2a2f] rounded-2xl border border-[#4a5f7f] overflow-hidden group"
                   >
                     <div className="p-4">
-                      <div className="bg-[#3a3a3f]/30 rounded-2xl border border-ghost-white p-4">
+                      <div className="bg-[#3a3a3f]/30 rounded-2xl border border-[#4a5f7f] p-4">
                         <div className="flex gap-4">
                           {/* Scenario thumbnail - clickable */}
                           <button
@@ -106,7 +106,7 @@ export function ConversationsTab({
                                         e.stopPropagation();
                                         onDelete(entry.scenarioId, entry.conversationId);
                                       }}
-                                      className="p-2 rounded-lg bg-ghost-white border border-ghost-white text-zinc-400 hover:bg-white/15 hover:text-red-500 hover:border-red-500/30 transition-colors"
+                                      className="p-2 rounded-lg bg-red-500 border border-red-500 text-white hover:bg-red-600 hover:border-red-600 transition-colors"
                                     >
                                       <Trash2 className="w-4 h-4" />
                                     </button>
@@ -121,7 +121,7 @@ export function ConversationsTab({
                               onClick={() => onResume(entry.scenarioId, entry.conversationId)}
                               className="w-full text-left mt-2"
                             >
-                              <div className="bg-zinc-900/50 border border-ghost-white rounded-lg px-3 py-1.5">
+                              <div className="bg-zinc-900/50 border border-[#4a5f7f] rounded-lg px-3 py-1.5">
                                 <p className="text-sm text-zinc-400 line-clamp-2 leading-relaxed">
                                   {entry.lastMessage || "No messages yet"}
                                 </p>
@@ -141,7 +141,7 @@ export function ConversationsTab({
               <div className="flex justify-center py-6">
                 <button
                   onClick={() => setVisibleCount(prev => prev + PAGE_SIZE)}
-                  className="px-6 py-2 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-ghost-white active:bg-ghost-white transition-all active:scale-95 text-sm font-bold"
+                  className="px-6 py-2 rounded-xl border border-[#4a5f7f] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-ghost-white active:bg-ghost-white transition-all active:scale-95 text-sm font-bold"
                 >
                   Load More ({sortedRegistry.length - visibleCount} remaining)
                 </button>
