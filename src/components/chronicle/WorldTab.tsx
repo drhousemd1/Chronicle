@@ -587,7 +587,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                       
                       <div data-publish-error={!!publishErrors.storyTitle || undefined}>
                         <FieldLabel label="Story Name" fieldName="scenarioName" />
-                         <AutoResizeTextarea value={world.core.scenarioName} onChange={(v) => updateCore({ scenarioName: v })} placeholder="e.g. Chronicles of Eldoria" className={`px-3 py-2 text-sm bg-zinc-900/50 border text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${(storyNameError && !world.core.scenarioName?.trim()) || publishErrors.storyTitle ? 'border-red-500 ring-2 ring-red-500' : 'border-zinc-700'}`} />
+                         <AutoResizeTextarea value={world.core.scenarioName} onChange={(v) => updateCore({ scenarioName: v })} placeholder="e.g. Chronicles of Eldoria" className={`px-3 py-2 text-sm bg-zinc-900/50 border text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${(storyNameError && !world.core.scenarioName?.trim()) || publishErrors.storyTitle ? 'border-red-500 ring-2 ring-red-500' : 'border-[#4a5f7f]'}`} />
                         {((storyNameError && !world.core.scenarioName?.trim()) || publishErrors.storyTitle) && (
                           <p className="text-sm text-red-500 mt-1">{publishErrors.storyTitle || 'Story name is required'}</p>
                         )}
