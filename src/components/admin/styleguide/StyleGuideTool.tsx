@@ -1376,10 +1376,11 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 ]}
               />
               {/* Whisper White migrated → Ghost White (AI bubble border now uses border-ghost-white) */}
-              <SwatchCardV2 color="rgba(248,250,252,0.3)" name="Ghost White" locations="Avatar border, Scene image overlay border, Empty state circle bg/border, Settings modal border/dividers" value="rgba(248,250,252,0.3)" token="border-ghost-white / bg-ghost-white" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #ccc' }}
+              <SwatchCardV2 color="rgba(248,250,252,0.3)" name="Ghost White" locations="Avatar border, Scene image overlay border, Empty state circle bg/border, Settings modal border/dividers, AI message bubble border (default state), Character card bg (dark sidebar), Overflow indicator bg" value="rgba(248,250,252,0.3)" token="border-ghost-white / bg-ghost-white" pageSpecific={true} appWide={false} extraPreviewStyle={{ border: '1px dashed #ccc' }}
                 locationImages={[
-                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-message-bubble.png', location: 'Avatar border', function: 'Subtle border ring around speaker avatars' },
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-message-bubble.png', location: 'Avatar border & AI bubble border', function: 'Subtle border ring around speaker avatars and AI message bubbles' },
                   { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-settings-modal.png', location: 'Settings modal border', function: 'Border and dividers inside Chat Settings modal' },
+                  { url: 'https://gialzvvswxadxolnwots.supabase.co/storage/v1/object/public/guide_images/chat-interface%2Fchat-sidebar-chars.png', location: 'Card bg (dark sidebar)', function: 'Ghost white character card on dark sidebar background' },
                 ]}
               />
 
