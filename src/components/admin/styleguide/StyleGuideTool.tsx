@@ -2652,7 +2652,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               buttonColor="Active: bg-[#4a5f7f] shadow-lg shadow-black/40 text-white. Inactive: text-slate-400"
               size="rounded-xl px-4 py-3 — font-bold text-sm. Collapsed: px-3 py-3 centered"
               purpose="Primary navigation between app sections"
-              visualEffects="Inactive hover: bg-white/10 text-white shadow-md shadow-black/20"
+              visualEffects="Inactive hover: bg-ghost-white text-white shadow-md shadow-black/20"
               locations="Index.tsx — main sidebar navigation"
               appWide
               preview={
