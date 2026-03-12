@@ -235,7 +235,7 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
                             updateField('customWorldSections', updated);
                           }}
                           placeholder="Label..."
-                          className="w-2/5 bg-zinc-900/50 border-ghost-white text-zinc-400 uppercase tracking-widest placeholder:text-zinc-500 placeholder:normal-case placeholder:tracking-normal text-sm"
+                          className="w-2/5 bg-zinc-900/50 border-[#4a5f7f] text-zinc-400 uppercase tracking-widest placeholder:text-zinc-500 placeholder:normal-case placeholder:tracking-normal text-sm"
                         />
                         <AutoResizeTextarea
                           value={item.value}
