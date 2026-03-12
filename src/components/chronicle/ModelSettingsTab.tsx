@@ -90,7 +90,7 @@ export function ModelSettingsTab({ selectedModelId, onSelectModel }: ModelSettin
                     selectedModelId === model.id 
                       ? 'bg-slate-900 border-slate-900 shadow-xl scale-[1.02]' 
                       : model.disabled 
-                        ? 'bg-slate-50 border-slate-100 opacity-50 cursor-not-allowed'
+                        ? 'bg-ghost-white border-slate-100 opacity-50 cursor-not-allowed'
                         : 'bg-white border-slate-200 hover:border-blue-500 hover:shadow-lg hover:scale-[1.01]'
                   }`}
                 >
