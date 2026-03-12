@@ -1,11 +1,19 @@
 
 
-## Plan: Persist Style Guide Edits to Supabase — Complete ✅
+# Fix Hover Button Wrapping on Story Cards
 
-### What was done:
+## Problem
+The Edit/Delete/Play buttons use `flex-wrap` which causes them to stack when the card is narrow (at 100% zoom). They need to always stay in one row.
 
-1. **Seeded `app_settings` rows** — `styleguide_edits` and `styleguide_keeps` rows inserted into the database
-2. **Rewrote all storage helpers** in `StyleGuideEditsModal.tsx` from sync localStorage to async Supabase operations (`getEditsRegistry`, `upsertEdit`, `removeEdit`, `getKeeps`, `addKeep`, `removeKeep`, `getEditsCount`)
-3. **Updated all consumers** in `StyleGuideTool.tsx` — `refreshEditsState`, `handleKeep`, `handleEditOpen`, `handleSaveEdit`, `handleRemoveKeep` are all async now
-4. **Updated `Index.tsx`** — `getEditsCount()` call now uses `.then()` since it's async
-5. **Every edit, keep, and delete auto-saves to Supabase immediately** — no data loss on domain changes
+## Solution
+In `src/components/chronicle/StoryHub.tsx` (~line 82), two changes:
+
+1. **Remove `flex-wrap`** — prevents buttons from wrapping to a new line
+2. **Reduce horizontal padding** from `px-4` to `px-3` on the buttons themselves (lines 85, 91, 97) to give them more room to fit side by side
+
+This keeps the buttons compact enough to always fit in a single row regardless of card width.
+
+### File: `src/components/chronicle/StoryHub.tsx`
+- Line 82: Remove `flex-wrap` from the container div
+- Lines 85, 91, ~97: Change `px-4` → `px-3` on all three buttons
+
