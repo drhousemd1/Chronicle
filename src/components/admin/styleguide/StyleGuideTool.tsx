@@ -4219,7 +4219,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
               <PanelCardV2
                 panelName="Review Card"
-                background="bg-white/5"
+                background="bg-ghost-white"
                 border="N/A"
                 borderRadius="rounded-xl"
                 purpose="User review display with StarRating, SpiceRating, comment"
