@@ -3846,7 +3846,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 notes="backdrop-blur-sm. Avatar: w-20 h-20 rounded-full — only circular avatar in app."
                 preview={
                   <div style={{ display: 'flex', gap: 8, width: '100%' }}>
-                    <div className="flex-1 rounded-2xl p-2 text-center backdrop-blur-sm" style={{ background: 'rgba(255,255,255,0.3)', minHeight: 48 }}>
+                    <div className="flex-1 rounded-2xl p-2 text-center backdrop-blur-sm bg-ghost-white" style={{ minHeight: 48 }}>
                       <div className="text-[9px] font-bold text-slate-800">Light card</div>
                       <div className="text-[8px] text-slate-600">Dark bg</div>
                     </div>
