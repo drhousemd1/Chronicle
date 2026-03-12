@@ -1336,8 +1336,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
 
           {/* Share Section */}
           <section>
-            <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-ghost-white overflow-hidden shadow-lg">
-              <div className="bg-[#4a5f7f] border-b border-ghost-white px-6 py-4 flex items-center gap-3 shadow-lg">
+            <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-[#4a5f7f] overflow-hidden shadow-lg">
+              <div className="bg-[#4a5f7f] border-b border-[#4a5f7f] px-6 py-4 flex items-center gap-3 shadow-lg">
                 <Share2 className="w-5 h-5 text-white" />
                 <h2 className="text-white text-xl font-bold tracking-tight">Share Your Story</h2>
               </div>
