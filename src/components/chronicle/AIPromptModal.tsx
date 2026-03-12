@@ -81,7 +81,7 @@ export function AIPromptModal({
               id="useExistingDetails"
               checked={useExistingDetails}
               onCheckedChange={(checked) => setUseExistingDetails(checked === true)}
-              className="mt-0.5 border-white/20 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
+              className="mt-0.5 border-ghost-white data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
             />
             <div className="space-y-1">
               <label
