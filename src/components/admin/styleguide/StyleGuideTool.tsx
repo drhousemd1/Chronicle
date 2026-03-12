@@ -4089,7 +4089,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               <PanelCardV2
                 panelName="Subscription Tier Cards"
                 background="Free: bg-white/5 · Pro: bg-[#4a5f7f]/10 · Premium: bg-amber-500/10"
-                border="Free: border-white/10 · Pro: border-[#4a5f7f]/30 · Premium: border-amber-500/20"
+                border="Free: border-ghost-white · Pro: border-[#4a5f7f]/30 · Premium: border-amber-500/20"
                 borderRadius="rounded-2xl"
                 purpose="Pricing tier comparison cards with badges (Current Plan, Coming Soon)"
                 locations="SubscriptionTab.tsx"
@@ -4097,7 +4097,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 notes="Current badge: bg-emerald-500/20 text-emerald-400. Soon badge: bg-[#4a5f7f] text-white."
                 preview={
                   <div style={{ display: 'flex', gap: 6, width: '100%' }}>
-                    <div className="flex-1 rounded-lg border border-white/10 p-2" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                    <div className="flex-1 rounded-lg border border-ghost-white p-2" style={{ background: 'rgba(255,255,255,0.05)' }}>
                       <div className="text-slate-400 text-[7px] font-bold">Free</div>
                       <div className="text-white text-[10px] font-black">$0</div>
                     </div>
