@@ -102,7 +102,7 @@ const CategorySection: React.FC<CategorySectionProps> = ({
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-      <CollapsibleTrigger className="flex items-center justify-between w-full py-3 px-4 hover:bg-white/5 transition-colors">
+      <CollapsibleTrigger className="flex items-center justify-between w-full py-3 px-4 hover:bg-ghost-white transition-colors">
         <span className="text-sm font-semibold text-white">{title}</span>
         {isOpen ? (
           <ChevronDown className="w-4 h-4 text-[rgba(248,250,252,0.3)]" />
@@ -125,7 +125,7 @@ const CategorySection: React.FC<CategorySectionProps> = ({
                   "flex items-center gap-2 w-full px-3 py-2 rounded-lg text-left text-sm transition-colors",
                   isSelected 
                     ? "bg-blue-500/20 text-blue-500" 
-                    : "text-white/70 hover:bg-white/5 hover:text-white"
+                    : "text-white/70 hover:bg-ghost-white hover:text-white"
                 )}
               >
                 <Icon className={cn("w-4 h-4 flex-shrink-0", isSelected ? "text-blue-500" : iconColor)} />

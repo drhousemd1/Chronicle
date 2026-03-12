@@ -1621,7 +1621,7 @@ const IndexContent = () => {
                       type="button"
                       onClick={() => setUserMenuOpen(prev => !prev)}
                       className={cn(
-                        "flex items-center gap-3 w-full rounded-xl px-2 py-2 hover:bg-white/5 active:bg-ghost-white transition-all text-left",
+                        "flex items-center gap-3 w-full rounded-xl px-2 py-2 hover:bg-ghost-white active:bg-ghost-white transition-all text-left",
                         sidebarCollapsed && "justify-center px-0"
                       )}
                     >
@@ -1649,7 +1649,7 @@ const IndexContent = () => {
                           type="button"
                           onClick={() => { setAccountActiveTab('profile'); setTab("account"); setUserMenuOpen(false); }}
                           className={cn(
-                            "flex items-center gap-2 w-full rounded-lg px-2 py-1.5 hover:bg-white/5 transition-colors text-white/70 hover:text-white text-sm font-bold",
+                            "flex items-center gap-2 w-full rounded-lg px-2 py-1.5 hover:bg-ghost-white transition-colors text-white/70 hover:text-white text-sm font-bold",
                             sidebarCollapsed && "justify-center px-0"
                           )}
                         >
@@ -1660,7 +1660,7 @@ const IndexContent = () => {
                           type="button"
                           onClick={() => { setAccountActiveTab('settings'); setTab("account"); setUserMenuOpen(false); }}
                           className={cn(
-                            "flex items-center gap-2 w-full rounded-lg px-2 py-1.5 hover:bg-white/5 transition-colors text-white/70 hover:text-white text-sm font-bold",
+                            "flex items-center gap-2 w-full rounded-lg px-2 py-1.5 hover:bg-ghost-white transition-colors text-white/70 hover:text-white text-sm font-bold",
                             sidebarCollapsed && "justify-center px-0"
                           )}
                         >
@@ -1671,7 +1671,7 @@ const IndexContent = () => {
                           type="button"
                           onClick={() => { handleSignOut(); setUserMenuOpen(false); }}
                           className={cn(
-                            "flex items-center gap-2 w-full rounded-lg px-2 py-1.5 hover:bg-white/5 transition-colors text-red-500 text-sm font-bold",
+                            "flex items-center gap-2 w-full rounded-lg px-2 py-1.5 hover:bg-ghost-white transition-colors text-red-500 text-sm font-bold",
                             sidebarCollapsed && "justify-center px-0"
                           )}
                         >
@@ -1687,7 +1687,7 @@ const IndexContent = () => {
                   type="button"
                   onClick={() => setAuthModalOpen(true)}
                   className={cn(
-                    "flex items-center gap-3 w-full rounded-xl px-2 py-2 hover:bg-white/5 active:bg-ghost-white transition-all text-[#4a5f7f]",
+                    "flex items-center gap-3 w-full rounded-xl px-2 py-2 hover:bg-ghost-white active:bg-ghost-white transition-all text-[#4a5f7f]",
                     sidebarCollapsed && "justify-center px-0"
                   )}
                 >
@@ -1985,7 +1985,7 @@ const IndexContent = () => {
                 <button
                   type="button"
                   onClick={() => setConvDeleteAllOpen(true)}
-                  className="inline-flex items-center justify-center rounded-xl h-10 px-6 border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-ghost-white transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
+                  className="inline-flex items-center justify-center rounded-xl h-10 px-6 border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-ghost-white active:bg-ghost-white transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
                 >
                   Delete All
                 </button>
@@ -1996,7 +1996,7 @@ const IndexContent = () => {
                     <DropdownMenuTrigger asChild>
                       <button
                         type="button"
-                        className="inline-flex items-center justify-center rounded-xl px-3 py-2 border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-ghost-white transition-all active:scale-95"
+                        className="inline-flex items-center justify-center rounded-xl px-3 py-2 border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-ghost-white active:bg-ghost-white transition-all active:scale-95"
                       >
                         <Settings className="w-5 h-5" />
                       </button>
@@ -2076,7 +2076,7 @@ const IndexContent = () => {
                     <DropdownMenuTrigger asChild>
                       <button
                         type="button"
-                        className="inline-flex items-center justify-center rounded-xl px-3 py-2 border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-ghost-white transition-all active:scale-95"
+                        className="inline-flex items-center justify-center rounded-xl px-3 py-2 border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-ghost-white active:bg-ghost-white transition-all active:scale-95"
                       >
                         <Settings className="w-5 h-5" />
                       </button>
@@ -2172,7 +2172,7 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
                           rounded-xl border border-[hsl(var(--ui-border))] 
                           bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
                           text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider
-                          hover:bg-white/5 active:bg-ghost-white
+                          hover:bg-ghost-white active:bg-ghost-white
                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ghost-white
                           transition-colors"
                       >
@@ -2208,21 +2208,21 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
                       <button
                         type="button"
                         onClick={() => setTab("world")}
-                        className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-ghost-white transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
+                        className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-ghost-white active:bg-ghost-white transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
                       >
                         Cancel
                       </button>
                       <button
                         type="button"
                         onClick={() => setIsCharacterPickerOpen(true)}
-                        className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-ghost-white transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
+                        className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-ghost-white active:bg-ghost-white transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
                       >
                         Import from Library
                       </button>
                       <button
                         type="button"
                         onClick={handleCreateCharacter}
-                        className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-white/5 active:bg-ghost-white transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
+                        className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-ghost-white active:bg-ghost-white transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
                       >
                         + New Character
                       </button>

@@ -12,7 +12,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     const base = "inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold transition-all border active:scale-95 cursor-pointer duration-200";
     const styles: Record<ButtonVariant, string> = {
       primary: "bg-slate-900 text-white border-slate-900 hover:bg-slate-800 shadow-md hover:shadow-lg",
-      secondary: "bg-white text-[hsl(var(--ui-surface-2))] border-slate-200 hover:bg-slate-50 shadow-sm",
+      secondary: "bg-white text-[hsl(var(--ui-surface-2))] border-slate-200 hover:bg-ghost-white shadow-sm",
       danger: "bg-rose-600 text-white border-rose-600 hover:bg-rose-500 shadow-md",
       ghost: "bg-transparent text-slate-500 border-transparent hover:bg-slate-100 hover:text-[hsl(var(--ui-surface-2))]",
       brand: "bg-[#4a5f7f] text-white border-[#4a5f7f] hover:bg-[#5a6f8f] shadow-md hover:shadow-lg",

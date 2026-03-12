@@ -46,7 +46,7 @@ export const AccountSettingsTab: React.FC<AccountSettingsTabProps> = ({ user }) 
           <Mail className="w-5 h-5 text-[#4a5f7f]" />
           <h3 className="text-lg font-bold text-white">Email Address</h3>
         </div>
-        <p className="text-white/70 text-sm bg-[#2a2a2f] rounded-xl px-4 py-3 border border-white/5">
+        <p className="text-white/70 text-sm bg-[#2a2a2f] rounded-xl px-4 py-3 border border-ghost-white">
           {user?.email || 'No email found'}
         </p>
       </div>

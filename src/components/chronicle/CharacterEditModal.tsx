@@ -237,7 +237,7 @@ const CollapsibleSection: React.FC<{
     </div>
     {/* Content - always rendered, shows either expanded or collapsed view */}
     <div className="p-5">
-      <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
+      <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-ghost-white">
         {isExpanded ? (
           <div className="space-y-4">
             {children}
@@ -1299,7 +1299,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                             rounded-xl border border-[hsl(var(--ui-border))] 
                             bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
                             text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider
-                            hover:bg-white/5 active:bg-ghost-white
+                            hover:bg-ghost-white active:bg-ghost-white
                             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ghost-white
                             transition-colors"
                         >
@@ -1757,7 +1757,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     </div>
                     {/* Content */}
                     <div className="p-5">
-                      <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
+                      <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-ghost-white">
                         {(expandedCustomSections[section.id] ?? true) ? (
                           <div className="space-y-4">
                             {section.type === 'freeform' ? (
@@ -1856,7 +1856,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                       rounded-xl border border-[hsl(var(--ui-border))] 
                       bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
                       text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider
-                      hover:bg-white/5 active:bg-ghost-white disabled:opacity-50
+                      hover:bg-ghost-white active:bg-ghost-white disabled:opacity-50
                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ghost-white
                       transition-colors"
                   >
@@ -1892,7 +1892,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
               rounded-xl border border-[hsl(var(--ui-border))] 
               bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
               text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider
-              hover:bg-white/5 active:bg-ghost-white disabled:opacity-50
+              hover:bg-ghost-white active:bg-ghost-white disabled:opacity-50
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ghost-white
               transition-colors"
           >

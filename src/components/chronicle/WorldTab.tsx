@@ -55,7 +55,7 @@ interface WorldTabProps {
 }
 
 const HintBox: React.FC<{ hints: string[] }> = ({ hints }) => (
-  <div className="bg-zinc-900 rounded-xl p-4 space-y-2 border border-white/5">
+  <div className="bg-zinc-900 rounded-xl p-4 space-y-2 border border-ghost-white">
     {hints.map((hint, index) => (
       <p key={index} className="text-sm text-zinc-400 leading-relaxed flex items-start gap-2">
         <span className="text-zinc-500 mt-0.5">◆</span>
@@ -261,7 +261,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
               ? "text-cyan-400 animate-pulse cursor-wait" 
               : enhancingField !== null
               ? "text-zinc-600 cursor-not-allowed"
-              : "text-zinc-400 hover:text-cyan-400 hover:bg-white/5"
+              : "text-zinc-400 hover:text-cyan-400 hover:bg-ghost-white"
           )}
         >
           <Sparkles size={14} />
@@ -497,7 +497,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
         </div>
       </aside>
 
-      <div className="flex-1 overflow-y-auto scrollbar-thin bg-slate-50/30">
+      <div className="flex-1 overflow-y-auto scrollbar-thin bg-ghost-white">
         <div className="p-4 lg:p-10 max-w-4xl mx-auto space-y-12 pb-20">
           <div className="mb-2">
             <h1 className="text-2xl lg:text-4xl font-black text-[hsl(var(--ui-surface-2))] tracking-tight">Story Setup</h1>
@@ -515,7 +515,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
               
               {/* Content */}
               <div className="p-6">
-                <div className="p-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
+                <div className="p-6 bg-[#3a3a3f]/30 rounded-2xl border border-ghost-white">
                       <div className="flex flex-col md:flex-row gap-8">
                     {/* Preview Container - Portrait aspect ratio for story cards */}
                     <div data-publish-error={!!publishErrors.coverImage || undefined}>
@@ -639,7 +639,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                 <h2 className="text-white text-xl font-bold tracking-tight">World Core</h2>
               </div>
               <div className="p-6">
-                <div className="p-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
+                <div className="p-6 bg-[#3a3a3f]/30 rounded-2xl border border-ghost-white">
                   <div className="grid grid-cols-1 gap-8">
                     <div data-publish-error={!!publishErrors.storyPremise || undefined}>
                       <FieldLabel label="Story Premise" fieldName="storyPremise" />
@@ -889,7 +889,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                 <h2 className="text-white text-xl font-bold tracking-tight">Opening Dialog</h2>
               </div>
               <div className="p-6">
-                <div className="p-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
+                <div className="p-6 bg-[#3a3a3f]/30 rounded-2xl border border-ghost-white">
                   <div className="space-y-6">
                     <div data-publish-error={!!publishErrors.openingDialog || undefined}>
                       <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1 flex items-center gap-1.5">
@@ -1261,7 +1261,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                 <h2 className="text-white text-xl font-bold tracking-tight">World Codex</h2>
               </div>
               <div className="p-6">
-                <div className="p-6 bg-[#3a3a3f]/30 rounded-2xl border border-white/5">
+                <div className="p-6 bg-[#3a3a3f]/30 rounded-2xl border border-ghost-white">
                   <div className="space-y-8">
                     
                     <div>
@@ -1368,7 +1368,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                     rounded-xl border border-[hsl(var(--ui-border))] 
                     bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
                     text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none
-                    hover:bg-white/5 active:bg-ghost-white
+                    hover:bg-ghost-white active:bg-ghost-white
                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40
                     transition-colors"
                 >

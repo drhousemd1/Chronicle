@@ -301,7 +301,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                     {onEdit && (
                       <button
                         onClick={handleEdit}
-                        className="flex-1 h-12 bg-white/5 hover:bg-ghost-white border border-ghost-white rounded-xl flex items-center justify-center gap-2 text-white transition-colors"
+                        className="flex-1 h-12 bg-ghost-white hover:bg-ghost-white border border-ghost-white rounded-xl flex items-center justify-center gap-2 text-white transition-colors"
                       >
                         <Edit className="w-5 h-5" />
                         <span className="text-sm font-semibold">Edit</span>
@@ -325,7 +325,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                           "flex-1 h-12 border rounded-xl flex items-center justify-center gap-2 transition-all",
                           isLiked 
                             ? "bg-rose-500/20 border-rose-500/50 text-rose-400" 
-                            : "bg-white/5 hover:bg-ghost-white border-ghost-white text-white"
+                            : "bg-ghost-white hover:bg-ghost-white border-ghost-white text-white"
                         )}
                       >
                         <Heart className={cn("w-5 h-5", isLiked && "fill-current")} />
@@ -340,7 +340,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                           "flex-1 h-12 border rounded-xl flex items-center justify-center gap-2 transition-all",
                           isSaved 
                             ? "bg-amber-500/20 border-amber-500/50 text-amber-400" 
-                            : "bg-white/5 hover:bg-ghost-white border-ghost-white text-white"
+                            : "bg-ghost-white hover:bg-ghost-white border-ghost-white text-white"
                         )}
                       >
                         <Bookmark className={cn("w-5 h-5", isSaved && "fill-current")} />
@@ -363,7 +363,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                 <button
                   onClick={handleUnpublish}
                   disabled={isUnpublishing}
-                  className="w-full h-10 bg-white/5 hover:bg-ghost-white border border-ghost-white text-[rgba(248,250,252,0.3)] hover:text-white rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50 mt-2"
+                  className="w-full h-10 bg-ghost-white hover:bg-ghost-white border border-ghost-white text-[rgba(248,250,252,0.3)] hover:text-white rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50 mt-2"
                 >
                   {isUnpublishing ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -377,7 +377,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
             </div>
 
             {/* Right Column - Content */}
-            <ScrollArea className="flex-1 md:border-l border-white/5">
+            <ScrollArea className="flex-1 md:border-l border-ghost-white">
               <div className="p-6 md:p-8 md:pr-12 flex flex-col min-h-full">
                 {/* Header: Title + Stats */}
                 <div className="flex flex-col gap-1 pr-8">
@@ -607,7 +607,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                     ) : (
                       <div className="space-y-4">
                         {reviews.map((review) => (
-                          <div key={review.id} className="p-3 rounded-xl bg-white/5 border border-white/5">
+                          <div key={review.id} className="p-3 rounded-xl bg-ghost-white border border-ghost-white">
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center gap-2">
                                 <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 overflow-hidden flex-shrink-0">

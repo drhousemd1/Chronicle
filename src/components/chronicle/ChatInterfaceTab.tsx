@@ -3174,7 +3174,7 @@ const updatedChar: SideCharacter = {
     return (
       <div
         key={char.id}
-        className={`min-h-[140px] rounded-2xl transition-all duration-300 border-2 backdrop-blur-sm relative ${!sidebarBgIsLight ? 'bg-white/30 border-transparent hover:bg-white' : 'bg-black/30 border-transparent hover:bg-black/50'} ${isUpdating ? 'ring-2 ring-blue-500/60' : ''}`}
+        className={`min-h-[140px] rounded-2xl transition-all duration-300 border-2 backdrop-blur-sm relative ${!sidebarBgIsLight ? 'bg-ghost-white border-transparent hover:bg-ghost-white' : 'bg-black/30 border-transparent hover:bg-black/50'} ${isUpdating ? 'ring-2 ring-blue-500/60' : ''}`}
       >
         {/* Blue vignette overlay - scoped to this card */}
         {isUpdating && (
@@ -3202,7 +3202,7 @@ const updatedChar: SideCharacter = {
         <div className="relative">
           <div className="w-full flex flex-col items-center gap-2 p-3 text-center">
             <div className="relative">
-              <div className={`w-20 h-20 rounded-full border-2 shadow-sm overflow-hidden transition-all duration-300 ${!sidebarBgIsLight ? 'bg-slate-50 border-slate-100' : 'bg-zinc-800 border-ghost-white'}`}>
+              <div className={`w-20 h-20 rounded-full border-2 shadow-sm overflow-hidden transition-all duration-300 ${!sidebarBgIsLight ? 'bg-ghost-white border-slate-100' : 'bg-zinc-800 border-ghost-white'}`}>
                 {char.avatarDataUrl ? (
                   <img src={char.avatarDataUrl} alt={char.name} className="w-full h-full object-cover" />
                 ) : (
@@ -3461,7 +3461,7 @@ const updatedChar: SideCharacter = {
               </div>
               {/* Full-width card-like overflow indicator */}
               {mainCharactersForDisplay.length > 3 && canScrollDownMainChars && (
-                 <div className={`mt-0 w-full rounded-2xl backdrop-blur-sm border border-ghost-white flex items-center justify-center py-1.5 ${!sidebarBgIsLight ? 'bg-white/30' : 'bg-black/30'}`}>
+                 <div className={`mt-0 w-full rounded-2xl backdrop-blur-sm border border-ghost-white flex items-center justify-center py-1.5 ${!sidebarBgIsLight ? 'bg-ghost-white' : 'bg-black/30'}`}>
                    <ChevronDown className={`w-4 h-4 ${!sidebarBgIsLight ? 'text-black/80' : 'text-white/80'}`} />
                    <span className={`text-xs font-medium ml-1 ${!sidebarBgIsLight ? 'text-black/80' : 'text-white/80'}`}>
                      {mainCharactersForDisplay.length - 3}
@@ -3552,7 +3552,7 @@ const updatedChar: SideCharacter = {
                   bubblesTransparent
                     ? 'bg-black/50'
                     : 'bg-[#1c1f26]'
-                } ${!isAi ? 'border-2 border-blue-500' : 'border border-white/5 hover:border-ghost-white'}`}>
+                } ${!isAi ? 'border-2 border-blue-500' : 'border border-ghost-white hover:border-ghost-white'}`}>
                   
                   {/* Action buttons - top right corner */}
                   <div className={`absolute top-4 right-4 flex items-center gap-1 transition-opacity ${
@@ -3646,7 +3646,7 @@ const updatedChar: SideCharacter = {
                           <button
                             onClick={handleGenerateSceneImage}
                             disabled={isGeneratingImage}
-                            className="p-3 bg-ghost-white rounded-lg hover:bg-white/30 transition-colors"
+                            className="p-3 bg-ghost-white rounded-lg hover:bg-ghost-white transition-colors"
                             title="Generate new image"
                           >
                             <RefreshCw className={`w-5 h-5 text-white ${isGeneratingImage ? 'animate-spin' : ''}`} />
@@ -3713,7 +3713,7 @@ const updatedChar: SideCharacter = {
                       const showAvatar = segIndex === 0 || prevSpeakerName !== segmentName;
                     
                     return (
-                      <div key={segIndex} className={`relative ${segIndex > 0 && showAvatar ? 'mt-2.5 pt-2.5 border-t border-white/5' : ''}`}>
+                      <div key={segIndex} className={`relative ${segIndex > 0 && showAvatar ? 'mt-2.5 pt-2.5 border-t border-ghost-white' : ''}`}>
                         {showAvatar && (
                           <div className="float-left mr-4 mb-2 flex flex-col items-center gap-1.5 w-16">
                             <div className={`w-12 h-12 rounded-full border-2 border-ghost-white shadow-lg overflow-hidden flex items-center justify-center ${segmentAvatar ? '' : 'bg-slate-800'}`}>
@@ -3801,8 +3801,8 @@ const updatedChar: SideCharacter = {
               <div className={`w-full ${offsetBubbles ? 'max-w-3xl mr-auto' : 'max-w-4xl mx-auto'}`}>
                 <div className={`p-8 pt-14 pb-12 rounded-[2rem] border shadow-2xl flex flex-col gap-4 ${
                     bubblesTransparent
-                      ? 'bg-black/50 border-white/5'
-                      : 'bg-[#1c1f26] border-white/5'
+                      ? 'bg-black/50 border-ghost-white'
+                      : 'bg-[#1c1f26] border-ghost-white'
                 }`}>
                   {segments.map((segment, segIndex) => {
                     // Look up character for this segment using session-aware lookup
@@ -3831,7 +3831,7 @@ const updatedChar: SideCharacter = {
                     const showAvatar = segIndex === 0 || prevSpeakerName !== segmentName;
                     
                     return (
-                      <div key={segIndex} className={`relative ${segIndex > 0 && showAvatar ? 'mt-2.5 pt-2.5 border-t border-white/5' : ''}`}>
+                      <div key={segIndex} className={`relative ${segIndex > 0 && showAvatar ? 'mt-2.5 pt-2.5 border-t border-ghost-white' : ''}`}>
                         {showAvatar && (
                           <div className="float-left mr-4 mb-2 flex flex-col items-center gap-1.5 w-16">
                             <div className={`w-12 h-12 rounded-full border-2 border-ghost-white shadow-lg overflow-hidden flex items-center justify-center ${segmentAvatar ? '' : 'bg-slate-800 animate-pulse'}`}>

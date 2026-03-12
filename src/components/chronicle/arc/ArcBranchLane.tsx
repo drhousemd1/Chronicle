@@ -160,7 +160,7 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
                       "w-[26px] h-[26px] rounded-[8px] flex items-center justify-center cursor-pointer transition-all",
                       step.status === 'failed'
                         ? "border border-red-500/60 bg-red-500/20 text-red-300"
-                        : "border border-ghost-white bg-white/5 text-white/40"
+                        : "border border-ghost-white bg-ghost-white text-white/40"
                     )}
                   >
                     <X size={13} />
@@ -180,7 +180,7 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
                       "w-[26px] h-[26px] rounded-[8px] flex items-center justify-center cursor-pointer transition-all",
                       step.status === 'deviated'
                         ? "border border-orange-500/60 bg-orange-500/20 text-orange-300"
-                        : "border border-ghost-white bg-white/5 text-white/40"
+                        : "border border-ghost-white bg-ghost-white text-white/40"
                     )}
                   >
                     <ArrowUpRight size={13} />
@@ -201,7 +201,7 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
                     "w-[26px] h-[26px] rounded-[8px] flex items-center justify-center cursor-pointer transition-all",
                     step.status === 'succeeded'
                       ? "border border-emerald-500/60 bg-emerald-500/20 text-emerald-200"
-                      : "border border-ghost-white bg-white/5 text-white/40"
+                      : "border border-ghost-white bg-ghost-white text-white/40"
                   )}
                 >
                   <Check size={13} />
