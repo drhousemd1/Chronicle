@@ -231,12 +231,12 @@ const IndexContent = () => {
     return () => mql.removeEventListener('change', onChange as (e: MediaQueryListEvent) => void);
   }, []);
 
-  // Redirect to auth if not authenticated
+  // Guest users: redirect to gallery if they try to access protected tabs
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      navigate('/auth');
+    if (!authLoading && !isAuthenticated && tab !== "gallery") {
+      setTab("gallery");
     }
-  }, [authLoading, isAuthenticated, navigate]);
+  }, [authLoading, isAuthenticated, tab]);
 
   // Check admin status from database
   useEffect(() => {
