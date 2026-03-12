@@ -171,7 +171,7 @@ export const ImageLibraryPickerModal: React.FC<ImageLibraryPickerModalProps> = (
                           </div>
                         )}
                         
-                        <div className="absolute inset-x-0 bottom-0 p-5 flex flex-col gap-1">
+                        <div className="absolute inset-x-0 bottom-0 p-5 flex flex-col gap-1" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.7), 0 0 1px rgba(0,0,0,0.9)' }}>
                           <span className="inline-flex self-start items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-500/90 text-white text-[11px] font-semibold tracking-wide shadow">
                             <ImageIcon className="w-3 h-3" />
                             {folder.imageCount}
