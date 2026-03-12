@@ -3968,8 +3968,8 @@ const updatedChar: SideCharacter = {
       
       {/* Chat Settings Modal */}
       <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-        <DialogContent className="max-w-2xl bg-zinc-900 border-white/10 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.5)]">
-          <DialogHeader className="border-b border-white/10 pb-4">
+        <DialogContent className="max-w-2xl bg-zinc-900 border-ghost-white shadow-[0_12px_32px_-2px_rgba(0,0,0,0.5)]">
+          <DialogHeader className="border-b border-ghost-white pb-4">
             <DialogTitle className="flex items-center gap-2 text-lg font-black text-white uppercase tracking-tight">
               <Settings className="w-5 h-5" />
               Chat Settings
