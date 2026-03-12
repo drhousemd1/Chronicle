@@ -1784,7 +1784,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                                         value={item.label}
                                         onChange={(v) => updateSectionItem(section.id, item.id, 'label', v)}
                                         placeholder="Label"
-                                        className="w-full px-3 py-2 rounded-lg text-xs font-bold bg-zinc-900/50 border border-white/10 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 placeholder:normal-case placeholder:tracking-normal focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
+                                        className="w-full px-3 py-2 rounded-lg text-xs font-bold bg-zinc-900/50 border border-ghost-white text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 placeholder:normal-case placeholder:tracking-normal focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
                                       />
                                     </div>
                                     <AutoResizeTextarea
