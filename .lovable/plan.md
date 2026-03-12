@@ -1,11 +1,32 @@
 
 
-## Plan: Persist Style Guide Edits to Supabase — Complete ✅
+# Move Creator Rating from View More Modal to Creator Profile Page
 
-### What was done:
+## Changes
 
-1. **Seeded `app_settings` rows** — `styleguide_edits` and `styleguide_keeps` rows inserted into the database
-2. **Rewrote all storage helpers** in `StyleGuideEditsModal.tsx` from sync localStorage to async Supabase operations (`getEditsRegistry`, `upsertEdit`, `removeEdit`, `getKeeps`, `addKeep`, `removeKeep`, `getEditsCount`)
-3. **Updated all consumers** in `StyleGuideTool.tsx` — `refreshEditsState`, `handleKeep`, `handleEditOpen`, `handleSaveEdit`, `handleRemoveKeep` are all async now
-4. **Updated `Index.tsx`** — `getEditsCount()` call now uses `.then()` since it's async
-5. **Every edit, keep, and delete auto-saves to Supabase immediately** — no data loss on domain changes
+### 1. `src/components/chronicle/StoryDetailModal.tsx` — Remove creator rating
+- Remove the `creatorRating` state and the `useEffect` that calls `fetchCreatorOverallRating` (~lines 122, 174-178)
+- Remove the `fetchCreatorOverallRating` import
+- Remove the creator rating display block (~lines 454-460), keeping the "Created by" text
+
+### 2. `src/pages/CreatorProfile.tsx` — Add creator rating
+- Import `fetchCreatorOverallRating` from `@/services/gallery-data` and `StarRating` from `@/components/chronicle/StarRating`
+- Add state for `creatorRating` and fetch it in the existing data-loading effect using the `userId` param
+- Display the rating row in the info column (after the "Creator" display name row, ~line 224), using ghost white text color and slate blue stars:
+
+```tsx
+{creatorRating && (
+  <div className="flex items-center gap-2">
+    <span className="text-xs font-bold text-white/40 uppercase tracking-wider w-28 shrink-0">Rating</span>
+    <div className="flex items-center gap-1.5">
+      <StarRating rating={creatorRating.rating} size={16} color="slate" />
+      <span className="text-sm text-ghost-white">
+        {creatorRating.rating.toFixed(1)} ({creatorRating.totalReviews} review{creatorRating.totalReviews !== 1 ? 's' : ''})
+      </span>
+    </div>
+  </div>
+)}
+```
+
+Two files, straightforward move of the element.
+
