@@ -105,7 +105,7 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDel
           <h3 className="text-lg font-black text-white leading-tight tracking-tight group-hover:text-blue-300 transition-colors truncate">
             {scen.title || "Unnamed Story"}
           </h3>
-          <p className="text-xs text-[rgba(248,250,252,0.3)] line-clamp-2 leading-relaxed italic min-h-[2.5rem]">
+          <p className="text-xs text-[rgba(248,250,252,0.7)] line-clamp-2 leading-relaxed italic min-h-[2.5rem]">
             {scen.description || "No summary provided."}
           </p>
           {/* Stats row: show all 4 for published, only Play for unpublished */}
