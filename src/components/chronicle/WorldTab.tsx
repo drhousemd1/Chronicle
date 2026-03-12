@@ -969,7 +969,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                           </div>
 
                           {/* Time of Day Icons */}
-                          <div className="flex items-center gap-1 bg-zinc-800 rounded-xl p-1 border border-zinc-700">
+                          <div className="flex items-center gap-1 bg-zinc-800 rounded-xl p-1 border border-[#4a5f7f]">
                             {([
                               { key: 'sunrise' as TimeOfDay, icon: Sunrise, label: 'Sunrise' },
                               { key: 'day' as TimeOfDay, icon: Sun, label: 'Day' },
