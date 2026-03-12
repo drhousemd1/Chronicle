@@ -3598,7 +3598,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 pageSpecific
                 notes="Positioned in a w-7 flex-shrink-0 container at end of row. Only on hardcoded trait sections, not user-added extras."
                 preview={
-                  <div className="flex items-center gap-2 bg-zinc-900/50 px-3 py-1.5 rounded-lg border border-white/10">
+                  <div className="flex items-center gap-2 bg-zinc-900/50 px-3 py-1.5 rounded-lg border border-ghost-white">
                     <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">PERSONALITY</span>
                     <div className="w-7 flex-shrink-0 flex items-center justify-center">
                       <Lock className="w-3.5 h-3.5 text-zinc-400" />
