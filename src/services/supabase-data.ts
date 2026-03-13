@@ -1501,7 +1501,7 @@ export async function updateBackgroundOverlay(userId: string, backgroundId: stri
 export async function fetchMyScenariosPaginated(userId: string, limit: number, offset: number): Promise<ScenarioMetadata[]> {
   const { data, error } = await supabase
     .from('stories' as any)
-    .select('id, title, description, cover_image_url, cover_image_position, tags, created_at, updated_at')
+    .select('id, title, description, cover_image_url, cover_image_position, tags, created_at, updated_at, is_draft')
     .eq('user_id', userId)
     .order('updated_at', { ascending: false })
     .range(offset, offset + limit - 1);
