@@ -70,7 +70,7 @@ const HardcodedSection: React.FC<{
   <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-[#4a5f7f] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
     {/* Section Header */}
     <div className="bg-[#4a5f7f] border-b border-[#4a5f7f] px-5 py-3 flex items-center justify-between shadow-lg">
-      <h2 className="text-white text-xl font-bold tracking-tight">{title}</h2>
+      <h2 className="text-white text-xl font-semibold tracking-tight">{title}</h2>
       <button 
         onClick={onToggle} 
         className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-ghost-white"
