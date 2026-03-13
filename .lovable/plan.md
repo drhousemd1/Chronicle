@@ -1,13 +1,21 @@
 
 
-## Plan: Revamp Drafts — localStorage → Database-Backed System ✅
+# Fix Header Title on Character Builder Page
 
-### What was done:
+## Problem
+The header at line 1717-1718 shows "Story Builder" for both the World tab and the Characters tab. When on the Character Builder page (`tab === "characters"`), it should display "Character Builder" instead.
 
-1. **Database migration** — Added `is_draft boolean NOT NULL DEFAULT false` column to `stories` table
-2. **Updated `ScenarioMetadata` type** — Added `isDraft?: boolean` field
-3. **Updated `supabase-data.ts`** — `dbToScenarioMetadata` now maps `is_draft`, `fetchMyScenarios` selects `is_draft`, `saveScenario` accepts `options.isDraft` parameter
-4. **Updated `StoryHub.tsx`** — Cards show amber "Draft" badge, Play button hidden for drafts, `isDraft` passed to detail modal
-5. **Updated `StoryDetailModal.tsx`** — Accepts `isDraft` prop, hides Play button for owned drafts
-6. **Updated `Index.tsx`** — Added "Drafts" filter pill, "My Stories" excludes drafts, "All" excludes drafts, Save Draft now saves to DB with `isDraft: true`, removed Drafts button/modal/localStorage logic
-7. **Cleanup** — Removed DraftsModal import and render, removed localStorage draft registry functions
+## Change — Single File: `src/pages/Index.tsx`
+
+**Line 1717-1718**: Change the static "Story Builder" text to a conditional expression:
+
+```tsx
+<h1 className="text-lg font-black text-[hsl(var(--ui-surface-2))] uppercase tracking-tight">
+  {tab === "characters" ? "Character Builder" : "Story Builder"}
+</h1>
+```
+
+This checks if the current tab is "characters" and shows "Character Builder", otherwise shows "Story Builder" (for the world tab and any future tabs that share this header).
+
+No other changes needed.
+
