@@ -308,7 +308,7 @@ export const ContentThemesSection: React.FC<ContentThemesSectionProps> = ({
         {/* Section Header - Steel Blue */}
         <div className="bg-[#4a5f7f] border-b border-[#4a5f7f] px-6 py-4 flex items-center gap-3 shadow-lg">
           <Tags className="w-[18px] h-[18px] text-white" />
-          <h2 className="text-white text-xl font-bold tracking-tight">Content Themes</h2>
+          <h2 className="text-white text-xl font-semibold tracking-tight">Content Themes</h2>
         </div>
         
         {/* Content */}
