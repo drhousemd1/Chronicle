@@ -231,117 +231,119 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
             return (
               <div key={goal.id} className={cn("p-5 pb-6 bg-[#2e2e33] rounded-2xl border relative", isEditMode ? "border-blue-500/20" : "border-[#4a5f7f]")}>
 
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                  <div className="md:col-span-9 space-y-4">
-                    {/* Goal Name */}
-                    <div>
-                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Goal Name</label>
-                      {isEditMode ? (
-                        <AutoResizeTextarea value={goal.title} onChange={(v) => updateGoal(goal.id, { title: v })} placeholder="Enter goal name..." className="mt-1 px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
-                      ) : (
-                        <h3 className="text-lg font-bold text-white mt-0.5">{goal.title || 'No goal name set'}</h3>
-                      )}
-                    </div>
-
-                    {/* Desired Outcome */}
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Desired Outcome</label>
-                        {isEditMode && (
-                          <SparkleButton
-                            fieldKey={`goal_outcome_${goal.id}`}
-                            onClick={() => onEnhanceField?.(
-                              `goal_outcome_${goal.id}`,
-                              () => goal.desiredOutcome,
-                              (v) => updateGoal(goal.id, { desiredOutcome: v }),
-                              `Desired Outcome for goal: ${goal.title || 'Untitled'}`
-                            )}
-                          />
-                        )}
-                      </div>
-                      {isEditMode ? (
-                        <AutoResizeTextarea value={goal.desiredOutcome} onChange={(v) => updateGoal(goal.id, { desiredOutcome: v })} placeholder="What success looks like..." className="mt-1 px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20" rows={2} />
-                      ) : (
-                        <p className="text-sm text-zinc-300 mt-0.5">{goal.desiredOutcome || 'No outcome defined'}</p>
-                      )}
-                    </div>
-
-                    {/* Guidance Strength Slider */}
-                    {isEditMode && (
-                      <GuidanceStrengthSlider
-                        value={goal.flexibility || 'normal'}
-                        onChange={(flexibility) => updateGoal(goal.id, { flexibility })}
-                      />
+                {/* Row 1: Goal Name + Progress Ring */}
+                <div className="flex items-start gap-4">
+                  <div className="flex-1">
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block mb-1">Goal Name</label>
+                    {isEditMode ? (
+                      <AutoResizeTextarea value={goal.title} onChange={(v) => updateGoal(goal.id, { title: v })} placeholder="Enter goal name..." className="px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
+                    ) : (
+                      <h3 className="text-lg font-bold text-white mt-0.5">{goal.title || 'No goal name set'}</h3>
                     )}
-
-                    {/* Steps Section */}
-                    <div className="mt-4 pt-4 border-t border-[#4a5f7f]">
-                      <h4 className="text-[10px] font-bold text-white uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
-                        <CheckSquare className="h-4 w-4 text-blue-500" />
-                        Steps
-                      </h4>
-
-                      {(goal.steps && goal.steps.length > 0) ? (
-                        <div className="space-y-2">
-                          {goal.steps.map((step, stepIdx) => (
-                            <div key={step.id} className="flex items-start gap-3">
-                              <Checkbox
-                                checked={step.completed}
-                                onCheckedChange={() => isEditMode ? toggleStep(goal.id, step.id) : undefined}
-                                disabled={!isEditMode}
-                                className="mt-2.5 border-zinc-600 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
-                              />
-                              {isEditMode ? (
-                                <>
-                                  <AutoResizeTextarea
-                                    value={step.description}
-                                    onChange={(v) => updateStep(goal.id, step.id, { description: v })}
-                                    placeholder={`Step ${stepIdx + 1}: Describe this step...`}
-                                    className={cn("flex-1 px-3 py-2 bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20", step.completed && "line-through text-zinc-500")}
-                                  />
-                                  <SparkleButton
-                                    fieldKey={`goal_step_${step.id}`}
-                                    onClick={() => onEnhanceField?.(
-                                      `goal_step_${step.id}`,
-                                      () => step.description,
-                                      (v) => updateStep(goal.id, step.id, { description: v }),
-                                      `Step for goal "${goal.title || 'Untitled'}"`
-                                    )}
-                                  />
-                                </>
-                              ) : (
-                                <span className={cn("text-sm text-zinc-200 pt-2", step.completed && "line-through text-zinc-500")}>
-                                  {step.description || 'No description'}
-                                </span>
-                              )}
-                              {isEditMode && (
-                                <button onClick={() => deleteStep(goal.id, step.id)} className="mt-2 text-red-500 hover:text-red-400 transition-colors p-1">
-                                  <X className="h-4 w-4" />
-                                </button>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-zinc-500 text-sm italic">No steps defined yet</p>
-                      )}
-
-                      {isEditMode && (
-                        <button onClick={() => addStep(goal.id)} className="flex items-center gap-2 text-blue-500 hover:text-blue-300 text-sm mt-3 transition-colors">
-                          <Plus className="h-4 w-4" />
-                          <span>Add Step</span>
-                        </button>
-                      )}
-                    </div>
                   </div>
 
                   {/* Progress Ring */}
-                  <div className="md:col-span-3 flex flex-col items-center justify-start pt-4">
-                    <CircularProgress value={progress} size={96} strokeWidth={8} variant="dark" />
+                  <div className="flex flex-col items-center shrink-0 mt-1">
+                    <div className="w-20 h-20 rounded-full border-[8px] border-[rgba(51,80,125,0.85)] flex items-center justify-center">
+                      <span className="text-lg font-bold text-slate-300">
+                        {progress}%
+                      </span>
+                    </div>
                     <p className="mt-2 text-[9px] font-black text-zinc-400 uppercase tracking-[0.2em]">
-                      {(goal.steps?.length || 0) > 0 ? `${goal.steps!.filter(s => s.completed).length}/${goal.steps!.length} Steps` : `${progress}%`}
+                      {(goal.steps?.length || 0) > 0 ? `${goal.steps!.filter(s => s.completed).length}/${goal.steps!.length} Steps` : 'Progress'}
                     </p>
                   </div>
+                </div>
+
+                {/* Full width: Desired Outcome */}
+                <div className="mt-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Desired Outcome</label>
+                    {isEditMode && (
+                      <SparkleButton
+                        fieldKey={`goal_outcome_${goal.id}`}
+                        onClick={() => onEnhanceField?.(
+                          `goal_outcome_${goal.id}`,
+                          () => goal.desiredOutcome,
+                          (v) => updateGoal(goal.id, { desiredOutcome: v }),
+                          `Desired Outcome for goal: ${goal.title || 'Untitled'}`
+                        )}
+                      />
+                    )}
+                  </div>
+                  {isEditMode ? (
+                    <AutoResizeTextarea value={goal.desiredOutcome} onChange={(v) => updateGoal(goal.id, { desiredOutcome: v })} placeholder="What success looks like..." className="px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20" rows={2} />
+                  ) : (
+                    <p className="text-sm text-zinc-300 mt-0.5">{goal.desiredOutcome || 'No outcome defined'}</p>
+                  )}
+                </div>
+
+                {/* Full width: Guidance Strength Slider */}
+                {isEditMode && (
+                  <GuidanceStrengthSlider
+                    value={goal.flexibility || 'normal'}
+                    onChange={(flexibility) => updateGoal(goal.id, { flexibility })}
+                  />
+                )}
+
+                {/* Full width: Steps Section */}
+                <div className="mt-4 pt-4 border-t border-[#4a5f7f]">
+                  <h4 className="text-[10px] font-bold text-white uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
+                    <CheckSquare className="h-4 w-4 text-blue-500" />
+                    Steps
+                  </h4>
+
+                  {(goal.steps && goal.steps.length > 0) ? (
+                    <div className="space-y-2">
+                      {goal.steps.map((step, stepIdx) => (
+                        <div key={step.id} className="flex items-start gap-3">
+                          <Checkbox
+                            checked={step.completed}
+                            onCheckedChange={() => isEditMode ? toggleStep(goal.id, step.id) : undefined}
+                            disabled={!isEditMode}
+                            className="mt-2.5 border-zinc-600 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
+                          />
+                          {isEditMode ? (
+                            <>
+                              <AutoResizeTextarea
+                                value={step.description}
+                                onChange={(v) => updateStep(goal.id, step.id, { description: v })}
+                                placeholder={`Step ${stepIdx + 1}: Describe this step...`}
+                                className={cn("flex-1 px-3 py-2 bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20", step.completed && "line-through text-zinc-500")}
+                              />
+                              <SparkleButton
+                                fieldKey={`goal_step_${step.id}`}
+                                onClick={() => onEnhanceField?.(
+                                  `goal_step_${step.id}`,
+                                  () => step.description,
+                                  (v) => updateStep(goal.id, step.id, { description: v }),
+                                  `Step for goal "${goal.title || 'Untitled'}"`
+                                )}
+                              />
+                            </>
+                          ) : (
+                            <span className={cn("text-sm text-zinc-200 pt-2", step.completed && "line-through text-zinc-500")}>
+                              {step.description || 'No description'}
+                            </span>
+                          )}
+                          {isEditMode && (
+                            <button onClick={() => deleteStep(goal.id, step.id)} className="mt-2 text-red-500 hover:text-red-400 transition-colors p-1">
+                              <X className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-zinc-500 text-sm italic">No steps defined yet</p>
+                  )}
+
+                  {isEditMode && (
+                    <button onClick={() => addStep(goal.id)} className="flex items-center gap-2 text-blue-500 hover:text-blue-300 text-sm mt-3 transition-colors">
+                      <Plus className="h-4 w-4" />
+                      <span>Add Step</span>
+                    </button>
+                  )}
                 </div>
               </div>
             );
