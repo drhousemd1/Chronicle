@@ -294,7 +294,7 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
         {/* Header */}
         <div className="bg-[#4a5f7f] border-b border-[#4a5f7f] px-5 py-3 flex items-center gap-3">
           <GitBranch className="w-4 h-4 text-white" />
-          <h2 className="text-white text-xl font-bold tracking-tight m-0">
+          <h2 className="text-white text-xl font-semibold tracking-tight m-0">
             Story Arcs
           </h2>
         </div>

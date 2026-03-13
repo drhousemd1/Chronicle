@@ -1210,7 +1210,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                   value={section.title}
                   onChange={(v) => handleUpdateSection(selected.id, section.id, { title: v })}
                   placeholder="Section Title"
-                  className="bg-transparent border-none text-white text-xl font-bold tracking-tight placeholder:text-[rgba(248,250,252,0.3)] focus:outline-none flex-1 mr-2"
+                  className="bg-transparent border-none text-white text-xl font-semibold tracking-tight placeholder:text-[rgba(248,250,252,0.3)] focus:outline-none flex-1 mr-2"
                 />
                 <div className="flex items-center gap-2 shrink-0">
                   <button 
