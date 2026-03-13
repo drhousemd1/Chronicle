@@ -1200,7 +1200,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                   <circle cx="17" cy="18.5" r="2.5"/>
                   <path d="M12 2v1"/>
                 </svg>
-                <h2 className="text-white text-xl font-bold tracking-tight">Art Style Preference</h2>
+                <h2 className="text-white text-xl font-semibold tracking-tight">Art Style Preference</h2>
               </div>
               <div className="p-6 space-y-1">
                 <div className="flex items-center gap-2 mb-1">
