@@ -1,13 +1,16 @@
 
 
-## Plan: Revamp Drafts — localStorage → Database-Backed System ✅
+# Update Story Card Input Field Borders to Zinc-500
 
-### What was done:
+## Summary
+The Story Name and Brief Description text fields inside the Story Card container still use the old slate blue (`border-[#4a5f7f]`) for their non-error border state. These need to match the `border-zinc-500` applied in the previous change.
 
-1. **Database migration** — Added `is_draft boolean NOT NULL DEFAULT false` column to `stories` table
-2. **Updated `ScenarioMetadata` type** — Added `isDraft?: boolean` field
-3. **Updated `supabase-data.ts`** — `dbToScenarioMetadata` now maps `is_draft`, `fetchMyScenarios` selects `is_draft`, `saveScenario` accepts `options.isDraft` parameter
-4. **Updated `StoryHub.tsx`** — Cards show amber "Draft" badge, Play button hidden for drafts, `isDraft` passed to detail modal
-5. **Updated `StoryDetailModal.tsx`** — Accepts `isDraft` prop, hides Play button for owned drafts
-6. **Updated `Index.tsx`** — Added "Drafts" filter pill, "My Stories" excludes drafts, "All" excludes drafts, Save Draft now saves to DB with `isDraft: true`, removed Drafts button/modal/localStorage logic
-7. **Cleanup** — Removed DraftsModal import and render, removed localStorage draft registry functions
+## Changes — Single File: `src/components/chronicle/WorldTab.tsx`
+
+| Line | Field | Current (non-error) | New |
+|------|-------|---------------------|-----|
+| 590 | Story Name | `border-[#4a5f7f]` | `border-zinc-500` |
+| 597 | Brief Description | `border-[#4a5f7f]` | `border-zinc-500` |
+
+No other properties touched. Error states (`border-red-500`) unchanged. No other file modified.
+
