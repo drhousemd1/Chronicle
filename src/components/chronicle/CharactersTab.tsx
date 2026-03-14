@@ -1245,53 +1245,54 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                 <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
                   {expandedSections.avatar ? (
                     <div className="space-y-4">
-                      <div className="flex flex-col items-center gap-4">
-                        <div
-                          ref={avatarContainerRef}
-                          className={`relative group w-48 h-48 rounded-2xl shadow-lg select-none ${isRepositioning ? 'ring-4 ring-blue-500 cursor-move overflow-hidden' : selected.avatarDataUrl ? 'border-2 border-[#4a5f7f] overflow-hidden' : ''}`}
-                          onMouseDown={handleMouseDown}
-                          onMouseMove={handleMouseMove}
-                          onMouseUp={handleMouseUp}
-                          onMouseLeave={handleMouseUp}
-                          onTouchStart={handleTouchStart}
-                          onTouchMove={handleTouchMove}
-                          onTouchEnd={handleTouchEnd}
-                          style={isRepositioning ? { touchAction: 'none' } : undefined}
-                        >
-                          {selected.avatarDataUrl ? (
-                            <img
-                              src={selected.avatarDataUrl}
-                              style={{
-                                objectPosition: `${avatarPos.x}% ${avatarPos.y}%`,
-                                pointerEvents: 'none'
-                              }}
-                              className={`w-full h-full object-cover transition-opacity ${isGeneratingImg ? 'opacity-50' : ''}`}
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex flex-col items-center justify-center border-2 border-dashed border-[#4a5f7f] gap-3 rounded-2xl">
-                              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-500">
-                                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
-                                <circle cx="12" cy="7" r="4"/>
-                              </svg>
-                              <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">No Avatar</span>
-                            </div>
-                          )}
+                      <div className="grid grid-cols-2 gap-5">
+                        {/* Left column: Avatar + buttons */}
+                        <div className="flex flex-col gap-3">
+                          <div
+                            ref={avatarContainerRef}
+                            className={`relative group w-full aspect-square rounded-2xl shadow-lg select-none ${isRepositioning ? 'ring-4 ring-blue-500 cursor-move overflow-hidden' : selected.avatarDataUrl ? 'border-2 border-[#4a5f7f] overflow-hidden' : ''}`}
+                            onMouseDown={handleMouseDown}
+                            onMouseMove={handleMouseMove}
+                            onMouseUp={handleMouseUp}
+                            onMouseLeave={handleMouseUp}
+                            onTouchStart={handleTouchStart}
+                            onTouchMove={handleTouchMove}
+                            onTouchEnd={handleTouchEnd}
+                            style={isRepositioning ? { touchAction: 'none' } : undefined}
+                          >
+                            {selected.avatarDataUrl ? (
+                              <img
+                                src={selected.avatarDataUrl}
+                                style={{
+                                  objectPosition: `${avatarPos.x}% ${avatarPos.y}%`,
+                                  pointerEvents: 'none'
+                                }}
+                                className={`w-full h-full object-cover transition-opacity ${isGeneratingImg ? 'opacity-50' : ''}`}
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex flex-col items-center justify-center border-2 border-dashed border-[#4a5f7f] gap-3 rounded-2xl">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-500">
+                                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+                                  <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                                <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">No Avatar</span>
+                              </div>
+                            )}
 
-                          {isGeneratingImg && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-[2px]">
-                              <div className="w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
-                            </div>
-                          )}
-                          {isRepositioning && (
-                            <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                              <div className="w-full h-[1px] bg-blue-500/30 absolute" />
-                              <div className="h-full w-[1px] bg-blue-500/30 absolute" />
-                              <div className="bg-blue-500 text-white text-[9px] font-black uppercase px-2 py-1 rounded absolute bottom-2 tracking-widest">Drag to Refocus</div>
-                            </div>
-                          )}
-                        </div>
+                            {isGeneratingImg && (
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-[2px]">
+                                <div className="w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+                              </div>
+                            )}
+                            {isRepositioning && (
+                              <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                                <div className="w-full h-[1px] bg-blue-500/30 absolute" />
+                                <div className="h-full w-[1px] bg-blue-500/30 absolute" />
+                                <div className="bg-blue-500 text-white text-[9px] font-black uppercase px-2 py-1 rounded absolute bottom-2 tracking-widest">Drag to Refocus</div>
+                              </div>
+                            )}
+                          </div>
 
-                        <div className="flex flex-col gap-2 w-full">
                           <AvatarActionButtons
                             onUploadFromDevice={() => fileInputRef.current?.click()}
                             onSelectFromLibrary={(imageUrl) => {
@@ -1316,71 +1317,74 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                               {isRepositioning ? "Save Position" : "REPOSITION"}
                             </button>
                           )}
+
+                          <input
+                            type="file"
+                            className="hidden"
+                            ref={fileInputRef}
+                            accept="image/*"
+                            onChange={async (e) => {
+                              const f = e.target.files?.[0];
+                              if (!f || !selected || !user) {
+                                if (!user) console.error('Please sign in to upload avatars');
+                                return;
+                              }
+
+                              setIsUploading(true);
+                              try {
+                                const reader = new FileReader();
+                                reader.onload = async () => {
+                                  try {
+                                    const optimized = await resizeImage(reader.result as string, 512, 512, 0.7);
+                                    const blob = dataUrlToBlob(optimized);
+                                    if (!blob) throw new Error('Failed to process image');
+
+                                    const filename = `avatar-${selected.id}-${Date.now()}.jpg`;
+                                    const publicUrl = await uploadAvatar(user.id, blob, filename);
+
+                                    onUpdate(selected.id, {
+                                      avatarDataUrl: publicUrl,
+                                      avatarPosition: { x: 50, y: 50 }
+                                    });
+                                    setIsRepositioning(true);
+                                  } catch (error) {
+                                    console.error('Avatar upload failed:', error);
+                                  } finally {
+                                    setIsUploading(false);
+                                  }
+                                };
+                                reader.readAsDataURL(f);
+                              } catch (error) {
+                                console.error('Avatar upload failed:', error);
+                                setIsUploading(false);
+                              }
+                            }}
+                          />
                         </div>
 
-                        <input
-                          type="file"
-                          className="hidden"
-                          ref={fileInputRef}
-                          accept="image/*"
-                          onChange={async (e) => {
-                            const f = e.target.files?.[0];
-                            if (!f || !selected || !user) {
-                              if (!user) console.error('Please sign in to upload avatars');
-                              return;
-                            }
-
-                            setIsUploading(true);
-                            try {
-                              const reader = new FileReader();
-                              reader.onload = async () => {
-                                try {
-                                  const optimized = await resizeImage(reader.result as string, 512, 512, 0.7);
-                                  const blob = dataUrlToBlob(optimized);
-                                  if (!blob) throw new Error('Failed to process image');
-
-                                  const filename = `avatar-${selected.id}-${Date.now()}.jpg`;
-                                  const publicUrl = await uploadAvatar(user.id, blob, filename);
-
-                                  onUpdate(selected.id, {
-                                    avatarDataUrl: publicUrl,
-                                    avatarPosition: { x: 50, y: 50 }
-                                  });
-                                  setIsRepositioning(true);
-                                } catch (error) {
-                                  console.error('Avatar upload failed:', error);
-                                } finally {
-                                  setIsUploading(false);
-                                }
-                              };
-                              reader.readAsDataURL(f);
-                            } catch (error) {
-                              console.error('Avatar upload failed:', error);
-                              setIsUploading(false);
-                            }
-                          }}
-                        />
-                      </div>
-
-                      <div className="space-y-4">
-                        <div>
-                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Name</label>
-                          <AutoResizeTextarea value={selected.name === "New Character" ? "" : selected.name} onChange={(v) => onUpdate(selected.id, { name: v })} placeholder="Character name" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 border-x-0 border-b-0 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
-                        </div>
-                        <div>
-                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Nicknames</label>
-                          <AutoResizeTextarea value={selected.nicknames || ''} onChange={(v) => onUpdate(selected.id, { nicknames: v })} placeholder="Nicknames" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 border-x-0 border-b-0 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
+                        {/* Right column: Name, Nickname, Age, Sex */}
+                        <div className="flex flex-col gap-4">
+                          <div>
+                            <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Name</label>
+                            <AutoResizeTextarea value={selected.name === "New Character" ? "" : selected.name} onChange={(v) => onUpdate(selected.id, { name: v })} placeholder="Character name" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 border-x-0 border-b-0 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Nicknames</label>
+                            <AutoResizeTextarea value={selected.nicknames || ''} onChange={(v) => onUpdate(selected.id, { nicknames: v })} placeholder="Nicknames" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 border-x-0 border-b-0 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                          </div>
                           <div>
                             <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Age</label>
                             <AutoResizeTextarea value={selected.age || ''} onChange={(v) => onUpdate(selected.id, { age: v })} placeholder="25" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 border-x-0 border-b-0 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                           </div>
+                          <div>
+                            <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Sex / Identity</label>
+                            <AutoResizeTextarea value={selected.sexType} onChange={(v) => onUpdate(selected.id, { sexType: v })} placeholder="Female, Male, Non-binary" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 border-x-0 border-b-0 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                          </div>
                         </div>
-                        <div>
-                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Sex / Identity</label>
-                          <AutoResizeTextarea value={selected.sexType} onChange={(v) => onUpdate(selected.id, { sexType: v })} placeholder="Female, Male, Non-binary" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 border-x-0 border-b-0 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
-                        </div>
+                      </div>
+
+                      {/* Below grid: remaining fields */}
+                      <div className="space-y-4 mt-4">
                         <div>
                           <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Sexual Orientation</label>
                           <AutoResizeTextarea value={selected.sexualOrientation || ''} onChange={(v) => onUpdate(selected.id, { sexualOrientation: v })} placeholder="Heterosexual, Bisexual, etc." className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 border-x-0 border-b-0 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
