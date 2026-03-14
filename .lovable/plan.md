@@ -8,9 +8,9 @@
 ## Features Being Transferred
 | ID | Feature | Status |
 |----|---------|--------|
-| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ⬜ |
-| B | Story Transfer Library (story-transfer.ts) | ⬜ |
-| A | UI Audit System (schema, utils, findings, page) | ⬜ |
+| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
+| B | Story Transfer Library (story-transfer.ts) | ✅ |
+| A | UI Audit System (schema, utils, findings, page) | 🔄 |
 | B | Story Export/Import Modals | ⬜ |
 | C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ⬜ |
 | D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
@@ -24,9 +24,9 @@
 |---|---------------|--------|-------|
 | 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
 | 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
-| 3 | `src/lib/ui-audit-schema.ts` | ⬜ TODO | New file, types only |
-| 4 | `src/lib/ui-audit-utils.ts` | ⬜ TODO | New file, depends on schema |
-| 5 | `src/data/ui-audit-findings.ts` | ⬜ TODO | New file, depends on schema |
+| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file, types and const arrays |
+| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file, sorting/grouping/filtering helpers |
+| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file, full audit data (38 findings, 11 ISM rows, 6 CVM rows, 18 color plan items, 19 review units) |
 | 6 | `StoryExportFormatModal.tsx` | ⬜ TODO | New component |
 | 7 | `StoryImportModeModal.tsx` | ⬜ TODO | New component |
 | 8 | `CharactersTab.tsx` | ⬜ TODO | Large merge — Character Builder nav |
