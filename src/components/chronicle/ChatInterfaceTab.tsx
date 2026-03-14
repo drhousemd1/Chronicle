@@ -4224,6 +4224,99 @@ const updatedChar: SideCharacter = {
         </div>
       </main>
 
+      <Dialog open={isColorModalOpen} onOpenChange={setIsColorModalOpen}>
+        <DialogContent className="max-w-xl bg-[#1f222b] border border-[#3a4152] text-zinc-100">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold tracking-tight">Change Chat Colors</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="rounded-xl border border-[#3a4152] bg-[#191c24] p-4 space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-white">Chat Background</p>
+                  <p className="text-xs text-zinc-400">Color behind all message bubbles</p>
+                </div>
+                <div className="h-8 w-8 rounded-md border border-white/20" style={{ backgroundColor: chatCanvasColor }} />
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={chatCanvasColor}
+                  onChange={(e) => handleChatCanvasColorInput(e.target.value)}
+                  className="h-10 w-14 cursor-pointer rounded border border-white/20 bg-transparent p-1"
+                  aria-label="Chat background color"
+                />
+                <input
+                  type="text"
+                  value={chatCanvasHexInput}
+                  onChange={(e) => handleChatCanvasColorInput(e.target.value)}
+                  onBlur={() => setChatCanvasHexInput(chatCanvasColor)}
+                  className="h-10 flex-1 rounded-md border border-white/20 bg-[#12141b] px-3 text-sm font-mono uppercase text-white"
+                  placeholder="#1A1B20"
+                  spellCheck={false}
+                />
+              </div>
+              <p className="text-[11px] text-zinc-400">
+                {chatCanvasColor.toUpperCase()} • {getColorFamilyLabel(chatCanvasColor)}
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-[#3a4152] bg-[#191c24] p-4 space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-white">Bubble Background</p>
+                  <p className="text-xs text-zinc-400">Color of the dialog bubbles</p>
+                </div>
+                <div className="h-8 w-8 rounded-md border border-white/20" style={{ backgroundColor: chatBubbleColor }} />
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={chatBubbleColor}
+                  onChange={(e) => handleChatBubbleColorInput(e.target.value)}
+                  className="h-10 w-14 cursor-pointer rounded border border-white/20 bg-transparent p-1"
+                  aria-label="Bubble background color"
+                />
+                <input
+                  type="text"
+                  value={chatBubbleHexInput}
+                  onChange={(e) => handleChatBubbleColorInput(e.target.value)}
+                  onBlur={() => setChatBubbleHexInput(chatBubbleColor)}
+                  className="h-10 flex-1 rounded-md border border-white/20 bg-[#12141b] px-3 text-sm font-mono uppercase text-white"
+                  placeholder="#1A1B20"
+                  spellCheck={false}
+                />
+              </div>
+              <p className="text-[11px] text-zinc-400">
+                {chatBubbleColor.toUpperCase()} • {getColorFamilyLabel(chatBubbleColor)}
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                handleUpdateUiSettings({ chatCanvasColor: '#1a1b20', chatBubbleColor: '#1a1b20' });
+                setChatCanvasHexInput('#1a1b20');
+                setChatBubbleHexInput('#1a1b20');
+              }}
+              className="rounded-lg border border-white/20 bg-[#2a2f3b] px-3 py-2 text-xs font-bold uppercase tracking-wide text-white hover:bg-[#343b49]"
+            >
+              Reset
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsColorModalOpen(false)}
+              className="rounded-lg border border-[#4a5f7f] bg-[#4a5f7f] px-3 py-2 text-xs font-bold uppercase tracking-wide text-white hover:bg-[#5a7093]"
+            >
+              Close
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Character Edit Modal */}
 <CharacterEditModal
         open={editModalOpen}
