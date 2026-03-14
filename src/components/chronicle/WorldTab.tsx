@@ -979,7 +979,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                         onChange={(v) => onUpdateOpening({ text: v })} 
                         rows={8} 
                         placeholder='James: *James looked up from where he sat on the ground* (What was that?) "Hello? Is anyone there?"'
-                        className={`px-3 py-2 text-sm bg-zinc-900/50 border text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${publishErrors.openingDialog ? 'border-red-500 ring-2 ring-red-500' : 'border-[#4a5f7f]'}`}
+                        className={`px-3 py-2 text-sm bg-[#1c1c1f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${publishErrors.openingDialog ? 'border border-red-500 ring-2 ring-red-500' : 'border-t border-black/35'}`}
                       />
                       {publishErrors.openingDialog && <p className="text-sm text-red-500 mt-1">{publishErrors.openingDialog}</p>}
                     </div>
