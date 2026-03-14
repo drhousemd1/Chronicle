@@ -1,53 +1,37 @@
 
-# Sandbox Feature Transfer — Master Tracker
+Goal: remove the Story Builder toast behavior and keep feedback strictly inline, consistent with the no-toast policy.
 
-## Source Documents
-- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
-- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
+What I found:
+- The toast was introduced in `src/pages/Index.tsx`:
+  - `storyTransferNotice` state + auto-dismiss effect (lines ~198–206)
+  - `setStoryTransferNotice(...)` calls in import/export handlers (lines ~1022, ~1028, ~1080, ~1086)
+  - a floating bottom-center toast render block (lines ~2732–2746) with `fixed bottom-6 left-1/2`.
+- Transfer-pack reference shows this should be inline in the header (next to Save Draft), not a floating toast.
 
-## Features Being Transferred
-| ID | Feature | Status |
-|----|---------|--------|
-| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
-| B | Story Transfer Library (story-transfer.ts) | ✅ |
-| A | UI Audit System (schema, utils, findings, page) | 🔄 |
-| B | Story Export/Import Modals | ✅ |
-| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
-| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
-| - | StyleGuideTool.tsx audit button | ⬜ |
-| - | App.tsx route wiring | ⬜ |
-| - | Index.tsx full wiring | ⬜ |
+No critical unknowns:
+- I’ll preserve user feedback for import/export, but only as inline header text (no overlays, no toaster infra).
 
-## Prompt Execution Status
+Implementation plan:
+1. Update `src/pages/Index.tsx` feedback rendering
+   - Remove the floating toast JSX block at the bottom of the component.
+   - Insert inline status text inside the Story Builder action group (`world/characters` header actions), immediately after `Save Draft`.
+   - Reuse existing state (`storyTransferNotice`) to minimize risk and keep current success/error/info messaging.
 
-| # | Target File(s) | Status | Notes |
-|---|---------------|--------|-------|
-| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
-| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
-| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
-| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
-| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
-| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
-| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
-| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
-| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
-| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
-| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
-| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
-| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
-| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
+2. Keep feedback behavior but make it non-toast
+   - Keep the current `setStoryTransferNotice(...)` calls in import/export handlers.
+   - Keep timed dismissal effect so inline status clears automatically.
+   - Remove any comment text labeling this as “toast”.
 
-## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
-- `src/types.ts`: line 11507
-- `src/utils.ts`: line 12138
-- `src/lib/story-transfer.ts`: line 9812
-- `src/lib/ui-audit-schema.ts`: line 21329
-- `src/lib/ui-audit-utils.ts`: line 21565
-- `src/data/ui-audit-findings.ts`: line 18967
-- `StoryExportFormatModal.tsx`: line 9642
-- `StoryImportModeModal.tsx`: line 9731
-- `CharactersTab.tsx`: line 2893
-- `ChatInterfaceTab.tsx`: line 5004
-- `src/pages/style-guide/ui-audit.tsx`: line 17867
-- `src/App.tsx`: line 95
-- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout
+3. Styling and UX alignment
+   - Use compact inline text style (same transfer-pack pattern): small text, color by tone, truncate long message.
+   - Keep message non-blocking and non-overlay (no fixed positioning, no z-layer popups).
+
+4. Verification pass (code-level)
+   - Confirm there is no `fixed bottom-*` story transfer notice render left in `Index.tsx`.
+   - Confirm import/export still works and produces inline status in the header.
+   - Confirm no toast library usage (`useToast`, `Toaster`, `sonner`) remains in app wiring.
+
+Acceptance criteria:
+- No floating toast appears anywhere for story import/export.
+- Import/export still provides feedback via inline header text only.
+- Finalize/Close and other header actions remain in correct order/layout.
