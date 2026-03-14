@@ -1400,12 +1400,13 @@ export const WorldTab: React.FC<WorldTabProps> = ({
 
           {/* Share Section */}
           <section>
-            <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-[#4a5f7f] overflow-hidden shadow-lg">
-              <div className="bg-[#4a5f7f] border-b border-[#4a5f7f] px-6 py-4 flex items-center gap-3 shadow-lg">
-                <Share2 className="w-5 h-5 text-white" />
-                <h2 className="text-white text-xl font-semibold tracking-tight">Share Your Story</h2>
+            <div className="w-full bg-[#2a2a2f] rounded-[24px] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]">
+              <div className="relative overflow-hidden bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 px-5 py-3 flex items-center gap-3 shadow-lg">
+                <div className="absolute inset-0 z-0 bg-gradient-to-tr from-white/10 to-transparent opacity-40" style={{ height: '60%' }} />
+                <Share2 className="w-5 h-5 text-white relative z-[1]" />
+                <h2 className="text-white text-xl font-bold tracking-[-0.015em] relative z-[1]">Share Your Story</h2>
               </div>
-              <div className="p-6 space-y-4">
+              <div className="p-5 space-y-4">
                 <button
                   type="button"
                   onClick={() => {

@@ -304,11 +304,12 @@ export const ContentThemesSection: React.FC<ContentThemesSectionProps> = ({
 
   return (
     <section>
-      <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-[#4a5f7f] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
+      <div className="w-full bg-[#2a2a2f] rounded-[24px] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]">
         {/* Section Header - Steel Blue */}
-        <div className="bg-[#4a5f7f] border-b border-[#4a5f7f] px-6 py-4 flex items-center gap-3 shadow-lg">
-          <Tags className="w-[18px] h-[18px] text-white" />
-          <h2 className="text-white text-xl font-semibold tracking-tight">Content Themes</h2>
+        <div className="relative overflow-hidden bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 px-5 py-3 flex items-center gap-3 shadow-lg">
+          <div className="absolute inset-0 z-0 bg-gradient-to-tr from-white/10 to-transparent opacity-40" style={{ height: '60%' }} />
+          <Tags className="w-[18px] h-[18px] text-white relative z-[1]" />
+          <h2 className="text-white text-xl font-bold tracking-[-0.015em] relative z-[1]">Content Themes</h2>
         </div>
         
         {/* Content */}
