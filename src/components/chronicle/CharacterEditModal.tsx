@@ -1007,11 +1007,12 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
       id: `section-${Date.now()}`,
       title: 'New Category',
       type,
-      items: type === 'structured' ? [{ id: `item-${Date.now()}`, label: '', value: '', createdAt: Date.now(), updatedAt: Date.now() }] : [],
-      freeformValue: type === 'freeform' ? '' : undefined,
+      items: [{ id: `item-${Date.now()}`, label: '', value: '', createdAt: Date.now(), updatedAt: Date.now() }],
+      freeformValue: undefined,
       createdAt: Date.now(),
       updatedAt: Date.now()
     };
+    setExpandedCustomSections(prev => ({ ...prev, [newSection.id]: true }));
     setDraft(prev => ({
       ...prev,
       sections: [...(prev.sections || []), newSection]
@@ -1761,18 +1762,78 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                         {(expandedCustomSections[section.id] ?? true) ? (
                           <div className="space-y-4">
                             {section.type === 'freeform' ? (
-                              <AutoResizeTextarea
-                                value={section.freeformValue || ''}
-                                onChange={(v) => {
+                              <>
+                              {(() => {
+                                const items = section.items.length > 0
+                                  ? section.items
+                                  : section.freeformValue
+                                    ? [{ id: `item-${Date.now()}`, label: '', value: section.freeformValue, createdAt: Date.now(), updatedAt: Date.now() }]
+                                    : [{ id: `item-${Date.now()}`, label: '', value: '', createdAt: Date.now(), updatedAt: Date.now() }];
+                                if (section.items.length === 0 && items.length > 0) {
                                   setDraft(prev => ({
                                     ...prev,
-                                    sections: prev.sections?.map(s => s.id === section.id ? { ...s, freeformValue: v } : s)
+                                    sections: prev.sections?.map(s => s.id === section.id ? { ...s, items, freeformValue: undefined } : s)
+                                  }));
+                                }
+                                return items.map(item => (
+                                  <div key={item.id} className="space-y-2">
+                                    <div className="flex items-center gap-2">
+                                      <AutoResizeTextarea
+                                        value={item.label}
+                                        onChange={(v) => {
+                                          const nextItems = (section.items.length > 0 ? section.items : items).map(it => it.id === item.id ? { ...it, label: v } : it);
+                                          setDraft(prev => ({
+                                            ...prev,
+                                            sections: prev.sections?.map(s => s.id === section.id ? { ...s, items: nextItems } : s)
+                                          }));
+                                        }}
+                                        placeholder="LABEL"
+                                        className="flex-1 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border-t border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const nextItems = (section.items.length > 0 ? section.items : items).filter(it => it.id !== item.id);
+                                          setDraft(prev => ({
+                                            ...prev,
+                                            sections: prev.sections?.map(s => s.id === section.id ? { ...s, items: nextItems.length > 0 ? nextItems : [{ id: `item-${Date.now()}`, label: '', value: '', createdAt: Date.now(), updatedAt: Date.now() }] } : s)
+                                          }));
+                                        }}
+                                        className="text-red-500 hover:text-red-400 p-1.5 rounded-md hover:bg-red-900/30"
+                                      >
+                                        <X className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                    <AutoResizeTextarea
+                                      value={item.value}
+                                      onChange={(v) => {
+                                        const nextItems = (section.items.length > 0 ? section.items : items).map(it => it.id === item.id ? { ...it, value: v } : it);
+                                        setDraft(prev => ({
+                                          ...prev,
+                                          sections: prev.sections?.map(s => s.id === section.id ? { ...s, items: nextItems } : s)
+                                        }));
+                                      }}
+                                      placeholder="Write your content here..."
+                                      className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-ghost-white text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                      rows={4}
+                                    />
+                                  </div>
+                                ));
+                              })()}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const currentItems = section.items.length > 0 ? section.items : [{ id: `item-${Date.now()}`, label: '', value: section.freeformValue || '', createdAt: Date.now(), updatedAt: Date.now() }];
+                                  setDraft(prev => ({
+                                    ...prev,
+                                    sections: prev.sections?.map(s => s.id === section.id ? { ...s, items: [...currentItems, { id: `item-${Date.now() + 1}`, label: '', value: '', createdAt: Date.now(), updatedAt: Date.now() }], freeformValue: undefined } : s)
                                   }));
                                 }}
-                                placeholder="Write your content here..."
-                                className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-ghost-white text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                                rows={4}
-                              />
+                                className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5"
+                              >
+                                <Plus className="w-4 h-4" /> ADD TEXT FIELD
+                              </button>
+                              </>
                             ) : (
                               <>
                             {section.items.map((item) => (
@@ -1804,14 +1865,13 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                                 </div>
                               </div>
                             ))}
-                            <Button
-                              variant="ghost"
-                              size="sm"
+                            <button
+                              type="button"
                               onClick={() => addItemToSection(section.id)}
-                              className="text-blue-500 hover:text-blue-300 w-full border-2 border-dashed border-zinc-500 hover:border-blue-500 hover:bg-blue-500/5"
+                              className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5"
                             >
-                              <Plus className="w-4 h-4 mr-1" /> Add Row
-                            </Button>
+                              <Plus className="w-4 h-4" /> ADD ROW
+                            </button>
                               </>
                             )}
                           </div>
@@ -1819,8 +1879,14 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                           // Collapsed view - show summary
                           (() => {
                             if (section.type === 'freeform') {
-                              return section.freeformValue
-                                ? <p className="text-sm text-zinc-400 whitespace-pre-wrap">{section.freeformValue}</p>
+                              const items = section.items.length > 0 ? section.items : (section.freeformValue ? [{ id: 'legacy', label: '', value: section.freeformValue }] : []);
+                              return items.length > 0 && items.some(it => it.value)
+                                ? <div className="space-y-2">{items.filter(it => it.value).map(it => (
+                                    <div key={it.id}>
+                                      {it.label && <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{it.label}</span>}
+                                      <p className="text-sm text-zinc-400 whitespace-pre-wrap">{it.value}</p>
+                                    </div>
+                                  ))}</div>
                                 : <p className="text-zinc-500 text-sm italic">No content</p>;
                             }
                             const hasAnyValue = section.items.some(item => item.label || item.value);

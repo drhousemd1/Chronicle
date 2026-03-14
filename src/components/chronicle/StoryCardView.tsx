@@ -271,23 +271,81 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
                         updated[sIdx] = { ...updated[sIdx], items };
                         updateField('customWorldSections', updated);
                       }}
-                      className="flex items-center gap-2 text-blue-500 hover:text-blue-300 text-sm transition-colors"
+                      className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5"
                     >
-                      <Plus size={16} />
-                      <span>Add Item</span>
+                      <Plus size={16} /> ADD ROW
                     </button>
                   </>
                 ) : (
-                  <AutoResizeTextarea
-                    value={section.freeformValue || ''}
-                    onChange={(v) => {
+                  <>
+                  {(() => {
+                    const items = section.items.length > 0
+                      ? section.items
+                      : section.freeformValue
+                        ? [{ id: uid('cwi'), label: '', value: section.freeformValue }]
+                        : [{ id: uid('cwi'), label: '', value: '' }];
+                    if (section.items.length === 0 && items.length > 0) {
                       const updated = [...customSections];
-                      updated[sIdx] = { ...updated[sIdx], freeformValue: v };
+                      updated[sIdx] = { ...updated[sIdx], items, freeformValue: undefined };
+                      updateField('customWorldSections', updated);
+                    }
+                    return items.map((item, iIdx) => (
+                      <div key={item.id} className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Input
+                            value={item.label}
+                            onChange={(e) => {
+                              const updated = [...customSections];
+                              const updatedItems = [...updated[sIdx].items];
+                              updatedItems[iIdx] = { ...updatedItems[iIdx], label: e.target.value };
+                              updated[sIdx] = { ...updated[sIdx], items: updatedItems };
+                              updateField('customWorldSections', updated);
+                            }}
+                            placeholder="LABEL"
+                            className="flex-1 bg-[#1c1c1f] border-t border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 text-sm"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = [...customSections];
+                              const updatedItems = updated[sIdx].items.filter((_, i) => i !== iIdx);
+                              updated[sIdx] = { ...updated[sIdx], items: updatedItems.length > 0 ? updatedItems : [{ id: uid('cwi'), label: '', value: '' }] };
+                              updateField('customWorldSections', updated);
+                            }}
+                            className="text-red-500 hover:text-red-400 p-1.5 rounded-md hover:bg-red-900/30"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                        <AutoResizeTextarea
+                          value={item.value}
+                          onChange={(v) => {
+                            const updated = [...customSections];
+                            const updatedItems = [...updated[sIdx].items];
+                            updatedItems[iIdx] = { ...updatedItems[iIdx], value: v };
+                            updated[sIdx] = { ...updated[sIdx], items: updatedItems };
+                            updateField('customWorldSections', updated);
+                          }}
+                          placeholder="Write your content here..."
+                          className="w-full px-3 py-2 rounded-lg text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
+                          rows={4}
+                        />
+                      </div>
+                    ));
+                  })()}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const updated = [...customSections];
+                      const currentItems = updated[sIdx].items.length > 0 ? updated[sIdx].items : [{ id: uid('cwi'), label: '', value: updated[sIdx].freeformValue || '' }];
+                      updated[sIdx] = { ...updated[sIdx], items: [...currentItems, { id: uid('cwi'), label: '', value: '' }], freeformValue: undefined };
                       updateField('customWorldSections', updated);
                     }}
-                    placeholder="Write freely..."
-                    className="w-full px-3 py-2 rounded-lg text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
-                  />
+                    className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5"
+                  >
+                    <Plus size={16} /> ADD TEXT FIELD
+                  </button>
+                  </>
                 )}
               </div>
             ))}

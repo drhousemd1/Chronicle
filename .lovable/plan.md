@@ -1,50 +1,53 @@
 
+# Sandbox Feature Transfer — Master Tracker
 
-## Plan: Freeform Section Labels, Multi-Entry Support, Expansion Fix, and Button Styling
+## Source Documents
+- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
+- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
 
-### Problem
-1. **Freeform sections** (large text field type) have no label above the textarea and only support a single text area — users want multiple labeled text areas per section
-2. **New custom sections** are collapsed by default when added — should be expanded
-3. **"Add Row" buttons** in custom sections still use the old dashed-outline style instead of the updated shadow-surface style
-4. **WorldTab "Label..." placeholder** still uses lowercase and has `placeholder:normal-case` override
+## Features Being Transferred
+| ID | Feature | Status |
+|----|---------|--------|
+| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
+| B | Story Transfer Library (story-transfer.ts) | ✅ |
+| A | UI Audit System (schema, utils, findings, page) | 🔄 |
+| B | Story Export/Import Modals | ✅ |
+| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
+| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
+| - | StyleGuideTool.tsx audit button | ⬜ |
+| - | App.tsx route wiring | ⬜ |
+| - | Index.tsx full wiring | ⬜ |
 
-### Changes
+## Prompt Execution Status
 
-#### 1. Freeform sections: add label + multi-entry support
-**Files: `CharactersTab.tsx`, `CharacterEditModal.tsx`, `WorldTab.tsx`, `StoryCardView.tsx`**
+| # | Target File(s) | Status | Notes |
+|---|---------------|--------|-------|
+| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
+| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
+| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
+| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
+| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
+| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
+| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
+| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
+| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
+| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
+| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
+| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
+| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
+| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
 
-Currently freeform sections store a single `freeformValue` string and render one textarea. Change to use the existing `items[]` array (same data structure as structured sections) but render values as large multi-line textareas instead of single-line descriptions.
-
-- When rendering freeform: show each item as a **LABEL input** (same uppercase style) above a **large textarea** (rows=4), with a delete button
-- Add an **"Add Text Field"** button at the bottom (same shadow-surface button style)
-- For **backward compatibility**: if a freeform section has `freeformValue` but empty `items[]`, auto-migrate the freeformValue into `items[0]` with an empty label
-- When creating a new freeform section, seed it with one empty item: `{ id, label: '', value: '' }`
-- Update collapsed summary to iterate items instead of showing freeformValue
-
-#### 2. New custom sections default to expanded
-**Files: `CharactersTab.tsx`, `CharacterEditModal.tsx`**
-
-When `handleAddSection` / `addNewSection` creates a new section, also set `expandedCustomSections[newSection.id] = true` in state. Currently the fallback `?? true` handles this, but the screenshots show they're collapsed — likely the toggle state is being set. Explicitly set expanded on creation.
-
-#### 3. Fix "Add Row" / "Add Item" button styling
-**Files: `CharactersTab.tsx` (line 1943-1949), `CharacterEditModal.tsx` (line 1807-1814), `WorldTab.tsx` (line 817-828, 848-855)**
-
-Replace all remaining dashed-outline add buttons in custom sections with the updated shadow-surface style:
-```
-w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl 
-shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] 
-hover:brightness-110 transition-all
-```
-
-#### 4. Fix WorldTab "Label..." placeholder
-**File: `WorldTab.tsx` (line 751-752)**
-
-Change `placeholder="Label..."` to `placeholder="LABEL"` and remove `placeholder:normal-case placeholder:tracking-normal`.
-
-### Files modified
-- `src/components/chronicle/CharactersTab.tsx` — freeform rendering, add button, expansion
-- `src/components/chronicle/CharacterEditModal.tsx` — freeform rendering, add button, expansion
-- `src/components/chronicle/WorldTab.tsx` — freeform rendering, add button, label placeholder
-- `src/components/chronicle/StoryCardView.tsx` — freeform rendering (already uses items pattern but needs label above textarea)
-- `src/pages/Index.tsx` — seed freeform sections with one item instead of empty array
-
+## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
+- `src/types.ts`: line 11507
+- `src/utils.ts`: line 12138
+- `src/lib/story-transfer.ts`: line 9812
+- `src/lib/ui-audit-schema.ts`: line 21329
+- `src/lib/ui-audit-utils.ts`: line 21565
+- `src/data/ui-audit-findings.ts`: line 18967
+- `StoryExportFormatModal.tsx`: line 9642
+- `StoryImportModeModal.tsx`: line 9731
+- `CharactersTab.tsx`: line 2893
+- `ChatInterfaceTab.tsx`: line 5004
+- `src/pages/style-guide/ui-audit.tsx`: line 17867
+- `src/App.tsx`: line 95
+- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout
