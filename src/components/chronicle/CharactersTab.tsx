@@ -31,8 +31,16 @@ import {
   Flag,
   CircleUserRound,
   Stars,
+  MoreVertical,
+  Move,
   type LucideIcon,
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { aiEnhanceCharacterField, GENERATE_BOTH_PREFIX, parseGenerateBothResponse } from '@/services/character-ai';
 import {
@@ -1284,11 +1292,44 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                                 <div className="w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
                               </div>
                             )}
+                            {/* Three-dot menu — top-right of avatar */}
+                            {selected.avatarDataUrl && !isRepositioning && (
+                              <div className="absolute top-2 right-2 z-30">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <button className="p-1.5 rounded-lg transition-colors bg-black/30 hover:bg-black/50 text-white/70 hover:text-white">
+                                      <MoreVertical className="w-4 h-4" />
+                                    </button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="shadow-lg z-50 bg-zinc-800 border-ghost-white text-zinc-200">
+                                    <DropdownMenuItem onClick={() => setIsRepositioning(true)} className="hover:!bg-zinc-700 focus:!bg-zinc-700 focus:!text-white">
+                                      <Move className="w-4 h-4 mr-2" />
+                                      Reposition image
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            )}
+                            {/* Reposition overlay with Done button */}
                             {isRepositioning && (
-                              <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                                <div className="w-full h-[1px] bg-blue-500/30 absolute" />
-                                <div className="h-full w-[1px] bg-blue-500/30 absolute" />
-                                <div className="bg-blue-500 text-white text-[9px] font-black uppercase px-2 py-1 rounded absolute bottom-2 tracking-widest">Drag to Refocus</div>
+                              <div className="absolute inset-0 z-[18] touch-none cursor-move pointer-events-auto">
+                                <button
+                                  type="button"
+                                  className="absolute left-2 top-2 rounded-md bg-black/55 border border-white/20 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-white hover:bg-black/70 pointer-events-auto z-20"
+                                  onMouseDown={(e) => e.stopPropagation()}
+                                  onTouchStart={(e) => e.stopPropagation()}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsRepositioning(false);
+                                  }}
+                                >
+                                  Done
+                                </button>
+                                <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                                  <div className="w-full h-[1px] bg-blue-500/30 absolute" />
+                                  <div className="h-full w-[1px] bg-blue-500/30 absolute" />
+                                  <div className="bg-blue-500 text-white text-[9px] font-black uppercase px-2 py-1 rounded absolute bottom-2 tracking-widest">Drag to Refocus</div>
+                                </div>
                               </div>
                             )}
                           </div>
@@ -1308,15 +1349,6 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                             isGenerating={isGeneratingImg}
                             isUploading={isUploading}
                           />
-                          {selected.avatarDataUrl && (
-                            <button
-                              type="button"
-                              onClick={() => setIsRepositioning(!isRepositioning)}
-                              className={`w-full h-10 rounded-xl text-[10px] font-bold leading-none uppercase tracking-wider transition-colors cursor-pointer ${isRepositioning ? 'bg-blue-500 text-white border border-blue-500' : 'bg-[hsl(240_6%_18%)] border border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] hover:bg-[hsl(240_6%_22%)] shadow-[0_10px_30px_hsl(0_0%_0%_/_0.35)]'}`}
-                            >
-                              {isRepositioning ? "Save Position" : "REPOSITION"}
-                            </button>
-                          )}
 
                           <input
                             type="file"
