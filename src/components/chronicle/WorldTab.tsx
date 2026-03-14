@@ -1615,7 +1615,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
             id: uid('wcs'),
             title: '',
             type,
-            items: type === 'structured' ? [{ id: uid('wci'), label: '', value: '' }] : [],
+            items: type === 'structured' ? [{ id: uid('wci'), label: '', value: '' }] : [{ id: uid('wci'), label: '', value: '' }],
             freeformValue: type === 'freeform' ? '' : undefined,
           });
           updateCore({ customWorldSections: sections });
