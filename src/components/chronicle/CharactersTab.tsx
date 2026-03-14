@@ -1325,11 +1325,6 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                                 >
                                   Done
                                 </button>
-                                <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                                  <div className="w-full h-[1px] bg-blue-500/30 absolute" />
-                                  <div className="h-full w-[1px] bg-blue-500/30 absolute" />
-                                  <div className="bg-blue-500 text-white text-[9px] font-black uppercase px-2 py-1 rounded absolute bottom-2 tracking-widest">Drag to Refocus</div>
-                                </div>
                               </div>
                             )}
                           </div>
