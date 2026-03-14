@@ -51,7 +51,21 @@ interface ChatInterfaceTabProps {
   onUpdate: (convs: Conversation[]) => void;
   onBack: () => void;
   onSaveScenario: (conversations?: Conversation[]) => void;
-  onUpdateUiSettings?: (patch: { showBackgrounds?: boolean; transparentBubbles?: boolean; darkMode?: boolean; offsetBubbles?: boolean; proactiveCharacterDiscovery?: boolean; dynamicText?: boolean; proactiveNarrative?: boolean; narrativePov?: 'first' | 'third'; nsfwIntensity?: 'normal' | 'high'; realismMode?: boolean; responseVerbosity?: 'concise' | 'balanced' | 'detailed' }) => void;
+  onUpdateUiSettings?: (patch: {
+    showBackgrounds?: boolean;
+    transparentBubbles?: boolean;
+    darkMode?: boolean;
+    offsetBubbles?: boolean;
+    proactiveCharacterDiscovery?: boolean;
+    dynamicText?: boolean;
+    proactiveNarrative?: boolean;
+    narrativePov?: 'first' | 'third';
+    nsfwIntensity?: 'normal' | 'high';
+    realismMode?: boolean;
+    responseVerbosity?: 'concise' | 'balanced' | 'detailed';
+    chatCanvasColor?: string;
+    chatBubbleColor?: string;
+  }) => void;
   onUpdateSideCharacters?: (sideCharacters: SideCharacter[]) => void;
   // Lazy loading props
   onLoadOlderMessages?: (conversationId: string, beforeCreatedAt: string) => Promise<Message[]>;
