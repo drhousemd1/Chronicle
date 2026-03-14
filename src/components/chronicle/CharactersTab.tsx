@@ -1230,18 +1230,19 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
       <div className="flex-1 overflow-y-auto scrollbar-thin bg-[#1a1b20]">
         <div className="p-4 lg:p-10 max-w-6xl mx-auto space-y-6 pb-20">
           {isTraitVisible('profile') && (
-            <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-[#4a5f7f] overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
-              <div className="bg-[#4a5f7f] border-b border-[#4a5f7f] px-5 py-3 flex items-center justify-between shadow-lg">
-                <h2 className="text-white text-xl font-bold tracking-tight">Basics</h2>
+            <div className="w-full bg-[#2a2a2f] rounded-[24px] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]">
+              <div className="relative bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 px-5 py-3 flex items-center justify-between shadow-lg overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-b from-white/[0.07] via-transparent to-transparent pointer-events-none" style={{ backgroundSize: '100% 60%', backgroundRepeat: 'no-repeat' }} />
+                <h2 className="text-white text-xl font-bold tracking-[-0.015em] relative z-[1]">Basics</h2>
                 <button
                   onClick={() => toggleSection('avatar')}
-                  className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-ghost-white"
+                  className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-ghost-white relative z-[1]"
                 >
                   {expandedSections.avatar ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
                 </button>
               </div>
               <div className="p-5">
-                <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl border border-[#4a5f7f]">
+                <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
                   {expandedSections.avatar ? (
                     <div className="space-y-4">
                       <div className="flex flex-col items-center gap-4">
@@ -1364,33 +1365,33 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                       <div className="space-y-4">
                         <div>
                           <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Name</label>
-                          <AutoResizeTextarea value={selected.name === "New Character" ? "" : selected.name} onChange={(v) => onUpdate(selected.id, { name: v })} placeholder="Character name" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                          <AutoResizeTextarea value={selected.name === "New Character" ? "" : selected.name} onChange={(v) => onUpdate(selected.id, { name: v })} placeholder="Character name" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 border-x-0 border-b-0 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                         </div>
                         <div>
                           <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Nicknames</label>
-                          <AutoResizeTextarea value={selected.nicknames || ''} onChange={(v) => onUpdate(selected.id, { nicknames: v })} placeholder="Nicknames" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                          <AutoResizeTextarea value={selected.nicknames || ''} onChange={(v) => onUpdate(selected.id, { nicknames: v })} placeholder="Nicknames" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 border-x-0 border-b-0 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                           <div>
                             <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Age</label>
-                            <AutoResizeTextarea value={selected.age || ''} onChange={(v) => onUpdate(selected.id, { age: v })} placeholder="25" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                            <AutoResizeTextarea value={selected.age || ''} onChange={(v) => onUpdate(selected.id, { age: v })} placeholder="25" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 border-x-0 border-b-0 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                           </div>
                         </div>
                         <div>
                           <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Sex / Identity</label>
-                          <AutoResizeTextarea value={selected.sexType} onChange={(v) => onUpdate(selected.id, { sexType: v })} placeholder="Female, Male, Non-binary" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                          <AutoResizeTextarea value={selected.sexType} onChange={(v) => onUpdate(selected.id, { sexType: v })} placeholder="Female, Male, Non-binary" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 border-x-0 border-b-0 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                         </div>
                         <div>
                           <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Sexual Orientation</label>
-                          <AutoResizeTextarea value={selected.sexualOrientation || ''} onChange={(v) => onUpdate(selected.id, { sexualOrientation: v })} placeholder="Heterosexual, Bisexual, etc." className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                          <AutoResizeTextarea value={selected.sexualOrientation || ''} onChange={(v) => onUpdate(selected.id, { sexualOrientation: v })} placeholder="Heterosexual, Bisexual, etc." className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 border-x-0 border-b-0 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                         </div>
                         <div>
                           <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Location</label>
-                          <AutoResizeTextarea value={selected.location || ''} onChange={(v) => onUpdate(selected.id, { location: v })} placeholder="Current location" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                          <AutoResizeTextarea value={selected.location || ''} onChange={(v) => onUpdate(selected.id, { location: v })} placeholder="Current location" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 border-x-0 border-b-0 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                         </div>
                         <div>
                           <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Current Mood</label>
-                          <AutoResizeTextarea value={selected.currentMood || ''} onChange={(v) => onUpdate(selected.id, { currentMood: v })} placeholder="Happy, Tired" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                          <AutoResizeTextarea value={selected.currentMood || ''} onChange={(v) => onUpdate(selected.id, { currentMood: v })} placeholder="Happy, Tired" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 border-x-0 border-b-0 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
@@ -1454,7 +1455,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                               <Sparkles size={14} />
                             </button>
                           </div>
-                          <AutoResizeTextarea value={selected.roleDescription || ''} onChange={(v) => onUpdate(selected.id, { roleDescription: v })} placeholder="Brief description of the character's role" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                          <AutoResizeTextarea value={selected.roleDescription || ''} onChange={(v) => onUpdate(selected.id, { roleDescription: v })} placeholder="Brief description of the character's role" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 border-x-0 border-b-0 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                         </div>
                       </div>
                     </div>
