@@ -121,7 +121,7 @@ const TraitRow: React.FC<{
           value={trait.value}
           onChange={(v) => onUpdate({ value: v })}
           placeholder="Description..."
-          className="flex-1 px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
+          className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
         />
       </div>
       {/* Flexibility dropdown */}
