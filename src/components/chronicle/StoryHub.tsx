@@ -145,7 +145,7 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDel
               </span>
             )}
           </div>
-          <span className="text-[11px] text-[rgba(248,250,252,0.7)] font-medium mt-1">
+          <span className="text-[11px] text-white font-medium mt-1">
             Created by: {displayAuthor || 'Anonymous'}
           </span>
         </div>

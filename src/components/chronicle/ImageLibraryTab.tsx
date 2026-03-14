@@ -486,7 +486,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
                           {folder.name}
                         </h3>
                         {folder.description && (
-                          <p className="text-xs text-white/70 line-clamp-2 leading-relaxed italic">
+                          <p className="text-xs text-white line-clamp-2 leading-relaxed italic">
                             {folder.description}
                           </p>
                         )}

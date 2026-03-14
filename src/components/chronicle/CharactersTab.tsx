@@ -1090,7 +1090,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                     </span>
                   </div>
                   <h3 className="text-xl font-black text-white leading-tight mb-1 tracking-tight group-hover:text-blue-300 transition-colors truncate">{c.name || "Unnamed"}</h3>
-                  <p className="text-xs text-white/70 line-clamp-3 leading-relaxed italic">
+                  <p className="text-xs text-white line-clamp-3 leading-relaxed italic">
                      {c.roleDescription || c.sections[0]?.items[0]?.value || "No description available."}
                   </p>
                 </div>
