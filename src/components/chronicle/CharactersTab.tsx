@@ -464,14 +464,14 @@ const HardcodedRow: React.FC<{
           disabled={isEnhancing}
           title="Enhance with AI"
           className={cn(
-            "relative overflow-hidden rounded-lg p-[7px] transition-all flex-shrink-0",
+            "w-[26px] h-[26px] rounded-[7px] flex-shrink-0 flex items-center justify-center transition-all",
             isEnhancing ? "animate-pulse cursor-wait" : "hover:brightness-125"
           )}
-          style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.40)' }}
+          style={{
+            background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 15%, #0f3460 35%, #1a6b8a 50%, #533483 65%, #9b2c5e 80%, #e94560 100%)'
+          }}
         >
-          <span className="absolute inset-0 bg-[linear-gradient(90deg,white,teal,white,purple,white)]" />
-          <span className="absolute inset-[1.5px] rounded-[calc(0.5rem-1.5px)]" style={{ background: 'linear-gradient(90deg, rgba(34,184,200,0.22), rgba(109,94,247,0.22)), #2B2D33' }} />
-          <Sparkles size={14} className="relative z-10 text-cyan-200 drop-shadow-[0_0_6px_rgba(34,184,200,0.5)]" />
+          <Sparkles size={10} className="text-white" />
         </button>
       )}
     </div>
