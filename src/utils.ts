@@ -264,6 +264,8 @@ export function createDefaultScenarioData(): ScenarioData {
       showBackgrounds: true,
       transparentBubbles: false,
       darkMode: false,
+      chatCanvasColor: '#1a1b20',
+      chatBubbleColor: '#1a1b20',
       proactiveCharacterDiscovery: true,  // Default enabled for creative freedom
       dynamicText: true,  // Default enabled for visual text styling
       proactiveNarrative: true,  // Default ON - AI drives story forward
