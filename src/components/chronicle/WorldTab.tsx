@@ -1179,7 +1179,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                       const sceneTags = scene.tags ?? ((scene as any).tag ? [(scene as any).tag] : []);
                       
                       return (
-                        <div key={scene.id} className="group relative rounded-xl overflow-hidden border border-[#4a5f7f] bg-zinc-800 cursor-pointer" onClick={() => setEditingScene({ ...scene, tags: sceneTags })}>
+                        <div key={scene.id} className="group relative rounded-xl overflow-hidden bg-zinc-800 cursor-pointer shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]" onClick={() => setEditingScene({ ...scene, tags: sceneTags })}>
                           {/* Image with zoom hover */}
                           <div className="aspect-video overflow-hidden">
                             <img 
