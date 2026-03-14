@@ -1056,11 +1056,12 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
       id: uid('sec'),
       title: 'New Section',
       type,
-      items: type === 'structured' ? [{ id: uid('item'), label: '', value: '', createdAt: now(), updatedAt: now() }] : [],
-      freeformValue: type === 'freeform' ? '' : undefined,
+      items: [{ id: uid('item'), label: '', value: '', createdAt: now(), updatedAt: now() }],
+      freeformValue: undefined,
       createdAt: now(),
       updatedAt: now()
     };
+    setExpandedCustomSections(prev => ({ ...prev, [newSection.id]: true }));
     onUpdate(selected.id, { sections: [...selected.sections, newSection] });
   };
 
