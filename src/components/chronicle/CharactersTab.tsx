@@ -1480,13 +1480,14 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                               disabled={enhancingField !== null}
                               title="Enhance with AI"
                               className={cn(
-                                "p-1.5 rounded-md transition-all flex-shrink-0",
-                                enhancingField === 'roleDescription'
-                                  ? "text-blue-500 animate-pulse cursor-wait"
-                                  : "text-zinc-400 hover:text-blue-500 hover:bg-blue-500/10"
+                                "relative flex items-center justify-center flex-shrink-0 rounded-lg p-[6px] overflow-hidden text-cyan-200 transition-all",
+                                enhancingField === 'roleDescription' ? "animate-pulse cursor-wait" : "hover:brightness-125"
                               )}
+                              style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.40)' }}
                             >
-                              <Sparkles size={14} />
+                              <span aria-hidden className="absolute inset-0 rounded-lg pointer-events-none" style={{ background: 'linear-gradient(90deg, rgba(255,255,255,0.34) 0%, rgba(34,184,200,0.62) 18%, rgba(255,255,255,0.22) 44%, rgba(109,94,247,0.64) 78%, rgba(255,255,255,0.28) 100%)' }} />
+                              <span aria-hidden className="absolute rounded-[6px] pointer-events-none" style={{ inset: '1.5px', background: 'linear-gradient(90deg, rgba(34,184,200,0.22), rgba(109,94,247,0.22)), #2B2D33' }} />
+                              <Sparkles size={13} className="relative z-10" style={{ filter: 'drop-shadow(0 0 6px rgba(34,184,200,0.50))' }} />
                             </button>
                           </div>
                           <AutoResizeTextarea value={selected.roleDescription || ''} onChange={(v) => onUpdate(selected.id, { roleDescription: v })} placeholder="Brief description of the character's role" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 border-x-0 border-b-0 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
