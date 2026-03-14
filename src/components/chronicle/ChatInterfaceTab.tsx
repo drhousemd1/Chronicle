@@ -436,6 +436,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [characterToDelete, setCharacterToDelete] = useState<string | null>(null);
   const [isMainCharacterDelete, setIsMainCharacterDelete] = useState(false);
+  const [chatCanvasHexInput, setChatCanvasHexInput] = useState('#1a1b20');
+  const [chatBubbleHexInput, setChatBubbleHexInput] = useState('#1a1b20');
   
   // Session-scoped world core overrides (global across all characters)
   const [worldCoreSessionOverrides, setWorldCoreSessionOverrides] = useState<Partial<WorldCore> | null>(null);
