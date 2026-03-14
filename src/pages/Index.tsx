@@ -2705,7 +2705,26 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
 
       {/* DraftsModal removed - drafts are now DB-backed and shown in the hub */}
 
+      <StoryExportFormatModal
+        open={storyExportModalOpen}
+        onClose={() => setStoryExportModalOpen(false)}
+        onSelect={handleExportStoryTransfer}
+      />
+
+      <StoryImportModeModal
+        open={storyImportModalOpen}
+        onClose={() => setStoryImportModalOpen(false)}
+        onSelect={handleSelectStoryImportMode}
+      />
+
       <AuthModal open={authModalOpen} onClose={() => setAuthModalOpen(false)} />
+      <input
+        ref={storyTransferFileRef}
+        type="file"
+        accept=".txt,.md,.markdown,.json,.chronicle,.doc,.docx,.rtf,.html,.htm"
+        className="hidden"
+        onChange={handleImportStoryTransferFile}
+      />
       </div>
     </TooltipProvider>
   );
