@@ -813,6 +813,7 @@ const ALL_SWATCHES: SwatchOption[] = [
 ];
 
 export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownload, onRegisterEdits, onEditsCountChange }) => {
+  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('colors');
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [showRestructuring, setShowRestructuring] = useState(false);
