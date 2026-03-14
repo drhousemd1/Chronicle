@@ -180,7 +180,7 @@ const TraitList: React.FC<{
       <button
         type="button"
         onClick={onAddTrait}
-        className="w-full py-2.5 text-sm font-medium text-blue-500 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-500 hover:bg-blue-500/5 rounded-xl transition-all flex items-center justify-center gap-1"
+        className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1"
       >
         <Plus className="w-4 h-4" /> Add Trait
       </button>
@@ -263,7 +263,7 @@ export const PersonalitySection: React.FC<PersonalitySectionProps> = ({
   };
 
   return (
-    <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-[#4a5f7f] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]">
+    <div className="w-full bg-[#2a2a2f] rounded-[24px] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]">
       <div className="bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 px-5 py-3 flex items-center justify-between shadow-lg relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-white/15 to-transparent pointer-events-none" />
         <h2 className="text-white text-xl font-bold tracking-[-0.015em] relative z-[1]">Personality</h2>
@@ -282,15 +282,15 @@ export const PersonalitySection: React.FC<PersonalitySectionProps> = ({
             <div className="space-y-5">
               {/* Split toggle */}
               {!readOnly && (
-                <div className="flex p-1 bg-zinc-900/50 rounded-lg border border-[#4a5f7f] w-fit">
+                <div className="flex p-1.5 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] w-fit">
                   <button
                     type="button"
                     onClick={() => onChange({ ...personality, splitMode: false })}
                     className={cn(
-                      "px-3.5 py-1.5 text-[10px] font-black uppercase tracking-widest rounded border-none cursor-pointer transition-all",
+                      "px-3.5 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg border-none cursor-pointer transition-all",
                       !personality.splitMode
-                        ? "bg-zinc-700 text-blue-500 shadow-sm"
-                        : "bg-transparent text-zinc-500 hover:text-zinc-300"
+                        ? "bg-[#3b82f6] text-white shadow-[0_2px_8px_rgba(59,130,246,0.35)]"
+                        : "bg-[#3f3f46] text-[#a1a1aa] hover:text-zinc-300"
                     )}
                   >
                     Standard
@@ -299,10 +299,10 @@ export const PersonalitySection: React.FC<PersonalitySectionProps> = ({
                     type="button"
                     onClick={() => onChange({ ...personality, splitMode: true })}
                     className={cn(
-                      "px-3.5 py-1.5 text-[10px] font-black uppercase tracking-widest rounded border-none cursor-pointer transition-all",
+                      "px-3.5 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg border-none cursor-pointer transition-all",
                       personality.splitMode
-                        ? "bg-zinc-700 text-blue-500 shadow-sm"
-                        : "bg-transparent text-zinc-500 hover:text-zinc-300"
+                        ? "bg-[#3b82f6] text-white shadow-[0_2px_8px_rgba(59,130,246,0.35)]"
+                        : "bg-[#3f3f46] text-[#a1a1aa] hover:text-zinc-300"
                     )}
                   >
                     Split
