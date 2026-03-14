@@ -406,13 +406,15 @@ const HardcodedSection: React.FC<{
   children: React.ReactNode;
   collapsedContent: React.ReactNode;
 }> = ({ title, isExpanded, onToggle, children, collapsedContent }) => (
-  <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-[#4a5f7f] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
+  <div className="w-full bg-[#2a2a2f] rounded-[24px] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]">
     {/* Section Header */}
-    <div className="bg-[#4a5f7f] border-b border-[#4a5f7f] px-5 py-3 flex items-center justify-between shadow-lg">
-      <h2 className="text-white text-xl font-bold tracking-tight">{title}</h2>
+    <div className="relative bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 px-5 py-3 flex items-center justify-between shadow-lg">
+      {/* Gloss sheen overlay */}
+      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.07] via-transparent to-transparent pointer-events-none" style={{ backgroundSize: '100% 60%', backgroundRepeat: 'no-repeat' }} />
+      <h2 className="text-white text-xl font-bold tracking-[-0.015em] relative z-[1]">{title}</h2>
       <button 
         onClick={onToggle} 
-        className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-ghost-white"
+        className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-ghost-white relative z-[1]"
       >
         {isExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
       </button>
@@ -420,7 +422,7 @@ const HardcodedSection: React.FC<{
     {/* Content */}
     <div className="p-5">
       {/* Inner card for visual depth */}
-      <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl border border-[#4a5f7f]">
+      <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
         {isExpanded ? (
           <div className="space-y-4">
             {children}
@@ -444,7 +446,7 @@ const HardcodedRow: React.FC<{
 }> = ({ label, value, onChange, placeholder, onEnhance, isEnhancing }) => (
   <div className="flex items-start gap-2">
     <div className="w-2/5 flex items-center gap-1.5 min-w-0">
-      <div className="flex-1 px-3 py-2 text-xs font-bold bg-zinc-900/50 border border-[#4a5f7f] text-zinc-400 rounded-lg uppercase tracking-widest min-w-0 break-words">
+      <div className="flex-1 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border-t border-black/35 text-zinc-400 rounded-lg uppercase tracking-widest min-w-0 break-words">
         {label}
       </div>
       {onEnhance && (
@@ -468,7 +470,7 @@ const HardcodedRow: React.FC<{
       value={value}
       onChange={onChange}
       placeholder={placeholder}
-      className="flex-1 px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
+      className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
     />
     <div className="w-7 flex-shrink-0 flex items-center justify-center">
       <Lock className="w-3.5 h-3.5 text-zinc-400" />
@@ -490,7 +492,7 @@ const ExtraRow: React.FC<{
         value={extra.label}
         onChange={(v) => onUpdate({ label: v })}
         placeholder="Label"
-        className="flex-1 px-3 py-2 text-xs font-bold bg-zinc-900/50 border border-[#4a5f7f] text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 placeholder:normal-case placeholder:tracking-normal rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
+        className="flex-1 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border-t border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 placeholder:normal-case placeholder:tracking-normal rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
       />
       {onEnhance && (
         <button
@@ -513,7 +515,7 @@ const ExtraRow: React.FC<{
       value={extra.value}
       onChange={(v) => onUpdate({ value: v })}
       placeholder="Description"
-      className="flex-1 px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
+      className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
     />
     <button
       type="button"
@@ -1513,7 +1515,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
               const args = buildExtraEnhanceArgs('extra_pa', `extra_pa_${extra.id}`, extra, 'physicalAppearance', 'physical appearance detail');
               return <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('physicalAppearance', extra.id, patch)} onDelete={() => handleDeleteExtra('physicalAppearance', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_pa_${extra.id}`, 'custom', () => extra.value, args.setValue, args.customLabel)} isEnhancing={enhancingField === `extra_pa_${extra.id}`} />;
             })}
-            <button type="button" onClick={() => handleAddExtra('physicalAppearance')} className="w-full py-2.5 text-sm font-medium text-blue-500 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-500 hover:bg-blue-500/5 rounded-xl transition-all">
+            <button type="button" onClick={() => handleAddExtra('physicalAppearance')} className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
             </button>
           </HardcodedSection>
@@ -1536,7 +1538,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
               const args = buildExtraEnhanceArgs('extra_cw', `extra_cw_${extra.id}`, extra, 'currentlyWearing', 'currently wearing detail');
               return <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('currentlyWearing', extra.id, patch)} onDelete={() => handleDeleteExtra('currentlyWearing', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_cw_${extra.id}`, 'custom', () => extra.value, args.setValue, args.customLabel)} isEnhancing={enhancingField === `extra_cw_${extra.id}`} />;
             })}
-            <button type="button" onClick={() => handleAddExtra('currentlyWearing')} className="w-full py-2.5 text-sm font-medium text-blue-500 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-500 hover:bg-blue-500/5 rounded-xl transition-all">
+            <button type="button" onClick={() => handleAddExtra('currentlyWearing')} className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
             </button>
           </HardcodedSection>
@@ -1560,7 +1562,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
               const args = buildExtraEnhanceArgs('extra_pc', `extra_pc_${extra.id}`, extra, 'preferredClothing', 'preferred clothing detail');
               return <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('preferredClothing', extra.id, patch)} onDelete={() => handleDeleteExtra('preferredClothing', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_pc_${extra.id}`, 'custom', () => extra.value, args.setValue, args.customLabel)} isEnhancing={enhancingField === `extra_pc_${extra.id}`} />;
             })}
-            <button type="button" onClick={() => handleAddExtra('preferredClothing')} className="w-full py-2.5 text-sm font-medium text-blue-500 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-500 hover:bg-blue-500/5 rounded-xl transition-all">
+            <button type="button" onClick={() => handleAddExtra('preferredClothing')} className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
             </button>
           </HardcodedSection>
@@ -1600,7 +1602,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
               const args = buildExtraEnhanceArgs('extra_tone', `extra_tone_${extra.id}`, extra, 'tone', 'character tone/voice detail');
               return <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('tone', extra.id, patch)} onDelete={() => handleDeleteExtra('tone', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_tone_${extra.id}`, 'custom', () => extra.value, args.setValue, args.customLabel)} isEnhancing={enhancingField === `extra_tone_${extra.id}`} />;
             })}
-            <button type="button" onClick={() => handleAddExtra('tone')} className="w-full py-2.5 text-sm font-medium text-blue-500 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-500 hover:bg-blue-500/5 rounded-xl transition-all">
+            <button type="button" onClick={() => handleAddExtra('tone')} className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
             </button>
           </HardcodedSection>
@@ -1642,7 +1644,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
               const args = buildExtraEnhanceArgs('extra_bg', `extra_bg_${extra.id}`, extra, 'background', 'background detail');
               return <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('background', extra.id, patch)} onDelete={() => handleDeleteExtra('background', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_bg_${extra.id}`, 'custom', () => extra.value, args.setValue, args.customLabel)} isEnhancing={enhancingField === `extra_bg_${extra.id}`} />;
             })}
-            <button type="button" onClick={() => handleAddExtra('background')} className="w-full py-2.5 text-sm font-medium text-blue-500 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-500 hover:bg-blue-500/5 rounded-xl transition-all">
+            <button type="button" onClick={() => handleAddExtra('background')} className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
             </button>
           </HardcodedSection>
@@ -1670,7 +1672,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
               const args = buildExtraEnhanceArgs('extra_kle', `extra_kle_${extra.id}`, extra, 'keyLifeEvents', 'key life event');
               return <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('keyLifeEvents', extra.id, patch)} onDelete={() => handleDeleteExtra('keyLifeEvents', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_kle_${extra.id}`, 'custom', () => extra.value, args.setValue, args.customLabel)} isEnhancing={enhancingField === `extra_kle_${extra.id}`} />;
             })}
-            <button type="button" onClick={() => handleAddExtra('keyLifeEvents')} className="w-full py-2.5 text-sm font-medium text-blue-500 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-500 hover:bg-blue-500/5 rounded-xl transition-all">
+            <button type="button" onClick={() => handleAddExtra('keyLifeEvents')} className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
             </button>
           </HardcodedSection>
@@ -1698,7 +1700,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
               const args = buildExtraEnhanceArgs('extra_rel', `extra_rel_${extra.id}`, extra, 'relationships', 'relationship');
               return <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('relationships', extra.id, patch)} onDelete={() => handleDeleteExtra('relationships', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_rel_${extra.id}`, 'custom', () => extra.value, args.setValue, args.customLabel)} isEnhancing={enhancingField === `extra_rel_${extra.id}`} />;
             })}
-            <button type="button" onClick={() => handleAddExtra('relationships')} className="w-full py-2.5 text-sm font-medium text-blue-500 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-500 hover:bg-blue-500/5 rounded-xl transition-all">
+            <button type="button" onClick={() => handleAddExtra('relationships')} className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
             </button>
           </HardcodedSection>
@@ -1726,7 +1728,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
               const args = buildExtraEnhanceArgs('extra_sec', `extra_sec_${extra.id}`, extra, 'secrets', 'secret');
               return <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('secrets', extra.id, patch)} onDelete={() => handleDeleteExtra('secrets', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_sec_${extra.id}`, 'custom', () => extra.value, args.setValue, args.customLabel)} isEnhancing={enhancingField === `extra_sec_${extra.id}`} />;
             })}
-            <button type="button" onClick={() => handleAddExtra('secrets')} className="w-full py-2.5 text-sm font-medium text-blue-500 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-500 hover:bg-blue-500/5 rounded-xl transition-all">
+            <button type="button" onClick={() => handleAddExtra('secrets')} className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
             </button>
           </HardcodedSection>
@@ -1754,7 +1756,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
               const args = buildExtraEnhanceArgs('extra_fear', `extra_fear_${extra.id}`, extra, 'fears', 'fear');
               return <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('fears', extra.id, patch)} onDelete={() => handleDeleteExtra('fears', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_fear_${extra.id}`, 'custom', () => extra.value, args.setValue, args.customLabel)} isEnhancing={enhancingField === `extra_fear_${extra.id}`} />;
             })}
-            <button type="button" onClick={() => handleAddExtra('fears')} className="w-full py-2.5 text-sm font-medium text-blue-500 hover:text-blue-300 border-2 border-dashed border-zinc-500 hover:border-blue-500 hover:bg-blue-500/5 rounded-xl transition-all">
+            <button type="button" onClick={() => handleAddExtra('fears')} className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
             </button>
           </HardcodedSection>
