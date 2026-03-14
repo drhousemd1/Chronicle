@@ -1851,14 +1851,65 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                   {(expandedCustomSections[section.id] ?? true) ? (
                     <div className="space-y-4">
                     {section.type === 'freeform' ? (
-                      /* Freeform: single textarea */
-                      <AutoResizeTextarea
-                        value={section.freeformValue || ''}
-                        onChange={(v) => handleUpdateSection(selected.id, section.id, { freeformValue: v })}
-                        placeholder="Write your content here..."
-                        className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                        rows={4}
-                      />
+                      /* Freeform: labeled text areas */
+                      <>
+                      {(() => {
+                        const items = section.items.length > 0
+                          ? section.items
+                          : section.freeformValue
+                            ? [{ id: uid('item'), label: '', value: section.freeformValue, createdAt: now(), updatedAt: now() }]
+                            : [{ id: uid('item'), label: '', value: '', createdAt: now(), updatedAt: now() }];
+                        // Auto-migrate freeformValue to items if needed
+                        if (section.items.length === 0 && items.length > 0) {
+                          handleUpdateSection(selected.id, section.id, { items, freeformValue: undefined });
+                        }
+                        return items.map(item => (
+                          <div key={item.id} className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <AutoResizeTextarea
+                                value={item.label}
+                                onChange={(v) => {
+                                  const nextItems = (section.items.length > 0 ? section.items : items).map(it => it.id === item.id ? { ...it, label: v } : it);
+                                  handleUpdateSection(selected.id, section.id, { items: nextItems });
+                                }}
+                                placeholder="LABEL"
+                                className="flex-1 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border-t border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const nextItems = (section.items.length > 0 ? section.items : items).filter(it => it.id !== item.id);
+                                  handleUpdateSection(selected.id, section.id, { items: nextItems.length > 0 ? nextItems : [{ id: uid('item'), label: '', value: '', createdAt: now(), updatedAt: now() }] });
+                                }}
+                                className="text-red-500 hover:text-red-400 p-1.5 rounded-md hover:bg-red-900/30"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                            <AutoResizeTextarea
+                              value={item.value}
+                              onChange={(v) => {
+                                const nextItems = (section.items.length > 0 ? section.items : items).map(it => it.id === item.id ? { ...it, value: v } : it);
+                                handleUpdateSection(selected.id, section.id, { items: nextItems });
+                              }}
+                              placeholder="Write your content here..."
+                              className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                              rows={4}
+                            />
+                          </div>
+                        ));
+                      })()}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const currentItems = section.items.length > 0 ? section.items : [{ id: uid('item'), label: '', value: section.freeformValue || '', createdAt: now(), updatedAt: now() }];
+                          handleUpdateSection(selected.id, section.id, { items: [...currentItems, { id: uid('item'), label: '', value: '', createdAt: now(), updatedAt: now() }], freeformValue: undefined });
+                        }}
+                        className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5"
+                      >
+                        <Plus className="w-4 h-4" /> ADD TEXT FIELD
+                      </button>
+                      </>
                     ) : (
                       /* Structured: label + description rows */
                       <>
