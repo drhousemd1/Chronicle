@@ -464,14 +464,14 @@ const HardcodedRow: React.FC<{
           disabled={isEnhancing}
           title="Enhance with AI"
           className={cn(
-            "w-[26px] h-[26px] rounded-[7px] flex-shrink-0 flex items-center justify-center transition-all",
+            "relative flex items-center justify-center flex-shrink-0 rounded-lg p-[6px] overflow-hidden text-cyan-200 transition-all",
             isEnhancing ? "animate-pulse cursor-wait" : "hover:brightness-125"
           )}
-          style={{
-            background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 15%, #0f3460 35%, #1a6b8a 50%, #533483 65%, #9b2c5e 80%, #e94560 100%)'
-          }}
+          style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.40)' }}
         >
-          <Sparkles size={10} className="text-white" />
+          <span aria-hidden className="absolute inset-0 rounded-lg pointer-events-none" style={{ background: 'linear-gradient(90deg, rgba(255,255,255,0.34) 0%, rgba(34,184,200,0.62) 18%, rgba(255,255,255,0.22) 44%, rgba(109,94,247,0.64) 78%, rgba(255,255,255,0.28) 100%)' }} />
+          <span aria-hidden className="absolute rounded-[6px] pointer-events-none" style={{ inset: '1.5px', background: 'linear-gradient(90deg, rgba(34,184,200,0.22), rgba(109,94,247,0.22)), #2B2D33' }} />
+          <Sparkles size={13} className="relative z-10" style={{ filter: 'drop-shadow(0 0 6px rgba(34,184,200,0.50))' }} />
         </button>
       )}
     </div>
@@ -510,14 +510,14 @@ const ExtraRow: React.FC<{
           disabled={isEnhancing}
           title="Enhance with AI"
           className={cn(
-            "w-[26px] h-[26px] rounded-[7px] flex-shrink-0 flex items-center justify-center transition-all",
+            "relative flex items-center justify-center flex-shrink-0 rounded-lg p-[6px] overflow-hidden text-cyan-200 transition-all",
             isEnhancing ? "animate-pulse cursor-wait" : "hover:brightness-125"
           )}
-          style={{
-            background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 15%, #0f3460 35%, #1a6b8a 50%, #533483 65%, #9b2c5e 80%, #e94560 100%)'
-          }}
+          style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.40)' }}
         >
-          <Sparkles size={10} className="text-white" />
+          <span aria-hidden className="absolute inset-0 rounded-lg pointer-events-none" style={{ background: 'linear-gradient(90deg, rgba(255,255,255,0.34) 0%, rgba(34,184,200,0.62) 18%, rgba(255,255,255,0.22) 44%, rgba(109,94,247,0.64) 78%, rgba(255,255,255,0.28) 100%)' }} />
+          <span aria-hidden className="absolute rounded-[6px] pointer-events-none" style={{ inset: '1.5px', background: 'linear-gradient(90deg, rgba(34,184,200,0.22), rgba(109,94,247,0.22)), #2B2D33' }} />
+          <Sparkles size={13} className="relative z-10" style={{ filter: 'drop-shadow(0 0 6px rgba(34,184,200,0.50))' }} />
         </button>
       )}
     </div>
