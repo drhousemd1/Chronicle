@@ -170,7 +170,7 @@ const StoryTypeSelector: React.FC<{
         Story Type
       </h4>
       
-      <div className="bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-xl p-4 border border-[#4a5f7f] w-fit">
+      <div className="bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-xl p-4 shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)] w-fit">
         <div className="flex gap-2">
           {STORY_TYPES.map(type => {
             const isSelected = selected === type;
