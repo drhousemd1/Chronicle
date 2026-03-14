@@ -1007,11 +1007,12 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
       id: `section-${Date.now()}`,
       title: 'New Category',
       type,
-      items: type === 'structured' ? [{ id: `item-${Date.now()}`, label: '', value: '', createdAt: Date.now(), updatedAt: Date.now() }] : [],
-      freeformValue: type === 'freeform' ? '' : undefined,
+      items: [{ id: `item-${Date.now()}`, label: '', value: '', createdAt: Date.now(), updatedAt: Date.now() }],
+      freeformValue: undefined,
       createdAt: Date.now(),
       updatedAt: Date.now()
     };
+    setExpandedCustomSections(prev => ({ ...prev, [newSection.id]: true }));
     setDraft(prev => ({
       ...prev,
       sections: [...(prev.sections || []), newSection]
