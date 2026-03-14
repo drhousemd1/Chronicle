@@ -163,7 +163,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
                 </p>
               </div>
 
-              <div className="absolute inset-0 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-all duration-300 bg-black/30 z-10 scale-90 group-hover:scale-100">
+              <div className="absolute inset-0 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 scale-90 group-hover:scale-100">
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); setEditingTool(tool); }}
