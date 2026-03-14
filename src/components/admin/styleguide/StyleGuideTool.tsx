@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback, createContext, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Sparkles, Pencil, Lock, X, Plus, Sunrise, Sun, Sunset, Moon, Eye, Heart, Bookmark, Play, ChevronUp, ChevronDown, ArrowLeft, ArrowRight } from 'lucide-react';
 import { StarRating } from '@/components/chronicle/StarRating';
 import { SpiceRating } from '@/components/chronicle/SpiceRating';
