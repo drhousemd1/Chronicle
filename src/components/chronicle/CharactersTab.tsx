@@ -31,8 +31,16 @@ import {
   Flag,
   CircleUserRound,
   Stars,
+  MoreVertical,
+  Move,
   type LucideIcon,
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { aiEnhanceCharacterField, GENERATE_BOTH_PREFIX, parseGenerateBothResponse } from '@/services/character-ai';
 import {
