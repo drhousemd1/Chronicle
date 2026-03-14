@@ -96,8 +96,8 @@ const TraitRow: React.FC<{
           <AutoResizeTextarea
             value={trait.label}
             onChange={(v) => onUpdate({ label: v })}
-            placeholder="Trait name"
-            className="flex-1 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border-t border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 placeholder:normal-case placeholder:tracking-normal rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
+            placeholder="PERSONALITY TRAIT"
+            className="flex-1 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border-t border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
           />
           {onEnhance && (
             <button
