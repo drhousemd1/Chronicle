@@ -971,6 +971,122 @@ const IndexContent = () => {
     return updated;
   }, []);
 
+  const toTransferBaseName = useCallback((scenarioName?: string) => {
+    const base = (scenarioName || "chronicle-story")
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+    const date = new Date().toISOString().slice(0, 10);
+    return `${base || "chronicle-story"}-${date}`;
+  }, []);
+
+  const downloadTransferFile = useCallback((content: string, filename: string, mimeType: string) => {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = filename;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  }, []);
+
+  const handleExportStoryTransfer = useCallback((format: StoryExportFormat) => {
+    if (!activeData) return;
+    try {
+      const baseName = toTransferBaseName(activeData.world.core.scenarioName);
+      if (format === "markdown") {
+        downloadTransferFile(
+          exportScenarioToText(activeData),
+          `${baseName}.chronicle.md`,
+          "text/markdown;charset=utf-8"
+        );
+      } else if (format === "json") {
+        downloadTransferFile(
+          exportScenarioToJson(activeData),
+          `${baseName}.chronicle.json`,
+          "application/json;charset=utf-8"
+        );
+      } else {
+        downloadTransferFile(
+          exportScenarioToWordDocument(activeData),
+          `${baseName}.chronicle.rtf`,
+          "text/rtf;charset=utf-8"
+        );
+      }
+      setStoryTransferNotice({
+        tone: "success",
+        text: `Exported as ${format === "word" ? "Word document" : format.toUpperCase()}.`,
+      });
+    } catch (error) {
+      console.error("Story export failed:", error);
+      setStoryTransferNotice({
+        tone: "error",
+        text: "Export failed. Please try again.",
+      });
+    }
+  }, [activeData, downloadTransferFile, toTransferBaseName]);
+
+  const handleOpenStoryExport = useCallback(() => {
+    if (!activeData) return;
+    setStoryExportModalOpen(true);
+  }, [activeData]);
+
+  const handleOpenStoryImport = useCallback(() => {
+    if (!activeData) return;
+    setStoryImportModalOpen(true);
+  }, [activeData]);
+
+  const handleSelectStoryImportMode = useCallback((mode: StoryImportMode) => {
+    setStoryImportMode(mode);
+    storyTransferFileRef.current?.click();
+  }, []);
+
+  const handleImportStoryTransferFile = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !activeData) return;
+
+    try {
+      const text = await file.text();
+      const result = importScenarioFromAny(
+        { text, fileName: file.name, mimeType: file.type },
+        activeData,
+        storyImportMode
+      );
+      setActiveData(result.data);
+
+      const {
+        updatedStoryFields,
+        updatedCharacters,
+        createdCharacters,
+        createdCharacterCustomSections,
+        createdWorldCustomSections,
+      } = result.summary;
+
+      const summaryParts = [
+        `${updatedStoryFields} story fields`,
+        `${updatedCharacters} characters updated`,
+        `${createdCharacters} characters created`,
+        `${createdCharacterCustomSections + createdWorldCustomSections} custom sections added`,
+      ];
+
+      const warningsCount = result.warnings.length;
+      setStoryTransferNotice({
+        tone: warningsCount > 0 ? "info" : "success",
+        text: `Import ${storyImportMode}: ${summaryParts.join(", ")}.${warningsCount > 0 ? ` ${warningsCount} warning${warningsCount === 1 ? "" : "s"}.` : ""}`,
+      });
+    } catch (error) {
+      console.error("Story import failed:", error);
+      setStoryTransferNotice({
+        tone: "error",
+        text: "Import failed. Try JSON, Markdown/TXT, HTML/DOC, or DOCX again.",
+      });
+    }
+  }, [activeData, storyImportMode]);
+
   // Navigation handler - stashes draft to localStorage as safety net, no DB save
   const handleNavigateAway = useCallback(async (targetTab: TabKey | "library") => {
     if (activeId && activeData) {
