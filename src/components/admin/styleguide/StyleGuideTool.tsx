@@ -944,6 +944,25 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               transition: 'all 0.2s ease',
             }}>{s.label}</button>
           ))}
+          <button
+            type="button"
+            onClick={openUiAudit}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              whiteSpace: 'nowrap',
+              fontSize: 12,
+              fontWeight: 700,
+              padding: '8px 12px',
+              borderRadius: 10,
+              border: '1px solid rgba(74,95,127,0.28)',
+              cursor: 'pointer',
+              background: 'rgba(74,95,127,0.12)',
+              color: sg.primary,
+            }}
+          >
+            UI Audit
+          </button>
         </nav>
       ) : (
         <nav style={{
