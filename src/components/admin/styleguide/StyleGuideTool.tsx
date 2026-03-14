@@ -922,6 +922,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
   const twoCol: React.CSSProperties = { display: 'grid', gridTemplateColumns: isMedium ? '1fr' : 'repeat(2,minmax(0,1fr))', gap: 16, alignItems: 'stretch' };
   const fullSpan: React.CSSProperties = isMedium ? {} : { gridColumn: '1 / -1' };
+  const openUiAudit = useCallback(() => navigate('/style-guide/ui-audit'), [navigate]);
 
   return (
     <EditsContext.Provider value={editsContextValue}>
