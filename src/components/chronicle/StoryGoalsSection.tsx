@@ -321,7 +321,7 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                         value={goal.title}
                         onChange={(v) => updateGoal(goal.id, { title: v })}
                         placeholder="Enter story arc title..."
-                        className={cn("px-3 py-2 text-sm bg-zinc-900/50 border text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500", hasError && !goal.title.trim() ? 'border-red-500 ring-2 ring-red-500' : 'border-[#4a5f7f]')}
+                        className={cn("px-3 py-2 text-sm bg-[#1c1c1f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500", hasError && !goal.title.trim() ? 'border border-red-500 ring-2 ring-red-500' : 'border-t border-black/35')}
                       />
                       {hasError && !goal.title.trim() && (
                         <p className="text-sm text-red-500 font-medium mt-1">Story arc title is required</p>
