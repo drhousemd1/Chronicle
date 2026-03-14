@@ -510,13 +510,14 @@ const ExtraRow: React.FC<{
           disabled={isEnhancing}
           title="Enhance with AI"
           className={cn(
-            "p-1.5 rounded-md transition-all flex-shrink-0",
-            isEnhancing
-              ? "text-blue-500 animate-pulse cursor-wait"
-              : "text-zinc-400 hover:text-blue-500 hover:bg-blue-500/10"
+            "relative overflow-hidden rounded-lg p-[7px] transition-all flex-shrink-0",
+            isEnhancing ? "animate-pulse cursor-wait" : "hover:brightness-125"
           )}
+          style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.40)' }}
         >
-          <Sparkles size={14} />
+          <span className="absolute inset-0 bg-[linear-gradient(90deg,white,teal,white,purple,white)]" />
+          <span className="absolute inset-[1.5px] rounded-[calc(0.5rem-1.5px)]" style={{ background: 'linear-gradient(90deg, rgba(34,184,200,0.22), rgba(109,94,247,0.22)), #2B2D33' }} />
+          <Sparkles size={14} className="relative z-10 text-cyan-200 drop-shadow-[0_0_6px_rgba(34,184,200,0.5)]" />
         </button>
       )}
     </div>
