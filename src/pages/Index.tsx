@@ -28,7 +28,7 @@ import { useAuth } from "@/hooks/use-auth";
 
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { PanelLeftClose, PanelLeft, Settings, Image as ImageIcon, Sparkles, ArrowLeft, UserCircle, Sun, Moon, Download, Pencil, LogIn, LogOut, ChevronDown } from "lucide-react";
+import { PanelLeftClose, PanelLeft, Settings, Image as ImageIcon, Sparkles, ArrowLeft, UserCircle, Sun, Moon, Download, Upload, Pencil, LogIn, LogOut, ChevronDown } from "lucide-react";
 import { AIPromptModal } from "@/components/chronicle/AIPromptModal";
 import {
   DropdownMenu,
@@ -45,7 +45,15 @@ import { ChangeNameModal } from "@/components/chronicle/ChangeNameModal";
 // DraftsModal removed - drafts are now DB-backed
 import { getEditsCount } from "@/components/admin/styleguide/StyleGuideEditsModal";
 import { AuthModal } from "@/components/auth/AuthModal";
-
+import {
+  exportScenarioToJson,
+  exportScenarioToText,
+  exportScenarioToWordDocument,
+  importScenarioFromAny,
+  StoryImportMode,
+} from "@/lib/story-transfer";
+import { StoryExportFormatModal, StoryExportFormat } from "@/components/chronicle/StoryExportFormatModal";
+import { StoryImportModeModal } from "@/components/chronicle/StoryImportModeModal";
 const IconsList = {
   Gallery: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>,
   Hub: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>,
@@ -185,6 +193,14 @@ const IndexContent = () => {
   const [styleGuideEditsCount, setStyleGuideEditsCount] = useState(0);
   const imageLibraryUploadRef = React.useRef<(() => void) | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const storyTransferFileRef = React.useRef<HTMLInputElement | null>(null);
+  const [storyExportModalOpen, setStoryExportModalOpen] = useState(false);
+  const [storyImportModalOpen, setStoryImportModalOpen] = useState(false);
+  const [storyImportMode, setStoryImportMode] = useState<StoryImportMode>('merge');
+  const [storyTransferNotice, setStoryTransferNotice] = useState<{
+    tone: "success" | "error" | "info";
+    text: string;
+  } | null>(null);
   // Pagination state
   const SCENARIO_PAGE_SIZE = 50;
   const [hasMoreScenarios, setHasMoreScenarios] = useState(true);
@@ -954,6 +970,122 @@ const IndexContent = () => {
     setLibrary(updated);
     return updated;
   }, []);
+
+  const toTransferBaseName = useCallback((scenarioName?: string) => {
+    const base = (scenarioName || "chronicle-story")
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+    const date = new Date().toISOString().slice(0, 10);
+    return `${base || "chronicle-story"}-${date}`;
+  }, []);
+
+  const downloadTransferFile = useCallback((content: string, filename: string, mimeType: string) => {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = filename;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  }, []);
+
+  const handleExportStoryTransfer = useCallback((format: StoryExportFormat) => {
+    if (!activeData) return;
+    try {
+      const baseName = toTransferBaseName(activeData.world.core.scenarioName);
+      if (format === "markdown") {
+        downloadTransferFile(
+          exportScenarioToText(activeData),
+          `${baseName}.chronicle.md`,
+          "text/markdown;charset=utf-8"
+        );
+      } else if (format === "json") {
+        downloadTransferFile(
+          exportScenarioToJson(activeData),
+          `${baseName}.chronicle.json`,
+          "application/json;charset=utf-8"
+        );
+      } else {
+        downloadTransferFile(
+          exportScenarioToWordDocument(activeData),
+          `${baseName}.chronicle.rtf`,
+          "text/rtf;charset=utf-8"
+        );
+      }
+      setStoryTransferNotice({
+        tone: "success",
+        text: `Exported as ${format === "word" ? "Word document" : format.toUpperCase()}.`,
+      });
+    } catch (error) {
+      console.error("Story export failed:", error);
+      setStoryTransferNotice({
+        tone: "error",
+        text: "Export failed. Please try again.",
+      });
+    }
+  }, [activeData, downloadTransferFile, toTransferBaseName]);
+
+  const handleOpenStoryExport = useCallback(() => {
+    if (!activeData) return;
+    setStoryExportModalOpen(true);
+  }, [activeData]);
+
+  const handleOpenStoryImport = useCallback(() => {
+    if (!activeData) return;
+    setStoryImportModalOpen(true);
+  }, [activeData]);
+
+  const handleSelectStoryImportMode = useCallback((mode: StoryImportMode) => {
+    setStoryImportMode(mode);
+    storyTransferFileRef.current?.click();
+  }, []);
+
+  const handleImportStoryTransferFile = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !activeData) return;
+
+    try {
+      const text = await file.text();
+      const result = importScenarioFromAny(
+        { text, fileName: file.name, mimeType: file.type },
+        activeData,
+        storyImportMode
+      );
+      setActiveData(result.data);
+
+      const {
+        updatedStoryFields,
+        updatedCharacters,
+        createdCharacters,
+        createdCharacterCustomSections,
+        createdWorldCustomSections,
+      } = result.summary;
+
+      const summaryParts = [
+        `${updatedStoryFields} story fields`,
+        `${updatedCharacters} characters updated`,
+        `${createdCharacters} characters created`,
+        `${createdCharacterCustomSections + createdWorldCustomSections} custom sections added`,
+      ];
+
+      const warningsCount = result.warnings.length;
+      setStoryTransferNotice({
+        tone: warningsCount > 0 ? "info" : "success",
+        text: `Import ${storyImportMode}: ${summaryParts.join(", ")}.${warningsCount > 0 ? ` ${warningsCount} warning${warningsCount === 1 ? "" : "s"}.` : ""}`,
+      });
+    } catch (error) {
+      console.error("Story import failed:", error);
+      setStoryTransferNotice({
+        tone: "error",
+        text: "Import failed. Try JSON, Markdown/TXT, HTML/DOC, or DOCX again.",
+      });
+    }
+  }, [activeData, storyImportMode]);
 
   // Navigation handler - stashes draft to localStorage as safety net, no DB save
   const handleNavigateAway = useCallback(async (targetTab: TabKey | "library") => {
@@ -1885,6 +2017,24 @@ const IndexContent = () => {
                 <>
                   <button
                     type="button"
+                    onClick={handleOpenStoryImport}
+                    disabled={!activeData || isSavingAndClosing || isSaving}
+                    className="inline-flex items-center gap-2 justify-center h-10 px-5 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider disabled:opacity-50 disabled:pointer-events-none"
+                  >
+                    <Upload size={14} />
+                    Import
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleOpenStoryExport}
+                    disabled={!activeData || isSavingAndClosing || isSaving}
+                    className="inline-flex items-center gap-2 justify-center h-10 px-5 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider disabled:opacity-50 disabled:pointer-events-none"
+                  >
+                    <Download size={14} />
+                    Export
+                  </button>
+                  <button
+                    type="button"
                     onClick={async () => {
                       if (!activeId || !activeData) return;
                       // Run validation before saving to DB
@@ -2555,7 +2705,26 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
 
       {/* DraftsModal removed - drafts are now DB-backed and shown in the hub */}
 
+      <StoryExportFormatModal
+        open={storyExportModalOpen}
+        onClose={() => setStoryExportModalOpen(false)}
+        onSelect={handleExportStoryTransfer}
+      />
+
+      <StoryImportModeModal
+        open={storyImportModalOpen}
+        onClose={() => setStoryImportModalOpen(false)}
+        onSelect={handleSelectStoryImportMode}
+      />
+
       <AuthModal open={authModalOpen} onClose={() => setAuthModalOpen(false)} />
+      <input
+        ref={storyTransferFileRef}
+        type="file"
+        accept=".txt,.md,.markdown,.json,.chronicle,.doc,.docx,.rtf,.html,.htm"
+        className="hidden"
+        onChange={handleImportStoryTransferFile}
+      />
       </div>
     </TooltipProvider>
   );
