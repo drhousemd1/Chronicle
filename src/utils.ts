@@ -264,6 +264,8 @@ export function createDefaultScenarioData(): ScenarioData {
       showBackgrounds: true,
       transparentBubbles: false,
       darkMode: false,
+      chatCanvasColor: '#1a1b20',
+      chatBubbleColor: '#1a1b20',
       proactiveCharacterDiscovery: true,  // Default enabled for creative freedom
       dynamicText: true,  // Default enabled for visual text styling
       proactiveNarrative: true,  // Default ON - AI drives story forward
@@ -401,6 +403,14 @@ export function normalizeScenarioData(raw: any): ScenarioData {
     showBackgrounds: typeof raw?.uiSettings?.showBackgrounds === "boolean" ? raw.uiSettings.showBackgrounds : true,
     transparentBubbles: typeof raw?.uiSettings?.transparentBubbles === "boolean" ? raw.uiSettings.transparentBubbles : false,
     darkMode: typeof raw?.uiSettings?.darkMode === "boolean" ? raw.uiSettings.darkMode : false,
+    chatCanvasColor:
+      typeof raw?.uiSettings?.chatCanvasColor === "string" && /^#([0-9a-fA-F]{6})$/.test(raw.uiSettings.chatCanvasColor)
+        ? raw.uiSettings.chatCanvasColor
+        : '#1a1b20',
+    chatBubbleColor:
+      typeof raw?.uiSettings?.chatBubbleColor === "string" && /^#([0-9a-fA-F]{6})$/.test(raw.uiSettings.chatBubbleColor)
+        ? raw.uiSettings.chatBubbleColor
+        : '#1a1b20',
     proactiveCharacterDiscovery: typeof raw?.uiSettings?.proactiveCharacterDiscovery === "boolean" ? raw.uiSettings.proactiveCharacterDiscovery : true,
     dynamicText: typeof raw?.uiSettings?.dynamicText === "boolean" ? raw.uiSettings.dynamicText : true,
     proactiveNarrative: typeof raw?.uiSettings?.proactiveNarrative === "boolean" ? raw.uiSettings.proactiveNarrative : true,
