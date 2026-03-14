@@ -895,6 +895,13 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     allCharactersForDisplay.filter(c => c.characterRole === 'Side'),
     [allCharactersForDisplay]
   );
+  const isExpandedTileInMainCharacters = useMemo(() => {
+    if (!expandedTileCharId) return false;
+    return mainCharactersForDisplay.some(
+      (char) => char._source === 'character' && char.id === expandedTileCharId
+    );
+  }, [expandedTileCharId, mainCharactersForDisplay]);
+  const hasExpandedTile = expandedTileCharId !== null;
 
   // Debug: log conversation state on mount and when it changes
   useEffect(() => {
