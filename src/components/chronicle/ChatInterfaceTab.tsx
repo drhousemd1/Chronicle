@@ -4093,11 +4093,12 @@ const updatedChar: SideCharacter = {
             
             return (
               <div className={`w-full ${offsetBubbles ? 'max-w-3xl mr-auto' : 'max-w-4xl mx-auto'}`}>
-                <div className={`p-8 pt-14 pb-12 rounded-[2rem] border shadow-2xl flex flex-col gap-4 ${
+                <div className={`p-8 pt-14 pb-12 rounded-[2rem] shadow-2xl flex flex-col gap-4 ${
                     bubblesTransparent
-                      ? 'bg-black/50 border-ghost-white'
-                      : 'bg-[#1c1f26] border-ghost-white'
-                }`}>
+                      ? 'bg-black/50'
+                      : ''
+                }`}
+                style={!bubblesTransparent ? { backgroundColor: chatBubbleColor } : undefined}>
                   {segments.map((segment, segIndex) => {
                     // Look up character for this segment using session-aware lookup
                     const segmentChar = segment.speakerName 
