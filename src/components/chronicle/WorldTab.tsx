@@ -828,18 +828,76 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                             </button>
                           </>
                         ) : (
-                          /* Freeform: single large textarea */
-                          <AutoResizeTextarea
-                            value={section.freeformValue || ''}
-                            onChange={(v) => {
+                          /* Freeform: labeled text areas */
+                          <>
+                          {(() => {
+                            const items = section.items.length > 0
+                              ? section.items
+                              : section.freeformValue
+                                ? [{ id: uid('wci'), label: '', value: section.freeformValue }]
+                                : [{ id: uid('wci'), label: '', value: '' }];
+                            if (section.items.length === 0 && items.length > 0) {
                               const sections = [...(world.core.customWorldSections || [])];
-                              sections[sIdx] = { ...sections[sIdx], freeformValue: v };
+                              sections[sIdx] = { ...sections[sIdx], items, freeformValue: undefined };
+                              updateCore({ customWorldSections: sections });
+                            }
+                            return items.map((item, iIdx) => (
+                              <div key={item.id} className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                  <AutoResizeTextarea
+                                    value={item.label}
+                                    onChange={(v) => {
+                                      const sections = [...(world.core.customWorldSections || [])];
+                                      const updatedItems = [...sections[sIdx].items];
+                                      updatedItems[iIdx] = { ...updatedItems[iIdx], label: v };
+                                      sections[sIdx] = { ...sections[sIdx], items: updatedItems };
+                                      updateCore({ customWorldSections: sections });
+                                    }}
+                                    placeholder="LABEL"
+                                    className="flex-1 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border-t border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const sections = [...(world.core.customWorldSections || [])];
+                                      const updatedItems = sections[sIdx].items.filter((_, i) => i !== iIdx);
+                                      sections[sIdx] = { ...sections[sIdx], items: updatedItems.length > 0 ? updatedItems : [{ id: uid('wci'), label: '', value: '' }] };
+                                      updateCore({ customWorldSections: sections });
+                                    }}
+                                    className="text-red-500 hover:text-red-400 p-1.5 rounded-md hover:bg-red-900/30"
+                                  >
+                                    <X size={16} />
+                                  </button>
+                                </div>
+                                <AutoResizeTextarea
+                                  value={item.value}
+                                  onChange={(v) => {
+                                    const sections = [...(world.core.customWorldSections || [])];
+                                    const updatedItems = [...sections[sIdx].items];
+                                    updatedItems[iIdx] = { ...updatedItems[iIdx], value: v };
+                                    sections[sIdx] = { ...sections[sIdx], items: updatedItems };
+                                    updateCore({ customWorldSections: sections });
+                                  }}
+                                  rows={4}
+                                  placeholder="Write your content here..."
+                                  className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                />
+                              </div>
+                            ));
+                          })()}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const sections = [...(world.core.customWorldSections || [])];
+                              const currentItems = sections[sIdx].items.length > 0 ? sections[sIdx].items : [{ id: uid('wci'), label: '', value: sections[sIdx].freeformValue || '' }];
+                              sections[sIdx] = { ...sections[sIdx], items: [...currentItems, { id: uid('wci'), label: '', value: '' }], freeformValue: undefined };
                               updateCore({ customWorldSections: sections });
                             }}
-                            rows={3}
-                            placeholder="Write freely..."
-                            className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                          />
+                            className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5"
+                          >
+                            <Plus size={16} /> ADD TEXT FIELD
+                          </button>
+                          </>
                         )}
                       </div>
                     ))}
