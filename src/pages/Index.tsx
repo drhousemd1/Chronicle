@@ -35,8 +35,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
-  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import * as supabaseData from "@/services/supabase-data";
@@ -201,6 +199,11 @@ const IndexContent = () => {
     tone: "success" | "error" | "info";
     text: string;
   } | null>(null);
+  useEffect(() => {
+    if (!storyTransferNotice) return;
+    const t = setTimeout(() => setStoryTransferNotice(null), 4000);
+    return () => clearTimeout(t);
+  }, [storyTransferNotice]);
   // Pagination state
   const SCENARIO_PAGE_SIZE = 50;
   const [hasMoreScenarios, setHasMoreScenarios] = useState(true);
@@ -2725,6 +2728,22 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
         className="hidden"
         onChange={handleImportStoryTransferFile}
       />
+
+      {/* Story transfer notice toast */}
+      {storyTransferNotice && (
+        <div
+          className={cn(
+            "fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] px-5 py-3 rounded-xl text-sm font-medium shadow-lg border animate-in fade-in slide-in-from-bottom-4 duration-300",
+            storyTransferNotice.tone === "success" && "bg-emerald-900/90 text-emerald-200 border-emerald-700/50",
+            storyTransferNotice.tone === "error" && "bg-red-900/90 text-red-200 border-red-700/50",
+            storyTransferNotice.tone === "info" && "bg-sky-900/90 text-sky-200 border-sky-700/50",
+          )}
+          onClick={() => setStoryTransferNotice(null)}
+          role="status"
+        >
+          {storyTransferNotice.text}
+        </div>
+      )}
       </div>
     </TooltipProvider>
   );
