@@ -1414,16 +1414,16 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                           </div>
                           <div className="space-y-1.5">
                             <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block">Character Role</label>
-                            <div className="flex p-1 bg-zinc-800 rounded-xl">
+                            <div className="flex p-1.5 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]">
                               <button
                                 onClick={() => onUpdate(selected.id, { characterRole: 'Main' })}
-                                className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.characterRole === 'Main' ? 'bg-zinc-700 text-indigo-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+                                className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.characterRole === 'Main' ? 'bg-[#3b82f6] text-white shadow-[0_2px_8px_rgba(59,130,246,0.35)]' : 'bg-[#3f3f46] text-[#a1a1aa] hover:text-zinc-300'}`}
                               >
                                 Main
                               </button>
                               <button
                                 onClick={() => onUpdate(selected.id, { characterRole: 'Side' })}
-                                className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.characterRole === 'Side' ? 'bg-zinc-700 text-zinc-300 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+                                className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.characterRole === 'Side' ? 'bg-[#3b82f6] text-white shadow-[0_2px_8px_rgba(59,130,246,0.35)]' : 'bg-[#3f3f46] text-[#a1a1aa] hover:text-zinc-300'}`}
                               >
                                 Side
                               </button>
