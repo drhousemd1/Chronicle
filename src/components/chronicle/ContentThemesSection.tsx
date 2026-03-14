@@ -132,7 +132,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
                   }}
                   placeholder="Custom..."
                   autoFocus
-                                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 text-white border border-[#4a5f7f] focus:border-blue-500 focus:outline-none w-28"
+                                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#1c1c1f] text-white border-t border-black/35 focus:border-blue-500 focus:outline-none w-28"
                 />
                 <button
                   type="button"
@@ -146,10 +146,10 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
               <button
                 type="button"
                 onClick={() => setShowInput(true)}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-transparent text-blue-500 border-2 border-dashed border-zinc-500 hover:border-blue-500 hover:bg-blue-500/5 transition-all flex items-center gap-1"
+                className="h-8 px-3 rounded-lg text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center gap-1"
               >
                 <Plus className="w-3 h-3" />
-                Add custom
+                ADD CUSTOM
               </button>
             )
           )}
@@ -263,7 +263,7 @@ const CustomTagsSection: React.FC<{
                 }}
                 placeholder="Custom..."
                 autoFocus
-                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 text-white border border-[#4a5f7f] focus:border-blue-500 focus:outline-none w-28"
+                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#1c1c1f] text-white border-t border-black/35 focus:border-blue-500 focus:outline-none w-28"
               />
               <button
                 type="button"
@@ -277,10 +277,10 @@ const CustomTagsSection: React.FC<{
             <button
               type="button"
               onClick={() => setShowInput(true)}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-transparent text-blue-500 border-2 border-dashed border-zinc-500 hover:border-blue-500 hover:bg-blue-500/5 transition-all flex items-center gap-1"
+              className="h-8 px-3 rounded-lg text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center gap-1"
             >
               <Plus className="w-3 h-3" />
-              Add custom
+              ADD CUSTOM
             </button>
           )}
         </div>

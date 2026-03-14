@@ -312,7 +312,7 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
             return (
               <div key={goal.id}>
                 {/* Single arc container */}
-                <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-blue-500/20 relative">
+                <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)] relative">
                   {/* Row 1: Goal Name + Delete + Progress Ring */}
                   <div className="flex items-start gap-4">
                     <div className="flex-1">
@@ -321,7 +321,7 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                         value={goal.title}
                         onChange={(v) => updateGoal(goal.id, { title: v })}
                         placeholder="Enter story arc title..."
-                        className={cn("px-3 py-2 text-sm bg-zinc-900/50 border text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500", hasError && !goal.title.trim() ? 'border-red-500 ring-2 ring-red-500' : 'border-[#4a5f7f]')}
+                        className={cn("px-3 py-2 text-sm bg-[#1c1c1f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500", hasError && !goal.title.trim() ? 'border border-red-500 ring-2 ring-red-500' : 'border-t border-black/35')}
                       />
                       {hasError && !goal.title.trim() && (
                         <p className="text-sm text-red-500 font-medium mt-1">Story arc title is required</p>
@@ -366,7 +366,7 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                       onChange={(v) => updateGoal(goal.id, { desiredOutcome: v })}
                       placeholder="What success looks like..."
                       rows={2}
-                      className={cn("px-3 py-2 text-sm bg-zinc-900/50 border text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500", hasError && !goal.desiredOutcome.trim() ? 'border-red-500 ring-2 ring-red-500' : 'border-[#4a5f7f]')}
+                      className={cn("px-3 py-2 text-sm bg-[#1c1c1f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500", hasError && !goal.desiredOutcome.trim() ? 'border border-red-500 ring-2 ring-red-500' : 'border-t border-black/35')}
                     />
                     {hasError && !goal.desiredOutcome.trim() && (
                       <p className="text-sm text-red-500 font-medium mt-1">Desired outcome is required</p>
@@ -380,7 +380,7 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                   />
 
                   {/* Steps Section */}
-                  <div className="mt-4 pt-5 border-t border-[#4a5f7f]">
+                  <div className="mt-4 pt-5 border-t border-white/10">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <CheckSquare size={14} className="text-blue-500" />
@@ -466,10 +466,10 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
                   <button
                     type="button"
                     onClick={() => addPhase(goal.id)}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 text-sm bg-transparent border-2 border-dashed border-zinc-500 text-blue-500 hover:border-blue-500 hover:bg-blue-500/5 font-medium rounded-xl transition-colors cursor-pointer mt-5"
+                    className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5 mt-5"
                   >
                     <Plus className="w-5 h-5" />
-                    Add Next Phase
+                    ADD NEXT PHASE
                   </button>
                 </div>
               </div>
@@ -479,10 +479,10 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
           {/* Add Story Arc */}
           <button
             onClick={addGoal}
-            className="w-full flex items-center justify-center gap-2 py-2.5 text-sm bg-transparent border-2 border-dashed border-zinc-500 text-blue-500 hover:border-blue-500 hover:bg-blue-500/5 font-medium rounded-xl transition-colors cursor-pointer"
+            className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5"
           >
             <Plus className="w-5 h-5" />
-            Add New Story Arc
+            ADD NEW STORY ARC
           </button>
         </div>
       </div>

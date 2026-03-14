@@ -55,7 +55,7 @@ interface WorldTabProps {
 }
 
 const HintBox: React.FC<{ hints: string[] }> = ({ hints }) => (
-  <div className="bg-zinc-900 rounded-xl p-4 space-y-2 border border-[#4a5f7f]">
+  <div className="bg-zinc-900 rounded-xl p-4 space-y-2 shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
     {hints.map((hint, index) => (
       <p key={index} className="text-sm text-zinc-400 leading-relaxed flex items-start gap-2">
         <span className="text-zinc-500 mt-0.5">◆</span>
@@ -588,14 +588,14 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                       
                       <div data-publish-error={!!publishErrors.storyTitle || undefined}>
                         <FieldLabel label="Story Name" fieldName="scenarioName" />
-                         <AutoResizeTextarea value={world.core.scenarioName} onChange={(v) => updateCore({ scenarioName: v })} placeholder="e.g. Chronicles of Eldoria" className={`px-3 py-2 text-sm bg-zinc-900/50 border text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${(storyNameError && !world.core.scenarioName?.trim()) || publishErrors.storyTitle ? 'border-red-500 ring-2 ring-red-500' : 'border-zinc-500'}`} />
+                         <AutoResizeTextarea value={world.core.scenarioName} onChange={(v) => updateCore({ scenarioName: v })} placeholder="e.g. Chronicles of Eldoria" className={`px-3 py-2 text-sm bg-[#1c1c1f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${(storyNameError && !world.core.scenarioName?.trim()) || publishErrors.storyTitle ? 'border border-red-500 ring-2 ring-red-500' : 'border-t border-black/35'}`} />
                         {((storyNameError && !world.core.scenarioName?.trim()) || publishErrors.storyTitle) && (
                           <p className="text-sm text-red-500 mt-1">{publishErrors.storyTitle || 'Story name is required'}</p>
                         )}
                       </div>
                       <div data-publish-error={!!publishErrors.briefDescription || undefined}>
                         <FieldLabel label="Brief Description" fieldName="briefDescription" />
-                        <AutoResizeTextarea value={world.core.briefDescription || ''} onChange={(v) => updateCore({ briefDescription: v })} rows={2} placeholder="A short summary that appears on your story card (1-2 sentences)..." className={`px-3 py-2 text-sm bg-zinc-900/50 border text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${publishErrors.briefDescription ? 'border-red-500 ring-2 ring-red-500' : 'border-zinc-500'}`} />
+                        <AutoResizeTextarea value={world.core.briefDescription || ''} onChange={(v) => updateCore({ briefDescription: v })} rows={2} placeholder="A short summary that appears on your story card (1-2 sentences)..." className={`px-3 py-2 text-sm bg-[#1c1c1f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${publishErrors.briefDescription ? 'border border-red-500 ring-2 ring-red-500' : 'border-t border-black/35'}`} />
                         {publishErrors.briefDescription && <p className="text-sm text-red-500 font-medium mt-1">{publishErrors.briefDescription}</p>}
                       </div>
                       
@@ -647,7 +647,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                   <div className="grid grid-cols-1 gap-8">
                     <div data-publish-error={!!publishErrors.storyPremise || undefined}>
                       <FieldLabel label="Story Premise" fieldName="storyPremise" />
-                      <AutoResizeTextarea value={world.core.storyPremise || ''} onChange={(v) => updateCore({ storyPremise: v })} rows={8} placeholder="What's the central situation or conflict? What's at stake? Describe the overall narrative the AI should understand..." className={`px-3 py-2 text-sm bg-zinc-900/50 border text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${publishErrors.storyPremise ? 'border-red-500 ring-2 ring-red-500' : 'border-[#4a5f7f]'}`} />
+                      <AutoResizeTextarea value={world.core.storyPremise || ''} onChange={(v) => updateCore({ storyPremise: v })} rows={8} placeholder="What's the central situation or conflict? What's at stake? Describe the overall narrative the AI should understand..." className={`px-3 py-2 text-sm bg-[#1c1c1f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${publishErrors.storyPremise ? 'border border-red-500 ring-2 ring-red-500' : 'border-t border-black/35'}`} />
                       {publishErrors.storyPremise && <p className="text-sm text-red-500 mt-1">{publishErrors.storyPremise}</p>}
                     </div>
                     
@@ -669,7 +669,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                                 updateCore({ structuredLocations: locs });
                               }}
                               placeholder={idx === 0 ? "e.g. The Lakehouse" : "Location name..."}
-                              className="w-2/5 px-3 py-2 text-xs font-bold bg-zinc-900/50 border border-[#4a5f7f] text-zinc-400 uppercase tracking-widest placeholder:text-zinc-500 placeholder:normal-case placeholder:tracking-normal rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                              className="w-2/5 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border-t border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                             />
                             <AutoResizeTextarea 
                               value={loc.description} 
@@ -680,7 +680,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                               }}
                               rows={1}
                               placeholder={idx === 0 ? "A secluded cabin by the lake..." : "Describe this location..."}
-                              className="flex-1 px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                              className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                             />
                             <button
                               type="button"
@@ -702,10 +702,10 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                             locs.push({ id: uid('loc'), label: '', description: '' });
                             updateCore({ structuredLocations: locs });
                           }}
-                          className="flex items-center gap-2 text-blue-500 hover:text-blue-300 text-sm transition-colors"
+                          className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5"
                         >
                           <Plus size={16} />
-                          <span>Add Location</span>
+                          <span>ADD LOCATION</span>
                         </button>
                       </div>
                     </div>
@@ -801,7 +801,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                                   }}
                                   rows={1}
                                   placeholder="Description..."
-                                  className="flex-1 px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                  className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                                 />
                                 <button
                                   type="button"
@@ -882,7 +882,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                                   }}
                                   rows={4}
                                   placeholder="Write your content here..."
-                                  className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                  className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                                 />
                               </div>
                             ));
@@ -979,7 +979,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                         onChange={(v) => onUpdateOpening({ text: v })} 
                         rows={8} 
                         placeholder='James: *James looked up from where he sat on the ground* (What was that?) "Hello? Is anyone there?"'
-                        className={`px-3 py-2 text-sm bg-zinc-900/50 border text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${publishErrors.openingDialog ? 'border-red-500 ring-2 ring-red-500' : 'border-[#4a5f7f]'}`}
+                        className={`px-3 py-2 text-sm bg-[#1c1c1f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${publishErrors.openingDialog ? 'border border-red-500 ring-2 ring-red-500' : 'border-t border-black/35'}`}
                       />
                       {publishErrors.openingDialog && <p className="text-sm text-red-500 mt-1">{publishErrors.openingDialog}</p>}
                     </div>
@@ -1001,7 +1001,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                         </div>
                         <div className="flex items-center gap-3">
                           {/* Day Counter */}
-                          <div className="flex items-center gap-1.5 bg-zinc-800 rounded-xl px-3 py-1.5 border border-[#4a5f7f]">
+                          <div className="flex items-center gap-1.5 bg-[#3c3e47] rounded-xl px-3 py-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]">
                             <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Day</span>
                             <button
                               type="button"
@@ -1030,7 +1030,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                           </div>
 
                           {/* Time of Day Icons */}
-                          <div className="flex items-center gap-1 bg-zinc-800 rounded-xl p-1 border border-[#4a5f7f]">
+                          <div className="flex items-center gap-1 bg-[#3c3e47] rounded-xl p-1 shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]">
                             {([
                               { key: 'sunrise' as TimeOfDay, icon: Sunrise, label: 'Sunrise' },
                               { key: 'day' as TimeOfDay, icon: Sun, label: 'Day' },
@@ -1075,7 +1075,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                             </TooltipContent>
                           </Tooltip>
                         </div>
-                        <div className="flex p-1 bg-zinc-900/50 rounded-xl border border-[#4a5f7f]">
+                        <div className="flex p-1 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]">
                           <button
                             type="button"
                             onClick={() => onUpdateOpening({ timeProgressionMode: 'manual' })}
@@ -1112,7 +1112,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                         <select
                           value={openingDialog.timeProgressionInterval || 15}
                           onChange={(e) => onUpdateOpening({ timeProgressionInterval: Number(e.target.value) })}
-                          className="bg-zinc-800 border border-[#4a5f7f] rounded-xl text-xs text-white px-2.5 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          className="bg-[#1c1c1f] border-t border-black/35 rounded-xl text-xs text-white px-2.5 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
                         >
                           <option value={5}>5 minutes</option>
                           <option value={10}>10 minutes</option>
@@ -1179,7 +1179,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                       const sceneTags = scene.tags ?? ((scene as any).tag ? [(scene as any).tag] : []);
                       
                       return (
-                        <div key={scene.id} className="group relative rounded-xl overflow-hidden border border-[#4a5f7f] bg-zinc-800 cursor-pointer" onClick={() => setEditingScene({ ...scene, tags: sceneTags })}>
+                        <div key={scene.id} className="group relative rounded-xl overflow-hidden bg-zinc-800 cursor-pointer shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]" onClick={() => setEditingScene({ ...scene, tags: sceneTags })}>
                           {/* Image with zoom hover */}
                           <div className="aspect-video overflow-hidden">
                             <img 
@@ -1240,7 +1240,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                       );
                     })}
                     {scenes.length === 0 && (
-                      <div className="col-span-full py-12 text-center text-zinc-500 border-2 border-dashed border-[#4a5f7f] rounded-2xl bg-[hsl(var(--ui-surface))]">
+                      <div className="col-span-full py-12 text-center text-zinc-500 border-2 border-dashed border-zinc-600 rounded-2xl bg-[hsl(var(--ui-surface))]">
                          <p className="text-xs font-bold uppercase tracking-widest">No scenes uploaded</p>
                          <p className="text-sm mt-1 text-zinc-500">Upload images to enable dynamic backgrounds in chat.</p>
                       </div>
@@ -1277,7 +1277,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                     </TooltipContent>
                   </Tooltip>
                 </div>
-                <div className="p-3 bg-zinc-900/50 rounded-xl border border-[#4a5f7f] overflow-visible">
+                <div className="p-3 bg-[#2e2e33] rounded-xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)] overflow-visible">
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                     {AVATAR_STYLES.map((style) => (
                       <button
@@ -1337,7 +1337,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                       </label>
                       
                       {/* Critical rules - always present, read-only */}
-                      <div className="bg-zinc-900/50 border border-[#4a5f7f] rounded-lg px-3 py-2 text-sm text-zinc-300">
+                      <div className="bg-[#1c1c1f] rounded-lg px-3 py-2 text-sm text-zinc-300 shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
                         <ul className="list-disc list-inside space-y-1">
                           <li>Enclose all spoken dialogue in " "</li>
                           <li>Enclose all physical actions or descriptions in * *</li>
@@ -1353,7 +1353,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                           onChange={(v) => updateCore({ dialogFormatting: v })} 
                           rows={3} 
                           placeholder="Add any custom formatting preferences here..."
-                          className="px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                          className="px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                         />
                       </div>
                     </div>
@@ -1363,7 +1363,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                         <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Additional Entries</h3>
                         <div className="grid grid-cols-1 gap-6">
                           {world.entries.map(entry => (
-                            <div key={entry.id} className="p-6 space-y-4 group rounded-2xl bg-zinc-800/50 border border-[#4a5f7f]">
+                            <div key={entry.id} className="p-6 space-y-4 group rounded-2xl bg-zinc-800/50 shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
                               <div className="flex justify-between items-center">
                                 <div className="flex-1">
                                   <AutoResizeTextarea 
@@ -1378,7 +1378,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                                   onUpdateWorld({ entries: next });
                                 }}><Icons.Trash /></Button>
                               </div>
-                              <AutoResizeTextarea value={entry.body} onChange={(v) => handleUpdateEntry(entry.id, { body: v })} placeholder="Detail the specifics..." rows={4} className="px-3 py-2 text-sm bg-transparent border border-[#4a5f7f] text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                              <AutoResizeTextarea value={entry.body} onChange={(v) => handleUpdateEntry(entry.id, { body: v })} placeholder="Detail the specifics..." rows={4} className="px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                             </div>
                           ))}
                         </div>
@@ -1615,7 +1615,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
             id: uid('wcs'),
             title: '',
             type,
-            items: type === 'structured' ? [{ id: uid('wci'), label: '', value: '' }] : [],
+            items: type === 'structured' ? [{ id: uid('wci'), label: '', value: '' }] : [{ id: uid('wci'), label: '', value: '' }],
             freeformValue: type === 'freeform' ? '' : undefined,
           });
           updateCore({ customWorldSections: sections });
