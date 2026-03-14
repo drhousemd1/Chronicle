@@ -118,7 +118,7 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDel
             {scen.description || "No summary provided."}
           </p>
           {/* Stats row: show all 4 for published, only Play for unpublished */}
-          <div className="flex items-center gap-3 text-[10px] text-[rgba(248,250,252,0.7)] mt-1">
+          <div className="flex items-center gap-3 text-[10px] text-white mt-1">
             {publishedData ? (
               <>
                 <span className="flex items-center gap-1">
