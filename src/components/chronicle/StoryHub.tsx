@@ -24,27 +24,6 @@ interface ScenarioCardProps {
 }
 
 const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDelete, onViewDetails, isPublished, isDraft, contentThemes, publishedData, displayAuthor }) => {
-  const cardRef = useRef<HTMLDivElement>(null);
-  const infoRef = useRef<HTMLDivElement>(null);
-  const [overlayTop, setOverlayTop] = useState<number | null>(null);
-
-  // Measure the real position of the bottom info block relative to the card
-  useLayoutEffect(() => {
-    const measure = () => {
-      if (!cardRef.current || !infoRef.current) return;
-      const cardRect = cardRef.current.getBoundingClientRect();
-      const infoRect = infoRef.current.getBoundingClientRect();
-      // Top of the info block relative to the card, with a small padding above
-      setOverlayTop(infoRect.top - cardRect.top - 8);
-    };
-
-    measure();
-
-    const ro = new ResizeObserver(measure);
-    if (cardRef.current) ro.observe(cardRef.current);
-
-    return () => ro.disconnect();
-  }, [scen.title, scen.description]);
 
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();

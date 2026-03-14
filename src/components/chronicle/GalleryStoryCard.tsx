@@ -80,8 +80,8 @@ export const GalleryScenarioCard: React.FC<GalleryScenarioCardProps> = ({
           </div>
         )}
         
-        {/* Flat dark overlay for text readability */}
-        <div className="absolute inset-0 bg-black/40 pointer-events-none" />
+        {/* Always-visible bottom gradient for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/70 pointer-events-none z-[1]" />
 
         {/* SFW/NSFW Badge */}
         {published.contentThemes?.storyType && (

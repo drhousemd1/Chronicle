@@ -1075,10 +1075,10 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                   </div>
                 )}
 
-                {/* Flat dark overlay for text readability */}
-                <div className="absolute inset-0 bg-black/40 pointer-events-none" />
+                {/* Always-visible bottom gradient for text readability */}
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/70 pointer-events-none z-[1]" />
 
-                <div className="absolute inset-x-0 bottom-0 p-6">
+                <div className="absolute inset-x-0 bottom-0 p-6 z-[2]">
                   <div className="flex flex-wrap gap-2 mb-2">
                     {c.tags && c.tags.split(',').slice(0, 2).map(tag => (
                       <span key={tag} className="bg-blue-500 text-[9px] font-black text-white px-2 py-1 rounded-md uppercase tracking-widest shadow-lg truncate max-w-[100px]">
