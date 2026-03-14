@@ -3844,8 +3844,9 @@ const updatedChar: SideCharacter = {
                 <div className={`p-8 pt-14 pb-12 rounded-[2rem] shadow-2xl flex flex-col gap-4 transition-all relative ${
                   bubblesTransparent
                     ? 'bg-black/50'
-                    : 'bg-[#1c1f26]'
-                } ${!isAi ? 'border-2 border-blue-500' : 'border border-ghost-white hover:border-ghost-white'}`}>
+                    : ''
+                }`}
+                style={!bubblesTransparent ? { backgroundColor: chatBubbleColor } : undefined}>
                   
                   {/* Action buttons - top right corner */}
                   <div className={`absolute top-4 right-4 flex items-center gap-1 transition-opacity ${
