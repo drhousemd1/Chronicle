@@ -199,6 +199,11 @@ const IndexContent = () => {
     tone: "success" | "error" | "info";
     text: string;
   } | null>(null);
+  useEffect(() => {
+    if (!storyTransferNotice) return;
+    const t = setTimeout(() => setStoryTransferNotice(null), 4000);
+    return () => clearTimeout(t);
+  }, [storyTransferNotice]);
   // Pagination state
   const SCENARIO_PAGE_SIZE = 50;
   const [hasMoreScenarios, setHasMoreScenarios] = useState(true);
