@@ -1240,7 +1240,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                       );
                     })}
                     {scenes.length === 0 && (
-                      <div className="col-span-full py-12 text-center text-zinc-500 border-2 border-dashed border-[#4a5f7f] rounded-2xl bg-[hsl(var(--ui-surface))]">
+                      <div className="col-span-full py-12 text-center text-zinc-500 border-2 border-dashed border-zinc-600 rounded-2xl bg-[hsl(var(--ui-surface))]">
                          <p className="text-xs font-bold uppercase tracking-widest">No scenes uploaded</p>
                          <p className="text-sm mt-1 text-zinc-500">Upload images to enable dynamic backgrounds in chat.</p>
                       </div>
