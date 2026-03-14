@@ -12,7 +12,7 @@
 | B | Story Transfer Library (story-transfer.ts) | ✅ |
 | A | UI Audit System (schema, utils, findings, page) | 🔄 |
 | B | Story Export/Import Modals | ✅ |
-| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ⬜ |
+| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
 | D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
 | - | StyleGuideTool.tsx audit button | ⬜ |
 | - | App.tsx route wiring | ⬜ |
@@ -29,7 +29,7 @@
 | 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
 | 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
 | 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
-| 8 | `CharactersTab.tsx` | ⬜ TODO | Large merge — Character Builder left nav redesign |
+| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
 | 9 | `ChatInterfaceTab.tsx` | ⬜ TODO | Large merge — Avatar UX + Bubble Color Controls |
 | 10 | `StyleGuideTool.tsx` | ⬜ TODO | Add UI Audit button |
 | 11 | `src/pages/style-guide/ui-audit.tsx` | ⬜ TODO | New page — full audit dashboard |
@@ -46,6 +46,8 @@
 - `src/data/ui-audit-findings.ts`: line 18967
 - `StoryExportFormatModal.tsx`: line 9642
 - `StoryImportModeModal.tsx`: line 9731
+- `CharactersTab.tsx`: line 2893
+- `ChatInterfaceTab.tsx`: line 5004
 - `src/pages/style-guide/ui-audit.tsx`: line 17867
 - `src/App.tsx`: line 95
 - Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout

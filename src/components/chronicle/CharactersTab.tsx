@@ -1,5 +1,4 @@
-
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { Character, CharacterTraitSection, CharacterTraitSectionType, ScenarioData, PhysicalAppearance, CurrentlyWearing, PreferredClothing, CharacterGoal, CharacterExtraRow, CharacterBackground, CharacterTone, CharacterKeyLifeEvents, CharacterRelationships, CharacterSecrets, CharacterFears, defaultCharacterBackground } from '@/types';
 import { CustomContentTypeModal } from './CustomContentTypeModal';
 import { Button, TextArea, Card } from './UI';
@@ -10,9 +9,39 @@ import { uploadAvatar, dataUrlToBlob } from '@/services/supabase-data';
 
 import { AvatarGenerationModal } from './AvatarGenerationModal';
 import { AvatarActionButtons } from './AvatarActionButtons';
-import { Sparkles, ChevronDown, ChevronUp, Trash2, Plus, X, Lock } from 'lucide-react';
+import {
+  Sparkles,
+  ChevronDown,
+  ChevronUp,
+  Trash2,
+  Plus,
+  X,
+  Lock,
+  Check,
+  PenSquare,
+  Fingerprint,
+  Accessibility,
+  Shirt,
+  Brain,
+  Mic2,
+  ScrollText,
+  Users,
+  EyeOff,
+  TriangleAlert,
+  Flag,
+  CircleUserRound,
+  Stars,
+  type LucideIcon,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { aiEnhanceCharacterField, GENERATE_BOTH_PREFIX, parseGenerateBothResponse } from '@/services/character-ai';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 import { EnhanceModeModal, EnhanceMode } from './EnhanceModeModal';
 import { CharacterGoalsSection } from './CharacterGoalsSection';
@@ -29,6 +58,316 @@ interface CharactersTabProps {
   onAddNew?: () => void;
 }
 
+const BUILT_IN_TRAIT_SECTIONS: Array<{ key: string; label: string }> = [
+  { key: 'profile', label: 'Profile' },
+  { key: 'physicalAppearance', label: 'Physical Appearance' },
+  { key: 'currentlyWearing', label: 'Currently Wearing' },
+  { key: 'preferredClothing', label: 'Preferred Clothing' },
+  { key: 'personality', label: 'Personality' },
+  { key: 'tone', label: 'Tone' },
+  { key: 'background', label: 'Background' },
+  { key: 'keyLifeEvents', label: 'Key Life Events' },
+  { key: 'relationships', label: 'Relationships' },
+  { key: 'secrets', label: 'Secrets' },
+  { key: 'fears', label: 'Fears' },
+  { key: 'characterGoals', label: 'Character Goals' },
+];
+
+const NON_PROFILE_BUILT_IN_TRAIT_SECTIONS = BUILT_IN_TRAIT_SECTIONS.filter(
+  (section) => section.key !== 'profile'
+);
+
+const TRAIT_NAV_ICON_BY_KEY: Record<string, LucideIcon> = {
+  profile: Fingerprint,
+  physicalAppearance: Accessibility,
+  currentlyWearing: CircleUserRound,
+  preferredClothing: Shirt,
+  personality: Brain,
+  tone: Mic2,
+  background: ScrollText,
+  keyLifeEvents: Stars,
+  relationships: Users,
+  secrets: EyeOff,
+  fears: TriangleAlert,
+  characterGoals: Flag,
+};
+
+type SectionProgress = {
+  completed: number;
+  total: number;
+  percent: number;
+};
+
+type NavButtonImageConfig = {
+  src: string;
+  x: number;
+  y: number;
+  scale: number;
+};
+
+const CHARACTER_NAV_SIDEBAR_WIDTH = 320;
+const CHARACTER_NAV_BUTTON_HEIGHT = 60;
+const CHARACTER_NAV_OUTER_PADDING = 10;
+const CHARACTER_NAV_TRAY_PADDING = 10;
+const CHARACTER_NAV_PREVIEW_WIDTH =
+  CHARACTER_NAV_SIDEBAR_WIDTH - CHARACTER_NAV_OUTER_PADDING * 2 - CHARACTER_NAV_TRAY_PADDING * 2;
+
+const isFilledText = (value: string | null | undefined) => typeof value === 'string' && value.trim().length > 0;
+
+const toProgress = (completed: number, total: number): SectionProgress => ({
+  completed,
+  total,
+  percent: total > 0 ? Math.round((completed / total) * 100) : 0,
+});
+
+const countSimpleFields = (values: Array<string | null | undefined>): { completed: number; total: number } => ({
+  completed: values.filter(isFilledText).length,
+  total: values.length,
+});
+
+const countExtraRows = (rows?: CharacterExtraRow[]): { completed: number; total: number } => {
+  const safeRows = rows || [];
+  return {
+    completed: safeRows.reduce((acc, row) => acc + (isFilledText(row.label) ? 1 : 0) + (isFilledText(row.value) ? 1 : 0), 0),
+    total: safeRows.length * 2,
+  };
+};
+
+const combineCounts = (...counts: Array<{ completed: number; total: number }>): { completed: number; total: number } => ({
+  completed: counts.reduce((acc, count) => acc + count.completed, 0),
+  total: counts.reduce((acc, count) => acc + count.total, 0),
+});
+
+const calculateSectionProgress = (character: Character, sectionKey: string): SectionProgress => {
+  if (sectionKey.startsWith('custom:')) {
+    const sectionId = sectionKey.replace('custom:', '');
+    const section = character.sections.find((s) => s.id === sectionId);
+    if (!section) return toProgress(0, 0);
+    if (section.type === 'freeform') {
+      return toProgress(isFilledText(section.freeformValue) ? 1 : 0, 1);
+    }
+    const structured = combineCounts(...section.items.map((item) => countSimpleFields([item.label, item.value])));
+    return toProgress(structured.completed, structured.total);
+  }
+
+  switch (sectionKey) {
+    case 'profile': {
+      const profile = countSimpleFields([
+        character.name,
+        character.nicknames,
+        character.age,
+        character.sexType,
+        character.sexualOrientation,
+        character.location,
+        character.currentMood,
+        character.roleDescription,
+      ]);
+      return toProgress(profile.completed, profile.total);
+    }
+    case 'physicalAppearance': {
+      const core = countSimpleFields([
+        character.physicalAppearance?.hairColor,
+        character.physicalAppearance?.eyeColor,
+        character.physicalAppearance?.build,
+        character.physicalAppearance?.bodyHair,
+        character.physicalAppearance?.height,
+        character.physicalAppearance?.breastSize,
+        character.physicalAppearance?.genitalia,
+        character.physicalAppearance?.skinTone,
+        character.physicalAppearance?.makeup,
+        character.physicalAppearance?.bodyMarkings,
+        character.physicalAppearance?.temporaryConditions,
+      ]);
+      const extras = countExtraRows(character.physicalAppearance?._extras);
+      return toProgress(core.completed + extras.completed, core.total + extras.total);
+    }
+    case 'currentlyWearing': {
+      const core = countSimpleFields([
+        character.currentlyWearing?.top,
+        character.currentlyWearing?.bottom,
+        character.currentlyWearing?.undergarments,
+        character.currentlyWearing?.miscellaneous,
+      ]);
+      const extras = countExtraRows(character.currentlyWearing?._extras);
+      return toProgress(core.completed + extras.completed, core.total + extras.total);
+    }
+    case 'preferredClothing': {
+      const core = countSimpleFields([
+        character.preferredClothing?.casual,
+        character.preferredClothing?.work,
+        character.preferredClothing?.sleep,
+        character.preferredClothing?.undergarments,
+        character.preferredClothing?.miscellaneous,
+      ]);
+      const extras = countExtraRows(character.preferredClothing?._extras);
+      return toProgress(core.completed + extras.completed, core.total + extras.total);
+    }
+    case 'personality': {
+      const personality = character.personality;
+      if (!personality) return toProgress(0, 0);
+      const traits = personality.splitMode
+        ? [...(personality.outwardTraits || []), ...(personality.inwardTraits || [])]
+        : (personality.traits || []);
+      const traitCounts = combineCounts(...traits.map((trait) => countSimpleFields([trait.label, trait.value])));
+      return toProgress(traitCounts.completed, traitCounts.total);
+    }
+    case 'tone': {
+      const toneExtras = countExtraRows(character.tone?._extras);
+      return toProgress(toneExtras.completed, toneExtras.total);
+    }
+    case 'background': {
+      const core = countSimpleFields([
+        character.background?.jobOccupation,
+        character.background?.educationLevel,
+        character.background?.residence,
+        character.background?.hobbies,
+        character.background?.financialStatus,
+        character.background?.motivation,
+      ]);
+      const extras = countExtraRows(character.background?._extras);
+      return toProgress(core.completed + extras.completed, core.total + extras.total);
+    }
+    case 'keyLifeEvents': {
+      const extras = countExtraRows(character.keyLifeEvents?._extras);
+      return toProgress(extras.completed, extras.total);
+    }
+    case 'relationships': {
+      const extras = countExtraRows(character.relationships?._extras);
+      return toProgress(extras.completed, extras.total);
+    }
+    case 'secrets': {
+      const extras = countExtraRows(character.secrets?._extras);
+      return toProgress(extras.completed, extras.total);
+    }
+    case 'fears': {
+      const extras = countExtraRows(character.fears?._extras);
+      return toProgress(extras.completed, extras.total);
+    }
+    case 'characterGoals': {
+      const goals = character.goals || [];
+      const goalCounts = combineCounts(
+        ...goals.map((goal) => ({
+          completed: (isFilledText(goal.title) ? 1 : 0) + (isFilledText(goal.desiredOutcome) ? 1 : 0) + (goal.steps || []).filter((step) => isFilledText(step.description)).length,
+          total: 2 + (goal.steps || []).length,
+        }))
+      );
+      return toProgress(goalCounts.completed, goalCounts.total);
+    }
+    default:
+      return toProgress(0, 0);
+  }
+};
+
+const SidebarProgressRing: React.FC<{ progress: SectionProgress; active: boolean; className?: string }> = ({ progress, active, className }) => {
+  const size = 32;
+  const strokeWidth = 3;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const safePercent = Math.max(0, Math.min(100, progress.percent));
+  const done = progress.total > 0 && progress.completed >= progress.total;
+  const strokeDashoffset = done ? 0 : circumference - (safePercent / 100) * circumference;
+
+  return (
+    <span
+      className={cn(
+        "relative inline-flex items-center justify-center w-8 h-8 shrink-0",
+        className
+      )}
+      title={progress.total > 0 ? `${progress.percent}% complete (${progress.completed}/${progress.total})` : 'No fields yet'}
+      aria-label={progress.total > 0 ? `${progress.percent}% complete` : 'No fields yet'}
+    >
+      <svg width={size} height={size} className="-rotate-90">
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="rgba(59,130,246,0.18)"
+          strokeWidth={strokeWidth}
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="#3b82f6"
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+        />
+      </svg>
+      <span className="absolute inset-0 flex items-center justify-center">
+        {done ? (
+          <Check className="w-[14px] h-[14px] text-[#3b82f6]" />
+        ) : (
+          <span className={cn("text-[10px] font-bold leading-none", active || safePercent > 0 ? "text-[#eaedf1]" : "text-[#71717a]")}>
+            {safePercent}%
+          </span>
+        )}
+      </span>
+    </span>
+  );
+};
+
+const TraitSidebarButton: React.FC<{
+  label: string;
+  progress: SectionProgress;
+  active: boolean;
+  onClick: () => void;
+  icon: LucideIcon;
+  backgroundImage?: NavButtonImageConfig;
+}> = ({ label, progress, active, onClick, icon: Icon, backgroundImage }) => {
+  const hasMeaningfulProgress = progress.total > 0 && progress.percent > 0;
+  const isCompleted = progress.total > 0 && progress.completed >= progress.total;
+  const highlightIcon = active || hasMeaningfulProgress || isCompleted;
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "relative w-full min-h-[60px] px-[14px] rounded-[14px] border-2 border-transparent text-left select-none overflow-hidden",
+        "flex items-center justify-between gap-3",
+        "bg-[#3c3e47] text-[#eaedf1]",
+        "shadow-[0_2px_6px_rgba(0,0,0,0.40),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]",
+        "transition-[filter,transform,box-shadow,border-color] duration-150 ease-out",
+        "hover:brightness-[1.12] hover:-translate-y-px active:brightness-95 active:translate-y-0 active:scale-[0.99]",
+        active && "border-[#3b82f6] shadow-[0_2px_6px_rgba(59,130,246,0.35),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]"
+      )}
+    >
+      {backgroundImage && (
+        <>
+          <img
+            src={backgroundImage.src}
+            alt=""
+            aria-hidden
+            className="absolute top-0 left-0 pointer-events-none select-none max-w-none"
+            style={{
+              transformOrigin: '0 0',
+              transform: `translate(${backgroundImage.x}px, ${backgroundImage.y}px) scale(${backgroundImage.scale})`,
+            }}
+          />
+          <span
+            className={cn(
+              "absolute inset-0 pointer-events-none",
+              active ? "bg-black/[0.38]" : "bg-black/[0.52]"
+            )}
+          />
+        </>
+      )}
+
+      <span className="relative z-10 min-w-0 flex items-center gap-[10px]">
+        <Icon className={cn("w-[18px] h-[18px] shrink-0", highlightIcon ? "text-[#60a5fa]" : "text-[#6b7280]")} />
+        <span className="truncate text-[12px] font-black tracking-[0.08em] leading-tight uppercase text-[#eaedf1]">
+          {label}
+        </span>
+      </span>
+      <SidebarProgressRing progress={progress} active={active} className="relative z-10" />
+    </button>
+  );
+};
+
 // Auto-resizing textarea that wraps text and grows with content
 const AutoResizeTextarea: React.FC<{
   value: string;
@@ -38,14 +377,14 @@ const AutoResizeTextarea: React.FC<{
   rows?: number;
 }> = ({ value, onChange, placeholder, className = '', rows = 1 }) => {
   const ref = React.useRef<HTMLTextAreaElement>(null);
-  
+
   React.useEffect(() => {
     if (ref.current) {
       ref.current.style.height = 'auto';
       ref.current.style.height = `${ref.current.scrollHeight}px`;
     }
   }, [value]);
-  
+
   return (
     <textarea
       ref={ref}
@@ -70,7 +409,7 @@ const HardcodedSection: React.FC<{
   <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-[#4a5f7f] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
     {/* Section Header */}
     <div className="bg-[#4a5f7f] border-b border-[#4a5f7f] px-5 py-3 flex items-center justify-between shadow-lg">
-      <h2 className="text-white text-xl font-semibold tracking-tight">{title}</h2>
+      <h2 className="text-white text-xl font-bold tracking-tight">{title}</h2>
       <button 
         onClick={onToggle} 
         className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-ghost-white"
@@ -225,6 +564,14 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
     characterGoals: true
   });
   const [expandedCustomSections, setExpandedCustomSections] = useState<Record<string, boolean>>({});
+  const [activeTraitSection, setActiveTraitSection] = useState<string>('profile');
+  const [navButtonImages, setNavButtonImages] = useState<Record<string, NavButtonImageConfig>>({});
+  const [showNavImageEditor, setShowNavImageEditor] = useState(false);
+  const [editingNavKey, setEditingNavKey] = useState<string>('physicalAppearance');
+  const [draftNavImage, setDraftNavImage] = useState<NavButtonImageConfig | null>(null);
+  const [isDraggingNavImage, setIsDraggingNavImage] = useState(false);
+  const navDragStartRef = useRef<{ mouseX: number; mouseY: number; imageX: number; imageY: number } | null>(null);
+  const navImageFileInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const avatarContainerRef = useRef<HTMLDivElement>(null);
 
@@ -240,6 +587,137 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
   };
 
   const selected = characters.find(c => c.id === selectedId);
+  const customTraitNavItems = (selected?.sections || []).map((section) => ({
+    key: `custom:${section.id}`,
+    label: section.title?.trim() || 'Custom Section',
+  }));
+  const sidebarTraitNavItems = [
+    { key: 'profile', label: 'Basics' },
+    ...NON_PROFILE_BUILT_IN_TRAIT_SECTIONS,
+    ...customTraitNavItems,
+  ];
+  const traitNavItems = [...BUILT_IN_TRAIT_SECTIONS, ...customTraitNavItems];
+  const sectionProgressByKey = selected
+    ? traitNavItems.reduce<Record<string, SectionProgress>>((acc, item) => {
+        acc[item.key] = calculateSectionProgress(selected, item.key);
+        return acc;
+      }, {})
+    : {};
+  const isTraitVisible = (key: string) => activeTraitSection === key;
+
+  useEffect(() => {
+    if (!selectedId) return;
+    if (traitNavItems.length === 0) return;
+    const isActiveValid = traitNavItems.some((item) => item.key === activeTraitSection);
+    if (!isActiveValid) {
+      setActiveTraitSection(traitNavItems[0].key);
+    }
+  }, [selectedId, activeTraitSection, traitNavItems]);
+
+  const loadNavImageDraft = useCallback((navKey: string) => {
+    setEditingNavKey(navKey);
+    const existing = navButtonImages[navKey];
+    setDraftNavImage(existing ? { ...existing } : null);
+  }, [navButtonImages]);
+
+  const openNavImageEditor = () => {
+    const fallbackKey = sidebarTraitNavItems[0]?.key;
+    const targetKey = sidebarTraitNavItems.some((item) => item.key === activeTraitSection)
+      ? activeTraitSection
+      : fallbackKey;
+    if (!targetKey) return;
+    loadNavImageDraft(targetKey);
+    setShowNavImageEditor(true);
+  };
+
+  const handleNavImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (loadEvent) => {
+      const src = typeof loadEvent.target?.result === 'string' ? loadEvent.target.result : '';
+      if (!src) return;
+      setDraftNavImage({ src, x: 0, y: 0, scale: 1 });
+    };
+    reader.readAsDataURL(file);
+    event.target.value = '';
+  };
+
+  const handleNavImageMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (!draftNavImage) return;
+    setIsDraggingNavImage(true);
+    navDragStartRef.current = {
+      mouseX: event.clientX,
+      mouseY: event.clientY,
+      imageX: draftNavImage.x,
+      imageY: draftNavImage.y,
+    };
+    event.preventDefault();
+  };
+
+  useEffect(() => {
+    if (!isDraggingNavImage) return;
+    const handleMouseMove = (event: MouseEvent) => {
+      const dragStartState = navDragStartRef.current;
+      if (!dragStartState) return;
+      const deltaX = event.clientX - dragStartState.mouseX;
+      const deltaY = event.clientY - dragStartState.mouseY;
+      setDraftNavImage((prev) => (prev
+        ? {
+            ...prev,
+            x: dragStartState.imageX + deltaX,
+            y: dragStartState.imageY + deltaY,
+          }
+        : prev));
+    };
+
+    const handleMouseUp = () => {
+      setIsDraggingNavImage(false);
+      navDragStartRef.current = null;
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDraggingNavImage]);
+
+  const handleNavImageWheel = (event: React.WheelEvent<HTMLDivElement>) => {
+    if (!draftNavImage) return;
+    event.preventDefault();
+    const delta = event.deltaY > 0 ? -0.05 : 0.05;
+    setDraftNavImage((prev) => (prev
+      ? {
+          ...prev,
+          scale: clamp(prev.scale + delta, 0.2, 3),
+        }
+      : prev));
+  };
+
+  const handleNavImageScaleChange = (value: string) => {
+    const nextScale = clamp(Number(value) / 100, 0.2, 3);
+    setDraftNavImage((prev) => (prev
+      ? { ...prev, scale: nextScale }
+      : prev));
+  };
+
+  const handleSaveNavImage = () => {
+    setNavButtonImages((prev) => {
+      const next = { ...prev };
+      if (draftNavImage) next[editingNavKey] = draftNavImage;
+      else delete next[editingNavKey];
+      return next;
+    });
+    setShowNavImageEditor(false);
+  };
+
+  const handleRemoveNavImage = () => {
+    setDraftNavImage(null);
+  };
+
+  const navActionButtonClass = "relative w-full min-h-[60px] px-[14px] rounded-[14px] border-2 border-transparent text-left select-none overflow-hidden flex items-center justify-between gap-3 bg-[#3c3e47] text-[#eaedf1] shadow-[0_2px_6px_rgba(0,0,0,0.40),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] transition-[filter,transform,box-shadow,border-color] duration-150 ease-out hover:brightness-[1.12] hover:-translate-y-px active:brightness-95 active:translate-y-0 active:scale-[0.99]";
 
   // Open modal to choose enhance mode before calling AI
   const openEnhanceModeModal = (
@@ -263,21 +741,21 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
     mode: EnhanceMode = 'detailed'
   ) => {
     if (!selected || enhancingField) return;
-    
+
     setEnhancingField(fieldKey);
     try {
       const currentValue = getCurrentValue();
-      
+
       const enhanced = await aiEnhanceCharacterField(
         fieldKey,
         currentValue,
         selected,
         appData,
-        appData.selectedModel || 'grok-4-1-fast-reasoning',
+        appData.selectedModel || 'grok-3',
         customLabel,
         mode
       );
-      
+
       setValue(enhanced);
     } catch (error) {
       console.error('Enhancement failed:', error);
@@ -329,7 +807,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
         avatarDataUrl: finalUrl,
         avatarPosition: { x: 50, y: 50 }
       });
-      
+
     }
     setShowAvatarModal(false);
   };
@@ -345,7 +823,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!dragStart || !selected || !avatarContainerRef.current) return;
-    
+
     const rect = avatarContainerRef.current.getBoundingClientRect();
     const deltaX = ((e.clientX - dragStart.x) / rect.width) * 100;
     const deltaY = ((e.clientY - dragStart.y) / rect.height) * 100;
@@ -581,7 +1059,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
           {characters.map(c => (
             <div key={c.id} className="group relative cursor-pointer transition-all duration-300 group-hover:-translate-y-3" onClick={() => onSelect(c.id)}>
               <div className="aspect-[2/3] w-full overflow-hidden rounded-[2rem] bg-slate-200 !shadow-[0_12px_24px_-8px_rgba(0,0,0,0.15)] transition-shadow duration-300 group-hover:shadow-2xl border border-[#4a5f7f] relative">
-                
+
                 {c.avatarDataUrl ? (
                   <img
                     src={c.avatarDataUrl}
@@ -596,10 +1074,10 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                      <div className="font-black text-ghost-white text-6xl uppercase tracking-tighter italic break-words">{c.name.charAt(0) || '?'}</div>
                   </div>
                 )}
-                
+
                 {/* Flat dark overlay for text readability */}
                 <div className="absolute inset-0 bg-black/40 pointer-events-none" />
-                
+
                 <div className="absolute inset-x-0 bottom-0 p-6">
                   <div className="flex flex-wrap gap-2 mb-2">
                     {c.tags && c.tags.split(',').slice(0, 2).map(tag => (
@@ -656,290 +1134,363 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
   const avatarPos = selected.avatarPosition || { x: 50, y: 50 };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        {/* Left Column - Avatar Panel */}
-        <div className="space-y-6 lg:sticky lg:top-0 lg:max-h-[calc(100vh-9rem)] lg:overflow-y-auto lg:pr-4 lg:pb-6 lg:pl-2 lg:overscroll-contain">
-          <div className="flex justify-between items-center h-9">
-            <h2 className="text-xl font-bold text-[hsl(var(--ui-surface-2))]">Profile</h2>
-          </div>
-          <div className="pb-4 px-2">
-          <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-[#4a5f7f] overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
-            {/* Section Header */}
-            <div className="bg-[#4a5f7f] border-b border-[#4a5f7f] px-5 py-3 flex items-center justify-between shadow-lg">
-              <h2 className="text-white text-xl font-semibold tracking-tight">Avatar</h2>
-              <button 
-                onClick={() => toggleSection('avatar')} 
-                className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-ghost-white"
-              >
-                {expandedSections.avatar ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
-              </button>
-            </div>
-            {/* Content */}
-            <div className="p-5">
-              <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl border border-[#4a5f7f]">
-                {expandedSections.avatar ? (
-                  <div className="space-y-4">
-                    <div className="flex flex-col items-center gap-4">
-                      <div 
-                        ref={avatarContainerRef}
-                        className={`relative group w-48 h-48 rounded-2xl shadow-lg select-none ${isRepositioning ? 'ring-4 ring-blue-500 cursor-move overflow-hidden' : selected.avatarDataUrl ? 'border-2 border-[#4a5f7f] overflow-hidden' : ''}`}
-                        onMouseDown={handleMouseDown}
-                        onMouseMove={handleMouseMove}
-                        onMouseUp={handleMouseUp}
-                        onMouseLeave={handleMouseUp}
-                        onTouchStart={handleTouchStart}
-                        onTouchMove={handleTouchMove}
-                        onTouchEnd={handleTouchEnd}
-                        style={isRepositioning ? { touchAction: 'none' } : undefined}
-                      >
-                        {selected.avatarDataUrl ? (
-                          <img 
-                            src={selected.avatarDataUrl} 
-                            style={{ 
-                              objectPosition: `${avatarPos.x}% ${avatarPos.y}%`,
-                              pointerEvents: 'none'
-                            }}
-                            className={`w-full h-full object-cover transition-opacity ${isGeneratingImg ? 'opacity-50' : ''}`} 
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex flex-col items-center justify-center border-2 border-dashed border-[#4a5f7f] gap-3 rounded-2xl">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-500">
-                              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
-                              <circle cx="12" cy="7" r="4"/>
-                            </svg>
-                            <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">No Avatar</span>
-                          </div>
-                        )}
-                        
-                        {isGeneratingImg && (
-                          <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-[2px]">
-                            <div className="w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
-                           </div>
-                         )}
-                        {isRepositioning && (
-                          <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                            <div className="w-full h-[1px] bg-blue-500/30 absolute" />
-                            <div className="h-full w-[1px] bg-blue-500/30 absolute" />
-                            <div className="bg-blue-500 text-white text-[9px] font-black uppercase px-2 py-1 rounded absolute bottom-2 tracking-widest">Drag to Refocus</div>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex flex-col gap-2 w-full">
-                        <AvatarActionButtons
-                          onUploadFromDevice={() => fileInputRef.current?.click()}
-                          onSelectFromLibrary={(imageUrl) => {
-                            if (selected) {
-                              onUpdate(selected.id, {
-                                avatarDataUrl: imageUrl,
-                                avatarPosition: { x: 50, y: 50 }
-                              });
-                            }
-                          }}
-                          onGenerateClick={handleAiPortrait}
-                          disabled={isUploading}
-                          isGenerating={isGeneratingImg}
-                          isUploading={isUploading}
-                        />
-                        {selected.avatarDataUrl && (
-                          <button 
-                            type="button"
-                            onClick={() => setIsRepositioning(!isRepositioning)}
-                            className={`w-full h-10 rounded-xl text-[10px] font-bold leading-none uppercase tracking-wider transition-colors cursor-pointer ${isRepositioning ? 'bg-blue-500 text-white border border-blue-500' : 'bg-[hsl(240_6%_18%)] border border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] hover:bg-[hsl(240_6%_22%)] shadow-[0_10px_30px_hsl(0_0%_0%_/_0.35)]'}`}
-                          >
-                            {isRepositioning ? "Save Position" : "REPOSITION"}
-                          </button>
-                        )}
-                      </div>
-                      
-                      <input 
-                        type="file" 
-                        className="hidden" 
-                        ref={fileInputRef} 
-                        accept="image/*" 
-                        onChange={async (e) => {
-                          const f = e.target.files?.[0];
-                          if (!f || !selected || !user) {
-                            if (!user) console.error('Please sign in to upload avatars');
-                            return;
-                          }
-                          
-                          setIsUploading(true);
-                          try {
-                            const reader = new FileReader();
-                            reader.onload = async () => {
-                              try {
-                                const optimized = await resizeImage(reader.result as string, 512, 512, 0.7);
-                                const blob = dataUrlToBlob(optimized);
-                                if (!blob) throw new Error('Failed to process image');
-                                
-                                const filename = `avatar-${selected.id}-${Date.now()}.jpg`;
-                                const publicUrl = await uploadAvatar(user.id, blob, filename);
-                                
-                                onUpdate(selected.id, { 
-                                  avatarDataUrl: publicUrl,
-                                  avatarPosition: { x: 50, y: 50 } 
-                                });
-                                setIsRepositioning(true);
-                              } catch (error) {
-                                console.error('Avatar upload failed:', error);
-                              } finally {
-                                setIsUploading(false);
-                              }
-                            };
-                            reader.readAsDataURL(f);
-                          } catch (error) {
-                            console.error('Avatar upload failed:', error);
-                            
-                            setIsUploading(false);
-                          }
-                        }} 
-                      />
-                    </div>
-                    
-                    {/* Avatar Panel Fields */}
-                    <div className="space-y-4">
-                      <div>
-                        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Name</label>
-                        <AutoResizeTextarea value={selected.name === "New Character" ? "" : selected.name} onChange={(v) => onUpdate(selected.id, { name: v })} placeholder="Character name" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Nicknames</label>
-                        <AutoResizeTextarea value={selected.nicknames || ''} onChange={(v) => onUpdate(selected.id, { nicknames: v })} placeholder="Nicknames" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Age</label>
-                          <AutoResizeTextarea value={selected.age || ''} onChange={(v) => onUpdate(selected.id, { age: v })} placeholder="25" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Sex / Identity</label>
-                        <AutoResizeTextarea value={selected.sexType} onChange={(v) => onUpdate(selected.id, { sexType: v })} placeholder="Female, Male, Non-binary" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Sexual Orientation</label>
-                        <AutoResizeTextarea value={selected.sexualOrientation || ''} onChange={(v) => onUpdate(selected.id, { sexualOrientation: v })} placeholder="Heterosexual, Bisexual, etc." className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Location</label>
-                        <AutoResizeTextarea value={selected.location || ''} onChange={(v) => onUpdate(selected.id, { location: v })} placeholder="Current location" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Current Mood</label>
-                        <AutoResizeTextarea value={selected.currentMood || ''} onChange={(v) => onUpdate(selected.id, { currentMood: v })} placeholder="Happy, Tired" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block">Controlled By</label>
-                          <div className="flex p-1 bg-zinc-800 rounded-xl">
-                            <button 
-                              onClick={() => onUpdate(selected.id, { controlledBy: 'AI' })}
-                              className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.controlledBy === 'AI' ? 'bg-zinc-700 text-blue-500 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
-                            >
-                              AI
-                            </button>
-                            <button 
-                              onClick={() => onUpdate(selected.id, { controlledBy: 'User' })}
-                              className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.controlledBy === 'User' ? 'bg-zinc-700 text-amber-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
-                            >
-                              User
-                            </button>
-                          </div>
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block">Character Role</label>
-                          <div className="flex p-1 bg-zinc-800 rounded-xl">
-                            <button 
-                              onClick={() => onUpdate(selected.id, { characterRole: 'Main' })}
-                              className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.characterRole === 'Main' ? 'bg-zinc-700 text-indigo-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
-                            >
-                              Main
-                            </button>
-                            <button 
-                              onClick={() => onUpdate(selected.id, { characterRole: 'Side' })}
-                              className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.characterRole === 'Side' ? 'bg-zinc-700 text-zinc-300 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
-                            >
-                              Side
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Role Description</label>
-                          <button
-                            type="button"
-                            onClick={() => openEnhanceModeModal(
-                              'roleDescription',
-                              'custom',
-                              () => selected.roleDescription || '',
-                              (v) => onUpdate(selected.id, { roleDescription: v }),
-                              'Role Description'
-                            )}
-                            disabled={enhancingField !== null}
-                            title="Enhance with AI"
-                            className={cn(
-                              "p-1.5 rounded-md transition-all flex-shrink-0",
-                              enhancingField === 'roleDescription'
-                                ? "text-blue-500 animate-pulse cursor-wait"
-                                : "text-zinc-400 hover:text-blue-500 hover:bg-blue-500/10"
-                            )}
-                          >
-                            <Sparkles size={14} />
-                          </button>
-                        </div>
-                        <AutoResizeTextarea value={selected.roleDescription || ''} onChange={(v) => onUpdate(selected.id, { roleDescription: v })} placeholder="Brief description of the character's role" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  /* Collapsed Avatar View */
-                  <div className="flex items-start gap-4">
-                    {/* Small avatar thumbnail */}
-                    <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-[#4a5f7f]">
-                      {selected.avatarDataUrl ? (
-                        <img 
-                          src={selected.avatarDataUrl} 
-                          style={{ objectPosition: `${avatarPos.x}% ${avatarPos.y}%` }}
-                          className="w-full h-full object-cover" 
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-zinc-800 flex items-center justify-center font-bold text-xl text-zinc-500">
-                          {selected.name.charAt(0) || '?'}
-                        </div>
-                      )}
-                    </div>
-                    {/* Condensed info */}
-                    <div className="flex-1 space-y-1">
-                      <h3 className="text-lg font-bold text-white">{selected.name || 'Unnamed'}</h3>
-                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-zinc-300">
-                        {selected.age && <span>{selected.age} years</span>}
-                        {selected.sexType && <span>{selected.sexType}</span>}
-                        {selected.location && <span className="text-zinc-400">{selected.location}</span>}
-                      </div>
-                      {selected.currentMood && (
-                        <p className="text-xs text-zinc-400 italic">Mood: {selected.currentMood}</p>
-                      )}
-                    </div>
-                  </div>
-                )}
+    <div className="flex flex-1 h-full overflow-hidden">
+      <aside
+        className="flex-shrink-0 bg-[#2a2a2f] border-r border-[#4a5f7f]/80 flex flex-col h-full rounded-none shadow-[0_12px_32px_-2px_rgba(0,0,0,0.55),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]"
+        style={{ width: CHARACTER_NAV_SIDEBAR_WIDTH }}
+      >
+        <div className="relative overflow-hidden bg-[linear-gradient(180deg,#5a7292_0%,#4a5f7f_100%)] shadow-[0_6px_16px_rgba(0,0,0,0.35)]">
+          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.07)_0%,rgba(255,255,255,0)_30%)]" />
+          <div className="relative p-3">
+            <div className="w-full text-left flex items-center gap-3 p-[10px] rounded-[14px] bg-[#2e2e33] shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.30)]">
+              <div className="w-12 h-12 shrink-0 rounded-[10px] overflow-hidden bg-[#1c1c1f] border-t border-black/35 shadow-[inset_0_2px_4px_rgba(0,0,0,0.35)]">
+              {selected.avatarDataUrl ? (
+                <img src={selected.avatarDataUrl} alt={selected.name || 'Character'} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center font-black text-[#a1a1aa] text-[18px] italic uppercase">
+                  {selected.name.charAt(0) || '?'}
+                </div>
+              )}
+              </div>
+              <div className="min-w-0 flex-1 space-y-[1px]">
+                <div className="text-[13px] font-bold text-[#eaedf1] truncate leading-tight">{selected.name || 'Unnamed Character'}</div>
+                <div className="text-[12px] text-[#a1a1aa]">
+                  <span className="text-[#71717a]">Age:</span> {selected.age || ''}
+                </div>
+                <div className="text-[12px] text-[#a1a1aa]">
+                  <span className="text-[#71717a]">Controlled by:</span>{' '}
+                  <span className="uppercase tracking-[0.08em] font-black text-[#eaedf1]">{selected.controlledBy || 'AI'}</span>
+                </div>
               </div>
             </div>
-            </div>
           </div>
-          </div>
+        </div>
 
-        {/* Right Column - Trait Sections */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="flex justify-between items-center h-9">
-            <h2 className="text-xl font-bold text-[hsl(var(--ui-surface-2))]">Character Traits</h2>
+        <div
+          className="flex-1 overflow-y-auto scrollbar-none bg-[#2a2a2f]"
+          style={{ padding: `${CHARACTER_NAV_OUTER_PADDING}px` }}
+        >
+          <div
+            className="rounded-2xl space-y-2 bg-[#2e2e33] shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]"
+            style={{ padding: `${CHARACTER_NAV_TRAY_PADDING}px` }}
+          >
+              {sidebarTraitNavItems.map((item) => {
+                const active = item.key === activeTraitSection;
+                const Icon = TRAIT_NAV_ICON_BY_KEY[item.key] || Sparkles;
+                const backgroundImage = navButtonImages[item.key];
+
+                return (
+                  <TraitSidebarButton
+                    key={item.key}
+                    label={item.label}
+                    progress={sectionProgressByKey[item.key] || toProgress(0, 0)}
+                    active={active}
+                    icon={Icon}
+                    backgroundImage={backgroundImage}
+                    onClick={() => setActiveTraitSection(item.key)}
+                  />
+                );
+              })}
+
+              <button
+                type="button"
+                onClick={() => setShowCategoryTypeModal(true)}
+                className={navActionButtonClass}
+              >
+                <span className="relative z-10 min-w-0 flex items-center gap-[10px]">
+                  <Plus className="w-[18px] h-[18px] shrink-0 text-[#60a5fa]" />
+                  <span className="truncate text-[12px] font-black tracking-[0.08em] leading-tight text-[#eaedf1]">
+                    Custom Content
+                  </span>
+                </span>
+                <span className="relative z-10 w-8 h-8 shrink-0" aria-hidden />
+              </button>
+
+              {user && (
+                <button
+                  type="button"
+                  onClick={openNavImageEditor}
+                  className={navActionButtonClass}
+                >
+                  <span className="relative z-10 min-w-0 flex items-center gap-[10px]">
+                    <PenSquare className="w-[18px] h-[18px] shrink-0 text-[#60a5fa]" />
+                    <span className="truncate text-[12px] font-black tracking-[0.08em] leading-tight text-[#eaedf1]">
+                      Edit Buttons (Admin)
+                    </span>
+                  </span>
+                  <span className="relative z-10 w-8 h-8 shrink-0" aria-hidden />
+                </button>
+              )}
           </div>
+        </div>
+      </aside>
+
+      <div className="flex-1 overflow-y-auto scrollbar-thin bg-[#1a1b20]">
+        <div className="p-4 lg:p-10 max-w-6xl mx-auto space-y-6 pb-20">
+          {isTraitVisible('profile') && (
+            <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-[#4a5f7f] overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
+              <div className="bg-[#4a5f7f] border-b border-[#4a5f7f] px-5 py-3 flex items-center justify-between shadow-lg">
+                <h2 className="text-white text-xl font-bold tracking-tight">Avatar</h2>
+                <button
+                  onClick={() => toggleSection('avatar')}
+                  className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-ghost-white"
+                >
+                  {expandedSections.avatar ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
+                </button>
+              </div>
+              <div className="p-5">
+                <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl border border-[#4a5f7f]">
+                  {expandedSections.avatar ? (
+                    <div className="space-y-4">
+                      <div className="flex flex-col items-center gap-4">
+                        <div
+                          ref={avatarContainerRef}
+                          className={`relative group w-48 h-48 rounded-2xl shadow-lg select-none ${isRepositioning ? 'ring-4 ring-blue-500 cursor-move overflow-hidden' : selected.avatarDataUrl ? 'border-2 border-[#4a5f7f] overflow-hidden' : ''}`}
+                          onMouseDown={handleMouseDown}
+                          onMouseMove={handleMouseMove}
+                          onMouseUp={handleMouseUp}
+                          onMouseLeave={handleMouseUp}
+                          onTouchStart={handleTouchStart}
+                          onTouchMove={handleTouchMove}
+                          onTouchEnd={handleTouchEnd}
+                          style={isRepositioning ? { touchAction: 'none' } : undefined}
+                        >
+                          {selected.avatarDataUrl ? (
+                            <img
+                              src={selected.avatarDataUrl}
+                              style={{
+                                objectPosition: `${avatarPos.x}% ${avatarPos.y}%`,
+                                pointerEvents: 'none'
+                              }}
+                              className={`w-full h-full object-cover transition-opacity ${isGeneratingImg ? 'opacity-50' : ''}`}
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex flex-col items-center justify-center border-2 border-dashed border-[#4a5f7f] gap-3 rounded-2xl">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-500">
+                                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                              </svg>
+                              <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">No Avatar</span>
+                            </div>
+                          )}
+
+                          {isGeneratingImg && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-[2px]">
+                              <div className="w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+                            </div>
+                          )}
+                          {isRepositioning && (
+                            <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                              <div className="w-full h-[1px] bg-blue-500/30 absolute" />
+                              <div className="h-full w-[1px] bg-blue-500/30 absolute" />
+                              <div className="bg-blue-500 text-white text-[9px] font-black uppercase px-2 py-1 rounded absolute bottom-2 tracking-widest">Drag to Refocus</div>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex flex-col gap-2 w-full">
+                          <AvatarActionButtons
+                            onUploadFromDevice={() => fileInputRef.current?.click()}
+                            onSelectFromLibrary={(imageUrl) => {
+                              if (selected) {
+                                onUpdate(selected.id, {
+                                  avatarDataUrl: imageUrl,
+                                  avatarPosition: { x: 50, y: 50 }
+                                });
+                              }
+                            }}
+                            onGenerateClick={handleAiPortrait}
+                            disabled={isUploading}
+                            isGenerating={isGeneratingImg}
+                            isUploading={isUploading}
+                          />
+                          {selected.avatarDataUrl && (
+                            <button
+                              type="button"
+                              onClick={() => setIsRepositioning(!isRepositioning)}
+                              className={`w-full h-10 rounded-xl text-[10px] font-bold leading-none uppercase tracking-wider transition-colors cursor-pointer ${isRepositioning ? 'bg-blue-500 text-white border border-blue-500' : 'bg-[hsl(240_6%_18%)] border border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] hover:bg-[hsl(240_6%_22%)] shadow-[0_10px_30px_hsl(0_0%_0%_/_0.35)]'}`}
+                            >
+                              {isRepositioning ? "Save Position" : "REPOSITION"}
+                            </button>
+                          )}
+                        </div>
+
+                        <input
+                          type="file"
+                          className="hidden"
+                          ref={fileInputRef}
+                          accept="image/*"
+                          onChange={async (e) => {
+                            const f = e.target.files?.[0];
+                            if (!f || !selected || !user) {
+                              if (!user) console.error('Please sign in to upload avatars');
+                              return;
+                            }
+
+                            setIsUploading(true);
+                            try {
+                              const reader = new FileReader();
+                              reader.onload = async () => {
+                                try {
+                                  const optimized = await resizeImage(reader.result as string, 512, 512, 0.7);
+                                  const blob = dataUrlToBlob(optimized);
+                                  if (!blob) throw new Error('Failed to process image');
+
+                                  const filename = `avatar-${selected.id}-${Date.now()}.jpg`;
+                                  const publicUrl = await uploadAvatar(user.id, blob, filename);
+
+                                  onUpdate(selected.id, {
+                                    avatarDataUrl: publicUrl,
+                                    avatarPosition: { x: 50, y: 50 }
+                                  });
+                                  setIsRepositioning(true);
+                                } catch (error) {
+                                  console.error('Avatar upload failed:', error);
+                                } finally {
+                                  setIsUploading(false);
+                                }
+                              };
+                              reader.readAsDataURL(f);
+                            } catch (error) {
+                              console.error('Avatar upload failed:', error);
+                              setIsUploading(false);
+                            }
+                          }}
+                        />
+                      </div>
+
+                      <div className="space-y-4">
+                        <div>
+                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Name</label>
+                          <AutoResizeTextarea value={selected.name === "New Character" ? "" : selected.name} onChange={(v) => onUpdate(selected.id, { name: v })} placeholder="Character name" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Nicknames</label>
+                          <AutoResizeTextarea value={selected.nicknames || ''} onChange={(v) => onUpdate(selected.id, { nicknames: v })} placeholder="Nicknames" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Age</label>
+                            <AutoResizeTextarea value={selected.age || ''} onChange={(v) => onUpdate(selected.id, { age: v })} placeholder="25" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Sex / Identity</label>
+                          <AutoResizeTextarea value={selected.sexType} onChange={(v) => onUpdate(selected.id, { sexType: v })} placeholder="Female, Male, Non-binary" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Sexual Orientation</label>
+                          <AutoResizeTextarea value={selected.sexualOrientation || ''} onChange={(v) => onUpdate(selected.id, { sexualOrientation: v })} placeholder="Heterosexual, Bisexual, etc." className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Location</label>
+                          <AutoResizeTextarea value={selected.location || ''} onChange={(v) => onUpdate(selected.id, { location: v })} placeholder="Current location" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Current Mood</label>
+                          <AutoResizeTextarea value={selected.currentMood || ''} onChange={(v) => onUpdate(selected.id, { currentMood: v })} placeholder="Happy, Tired" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block">Controlled By</label>
+                            <div className="flex p-1 bg-zinc-800 rounded-xl">
+                              <button
+                                onClick={() => onUpdate(selected.id, { controlledBy: 'AI' })}
+                                className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.controlledBy === 'AI' ? 'bg-zinc-700 text-blue-500 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+                              >
+                                AI
+                              </button>
+                              <button
+                                onClick={() => onUpdate(selected.id, { controlledBy: 'User' })}
+                                className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.controlledBy === 'User' ? 'bg-zinc-700 text-amber-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+                              >
+                                User
+                              </button>
+                            </div>
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block">Character Role</label>
+                            <div className="flex p-1 bg-zinc-800 rounded-xl">
+                              <button
+                                onClick={() => onUpdate(selected.id, { characterRole: 'Main' })}
+                                className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.characterRole === 'Main' ? 'bg-zinc-700 text-indigo-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+                              >
+                                Main
+                              </button>
+                              <button
+                                onClick={() => onUpdate(selected.id, { characterRole: 'Side' })}
+                                className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.characterRole === 'Side' ? 'bg-zinc-700 text-zinc-300 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+                              >
+                                Side
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Role Description</label>
+                            <button
+                              type="button"
+                              onClick={() => openEnhanceModeModal(
+                                'roleDescription',
+                                'custom',
+                                () => selected.roleDescription || '',
+                                (v) => onUpdate(selected.id, { roleDescription: v }),
+                                'Role Description'
+                              )}
+                              disabled={enhancingField !== null}
+                              title="Enhance with AI"
+                              className={cn(
+                                "p-1.5 rounded-md transition-all flex-shrink-0",
+                                enhancingField === 'roleDescription'
+                                  ? "text-blue-500 animate-pulse cursor-wait"
+                                  : "text-zinc-400 hover:text-blue-500 hover:bg-blue-500/10"
+                              )}
+                            >
+                              <Sparkles size={14} />
+                            </button>
+                          </div>
+                          <AutoResizeTextarea value={selected.roleDescription || ''} onChange={(v) => onUpdate(selected.id, { roleDescription: v })} placeholder="Brief description of the character's role" className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-4">
+                      <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-[#4a5f7f]">
+                        {selected.avatarDataUrl ? (
+                          <img
+                            src={selected.avatarDataUrl}
+                            style={{ objectPosition: `${avatarPos.x}% ${avatarPos.y}%` }}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-zinc-800 flex items-center justify-center font-bold text-xl text-zinc-500">
+                            {selected.name.charAt(0) || '?'}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <h3 className="text-lg font-bold text-white">{selected.name || 'Unnamed'}</h3>
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-zinc-300">
+                          {selected.age && <span>{selected.age} years</span>}
+                          {selected.sexType && <span>{selected.sexType}</span>}
+                          {selected.location && <span className="text-zinc-400">{selected.location}</span>}
+                        </div>
+                        {selected.currentMood && (
+                          <p className="text-xs text-zinc-400 italic">Mood: {selected.currentMood}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* HARDCODED SECTION 1: Physical Appearance */}
+          {isTraitVisible('physicalAppearance') && (
           <HardcodedSection 
             title="Physical Appearance"
             isExpanded={expandedSections.physicalAppearance}
@@ -966,8 +1517,10 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
             </button>
           </HardcodedSection>
+          )}
 
           {/* HARDCODED SECTION 2: Currently Wearing */}
+          {isTraitVisible('currentlyWearing') && (
           <HardcodedSection 
             title="Currently Wearing"
             isExpanded={expandedSections.currentlyWearing}
@@ -987,8 +1540,10 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
             </button>
           </HardcodedSection>
+          )}
 
           {/* HARDCODED SECTION 3: Preferred Clothing */}
+          {isTraitVisible('preferredClothing') && (
           <HardcodedSection 
             title="Preferred Clothing"
             isExpanded={expandedSections.preferredClothing}
@@ -1009,8 +1564,10 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
             </button>
           </HardcodedSection>
+          )}
 
           {/* HARDCODED SECTION 4: Personality */}
+          {isTraitVisible('personality') && (
           <PersonalitySection
             personality={selected.personality || defaultPersonality}
             onChange={(personality) => onUpdate(selected.id, { personality })}
@@ -1019,8 +1576,10 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
             onEnhanceField={(fieldKey, getCurrentValue, setValue, customLabel) => openEnhanceModeModal(fieldKey, 'custom', getCurrentValue, setValue, customLabel)}
             enhancingField={enhancingField}
           />
+          )}
 
           {/* HARDCODED SECTION 5: Tone */}
+          {isTraitVisible('tone') && (
           <HardcodedSection 
             title="Tone"
             isExpanded={expandedSections.tone}
@@ -1045,8 +1604,10 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
             </button>
           </HardcodedSection>
+          )}
 
           {/* HARDCODED SECTION 6: Background */}
+          {isTraitVisible('background') && (
           <HardcodedSection 
             title="Background"
             isExpanded={expandedSections.background}
@@ -1085,8 +1646,10 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
             </button>
           </HardcodedSection>
+          )}
 
           {/* HARDCODED SECTION 7: Key Life Events */}
+          {isTraitVisible('keyLifeEvents') && (
           <HardcodedSection 
             title="Key Life Events"
             isExpanded={expandedSections.keyLifeEvents}
@@ -1111,8 +1674,10 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
             </button>
           </HardcodedSection>
+          )}
 
           {/* HARDCODED SECTION 8: Relationships */}
+          {isTraitVisible('relationships') && (
           <HardcodedSection 
             title="Relationships"
             isExpanded={expandedSections.relationships}
@@ -1137,8 +1702,10 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
             </button>
           </HardcodedSection>
+          )}
 
           {/* HARDCODED SECTION 9: Secrets */}
+          {isTraitVisible('secrets') && (
           <HardcodedSection 
             title="Secrets"
             isExpanded={expandedSections.secrets}
@@ -1163,8 +1730,10 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
             </button>
           </HardcodedSection>
+          )}
 
           {/* HARDCODED SECTION 10: Fears */}
+          {isTraitVisible('fears') && (
           <HardcodedSection 
             title="Fears"
             isExpanded={expandedSections.fears}
@@ -1189,8 +1758,10 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
             </button>
           </HardcodedSection>
+          )}
 
           {/* HARDCODED SECTION 11: Character Goals */}
+          {isTraitVisible('characterGoals') && (
           <CharacterGoalsSection
             goals={selected.goals || []}
             onChange={(goals) => onUpdate(selected.id, { goals })}
@@ -1199,10 +1770,13 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
             onEnhanceField={(fieldKey, getCurrentValue, setValue, customLabel) => openEnhanceModeModal(fieldKey, 'custom', getCurrentValue, setValue, customLabel)}
             enhancingField={enhancingField}
           />
+          )}
 
 
           {/* USER-CREATED CUSTOM SECTIONS */}
-          {selected.sections.map(section => (
+          {selected.sections
+            .filter(section => isTraitVisible(`custom:${section.id}`))
+            .map(section => (
             <div key={section.id} className="w-full bg-[#2a2a2f] rounded-[24px] border border-[#4a5f7f] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
               {/* Dark blue header with editable title */}
               <div className="bg-[#4a5f7f] border-b border-[#4a5f7f] px-5 py-3 flex items-center justify-between shadow-lg">
@@ -1210,7 +1784,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                   value={section.title}
                   onChange={(v) => handleUpdateSection(selected.id, section.id, { title: v })}
                   placeholder="Section Title"
-                  className="bg-transparent border-none text-white text-xl font-semibold tracking-tight placeholder:text-[rgba(248,250,252,0.3)] focus:outline-none flex-1 mr-2"
+                  className="bg-transparent border-none text-white text-xl font-bold tracking-tight placeholder:text-[rgba(248,250,252,0.3)] focus:outline-none flex-1 mr-2"
                 />
                 <div className="flex items-center gap-2 shrink-0">
                   <button 
@@ -1367,21 +1941,6 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
             </div>
           ))}
 
-          {/* Add Category Button - positioned below all trait sections */}
-          <button
-            type="button"
-            onClick={() => setShowCategoryTypeModal(true)}
-            className="w-full flex h-10 px-6 items-center justify-center gap-2
-              rounded-xl border border-[hsl(var(--ui-border))] 
-              bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
-              text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider
-              hover:bg-ghost-white active:bg-ghost-white
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ghost-white
-              transition-colors"
-          >
-            <Plus className="w-4 h-4" /> Add Category
-          </button>
-
           <CustomContentTypeModal
             open={showCategoryTypeModal}
             onClose={() => setShowCategoryTypeModal(false)}
@@ -1402,8 +1961,139 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
           sexType: selected?.sexType,
           age: selected?.age
         }}
-        modelId={appData.selectedModel || "grok-4-1-fast-reasoning"} /* GROK ONLY */
+        modelId={appData.selectedModel || "grok-3"} /* GROK ONLY */
       />
+
+      <Dialog
+        open={showNavImageEditor}
+        onOpenChange={(open) => {
+          setShowNavImageEditor(open);
+          if (!open) {
+            setIsDraggingNavImage(false);
+            navDragStartRef.current = null;
+          }
+        }}
+      >
+        <DialogContent className="max-w-[460px] overflow-hidden border-0 p-0 bg-[#2a2a2f] shadow-[0_24px_60px_rgba(0,0,0,0.70),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]">
+          <DialogHeader className="relative overflow-hidden bg-[linear-gradient(180deg,#5a7292_0%,#4a5f7f_100%)] px-[18px] py-[14px] shadow-[0_6px_16px_rgba(0,0,0,0.35)]">
+            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.07)_0%,transparent_30%)]" />
+            <DialogTitle className="relative z-10 text-[14px] font-black tracking-[0.08em] uppercase text-white">
+              Edit Button Image
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="p-4 space-y-3">
+            <div className="bg-[#2e2e33] rounded-[14px] p-[14px] space-y-3 shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30)]">
+              <select
+                value={editingNavKey}
+                onChange={(event) => loadNavImageDraft(event.target.value)}
+                className="w-full bg-[#1c1c1f] text-[#eaedf1] text-[12px] font-bold px-[10px] py-2 rounded-lg border-0 border-t border-black/35 shadow-[inset_0_2px_4px_rgba(0,0,0,0.25)]"
+              >
+                {sidebarTraitNavItems.map((item) => (
+                  <option key={item.key} value={item.key}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+
+              <div
+                onMouseDown={handleNavImageMouseDown}
+                onWheel={handleNavImageWheel}
+                className={cn(
+                  "relative rounded-[14px] overflow-hidden bg-[#3c3e47] mx-auto",
+                  "shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]",
+                  draftNavImage ? (isDraggingNavImage ? "cursor-grabbing" : "cursor-grab") : "cursor-default"
+                )}
+                style={{ width: CHARACTER_NAV_PREVIEW_WIDTH, height: CHARACTER_NAV_BUTTON_HEIGHT }}
+              >
+                {draftNavImage && (
+                  <img
+                    src={draftNavImage.src}
+                    alt=""
+                    draggable={false}
+                    className="absolute top-0 left-0 pointer-events-none select-none max-w-none"
+                    style={{
+                      transformOrigin: '0 0',
+                      transform: `translate(${draftNavImage.x}px, ${draftNavImage.y}px) scale(${draftNavImage.scale})`,
+                    }}
+                  />
+                )}
+                <div className="absolute inset-0 bg-black/50 pointer-events-none" />
+                <div className="absolute inset-0 z-10 flex items-center justify-between px-[14px] pointer-events-none">
+                  <span className="text-[11px] font-black tracking-[0.08em] uppercase text-[#eaedf1] truncate">
+                    {sidebarTraitNavItems.find((item) => item.key === editingNavKey)?.label || 'Section'}
+                  </span>
+                  <SidebarProgressRing
+                    progress={sectionProgressByKey[editingNavKey] || toProgress(0, 0)}
+                    active={editingNavKey === activeTraitSection}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <label className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#a1a1aa] min-w-[52px]">Scale</label>
+                <input
+                  type="range"
+                  min={20}
+                  max={300}
+                  value={draftNavImage ? Math.round(draftNavImage.scale * 100) : 100}
+                  onChange={(event) => handleNavImageScaleChange(event.target.value)}
+                  disabled={!draftNavImage}
+                  className="flex-1 h-1 cursor-pointer accent-[#3b82f6] disabled:opacity-40 disabled:cursor-not-allowed"
+                />
+                <span className="text-[11px] text-[#eaedf1] font-bold min-w-[40px] text-right">
+                  {draftNavImage ? `${Math.round(draftNavImage.scale * 100)}%` : '100%'}
+                </span>
+              </div>
+
+              <p className="text-[11px] text-[#71717a] text-center">
+                Drag the image to reposition. Scroll to zoom or use the slider.
+              </p>
+            </div>
+
+            <input
+              ref={navImageFileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleNavImageUpload}
+            />
+
+            <button
+              type="button"
+              onClick={() => navImageFileInputRef.current?.click()}
+              className="w-full rounded-[10px] bg-[#3c3e47] text-[#eaedf1] text-[12px] font-bold py-[9px] shadow-[0_4px_12px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] transition-[filter,transform] duration-150 hover:brightness-110 hover:-translate-y-px active:brightness-95 active:translate-y-0 active:scale-[0.99]"
+            >
+              Upload Image
+            </button>
+
+            <DialogFooter className="flex flex-row gap-2 sm:justify-start">
+              <button
+                type="button"
+                onClick={handleSaveNavImage}
+                className="flex-1 rounded-[10px] bg-[#3b82f6] text-white text-[12px] font-black tracking-[0.05em] uppercase py-[10px] shadow-[0_4px_12px_rgba(59,130,246,0.35)] transition-[filter,transform] duration-150 hover:brightness-110 hover:-translate-y-px active:brightness-95 active:translate-y-0 active:scale-[0.99]"
+              >
+                Save
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowNavImageEditor(false)}
+                className="flex-1 rounded-[10px] bg-[#3c3e47] text-[#eaedf1] text-[12px] font-black tracking-[0.05em] uppercase py-[10px] shadow-[0_4px_12px_rgba(0,0,0,0.30),inset_0_1px_0_rgba(255,255,255,0.09)] transition-[filter,transform] duration-150 hover:brightness-110 hover:-translate-y-px active:brightness-95 active:translate-y-0 active:scale-[0.99]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleRemoveNavImage}
+                disabled={!draftNavImage}
+                className="rounded-[10px] bg-[hsl(0,72%,51%)] text-white text-[12px] font-black tracking-[0.05em] uppercase px-[14px] py-[10px] shadow-[0_4px_12px_rgba(0,0,0,0.35)] transition-[filter,transform,opacity] duration-150 hover:brightness-110 hover:-translate-y-px active:brightness-95 active:translate-y-0 active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+              >
+                Remove
+              </button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Enhance Mode Selector Modal */}
       <EnhanceModeModal
