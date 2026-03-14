@@ -3723,9 +3723,10 @@ const updatedChar: SideCharacter = {
             <div className={`transition-all duration-300 ease-in-out overflow-hidden ${mainCharsCollapsed ? 'max-h-0 opacity-0' : 'max-h-[2000px] opacity-100'}`}>
               <div
                 ref={mainCharsScrollRef}
-                className="max-h-[calc(140px*3+0.5rem*2+0.5rem)] overflow-y-auto pr-1"
+                className={isExpandedTileInMainCharacters ? 'overflow-visible pr-0' : 'max-h-[calc(140px*3+0.5rem*2+0.5rem)] overflow-y-auto pr-1'}
                 style={{ scrollbarWidth: 'thin', scrollbarColor: '#94a3b8 transparent' }}
                 onScroll={() => {
+                  if (isExpandedTileInMainCharacters) return;
                   const el = mainCharsScrollRef.current;
                   if (!el) return;
                   setCanScrollDownMainChars(el.scrollTop < el.scrollHeight - el.clientHeight - 10);
