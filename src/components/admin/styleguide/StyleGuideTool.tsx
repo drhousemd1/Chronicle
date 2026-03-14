@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback, createContext, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Sparkles, Pencil, Lock, X, Plus, Sunrise, Sun, Sunset, Moon, Eye, Heart, Bookmark, Play, ChevronUp, ChevronDown, ArrowLeft, ArrowRight } from 'lucide-react';
 import { StarRating } from '@/components/chronicle/StarRating';
 import { SpiceRating } from '@/components/chronicle/SpiceRating';
@@ -812,6 +813,7 @@ const ALL_SWATCHES: SwatchOption[] = [
 ];
 
 export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownload, onRegisterEdits, onEditsCountChange }) => {
+  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('colors');
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [showRestructuring, setShowRestructuring] = useState(false);
@@ -920,6 +922,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
   const twoCol: React.CSSProperties = { display: 'grid', gridTemplateColumns: isMedium ? '1fr' : 'repeat(2,minmax(0,1fr))', gap: 16, alignItems: 'stretch' };
   const fullSpan: React.CSSProperties = isMedium ? {} : { gridColumn: '1 / -1' };
+  const openUiAudit = useCallback(() => navigate('/style-guide/ui-audit'), [navigate]);
 
   return (
     <EditsContext.Provider value={editsContextValue}>
@@ -941,6 +944,25 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               transition: 'all 0.2s ease',
             }}>{s.label}</button>
           ))}
+          <button
+            type="button"
+            onClick={openUiAudit}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              whiteSpace: 'nowrap',
+              fontSize: 12,
+              fontWeight: 700,
+              padding: '8px 12px',
+              borderRadius: 10,
+              border: '1px solid rgba(74,95,127,0.28)',
+              cursor: 'pointer',
+              background: 'rgba(74,95,127,0.12)',
+              color: sg.primary,
+            }}
+          >
+            UI Audit
+          </button>
         </nav>
       ) : (
         <nav style={{
@@ -987,6 +1009,22 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 transition: 'background 0.2s ease',
               }} />
               App Style Restructuring
+            </button>
+            <button
+              type="button"
+              onClick={openUiAudit}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10, width: '100%', textDecoration: 'none', whiteSpace: 'nowrap',
+                marginTop: 8, fontSize: 13, fontWeight: 700, padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
+                border: '1px solid rgba(74,95,127,0.28)', background: 'rgba(74,95,127,0.12)', color: sg.primary,
+                boxShadow: 'inset 0 0 0 1px rgba(74,95,127,0.18)',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <span style={{
+                width: 7, height: 7, borderRadius: 999, flexShrink: 0, background: sg.primary,
+              }} />
+              Open UI Audit
             </button>
           </div>
           <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, marginTop: 8 }}>
