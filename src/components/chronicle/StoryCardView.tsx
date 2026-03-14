@@ -19,19 +19,20 @@ const CollapsibleSection: React.FC<{
   children: React.ReactNode;
   collapsedContent?: React.ReactNode;
 }> = ({ title, isExpanded, onToggle, children, collapsedContent }) => (
-  <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-[#4a5f7f] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
-    <div className="bg-[#4a5f7f] border-b border-[#4a5f7f] px-5 py-3 flex items-center justify-between shadow-lg">
-      <h2 className="text-white text-xl font-bold tracking-tight">{title}</h2>
+  <div className="w-full bg-[#2a2a2f] rounded-[24px] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]">
+    <div className="relative overflow-hidden bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 px-5 py-3 flex items-center justify-between shadow-lg">
+      <div className="absolute inset-0 z-0 bg-gradient-to-tr from-white/10 to-transparent opacity-40" style={{ height: '60%' }} />
+      <h2 className="text-white text-xl font-bold tracking-[-0.015em] relative z-[1]">{title}</h2>
       <button 
         type="button"
         onClick={onToggle} 
-        className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-ghost-white"
+        className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-white/10 relative z-[1]"
       >
         {isExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
       </button>
     </div>
     <div className="p-5">
-      <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl border border-[#4a5f7f]">
+      <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
         {isExpanded ? (
           <div className="space-y-4">
             {children}

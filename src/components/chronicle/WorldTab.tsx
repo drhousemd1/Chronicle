@@ -506,16 +506,17 @@ export const WorldTab: React.FC<WorldTabProps> = ({
 
           {/* Cover Image Section - Dark Theme */}
           <section>
-            <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-zinc-500 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
+            <div className="w-full bg-[#2a2a2f] rounded-[24px] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]">
               {/* Section Header - Steel Blue */}
-              <div className="bg-[#4a5f7f] border-b border-[#4a5f7f] px-6 py-4 flex items-center gap-3 shadow-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-white"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-                <h2 className="text-white text-xl font-semibold tracking-tight">Story Card</h2>
+              <div className="relative overflow-hidden bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 px-5 py-3 flex items-center gap-3 shadow-lg">
+                <div className="absolute inset-0 z-0 bg-gradient-to-tr from-white/10 to-transparent opacity-40" style={{ height: '60%' }} />
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-white relative z-[1]"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                <h2 className="text-white text-xl font-bold tracking-[-0.015em] relative z-[1]">Story Card</h2>
               </div>
               
               {/* Content */}
-              <div className="p-6">
-                <div className="p-6 bg-[#2e2e33] rounded-2xl border border-zinc-500">
+              <div className="p-5">
+                <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
                       <div className="flex flex-col md:flex-row gap-8">
                     {/* Preview Container - Portrait aspect ratio for story cards */}
                     <div data-publish-error={!!publishErrors.coverImage || undefined}>
@@ -635,13 +636,14 @@ export const WorldTab: React.FC<WorldTabProps> = ({
 
           {/* World Core Section - Dark Theme */}
           <section>
-            <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-[#4a5f7f] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
-              <div className="bg-[#4a5f7f] border-b border-[#4a5f7f] px-6 py-4 flex items-center gap-3 shadow-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-                <h2 className="text-white text-xl font-semibold tracking-tight">World Core</h2>
+            <div className="w-full bg-[#2a2a2f] rounded-[24px] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]">
+              <div className="relative overflow-hidden bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 px-5 py-3 flex items-center gap-3 shadow-lg">
+                <div className="absolute inset-0 z-0 bg-gradient-to-tr from-white/10 to-transparent opacity-40" style={{ height: '60%' }} />
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white relative z-[1]"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                <h2 className="text-white text-xl font-bold tracking-[-0.015em] relative z-[1]">World Core</h2>
               </div>
-              <div className="p-6">
-                <div className="p-6 bg-[#2e2e33] rounded-2xl border border-[#4a5f7f]">
+              <div className="p-5">
+                <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
                   <div className="grid grid-cols-1 gap-8">
                     <div data-publish-error={!!publishErrors.storyPremise || undefined}>
                       <FieldLabel label="Story Premise" fieldName="storyPremise" />
@@ -943,13 +945,14 @@ export const WorldTab: React.FC<WorldTabProps> = ({
 
           {/* Opening Dialog Section - Dark Theme */}
           <section>
-            <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-[#4a5f7f] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
-              <div className="bg-[#4a5f7f] border-b border-[#4a5f7f] px-6 py-4 flex items-center gap-3 shadow-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                <h2 className="text-white text-xl font-semibold tracking-tight">Opening Dialog</h2>
+            <div className="w-full bg-[#2a2a2f] rounded-[24px] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]">
+              <div className="relative overflow-hidden bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 px-5 py-3 flex items-center gap-3 shadow-lg">
+                <div className="absolute inset-0 z-0 bg-gradient-to-tr from-white/10 to-transparent opacity-40" style={{ height: '60%' }} />
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white relative z-[1]"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                <h2 className="text-white text-xl font-bold tracking-[-0.015em] relative z-[1]">Opening Dialog</h2>
               </div>
-              <div className="p-6">
-                <div className="p-6 bg-[#2e2e33] rounded-2xl border border-[#4a5f7f]">
+              <div className="p-5">
+                <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
                   <div className="space-y-6">
                     <div data-publish-error={!!publishErrors.openingDialog || undefined}>
                       <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1 flex items-center gap-1.5">
@@ -1127,12 +1130,13 @@ export const WorldTab: React.FC<WorldTabProps> = ({
 
           {/* Scene Gallery Section - Dark Theme */}
           <section>
-            <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-[#4a5f7f] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
-              <div className="bg-[#4a5f7f] border-b border-[#4a5f7f] px-6 py-4 flex items-center gap-3 shadow-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-white"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-                <h2 className="text-white text-xl font-semibold tracking-tight">Scene Gallery</h2>
+            <div className="w-full bg-[#2a2a2f] rounded-[24px] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]">
+              <div className="relative overflow-hidden bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 px-5 py-3 flex items-center gap-3 shadow-lg">
+                <div className="absolute inset-0 z-0 bg-gradient-to-tr from-white/10 to-transparent opacity-40" style={{ height: '60%' }} />
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-white relative z-[1]"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                <h2 className="text-white text-xl font-bold tracking-[-0.015em] relative z-[1]">Scene Gallery</h2>
               </div>
-              <div className="p-6">
+              <div className="p-5">
                 {/* Header row: label + tooltip on left, buttons on right */}
                 <div className="flex items-end justify-between gap-4 mb-1">
                   <div className="flex items-center gap-2">
@@ -1248,9 +1252,10 @@ export const WorldTab: React.FC<WorldTabProps> = ({
 
           {/* Art Style Preference Section - Dark Theme */}
           <section>
-            <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-[#4a5f7f] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
-              <div className="bg-[#4a5f7f] border-b border-[#4a5f7f] px-6 py-4 flex items-center gap-3 shadow-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+            <div className="w-full bg-[#2a2a2f] rounded-[24px] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]">
+              <div className="relative overflow-hidden bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 px-5 py-3 flex items-center gap-3 shadow-lg">
+                <div className="absolute inset-0 z-0 bg-gradient-to-tr from-white/10 to-transparent opacity-40" style={{ height: '60%' }} />
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-white relative z-[1]">
                   <circle cx="13.5" cy="6.5" r="2.5"/>
                   <circle cx="6" cy="12" r="2.5"/>
                   <circle cx="18" cy="12" r="2.5"/>
@@ -1258,9 +1263,9 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                   <circle cx="17" cy="18.5" r="2.5"/>
                   <path d="M12 2v1"/>
                 </svg>
-                <h2 className="text-white text-xl font-semibold tracking-tight">Art Style Preference</h2>
+                <h2 className="text-white text-xl font-bold tracking-[-0.015em] relative z-[1]">Art Style Preference</h2>
               </div>
-              <div className="p-6 space-y-1">
+              <div className="p-5 space-y-1">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">Art Style Selection</span>
                   <Tooltip>
@@ -1315,13 +1320,14 @@ export const WorldTab: React.FC<WorldTabProps> = ({
 
           {/* World Codex Section - Dark Theme */}
           <section>
-            <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-[#4a5f7f] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
-              <div className="bg-[#4a5f7f] border-b border-[#4a5f7f] px-6 py-4 flex items-center gap-3 shadow-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>
-                <h2 className="text-white text-xl font-semibold tracking-tight">World Codex</h2>
+            <div className="w-full bg-[#2a2a2f] rounded-[24px] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]">
+              <div className="relative overflow-hidden bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 px-5 py-3 flex items-center gap-3 shadow-lg">
+                <div className="absolute inset-0 z-0 bg-gradient-to-tr from-white/10 to-transparent opacity-40" style={{ height: '60%' }} />
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white relative z-[1]"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>
+                <h2 className="text-white text-xl font-bold tracking-[-0.015em] relative z-[1]">World Codex</h2>
               </div>
-              <div className="p-6">
-                <div className="p-6 bg-[#2e2e33] rounded-2xl border border-[#4a5f7f]">
+              <div className="p-5">
+                <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
                   <div className="space-y-8">
                     
                     <div>
@@ -1394,12 +1400,13 @@ export const WorldTab: React.FC<WorldTabProps> = ({
 
           {/* Share Section */}
           <section>
-            <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-[#4a5f7f] overflow-hidden shadow-lg">
-              <div className="bg-[#4a5f7f] border-b border-[#4a5f7f] px-6 py-4 flex items-center gap-3 shadow-lg">
-                <Share2 className="w-5 h-5 text-white" />
-                <h2 className="text-white text-xl font-semibold tracking-tight">Share Your Story</h2>
+            <div className="w-full bg-[#2a2a2f] rounded-[24px] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]">
+              <div className="relative overflow-hidden bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 px-5 py-3 flex items-center gap-3 shadow-lg">
+                <div className="absolute inset-0 z-0 bg-gradient-to-tr from-white/10 to-transparent opacity-40" style={{ height: '60%' }} />
+                <Share2 className="w-5 h-5 text-white relative z-[1]" />
+                <h2 className="text-white text-xl font-bold tracking-[-0.015em] relative z-[1]">Share Your Story</h2>
               </div>
-              <div className="p-6 space-y-4">
+              <div className="p-5 space-y-4">
                 <button
                   type="button"
                   onClick={() => {

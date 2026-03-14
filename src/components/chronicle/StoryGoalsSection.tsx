@@ -290,11 +290,12 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
   return (
     <section data-publish-error={hasError || undefined}>
       {/* Outer shell */}
-      <div className={cn("bg-[#2a2a2f] rounded-[24px] border overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]", hasError ? 'border-red-500 ring-2 ring-red-500' : 'border-[#4a5f7f]')}>
+      <div className={cn("bg-[#2a2a2f] rounded-[24px] overflow-hidden", hasError ? 'border border-red-500 ring-2 ring-red-500 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]' : 'shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]')}>
         {/* Header */}
-        <div className="bg-[#4a5f7f] border-b border-[#4a5f7f] px-5 py-3 flex items-center gap-3">
-          <GitBranch className="w-4 h-4 text-white" />
-          <h2 className="text-white text-xl font-semibold tracking-tight m-0">
+        <div className="relative overflow-hidden bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 px-5 py-3 flex items-center gap-3 shadow-lg">
+          <div className="absolute inset-0 z-0 bg-gradient-to-tr from-white/10 to-transparent opacity-40" style={{ height: '60%' }} />
+          <GitBranch className="w-4 h-4 text-white relative z-[1]" />
+          <h2 className="text-white text-xl font-bold tracking-[-0.015em] relative z-[1] m-0">
             Story Arcs
           </h2>
         </div>
