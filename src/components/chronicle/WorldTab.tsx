@@ -1277,7 +1277,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                     </TooltipContent>
                   </Tooltip>
                 </div>
-                <div className="p-3 bg-zinc-900/50 rounded-xl border border-[#4a5f7f] overflow-visible">
+                <div className="p-3 bg-[#2e2e33] rounded-xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)] overflow-visible">
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                     {AVATAR_STYLES.map((style) => (
                       <button
