@@ -1230,7 +1230,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
           {isTraitVisible('profile') && (
             <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-[#4a5f7f] overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
               <div className="bg-[#4a5f7f] border-b border-[#4a5f7f] px-5 py-3 flex items-center justify-between shadow-lg">
-                <h2 className="text-white text-xl font-bold tracking-tight">Avatar</h2>
+                <h2 className="text-white text-xl font-bold tracking-tight">Basics</h2>
                 <button
                   onClick={() => toggleSection('avatar')}
                   className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-ghost-white"
