@@ -3261,27 +3261,188 @@ const updatedChar: SideCharacter = {
       </div>
     );
   };
+  const getTileAvatarPosition = useCallback((char: Character): { x: number; y: number } => {
+    const override = tileAvatarPositionOverrides[char.id];
+    if (override) return override;
+    return {
+      x: clampPercent(char.avatarPosition?.x ?? 50),
+      y: storedAvatarYToTileY(char.avatarPosition?.y),
+    };
+  }, [tileAvatarPositionOverrides]);
+
+  const persistMainCharacterTilePosition = useCallback(async (charId: string, position: { x: number; y: number }) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const baseChar = appData.characters.find(c => c.id === charId);
+      if (!baseChar) return;
+
+      const storedAvatarPosition = {
+        x: clampPercent(position.x),
+        y: tileYToStoredAvatarY(position.y),
+      };
+
+      let sessionState = sessionStates.find(s => s.characterId === charId);
+      if (!sessionState) {
+        sessionState = await supabaseData.createSessionState(baseChar, conversationId, user.id);
+        setSessionStates(prev => [...prev, sessionState!]);
+      }
+
+      await supabaseData.updateSessionState(sessionState.id, { avatarPosition: storedAvatarPosition });
+      setSessionStates(prev =>
+        prev.map(s => (s.id === sessionState!.id ? { ...s, avatarPosition: storedAvatarPosition } : s))
+      );
+    } catch (err) {
+      console.error('Failed to persist tile avatar position:', err);
+    }
+  }, [appData.characters, conversationId, sessionStates]);
+
+  const toggleTileRepositionMode = useCallback((char: Character) => {
+    setTileDragState(null);
+    setExpandedTileCharId(prev => (prev === char.id ? null : prev));
+    setTileAvatarPositionOverrides(prev => ({
+      ...prev,
+      [char.id]: getTileAvatarPosition(char)
+    }));
+    setRepositioningTileCharId(prev => (prev === char.id ? null : char.id));
+  }, [getTileAvatarPosition]);
+
+  const handleTileRepositionPointerDown = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>, char: Character) => {
+      if (event.pointerType === 'mouse' && event.button !== 0) return;
+      if (repositioningTileCharId !== char.id) return;
+
+      event.preventDefault();
+      const rect = event.currentTarget.getBoundingClientRect();
+      const startPos = getTileAvatarPosition(char);
+      event.currentTarget.setPointerCapture(event.pointerId);
+
+      setTileDragState({
+        charId: char.id,
+        pointerId: event.pointerId,
+        startClientX: event.clientX,
+        startClientY: event.clientY,
+        startPos,
+        width: rect.width || 1,
+        height: rect.height || 1,
+      });
+    },
+    [getTileAvatarPosition, repositioningTileCharId]
+  );
+
+  const handleTileRepositionPointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (!tileDragState) return;
+    if (event.pointerId !== tileDragState.pointerId) return;
+
+    event.preventDefault();
+    const deltaX = event.clientX - tileDragState.startClientX;
+    const deltaY = event.clientY - tileDragState.startClientY;
+
+    const nextX = clampPercent(tileDragState.startPos.x - (deltaX / tileDragState.width) * 100);
+    const nextY = clampPercent(tileDragState.startPos.y - (deltaY / tileDragState.height) * 100);
+
+    setTileAvatarPositionOverrides(prev => ({
+      ...prev,
+      [tileDragState.charId]: { x: nextX, y: nextY },
+    }));
+  }, [tileDragState]);
+
+  const handleTileRepositionPointerEnd = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (!tileDragState) return;
+    if (event.pointerId !== tileDragState.pointerId) return;
+
+    event.preventDefault();
+    event.currentTarget.releasePointerCapture(event.pointerId);
+
+    const finalPos = tileAvatarPositionOverrides[tileDragState.charId] || tileDragState.startPos;
+    void persistMainCharacterTilePosition(tileDragState.charId, finalPos);
+    setTileDragState(null);
+  }, [tileDragState, tileAvatarPositionOverrides, persistMainCharacterTilePosition]);
+
+  const handleDoneTileReposition = useCallback((char: Character) => {
+    const finalPos = tileAvatarPositionOverrides[char.id] || getTileAvatarPosition(char);
+    void persistMainCharacterTilePosition(char.id, finalPos);
+    setTileDragState(null);
+    setRepositioningTileCharId(null);
+  }, [getTileAvatarPosition, persistMainCharacterTilePosition, tileAvatarPositionOverrides]);
+
+  useEffect(() => {
+    if (!expandedTileCharId) return;
+    if (!appData.characters.some((c) => c.id === expandedTileCharId)) {
+      setExpandedTileCharId(null);
+    }
+  }, [appData.characters, expandedTileCharId]);
 
   const renderCharacterCard = (baseChar: Character) => {
     // Apply session-scoped overrides to get the effective character
     const char = getEffectiveCharacter(baseChar);
     const isUpdating = updatingCharacterIds.has(char.id);
-    
+    const isRepositioning = repositioningTileCharId === char.id;
+    const isExpanded = expandedTileCharId === char.id;
+    const tileAvatarPos = getTileAvatarPosition(char);
+
     return (
       <div
         key={char.id}
-        className={`min-h-[140px] rounded-2xl transition-all duration-300 border-2 backdrop-blur-sm relative ${!sidebarBgIsLight ? 'bg-ghost-white border-transparent hover:bg-ghost-white' : 'bg-black/30 border-transparent hover:bg-black/50'} ${isUpdating ? 'ring-2 ring-blue-500/60' : ''}`}
+        className={`group rounded-2xl overflow-hidden transition-all duration-300 border-2 relative bg-black ${isExpanded ? '' : 'h-[140px]'} ${!sidebarBgIsLight ? 'border-transparent hover:border-white/20' : 'border-transparent hover:border-white/25'} ${isUpdating ? 'ring-2 ring-blue-500/60' : ''}`}
       >
+        {char.avatarDataUrl ? (
+          <img
+            src={char.avatarDataUrl}
+            alt={char.name}
+            className={`block w-full transition-all duration-300 ${isExpanded ? 'h-auto' : 'h-full object-cover object-top'}`}
+            style={isExpanded ? undefined : { objectPosition: `${tileAvatarPos.x}% ${tileAvatarPos.y}%` }}
+          />
+        ) : (
+          <div className={`flex h-full min-h-[140px] items-center justify-center font-black text-5xl italic uppercase ${!sidebarBgIsLight ? 'bg-slate-300 text-slate-600' : 'bg-zinc-800 text-zinc-500'}`}>
+            {char.name.charAt(0)}
+          </div>
+        )}
+
+        {char.avatarDataUrl && !isRepositioning && (
+          <button
+            type="button"
+            onClick={() => setExpandedTileCharId((prev) => (prev === char.id ? null : char.id))}
+            className="absolute inset-0 z-20"
+            aria-label={isExpanded ? `Collapse ${char.name} avatar` : `Expand ${char.name} avatar`}
+          />
+        )}
+
+        <div className="absolute inset-0 pointer-events-none bg-black/0 transition-colors duration-150 group-hover:bg-black/35" />
+
+        {isRepositioning && char.avatarDataUrl && (
+          <div
+            className="absolute inset-0 z-[18] touch-none cursor-move"
+            onPointerDown={(e) => handleTileRepositionPointerDown(e, char)}
+            onPointerMove={handleTileRepositionPointerMove}
+            onPointerUp={handleTileRepositionPointerEnd}
+            onPointerCancel={handleTileRepositionPointerEnd}
+          >
+            <button
+              type="button"
+              className="absolute left-2 top-2 rounded-md bg-black/55 border border-white/20 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-white hover:bg-black/70"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDoneTileReposition(char);
+              }}
+            >
+              Done
+            </button>
+          </div>
+        )}
+
         {/* Blue vignette overlay - scoped to this card */}
         {isUpdating && (
           <div 
-            className="absolute inset-0 z-[1] pointer-events-none rounded-2xl overflow-hidden animate-vignette-pulse"
+            className="absolute inset-0 z-[15] pointer-events-none rounded-2xl overflow-hidden animate-vignette-pulse"
             style={{
               background: 'radial-gradient(ellipse 120% 100% at center 30%, transparent 25%, rgba(59, 130, 246, 0.25) 50%, rgba(59, 130, 246, 0.5) 80%, rgba(59, 130, 246, 1) 100%)'
             }}
           />
         )}
-        
+
         {/* "Updating..." text overlay - top-left with ethereal glow */}
         {isUpdating && (
           <div className="absolute top-3 left-3 z-20 pointer-events-none">
@@ -3295,55 +3456,53 @@ const updatedChar: SideCharacter = {
             </span>
           </div>
         )}
-        <div className="relative">
-          <div className="w-full flex flex-col items-center gap-2 p-3 text-center">
-            <div className="relative">
-              <div className={`w-20 h-20 rounded-full border-2 shadow-sm overflow-hidden transition-all duration-300 ${!sidebarBgIsLight ? 'bg-ghost-white border-slate-100' : 'bg-zinc-800 border-ghost-white'}`}>
-                {char.avatarDataUrl ? (
-                  <img src={char.avatarDataUrl} alt={char.name} className="w-full h-full object-cover" />
-                ) : (
-                  <div className={`w-full h-full flex items-center justify-center font-black text-xl italic uppercase ${!sidebarBgIsLight ? 'text-slate-300' : 'text-zinc-400'}`}>
-                    {char.name.charAt(0)}
-                  </div>
-                )}
+
+        <div className="absolute inset-x-0 bottom-0 z-10 p-3">
+          <div className="flex items-end justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-bold tracking-tight text-white truncate drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
+                {char.name}
               </div>
-              <Badge 
-                variant={char.controlledBy === 'User' ? 'default' : 'secondary'}
-                className={`absolute -bottom-1 -right-1 text-[9px] px-1.5 py-0.5 shadow-sm ${
-                  char.controlledBy === 'User' 
-                    ? 'bg-blue-500 hover:bg-blue-500 text-white border-0' 
-                    : 'bg-slate-500 hover:bg-slate-500 text-white border-0'
-                }`}
-              >
-                {char.controlledBy}
-              </Badge>
             </div>
-            <div className={`text-sm font-bold tracking-tight ${!sidebarBgIsLight ? 'text-slate-800' : 'text-white'}`}>{char.name}</div>
+            <Badge 
+              variant={char.controlledBy === 'User' ? 'default' : 'secondary'}
+              className={`text-[9px] px-1.5 py-0.5 shadow-sm ${
+                char.controlledBy === 'User' 
+                  ? 'bg-blue-500 hover:bg-blue-500 text-white border-0' 
+                  : 'bg-slate-500 hover:bg-slate-500 text-white border-0'
+              }`}
+            >
+              {char.controlledBy}
+            </Badge>
           </div>
-          
-          {/* Edit dropdown menu - always visible */}
-          <div className="absolute top-2 right-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className={`p-1.5 rounded-lg transition-colors ${!sidebarBgIsLight ? 'hover:bg-slate-200 text-slate-700 hover:text-[hsl(var(--ui-surface-2))]' : 'hover:bg-ghost-white text-white/70 hover:text-white'}`}>
-                  <MoreVertical className="w-4 h-4" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="shadow-lg z-50 bg-zinc-800 border-ghost-white text-zinc-200">
-                <DropdownMenuItem onClick={() => openCharacterEditModal(char)} className="hover:!bg-zinc-700 focus:!bg-zinc-700 focus:!text-white">
-                  <Pencil className="w-4 h-4 mr-2" />
-                  Edit character
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={() => handleDeleteMainCharacter(char.id)}
-                  className="text-red-600 focus:text-red-600 focus:!bg-zinc-700 hover:!bg-zinc-700"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete character
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+        </div>
+
+        {/* Edit dropdown menu - always visible */}
+        <div className="absolute top-2 right-2 z-30">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="p-1.5 rounded-lg transition-colors bg-black/30 hover:bg-black/50 text-white/70 hover:text-white">
+                <MoreVertical className="w-4 h-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="shadow-lg z-50 bg-zinc-800 border-ghost-white text-zinc-200">
+              <DropdownMenuItem onClick={() => toggleTileRepositionMode(char)} className="hover:!bg-zinc-700 focus:!bg-zinc-700 focus:!text-white">
+                <Move className="w-4 h-4 mr-2" />
+                {isRepositioning ? 'Done repositioning' : 'Reposition image'}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => openCharacterEditModal(char)} className="hover:!bg-zinc-700 focus:!bg-zinc-700 focus:!text-white">
+                <Pencil className="w-4 h-4 mr-2" />
+                Edit character
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => handleDeleteMainCharacter(char.id)}
+                className="text-red-600 focus:text-red-600 focus:!bg-zinc-700 hover:!bg-zinc-700"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete character
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     );
@@ -3354,11 +3513,45 @@ const updatedChar: SideCharacter = {
   const darkMode = appData.uiSettings?.darkMode;
   const offsetBubbles = appData.uiSettings?.offsetBubbles;
   const dynamicText = appData.uiSettings?.dynamicText !== false;
+  const chatCanvasColor = normalizeHexColor(appData.uiSettings?.chatCanvasColor, '#1a1b20');
+  const chatBubbleColor = normalizeHexColor(appData.uiSettings?.chatBubbleColor, '#1a1b20');
 
-  const handleUpdateUiSettings = (patch: { showBackgrounds?: boolean; transparentBubbles?: boolean; darkMode?: boolean; offsetBubbles?: boolean; proactiveCharacterDiscovery?: boolean; dynamicText?: boolean; proactiveNarrative?: boolean; narrativePov?: 'first' | 'third'; nsfwIntensity?: 'normal' | 'high'; realismMode?: boolean; responseVerbosity?: 'concise' | 'balanced' | 'detailed' }) => {
+  useEffect(() => {
+    if (!isColorModalOpen) return;
+    setChatCanvasHexInput(chatCanvasColor);
+    setChatBubbleHexInput(chatBubbleColor);
+  }, [chatCanvasColor, chatBubbleColor, isColorModalOpen]);
+
+  const handleUpdateUiSettings = (patch: {
+    showBackgrounds?: boolean;
+    transparentBubbles?: boolean;
+    darkMode?: boolean;
+    offsetBubbles?: boolean;
+    proactiveCharacterDiscovery?: boolean;
+    dynamicText?: boolean;
+    proactiveNarrative?: boolean;
+    narrativePov?: 'first' | 'third';
+    nsfwIntensity?: 'normal' | 'high';
+    realismMode?: boolean;
+    responseVerbosity?: 'concise' | 'balanced' | 'detailed';
+    chatCanvasColor?: string;
+    chatBubbleColor?: string;
+  }) => {
     if (onUpdateUiSettings) {
       onUpdateUiSettings(patch);
     }
+  };
+
+  const handleChatCanvasColorInput = (value: string) => {
+    setChatCanvasHexInput(value);
+    const normalized = tryNormalizeHexColor(value);
+    if (normalized) handleUpdateUiSettings({ chatCanvasColor: normalized });
+  };
+
+  const handleChatBubbleColorInput = (value: string) => {
+    setChatBubbleHexInput(value);
+    const normalized = tryNormalizeHexColor(value);
+    if (normalized) handleUpdateUiSettings({ chatBubbleColor: normalized });
   };
 
   if (!conversation) {
