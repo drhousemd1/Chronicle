@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { uid, now, uuid } from '../../services/storage';
 import { generateRoleplayResponseStream } from '../../services/llm';
-import { RefreshCw, MoreVertical, Copy, Pencil, Trash2, ChevronUp, ChevronDown, Sunrise, Sun, Sunset, Moon, Loader2, StepForward, Settings, Image as ImageIcon, Brain, Check, X, Info, Play, Pause } from 'lucide-react';
+import { RefreshCw, MoreVertical, Copy, Pencil, Trash2, ChevronUp, ChevronDown, Sunrise, Sun, Sunset, Moon, Loader2, StepForward, Settings, Image as ImageIcon, Brain, Check, X, Info, Play, Pause, Move, Palette } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import {
   DropdownMenu,
@@ -51,7 +51,21 @@ interface ChatInterfaceTabProps {
   onUpdate: (convs: Conversation[]) => void;
   onBack: () => void;
   onSaveScenario: (conversations?: Conversation[]) => void;
-  onUpdateUiSettings?: (patch: { showBackgrounds?: boolean; transparentBubbles?: boolean; darkMode?: boolean; offsetBubbles?: boolean; proactiveCharacterDiscovery?: boolean; dynamicText?: boolean; proactiveNarrative?: boolean; narrativePov?: 'first' | 'third'; nsfwIntensity?: 'normal' | 'high'; realismMode?: boolean; responseVerbosity?: 'concise' | 'balanced' | 'detailed' }) => void;
+  onUpdateUiSettings?: (patch: {
+    showBackgrounds?: boolean;
+    transparentBubbles?: boolean;
+    darkMode?: boolean;
+    offsetBubbles?: boolean;
+    proactiveCharacterDiscovery?: boolean;
+    dynamicText?: boolean;
+    proactiveNarrative?: boolean;
+    narrativePov?: 'first' | 'third';
+    nsfwIntensity?: 'normal' | 'high';
+    realismMode?: boolean;
+    responseVerbosity?: 'concise' | 'balanced' | 'detailed';
+    chatCanvasColor?: string;
+    chatBubbleColor?: string;
+  }) => void;
   onUpdateSideCharacters?: (sideCharacters: SideCharacter[]) => void;
   // Lazy loading props
   onLoadOlderMessages?: (conversationId: string, beforeCreatedAt: string) => Promise<Message[]>;
@@ -274,6 +288,65 @@ const mergeByRenderedSpeaker = (
   
   return merged;
 };
+const clampPercent = (value: number): number => Math.max(0, Math.min(100, value));
+const storedAvatarYToTileY = (storedY?: number): number => clampPercent((storedY ?? 50) - 50);
+const tileYToStoredAvatarY = (tileY: number): number => clampPercent(tileY + 50);
+const HEX_COLOR_PATTERN = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i;
+
+const normalizeHexColor = (value: string | undefined | null, fallback: string): string => {
+  if (!value) return fallback;
+  const trimmed = value.trim();
+  const match = trimmed.match(HEX_COLOR_PATTERN);
+  if (!match) return fallback;
+  const raw = match[1].toLowerCase();
+  const expanded = raw.length === 3 ? raw.split('').map(c => c + c).join('') : raw;
+  return `#${expanded}`;
+};
+
+const tryNormalizeHexColor = (value: string): string | null => {
+  const trimmed = value.trim();
+  const match = trimmed.match(HEX_COLOR_PATTERN);
+  if (!match) return null;
+  const raw = match[1].toLowerCase();
+  const expanded = raw.length === 3 ? raw.split('').map(c => c + c).join('') : raw;
+  return `#${expanded}`;
+};
+
+const getColorFamilyLabel = (hex: string): string => {
+  const normalized = normalizeHexColor(hex, '#1a1b20');
+  const r = parseInt(normalized.slice(1, 3), 16);
+  const g = parseInt(normalized.slice(3, 5), 16);
+  const b = parseInt(normalized.slice(5, 7), 16);
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const chroma = max - min;
+  const lightness = ((max + min) / 2) / 255;
+
+  if (chroma < 12) {
+    if (lightness < 0.18) return 'Very dark gray';
+    if (lightness < 0.4) return 'Dark gray';
+    if (lightness < 0.7) return 'Gray';
+    return 'Light gray';
+  }
+
+  let hue = 0;
+  if (max === r) hue = ((g - b) / chroma) % 6;
+  else if (max === g) hue = (b - r) / chroma + 2;
+  else hue = (r - g) / chroma + 4;
+  hue = Math.round(hue * 60);
+  if (hue < 0) hue += 360;
+
+  if (hue < 15 || hue >= 345) return 'Red';
+  if (hue < 45) return 'Orange';
+  if (hue < 70) return 'Yellow';
+  if (hue < 160) return 'Green';
+  if (hue < 200) return 'Cyan';
+  if (hue < 260) return 'Blue';
+  if (hue < 300) return 'Purple';
+  if (hue < 345) return 'Pink';
+  return 'Color';
+};
 
 export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   scenarioId,
@@ -296,6 +369,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const [streamingContent, setStreamingContent] = useState('');
   const [formattedStreamingContent, setFormattedStreamingContent] = useState('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isColorModalOpen, setIsColorModalOpen] = useState(false);
   const [activeSceneId, setActiveSceneId] = useState<string | null>(null);
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [editText, setEditText] = useState('');
@@ -344,11 +418,26 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   
   // Track which characters are showing the "updating" indicator
   const [updatingCharacterIds, setUpdatingCharacterIds] = useState<Set<string>>(new Set());
-  
+  // Per-tile avatar crop positioning UX (main character cards)
+  const [repositioningTileCharId, setRepositioningTileCharId] = useState<string | null>(null);
+  const [expandedTileCharId, setExpandedTileCharId] = useState<string | null>(null);
+  const [tileAvatarPositionOverrides, setTileAvatarPositionOverrides] = useState<Record<string, { x: number; y: number }>>({});
+  const [tileDragState, setTileDragState] = useState<{
+    charId: string;
+    pointerId: number;
+    startClientX: number;
+    startClientY: number;
+    startPos: { x: number; y: number };
+    width: number;
+    height: number;
+  } | null>(null);
+
   // Delete confirmation dialog state
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [characterToDelete, setCharacterToDelete] = useState<string | null>(null);
   const [isMainCharacterDelete, setIsMainCharacterDelete] = useState(false);
+  const [chatCanvasHexInput, setChatCanvasHexInput] = useState('#1a1b20');
+  const [chatBubbleHexInput, setChatBubbleHexInput] = useState('#1a1b20');
   
   // Session-scoped world core overrides (global across all characters)
   const [worldCoreSessionOverrides, setWorldCoreSessionOverrides] = useState<Partial<WorldCore> | null>(null);
@@ -806,6 +895,13 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     allCharactersForDisplay.filter(c => c.characterRole === 'Side'),
     [allCharactersForDisplay]
   );
+  const isExpandedTileInMainCharacters = useMemo(() => {
+    if (!expandedTileCharId) return false;
+    return mainCharactersForDisplay.some(
+      (char) => char._source === 'character' && char.id === expandedTileCharId
+    );
+  }, [expandedTileCharId, mainCharactersForDisplay]);
+  const hasExpandedTile = expandedTileCharId !== null;
 
   // Debug: log conversation state on mount and when it changes
   useEffect(() => {
@@ -3165,27 +3261,188 @@ const updatedChar: SideCharacter = {
       </div>
     );
   };
+  const getTileAvatarPosition = useCallback((char: Character): { x: number; y: number } => {
+    const override = tileAvatarPositionOverrides[char.id];
+    if (override) return override;
+    return {
+      x: clampPercent(char.avatarPosition?.x ?? 50),
+      y: storedAvatarYToTileY(char.avatarPosition?.y),
+    };
+  }, [tileAvatarPositionOverrides]);
+
+  const persistMainCharacterTilePosition = useCallback(async (charId: string, position: { x: number; y: number }) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const baseChar = appData.characters.find(c => c.id === charId);
+      if (!baseChar) return;
+
+      const storedAvatarPosition = {
+        x: clampPercent(position.x),
+        y: tileYToStoredAvatarY(position.y),
+      };
+
+      let sessionState = sessionStates.find(s => s.characterId === charId);
+      if (!sessionState) {
+        sessionState = await supabaseData.createSessionState(baseChar, conversationId, user.id);
+        setSessionStates(prev => [...prev, sessionState!]);
+      }
+
+      await supabaseData.updateSessionState(sessionState.id, { avatarPosition: storedAvatarPosition });
+      setSessionStates(prev =>
+        prev.map(s => (s.id === sessionState!.id ? { ...s, avatarPosition: storedAvatarPosition } : s))
+      );
+    } catch (err) {
+      console.error('Failed to persist tile avatar position:', err);
+    }
+  }, [appData.characters, conversationId, sessionStates]);
+
+  const toggleTileRepositionMode = useCallback((char: Character) => {
+    setTileDragState(null);
+    setExpandedTileCharId(prev => (prev === char.id ? null : prev));
+    setTileAvatarPositionOverrides(prev => ({
+      ...prev,
+      [char.id]: getTileAvatarPosition(char)
+    }));
+    setRepositioningTileCharId(prev => (prev === char.id ? null : char.id));
+  }, [getTileAvatarPosition]);
+
+  const handleTileRepositionPointerDown = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>, char: Character) => {
+      if (event.pointerType === 'mouse' && event.button !== 0) return;
+      if (repositioningTileCharId !== char.id) return;
+
+      event.preventDefault();
+      const rect = event.currentTarget.getBoundingClientRect();
+      const startPos = getTileAvatarPosition(char);
+      event.currentTarget.setPointerCapture(event.pointerId);
+
+      setTileDragState({
+        charId: char.id,
+        pointerId: event.pointerId,
+        startClientX: event.clientX,
+        startClientY: event.clientY,
+        startPos,
+        width: rect.width || 1,
+        height: rect.height || 1,
+      });
+    },
+    [getTileAvatarPosition, repositioningTileCharId]
+  );
+
+  const handleTileRepositionPointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (!tileDragState) return;
+    if (event.pointerId !== tileDragState.pointerId) return;
+
+    event.preventDefault();
+    const deltaX = event.clientX - tileDragState.startClientX;
+    const deltaY = event.clientY - tileDragState.startClientY;
+
+    const nextX = clampPercent(tileDragState.startPos.x - (deltaX / tileDragState.width) * 100);
+    const nextY = clampPercent(tileDragState.startPos.y - (deltaY / tileDragState.height) * 100);
+
+    setTileAvatarPositionOverrides(prev => ({
+      ...prev,
+      [tileDragState.charId]: { x: nextX, y: nextY },
+    }));
+  }, [tileDragState]);
+
+  const handleTileRepositionPointerEnd = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (!tileDragState) return;
+    if (event.pointerId !== tileDragState.pointerId) return;
+
+    event.preventDefault();
+    event.currentTarget.releasePointerCapture(event.pointerId);
+
+    const finalPos = tileAvatarPositionOverrides[tileDragState.charId] || tileDragState.startPos;
+    void persistMainCharacterTilePosition(tileDragState.charId, finalPos);
+    setTileDragState(null);
+  }, [tileDragState, tileAvatarPositionOverrides, persistMainCharacterTilePosition]);
+
+  const handleDoneTileReposition = useCallback((char: Character) => {
+    const finalPos = tileAvatarPositionOverrides[char.id] || getTileAvatarPosition(char);
+    void persistMainCharacterTilePosition(char.id, finalPos);
+    setTileDragState(null);
+    setRepositioningTileCharId(null);
+  }, [getTileAvatarPosition, persistMainCharacterTilePosition, tileAvatarPositionOverrides]);
+
+  useEffect(() => {
+    if (!expandedTileCharId) return;
+    if (!appData.characters.some((c) => c.id === expandedTileCharId)) {
+      setExpandedTileCharId(null);
+    }
+  }, [appData.characters, expandedTileCharId]);
 
   const renderCharacterCard = (baseChar: Character) => {
     // Apply session-scoped overrides to get the effective character
     const char = getEffectiveCharacter(baseChar);
     const isUpdating = updatingCharacterIds.has(char.id);
-    
+    const isRepositioning = repositioningTileCharId === char.id;
+    const isExpanded = expandedTileCharId === char.id;
+    const tileAvatarPos = getTileAvatarPosition(char);
+
     return (
       <div
         key={char.id}
-        className={`min-h-[140px] rounded-2xl transition-all duration-300 border-2 backdrop-blur-sm relative ${!sidebarBgIsLight ? 'bg-ghost-white border-transparent hover:bg-ghost-white' : 'bg-black/30 border-transparent hover:bg-black/50'} ${isUpdating ? 'ring-2 ring-blue-500/60' : ''}`}
+        className={`group rounded-2xl overflow-hidden transition-all duration-300 border-2 relative bg-black ${isExpanded ? '' : 'h-[140px]'} ${!sidebarBgIsLight ? 'border-transparent hover:border-white/20' : 'border-transparent hover:border-white/25'} ${isUpdating ? 'ring-2 ring-blue-500/60' : ''}`}
       >
+        {char.avatarDataUrl ? (
+          <img
+            src={char.avatarDataUrl}
+            alt={char.name}
+            className={`block w-full transition-all duration-300 ${isExpanded ? 'h-auto' : 'h-full object-cover object-top'}`}
+            style={isExpanded ? undefined : { objectPosition: `${tileAvatarPos.x}% ${tileAvatarPos.y}%` }}
+          />
+        ) : (
+          <div className={`flex h-full min-h-[140px] items-center justify-center font-black text-5xl italic uppercase ${!sidebarBgIsLight ? 'bg-slate-300 text-slate-600' : 'bg-zinc-800 text-zinc-500'}`}>
+            {char.name.charAt(0)}
+          </div>
+        )}
+
+        {char.avatarDataUrl && !isRepositioning && (
+          <button
+            type="button"
+            onClick={() => setExpandedTileCharId((prev) => (prev === char.id ? null : char.id))}
+            className="absolute inset-0 z-20"
+            aria-label={isExpanded ? `Collapse ${char.name} avatar` : `Expand ${char.name} avatar`}
+          />
+        )}
+
+        <div className="absolute inset-0 pointer-events-none bg-black/0 transition-colors duration-150 group-hover:bg-black/35" />
+
+        {isRepositioning && char.avatarDataUrl && (
+          <div
+            className="absolute inset-0 z-[18] touch-none cursor-move"
+            onPointerDown={(e) => handleTileRepositionPointerDown(e, char)}
+            onPointerMove={handleTileRepositionPointerMove}
+            onPointerUp={handleTileRepositionPointerEnd}
+            onPointerCancel={handleTileRepositionPointerEnd}
+          >
+            <button
+              type="button"
+              className="absolute left-2 top-2 rounded-md bg-black/55 border border-white/20 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-white hover:bg-black/70"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDoneTileReposition(char);
+              }}
+            >
+              Done
+            </button>
+          </div>
+        )}
+
         {/* Blue vignette overlay - scoped to this card */}
         {isUpdating && (
           <div 
-            className="absolute inset-0 z-[1] pointer-events-none rounded-2xl overflow-hidden animate-vignette-pulse"
+            className="absolute inset-0 z-[15] pointer-events-none rounded-2xl overflow-hidden animate-vignette-pulse"
             style={{
               background: 'radial-gradient(ellipse 120% 100% at center 30%, transparent 25%, rgba(59, 130, 246, 0.25) 50%, rgba(59, 130, 246, 0.5) 80%, rgba(59, 130, 246, 1) 100%)'
             }}
           />
         )}
-        
+
         {/* "Updating..." text overlay - top-left with ethereal glow */}
         {isUpdating && (
           <div className="absolute top-3 left-3 z-20 pointer-events-none">
@@ -3199,55 +3456,53 @@ const updatedChar: SideCharacter = {
             </span>
           </div>
         )}
-        <div className="relative">
-          <div className="w-full flex flex-col items-center gap-2 p-3 text-center">
-            <div className="relative">
-              <div className={`w-20 h-20 rounded-full border-2 shadow-sm overflow-hidden transition-all duration-300 ${!sidebarBgIsLight ? 'bg-ghost-white border-slate-100' : 'bg-zinc-800 border-ghost-white'}`}>
-                {char.avatarDataUrl ? (
-                  <img src={char.avatarDataUrl} alt={char.name} className="w-full h-full object-cover" />
-                ) : (
-                  <div className={`w-full h-full flex items-center justify-center font-black text-xl italic uppercase ${!sidebarBgIsLight ? 'text-slate-300' : 'text-zinc-400'}`}>
-                    {char.name.charAt(0)}
-                  </div>
-                )}
+
+        <div className="absolute inset-x-0 bottom-0 z-10 p-3">
+          <div className="flex items-end justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-bold tracking-tight text-white truncate drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
+                {char.name}
               </div>
-              <Badge 
-                variant={char.controlledBy === 'User' ? 'default' : 'secondary'}
-                className={`absolute -bottom-1 -right-1 text-[9px] px-1.5 py-0.5 shadow-sm ${
-                  char.controlledBy === 'User' 
-                    ? 'bg-blue-500 hover:bg-blue-500 text-white border-0' 
-                    : 'bg-slate-500 hover:bg-slate-500 text-white border-0'
-                }`}
-              >
-                {char.controlledBy}
-              </Badge>
             </div>
-            <div className={`text-sm font-bold tracking-tight ${!sidebarBgIsLight ? 'text-slate-800' : 'text-white'}`}>{char.name}</div>
+            <Badge 
+              variant={char.controlledBy === 'User' ? 'default' : 'secondary'}
+              className={`text-[9px] px-1.5 py-0.5 shadow-sm ${
+                char.controlledBy === 'User' 
+                  ? 'bg-blue-500 hover:bg-blue-500 text-white border-0' 
+                  : 'bg-slate-500 hover:bg-slate-500 text-white border-0'
+              }`}
+            >
+              {char.controlledBy}
+            </Badge>
           </div>
-          
-          {/* Edit dropdown menu - always visible */}
-          <div className="absolute top-2 right-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className={`p-1.5 rounded-lg transition-colors ${!sidebarBgIsLight ? 'hover:bg-slate-200 text-slate-700 hover:text-[hsl(var(--ui-surface-2))]' : 'hover:bg-ghost-white text-white/70 hover:text-white'}`}>
-                  <MoreVertical className="w-4 h-4" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="shadow-lg z-50 bg-zinc-800 border-ghost-white text-zinc-200">
-                <DropdownMenuItem onClick={() => openCharacterEditModal(char)} className="hover:!bg-zinc-700 focus:!bg-zinc-700 focus:!text-white">
-                  <Pencil className="w-4 h-4 mr-2" />
-                  Edit character
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={() => handleDeleteMainCharacter(char.id)}
-                  className="text-red-600 focus:text-red-600 focus:!bg-zinc-700 hover:!bg-zinc-700"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete character
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+        </div>
+
+        {/* Edit dropdown menu - always visible */}
+        <div className="absolute top-2 right-2 z-30">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="p-1.5 rounded-lg transition-colors bg-black/30 hover:bg-black/50 text-white/70 hover:text-white">
+                <MoreVertical className="w-4 h-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="shadow-lg z-50 bg-zinc-800 border-ghost-white text-zinc-200">
+              <DropdownMenuItem onClick={() => toggleTileRepositionMode(char)} className="hover:!bg-zinc-700 focus:!bg-zinc-700 focus:!text-white">
+                <Move className="w-4 h-4 mr-2" />
+                {isRepositioning ? 'Done repositioning' : 'Reposition image'}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => openCharacterEditModal(char)} className="hover:!bg-zinc-700 focus:!bg-zinc-700 focus:!text-white">
+                <Pencil className="w-4 h-4 mr-2" />
+                Edit character
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => handleDeleteMainCharacter(char.id)}
+                className="text-red-600 focus:text-red-600 focus:!bg-zinc-700 hover:!bg-zinc-700"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete character
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     );
@@ -3258,11 +3513,45 @@ const updatedChar: SideCharacter = {
   const darkMode = appData.uiSettings?.darkMode;
   const offsetBubbles = appData.uiSettings?.offsetBubbles;
   const dynamicText = appData.uiSettings?.dynamicText !== false;
+  const chatCanvasColor = normalizeHexColor(appData.uiSettings?.chatCanvasColor, '#1a1b20');
+  const chatBubbleColor = normalizeHexColor(appData.uiSettings?.chatBubbleColor, '#1a1b20');
 
-  const handleUpdateUiSettings = (patch: { showBackgrounds?: boolean; transparentBubbles?: boolean; darkMode?: boolean; offsetBubbles?: boolean; proactiveCharacterDiscovery?: boolean; dynamicText?: boolean; proactiveNarrative?: boolean; narrativePov?: 'first' | 'third'; nsfwIntensity?: 'normal' | 'high'; realismMode?: boolean; responseVerbosity?: 'concise' | 'balanced' | 'detailed' }) => {
+  useEffect(() => {
+    if (!isColorModalOpen) return;
+    setChatCanvasHexInput(chatCanvasColor);
+    setChatBubbleHexInput(chatBubbleColor);
+  }, [chatCanvasColor, chatBubbleColor, isColorModalOpen]);
+
+  const handleUpdateUiSettings = (patch: {
+    showBackgrounds?: boolean;
+    transparentBubbles?: boolean;
+    darkMode?: boolean;
+    offsetBubbles?: boolean;
+    proactiveCharacterDiscovery?: boolean;
+    dynamicText?: boolean;
+    proactiveNarrative?: boolean;
+    narrativePov?: 'first' | 'third';
+    nsfwIntensity?: 'normal' | 'high';
+    realismMode?: boolean;
+    responseVerbosity?: 'concise' | 'balanced' | 'detailed';
+    chatCanvasColor?: string;
+    chatBubbleColor?: string;
+  }) => {
     if (onUpdateUiSettings) {
       onUpdateUiSettings(patch);
     }
+  };
+
+  const handleChatCanvasColorInput = (value: string) => {
+    setChatCanvasHexInput(value);
+    const normalized = tryNormalizeHexColor(value);
+    if (normalized) handleUpdateUiSettings({ chatCanvasColor: normalized });
+  };
+
+  const handleChatBubbleColorInput = (value: string) => {
+    setChatBubbleHexInput(value);
+    const normalized = tryNormalizeHexColor(value);
+    if (normalized) handleUpdateUiSettings({ chatBubbleColor: normalized });
   };
 
   if (!conversation) {
@@ -3274,7 +3563,10 @@ const updatedChar: SideCharacter = {
   }
 
   return (
-    <div className={`flex flex-1 h-full w-full overflow-hidden relative ${darkMode ? 'bg-slate-900' : 'bg-black'}`}>
+    <div
+      className={`flex flex-1 h-full w-full overflow-hidden relative ${darkMode ? 'bg-slate-900' : ''}`}
+      style={{ backgroundColor: chatCanvasColor }}
+    >
 
       <aside className={`w-[300px] flex-shrink-0 border-r border-slate-200 flex flex-col h-full shadow-[inset_-4px_0_12px_rgba(0,0,0,0.02)] z-10 transition-colors relative overflow-hidden ${showBackground ? 'bg-white/90 backdrop-blur-md' : 'bg-white'}`}>
         {/* Sidebar background image layer */}
@@ -3319,7 +3611,7 @@ const updatedChar: SideCharacter = {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-          <div className="flex-1 flex flex-col p-4 gap-3 overflow-hidden">
+          <div className={`flex-1 flex flex-col p-4 gap-3 ${hasExpandedTile ? 'overflow-y-auto' : 'overflow-hidden'}`}>
           {/* Day/Time Control Panel - Fixed at top */}
           <section
             className="flex-shrink-0 rounded-xl p-4 border border-slate-200 shadow-lg transition-all duration-700 relative overflow-hidden"
@@ -3431,9 +3723,10 @@ const updatedChar: SideCharacter = {
             <div className={`transition-all duration-300 ease-in-out overflow-hidden ${mainCharsCollapsed ? 'max-h-0 opacity-0' : 'max-h-[2000px] opacity-100'}`}>
               <div
                 ref={mainCharsScrollRef}
-                className="max-h-[calc(140px*3+0.5rem*2+0.5rem)] overflow-y-auto pr-1"
+                className={isExpandedTileInMainCharacters ? 'overflow-visible pr-0' : 'max-h-[calc(140px*3+0.5rem*2+0.5rem)] overflow-y-auto pr-1'}
                 style={{ scrollbarWidth: 'thin', scrollbarColor: '#94a3b8 transparent' }}
                 onScroll={() => {
+                  if (isExpandedTileInMainCharacters) return;
                   const el = mainCharsScrollRef.current;
                   if (!el) return;
                   setCanScrollDownMainChars(el.scrollTop < el.scrollHeight - el.clientHeight - 10);
@@ -3460,7 +3753,7 @@ const updatedChar: SideCharacter = {
               </div>
               </div>
               {/* Full-width card-like overflow indicator */}
-              {mainCharactersForDisplay.length > 3 && canScrollDownMainChars && (
+              {!isExpandedTileInMainCharacters && mainCharactersForDisplay.length > 3 && canScrollDownMainChars && (
                  <div className={`mt-0 w-full rounded-2xl backdrop-blur-sm border border-ghost-white flex items-center justify-center py-1.5 ${!sidebarBgIsLight ? 'bg-ghost-white' : 'bg-black/30'}`}>
                    <ChevronDown className={`w-4 h-4 ${!sidebarBgIsLight ? 'text-black/80' : 'text-white/80'}`} />
                    <span className={`text-xs font-medium ml-1 ${!sidebarBgIsLight ? 'text-black/80' : 'text-white/80'}`}>
@@ -3551,8 +3844,9 @@ const updatedChar: SideCharacter = {
                 <div className={`p-8 pt-14 pb-12 rounded-[2rem] shadow-2xl flex flex-col gap-4 transition-all relative ${
                   bubblesTransparent
                     ? 'bg-black/50'
-                    : 'bg-[#1c1f26]'
-                } ${!isAi ? 'border-2 border-blue-500' : 'border border-ghost-white hover:border-ghost-white'}`}>
+                    : ''
+                }`}
+                style={!bubblesTransparent ? { backgroundColor: chatBubbleColor } : undefined}>
                   
                   {/* Action buttons - top right corner */}
                   <div className={`absolute top-4 right-4 flex items-center gap-1 transition-opacity ${
@@ -3716,7 +4010,7 @@ const updatedChar: SideCharacter = {
                       <div key={segIndex} className={`relative ${segIndex > 0 && showAvatar ? 'mt-2.5 pt-2.5 border-t border-ghost-white' : ''}`}>
                         {showAvatar && (
                           <div className="float-left mr-4 mb-2 flex flex-col items-center gap-1.5 w-16">
-                            <div className={`w-12 h-12 rounded-full border-2 border-ghost-white shadow-lg overflow-hidden flex items-center justify-center ${segmentAvatar ? '' : 'bg-slate-800'}`}>
+                            <div className={`w-12 h-12 rounded-md border-2 border-ghost-white shadow-lg overflow-hidden flex items-center justify-center ${segmentAvatar ? '' : 'bg-slate-800'}`}>
                               {isGenerating ? (
                                 <Loader2 className="w-5 h-5 text-purple-400 animate-spin" />
                               ) : segmentAvatar ? (
@@ -3799,11 +4093,12 @@ const updatedChar: SideCharacter = {
             
             return (
               <div className={`w-full ${offsetBubbles ? 'max-w-3xl mr-auto' : 'max-w-4xl mx-auto'}`}>
-                <div className={`p-8 pt-14 pb-12 rounded-[2rem] border shadow-2xl flex flex-col gap-4 ${
+                <div className={`p-8 pt-14 pb-12 rounded-[2rem] shadow-2xl flex flex-col gap-4 ${
                     bubblesTransparent
-                      ? 'bg-black/50 border-ghost-white'
-                      : 'bg-[#1c1f26] border-ghost-white'
-                }`}>
+                      ? 'bg-black/50'
+                      : ''
+                }`}
+                style={!bubblesTransparent ? { backgroundColor: chatBubbleColor } : undefined}>
                   {segments.map((segment, segIndex) => {
                     // Look up character for this segment using session-aware lookup
                     const segmentChar = segment.speakerName 
@@ -3834,7 +4129,7 @@ const updatedChar: SideCharacter = {
                       <div key={segIndex} className={`relative ${segIndex > 0 && showAvatar ? 'mt-2.5 pt-2.5 border-t border-ghost-white' : ''}`}>
                         {showAvatar && (
                           <div className="float-left mr-4 mb-2 flex flex-col items-center gap-1.5 w-16">
-                            <div className={`w-12 h-12 rounded-full border-2 border-ghost-white shadow-lg overflow-hidden flex items-center justify-center ${segmentAvatar ? '' : 'bg-slate-800 animate-pulse'}`}>
+                            <div className={`w-12 h-12 rounded-md border-2 border-ghost-white shadow-lg overflow-hidden flex items-center justify-center ${segmentAvatar ? '' : 'bg-slate-800 animate-pulse'}`}>
                               {isGenerating ? (
                                 <Loader2 className="w-5 h-5 text-purple-400 animate-spin" />
                               ) : segmentAvatar ? (
@@ -3894,7 +4189,15 @@ const updatedChar: SideCharacter = {
                   </>
                 )}
               </button>
-              
+
+              <button
+                onClick={() => setIsColorModalOpen(true)}
+                className="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest border transition-all active:scale-95 cursor-pointer bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:border-[hsl(var(--ui-border-hover))]"
+              >
+                <Palette className="w-4 h-4" />
+                Change Color
+              </button>
+
               <button
                 onClick={handleSend}
                 disabled={!input.trim() || isStreaming}
@@ -3920,6 +4223,99 @@ const updatedChar: SideCharacter = {
           </div>
         </div>
       </main>
+
+      <Dialog open={isColorModalOpen} onOpenChange={setIsColorModalOpen}>
+        <DialogContent className="max-w-xl bg-[#1f222b] border border-[#3a4152] text-zinc-100">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold tracking-tight">Change Chat Colors</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="rounded-xl border border-[#3a4152] bg-[#191c24] p-4 space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-white">Chat Background</p>
+                  <p className="text-xs text-zinc-400">Color behind all message bubbles</p>
+                </div>
+                <div className="h-8 w-8 rounded-md border border-white/20" style={{ backgroundColor: chatCanvasColor }} />
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={chatCanvasColor}
+                  onChange={(e) => handleChatCanvasColorInput(e.target.value)}
+                  className="h-10 w-14 cursor-pointer rounded border border-white/20 bg-transparent p-1"
+                  aria-label="Chat background color"
+                />
+                <input
+                  type="text"
+                  value={chatCanvasHexInput}
+                  onChange={(e) => handleChatCanvasColorInput(e.target.value)}
+                  onBlur={() => setChatCanvasHexInput(chatCanvasColor)}
+                  className="h-10 flex-1 rounded-md border border-white/20 bg-[#12141b] px-3 text-sm font-mono uppercase text-white"
+                  placeholder="#1A1B20"
+                  spellCheck={false}
+                />
+              </div>
+              <p className="text-[11px] text-zinc-400">
+                {chatCanvasColor.toUpperCase()} • {getColorFamilyLabel(chatCanvasColor)}
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-[#3a4152] bg-[#191c24] p-4 space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-white">Bubble Background</p>
+                  <p className="text-xs text-zinc-400">Color of the dialog bubbles</p>
+                </div>
+                <div className="h-8 w-8 rounded-md border border-white/20" style={{ backgroundColor: chatBubbleColor }} />
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={chatBubbleColor}
+                  onChange={(e) => handleChatBubbleColorInput(e.target.value)}
+                  className="h-10 w-14 cursor-pointer rounded border border-white/20 bg-transparent p-1"
+                  aria-label="Bubble background color"
+                />
+                <input
+                  type="text"
+                  value={chatBubbleHexInput}
+                  onChange={(e) => handleChatBubbleColorInput(e.target.value)}
+                  onBlur={() => setChatBubbleHexInput(chatBubbleColor)}
+                  className="h-10 flex-1 rounded-md border border-white/20 bg-[#12141b] px-3 text-sm font-mono uppercase text-white"
+                  placeholder="#1A1B20"
+                  spellCheck={false}
+                />
+              </div>
+              <p className="text-[11px] text-zinc-400">
+                {chatBubbleColor.toUpperCase()} • {getColorFamilyLabel(chatBubbleColor)}
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                handleUpdateUiSettings({ chatCanvasColor: '#1a1b20', chatBubbleColor: '#1a1b20' });
+                setChatCanvasHexInput('#1a1b20');
+                setChatBubbleHexInput('#1a1b20');
+              }}
+              className="rounded-lg border border-white/20 bg-[#2a2f3b] px-3 py-2 text-xs font-bold uppercase tracking-wide text-white hover:bg-[#343b49]"
+            >
+              Reset
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsColorModalOpen(false)}
+              className="rounded-lg border border-[#4a5f7f] bg-[#4a5f7f] px-3 py-2 text-xs font-bold uppercase tracking-wide text-white hover:bg-[#5a7093]"
+            >
+              Close
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Character Edit Modal */}
 <CharacterEditModal
