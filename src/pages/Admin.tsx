@@ -138,15 +138,15 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
         {tools.map((tool) => (
           <div
             key={tool.id}
-            className="group relative cursor-pointer"
+            className="group relative cursor-pointer transition-all duration-300 group-hover:-translate-y-3"
             onClick={() => onSetActiveTool(tool.id)}
           >
-            <div className="aspect-[2/3] w-full overflow-hidden rounded-[2rem] bg-slate-200 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)] transition-all duration-300 group-hover:-translate-y-3 group-hover:shadow-2xl border border-[#4a5f7f] relative">
+            <div className="aspect-[2/3] w-full overflow-hidden rounded-[2rem] bg-slate-200 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)] transition-shadow duration-300 group-hover:shadow-2xl border border-[#4a5f7f] relative">
               {tool.thumbnailUrl ? (
                 <img
                   src={tool.thumbnailUrl}
                   alt={tool.title}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-zinc-900">
@@ -154,16 +154,16 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
                 </div>
               )}
 
-              
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/70 pointer-events-none z-[1]" />
 
-              <div className="absolute inset-x-0 bottom-0 p-5">
-                <h3 className="text-white font-bold text-base truncate">{tool.title}</h3>
-                <p className="text-slate-300 text-xs mt-1 italic line-clamp-2">
+              <div className="absolute inset-x-0 bottom-0 p-5 z-[2] pointer-events-none" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.7), 0 0 1px rgba(0,0,0,0.9)' }}>
+                <h3 className="text-white font-bold text-base truncate group-hover:text-blue-300 transition-colors">{tool.title}</h3>
+                <p className="text-white text-xs mt-1 italic line-clamp-2">
                   {tool.description}
                 </p>
               </div>
 
-              <div className="absolute inset-0 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-all bg-black/30">
+              <div className="absolute inset-0 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-all duration-300 bg-black/30 z-10 scale-90 group-hover:scale-100">
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); setEditingTool(tool); }}
