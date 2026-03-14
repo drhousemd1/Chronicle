@@ -23,7 +23,7 @@
 | # | Target File(s) | Status | Notes |
 |---|---------------|--------|-------|
 | 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
-| 2 | `src/lib/story-transfer.ts` | ⬜ TODO | New file, pure lib |
+| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
 | 3 | `src/lib/ui-audit-schema.ts` | ⬜ TODO | New file, types only |
 | 4 | `src/lib/ui-audit-utils.ts` | ⬜ TODO | New file, depends on schema |
 | 5 | `src/data/ui-audit-findings.ts` | ⬜ TODO | New file, depends on schema |
