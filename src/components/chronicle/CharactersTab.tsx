@@ -335,13 +335,13 @@ const TraitSidebarButton: React.FC<{
       type="button"
       onClick={onClick}
       className={cn(
-        "relative w-full min-h-[60px] px-[14px] rounded-[14px] border-2 border-transparent text-left select-none overflow-hidden",
+        "relative w-full min-h-[60px] px-[14px] rounded-xl border-2 border-transparent text-left select-none overflow-hidden",
         "flex items-center justify-between gap-3",
         "bg-[#3c3e47] text-[#eaedf1]",
-        "shadow-[0_2px_6px_rgba(0,0,0,0.40),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]",
+        "shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]",
         "transition-[filter,transform,box-shadow,border-color] duration-150 ease-out",
         "hover:brightness-[1.12] hover:-translate-y-px active:brightness-95 active:translate-y-0 active:scale-[0.99]",
-        active && "border-[#3b82f6] shadow-[0_2px_6px_rgba(59,130,246,0.35),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]"
+        active && "border-[#3b82f6] shadow-[0_8px_24px_rgba(59,130,246,0.35),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]"
       )}
     >
       {backgroundImage && (
