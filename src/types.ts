@@ -438,6 +438,8 @@ export type ScenarioData = {
     nsfwIntensity?: 'normal' | 'high';  // How proactively AI engages in mature content
     realismMode?: boolean;  // Physical actions have realistic consequences
     responseVerbosity?: 'concise' | 'balanced' | 'detailed';  // Controls response length/detail density
+    chatCanvasColor?: string;  // Background behind message bubbles in chat interface
+    chatBubbleColor?: string;  // Message bubble background color in chat interface
   };
   conversations: Conversation[];
   selectedModel?: string;
