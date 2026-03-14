@@ -369,6 +369,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const [streamingContent, setStreamingContent] = useState('');
   const [formattedStreamingContent, setFormattedStreamingContent] = useState('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isColorModalOpen, setIsColorModalOpen] = useState(false);
   const [activeSceneId, setActiveSceneId] = useState<string | null>(null);
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [editText, setEditText] = useState('');
