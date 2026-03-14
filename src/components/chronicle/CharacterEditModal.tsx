@@ -1865,14 +1865,13 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                                 </div>
                               </div>
                             ))}
-                            <Button
-                              variant="ghost"
-                              size="sm"
+                            <button
+                              type="button"
                               onClick={() => addItemToSection(section.id)}
-                              className="text-blue-500 hover:text-blue-300 w-full border-2 border-dashed border-zinc-500 hover:border-blue-500 hover:bg-blue-500/5"
+                              className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5"
                             >
-                              <Plus className="w-4 h-4 mr-1" /> Add Row
-                            </Button>
+                              <Plus className="w-4 h-4" /> ADD ROW
+                            </button>
                               </>
                             )}
                           </div>
