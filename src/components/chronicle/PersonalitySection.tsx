@@ -275,7 +275,7 @@ export const PersonalitySection: React.FC<PersonalitySectionProps> = ({
       </div>
 
       <div className="p-5">
-        <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl border border-[#4a5f7f]">
+        <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
           {!isExpanded ? (
             <CollapsedView />
           ) : (
