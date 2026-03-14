@@ -1879,8 +1879,14 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                           // Collapsed view - show summary
                           (() => {
                             if (section.type === 'freeform') {
-                              return section.freeformValue
-                                ? <p className="text-sm text-zinc-400 whitespace-pre-wrap">{section.freeformValue}</p>
+                              const items = section.items.length > 0 ? section.items : (section.freeformValue ? [{ id: 'legacy', label: '', value: section.freeformValue }] : []);
+                              return items.length > 0 && items.some(it => it.value)
+                                ? <div className="space-y-2">{items.filter(it => it.value).map(it => (
+                                    <div key={it.id}>
+                                      {it.label && <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{it.label}</span>}
+                                      <p className="text-sm text-zinc-400 whitespace-pre-wrap">{it.value}</p>
+                                    </div>
+                                  ))}</div>
                                 : <p className="text-zinc-500 text-sm italic">No content</p>;
                             }
                             const hasAnyValue = section.items.some(item => item.label || item.value);
