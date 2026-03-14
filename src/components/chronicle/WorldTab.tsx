@@ -1075,7 +1075,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                             </TooltipContent>
                           </Tooltip>
                         </div>
-                        <div className="flex p-1 bg-zinc-900/50 rounded-xl border border-[#4a5f7f]">
+                        <div className="flex p-1 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]">
                           <button
                             type="button"
                             onClick={() => onUpdateOpening({ timeProgressionMode: 'manual' })}
