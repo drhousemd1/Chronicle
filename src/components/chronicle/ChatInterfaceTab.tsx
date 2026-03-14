@@ -3611,7 +3611,7 @@ const updatedChar: SideCharacter = {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-          <div className="flex-1 flex flex-col p-4 gap-3 overflow-hidden">
+          <div className={`flex-1 flex flex-col p-4 gap-3 ${hasExpandedTile ? 'overflow-y-auto' : 'overflow-hidden'}`}>
           {/* Day/Time Control Panel - Fixed at top */}
           <section
             className="flex-shrink-0 rounded-xl p-4 border border-slate-200 shadow-lg transition-all duration-700 relative overflow-hidden"
