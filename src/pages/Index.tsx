@@ -193,6 +193,14 @@ const IndexContent = () => {
   const [styleGuideEditsCount, setStyleGuideEditsCount] = useState(0);
   const imageLibraryUploadRef = React.useRef<(() => void) | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const storyTransferFileRef = React.useRef<HTMLInputElement | null>(null);
+  const [storyExportModalOpen, setStoryExportModalOpen] = useState(false);
+  const [storyImportModalOpen, setStoryImportModalOpen] = useState(false);
+  const [storyImportMode, setStoryImportMode] = useState<StoryImportMode>('merge');
+  const [storyTransferNotice, setStoryTransferNotice] = useState<{
+    tone: "success" | "error" | "info";
+    text: string;
+  } | null>(null);
   // Pagination state
   const SCENARIO_PAGE_SIZE = 50;
   const [hasMoreScenarios, setHasMoreScenarios] = useState(true);
