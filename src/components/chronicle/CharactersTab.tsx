@@ -1145,7 +1145,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
             <div className="w-full text-left flex items-center gap-3 p-[10px] rounded-[14px] bg-[#2e2e33] shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.30)]">
               <div className="w-12 h-12 shrink-0 rounded-[10px] overflow-hidden bg-[#1c1c1f] border-t border-black/35 shadow-[inset_0_2px_4px_rgba(0,0,0,0.35)]">
               {selected.avatarDataUrl ? (
-                <img src={selected.avatarDataUrl} alt={selected.name || 'Character'} className="w-full h-full object-cover" />
+                <img src={selected.avatarDataUrl} alt={selected.name || 'Character'} className="w-full h-full object-cover" style={{ objectPosition: `${selected.avatarPosition?.x ?? 50}% ${selected.avatarPosition?.y ?? 50}%` }} />
               ) : (
                 <div className="w-full h-full flex items-center justify-center font-black text-[#a1a1aa] text-[18px] italic uppercase">
                   {selected.name.charAt(0) || '?'}
