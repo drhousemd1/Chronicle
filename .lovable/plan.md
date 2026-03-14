@@ -22,7 +22,7 @@
 
 | # | Target File(s) | Status | Notes |
 |---|---------------|--------|-------|
-| 1 | `src/types.ts` + `src/utils.ts` | ⬜ TODO | Foundation — all others depend on this |
+| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
 | 2 | `src/lib/story-transfer.ts` | ⬜ TODO | New file, pure lib |
 | 3 | `src/lib/ui-audit-schema.ts` | ⬜ TODO | New file, types only |
 | 4 | `src/lib/ui-audit-utils.ts` | ⬜ TODO | New file, depends on schema |
