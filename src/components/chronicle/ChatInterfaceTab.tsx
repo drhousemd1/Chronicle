@@ -418,7 +418,20 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   
   // Track which characters are showing the "updating" indicator
   const [updatingCharacterIds, setUpdatingCharacterIds] = useState<Set<string>>(new Set());
-  
+  // Per-tile avatar crop positioning UX (main character cards)
+  const [repositioningTileCharId, setRepositioningTileCharId] = useState<string | null>(null);
+  const [expandedTileCharId, setExpandedTileCharId] = useState<string | null>(null);
+  const [tileAvatarPositionOverrides, setTileAvatarPositionOverrides] = useState<Record<string, { x: number; y: number }>>({});
+  const [tileDragState, setTileDragState] = useState<{
+    charId: string;
+    pointerId: number;
+    startClientX: number;
+    startClientY: number;
+    startPos: { x: number; y: number };
+    width: number;
+    height: number;
+  } | null>(null);
+
   // Delete confirmation dialog state
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [characterToDelete, setCharacterToDelete] = useState<string | null>(null);
