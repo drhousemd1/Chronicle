@@ -1010,6 +1010,22 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               }} />
               App Style Restructuring
             </button>
+            <button
+              type="button"
+              onClick={openUiAudit}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10, width: '100%', textDecoration: 'none', whiteSpace: 'nowrap',
+                marginTop: 8, fontSize: 13, fontWeight: 700, padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
+                border: '1px solid rgba(74,95,127,0.28)', background: 'rgba(74,95,127,0.12)', color: sg.primary,
+                boxShadow: 'inset 0 0 0 1px rgba(74,95,127,0.18)',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <span style={{
+                width: 7, height: 7, borderRadius: 999, flexShrink: 0, background: sg.primary,
+              }} />
+              Open UI Audit
+            </button>
           </div>
           <div style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, marginTop: 8 }}>
             Design System v1.0
