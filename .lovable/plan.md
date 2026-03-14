@@ -1,53 +1,56 @@
 
-# Sandbox Feature Transfer — Master Tracker
 
-## Source Documents
-- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
-- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
+## Reposition Basics Container — Two-Column Layout
 
-## Features Being Transferred
-| ID | Feature | Status |
-|----|---------|--------|
-| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
-| B | Story Transfer Library (story-transfer.ts) | ✅ |
-| A | UI Audit System (schema, utils, findings, page) | 🔄 |
-| B | Story Export/Import Modals | ✅ |
-| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
-| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
-| - | StyleGuideTool.tsx audit button | ⬜ |
-| - | App.tsx route wiring | ⬜ |
-| - | Index.tsx full wiring | ⬜ |
+Currently the Basics section stacks vertically: avatar centered on top, then all fields below. The mockup shows a side-by-side layout.
 
-## Prompt Execution Status
+### Layout Change (lines 1247-1460 in CharactersTab.tsx)
 
-| # | Target File(s) | Status | Notes |
-|---|---------------|--------|-------|
-| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
-| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
-| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
-| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
-| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
-| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
-| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
-| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
-| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
-| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
-| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
-| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
-| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
-| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
+Replace the current vertical `flex-col items-center` layout with a horizontal two-column grid:
 
-## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
-- `src/types.ts`: line 11507
-- `src/utils.ts`: line 12138
-- `src/lib/story-transfer.ts`: line 9812
-- `src/lib/ui-audit-schema.ts`: line 21329
-- `src/lib/ui-audit-utils.ts`: line 21565
-- `src/data/ui-audit-findings.ts`: line 18967
-- `StoryExportFormatModal.tsx`: line 9642
-- `StoryImportModeModal.tsx`: line 9731
-- `CharactersTab.tsx`: line 2893
-- `ChatInterfaceTab.tsx`: line 5004
-- `src/pages/style-guide/ui-audit.tsx`: line 17867
-- `src/App.tsx`: line 95
-- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout
+**Left column (~50%):**
+- Avatar image placeholder (increased from `w-48 h-48` to fill the column, roughly `w-full aspect-square`)
+- Upload Image + AI Generate buttons underneath the avatar
+- Reposition button (if avatar exists)
+- Hidden file input
+
+**Right column (~50%):**
+- Name field
+- Nickname field
+- Age + Sex side-by-side (grid-cols-2)
+- Remaining fields below the fold stay in the same vertical flow after the two-column area (Sexual Orientation, Location, Current Mood, Controlled By/Role toggles, Role Description)
+
+### Specific Changes
+
+**Line 1248** — Change outer wrapper from:
+```tsx
+<div className="flex flex-col items-center gap-4">
+```
+To a two-column grid:
+```tsx
+<div className="grid grid-cols-2 gap-5">
+```
+
+**Left column (lines 1249-1363)** — Wrap avatar + buttons in:
+```tsx
+<div className="flex flex-col gap-3">
+  {/* Avatar container — change w-48 h-48 to w-full aspect-square */}
+  {/* AvatarActionButtons + Reposition button + hidden input */}
+</div>
+```
+
+**Right column** — Wrap Name, Nickname, Age+Sex in:
+```tsx
+<div className="flex flex-col gap-4">
+  {/* Name field */}
+  {/* Nickname field */}
+  {/* Age + Sex in grid-cols-2 */}
+</div>
+```
+
+**Below the grid (lines 1384-1459)** — Sexual Orientation, Location, Current Mood, Controlled By/Role toggles, and Role Description remain in the existing vertical `space-y-4` flow, unchanged.
+
+### Avatar Size
+- Change `w-48 h-48` to `w-full aspect-square` so it fills the left column naturally
+- This makes the avatar roughly half the container width
+
