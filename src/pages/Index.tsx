@@ -2013,7 +2013,7 @@ const IndexContent = () => {
               )}
             </div>
             <div className="flex items-center gap-3">
-              {tab === "world" && (
+              {(tab === "world" || tab === "characters") && (
                 <>
                   <button
                     type="button"
