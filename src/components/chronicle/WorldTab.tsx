@@ -647,7 +647,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                   <div className="grid grid-cols-1 gap-8">
                     <div data-publish-error={!!publishErrors.storyPremise || undefined}>
                       <FieldLabel label="Story Premise" fieldName="storyPremise" />
-                      <AutoResizeTextarea value={world.core.storyPremise || ''} onChange={(v) => updateCore({ storyPremise: v })} rows={8} placeholder="What's the central situation or conflict? What's at stake? Describe the overall narrative the AI should understand..." className={`px-3 py-2 text-sm bg-zinc-900/50 border text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${publishErrors.storyPremise ? 'border-red-500 ring-2 ring-red-500' : 'border-[#4a5f7f]'}`} />
+                      <AutoResizeTextarea value={world.core.storyPremise || ''} onChange={(v) => updateCore({ storyPremise: v })} rows={8} placeholder="What's the central situation or conflict? What's at stake? Describe the overall narrative the AI should understand..." className={`px-3 py-2 text-sm bg-[#1c1c1f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${publishErrors.storyPremise ? 'border border-red-500 ring-2 ring-red-500' : 'border-t border-black/35'}`} />
                       {publishErrors.storyPremise && <p className="text-sm text-red-500 mt-1">{publishErrors.storyPremise}</p>}
                     </div>
                     
