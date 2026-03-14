@@ -4189,7 +4189,15 @@ const updatedChar: SideCharacter = {
                   </>
                 )}
               </button>
-              
+
+              <button
+                onClick={() => setIsColorModalOpen(true)}
+                className="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest border transition-all active:scale-95 cursor-pointer bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:border-[hsl(var(--ui-border-hover))]"
+              >
+                <Palette className="w-4 h-4" />
+                Change Color
+              </button>
+
               <button
                 onClick={handleSend}
                 disabled={!input.trim() || isStreaming}
