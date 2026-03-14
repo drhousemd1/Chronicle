@@ -3563,7 +3563,10 @@ const updatedChar: SideCharacter = {
   }
 
   return (
-    <div className={`flex flex-1 h-full w-full overflow-hidden relative ${darkMode ? 'bg-slate-900' : 'bg-black'}`}>
+    <div
+      className={`flex flex-1 h-full w-full overflow-hidden relative ${darkMode ? 'bg-slate-900' : ''}`}
+      style={{ backgroundColor: chatCanvasColor }}
+    >
 
       <aside className={`w-[300px] flex-shrink-0 border-r border-slate-200 flex flex-col h-full shadow-[inset_-4px_0_12px_rgba(0,0,0,0.02)] z-10 transition-colors relative overflow-hidden ${showBackground ? 'bg-white/90 backdrop-blur-md' : 'bg-white'}`}>
         {/* Sidebar background image layer */}
