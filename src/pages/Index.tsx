@@ -2279,7 +2279,7 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
           )}
 
           {tab === "characters" && activeData && (
-            <div className="p-10 overflow-y-auto h-full">
+            <div className="h-full overflow-hidden">
               <CharactersTab
                 appData={activeData}
                 selectedId={selectedCharacterId}
