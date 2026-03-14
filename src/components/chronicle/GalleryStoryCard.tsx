@@ -80,8 +80,8 @@ export const GalleryScenarioCard: React.FC<GalleryScenarioCardProps> = ({
           </div>
         )}
         
-        {/* Flat dark overlay for text readability */}
-        <div className="absolute inset-0 bg-black/40 pointer-events-none" />
+        {/* Always-visible bottom gradient for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/70 pointer-events-none z-[1]" />
 
         {/* SFW/NSFW Badge */}
         {published.contentThemes?.storyType && (
@@ -138,14 +138,14 @@ export const GalleryScenarioCard: React.FC<GalleryScenarioCardProps> = ({
         </div>
 
         {/* Bottom Info */}
-        <div className="absolute inset-x-0 bottom-0 p-4 pb-5 pointer-events-none flex flex-col" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.7), 0 0 1px rgba(0,0,0,0.9)' }}>
+        <div className="absolute inset-x-0 bottom-0 p-4 pb-5 pointer-events-none flex flex-col z-[2]" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.7), 0 0 1px rgba(0,0,0,0.9)' }}>
           <h3 className="text-lg font-black text-white leading-tight tracking-tight group-hover:text-blue-300 transition-colors truncate">
             {scenario?.title || "Untitled Story"}
           </h3>
-          <p className="text-xs text-[rgba(248,250,252,0.7)] line-clamp-2 leading-relaxed italic min-h-[2.5rem]">
+          <p className="text-xs text-white line-clamp-2 leading-relaxed italic min-h-[2.5rem]">
             {scenario?.description || "No description provided."}
           </p>
-          <div className="flex items-center gap-3 text-[10px] text-[rgba(248,250,252,0.7)] mt-1">
+          <div className="flex items-center gap-3 text-[10px] text-white mt-1">
             <span className="flex items-center gap-1">
               <Eye className="w-3 h-3" />
               {published.view_count}
@@ -163,7 +163,7 @@ export const GalleryScenarioCard: React.FC<GalleryScenarioCardProps> = ({
               {published.play_count}
             </span>
           </div>
-          <span className="text-[11px] text-[rgba(248,250,252,0.7)] font-medium mt-1">
+          <span className="text-[11px] text-white font-medium mt-1">
             Created by: {publisher?.display_name || publisher?.username || 'Anonymous'}
           </span>
         </div>

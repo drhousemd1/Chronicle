@@ -473,10 +473,10 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
                         </div>
                       )}
 
-                      {/* Flat dark overlay for text readability */}
-                      <div className="absolute inset-0 bg-black/40 pointer-events-none" />
+                      {/* Always-visible bottom gradient for text readability */}
+                      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/70 pointer-events-none z-[1]" />
 
-                      <div className="absolute inset-x-0 bottom-0 p-6" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.7), 0 0 1px rgba(0,0,0,0.9)' }}>
+                      <div className="absolute inset-x-0 bottom-0 p-6 z-[2]" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.7), 0 0 1px rgba(0,0,0,0.9)' }}>
                         <div className="flex items-center gap-2 mb-2">
                           <span className="bg-blue-500 text-[9px] font-black text-white px-2 py-1 rounded-md uppercase tracking-widest shadow-lg">
                             {folder.imageCount} {folder.imageCount === 1 ? 'image' : 'images'}
@@ -486,7 +486,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
                           {folder.name}
                         </h3>
                         {folder.description && (
-                          <p className="text-xs text-white/70 line-clamp-2 leading-relaxed italic">
+                          <p className="text-xs text-white line-clamp-2 leading-relaxed italic">
                             {folder.description}
                           </p>
                         )}

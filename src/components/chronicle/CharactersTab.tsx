@@ -1075,10 +1075,10 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                   </div>
                 )}
 
-                {/* Flat dark overlay for text readability */}
-                <div className="absolute inset-0 bg-black/40 pointer-events-none" />
+                {/* Always-visible bottom gradient for text readability */}
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/70 pointer-events-none z-[1]" />
 
-                <div className="absolute inset-x-0 bottom-0 p-6">
+                <div className="absolute inset-x-0 bottom-0 p-6 z-[2]">
                   <div className="flex flex-wrap gap-2 mb-2">
                     {c.tags && c.tags.split(',').slice(0, 2).map(tag => (
                       <span key={tag} className="bg-blue-500 text-[9px] font-black text-white px-2 py-1 rounded-md uppercase tracking-widest shadow-lg truncate max-w-[100px]">
@@ -1090,7 +1090,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                     </span>
                   </div>
                   <h3 className="text-xl font-black text-white leading-tight mb-1 tracking-tight group-hover:text-blue-300 transition-colors truncate">{c.name || "Unnamed"}</h3>
-                  <p className="text-xs text-white/70 line-clamp-3 leading-relaxed italic">
+                  <p className="text-xs text-white line-clamp-3 leading-relaxed italic">
                      {c.roleDescription || c.sections[0]?.items[0]?.value || "No description available."}
                   </p>
                 </div>

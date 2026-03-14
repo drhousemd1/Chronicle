@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef, useCallback, useLayoutEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { ScenarioMetadata, ContentThemes } from "@/types";
 import { Eye, Heart, Bookmark, Play, Pencil, Loader2 } from "lucide-react";
 import { Button } from "./UI";
@@ -24,27 +24,6 @@ interface ScenarioCardProps {
 }
 
 const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDelete, onViewDetails, isPublished, isDraft, contentThemes, publishedData, displayAuthor }) => {
-  const cardRef = useRef<HTMLDivElement>(null);
-  const infoRef = useRef<HTMLDivElement>(null);
-  const [overlayTop, setOverlayTop] = useState<number | null>(null);
-
-  // Measure the real position of the bottom info block relative to the card
-  useLayoutEffect(() => {
-    const measure = () => {
-      if (!cardRef.current || !infoRef.current) return;
-      const cardRect = cardRef.current.getBoundingClientRect();
-      const infoRect = infoRef.current.getBoundingClientRect();
-      // Top of the info block relative to the card, with a small padding above
-      setOverlayTop(infoRect.top - cardRect.top - 8);
-    };
-
-    measure();
-
-    const ro = new ResizeObserver(measure);
-    if (cardRef.current) ro.observe(cardRef.current);
-
-    return () => ro.disconnect();
-  }, [scen.title, scen.description]);
 
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -55,7 +34,7 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDel
 
   return (
     <div className="group relative cursor-pointer transition-all duration-300 group-hover:-translate-y-3" onClick={() => onViewDetails(scen.id)}>
-      <div ref={cardRef} className="aspect-[2/3] w-full overflow-hidden rounded-[2rem] bg-slate-200 !shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)] transition-shadow duration-300 group-hover:shadow-2xl border border-[#4a5f7f] relative">
+      <div className="aspect-[2/3] w-full overflow-hidden rounded-[2rem] bg-slate-200 !shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)] transition-shadow duration-300 group-hover:shadow-2xl border border-[#4a5f7f] relative">
         
         {/* Top-left badge container - flows horizontally */}
         <div className="absolute top-4 left-4 flex items-center gap-2 z-10">
@@ -103,16 +82,8 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDel
           </div>
         )}
         
-        {/* Flat dark overlay for text readability */}
-        <div className="absolute inset-0 bg-black/40 pointer-events-none" />
-        
-        {/* Hover slide-up dark overlay - positioned to actual info block */}
-        {overlayTop !== null && (
-          <div
-            className="absolute inset-x-0 bottom-0 bg-gradient-to-b from-transparent to-black/70 pointer-events-none translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out z-[1]"
-            style={{ top: `${overlayTop}px` }}
-          />
-        )}
+        {/* Always-visible bottom gradient for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/70 pointer-events-none z-[1]" />
         
         {/* Hover Actions - Edit, Delete, Play */}
         <div className="absolute inset-0 flex items-center justify-center gap-2 px-4 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 scale-90 group-hover:scale-100">
@@ -139,15 +110,15 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDel
         </div>
         
         {/* Bottom Info */}
-        <div ref={infoRef} className="absolute inset-x-0 bottom-0 p-4 pb-5 pointer-events-none flex flex-col z-[2]" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.7), 0 0 1px rgba(0,0,0,0.9)' }}>
+        <div className="absolute inset-x-0 bottom-0 p-4 pb-5 pointer-events-none flex flex-col z-[2]" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.7), 0 0 1px rgba(0,0,0,0.9)' }}>
           <h3 className="text-lg font-black text-white leading-tight tracking-tight group-hover:text-blue-300 transition-colors truncate">
             {scen.title || "Unnamed Story"}
           </h3>
-          <p className="text-xs text-[rgba(248,250,252,0.7)] line-clamp-2 leading-relaxed italic min-h-[2.5rem]">
+          <p className="text-xs text-white line-clamp-2 leading-relaxed italic min-h-[2.5rem]">
             {scen.description || "No summary provided."}
           </p>
           {/* Stats row: show all 4 for published, only Play for unpublished */}
-          <div className="flex items-center gap-3 text-[10px] text-[rgba(248,250,252,0.7)] mt-1">
+          <div className="flex items-center gap-3 text-[10px] text-white mt-1">
             {publishedData ? (
               <>
                 <span className="flex items-center gap-1">
@@ -174,7 +145,7 @@ const ScenarioCard: React.FC<ScenarioCardProps> = ({ scen, onPlay, onEdit, onDel
               </span>
             )}
           </div>
-          <span className="text-[11px] text-[rgba(248,250,252,0.7)] font-medium mt-1">
+          <span className="text-[11px] text-white font-medium mt-1">
             Created by: {displayAuthor || 'Anonymous'}
           </span>
         </div>
