@@ -55,7 +55,7 @@ interface WorldTabProps {
 }
 
 const HintBox: React.FC<{ hints: string[] }> = ({ hints }) => (
-  <div className="bg-zinc-900 rounded-xl p-4 space-y-2 border border-[#4a5f7f]">
+  <div className="bg-zinc-900 rounded-xl p-4 space-y-2 shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
     {hints.map((hint, index) => (
       <p key={index} className="text-sm text-zinc-400 leading-relaxed flex items-start gap-2">
         <span className="text-zinc-500 mt-0.5">◆</span>
