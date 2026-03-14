@@ -1008,7 +1008,7 @@ const parseTextToPayload = (text: string, warnings: string[]): { payload: Transf
     }
 
     const applyKnownWithExtras = (
-      target: Partial<Record<string, string>> | undefined,
+      target: Record<string, any> | undefined,
       extras: TransferRow[] | undefined,
       mapping: Record<string, string>
     ) => {
