@@ -138,7 +138,7 @@ export const GalleryScenarioCard: React.FC<GalleryScenarioCardProps> = ({
         </div>
 
         {/* Bottom Info */}
-        <div className="absolute inset-x-0 bottom-0 p-4 pb-5 pointer-events-none flex flex-col" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.7), 0 0 1px rgba(0,0,0,0.9)' }}>
+        <div className="absolute inset-x-0 bottom-0 p-4 pb-5 pointer-events-none flex flex-col z-[2]" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.7), 0 0 1px rgba(0,0,0,0.9)' }}>
           <h3 className="text-lg font-black text-white leading-tight tracking-tight group-hover:text-blue-300 transition-colors truncate">
             {scenario?.title || "Untitled Story"}
           </h3>
