@@ -603,18 +603,10 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
   const verbosityRules = responseVerbosity === 'detailed' ? `
     --- RESPONSE DETAIL LEVEL (DETAILED) ---
     * Write rich, immersive responses with layered sensory detail.
-    * HARD CAP: 2-3 paragraphs per response. Maximum 4 ONLY for multi-character turning points with high emotional stakes.
-    * Paragraph caps count TOTAL paragraphs across ALL character blocks combined. A 2-block response with 2 paragraphs each = 4 paragraphs = AT THE CAP.
+    * HARD CAP: 2-3 paragraphs per response. Maximum 4 ONLY for pivotal multi-character moments.
+    * Paragraph caps count TOTAL paragraphs across ALL character blocks combined.
     * Draw out moments with physical sensations, sounds, textures, and atmosphere.
-    * Describe physical sensations in detail (e.g., warmth spreading, muscles tensing, breath catching).
-    * Incorporate vocal and emotional reactions (e.g., breathy moans, desperate whispers, gasps).
-    * During intimate scenes, prolong acts with step-by-step progression.
-    * Layer multiple senses (sight, sound, taste, smell, touch) in descriptions.
-    * Extended internal monologue is encouraged — show depth of thought.
-    * During intimate scenes, layer physical sensations: heat, pressure, friction, texture.
-    * Include environmental sounds and character sounds naturally as the scene builds.
-    * Show arousal states through physical description: colour, breath, trembling.
-    * VIOLATION CHECK: Count your paragraphs. If more than 4, cut the weakest ones.
+    * Layer multiple senses. During intimate scenes, prolong acts with step-by-step progression.
 ` : responseVerbosity === 'concise' ? `
     --- RESPONSE DETAIL LEVEL (CONCISE) ---
     * Keep responses tight and punchy. Brevity is king.
