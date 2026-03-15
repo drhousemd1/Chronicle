@@ -1,5 +1,5 @@
 
-import React, { useRef, useState, useCallback, useEffect } from 'react';
+import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import { World, OpeningDialog, CodexEntry, Character, Scene, TimeOfDay, WorldCore, ContentThemes, defaultContentThemes, LocationEntry, WorldCustomSection, WorldCustomItem, WorldCustomSectionType, StoryGoal } from '@/types';
 import { validateForPublish, hasPublishErrors, PublishValidationErrors } from '@/utils/publish-validation';
 import { EnhanceableWorldFields } from '@/services/world-ai';
