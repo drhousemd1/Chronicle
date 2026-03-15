@@ -747,6 +747,24 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       }
     }
     
+    // Pass 13c: Cross-message multi-character pattern detector
+    const last3AiMsgs = msgs.filter(m => m.role === 'assistant').slice(-3);
+    if (last3AiMsgs.length >= 3) {
+      const speakerPattern = /^([A-Z][a-zA-Z\s'-]+):/m;
+      const allMultiChar = last3AiMsgs.every(m => {
+        const lines = m.text.split('\n').filter((l: string) => l.trim().length > 0);
+        const uniqueSpeakers = new Set<string>();
+        for (const line of lines) {
+          const match = line.match(speakerPattern);
+          if (match) uniqueSpeakers.add(match[1].trim());
+        }
+        return uniqueSpeakers.size >= 2;
+      });
+      if (allMultiChar) {
+        directives.push('[ANTI-MULTI-CHAR-PATTERN: Your last 3 responses ALL featured multiple AI characters. This response MUST be single-character only. Pick the focal character, write their beat, and STOP. Other characters can be referenced in narration but get NO tagged blocks this turn.]');
+      }
+    }
+    
     return directives.join(' ');
   };
 
