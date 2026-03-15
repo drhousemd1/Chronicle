@@ -2731,7 +2731,13 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       const antiLoopDirective = getAntiLoopDirective();
       sessionMessageCountRef.current += 1;
       
-      const llmInput = antiLoopDirective + (antiLoopDirective ? ' ' : '') + canonNote + input;
+      // Pass 14: Consume narrative directive (one-shot)
+      const directorTag = narrativeDirectiveRef.current
+        ? `[DIRECTOR: ${narrativeDirectiveRef.current}] `
+        : '';
+      narrativeDirectiveRef.current = null;
+      
+      const llmInput = directorTag + antiLoopDirective + (antiLoopDirective ? ' ' : '') + canonNote + input;
       const stream = generateRoleplayResponseStream(llmAppData, conversationId, llmInput, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled, undefined, lengthDirective || undefined, sessionMessageCountRef.current);
 
       for await (const chunk of stream) {
