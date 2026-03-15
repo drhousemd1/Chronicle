@@ -1919,16 +1919,21 @@ export async function updateStoryUiSettings(
 export async function updateNavButtonImages(
   navButtonImages: Record<string, any>
 ): Promise<void> {
-  const { error: updateError } = await supabase
+  // Try update first, using .select() to detect if any row was matched
+  const { data, error: updateError } = await (supabase as any)
     .from('app_settings')
-    .update({ setting_value: navButtonImages as any, updated_at: new Date().toISOString() })
-    .eq('setting_key', 'nav_button_images');
+    .update({ setting_value: navButtonImages, updated_at: new Date().toISOString() })
+    .eq('setting_key', 'nav_button_images')
+    .select('id');
 
-  if (updateError) {
-    // Row doesn't exist yet — insert it
-    await supabase
+  if (updateError) throw updateError;
+
+  // If no row existed, insert it
+  if (!data || data.length === 0) {
+    const { error: insertError } = await (supabase as any)
       .from('app_settings')
-      .insert({ setting_key: 'nav_button_images', setting_value: navButtonImages as any });
+      .insert({ setting_key: 'nav_button_images', setting_value: navButtonImages });
+    if (insertError) throw insertError;
   }
 }
 

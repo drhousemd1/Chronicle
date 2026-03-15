@@ -1271,7 +1271,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                 <span className="relative z-10 w-8 h-8 shrink-0" aria-hidden />
               </button>
 
-              {user && (
+              {user && isAdmin && (
                 <button
                   type="button"
                   onClick={openNavImageEditor}
