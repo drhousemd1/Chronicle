@@ -3543,10 +3543,15 @@ const updatedChar: SideCharacter = {
     if (normalized) handleUpdateUiSettings({ chatBubbleColor: normalized });
   };
 
-  if (!conversation) {
+  // LOADING STATE: Show skeleton UI while data is being fetched
+  // Placed here (after all hooks) to comply with React rules of hooks
+  if (conversationId === "loading" || !conversation) {
     return (
-      <div className="flex-1 flex items-center justify-center">
-        <p className="text-slate-500">Conversation not found.</p>
+      <div className="flex-1 flex items-center justify-center bg-zinc-800">
+        <div className="text-center space-y-4">
+          <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto" />
+          <p className="text-slate-400 text-sm">Loading your story...</p>
+        </div>
       </div>
     );
   }
