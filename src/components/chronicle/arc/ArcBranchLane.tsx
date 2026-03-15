@@ -254,7 +254,7 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
                 value={sentinelText}
                 onChange={() => {}}
                 readOnly
-                className="px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-zinc-400 italic rounded-lg cursor-default"
+                className="px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-zinc-400 italic rounded-lg cursor-default"
               />
             </div>
           </div>
