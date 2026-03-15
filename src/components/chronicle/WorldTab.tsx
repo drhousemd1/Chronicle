@@ -73,10 +73,10 @@ const CharacterButton: React.FC<{ char: Character; onSelect: (id: string) => voi
       type="button"
       onClick={() => onSelect(char.id)}
       className={cn(
-        "w-full text-left group flex items-center gap-4 p-2 rounded-2xl bg-gradient-to-br from-zinc-800 to-zinc-900 hover:bg-black transition-all duration-200 cursor-pointer",
+        "w-full text-left group flex items-center gap-4 p-2 rounded-2xl bg-[#3a3a3f]/40 hover:bg-[#3a3a3f]/60 transition-all duration-200 cursor-pointer",
         errors && errors.length > 0
-          ? "border-2 border-red-500"
-          : "border border-[#4a5f7f] hover:border-[#6b82a8]"
+          ? "border border-red-500 ring-2 ring-red-500"
+          : "shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]"
       )}
     >
       <div className="w-14 h-14 shrink-0 rounded-xl overflow-hidden shadow-sm transition-transform duration-300 group-hover:scale-105 bg-zinc-800">
@@ -256,15 +256,18 @@ export const WorldTab: React.FC<WorldTabProps> = ({
           disabled={isLoading || enhancingField !== null}
           title="Enhance with AI"
           className={cn(
-            "p-1.5 rounded-md transition-all flex-shrink-0",
-            isLoading 
-              ? "text-blue-500 animate-pulse cursor-wait" 
+            "relative flex items-center justify-center flex-shrink-0 rounded-lg p-[6px] overflow-hidden transition-all text-cyan-200",
+            isLoading
+              ? "animate-pulse cursor-wait"
               : enhancingField !== null
-              ? "text-zinc-600 cursor-not-allowed"
-              : "text-zinc-400 hover:text-blue-500 hover:bg-blue-500/10"
+              ? "opacity-50 cursor-not-allowed"
+              : "hover:brightness-125"
           )}
+          style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.40)' }}
         >
-          <Sparkles size={14} />
+          <span aria-hidden className="absolute inset-0 rounded-lg pointer-events-none" style={{ background: 'linear-gradient(90deg, rgba(255,255,255,0.34) 0%, rgba(34,184,200,0.62) 18%, rgba(255,255,255,0.22) 44%, rgba(109,94,247,0.64) 78%, rgba(255,255,255,0.28) 100%)' }} />
+          <span aria-hidden className="absolute rounded-[6px] pointer-events-none" style={{ inset: '1.5px', background: 'linear-gradient(90deg, rgba(34,184,200,0.22), rgba(109,94,247,0.22)), #2B2D33' }} />
+          <Sparkles size={13} className="relative z-10" style={{ filter: 'drop-shadow(0 0 6px rgba(34,184,200,0.50))' }} />
         </button>
       </div>
     );
@@ -449,13 +452,11 @@ export const WorldTab: React.FC<WorldTabProps> = ({
       type="button"
       onClick={() => setIsCharacterCreationOpen(true)}
       className={cn(
-        "group/add w-full flex items-center gap-4 p-3 rounded-2xl transition-all duration-300 bg-[#3a3a3f]/30 hover:bg-[#3a3a3f]/50 cursor-pointer",
-        hasError
-          ? "border-2 border-dashed border-red-500"
-          : "border-2 border-dashed border-[#4a5f7f] hover:border-[#5a7a9f]"
+        "group/add w-full flex items-center gap-4 p-3 rounded-2xl transition-all duration-300 bg-[#3a3a3f]/40 hover:bg-[#3a3a3f]/60 cursor-pointer shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]",
+        hasError && "border border-red-500 ring-2 ring-red-500"
       )}
     >
-      <div className="w-14 h-14 shrink-0 rounded-xl bg-gradient-to-br from-zinc-800 to-zinc-900 border-2 border-dashed border-[#4a5f7f] flex items-center justify-center text-zinc-500 transition-all duration-300 group-hover/add:border-[#5a7a9f] group-hover/add:bg-[#3a3a3f]/70 group-hover/add:text-zinc-300">
+      <div className="w-14 h-14 shrink-0 rounded-xl bg-[#1c1c1f] border-t border-black/35 flex items-center justify-center text-zinc-500 transition-all duration-300 group-hover/add:bg-[#252529] group-hover/add:text-zinc-300">
          <span className="text-2xl font-light">+</span>
       </div>
       <div className="text-left">
@@ -467,8 +468,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
 
   return (
     <div className="flex flex-1 h-full overflow-hidden">
-      <aside className="w-[260px] flex-shrink-0 bg-[#2a2a2f] border-r border-[#4a5f7f] flex flex-col h-full">
-        <div className="p-6 border-b border-[#4a5f7f] bg-[#4a5f7f]">
+      <aside className="w-[260px] flex-shrink-0 bg-[#2a2a2f] shadow-[inset_-1px_0_0_rgba(255,255,255,0.06)] flex flex-col h-full">
+        <div className="p-6 bg-[#3c3e47] shadow-[inset_0_-1px_0_rgba(0,0,0,0.25)]">
           <div className="text-[10px] font-black text-white uppercase tracking-widest">Character Roster</div>
         </div>
         
@@ -561,7 +562,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                           )}
                         </>
                       ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex flex-col items-center justify-center border-2 border-dashed border-zinc-500 gap-3 rounded-2xl">
+                        <div className="w-full h-full bg-[#1c1c1f] flex flex-col items-center justify-center gap-3 rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
                           <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-500"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
                           <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">No Cover</span>
                         </div>
@@ -780,13 +781,18 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                                       disabled={enhancingField !== null}
                                       title="Enhance with AI"
                                       className={cn(
-                                        "p-1.5 rounded-md transition-all flex-shrink-0",
+                                        "relative flex items-center justify-center flex-shrink-0 rounded-lg p-[6px] overflow-hidden transition-all text-cyan-200",
                                         enhancingField === `world_custom_${item.id}`
-                                          ? "text-blue-500 animate-pulse cursor-wait"
-                                          : "text-zinc-400 hover:text-blue-500 hover:bg-blue-500/10"
+                                          ? "animate-pulse cursor-wait"
+                                          : enhancingField !== null
+                                          ? "opacity-50 cursor-not-allowed"
+                                          : "hover:brightness-125"
                                       )}
+                                      style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.40)' }}
                                     >
-                                      <Sparkles size={14} />
+                                      <span aria-hidden className="absolute inset-0 rounded-lg pointer-events-none" style={{ background: 'linear-gradient(90deg, rgba(255,255,255,0.34) 0%, rgba(34,184,200,0.62) 18%, rgba(255,255,255,0.22) 44%, rgba(109,94,247,0.64) 78%, rgba(255,255,255,0.28) 100%)' }} />
+                                      <span aria-hidden className="absolute rounded-[6px] pointer-events-none" style={{ inset: '1.5px', background: 'linear-gradient(90deg, rgba(34,184,200,0.22), rgba(109,94,247,0.22)), #2B2D33' }} />
+                                      <Sparkles size={13} className="relative z-10" style={{ filter: 'drop-shadow(0 0 6px rgba(34,184,200,0.50))' }} />
                                     </button>
                                   )}
                                 </div>
@@ -1075,15 +1081,15 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                             </TooltipContent>
                           </Tooltip>
                         </div>
-                        <div className="flex p-1 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]">
+                        <div className="flex p-1.5 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]">
                           <button
                             type="button"
                             onClick={() => onUpdateOpening({ timeProgressionMode: 'manual' })}
                             className={cn(
-                              "px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg border-none cursor-pointer transition-all",
+                              "px-3.5 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg border-none cursor-pointer transition-all",
                               (openingDialog.timeProgressionMode || 'manual') === 'manual'
-                                ? "bg-zinc-700 text-blue-500 shadow-sm"
-                                : "bg-transparent text-zinc-500 hover:text-zinc-300"
+                                ? "bg-[#3b82f6] text-white shadow-[0_2px_8px_rgba(59,130,246,0.35)]"
+                                : "bg-[#3f3f46] text-[#a1a1aa] hover:text-zinc-300"
                             )}
                           >
                             Manual
@@ -1092,10 +1098,10 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                             type="button"
                             onClick={() => onUpdateOpening({ timeProgressionMode: 'automatic' })}
                             className={cn(
-                              "px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg border-none cursor-pointer transition-all",
+                              "px-3.5 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg border-none cursor-pointer transition-all",
                               openingDialog.timeProgressionMode === 'automatic'
-                                ? "bg-zinc-700 text-blue-500 shadow-sm"
-                                : "bg-transparent text-zinc-500 hover:text-zinc-300"
+                                ? "bg-[#3b82f6] text-white shadow-[0_2px_8px_rgba(59,130,246,0.35)]"
+                                : "bg-[#3f3f46] text-[#a1a1aa] hover:text-zinc-300"
                             )}
                           >
                             Automatic
@@ -1137,6 +1143,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                 <h2 className="text-white text-xl font-bold tracking-[-0.015em] relative z-[1]">Scene Gallery</h2>
               </div>
               <div className="p-5">
+                <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
                 {/* Header row: label + tooltip on left, buttons on right */}
                 <div className="flex items-end justify-between gap-4 mb-1">
                   <div className="flex items-center gap-2">
@@ -1240,12 +1247,13 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                       );
                     })}
                     {scenes.length === 0 && (
-                      <div className="col-span-full py-12 text-center text-zinc-500 border-2 border-dashed border-zinc-600 rounded-2xl bg-[hsl(var(--ui-surface))]">
+                      <div className="col-span-full py-12 text-center text-zinc-500 rounded-2xl bg-[#1c1c1f] shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
                          <p className="text-xs font-bold uppercase tracking-widest">No scenes uploaded</p>
                          <p className="text-sm mt-1 text-zinc-500">Upload images to enable dynamic backgrounds in chat.</p>
                       </div>
                     )}
                   </div>
+                </div>
               </div>
             </div>
           </section>
@@ -1359,7 +1367,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                     </div>
 
                     {world.entries.length > 0 && (
-                      <div className="space-y-6 pt-6 border-t border-zinc-700/50">
+                      <div className="space-y-6 pt-6 border-t border-white/10">
                         <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Additional Entries</h3>
                         <div className="grid grid-cols-1 gap-6">
                           {world.entries.map(entry => (
@@ -1406,7 +1414,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                 <Share2 className="w-5 h-5 text-white relative z-[1]" />
                 <h2 className="text-white text-xl font-bold tracking-[-0.015em] relative z-[1]">Share Your Story</h2>
               </div>
-              <div className="p-5 space-y-4">
+              <div className="p-5">
+                <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)] space-y-4">
                 <button
                   type="button"
                   onClick={() => {
@@ -1432,10 +1441,10 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                     }
                   }}
                   className="flex h-10 w-full items-center justify-center gap-2 px-4
-                    rounded-xl border border-[hsl(var(--ui-border))] 
-                    bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
-                    text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none
-                    hover:bg-ghost-white active:bg-ghost-white
+                    rounded-xl border-0
+                    bg-[#3c3e47] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]
+                    text-[#eaedf1] text-xs font-bold leading-none
+                    hover:bg-[#44464f] active:bg-[#44464f]
                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40
                     transition-colors"
                 >
@@ -1472,6 +1481,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                     </div>
                   </div>
                 )}
+                </div>
               </div>
             </div>
           </section>

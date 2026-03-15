@@ -92,7 +92,7 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
             value={branch.triggerDescription}
             onChange={onUpdateTrigger}
             placeholder={isFail ? "What causes failure..." : "What triggers success..."}
-            className="px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-zinc-500 text-white"
+            className="px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 placeholder:text-zinc-600 text-white"
           />
         </div>
       </div>
@@ -160,7 +160,7 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
                       "w-[26px] h-[26px] rounded-[8px] flex items-center justify-center cursor-pointer transition-all",
                       step.status === 'failed'
                         ? "border border-red-500/60 bg-red-500/20 text-red-300"
-                        : "border border-ghost-white bg-ghost-white text-white/40"
+                        : "border border-black/20 bg-[#3f3f46] text-[#a1a1aa]"
                     )}
                   >
                     <X size={13} />
@@ -180,7 +180,7 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
                       "w-[26px] h-[26px] rounded-[8px] flex items-center justify-center cursor-pointer transition-all",
                       step.status === 'deviated'
                         ? "border border-orange-500/60 bg-orange-500/20 text-orange-300"
-                        : "border border-ghost-white bg-ghost-white text-white/40"
+                        : "border border-black/20 bg-[#3f3f46] text-[#a1a1aa]"
                     )}
                   >
                     <ArrowUpRight size={13} />
@@ -201,7 +201,7 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
                     "w-[26px] h-[26px] rounded-[8px] flex items-center justify-center cursor-pointer transition-all",
                     step.status === 'succeeded'
                       ? "border border-emerald-500/60 bg-emerald-500/20 text-emerald-200"
-                      : "border border-ghost-white bg-ghost-white text-white/40"
+                      : "border border-black/20 bg-[#3f3f46] text-[#a1a1aa]"
                   )}
                 >
                   <Check size={13} />
@@ -218,7 +218,7 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
               onChange={(v) => onUpdateStep(step.id, { description: v })}
               placeholder="Describe this step..."
               className={cn(
-                "px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
+                "px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
                 (step.status === 'succeeded' || step.status === 'failed' || step.status === 'deviated') && "line-through opacity-60"
               )}
             />
@@ -254,21 +254,21 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
                 value={sentinelText}
                 onChange={() => {}}
                 readOnly
-                className="px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-zinc-400 italic rounded-lg cursor-default"
+                className="px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-zinc-400 italic rounded-lg cursor-default"
               />
             </div>
           </div>
         )}
 
-        {/* Add Step link - advanced mode only */}
+        {/* Add Step button - advanced mode only */}
         {!isSimpleMode && (
           <button
             type="button"
             onClick={onAddStep}
-            className="flex items-center justify-center gap-2 text-blue-500 hover:text-blue-300 text-sm mt-3 transition-colors w-full"
+            className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5 mt-3"
           >
             <Plus className="h-4 w-4" />
-            <span>Add Step</span>
+            <span>ADD STEP</span>
           </button>
         )}
       </div>
