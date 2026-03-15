@@ -439,12 +439,8 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
           - WRONG: "She couldn't see it, but she knew the purple lace was there" (naming hidden specifics)
           - RIGHT: "She wondered if he was wearing one of hers underneath" (knowledge without visual detail)
           - RIGHT: "The thought of what might be under those shorts made her pulse quicken" (desire without certainty)
-           - KEY RULE: If the user explicitly describes hiding/concealing something, the AI character
-            MUST NOT name the hidden item's specific attributes (color, material, style) in their response.
-        * VIOLATION CHECK: Before finalizing your response, re-read it and DELETE
-          any references where a character names specific hidden attributes (color,
-          material, style) of concealed items. Knowledge-based wondering is allowed;
-          visual specifics of hidden items are NOT.
+        * KEY RULE: If the user explicitly describes hiding/concealing something, the AI character
+            MUST NOT name the hidden item's specific attributes (color, material, style).
 `;
 
   // Anti-repetition protocol (#33, #34)
