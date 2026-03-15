@@ -1,86 +1,53 @@
 
+# Sandbox Feature Transfer — Master Tracker
 
-## Button Text Case & Styling Audit — Story Builder + Character Builder
+## Source Documents
+- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
+- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
 
-### Summary of Findings
+## Features Being Transferred
+| ID | Feature | Status |
+|----|---------|--------|
+| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
+| B | Story Transfer Library (story-transfer.ts) | ✅ |
+| A | UI Audit System (schema, utils, findings, page) | 🔄 |
+| B | Story Export/Import Modals | ✅ |
+| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
+| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
+| - | StyleGuideTool.tsx audit button | ⬜ |
+| - | App.tsx route wiring | ⬜ |
+| - | Index.tsx full wiring | ⬜ |
 
-The **Character Builder** buttons consistently use **title case** (e.g., "Add Row", "Add Trait"). The **Story Builder** (WorldTab + StoryGoalsSection) buttons consistently use **ALL CAPS** (e.g., "ADD LOCATION", "ADD ROW", "ADD NEW STORY ARC"). The fix is to make the Story Builder match the Character Builder's title case convention.
+## Prompt Execution Status
 
----
+| # | Target File(s) | Status | Notes |
+|---|---------------|--------|-------|
+| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
+| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
+| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
+| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
+| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
+| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
+| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
+| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
+| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
+| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
+| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
+| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
+| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
+| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
 
-### Complete Button Inventory
-
-#### CONSISTENT — Character Builder (No changes needed)
-
-| File | Line | Button Text | Case | Size/Weight |
-|------|------|-------------|------|-------------|
-| `CharactersTab.tsx` | 1556 | `Add Row` | Title ✓ | `text-xs font-bold` |
-| `CharactersTab.tsx` | 1579 | `Add Row` | Title ✓ | `text-xs font-bold` |
-| `CharactersTab.tsx` | 1603 | `Add Row` | Title ✓ | `text-xs font-bold` |
-| `CharactersTab.tsx` | 1643 | `Add Row` | Title ✓ | `text-xs font-bold` |
-| `CharactersTab.tsx` | 1685 | `Add Row` | Title ✓ | `text-xs font-bold` |
-| `CharactersTab.tsx` | 1713 | `Add Row` | Title ✓ | `text-xs font-bold` |
-| `CharactersTab.tsx` | 1741 | `Add Row` | Title ✓ | `text-xs font-bold` |
-| `CharactersTab.tsx` | 1769 | `Add Row` | Title ✓ | `text-xs font-bold` |
-| `CharactersTab.tsx` | 1797 | `Add Row` | Title ✓ | `text-xs font-bold` |
-| `PersonalitySection.tsx` | 185 | `Add Trait` | Title ✓ | `text-xs font-bold` |
-| `CharacterGoalsSection.tsx` | 345 | `Add Step` | Title ✓ | `text-sm` |
-| `CharacterGoalsSection.tsx` | 356 | `Add New Goal` | Title ✓ | `text-sm font-medium` |
-
-#### INCONSISTENT — Story Builder (Need ALL CAPS → Title Case)
-
-| File | Line | Current Text | Fix To | Size/Weight |
-|------|------|-------------|--------|-------------|
-| `WorldTab.tsx` | 709 | `ADD LOCATION` | `Add Location` | `text-xs font-bold` |
-| `WorldTab.tsx` | 835 | `ADD ROW` | `Add Row` | `text-xs font-bold` |
-| `WorldTab.tsx` | 906 | `ADD TEXT FIELD` | `Add Text Field` | `text-xs font-bold` |
-| `WorldTab.tsx` | 920 | `ADD CUSTOM CONTENT` | `Add Custom Content` | `text-xs font-bold` |
-| `StoryGoalsSection.tsx` | 485 | `ADD NEXT PHASE` | `Add Next Phase` | `text-xs font-bold` |
-| `StoryGoalsSection.tsx` | 498 | `ADD NEW STORY ARC` | `Add New Story Arc` | `text-xs font-bold` |
-
-#### INCONSISTENT — Story Builder Cover Image Buttons (Need uppercase removed + restyle)
-
-| File | Line | Current Text | Fix To | Current Style Issue |
-|------|------|-------------|--------|-------------------|
-| `WorldTab.tsx` | 607 | `Reposition` / `Done` | Keep text, remove `uppercase tracking-wider` | Uses OLD style: `bg-[hsl(240_6%_18%)] border border-[hsl(var(--ui-border))]` — should use reference `bg-[#303035]` style |
-| `WorldTab.tsx` | 617 | `Remove` | Keep text, remove `uppercase tracking-wider` | Destructive button — keep `bg-[hsl(var(--destructive))]` but remove `uppercase tracking-wider` |
-
-#### INCONSISTENT — Character Builder Reposition Overlay Button
-
-| File | Line | Current Text | Fix To | Current Style Issue |
-|------|------|-------------|--------|-------------------|
-| `CharactersTab.tsx` | 1321 | `Done` | Keep text, remove `uppercase tracking-wider` | Uses `text-[9px] font-bold uppercase tracking-wider` |
-
-#### INCONSISTENT — Custom Section "ADD ROW" / "ADD TEXT FIELD" in CharactersTab
-
-| File | Line | Current Text | Fix To |
-|------|------|-------------|--------|
-| `CharactersTab.tsx` | 1910 | `ADD TEXT FIELD` | `Add Text Field` |
-| `CharactersTab.tsx` | 2000 | `ADD ROW` | `Add Row` |
-
----
-
-### Plan
-
-**Step 1: WorldTab.tsx** — 6 text changes + 1 button restyle
-
-1. Line 709: `ADD LOCATION` → `Add Location`
-2. Line 835: `ADD ROW` → `Add Row`
-3. Line 906: `ADD TEXT FIELD` → `Add Text Field`
-4. Line 920: `ADD CUSTOM CONTENT` → `Add Custom Content`
-5. Line 607: Remove `uppercase tracking-wider` from Reposition/Done button className. Replace OLD bg/border with reference style: `bg-[#303035] hover:bg-[#343439] border-0 shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]`. Keep the blue-500 active state for when repositioning is active.
-6. Line 617: Remove `uppercase tracking-wider` from Remove button. Keep destructive color. Replace shadow with reference shadow.
-
-**Step 2: StoryGoalsSection.tsx** — 2 text changes
-
-1. Line 485: `ADD NEXT PHASE` → `Add Next Phase`
-2. Line 498: `ADD NEW STORY ARC` → `Add New Story Arc`
-
-**Step 3: CharactersTab.tsx** — 3 changes
-
-1. Line 1321: Remove `uppercase tracking-wider` from Done overlay button
-2. Line 1910: `ADD TEXT FIELD` → `Add Text Field`
-3. Line 2000: `ADD ROW` → `Add Row`
-
-Total: 11 text/style changes across 3 files.
-
+## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
+- `src/types.ts`: line 11507
+- `src/utils.ts`: line 12138
+- `src/lib/story-transfer.ts`: line 9812
+- `src/lib/ui-audit-schema.ts`: line 21329
+- `src/lib/ui-audit-utils.ts`: line 21565
+- `src/data/ui-audit-findings.ts`: line 18967
+- `StoryExportFormatModal.tsx`: line 9642
+- `StoryImportModeModal.tsx`: line 9731
+- `CharactersTab.tsx`: line 2893
+- `ChatInterfaceTab.tsx`: line 5004
+- `src/pages/style-guide/ui-audit.tsx`: line 17867
+- `src/App.tsx`: line 95
+- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout

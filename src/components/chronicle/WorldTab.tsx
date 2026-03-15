@@ -604,17 +604,17 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                         <div className="flex flex-wrap gap-3">
                           <button 
                             onClick={() => setIsRepositioningCover(!isRepositioningCover)}
-                            className={`h-10 px-5 rounded-xl text-[10px] font-bold leading-none uppercase tracking-wider transition-colors ${
+                            className={`h-10 px-5 rounded-xl text-[10px] font-bold leading-none transition-colors ${
                               isRepositioningCover 
                                 ? 'bg-blue-500 text-white' 
-                                : 'bg-[hsl(240_6%_18%)] border border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] hover:bg-[hsl(240_6%_22%)] shadow-[0_10px_30px_hsl(0_0%_0%_/_0.35)]'
+                                : 'bg-[#303035] border-0 text-[#eaedf1] hover:bg-[#343439] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]'
                             }`}
                           >
                             {isRepositioningCover ? "Done" : "Reposition"}
                           </button>
                           <button 
                             onClick={handleDeleteCover}
-                            className="h-10 px-5 rounded-xl text-[10px] font-bold leading-none uppercase tracking-wider bg-[hsl(var(--destructive))] hover:brightness-110 text-[hsl(var(--destructive-foreground))] border-0 shadow-[0_10px_30px_hsl(0_0%_0%_/_0.35)] transition-colors"
+                            className="h-10 px-5 rounded-xl text-[10px] font-bold leading-none bg-[hsl(var(--destructive))] hover:brightness-110 text-[hsl(var(--destructive-foreground))] border-0 shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] transition-colors"
                           >
                             Remove
                           </button>
@@ -706,7 +706,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                           className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5"
                         >
                           <Plus size={16} />
-                          <span>ADD LOCATION</span>
+                          <span>Add Location</span>
                         </button>
                       </div>
                     </div>
@@ -832,7 +832,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                               className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5"
                             >
                               <Plus size={16} />
-                              <span>ADD ROW</span>
+                              <span>Add Row</span>
                             </button>
                           </>
                         ) : (
@@ -903,7 +903,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                             }}
                             className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5"
                           >
-                            <Plus size={16} /> ADD TEXT FIELD
+                            <Plus size={16} /> Add Text Field
                           </button>
                           </>
                         )}
@@ -917,7 +917,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                       className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5"
                     >
                       <Plus size={16} />
-                      ADD CUSTOM CONTENT
+                      Add Custom Content
                     </button>
                   </div>
                 </div>
