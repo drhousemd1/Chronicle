@@ -2022,7 +2022,7 @@ const IndexContent = () => {
                     type="button"
                     onClick={handleOpenStoryImport}
                     disabled={!activeData || isSavingAndClosing || isSaving}
-                    className="inline-flex items-center gap-2 justify-center h-10 px-5 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider disabled:opacity-50 disabled:pointer-events-none"
+                    className="inline-flex items-center gap-2 justify-center h-10 px-5 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-xs font-bold leading-none disabled:opacity-50 disabled:pointer-events-none"
                   >
                     <Upload size={14} />
                     Import
@@ -2031,7 +2031,7 @@ const IndexContent = () => {
                     type="button"
                     onClick={handleOpenStoryExport}
                     disabled={!activeData || isSavingAndClosing || isSaving}
-                    className="inline-flex items-center gap-2 justify-center h-10 px-5 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider disabled:opacity-50 disabled:pointer-events-none"
+                    className="inline-flex items-center gap-2 justify-center h-10 px-5 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-xs font-bold leading-none disabled:opacity-50 disabled:pointer-events-none"
                   >
                     <Download size={14} />
                     Export
@@ -2065,7 +2065,7 @@ const IndexContent = () => {
                       } finally { clearTimeout(safety); setIsSavingAndClosing(false); }
                     }}
                     disabled={isSavingAndClosing || isSaving}
-                    className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider disabled:opacity-50 disabled:pointer-events-none"
+                    className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-xs font-bold leading-none disabled:opacity-50 disabled:pointer-events-none"
                   >
                     {isSavingAndClosing ? 'Saving...' : 'Finalize and Close'}
                   </button>
@@ -2096,7 +2096,7 @@ const IndexContent = () => {
                       }
                     }}
                     disabled={isSaving || isSavingAndClosing}
-                    className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider disabled:opacity-50 disabled:pointer-events-none"
+                    className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-xs font-bold leading-none disabled:opacity-50 disabled:pointer-events-none"
                   >
                  {isSaving ? 'Draft Saved!' : 'Save Draft'}
                   </button>
