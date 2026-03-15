@@ -73,7 +73,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
 
   return (
     <div className="space-y-1">
-      <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+      <h4 className="text-[10px] font-black text-zinc-400">
         {title}
       </h4>
       
