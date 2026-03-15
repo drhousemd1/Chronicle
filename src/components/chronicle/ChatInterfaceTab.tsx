@@ -3769,13 +3769,16 @@ const updatedChar: SideCharacter = {
 
           {/* Side Characters - Scrollable section */}
           <section className="flex flex-col min-h-0 flex-1">
-            <h3
-              className="flex-shrink-0 text-[11px] font-bold text-white bg-[#4a5f7f] px-4 py-1.5 rounded-lg mb-3 tracking-tight uppercase flex items-center justify-between cursor-pointer select-none shadow-lg"
+            <div
+              className="relative overflow-hidden bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 px-4 py-1.5 rounded-lg mb-3 shadow-lg cursor-pointer select-none"
               onClick={() => setSideCharsCollapsed(prev => !prev)}
             >
-              Side Characters
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${sideCharsCollapsed ? 'rotate-180' : ''}`} />
-            </h3>
+              <div className="absolute inset-0 z-0 bg-gradient-to-tr from-white/10 to-transparent opacity-40" style={{ height: '60%' }} />
+              <div className="flex items-center justify-between relative z-[1]">
+                <span className="text-[11px] font-bold text-white tracking-tight uppercase">Side Characters</span>
+                <ChevronDown className={`w-3.5 h-3.5 text-white transition-transform duration-200 ${sideCharsCollapsed ? 'rotate-180' : ''}`} />
+              </div>
+            </div>
             <div className={`transition-all duration-300 ease-in-out overflow-hidden ${sideCharsCollapsed ? 'max-h-0 opacity-0' : 'max-h-[2000px] opacity-100'}`}>
             <ScrollableSection maxHeight="calc(50vh - 120px)" className="pr-1">
               <div className="space-y-2 pb-2">
