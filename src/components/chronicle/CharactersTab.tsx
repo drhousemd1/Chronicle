@@ -1318,7 +1318,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                               <div className="absolute inset-0 z-[18] touch-none cursor-move pointer-events-auto">
                                 <button
                                   type="button"
-                                  className="absolute left-2 top-2 rounded-md bg-black/55 border border-white/20 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-white hover:bg-black/70 pointer-events-auto z-20"
+                                  className="absolute left-2 top-2 rounded-md bg-black/55 border border-white/20 px-2 py-1 text-[9px] font-bold text-white hover:bg-black/70 pointer-events-auto z-20"
                                   onMouseDown={(e) => e.stopPropagation()}
                                   onTouchStart={(e) => e.stopPropagation()}
                                   onClick={(e) => {
