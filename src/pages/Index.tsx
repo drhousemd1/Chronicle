@@ -756,7 +756,7 @@ const IndexContent = () => {
       }
       
       // Own scenario - edit directly
-      // Check for a local draft first
+      // Determine best data source: backend vs local safety snapshot
       let finalData = data;
       let finalCoverImage = coverImage;
       let finalCoverPosition = coverImagePosition;
@@ -766,17 +766,48 @@ const IndexContent = () => {
         const draftRaw = localStorage.getItem(`draft_${id}`);
         if (draftRaw) {
           const draft = JSON.parse(draftRaw);
-          // Support both old format (raw ScenarioData) and new format (with metadata)
           if (draft.data && draft.savedAt) {
-            finalData = draft.data;
-            finalCoverImage = draft.coverImage ?? coverImage;
-            finalCoverPosition = draft.coverPosition ?? coverImagePosition;
-            finalContentThemes = draft.contentThemes ?? defaultContentThemes;
+            // Compare: use local snapshot only if backend data is empty/missing characters
+            // but local snapshot has them (recovery case)
+            const backendHasChars = data.characters.length > 0;
+            const localHasChars = (draft.data.characters?.length ?? 0) > 0;
+            
+            if (!backendHasChars && localHasChars) {
+              // Backend is empty but local has data — restore from snapshot
+              console.log('[handleEditScenario] Backend empty, restoring from local snapshot');
+              finalData = draft.data;
+              finalCoverImage = draft.coverImage ?? coverImage;
+              finalCoverPosition = draft.coverPosition ?? coverImagePosition;
+              finalContentThemes = draft.contentThemes ?? defaultContentThemes;
+              
+              // Auto-repair: persist recovered data back to backend
+              if (user) {
+                const derivedTitle = finalData.world.core.scenarioName || 'Untitled';
+                supabaseData.saveScenarioWithVerification(id, finalData, {
+                  title: derivedTitle,
+                  description: finalData.world.core.briefDescription || '',
+                  coverImage: finalCoverImage,
+                  coverImagePosition: finalCoverPosition,
+                  tags: ['Custom'],
+                }, user.id, { isDraft: true }).then(ok => {
+                  if (ok) {
+                    try { localStorage.removeItem(`draft_${id}`); } catch (_) {}
+                    console.log('[handleEditScenario] Auto-repair succeeded');
+                  }
+                }).catch(e => console.warn('[handleEditScenario] Auto-repair failed:', e));
+              }
+            } else if (backendHasChars) {
+              // Backend has data — prefer it, discard local snapshot
+              try { localStorage.removeItem(`draft_${id}`); } catch (_) {}
+            }
           } else {
             // Legacy format: draft is the ScenarioData directly
-            finalData = draft;
+            const legacyHasChars = (draft.characters?.length ?? 0) > 0;
+            if (data.characters.length === 0 && legacyHasChars) {
+              finalData = draft;
+            }
+            try { localStorage.removeItem(`draft_${id}`); } catch (_) {}
           }
-          localStorage.removeItem(`draft_${id}`);
         }
       } catch (e) {
         console.warn('Could not restore draft:', e);
