@@ -284,6 +284,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   const [isCharacterCreationOpen, setIsCharacterCreationOpen] = useState(false);
   const [showContentTypeModal, setShowContentTypeModal] = useState(false);
   const [publishErrors, setPublishErrors] = useState<PublishValidationErrors>({});
+  const [expandedRosterTileId, setExpandedRosterTileId] = useState<string | null>(null);
 
   // Listen for save-validation-failed events from Index.tsx (Save & Close button)
   useEffect(() => {
