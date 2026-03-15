@@ -626,6 +626,18 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
     }
   }, [selectedId, activeTraitSection, traitNavItems]);
 
+  // Auto-navigate to newly added custom section
+  const prevSectionCountRef = useRef(selected?.sections?.length ?? 0);
+  useEffect(() => {
+    if (!selected) return;
+    const currentCount = selected.sections.length;
+    if (currentCount > prevSectionCountRef.current && currentCount > 0) {
+      const newest = selected.sections[currentCount - 1];
+      setActiveTraitSection(`custom:${newest.id}`);
+    }
+    prevSectionCountRef.current = currentCount;
+  }, [selected?.sections?.length]);
+
   const loadNavImageDraft = useCallback((navKey: string) => {
     setEditingNavKey(navKey);
     const existing = navButtonImages[navKey];
@@ -1048,7 +1060,9 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
     if (!selected) return;
     // If external handler is provided, use it (for scenario builder)
     if (externalAddSection) {
+      const prevCount = selected.sections.length;
       externalAddSection(type);
+      // Auto-navigate will be handled by the useEffect below
       return;
     }
     // Otherwise use internal logic (for chat interface)
@@ -1851,7 +1865,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
           {selected.sections
             .filter(section => isTraitVisible(`custom:${section.id}`))
             .map(section => (
-            <div key={section.id} className="w-full bg-[#2a2a2f] rounded-[24px] border border-[#4a5f7f] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
+            <div key={section.id} className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
               {/* Dark blue header with editable title */}
               <div className="bg-[#4a5f7f] border-b border-[#4a5f7f] px-5 py-3 flex items-center justify-between shadow-lg">
                 <AutoResizeTextarea
@@ -1899,19 +1913,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                           handleUpdateSection(selected.id, section.id, { items, freeformValue: undefined });
                         }
                         return items.map(item => (
-                          <div key={item.id} className="space-y-2">
-                            <div className="flex items-center gap-2 justify-end">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const nextItems = (section.items.length > 0 ? section.items : items).filter(it => it.id !== item.id);
-                                  handleUpdateSection(selected.id, section.id, { items: nextItems.length > 0 ? nextItems : [{ id: uid('item'), label: '', value: '', createdAt: now(), updatedAt: now() }] });
-                                }}
-                                className="text-red-500 hover:text-red-400 p-1.5 rounded-md hover:bg-red-900/30"
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
-                            </div>
+                          <div key={item.id} className="flex items-start gap-2">
                             <AutoResizeTextarea
                               value={item.value}
                               onChange={(v) => {
@@ -1919,9 +1921,19 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                                 handleUpdateSection(selected.id, section.id, { items: nextItems });
                               }}
                               placeholder="Write your content here..."
-                              className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                              className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                               rows={4}
                             />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const nextItems = (section.items.length > 0 ? section.items : items).filter(it => it.id !== item.id);
+                                handleUpdateSection(selected.id, section.id, { items: nextItems.length > 0 ? nextItems : [{ id: uid('item'), label: '', value: '', createdAt: now(), updatedAt: now() }] });
+                              }}
+                              className="mt-2 text-red-500 hover:text-red-400 p-1.5 rounded-md hover:bg-red-900/30 shrink-0"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
                           </div>
                         ));
                       })()}

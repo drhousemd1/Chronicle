@@ -1,55 +1,53 @@
 
+# Sandbox Feature Transfer — Master Tracker
 
-## Fix Plan — Custom Sections (3 issues)
+## Source Documents
+- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
+- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
 
-### 1. Structured sections: seed one default row + Freeform X alignment
+## Features Being Transferred
+| ID | Feature | Status |
+|----|---------|--------|
+| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
+| B | Story Transfer Library (story-transfer.ts) | ✅ |
+| A | UI Audit System (schema, utils, findings, page) | 🔄 |
+| B | Story Export/Import Modals | ✅ |
+| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
+| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
+| - | StyleGuideTool.tsx audit button | ⬜ |
+| - | App.tsx route wiring | ⬜ |
+| - | Index.tsx full wiring | ⬜ |
 
-**File: `src/pages/Index.tsx`** — line 1628
+## Prompt Execution Status
 
-The external `handleAddSection` creates structured sections with `items: []` (empty). Fix: seed one item like the internal handler does.
+| # | Target File(s) | Status | Notes |
+|---|---------------|--------|-------|
+| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
+| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
+| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
+| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
+| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
+| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
+| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
+| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
+| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
+| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
+| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
+| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
+| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
+| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
 
-```
-items: [{ id: uid('item'), label: '', value: '', createdAt: now(), updatedAt: now() }]
-```
-
-### 2. Auto-navigate to new custom section after creation
-
-**File: `src/pages/Index.tsx`** — `handleAddSection` (line 1618-1634)
-
-After creating the section, we need to tell `CharactersTab` to navigate to it. The tab uses `activeTraitSection` state with keys like `custom:{sectionId}`.
-
-Options:
-- Return the new section ID and pass a callback to `CharactersTab`
-- Add an `onNavigateToSection` prop, or change `onAddSection` to return the ID
-
-Simplest: Change the `onAddSection` prop signature to accept a callback that receives the new section ID. Then in `CharactersTab`, after calling `externalAddSection`, use the returned ID to call `setActiveTraitSection`.
-
-Actually simpler: Move the navigation logic INTO `CharactersTab`. Instead of calling `externalAddSection` directly, have `CharactersTab` generate the section ID, call `externalAddSection` with it, then navigate. But that changes the API.
-
-**Best approach**: Modify `handleAddSection` in `Index.tsx` to store the new section ID, and add a new prop `navigateToSection` or simply have `CharactersTab` track "latest section added" via a `useEffect` on `selected.sections.length` changes and auto-navigate to the last one.
-
-**Chosen approach**: In `CharactersTab`, after calling `externalAddSection(type)`, use a ref/effect pattern: track previous section count, and when it increases, auto-navigate to the newest custom section.
-
-### 3. Freeform: Fix X button position + textarea width
-
-**File: `src/components/chronicle/CharactersTab.tsx`** — lines 1902-1925
-
-Currently the X button is in its own `<div>` above the textarea (lines 1903-1913), creating the weird gap. Fix: move the X to be inline-right of the textarea, matching the structured layout pattern (textarea + X side by side).
-
-### 4. Remove outer slate blue border from custom sections
-
-**File: `src/components/chronicle/CharactersTab.tsx`** — line 1854
-
-`border border-[#4a5f7f]` → remove it (use same borderless shadow pattern as other containers).
-
----
-
-### Summary — 4 changes across 2 files
-
-| # | File | Change |
-|---|------|--------|
-| 1 | `Index.tsx` line 1628 | Seed one default item for structured sections |
-| 2 | `CharactersTab.tsx` | Auto-navigate to new custom section via useEffect on sections length |
-| 3 | `CharactersTab.tsx` lines 1902-1925 | Move freeform X button inline-right of textarea |
-| 4 | `CharactersTab.tsx` line 1854 | Remove `border border-[#4a5f7f]` from custom section outer shell |
-
+## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
+- `src/types.ts`: line 11507
+- `src/utils.ts`: line 12138
+- `src/lib/story-transfer.ts`: line 9812
+- `src/lib/ui-audit-schema.ts`: line 21329
+- `src/lib/ui-audit-utils.ts`: line 21565
+- `src/data/ui-audit-findings.ts`: line 18967
+- `StoryExportFormatModal.tsx`: line 9642
+- `StoryImportModeModal.tsx`: line 9731
+- `CharactersTab.tsx`: line 2893
+- `ChatInterfaceTab.tsx`: line 5004
+- `src/pages/style-guide/ui-audit.tsx`: line 17867
+- `src/App.tsx`: line 95
+- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout
