@@ -1863,6 +1863,15 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
           />
           )}
 
+  // Load nav button images from DB on mount
+  useEffect(() => {
+    if (!scenarioId) return;
+    loadNavButtonImages(scenarioId).then((images) => {
+      if (images && Object.keys(images).length > 0) {
+        setNavButtonImages(images as Record<string, NavButtonImageConfig>);
+      }
+    }).catch(() => {});
+  }, [scenarioId]);
 
           {/* USER-CREATED CUSTOM SECTIONS */}
           {selected.sections
