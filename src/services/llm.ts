@@ -430,8 +430,8 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
     - DIALOGUE REQUIREMENTS:
         * Almost every response should contain spoken dialogue (text in quotes),
           but a rare action-only or thought-only beat is acceptable when it fits.
-        * Vary how much dialogue appears: sometimes one line, sometimes several
-          rapid exchanges. Match the scene's energy.
+        * Dialogue should feel natural within the paragraph cap. Multi-character
+          responses split blocks across characters, not extend them.
         * Focus on external dialogue, but ensure actions and internal thoughts
           occur naturally where appropriate.
         * AVOID predictable patterns - do NOT always place dialogue in the same
