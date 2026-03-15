@@ -73,10 +73,10 @@ const CharacterButton: React.FC<{ char: Character; onSelect: (id: string) => voi
       type="button"
       onClick={() => onSelect(char.id)}
       className={cn(
-        "w-full text-left group flex items-center gap-4 p-2 rounded-2xl bg-gradient-to-br from-zinc-800 to-zinc-900 hover:bg-black transition-all duration-200 cursor-pointer",
+        "w-full text-left group flex items-center gap-4 p-2 rounded-2xl bg-[#3a3a3f]/40 hover:bg-[#3a3a3f]/60 transition-all duration-200 cursor-pointer",
         errors && errors.length > 0
-          ? "border-2 border-red-500"
-          : "border border-[#4a5f7f] hover:border-[#6b82a8]"
+          ? "border border-red-500 ring-2 ring-red-500"
+          : "shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]"
       )}
     >
       <div className="w-14 h-14 shrink-0 rounded-xl overflow-hidden shadow-sm transition-transform duration-300 group-hover:scale-105 bg-zinc-800">
