@@ -293,6 +293,8 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   const [showContentTypeModal, setShowContentTypeModal] = useState(false);
   const [publishErrors, setPublishErrors] = useState<PublishValidationErrors>({});
   const [expandedRosterTileId, setExpandedRosterTileId] = useState<string | null>(null);
+  const [mainCharsCollapsed, setMainCharsCollapsed] = useState(false);
+  const [sideCharsCollapsed, setSideCharsCollapsed] = useState(false);
 
   // Reset expanded roster tile if character is removed
   useEffect(() => {
