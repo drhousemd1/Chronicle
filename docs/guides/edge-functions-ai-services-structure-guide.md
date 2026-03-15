@@ -128,8 +128,8 @@ The system prompt in `getSystemInstruction()` is constructed in this order:
 | #13 | Regeneration context duplication — user message included twice (in truncated history + as new message) reinforcing repetition | `src/components/chronicle/ChatInterfaceTab.tsx` | RESOLVED — 2026-03-07 — Truncation now excludes the triggering user message from history since generateRoleplayResponseStream re-adds it |
 | #14 | Detailed mode verbosity uncapped — 7-9 paragraph responses | `src/services/llm.ts` | RESOLVED — 2026-03-07 — Hard paragraph caps: concise 1-2, balanced 1-3, detailed 2-3 (max 4 exceptional). Verbosity-based max_tokens: concise=1024, balanced=2048, detailed=3072 |
 | #15 | 403 retry directive encouraged evasive/deferral output | `supabase/functions/chat/index.ts` | RESOLVED — 2026-03-07 — Replaced "deflect/redirect/change subject" with "concrete immediate action pivot," explicitly forbids postponement language |
+| #16 | Repetitive "quote→action→thought" triad pattern and passive/reactive AI output | `src/services/llm.ts`, `src/components/chronicle/ChatInterfaceTab.tsx` | RESOLVED — 2026-03-15 — Added TURN PROGRESSION CONTRACT (mandatory scene delta + proactive move per turn), STRUCTURE VARIETY GUARD (forbids repeating same output skeleton), thought frequency caps (0-1 for concise/balanced, 0-2 for detailed), runtime structural repetition and low-initiative detectors in getAntiLoopDirective, diversified style hints with action-led/decision-driven variants, continue prompt rewritten to demand decisive forward action |
 
-## 6. Image Generation Pipeline
 
 ### Avatar Generation
 
