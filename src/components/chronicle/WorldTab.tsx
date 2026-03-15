@@ -1083,15 +1083,15 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                             </TooltipContent>
                           </Tooltip>
                         </div>
-                        <div className="flex p-1 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]">
+                        <div className="flex p-1.5 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]">
                           <button
                             type="button"
                             onClick={() => onUpdateOpening({ timeProgressionMode: 'manual' })}
                             className={cn(
-                              "px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg border-none cursor-pointer transition-all",
+                              "px-3.5 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg border-none cursor-pointer transition-all",
                               (openingDialog.timeProgressionMode || 'manual') === 'manual'
-                                ? "bg-zinc-700 text-blue-500 shadow-sm"
-                                : "bg-transparent text-zinc-500 hover:text-zinc-300"
+                                ? "bg-[#3b82f6] text-white shadow-[0_2px_8px_rgba(59,130,246,0.35)]"
+                                : "bg-[#3f3f46] text-[#a1a1aa] hover:text-zinc-300"
                             )}
                           >
                             Manual
@@ -1100,10 +1100,10 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                             type="button"
                             onClick={() => onUpdateOpening({ timeProgressionMode: 'automatic' })}
                             className={cn(
-                              "px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg border-none cursor-pointer transition-all",
+                              "px-3.5 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg border-none cursor-pointer transition-all",
                               openingDialog.timeProgressionMode === 'automatic'
-                                ? "bg-zinc-700 text-blue-500 shadow-sm"
-                                : "bg-transparent text-zinc-500 hover:text-zinc-300"
+                                ? "bg-[#3b82f6] text-white shadow-[0_2px_8px_rgba(59,130,246,0.35)]"
+                                : "bg-[#3f3f46] text-[#a1a1aa] hover:text-zinc-300"
                             )}
                           >
                             Automatic
