@@ -286,6 +286,14 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   const [publishErrors, setPublishErrors] = useState<PublishValidationErrors>({});
   const [expandedRosterTileId, setExpandedRosterTileId] = useState<string | null>(null);
 
+  // Reset expanded roster tile if character is removed
+  useEffect(() => {
+    if (!expandedRosterTileId) return;
+    if (!characters.some((char) => char.id === expandedRosterTileId)) {
+      setExpandedRosterTileId(null);
+    }
+  }, [characters, expandedRosterTileId]);
+
   // Listen for save-validation-failed events from Index.tsx (Save & Close button)
   useEffect(() => {
     const handler = (e: Event) => {
