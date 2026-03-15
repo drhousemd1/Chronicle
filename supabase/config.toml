@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.compress-day-memories]
 verify_jwt = false
+
+[functions.generate-narrative-directive]
+verify_jwt = false
