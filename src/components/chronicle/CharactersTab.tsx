@@ -1422,13 +1422,13 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                               <div className="flex p-1.5 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]">
                                 <button
                                   onClick={() => onUpdate(selected.id, { controlledBy: 'AI' })}
-                                  className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.controlledBy === 'AI' ? 'bg-[#3b82f6] text-white shadow-[0_2px_8px_rgba(59,130,246,0.35)]' : 'bg-[#3f3f46] text-[#a1a1aa] hover:text-zinc-300'}`}
+                                  className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all ${selected.controlledBy === 'AI' ? 'bg-[#3b82f6] text-white shadow-[0_2px_8px_rgba(59,130,246,0.35)]' : 'bg-[#3f3f46] text-[#a1a1aa] hover:text-zinc-300'}`}
                                 >
                                   AI
                                 </button>
                                 <button
                                   onClick={() => onUpdate(selected.id, { controlledBy: 'User' })}
-                                  className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.controlledBy === 'User' ? 'bg-[#3b82f6] text-white shadow-[0_2px_8px_rgba(59,130,246,0.35)]' : 'bg-[#3f3f46] text-[#a1a1aa] hover:text-zinc-300'}`}
+                                  className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all ${selected.controlledBy === 'User' ? 'bg-[#3b82f6] text-white shadow-[0_2px_8px_rgba(59,130,246,0.35)]' : 'bg-[#3f3f46] text-[#a1a1aa] hover:text-zinc-300'}`}
                                 >
                                   User
                                 </button>
@@ -1439,13 +1439,13 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                               <div className="flex p-1.5 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]">
                                 <button
                                   onClick={() => onUpdate(selected.id, { characterRole: 'Main' })}
-                                  className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.characterRole === 'Main' ? 'bg-[#3b82f6] text-white shadow-[0_2px_8px_rgba(59,130,246,0.35)]' : 'bg-[#3f3f46] text-[#a1a1aa] hover:text-zinc-300'}`}
+                                  className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all ${selected.characterRole === 'Main' ? 'bg-[#3b82f6] text-white shadow-[0_2px_8px_rgba(59,130,246,0.35)]' : 'bg-[#3f3f46] text-[#a1a1aa] hover:text-zinc-300'}`}
                                 >
                                   Main
                                 </button>
                                 <button
                                   onClick={() => onUpdate(selected.id, { characterRole: 'Side' })}
-                                  className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.characterRole === 'Side' ? 'bg-[#3b82f6] text-white shadow-[0_2px_8px_rgba(59,130,246,0.35)]' : 'bg-[#3f3f46] text-[#a1a1aa] hover:text-zinc-300'}`}
+                                  className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all ${selected.characterRole === 'Side' ? 'bg-[#3b82f6] text-white shadow-[0_2px_8px_rgba(59,130,246,0.35)]' : 'bg-[#3f3f46] text-[#a1a1aa] hover:text-zinc-300'}`}
                                 >
                                   Side
                                 </button>
@@ -1635,10 +1635,17 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
               })()
             }
           >
-            {(selected.tone?._extras || []).map(extra => {
-              const args = buildExtraEnhanceArgs('extra_tone', `extra_tone_${extra.id}`, extra, 'tone', 'character tone/voice detail');
-              return <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('tone', extra.id, patch)} onDelete={() => handleDeleteExtra('tone', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_tone_${extra.id}`, 'custom', () => extra.value, args.setValue, args.customLabel)} isEnhancing={enhancingField === `extra_tone_${extra.id}`} />;
-            })}
+            {(() => {
+              const extras = selected.tone?._extras || [];
+              if (extras.length === 0) {
+                handleAddExtra('tone');
+                return null;
+              }
+              return extras.map(extra => {
+                const args = buildExtraEnhanceArgs('extra_tone', `extra_tone_${extra.id}`, extra, 'tone', 'character tone/voice detail');
+                return <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('tone', extra.id, patch)} onDelete={() => handleDeleteExtra('tone', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_tone_${extra.id}`, 'custom', () => extra.value, args.setValue, args.customLabel)} isEnhancing={enhancingField === `extra_tone_${extra.id}`} />;
+              });
+            })()}
             <button type="button" onClick={() => handleAddExtra('tone')} className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
             </button>
@@ -1705,10 +1712,17 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
               })()
             }
           >
-            {(selected.keyLifeEvents?._extras || []).map(extra => {
-              const args = buildExtraEnhanceArgs('extra_kle', `extra_kle_${extra.id}`, extra, 'keyLifeEvents', 'key life event');
-              return <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('keyLifeEvents', extra.id, patch)} onDelete={() => handleDeleteExtra('keyLifeEvents', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_kle_${extra.id}`, 'custom', () => extra.value, args.setValue, args.customLabel)} isEnhancing={enhancingField === `extra_kle_${extra.id}`} />;
-            })}
+            {(() => {
+              const extras = selected.keyLifeEvents?._extras || [];
+              if (extras.length === 0) {
+                handleAddExtra('keyLifeEvents');
+                return null;
+              }
+              return extras.map(extra => {
+                const args = buildExtraEnhanceArgs('extra_kle', `extra_kle_${extra.id}`, extra, 'keyLifeEvents', 'key life event');
+                return <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('keyLifeEvents', extra.id, patch)} onDelete={() => handleDeleteExtra('keyLifeEvents', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_kle_${extra.id}`, 'custom', () => extra.value, args.setValue, args.customLabel)} isEnhancing={enhancingField === `extra_kle_${extra.id}`} />;
+              });
+            })()}
             <button type="button" onClick={() => handleAddExtra('keyLifeEvents')} className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
             </button>
@@ -1733,10 +1747,17 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
               })()
             }
           >
-            {(selected.relationships?._extras || []).map(extra => {
-              const args = buildExtraEnhanceArgs('extra_rel', `extra_rel_${extra.id}`, extra, 'relationships', 'relationship');
-              return <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('relationships', extra.id, patch)} onDelete={() => handleDeleteExtra('relationships', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_rel_${extra.id}`, 'custom', () => extra.value, args.setValue, args.customLabel)} isEnhancing={enhancingField === `extra_rel_${extra.id}`} />;
-            })}
+            {(() => {
+              const extras = selected.relationships?._extras || [];
+              if (extras.length === 0) {
+                handleAddExtra('relationships');
+                return null;
+              }
+              return extras.map(extra => {
+                const args = buildExtraEnhanceArgs('extra_rel', `extra_rel_${extra.id}`, extra, 'relationships', 'relationship');
+                return <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('relationships', extra.id, patch)} onDelete={() => handleDeleteExtra('relationships', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_rel_${extra.id}`, 'custom', () => extra.value, args.setValue, args.customLabel)} isEnhancing={enhancingField === `extra_rel_${extra.id}`} />;
+              });
+            })()}
             <button type="button" onClick={() => handleAddExtra('relationships')} className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
             </button>
@@ -1761,10 +1782,17 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
               })()
             }
           >
-            {(selected.secrets?._extras || []).map(extra => {
-              const args = buildExtraEnhanceArgs('extra_sec', `extra_sec_${extra.id}`, extra, 'secrets', 'secret');
-              return <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('secrets', extra.id, patch)} onDelete={() => handleDeleteExtra('secrets', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_sec_${extra.id}`, 'custom', () => extra.value, args.setValue, args.customLabel)} isEnhancing={enhancingField === `extra_sec_${extra.id}`} />;
-            })}
+            {(() => {
+              const extras = selected.secrets?._extras || [];
+              if (extras.length === 0) {
+                handleAddExtra('secrets');
+                return null;
+              }
+              return extras.map(extra => {
+                const args = buildExtraEnhanceArgs('extra_sec', `extra_sec_${extra.id}`, extra, 'secrets', 'secret');
+                return <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('secrets', extra.id, patch)} onDelete={() => handleDeleteExtra('secrets', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_sec_${extra.id}`, 'custom', () => extra.value, args.setValue, args.customLabel)} isEnhancing={enhancingField === `extra_sec_${extra.id}`} />;
+              });
+            })()}
             <button type="button" onClick={() => handleAddExtra('secrets')} className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
             </button>
@@ -1789,10 +1817,17 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
               })()
             }
           >
-            {(selected.fears?._extras || []).map(extra => {
-              const args = buildExtraEnhanceArgs('extra_fear', `extra_fear_${extra.id}`, extra, 'fears', 'fear');
-              return <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('fears', extra.id, patch)} onDelete={() => handleDeleteExtra('fears', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_fear_${extra.id}`, 'custom', () => extra.value, args.setValue, args.customLabel)} isEnhancing={enhancingField === `extra_fear_${extra.id}`} />;
-            })}
+            {(() => {
+              const extras = selected.fears?._extras || [];
+              if (extras.length === 0) {
+                handleAddExtra('fears');
+                return null;
+              }
+              return extras.map(extra => {
+                const args = buildExtraEnhanceArgs('extra_fear', `extra_fear_${extra.id}`, extra, 'fears', 'fear');
+                return <ExtraRow key={extra.id} extra={extra} onUpdate={(patch) => handleUpdateExtra('fears', extra.id, patch)} onDelete={() => handleDeleteExtra('fears', extra.id)} onEnhance={() => openEnhanceModeModal(`extra_fear_${extra.id}`, 'custom', () => extra.value, args.setValue, args.customLabel)} isEnhancing={enhancingField === `extra_fear_${extra.id}`} />;
+              });
+            })()}
             <button type="button" onClick={() => handleAddExtra('fears')} className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all">
               <Plus className="w-4 h-4 inline mr-1" /> Add Row
             </button>
@@ -1847,7 +1882,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
               </div>
               {/* Content */}
               <div className="p-5">
-                <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl border border-[#4a5f7f]">
+                <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
                   {(expandedCustomSections[section.id] ?? true) ? (
                     <div className="space-y-4">
                     {section.type === 'freeform' ? (
@@ -1865,16 +1900,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                         }
                         return items.map(item => (
                           <div key={item.id} className="space-y-2">
-                            <div className="flex items-center gap-2">
-                              <AutoResizeTextarea
-                                value={item.label}
-                                onChange={(v) => {
-                                  const nextItems = (section.items.length > 0 ? section.items : items).map(it => it.id === item.id ? { ...it, label: v } : it);
-                                  handleUpdateSection(selected.id, section.id, { items: nextItems });
-                                }}
-                                placeholder="LABEL"
-                                className="flex-1 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border-t border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
-                              />
+                            <div className="flex items-center gap-2 justify-end">
                               <button
                                 type="button"
                                 onClick={() => {
@@ -1893,7 +1919,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                                 handleUpdateSection(selected.id, section.id, { items: nextItems });
                               }}
                               placeholder="Write your content here..."
-                              className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                              className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                               rows={4}
                             />
                           </div>
@@ -1976,7 +2002,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                                   handleUpdateSection(selected.id, section.id, { items: nextItems });
                                 }}
                                 placeholder="Description"
-                                className="flex-1 px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                               />
                             </div>
                             <button

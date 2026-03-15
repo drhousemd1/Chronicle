@@ -218,7 +218,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
       {/* Collapsed view */}
       {!isExpanded && (
         <div className="p-5">
-          <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl border border-[#4a5f7f]">
+          <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
             <CollapsedGoalsView />
           </div>
         </div>
@@ -230,14 +230,14 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
           {sortedGoals.map((goal) => {
             const progress = calculateProgress(goal);
             return (
-              <div key={goal.id} className={cn("p-5 pb-6 bg-[#2e2e33] rounded-2xl border relative", isEditMode ? "border-blue-500/20" : "border-[#4a5f7f]")}>
+              <div key={goal.id} className={cn("p-5 pb-6 bg-[#2e2e33] rounded-2xl relative shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]")}>
 
                 {/* Row 1: Goal Name + Progress Ring */}
                 <div className="flex items-start gap-4">
                   <div className="flex-1">
                     <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block mb-1">Goal Name</label>
                     {isEditMode ? (
-                      <AutoResizeTextarea value={goal.title} onChange={(v) => updateGoal(goal.id, { title: v })} placeholder="Enter goal name..." className="px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
+                      <AutoResizeTextarea value={goal.title} onChange={(v) => updateGoal(goal.id, { title: v })} placeholder="Enter goal name..." className="px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
                     ) : (
                       <h3 className="text-lg font-bold text-white mt-0.5">{goal.title || 'No goal name set'}</h3>
                     )}
@@ -273,7 +273,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
                     )}
                   </div>
                   {isEditMode ? (
-                    <AutoResizeTextarea value={goal.desiredOutcome} onChange={(v) => updateGoal(goal.id, { desiredOutcome: v })} placeholder="What success looks like..." className="px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20" rows={2} />
+                    <AutoResizeTextarea value={goal.desiredOutcome} onChange={(v) => updateGoal(goal.id, { desiredOutcome: v })} placeholder="What success looks like..." className="px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20" rows={2} />
                   ) : (
                     <p className="text-sm text-zinc-300 mt-0.5">{goal.desiredOutcome || 'No outcome defined'}</p>
                   )}
@@ -288,7 +288,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
                 )}
 
                 {/* Full width: Steps Section */}
-                <div className="mt-4 pt-4 border-t border-[#4a5f7f]">
+                <div className="mt-4 pt-4 border-t border-black/35">
                   <h4 className="text-[10px] font-bold text-white uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
                     <CheckSquare className="h-4 w-4 text-blue-500" />
                     Steps
@@ -310,7 +310,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
                                 value={step.description}
                                 onChange={(v) => updateStep(goal.id, step.id, { description: v })}
                                 placeholder={`Step ${stepIdx + 1}: Describe this step...`}
-                                className={cn("flex-1 px-3 py-2 bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20", step.completed && "line-through text-zinc-500")}
+                                className={cn("flex-1 px-3 py-2 bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20", step.completed && "line-through text-zinc-500")}
                               />
                               <SparkleButton
                                 fieldKey={`goal_step_${step.id}`}
@@ -340,9 +340,9 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
                   )}
 
                   {isEditMode && (
-                    <button onClick={() => addStep(goal.id)} className="flex items-center gap-2 text-blue-500 hover:text-blue-300 text-sm mt-3 transition-colors">
+                    <button onClick={() => addStep(goal.id)} className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5 mt-3">
                       <Plus className="h-4 w-4" />
-                      <span>Add Step</span>
+                      Add Step
                     </button>
                   )}
                 </div>
@@ -351,7 +351,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
           })}
 
           {isEditMode && (
-            <button onClick={addGoal} className="w-full py-2.5 text-sm bg-transparent border-2 border-dashed border-zinc-500 text-blue-500 hover:border-blue-500 hover:bg-blue-500/5 font-medium rounded-xl transition-colors flex items-center justify-center gap-2">
+            <button onClick={addGoal} className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5">
               <Plus className="w-4 h-4" />
               Add New Goal
             </button>

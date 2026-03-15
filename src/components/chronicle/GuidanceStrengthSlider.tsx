@@ -8,9 +8,9 @@ interface GuidanceStrengthSliderProps {
 }
 
 const LEVELS: { value: GoalFlexibility; label: string }[] = [
-  { value: 'rigid', label: 'RIGID' },
-  { value: 'normal', label: 'NORMAL' },
-  { value: 'flexible', label: 'FLEXIBLE' },
+  { value: 'rigid', label: 'Rigid' },
+  { value: 'normal', label: 'Normal' },
+  { value: 'flexible', label: 'Flexible' },
 ];
 
 const DESCRIPTIONS: Record<GoalFlexibility, string> = {
@@ -31,7 +31,7 @@ export const GuidanceStrengthSlider: React.FC<GuidanceStrengthSliderProps> = ({ 
   return (
     <div>
       <div className="mt-3.5 mb-1.5">
-        <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+        <span className="text-[10px] font-black text-zinc-400">
           Guidance Strength
         </span>
       </div>
@@ -70,7 +70,7 @@ export const GuidanceStrengthSlider: React.FC<GuidanceStrengthSliderProps> = ({ 
             key={level.value}
             onClick={() => onChange(level.value)}
             className={cn(
-              "cursor-pointer text-[10px] font-black uppercase tracking-widest transition-colors",
+              "cursor-pointer text-[10px] font-black transition-colors",
               value === level.value ? "text-blue-500" : "text-zinc-500"
             )}
           >
