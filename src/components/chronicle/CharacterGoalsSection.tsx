@@ -340,9 +340,9 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
                   )}
 
                   {isEditMode && (
-                    <button onClick={() => addStep(goal.id)} className="flex items-center gap-2 text-blue-500 hover:text-blue-300 text-sm mt-3 transition-colors">
+                    <button onClick={() => addStep(goal.id)} className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5 mt-3">
                       <Plus className="h-4 w-4" />
-                      <span>Add Step</span>
+                      Add Step
                     </button>
                   )}
                 </div>
