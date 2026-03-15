@@ -1,53 +1,42 @@
 
-# Sandbox Feature Transfer — Master Tracker
 
-## Source Documents
-- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
-- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
+# Pass 13 (Continued): Fix Narrative Director + Continue Button
 
-## Features Being Transferred
-| ID | Feature | Status |
-|----|---------|--------|
-| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
-| B | Story Transfer Library (story-transfer.ts) | ✅ |
-| A | UI Audit System (schema, utils, findings, page) | 🔄 |
-| B | Story Export/Import Modals | ✅ |
-| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
-| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
-| - | StyleGuideTool.tsx audit button | ⬜ |
-| - | App.tsx route wiring | ⬜ |
-| - | Index.tsx full wiring | ⬜ |
+## Root Cause Analysis
 
-## Prompt Execution Status
+I checked the edge function logs. **The narrative director has ZERO logs** — it has never fired once. Combined with the fact that **`handleContinueConversation` completely ignores the narrative directive**, every time you clicked Continue, the AI got a vague "take a DECISIVE FORWARD ACTION" prompt with no specific guidance about what to do. So it defaults to the easiest pattern: more emotional processing.
 
-| # | Target File(s) | Status | Notes |
-|---|---------------|--------|-------|
-| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
-| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
-| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
-| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
-| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
-| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
-| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
-| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
-| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
-| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
-| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
-| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
-| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
-| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
+Three concrete problems:
 
-## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
-- `src/types.ts`: line 11507
-- `src/utils.ts`: line 12138
-- `src/lib/story-transfer.ts`: line 9812
-- `src/lib/ui-audit-schema.ts`: line 21329
-- `src/lib/ui-audit-utils.ts`: line 21565
-- `src/data/ui-audit-findings.ts`: line 18967
-- `StoryExportFormatModal.tsx`: line 9642
-- `StoryImportModeModal.tsx`: line 9731
-- `CharactersTab.tsx`: line 2893
-- `ChatInterfaceTab.tsx`: line 5004
-- `src/pages/style-guide/ui-audit.tsx`: line 17867
-- `src/App.tsx`: line 95
-- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout
+1. **Narrative director edge function never fires.** Zero logs. The `supabase.functions.invoke()` call is in the code but is silently failing — likely because the function wasn't deployed or has an auth/config issue. Need to verify deployment and add visible error logging.
+
+2. **`handleContinueConversation` doesn't use the director.** Lines 3032-3042: it builds `runtimeDirectives` from only `antiLoopDirective`. It never reads `narrativeDirectiveRef.current`, never injects a `[DIRECTOR]` tag, and never calls `generateNarrativeDirective()` after completion. So even if the director worked, clicking Continue would bypass it entirely.
+
+3. **The continue prompt is generic.** "Take a DECISIVE FORWARD ACTION" is too vague — the model doesn't know WHICH goal to advance. It needs specific character goals injected into the continue prompt so the AI knows what "forward" means.
+
+## Plan
+
+### Change 1: Fix narrative director deployment
+Redeploy the `generate-narrative-directive` edge function to ensure it's live. Add explicit console logging at the invocation site in `ChatInterfaceTab.tsx` so we can see if the call is being made and what response comes back.
+
+### Change 2: Wire `handleContinueConversation` to the narrative director
+**File: `src/components/chronicle/ChatInterfaceTab.tsx`**
+- Consume `narrativeDirectiveRef.current` in the continue handler (same pattern as `handleSend`)
+- Inject it as `[DIRECTOR: ...]` in the runtime directives
+- Call `generateNarrativeDirective()` after the continue response completes
+- This ensures that every Continue click gets director guidance and generates a new directive for the next click
+
+### Change 3: Make the continue prompt goal-aware
+**File: `src/components/chronicle/ChatInterfaceTab.tsx`**
+- Build a compact summary of active character goals and pending arc steps
+- Inject them directly into the continue prompt so the model knows SPECIFICALLY what to advance
+- Example: instead of "take a DECISIVE FORWARD ACTION", it becomes "Ashley's active goal: 'Develop a femdom relationship with James' — current step: 'Share personal writings to deepen emotional connection'. Ashley must BEGIN READING from the journal NOW. No more building up to it."
+
+### Change 4: Update docs
+**File: `docs/guides/edge-functions-ai-services-structure-guide.md`**
+
+## Files Changed
+- `src/components/chronicle/ChatInterfaceTab.tsx` — wire director to continue handler, make continue prompt goal-aware, add debug logging
+- `supabase/functions/generate-narrative-directive/index.ts` — redeploy (touch to trigger)
+- `docs/guides/edge-functions-ai-services-structure-guide.md` — update Pass 13 notes
+
