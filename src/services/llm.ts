@@ -463,10 +463,12 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
           repeated turn after turn. This pattern MUST be broken.
         * Vary your response structure. Examples of different shapes:
           - Action-led: Start with a character doing something, dialogue emerges from the action
-          - Dialogue-heavy: Multiple rapid exchanges with minimal narration between
           - Decision beat: Character makes a choice and acts on it, minimal dialogue
           - Environmental shift: Setting/atmosphere changes, characters respond
           - Surprise/interruption: Something unexpected happens mid-scene
+        * Vary the speech-to-narration ratio between responses:
+          - Sometimes mostly dialogue with brief action beats
+          - Sometimes a short narration-only beat before a spoken line
         * If your last 2 responses followed [dialogue → action → thought], your
           next response MUST use a different structure.
 
