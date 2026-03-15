@@ -756,7 +756,7 @@ const IndexContent = () => {
       }
       
       // Own scenario - edit directly
-      // Check for a local draft first
+      // Determine best data source: backend vs local safety snapshot
       let finalData = data;
       let finalCoverImage = coverImage;
       let finalCoverPosition = coverImagePosition;
@@ -766,17 +766,48 @@ const IndexContent = () => {
         const draftRaw = localStorage.getItem(`draft_${id}`);
         if (draftRaw) {
           const draft = JSON.parse(draftRaw);
-          // Support both old format (raw ScenarioData) and new format (with metadata)
           if (draft.data && draft.savedAt) {
-            finalData = draft.data;
-            finalCoverImage = draft.coverImage ?? coverImage;
-            finalCoverPosition = draft.coverPosition ?? coverImagePosition;
-            finalContentThemes = draft.contentThemes ?? defaultContentThemes;
+            // Compare: use local snapshot only if backend data is empty/missing characters
+            // but local snapshot has them (recovery case)
+            const backendHasChars = data.characters.length > 0;
+            const localHasChars = (draft.data.characters?.length ?? 0) > 0;
+            
+            if (!backendHasChars && localHasChars) {
+              // Backend is empty but local has data — restore from snapshot
+              console.log('[handleEditScenario] Backend empty, restoring from local snapshot');
+              finalData = draft.data;
+              finalCoverImage = draft.coverImage ?? coverImage;
+              finalCoverPosition = draft.coverPosition ?? coverImagePosition;
+              finalContentThemes = draft.contentThemes ?? defaultContentThemes;
+              
+              // Auto-repair: persist recovered data back to backend
+              if (user) {
+                const derivedTitle = finalData.world.core.scenarioName || 'Untitled';
+                supabaseData.saveScenarioWithVerification(id, finalData, {
+                  title: derivedTitle,
+                  description: finalData.world.core.briefDescription || '',
+                  coverImage: finalCoverImage,
+                  coverImagePosition: finalCoverPosition,
+                  tags: ['Custom'],
+                }, user.id, { isDraft: true }).then(ok => {
+                  if (ok) {
+                    try { localStorage.removeItem(`draft_${id}`); } catch (_) {}
+                    console.log('[handleEditScenario] Auto-repair succeeded');
+                  }
+                }).catch(e => console.warn('[handleEditScenario] Auto-repair failed:', e));
+              }
+            } else if (backendHasChars) {
+              // Backend has data — prefer it, discard local snapshot
+              try { localStorage.removeItem(`draft_${id}`); } catch (_) {}
+            }
           } else {
             // Legacy format: draft is the ScenarioData directly
-            finalData = draft;
+            const legacyHasChars = (draft.characters?.length ?? 0) > 0;
+            if (data.characters.length === 0 && legacyHasChars) {
+              finalData = draft;
+            }
+            try { localStorage.removeItem(`draft_${id}`); } catch (_) {}
           }
-          localStorage.removeItem(`draft_${id}`);
         }
       } catch (e) {
         console.warn('Could not restore draft:', e);
@@ -2115,7 +2146,25 @@ const IndexContent = () => {
                           tags: ['Custom']
                         };
 
-                        await supabaseData.saveScenario(scenarioIdToSave, dataToSave, metadata, user.id, { isDraft: true });
+                        // Write local safety snapshot before remote save
+                        try {
+                          localStorage.setItem(`draft_${scenarioIdToSave}`, JSON.stringify({
+                            data: dataToSave,
+                            coverImage: activeCoverImage,
+                            coverPosition: activeCoverPosition,
+                            contentThemes: activeContentThemes,
+                            savedAt: Date.now(),
+                          }));
+                        } catch (_) { /* quota exceeded — non-fatal */ }
+
+                        const verified = await supabaseData.saveScenarioWithVerification(scenarioIdToSave, dataToSave, metadata, user.id, { isDraft: true });
+
+                        if (verified) {
+                          // Clear local snapshot on verified success
+                          try { localStorage.removeItem(`draft_${scenarioIdToSave}`); } catch (_) {}
+                        } else {
+                          console.warn('Draft saved but child-data verification failed; local snapshot kept as backup.');
+                        }
 
                         // Refresh registry so hub shows the draft
                         supabaseData.fetchMyScenarios(user.id)
@@ -2134,7 +2183,7 @@ const IndexContent = () => {
                     disabled={isSaving || isSavingAndClosing}
                     className="inline-flex items-center justify-center h-10 px-6 rounded-xl border-0 bg-[#303035] text-[#eaedf1] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:bg-[#343439] active:bg-[#343439] transition-all active:scale-95 text-xs font-bold leading-none disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40"
                   >
-                 {isSaving ? 'Draft Saved!' : 'Save Draft'}
+                 {isSaving ? 'Saving...' : 'Save Draft'}
                   </button>
                   {storyTransferNotice && (
                     <span className={cn("text-xs truncate max-w-[200px] animate-in fade-in duration-300",

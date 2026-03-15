@@ -616,6 +616,56 @@ async function syncScenes(scenarioId: string, data: ScenarioData): Promise<void>
   }
 }
 
+// =============================================
+// SAVE VERIFICATION
+// =============================================
+
+export async function fetchScenarioIntegrity(id: string): Promise<{ characters: number; codex: number; scenes: number }> {
+  const [charResult, codexResult, sceneResult] = await Promise.all([
+    supabase.from('characters').select('id', { count: 'exact', head: true }).eq('scenario_id', id),
+    supabase.from('codex_entries').select('id', { count: 'exact', head: true }).eq('scenario_id', id),
+    supabase.from('scenes').select('id', { count: 'exact', head: true }).eq('scenario_id', id),
+  ]);
+  return {
+    characters: charResult.count ?? 0,
+    codex: codexResult.count ?? 0,
+    scenes: sceneResult.count ?? 0,
+  };
+}
+
+export async function saveScenarioWithVerification(
+  id: string,
+  data: ScenarioData,
+  metadata: { title: string; description: string; coverImage: string; coverImagePosition?: { x: number; y: number }; tags: string[] },
+  userId: string,
+  options?: { isDraft?: boolean }
+): Promise<boolean> {
+  await saveScenario(id, data, metadata, userId, options);
+
+  // Verify child data was persisted
+  const integrity = await fetchScenarioIntegrity(id);
+  const expectedChars = data.characters.length;
+  const expectedCodex = data.world.entries.length;
+  const expectedScenes = data.scenes.length;
+
+  const charOk = integrity.characters >= expectedChars;
+  const codexOk = integrity.codex >= expectedCodex;
+  const sceneOk = integrity.scenes >= expectedScenes;
+
+  if (charOk && codexOk && sceneOk) return true;
+
+  // Auto-retry once
+  console.warn('[saveScenarioWithVerification] Integrity mismatch, retrying. Expected:', { expectedChars, expectedCodex, expectedScenes }, 'Got:', integrity);
+  await saveScenario(id, data, metadata, userId, options);
+
+  const retry = await fetchScenarioIntegrity(id);
+  const retryOk = retry.characters >= expectedChars && retry.codex >= expectedCodex && retry.scenes >= expectedScenes;
+  if (!retryOk) {
+    console.error('[saveScenarioWithVerification] Retry still failed. Got:', retry);
+  }
+  return retryOk;
+}
+
 export async function deleteScenario(id: string): Promise<void> {
   const { error } = await supabase
     .from('stories' as any)
