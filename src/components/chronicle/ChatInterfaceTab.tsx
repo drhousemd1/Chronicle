@@ -1221,19 +1221,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     }
   }, [conversationId, conversation, conversation?.messages, appData.scenes, activeSceneId]);
 
-  // LOADING STATE: Show skeleton UI while data is being fetched
-  // This enables immediate navigation with progressive data hydration
-  // NOTE: This check is placed AFTER all hooks to comply with React rules
-  if (conversationId === "loading" || (!conversation && conversationId !== "loading")) {
-    return (
-      <div className="flex-1 flex items-center justify-center bg-zinc-800">
-        <div className="text-center space-y-4">
-          <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto" />
-          <p className="text-slate-400 text-sm">Loading your story...</p>
-        </div>
-      </div>
-    );
-  }
+  // NOTE: Loading/missing conversation guards moved to just before final JSX return
+  // to ensure all hooks are called on every render (React rules of hooks).
 
   // Helper to find any character (main, side, or auto-generated) by name
   const findAnyCharacterByName = (name: string | null): Character | SideCharacter | null => {
@@ -3554,10 +3543,15 @@ const updatedChar: SideCharacter = {
     if (normalized) handleUpdateUiSettings({ chatBubbleColor: normalized });
   };
 
-  if (!conversation) {
+  // LOADING STATE: Show skeleton UI while data is being fetched
+  // Placed here (after all hooks) to comply with React rules of hooks
+  if (conversationId === "loading" || !conversation) {
     return (
-      <div className="flex-1 flex items-center justify-center">
-        <p className="text-slate-500">Conversation not found.</p>
+      <div className="flex-1 flex items-center justify-center bg-zinc-800">
+        <div className="text-center space-y-4">
+          <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto" />
+          <p className="text-slate-400 text-sm">Loading your story...</p>
+        </div>
       </div>
     );
   }
