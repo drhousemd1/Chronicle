@@ -603,14 +603,13 @@ export const WorldTab: React.FC<WorldTabProps> = ({
       type="button"
       onClick={() => setIsCharacterCreationOpen(true)}
       className={cn(
-        "w-full flex items-center justify-center gap-2 py-2.5 rounded-xl",
-        "bg-[#1c1c1f] hover:bg-[#252529] transition-all",
-        "text-blue-500 text-sm font-semibold",
-        "border border-white/5",
-        hasError && "border-red-500 ring-2 ring-red-500"
+        "w-full flex items-center justify-center h-10 rounded-xl",
+        "bg-[#3c3e47] hover:brightness-110 transition-all active:scale-95",
+        "text-xs font-bold text-white/90 border-0",
+        "shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]",
+        hasError && "border border-red-500 ring-2 ring-red-500"
       )}
     >
-      <Plus className="w-4 h-4" />
       {label}
     </button>
   );
