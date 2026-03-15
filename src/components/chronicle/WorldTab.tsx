@@ -1,5 +1,5 @@
 
-import React, { useRef, useState, useCallback, useEffect } from 'react';
+import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import { World, OpeningDialog, CodexEntry, Character, Scene, TimeOfDay, WorldCore, ContentThemes, defaultContentThemes, LocationEntry, WorldCustomSection, WorldCustomItem, WorldCustomSectionType, StoryGoal } from '@/types';
 import { validateForPublish, hasPublishErrors, PublishValidationErrors } from '@/utils/publish-validation';
 import { EnhanceableWorldFields } from '@/services/world-ai';
@@ -67,42 +67,176 @@ const HintBox: React.FC<{ hints: string[] }> = ({ hints }) => (
 
 // AutoResizeTextarea is now imported from ./AutoResizeTextarea
 
-const CharacterButton: React.FC<{ char: Character; onSelect: (id: string) => void; errors?: string[] }> = ({ char, onSelect, errors }) => (
-  <div className="space-y-1">
-    <button 
-      type="button"
-      onClick={() => onSelect(char.id)}
-      className={cn(
-        "w-full text-left group flex items-center gap-4 p-2 rounded-2xl bg-[#3a3a3f]/40 hover:bg-[#3a3a3f]/60 transition-all duration-200 cursor-pointer",
-        errors && errors.length > 0
-          ? "border border-red-500 ring-2 ring-red-500"
-          : "shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]"
-      )}
-    >
-      <div className="w-14 h-14 shrink-0 rounded-xl overflow-hidden shadow-sm transition-transform duration-300 group-hover:scale-105 bg-zinc-800">
+const clampPercent = (value: number): number => Math.max(0, Math.min(100, value));
+const CHARACTER_AVATAR_PREVIEW_SIZE = 192; // CharactersTab avatar preview uses w-48 h-48
+const STORY_ROSTER_TILE_HEIGHT = 140;
+const STORY_ROSTER_TILE_WIDTH = 268; // Sidebar 300px - horizontal padding 32px
+
+type Size2D = { width: number; height: number };
+const avatarNaturalSizeCache = new Map<string, Size2D>();
+
+const mapObjectPositionFromPreviewToTile = (
+  stored: { x: number; y: number },
+  imageSize: Size2D,
+  tileSize: Size2D
+): { x: number; y: number } => {
+  const fromSize = {
+    width: CHARACTER_AVATAR_PREVIEW_SIZE,
+    height: CHARACTER_AVATAR_PREVIEW_SIZE,
+  };
+
+  const fromScale = Math.max(fromSize.width / imageSize.width, fromSize.height / imageSize.height);
+  const toScale = Math.max(tileSize.width / imageSize.width, tileSize.height / imageSize.height);
+
+  const mapAxis = (
+    storedPercent: number,
+    imageLength: number,
+    fromLength: number,
+    toLength: number
+  ): number => {
+    const fromRendered = imageLength * fromScale;
+    const fromOverflow = Math.max(0, fromRendered - fromLength);
+    const sourceOffset = fromOverflow === 0 ? 0 : ((fromOverflow * clampPercent(storedPercent)) / 100) / fromScale;
+
+    const toRendered = imageLength * toScale;
+    const toOverflow = Math.max(0, toRendered - toLength);
+    if (toOverflow === 0) return 50;
+    const toOffset = sourceOffset * toScale;
+    return clampPercent((toOffset / toOverflow) * 100);
+  };
+
+  return {
+    x: mapAxis(stored.x, imageSize.width, fromSize.width, tileSize.width),
+    y: mapAxis(stored.y, imageSize.height, fromSize.height, tileSize.height),
+  };
+};
+
+const CharacterRosterTile: React.FC<{
+  char: Character;
+  onSelect: (id: string) => void;
+  errors?: string[];
+  isExpanded: boolean;
+  onToggleExpand: (id: string) => void;
+}> = ({ char, onSelect, errors, isExpanded, onToggleExpand }) => {
+  const [naturalImageSize, setNaturalImageSize] = useState<Size2D | null>(
+    () => (char.avatarDataUrl ? avatarNaturalSizeCache.get(char.avatarDataUrl) ?? null : null)
+  );
+
+  useEffect(() => {
+    if (!char.avatarDataUrl) {
+      setNaturalImageSize(null);
+      return;
+    }
+
+    const cachedSize = avatarNaturalSizeCache.get(char.avatarDataUrl);
+    if (cachedSize) {
+      setNaturalImageSize(cachedSize);
+      return;
+    }
+
+    let cancelled = false;
+    const image = new Image();
+    const commitSize = () => {
+      const nextSize = {
+        width: image.naturalWidth || 1,
+        height: image.naturalHeight || 1,
+      };
+      avatarNaturalSizeCache.set(char.avatarDataUrl!, nextSize);
+      if (!cancelled) setNaturalImageSize(nextSize);
+    };
+
+    image.onload = () => { commitSize(); };
+    image.onerror = () => { if (!cancelled) setNaturalImageSize(null); };
+    image.src = char.avatarDataUrl;
+    if (image.complete && image.naturalWidth > 0) {
+      commitSize();
+    }
+
+    return () => { cancelled = true; };
+  }, [char.avatarDataUrl]);
+
+  const tileObjectPosition = useMemo(() => {
+    const stored = {
+      x: clampPercent(char.avatarPosition?.x ?? 50),
+      y: clampPercent(char.avatarPosition?.y ?? 50),
+    };
+
+    if (!naturalImageSize) return `${stored.x}% ${stored.y}%`;
+
+    const mapped = mapObjectPositionFromPreviewToTile(
+      stored,
+      naturalImageSize,
+      { width: STORY_ROSTER_TILE_WIDTH, height: STORY_ROSTER_TILE_HEIGHT }
+    );
+    return `${mapped.x}% ${mapped.y}%`;
+  }, [char.avatarPosition?.x, char.avatarPosition?.y, naturalImageSize]);
+
+  return (
+    <div className="space-y-1">
+      <div
+        className={cn(
+          "relative overflow-hidden rounded-2xl bg-black transition-all duration-300",
+          isExpanded ? "" : "h-[140px]",
+          errors && errors.length > 0
+            ? "border-2 border-red-500 ring-2 ring-red-500"
+            : "shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]"
+        )}
+      >
         {char.avatarDataUrl ? (
-          <img src={char.avatarDataUrl} alt={char.name} className="w-full h-full object-cover" />
+          <img
+            src={char.avatarDataUrl}
+            alt={char.name}
+            className={`block w-full transition-all duration-300 ${isExpanded ? 'h-auto' : 'h-full object-cover'}`}
+            style={isExpanded ? undefined : { objectPosition: tileObjectPosition }}
+          />
         ) : (
-          <div className="w-full h-full flex items-center justify-center font-black text-slate-400 text-lg italic uppercase">
+          <div className="flex h-full min-h-[140px] items-center justify-center bg-zinc-800 font-black text-5xl italic uppercase text-zinc-500">
             {char.name.charAt(0)}
           </div>
         )}
+
+        {/* Click area to toggle expand/collapse */}
+        <button
+          type="button"
+          onClick={() => onToggleExpand(char.id)}
+          className="absolute inset-0 z-20"
+          aria-label={isExpanded ? `Collapse ${char.name} avatar` : `Expand ${char.name} avatar`}
+        />
+
+        {/* Edit button - top right */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelect(char.id);
+          }}
+          className="absolute right-2 top-2 z-30 rounded-lg bg-black/35 p-1.5 text-white/75 transition-colors hover:bg-black/55 hover:text-white"
+          aria-label={`Edit ${char.name}`}
+        >
+          <Pencil className="w-4 h-4" />
+        </button>
+
+        {/* Bottom gradient overlay */}
+        <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-3 pb-2 pt-8 pointer-events-none">
+          <div className="flex items-end justify-between">
+            <span className="text-sm font-bold text-white truncate">{char.name}</span>
+            <span className="text-[9px] font-black uppercase tracking-widest text-white/70 shrink-0 ml-2">
+              {char.controlledBy}
+            </span>
+          </div>
+        </div>
       </div>
-      <div className="min-w-0 flex-1 space-y-0.5">
-        <div className="text-sm font-bold text-white truncate group-hover:text-blue-300 transition-colors">{char.name}</div>
-        <div className="text-xs text-slate-400"><span className="text-slate-500">Age:</span> {char.age || ''}</div>
-        <div className="text-xs text-slate-400"><span className="text-slate-500">Controlled by:</span> <span className="uppercase tracking-wider font-black">{char.controlledBy}</span></div>
-      </div>
-    </button>
-    {errors && errors.length > 0 && (
-      <div className="pl-2 space-y-0.5">
-        {errors.map((err, i) => (
-          <p key={i} className="text-sm text-red-500 font-medium">{err}</p>
-        ))}
-      </div>
-    )}
-  </div>
-);
+
+      {errors && errors.length > 0 && (
+        <div className="pl-2 space-y-0.5">
+          {errors.map((err, i) => (
+            <p key={i} className="text-sm text-red-500 font-medium">{err}</p>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const WorldTab: React.FC<WorldTabProps> = ({ 
   scenarioId,
@@ -150,6 +284,15 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   const [isCharacterCreationOpen, setIsCharacterCreationOpen] = useState(false);
   const [showContentTypeModal, setShowContentTypeModal] = useState(false);
   const [publishErrors, setPublishErrors] = useState<PublishValidationErrors>({});
+  const [expandedRosterTileId, setExpandedRosterTileId] = useState<string | null>(null);
+
+  // Reset expanded roster tile if character is removed
+  useEffect(() => {
+    if (!expandedRosterTileId) return;
+    if (!characters.some((char) => char.id === expandedRosterTileId)) {
+      setExpandedRosterTileId(null);
+    }
+  }, [characters, expandedRosterTileId]);
 
   // Listen for save-validation-failed events from Index.tsx (Save & Close button)
   useEffect(() => {
@@ -468,7 +611,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
 
   return (
     <div className="flex flex-1 h-full overflow-hidden">
-      <aside className="w-[260px] flex-shrink-0 bg-[#2a2a2f] shadow-[inset_-1px_0_0_rgba(255,255,255,0.06)] flex flex-col h-full">
+      <aside className="w-[300px] flex-shrink-0 bg-[#2a2a2f] shadow-[inset_-1px_0_0_rgba(255,255,255,0.06)] flex flex-col h-full">
         <div className="p-6 bg-[#3c3e47] shadow-[inset_0_-1px_0_rgba(0,0,0,0.25)]">
           <div className="text-[10px] font-black text-white uppercase tracking-widest">Character Roster</div>
         </div>
@@ -479,7 +622,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                <div className="text-[10px] font-bold text-white uppercase tracking-wider">Main Characters</div>
             </div>
             <div className="space-y-2">
-              {mainCharacters.map(char => <CharacterButton key={char.id} char={char} onSelect={onSelectCharacter} errors={publishErrors.characters?.[char.id]} />)}
+              {mainCharacters.map(char => <CharacterRosterTile key={char.id} char={char} onSelect={onSelectCharacter} errors={publishErrors.characters?.[char.id]} isExpanded={expandedRosterTileId === char.id} onToggleExpand={(charId) => setExpandedRosterTileId(prev => prev === charId ? null : charId)} />)}
               <AddCharacterPlaceholder label="Add / Create" sublabel="Main Character" hasError={!!noAICharacterError || !!noUserCharacterError} />
               {noAICharacterError && <p className="text-sm text-red-500 font-medium pl-2">{noAICharacterError}</p>}
               {noUserCharacterError && <p className="text-sm text-red-500 font-medium pl-2">{noUserCharacterError}</p>}
@@ -491,7 +634,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                <div className="text-[10px] font-bold text-white uppercase tracking-wider">Side Characters</div>
             </div>
             <div className="space-y-2">
-              {sideCharacters.map(char => <CharacterButton key={char.id} char={char} onSelect={onSelectCharacter} errors={publishErrors.characters?.[char.id]} />)}
+              {sideCharacters.map(char => <CharacterRosterTile key={char.id} char={char} onSelect={onSelectCharacter} errors={publishErrors.characters?.[char.id]} isExpanded={expandedRosterTileId === char.id} onToggleExpand={(charId) => setExpandedRosterTileId(prev => prev === charId ? null : charId)} />)}
               <AddCharacterPlaceholder label="Add / Create" sublabel="Side Character" />
             </div>
           </section>
