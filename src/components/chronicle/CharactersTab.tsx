@@ -7,6 +7,35 @@ import { uid, now, clamp, resizeImage } from '@/utils';
 import { useAuth } from '@/hooks/use-auth';
 import { uploadAvatar, dataUrlToBlob, updateNavButtonImages, loadNavButtonImages } from '@/services/supabase-data';
 
+  // --- Header tile: load natural image dimensions for position mapping ---
+  useEffect(() => {
+    if (!selected?.avatarDataUrl) {
+      setHeaderTileImageSize(null);
+      return;
+    }
+    const cached = avatarNaturalSizeCache.get(selected.avatarDataUrl);
+    if (cached) {
+      setHeaderTileImageSize(cached);
+      return;
+    }
+    const img = new Image();
+    img.onload = () => {
+      const size = { width: img.naturalWidth, height: img.naturalHeight };
+      avatarNaturalSizeCache.set(selected.avatarDataUrl!, size);
+      setHeaderTileImageSize(size);
+    };
+    img.src = selected.avatarDataUrl;
+  }, [selected?.avatarDataUrl]);
+
+  const headerTileObjectPosition = useMemo(() => {
+    if (!selected?.avatarPosition || !headerTileImageSize) return '50% 50%';
+    const mapped = mapObjectPositionFromPreviewToTile(
+      selected.avatarPosition as { x: number; y: number },
+      headerTileImageSize,
+      { width: CHARACTER_HEADER_TILE_WIDTH, height: CHARACTER_HEADER_TILE_HEIGHT }
+    );
+    return `${mapped.x}% ${mapped.y}%`;
+  }, [selected?.avatarPosition, headerTileImageSize]);
 
 import { AvatarGenerationModal } from './AvatarGenerationModal';
 import { AvatarActionButtons } from './AvatarActionButtons';
