@@ -1,53 +1,66 @@
 
-# Sandbox Feature Transfer — Master Tracker
 
-## Source Documents
-- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
-- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
+## Problem Diagnosis
 
-## Features Being Transferred
-| ID | Feature | Status |
-|----|---------|--------|
-| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
-| B | Story Transfer Library (story-transfer.ts) | ✅ |
-| A | UI Audit System (schema, utils, findings, page) | 🔄 |
-| B | Story Export/Import Modals | ✅ |
-| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
-| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
-| - | StyleGuideTool.tsx audit button | ⬜ |
-| - | App.tsx route wiring | ⬜ |
-| - | Index.tsx full wiring | ⬜ |
+The screenshots show 5 consecutive regenerations producing the **exact same structure**: Ashley block → Sarah block → Ashley block → Sarah block → Ashley block. Every time. The content varies slightly but the pattern, block count, and emotional loop are identical.
 
-## Prompt Execution Status
+The core issue is **not the system prompt wording**. The prompt already says "default to 1 block." The model is ignoring it because:
 
-| # | Target File(s) | Status | Notes |
-|---|---------------|--------|-------|
-| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
-| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
-| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
-| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
-| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
-| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
-| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
-| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
-| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
-| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
-| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
-| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
-| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
-| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
+1. **The PARAGRAPH TAGGING rule says "EVERY paragraph must begin with a speaker tag"** — this implicitly tells the model to produce multiple tagged sections. Combined with 2 AI characters in the scene, it naturally alternates between them.
 
-## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
-- `src/types.ts`: line 11507
-- `src/utils.ts`: line 12138
-- `src/lib/story-transfer.ts`: line 9812
-- `src/lib/ui-audit-schema.ts`: line 21329
-- `src/lib/ui-audit-utils.ts`: line 21565
-- `src/data/ui-audit-findings.ts`: line 18967
-- `StoryExportFormatModal.tsx`: line 9642
-- `StoryImportModeModal.tsx`: line 9731
-- `CharactersTab.tsx`: line 2893
-- `ChatInterfaceTab.tsx`: line 5004
-- `src/pages/style-guide/ui-audit.tsx`: line 17867
-- `src/App.tsx`: line 95
-- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout
+2. **No runtime enforcement exists.** The anti-loop directive detects question repetition, structural triads, and passivity — but has **zero detection for multi-character ping-pong** (the exact problem). The model breaks the block cap rule and nothing catches it.
+
+3. **The prompt is ~4,000+ tokens of INSTRUCTIONS alone.** The block cap rule at line 847 is buried deep inside a wall of rules after control, scene presence, formatting, line-of-sight, anti-repetition, NSFW, verbosity, realism, paragraph tagging, and naming rules. By the time the model reaches it, attention weight is minimal.
+
+4. **No "measurable progress" is happening because both characters are emotional-reaction loops.** Ashley vents → Sarah comforts → Ashley vents more → Sarah comforts more. Each block technically has a "scene delta" (a new tear, a hand on a knee) but nothing actually changes.
+
+## Plan — Two-Pronged Fix
+
+### Prong 1: Runtime ping-pong detector in `ChatInterfaceTab.tsx` (~line 649)
+
+Add a new detector to `getAntiLoopDirective()` that counts character blocks in the last AI response. If it finds 3+ blocks alternating between the same 2 characters, inject a hard directive:
+
+```
+[ANTI-PING-PONG: Your last response alternated between the same two characters 
+across 5 blocks. This turn, write from ONE character's perspective only. 
+Other characters may be mentioned in narration but do NOT get their own tagged block. 
+Advance the scene: reveal new information, make a decision, or change the physical situation.]
+```
+
+This is a **code-level** fix — not a prompt rule the model can ignore.
+
+### Prong 2: Restructure prompt rule ordering in `src/services/llm.ts`
+
+Move the **BLOCK COUNT CAP** and **TURN PROGRESSION CONTRACT** to the TOP of the INSTRUCTIONS block, immediately after the priority hierarchy (line 787). Currently they're buried at lines 440 and 847 respectively. The model pays most attention to:
+- The beginning of the system prompt
+- The end of the system prompt  
+- The user message
+
+Rules buried in the middle of a 4K-token instruction block get the least attention weight.
+
+Specifically:
+1. Move the BLOCK COUNT CAP from inside MULTI-CHARACTER RESPONSES (line 847) to right after the priority hierarchy (line 796), as a standalone top-level rule.
+2. Move TURN PROGRESSION CONTRACT (line 440) to immediately after the block count cap.
+3. This puts the two most critical rules — "how many blocks" and "what qualifies as progress" — in the highest-attention position.
+
+### Prong 3: Add emotional-loop detector to `getAntiLoopDirective()`
+
+Detect when the last 2+ AI responses are dominated by emotional-reaction words without action verbs that change the situation. The existing passive detector checks for "watched/observed" but not for "sobbed/trembled/murmured/whispered/shuddered" emotional-stasis words. Add a pattern that catches this and injects:
+
+```
+[ANTI-STAGNATION: Recent responses are emotional reactions without scene change. 
+Something EXTERNAL must happen now: a phone rings, someone enters, a decision 
+is made, a character physically moves to a new position or activity. 
+Emotional processing is NOT forward movement.]
+```
+
+### Files Changed
+- `src/services/llm.ts` — reorder INSTRUCTIONS block (move block cap + progression contract to top)
+- `src/components/chronicle/ChatInterfaceTab.tsx` — add ping-pong detector and emotional-loop detector to `getAntiLoopDirective()`
+- `docs/guides/edge-functions-ai-services-structure-guide.md` — document Pass 12
+
+### What This Does NOT Change
+- No new prompt rules added (just reordered existing ones)
+- No changes to backend/edge functions
+- No changes to character data, story arc serialization, or memory system
+
