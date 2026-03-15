@@ -183,6 +183,7 @@ const IndexContent = () => {
   const [imageLibrarySearchQuery, setImageLibrarySearchQuery] = useState('');
   const [adminActiveTool, setAdminActiveTool] = useState<string>('hub');
   const [isAdminState, setIsAdminState] = useState(false);
+  const [navButtonImages, setNavButtonImages] = useState<Record<string, any>>({});
   const [guideTheme, setGuideTheme] = useState<'dark' | 'light'>('dark');
   const guideSaveRef = React.useRef<(() => Promise<void>) | null>(null);
   const guideSyncAllRef = React.useRef<(() => Promise<void>) | null>(null);
@@ -275,6 +276,13 @@ const IndexContent = () => {
   useEffect(() => {
     if (user?.id) checkIsAdmin(user.id).then(setIsAdminState);
   }, [user?.id]);
+
+  // Preload nav button images at app startup so they're ready before tab renders
+  useEffect(() => {
+    supabaseData.loadNavButtonImages().then((images) => {
+      setNavButtonImages((images || {}) as Record<string, any>);
+    }).catch(() => {});
+  }, []);
 
   // (Draft count refresh removed - drafts are now DB-backed and shown in the hub)
 
@@ -2418,6 +2426,8 @@ const IndexContent = () => {
                 onDelete={handleDeleteCharacterFromList}
                 onAddSection={handleAddSection}
                 onAddNew={handleCreateCharacter}
+                navButtonImages={navButtonImages}
+                onNavButtonImagesChange={setNavButtonImages}
               />
             </div>
           )}
@@ -2433,6 +2443,8 @@ const IndexContent = () => {
                 onAddSection={handleAddSection}
                 scenarioId={activeId}
                 isAdmin={isAdminState}
+                navButtonImages={navButtonImages}
+                onNavButtonImagesChange={setNavButtonImages}
               />
             </div>
           )}

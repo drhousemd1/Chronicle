@@ -67,6 +67,8 @@ interface CharactersTabProps {
   onAddNew?: () => void;
   scenarioId?: string | null;
   isAdmin?: boolean;
+  navButtonImages?: Record<string, NavButtonImageConfig>;
+  onNavButtonImagesChange?: (images: Record<string, NavButtonImageConfig>) => void;
 }
 
 const BUILT_IN_TRAIT_SECTIONS: Array<{ key: string; label: string }> = [
@@ -549,7 +551,9 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
   onAddSection: externalAddSection,
   onAddNew,
   scenarioId,
-  isAdmin
+  isAdmin,
+  navButtonImages: navButtonImagesProp,
+  onNavButtonImagesChange
 }) => {
   const { user } = useAuth();
   const characters = appData.characters;
@@ -582,7 +586,9 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
   });
   const [expandedCustomSections, setExpandedCustomSections] = useState<Record<string, boolean>>({});
   const [activeTraitSection, setActiveTraitSection] = useState<string>('profile');
-  const [navButtonImages, setNavButtonImages] = useState<Record<string, NavButtonImageConfig>>({});
+  const [localNavButtonImages, setLocalNavButtonImages] = useState<Record<string, NavButtonImageConfig>>({});
+  const navButtonImages = navButtonImagesProp ?? localNavButtonImages;
+  const setNavButtonImages = onNavButtonImagesChange ?? setLocalNavButtonImages;
   const [showNavImageEditor, setShowNavImageEditor] = useState(false);
   const [editingNavKey, setEditingNavKey] = useState<string>('physicalAppearance');
   const [draftNavImage, setDraftNavImage] = useState<NavButtonImageConfig | null>(null);
@@ -592,12 +598,14 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const avatarContainerRef = useRef<HTMLDivElement>(null);
 
-  // Load nav button images from global app_settings on mount
+  // Load nav button images from global app_settings on mount (only if not provided via props)
   useEffect(() => {
-    loadNavButtonImages().then((images) => {
-      setNavButtonImages((images || {}) as Record<string, NavButtonImageConfig>);
-    }).catch(() => {});
-  }, []);
+    if (!navButtonImagesProp) {
+      loadNavButtonImages().then((images) => {
+        setLocalNavButtonImages((images || {}) as Record<string, NavButtonImageConfig>);
+      }).catch(() => {});
+    }
+  }, [navButtonImagesProp]);
 
   const toggleSection = (key: string) => {
     setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
