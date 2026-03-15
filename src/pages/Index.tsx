@@ -183,6 +183,7 @@ const IndexContent = () => {
   const [imageLibrarySearchQuery, setImageLibrarySearchQuery] = useState('');
   const [adminActiveTool, setAdminActiveTool] = useState<string>('hub');
   const [isAdminState, setIsAdminState] = useState(false);
+  const [navButtonImages, setNavButtonImages] = useState<Record<string, any>>({});
   const [guideTheme, setGuideTheme] = useState<'dark' | 'light'>('dark');
   const guideSaveRef = React.useRef<(() => Promise<void>) | null>(null);
   const guideSyncAllRef = React.useRef<(() => Promise<void>) | null>(null);
