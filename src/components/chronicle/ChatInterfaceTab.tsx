@@ -2947,8 +2947,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       
       let fullText = '';
       const antiLoopDirective = getAntiLoopDirective();
-      const regenInput = antiLoopDirective + (antiLoopDirective ? ' ' : '') + userMessage.text;
-      const stream = generateRoleplayResponseStream(truncatedAppData, conversationId, regenInput, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled, true);
+      const runtimeDirectives = antiLoopDirective || undefined;
+      const regenInput = userMessage.text;
+      const stream = generateRoleplayResponseStream(truncatedAppData, conversationId, regenInput, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled, true, undefined, undefined, runtimeDirectives);
       
       for await (const chunk of stream) {
         fullText += chunk;
