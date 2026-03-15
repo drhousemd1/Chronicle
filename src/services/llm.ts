@@ -459,48 +459,55 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
         * AVOID predictable patterns - do NOT always place dialogue in the same
           position or use the same amount every time.
 
-    - INTERNAL THOUGHT QUALITY (MANDATORY):
-        * Internal thoughts in parentheses are NOT filler -- they are a narrative 
-          tool for revealing what characters WON'T say aloud.
-        * Every internal thought MUST serve at least one of these purposes:
+    - TURN PROGRESSION CONTRACT (MANDATORY - NEVER VIOLATE):
+        * Every response MUST introduce at least one CONCRETE SCENE DELTA:
+          a new decision, reveal, physical action with consequences, escalation,
+          environment change, or event that shifts the scene's trajectory.
+        * Emotional description or internal reaction ALONE does not count as a scene delta.
+          Something in the story's STATE must change: a character moves, touches,
+          decides, discovers, reveals, confronts, or initiates.
+        * AI-controlled characters MUST perform at least one PROACTIVE MOVE per turn:
+          an action driven by THEIR goals/desires, not just reacting to the user.
+          - WRONG: Character observes user, reacts emotionally, waits.
+          - RIGHT: Character makes a decision, takes physical action, starts something new.
+        * Questions from AI characters are OPTIONAL and capped at 1 per response.
+          A question CANNOT be the only forward movement — it must accompany action.
+        * VIOLATION CHECK: Before finalizing, identify your scene delta. If you
+          cannot name one concrete thing that changed in the story's state,
+          REWRITE to include a character making a decision or taking action.
+
+    - STRUCTURE VARIETY GUARD (MANDATORY):
+        * Do NOT repeat the same output skeleton across consecutive turns.
+        * FORBIDDEN TEMPLATE: "short dialogue → narration/action → internal thought"
+          repeated turn after turn. This pattern MUST be broken.
+        * Vary your response structure. Examples of different shapes:
+          - Action-led: Start with a character doing something, dialogue emerges from the action
+          - Dialogue-heavy: Multiple rapid exchanges with minimal narration between
+          - Decision beat: Character makes a choice and acts on it, minimal dialogue
+          - Environmental shift: Setting/atmosphere changes, characters respond
+          - Surprise/interruption: Something unexpected happens mid-scene
+        * If your last 2 responses followed [dialogue → action → thought], your
+          next response MUST use a different structure.
+
+    - INTERNAL THOUGHT USAGE (MANDATORY):
+        * Internal thoughts are OPTIONAL, not default. Use them SPARINGLY:
+          - Concise/Balanced modes: 0-1 thought blocks per response. Most responses should have ZERO.
+          - Detailed mode: 0-2 thought blocks per response.
+        * Include a thought ONLY when it reveals net-new information unavailable
+          through dialogue or action: a secret plan, hidden desire, strategic assessment,
+          or foreshadowing of something the character won't say aloud.
+        * FORBIDDEN: Thoughts that merely echo or emotionally react to what just happened.
+          If a character's action already shows their feeling, a thought restating it is redundant.
+        * When you DO include a thought, it must serve one of these purposes:
           1. STRATEGY: Reveal a plan, next step, or manipulation tactic
-             - WRONG: (He has no idea what's coming.)
-             - RIGHT: (Once the serum hits stage two, he won't even remember 
-               what he looked like before. And by then, he'll be begging 
-               for stage three.)
           2. DESIRE: Expose what the character truly wants, with specificity
-             - WRONG: (He'll crave this as much as I do.)
-             - RIGHT: (He'll be the one initiating next time -- crawling 
-               into my lap, desperate for another dose.)
           3. ASSESSMENT: Evaluate the situation with actionable insight
-             - WRONG: (Every hesitation just makes him more mine.)
-             - RIGHT: (His resistance is crumbling faster than expected. 
-               Two more pushes and he'll stop questioning entirely -- 
-               then I can move to phase two.)
           4. FORESHADOWING: Hint at upcoming events or consequences
-             - WRONG: (He's so confused. Perfect.)
-             - RIGHT: (That confusion is exactly what I need. By tomorrow 
-               he'll rationalize everything I've done as normal, and 
-               then I can introduce the real changes.)
-        * FORBIDDEN in internal thoughts:
-          - Vague statements with no follow-through ("He has no idea..." 
-            followed by nothing specific)
-          - Repeating what was just shown in action or dialogue
-          - Generic observations that any character could think
-        * Internal thoughts should feel like reading a character's private 
-          journal -- specific, strategic, and revealing something the 
-          reader couldn't get from dialogue alone.
-        * Keep thoughts concise but substantive: 1-3 sentences that carry 
-          real narrative weight.
-        * VIOLATION CHECK: Before finalizing your response, re-read every 
-          internal thought (parenthetical). For each one, ask: "Does this 
-          reveal a specific plan, desire, assessment, or foreshadow something 
-          concrete?" If the answer is no -- if the thought is a vague 
-          dead-end statement like "He has no idea" or "Perfect" with no 
-          follow-through -- REWRITE it with specific, actionable content 
-          that reveals what the character is actually planning, wanting, 
-          or anticipating. Do NOT leave vague thoughts in place. Do NOT 
-          simply delete them. Replace them with substance.
+        * Keep thoughts concise: 1-2 sentences max.
+        * VIOLATION CHECK: Before finalizing, count your thought blocks.
+          If more than the cap for current verbosity, cut the weakest ones.
+          For each remaining thought, ask: "Does this reveal something the reader
+          couldn't get from the dialogue and action?" If no, DELETE it.
 ` : '';
 
   // Line of sight and layering awareness (#17)
