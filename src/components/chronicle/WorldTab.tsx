@@ -220,18 +220,19 @@ const CharacterRosterTile: React.FC<{
           <Pencil className="w-4 h-4" />
         </button>
 
-        {/* Bottom gradient overlay */}
-        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/80 to-transparent z-[6] pointer-events-none" />
-
         {/* Bottom info overlay */}
-        <div className="absolute bottom-0 left-0 right-0 z-30 p-3 flex items-end gap-2">
-          <span className="text-sm font-bold text-white truncate min-w-0 flex-1" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.7)' }}>{char.name}</span>
-          <span className={cn(
-            "text-[9px] font-black uppercase tracking-widest shrink-0 rounded-full px-2 py-0.5",
-            char.controlledBy === 'User' ? "bg-blue-500 text-white" : "bg-slate-500 text-white"
-          )}>
-            {char.controlledBy}
-          </span>
+        <div className="absolute inset-x-0 bottom-0 z-30 p-3">
+          <div className="flex items-end justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">{char.name}</div>
+            </div>
+            <span className={cn(
+              "text-[9px] font-black uppercase tracking-wide shrink-0 rounded-full px-2 py-0.5",
+              char.controlledBy === 'User' ? "bg-blue-500 text-white" : "bg-slate-500 text-white"
+            )}>
+              {char.controlledBy}
+            </span>
+          </div>
         </div>
       </div>
 
