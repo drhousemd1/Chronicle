@@ -688,6 +688,7 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
     --- RESPONSE DETAIL LEVEL (CONCISE) ---
     * Keep responses tight and punchy. Brevity is king.
     * HARD CAP: 1-2 paragraphs maximum. No exceptions.
+    * Paragraph caps count TOTAL paragraphs across ALL character blocks combined.
     * Cut filler narration — lead with dialogue and action.
     * Internal thoughts should be 1 sentence max, only when essential.
     * Minimize atmospheric descriptions — focus on what characters DO and SAY.
