@@ -275,7 +275,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
                     )}
                   </div>
                   {isEditMode ? (
-                    <AutoResizeTextarea value={goal.desiredOutcome} onChange={(v) => updateGoal(goal.id, { desiredOutcome: v })} placeholder="What success looks like..." className="px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20" rows={2} />
+                    <AutoResizeTextarea value={goal.desiredOutcome} onChange={(v) => updateGoal(goal.id, { desiredOutcome: v })} placeholder="What success looks like..." className="px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" rows={2} />
                   ) : (
                     <p className="text-sm text-zinc-300 mt-0.5">{goal.desiredOutcome || 'No outcome defined'}</p>
                   )}
