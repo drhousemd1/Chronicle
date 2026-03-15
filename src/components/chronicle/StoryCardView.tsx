@@ -252,8 +252,9 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
                           placeholder="Value..."
                           className="flex-1 px-3 py-2 rounded-lg text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
                         />
-                        <button
+                         <button
                           type="button"
+                          tabIndex={-1}
                           onClick={() => {
                             const updated = [...customSections];
                             const items = updated[sIdx].items.filter((_, i) => i !== iIdx);
