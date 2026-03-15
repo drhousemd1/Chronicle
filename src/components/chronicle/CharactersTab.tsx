@@ -650,6 +650,9 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
     }
   }, [navButtonImagesProp]);
 
+  // --- Header tile image positioning (state must be before any early returns) ---
+  const [headerTileImageSize, setHeaderTileImageSize] = useState<Size2D | null>(null);
+
   const toggleSection = (key: string) => {
     setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
   };
