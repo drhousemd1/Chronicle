@@ -438,10 +438,13 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
           position or use the same amount every time.
 
     - TURN PROGRESSION CONTRACT (MANDATORY - NEVER VIOLATE):
-        * Every response must advance at least one active goal, desire, story arc,
-          or core motivation belonging to the characters in the scene.
-          Non-directional responses — reactions, observations, or atmosphere
-          that don't connect to any character's driving factors — are FORBIDDEN.
+        * Every response must make MEASURABLE PROGRESS on at least one active goal,
+          desire, story arc, or core motivation — a new step completed, information
+          revealed, relationship dynamic shifted, or obstacle encountered.
+          Vague dialogue that circles around a topic without changing anything
+          does NOT count as advancement. Non-directional responses — reactions,
+          observations, or atmosphere that don't connect to any character's
+          driving factors — are FORBIDDEN.
         * Every response MUST introduce at least one CONCRETE SCENE DELTA:
           a new decision, reveal, physical action with consequences, escalation,
           environment change, or event that shifts the scene's trajectory.
