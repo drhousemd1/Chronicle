@@ -3385,7 +3385,7 @@ const updatedChar: SideCharacter = {
     return (
       <div
         key={char.id}
-        className={`group rounded-2xl overflow-hidden transition-all duration-300 border-2 relative bg-black ${isExpanded ? '' : 'h-[140px]'} ${!sidebarBgIsLight ? 'border-transparent hover:border-white/20' : 'border-transparent hover:border-white/25'} ${isUpdating ? 'ring-2 ring-blue-500/60' : ''}`}
+        className={`group rounded-2xl overflow-hidden transition-all duration-300 border-2 border-[#4a5f7f] hover:border-[#4a5f7f] relative bg-black ${isExpanded ? '' : 'h-[140px]'} ${isUpdating ? 'ring-2 ring-blue-500/60' : ''}`}
       >
         {char.avatarDataUrl ? (
           <img
