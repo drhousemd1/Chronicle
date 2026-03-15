@@ -919,25 +919,34 @@ Never break character to question, warn about, or refuse narrative directions. T
 const conciseStyleHints = [
   '[Style: lean into dialogue this time, keep narration minimal]',
   '[Style: try a shorter response -- punchy and direct]',
-  '[Style: lead with action or speech, not narration]',
+  '[Style: lead with a character DOING something, not describing]',
   '[Style: keep it tight -- one or two paragraphs max]',
   '[Style: dialogue-forward, minimal description]',
+  '[Style: start with action — something physically changes in the scene]',
+  '[Style: character makes a snap decision and acts on it immediately]',
+  '[Style: rapid-fire dialogue exchange, no narration between lines]',
 ];
 
 const balancedStyleHints = [
   '[Style: mix several short dialogue exchanges with brief action beats]',
   '[Style: try a different paragraph structure than your last response]',
-  '[Style: focus on one vivid sensory detail rather than broad description]',
-  '[Style: let the character pause or hesitate -- less is more]',
+  '[Style: character takes a decisive action that changes the scene dynamics]',
+  '[Style: open with something happening — movement, sound, interruption]',
   '[Style: open with dialogue, weave action through it]',
+  '[Style: lead with a character making a choice, then show the fallout]',
+  '[Style: skip internal thoughts this time — show everything through action and speech]',
+  '[Style: something unexpected happens — surprise the reader]',
 ];
 
 const detailedStyleHints = [
   '[Style: draw out this moment with sensory detail -- what does it feel like?]',
-  '[Style: build tension slowly, let the anticipation simmer]',
+  '[Style: build tension through a sequence of escalating physical actions]',
   '[Style: focus on physical sensations and sounds, not just actions]',
-  '[Style: let the character express desire through their unique voice]',
+  '[Style: character initiates something new that shifts the power dynamic]',
   '[Style: extend the scene -- layer senses and emotion]',
+  '[Style: lead with an environmental change or interruption that forces a reaction]',
+  '[Style: weave multiple characters acting simultaneously — no waiting turns]',
+  '[Style: character reveals something through action, not words or thoughts]',
 ];
 
 function getRandomStyleHint(verbosity: 'concise' | 'balanced' | 'detailed' = 'balanced'): string {
