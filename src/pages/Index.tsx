@@ -277,6 +277,13 @@ const IndexContent = () => {
     if (user?.id) checkIsAdmin(user.id).then(setIsAdminState);
   }, [user?.id]);
 
+  // Preload nav button images at app startup so they're ready before tab renders
+  useEffect(() => {
+    supabaseData.loadNavButtonImages().then((images) => {
+      setNavButtonImages((images || {}) as Record<string, any>);
+    }).catch(() => {});
+  }, []);
+
   // (Draft count refresh removed - drafts are now DB-backed and shown in the hub)
 
   // Track whether conversation previews have been enriched
