@@ -230,7 +230,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
           {sortedGoals.map((goal) => {
             const progress = calculateProgress(goal);
             return (
-              <div key={goal.id} className={cn("p-5 pb-6 bg-[#2e2e33] rounded-2xl border relative", isEditMode ? "border-blue-500/20" : "border-[#4a5f7f]")}>
+              <div key={goal.id} className={cn("p-5 pb-6 bg-[#2e2e33] rounded-2xl relative shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]")}>
 
                 {/* Row 1: Goal Name + Progress Ring */}
                 <div className="flex items-start gap-4">
