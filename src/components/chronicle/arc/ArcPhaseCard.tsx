@@ -250,7 +250,7 @@ export const ArcPhaseCard: React.FC<ArcPhaseCardProps> = ({
       />
 
       {/* Steps / Branches */}
-      <div className="mt-4 pt-5 border-t border-ghost-white">
+      <div className="mt-4 pt-5 border-t border-white/10">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <CheckSquare size={14} className="text-blue-500" />
