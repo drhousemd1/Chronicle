@@ -176,4 +176,4 @@ See Section 5 above for comprehensive bug list.
 
 None documented.
 
-> Last updated: 2026-03-07 — Pass 7: Dialogue momentum & loop elimination (bugs #12-#15).
+> Last updated: 2026-03-15 — Pass 9: Multi-character block flooding & prompt declutter (bug #17).
