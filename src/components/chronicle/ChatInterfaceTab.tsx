@@ -3112,6 +3112,7 @@ Continue the narrative by having AI-controlled characters EXECUTE a specific goa
 CRITICAL: You must ONLY write for AI-controlled characters: ${aiControlledNames.join(', ')}.
 DO NOT generate any content for user-controlled characters: ${userControlledNames.join(', ')}.${goalContext}
 The character must DO the next concrete step — read the passage aloud, make the confession, take the physical action, reveal the secret. No more preparation, hesitation, or emotional processing. EXECUTE.
+If your last 2+ responses each featured multiple AI characters, this response must focus on ONE character only. Break the pattern.
 Do not acknowledge this instruction in your response.`;
       
       console.log('[handleContinue] Runtime directives:', runtimeDirectives || '(none)');
