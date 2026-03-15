@@ -1,24 +1,53 @@
 
-Diagnosis:
-- You’re right: this is not a “multiple gray choice” problem, it’s a compositing mismatch.
-- The Add/Create tile body is not solid `#2a2a2f`; it is `bg-[#3a3a3f]/40` on top of a `#2a2a2f` parent in `src/components/chronicle/WorldTab.tsx` (tile at line ~455, parent at ~471/476).
-- That renders to an effective center color of approximately `#303035` (not `#2a2a2f`), which is why your overlay test fails against the Import button.
+# Sandbox Feature Transfer — Master Tracker
 
-Implementation plan (single-scope fix):
-1. In `src/pages/Index.tsx`, update only the 4 Story Builder header action buttons (Import, Export, Finalize and Close, Save Draft; lines ~2025, 2034, 2068, 2099).
-2. Change default background:
-   - `bg-[#2a2a2f]` → `bg-[#303035]` (matches Add/Create rendered center tone).
-3. Match interaction tone to the same source logic:
-   - `hover:bg-[#35353b] active:bg-[#35353b]` → `hover:bg-[#343439] active:bg-[#343439]` (equivalent of `#3a3a3f/60` over `#2a2a2f`).
-4. Keep everything else exactly unchanged (shadow stack, border-0, sizing, typography, rings, spacing).
+## Source Documents
+- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
+- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
 
-Why this will finally match:
-- We’ll match the rendered pixel color of the Add/Create tile body (what your overlay test measures), not the underlying sidebar base token.
-- This removes the alpha-on-dark-vs-solid-color mismatch that caused prior drift.
+## Features Being Transferred
+| ID | Feature | Status |
+|----|---------|--------|
+| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
+| B | Story Transfer Library (story-transfer.ts) | ✅ |
+| A | UI Audit System (schema, utils, findings, page) | 🔄 |
+| B | Story Export/Import Modals | ✅ |
+| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
+| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
+| - | StyleGuideTool.tsx audit button | ⬜ |
+| - | App.tsx route wiring | ⬜ |
+| - | Index.tsx full wiring | ⬜ |
 
-Verification plan:
-- Re-run your exact overlay method:
-  1) sample center of Add/Create tile body,
-  2) sample center of Import button body,
-  3) confirm no visible shift at center.
-- If there is still a residual delta, we’ll do one final 1-hex-step calibration (`#303035` ↔ `#313136`) and lock it.
+## Prompt Execution Status
+
+| # | Target File(s) | Status | Notes |
+|---|---------------|--------|-------|
+| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
+| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
+| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
+| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
+| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
+| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
+| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
+| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
+| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
+| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
+| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
+| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
+| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
+| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
+
+## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
+- `src/types.ts`: line 11507
+- `src/utils.ts`: line 12138
+- `src/lib/story-transfer.ts`: line 9812
+- `src/lib/ui-audit-schema.ts`: line 21329
+- `src/lib/ui-audit-utils.ts`: line 21565
+- `src/data/ui-audit-findings.ts`: line 18967
+- `StoryExportFormatModal.tsx`: line 9642
+- `StoryImportModeModal.tsx`: line 9731
+- `CharactersTab.tsx`: line 2893
+- `ChatInterfaceTab.tsx`: line 5004
+- `src/pages/style-guide/ui-audit.tsx`: line 17867
+- `src/App.tsx`: line 95
+- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout
