@@ -747,6 +747,24 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       }
     }
     
+    // Pass 13c: Cross-message multi-character pattern detector
+    const last3AiMsgs = msgs.filter(m => m.role === 'assistant').slice(-3);
+    if (last3AiMsgs.length >= 3) {
+      const speakerPattern = /^([A-Z][a-zA-Z\s'-]+):/m;
+      const allMultiChar = last3AiMsgs.every(m => {
+        const lines = m.text.split('\n').filter((l: string) => l.trim().length > 0);
+        const uniqueSpeakers = new Set<string>();
+        for (const line of lines) {
+          const match = line.match(speakerPattern);
+          if (match) uniqueSpeakers.add(match[1].trim());
+        }
+        return uniqueSpeakers.size >= 2;
+      });
+      if (allMultiChar) {
+        directives.push('[ANTI-MULTI-CHAR-PATTERN: Your last 3 responses ALL featured multiple AI characters. This response MUST be single-character only. Pick the focal character, write their beat, and STOP. Other characters can be referenced in narration but get NO tagged blocks this turn.]');
+      }
+    }
+    
     return directives.join(' ');
   };
 
@@ -3094,6 +3112,7 @@ Continue the narrative by having AI-controlled characters EXECUTE a specific goa
 CRITICAL: You must ONLY write for AI-controlled characters: ${aiControlledNames.join(', ')}.
 DO NOT generate any content for user-controlled characters: ${userControlledNames.join(', ')}.${goalContext}
 The character must DO the next concrete step — read the passage aloud, make the confession, take the physical action, reveal the secret. No more preparation, hesitation, or emotional processing. EXECUTE.
+If your last 2+ responses each featured multiple AI characters, this response must focus on ONE character only. Break the pattern.
 Do not acknowledge this instruction in your response.`;
       
       console.log('[handleContinue] Runtime directives:', runtimeDirectives || '(none)');

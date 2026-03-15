@@ -297,7 +297,7 @@ Applied in both `renderCharacterCard()` (main characters) and `SideCharacterCard
 - **RESOLVED — Bug #10**: No in-session trait evolution guidance. Fixed with IN-SESSION TRAIT DYNAMICS block + `sessionMessageCountRef` + personality-driven NSFW pacing. (2026-03-01)
 - **RESOLVED — Bug #11**: NSFW intensity and verbosity instruction overlap. Fixed by moving sensory detail lines from nsfwRules to verbosityRules. (2026-03-01)
 - **RESOLVED — Bug #6**: Memory system incomplete — no long-term accumulation. Fixed with auto-extraction in `handleSend`, `previousDayRef` (reset on conversation switch) + day-compression `useEffect` (guarded by `memoriesLoaded`, dependency array: `[currentDay, memories, memoriesEnabled, conversationId]`), `entryType` field on Memory type, split `memoriesContext` builder in `llm.ts`, and `compress-day-memories` edge function (grok-3-mini). (2026-03-01)
-- **ACTIVE**: `ChatInterfaceTab.tsx` is ~3900 lines — extremely large single component. (2026-03-01)
+- **ACTIVE**: `ChatInterfaceTab.tsx` is ~5000 lines — extremely large single component. (2026-03-01)
 - **ACTIVE**: Message parsing regex may miss edge cases with nested formatting markers. (2026-03-01)
 - **RESOLVED — 2026-03-15**: Tile image "shoot up then bounce" on expand/collapse. Root-cause: `transition-all` animated `object-position` changes. Fix: changed to `transition-[height,object-fit] duration-300`, matched expanded/collapsed classes to Story Builder (`h-auto object-contain object-top` / `h-full object-cover`).
 - **RESOLVED — 2026-03-04**: Extraction throttling — `extract-character-updates` now throttled to every 5th AI response via `extractionCountRef` to reduce API costs.
@@ -312,4 +312,4 @@ Applied in both `renderCharacterCard()` (main characters) and `SideCharacterCard
 
 None documented.
 
-> Last updated: 2026-03-15 — Pass 14: Added Narrative Director Layer. New `generate-narrative-directive` edge function analyzes conversation state and produces turn-by-turn tactical directives injected as `[DIRECTOR: ...]` tags. `narrativeDirectiveRef` added to state. `[DIRECTOR]` tag added to priority hierarchy in `llm.ts` INSTRUCTIONS block at priority #2.
+> Last updated: 2026-03-15 — Pass 13c: Anti-Repetitive Multi-Character Pattern. Added NO AUTO-FOLLOW-UP PATTERN rule to `llm.ts` INSTRUCTIONS block after SILENCE IS VALID. Added cross-message multi-character detector to `getAntiLoopDirective()` — scans last 3 AI messages for 2+ speakers each, injects `[ANTI-MULTI-CHAR-PATTERN]` directive. Updated `continuePrompt` with pattern-breaking instruction.
