@@ -740,7 +740,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   // Pass 14: Generate narrative directive (async, non-blocking, runs after AI response)
   const generateNarrativeDirective = useCallback(async () => {
     try {
-      const msgs = conversation?.messages || [];
+      const conv = appData.conversations.find(c => c.id === conversationId);
+      const msgs = conv?.messages || [];
       const recentMessages = msgs.slice(-10).map(m => ({ role: m.role, text: m.text.slice(0, 400) }));
       
       // Build story goals summary
