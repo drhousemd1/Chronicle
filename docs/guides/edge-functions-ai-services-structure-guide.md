@@ -169,6 +169,7 @@ See Section 5 above for comprehensive bug list.
 - **RESOLVED — 2026-03-07**: Pass 7 — Dialogue momentum & loop elimination. Confirmation Closure Protocol, No Deferral Loop, No Rehash rules added to system prompt. Priority hierarchy hardened (forward-momentum = #2 priority, never overridden). Runtime anti-loop micro-directives in ChatInterfaceTab. Regeneration context duplication fixed. Verbosity hard-capped with paragraph limits and verbosity-based max_tokens. 403 retry directive rewritten to require concrete action instead of evasive deflection.
 - **RESOLVED — 2026-03-15**: Pass 8 — Anti-stagnation & initiative. TURN PROGRESSION CONTRACT mandates concrete scene delta + proactive AI move each turn. STRUCTURE VARIETY GUARD forbids repeating same output skeleton. Internal thoughts made optional with frequency caps. Runtime detectors added for structural triad repetition and low-initiative drift. Style hints diversified with action-led and decision-driven variants. Continue prompt rewritten to demand decisive forward action.
 - **RESOLVED — 2026-03-15**: Pass 9 — Multi-character block flooding & prompt declutter. Block count cap added to MULTI-CHARACTER RESPONSES (1-3 blocks, max 4 detailed). PROACTIVE NARRATIVE DRIVE merged into TURN PROGRESSION CONTRACT. RESPONSE SHAPE VARIATION merged into STRUCTURE VARIETY GUARD. Duplicate NO REHASH removed (kept in FORWARD MOMENTUM). "Dialogue-heavy: rapid exchanges" removed from valid shapes. Ping-pong-encouraging style hints replaced.
+- **RESOLVED — 2026-03-15**: Pass 10 — Goal-directedness added to TURN PROGRESSION CONTRACT. Every response must now advance at least one active goal, desire, story arc, or core motivation. Non-directional responses explicitly forbidden. AI characters must drive scenes toward their defined goals rather than taking generic action.
 
 ---
 
@@ -176,4 +177,4 @@ See Section 5 above for comprehensive bug list.
 
 None documented.
 
-> Last updated: 2026-03-15 — Pass 9: Multi-character block flooding & prompt declutter (bug #17).
+> Last updated: 2026-03-15 — Pass 10: Goal-directedness requirement added to TURN PROGRESSION CONTRACT.

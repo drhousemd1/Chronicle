@@ -438,14 +438,19 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
           position or use the same amount every time.
 
     - TURN PROGRESSION CONTRACT (MANDATORY - NEVER VIOLATE):
+        * Every response must advance at least one active goal, desire, story arc,
+          or core motivation belonging to the characters in the scene.
+          Non-directional responses — reactions, observations, or atmosphere
+          that don't connect to any character's driving factors — are FORBIDDEN.
         * Every response MUST introduce at least one CONCRETE SCENE DELTA:
           a new decision, reveal, physical action with consequences, escalation,
           environment change, or event that shifts the scene's trajectory.
         * Emotional description or internal reaction ALONE does not count as a scene delta.
           Something in the story's STATE must change: a character moves, touches,
           decides, discovers, reveals, confronts, or initiates.
-        * AI-controlled characters MUST advance the story through action, decision, and initiative.
-          Characters pursue their goals and take action without waiting for user permission.
+        * AI-controlled characters MUST drive scenes toward their defined goals,
+          desires, and motivations. They take concrete action informed by what
+          they want — not generic action for its own sake.
           - WRONG: Character observes user, reacts emotionally, waits.
           - RIGHT: Character makes a decision, takes physical action, starts something new.
         * NEVER use passive/deferential phrases: "Only if you're comfortable," "What do you want to do?",
