@@ -186,7 +186,7 @@ const CharacterRosterTile: React.FC<{
           <img
             src={char.avatarDataUrl}
             alt={char.name}
-            className={`block w-full transition-all duration-300 ${isExpanded ? 'h-auto object-contain object-top' : 'h-full object-cover'}`}
+            className={`block w-full transition-[height,object-fit] duration-300 ${isExpanded ? 'h-auto object-contain object-top' : 'h-full object-cover'}`}
             style={isExpanded ? undefined : { objectPosition: `${tileObjectPosition.x}% ${tileObjectPosition.y}%` }}
           />
         ) : (
