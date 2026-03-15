@@ -32,7 +32,7 @@
 | `check-shared-keys` | `supabase/functions/check-shared-keys/index.ts` | Validates shared API keys | N/A |
 | `compress-day-memories` | `supabase/functions/compress-day-memories/index.ts` | Compresses completed-day bullet memories into a 2-3 sentence synopsis | `grok-4-1-fast-reasoning` |
 | `sync-guide-to-github` | `supabase/functions/sync-guide-to-github/index.ts` | Syncs guide documents to GitHub repo | N/A |
-| `generate-narrative-directive` | `supabase/functions/generate-narrative-directive/index.ts` | Pass 14 — Analyzes last 5-10 messages against story goals/arcs/character goals and produces a 1-3 sentence tactical directive for the next AI response. Runs async after each AI response; directive stored in `narrativeDirectiveRef` and injected as `[DIRECTOR: ...]` tag in next turn. One-shot: consumed and cleared after use. | `grok-3-mini` |
+| `generate-narrative-directive` | `supabase/functions/generate-narrative-directive/index.ts` | Pass 14 — Analyzes last 5-10 messages against story goals/arcs/character goals and produces a 1-3 sentence tactical directive for the next AI response. Runs async after each AI response; directive stored in `narrativeDirectiveRef` and injected as `[DIRECTOR: ...]` tag in next turn. One-shot: consumed and cleared after use. | `grok-4-1-fast-reasoning` |
 | `migrate-base64-images` | `supabase/functions/migrate-base64-images/index.ts` | Migrates legacy base64 images to storage | N/A |
 
 ---
