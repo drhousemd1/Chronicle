@@ -2262,7 +2262,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                 disabled={!draftNavImage}
                 className="rounded-[10px] bg-[hsl(0,72%,51%)] text-white text-[12px] font-black tracking-[0.05em] uppercase px-[14px] py-[10px] shadow-[0_4px_12px_rgba(0,0,0,0.35)] transition-[filter,transform,opacity] duration-150 hover:brightness-110 hover:-translate-y-px active:brightness-95 active:translate-y-0 active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0"
               >
-                Remove
+                Reset
               </button>
             </DialogFooter>
           </div>
