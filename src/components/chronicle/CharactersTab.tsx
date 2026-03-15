@@ -590,15 +590,12 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const avatarContainerRef = useRef<HTMLDivElement>(null);
 
-  // Load nav button images from DB on mount
+  // Load nav button images from global app_settings on mount
   useEffect(() => {
-    if (!scenarioId) return;
-    loadNavButtonImages(scenarioId).then((images) => {
-      if (images && Object.keys(images).length > 0) {
-        setNavButtonImages(images as Record<string, NavButtonImageConfig>);
-      }
+    loadNavButtonImages().then((images) => {
+      setNavButtonImages((images || {}) as Record<string, NavButtonImageConfig>);
     }).catch(() => {});
-  }, [scenarioId]);
+  }, []);
 
   const toggleSection = (key: string) => {
     setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
@@ -768,12 +765,10 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
     setNavButtonImages(updatedImages);
     setShowNavImageEditor(false);
 
-    // Persist to DB
-    if (scenarioId) {
-      updateNavButtonImages(scenarioId, updatedImages).catch((e) =>
-        console.error('Failed to persist nav button images:', e)
-      );
-    }
+    // Persist to global app_settings
+    updateNavButtonImages(updatedImages).catch((e) =>
+      console.error('Failed to persist nav button images:', e)
+    );
   };
 
   const handleRemoveNavImage = () => {
