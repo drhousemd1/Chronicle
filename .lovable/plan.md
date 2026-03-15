@@ -1,53 +1,78 @@
 
-# Sandbox Feature Transfer — Master Tracker
 
-## Source Documents
-- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
-- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
+# Pass 14: Narrative Director Layer
 
-## Features Being Transferred
-| ID | Feature | Status |
-|----|---------|--------|
-| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
-| B | Story Transfer Library (story-transfer.ts) | ✅ |
-| A | UI Audit System (schema, utils, findings, page) | 🔄 |
-| B | Story Export/Import Modals | ✅ |
-| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
-| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
-| - | StyleGuideTool.tsx audit button | ⬜ |
-| - | App.tsx route wiring | ⬜ |
-| - | Index.tsx full wiring | ⬜ |
+## The Idea (Your Words, Validated)
 
-## Prompt Execution Status
+You described a "second API call" that looks at the conversation from a top-down view, compares where things are against story goals, and creates a hidden guidance message that gets injected into the next API call. This is a genuinely strong architectural idea — and it fits perfectly into the existing pattern. The app already makes post-response calls for character extraction, memory extraction, and arc progress evaluation. This would be a fourth parallel call that produces a **narrative directive** stored in a ref, then injected as a high-priority instruction in the next turn.
 
-| # | Target File(s) | Status | Notes |
-|---|---------------|--------|-------|
-| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
-| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
-| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
-| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
-| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
-| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
-| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
-| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
-| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
-| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
-| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
-| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
-| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
-| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
+## How It Works
 
-## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
-- `src/types.ts`: line 11507
-- `src/utils.ts`: line 12138
-- `src/lib/story-transfer.ts`: line 9812
-- `src/lib/ui-audit-schema.ts`: line 21329
-- `src/lib/ui-audit-utils.ts`: line 21565
-- `src/data/ui-audit-findings.ts`: line 18967
-- `StoryExportFormatModal.tsx`: line 9642
-- `StoryImportModeModal.tsx`: line 9731
-- `CharactersTab.tsx`: line 2893
-- `ChatInterfaceTab.tsx`: line 5004
-- `src/pages/style-guide/ui-audit.tsx`: line 17867
-- `src/App.tsx`: line 95
-- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout
+```text
+User sends message
+  → AI generates response (streamed)
+  → AFTER response completes, in parallel:
+      1. extract-character-updates  (existing)
+      2. extract-memory-events      (existing)
+      3. evaluate-arc-progress      (existing)
+      4. NEW: generate-narrative-directive  ← the "Director"
+          - Reads: last 5-10 messages, story goals, arc state, character goals
+          - Produces: 1-3 sentence directive for the NEXT response
+          - Stored in: narrativeDirectiveRef (client-side ref)
+  
+Next user message sent
+  → narrativeDirectiveRef.current is prepended as [DIRECTOR: ...]
+  → Cleared after use (one-shot)
+```
+
+## What the Director Analyzes
+
+The edge function receives a compact payload:
+- Last 5-10 messages (condensed)
+- Active story goals + current arc step descriptions
+- Character goals (desires, objectives)
+- Current day/time context
+
+It returns a short, actionable directive like:
+- *"Ashley has been emotionally processing for 4 turns without resolution. Next response should have her make a concrete decision about whether to confront Jake or leave."*
+- *"The 'Secret Revealed' arc step is pending. Sarah knows the secret — steer toward her revealing it through action, not dialogue."*
+- *"Scene has been static in the living room for 8 exchanges. Introduce a location change or external interruption."*
+
+## Implementation Details
+
+### 1. New Edge Function: `supabase/functions/generate-narrative-directive/index.ts`
+- Uses a fast, cheap model (gemini-2.5-flash-lite or similar) since this is analysis, not creative writing
+- Prompt: "You are a narrative director. Analyze the conversation state and produce a 1-3 sentence directive for the next AI response. Focus on: what should happen next to advance the story meaningfully."
+- Input: condensed recent messages, goal summaries, arc state
+- Output: `{ directive: string }` — plain text, no structured data needed
+- Lightweight — should complete in <2 seconds
+
+### 2. Client-Side: `ChatInterfaceTab.tsx`
+- New ref: `narrativeDirectiveRef = useRef<string | null>(null)`
+- After response completes (alongside existing parallel calls), fire `generateNarrativeDirective()` async
+- In `handleSend`, if `narrativeDirectiveRef.current` exists, prepend it as `[DIRECTOR: ...]` to the user message (same injection point as anti-loop directives)
+- Clear after use: `narrativeDirectiveRef.current = null`
+
+### 3. Prompt Awareness: `llm.ts`
+- Add a note in the INSTRUCTIONS block: "If a [DIRECTOR: ...] tag is present, treat it as a high-priority narrative goal for THIS response. Fulfill the directive while maintaining character voice and scene consistency."
+
+### 4. Documentation
+- Update edge-functions guide and chat-interface guide with Pass 14 entry
+
+## Why This Should Work Where Prompt Rules Failed
+
+The prompt rules say "advance goals" and "measurable progress" but the model has no idea **which specific goal to advance or how**. It just picks the laziest option (emotional reaction). The Director explicitly tells it: "Next turn, do X." It's turn-by-turn tactical guidance generated by an AI that can see the full picture, not a static rule buried in 4,000 tokens of instructions.
+
+## Cost / Performance
+
+- Uses a cheap/fast model (flash-lite tier) — minimal cost per call
+- Runs in parallel with existing post-response calls — no added latency to the user
+- One-shot per turn — directive is consumed and cleared
+
+## Files Changed
+- **New**: `supabase/functions/generate-narrative-directive/index.ts`
+- **Edit**: `src/components/chronicle/ChatInterfaceTab.tsx` — add directive ref, async call, injection
+- **Edit**: `src/services/llm.ts` — add [DIRECTOR] tag awareness to INSTRUCTIONS
+- **Edit**: `docs/guides/edge-functions-ai-services-structure-guide.md` — Pass 14
+- **Edit**: `docs/guides/chat-interface-page-structure-guide.md` — Pass 14
+
