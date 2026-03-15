@@ -654,6 +654,42 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
   };
 
   const selected = characters.find(c => c.id === selectedId);
+
+  // ── Header tile image positioning (Phase B) ──
+  const [headerTileImageSize, setHeaderTileImageSize] = useState<Size2D | null>(
+    () => (selected?.avatarDataUrl ? headerTileNaturalSizeCache.get(selected.avatarDataUrl) ?? null : null)
+  );
+
+  useEffect(() => {
+    if (!selected?.avatarDataUrl) { setHeaderTileImageSize(null); return; }
+    const cached = headerTileNaturalSizeCache.get(selected.avatarDataUrl);
+    if (cached) { setHeaderTileImageSize(cached); return; }
+    let cancelled = false;
+    const img = new Image();
+    const commit = () => {
+      const s = { width: img.naturalWidth || 1, height: img.naturalHeight || 1 };
+      headerTileNaturalSizeCache.set(selected.avatarDataUrl!, s);
+      if (!cancelled) setHeaderTileImageSize(s);
+    };
+    img.onload = commit;
+    img.onerror = () => { if (!cancelled) setHeaderTileImageSize(null); };
+    img.src = selected.avatarDataUrl;
+    if (img.complete && img.naturalWidth > 0) commit();
+    return () => { cancelled = true; };
+  }, [selected?.avatarDataUrl]);
+
+  const headerTileObjectPosition = useMemo(() => {
+    const stored = {
+      x: clampPercent(selected?.avatarPosition?.x ?? 50),
+      y: clampPercent(selected?.avatarPosition?.y ?? 50),
+    };
+    if (!headerTileImageSize) return stored;
+    return mapHeaderTilePosition(
+      stored,
+      headerTileImageSize,
+      { width: CHARACTER_HEADER_TILE_WIDTH, height: CHARACTER_HEADER_TILE_HEIGHT }
+    );
+  }, [selected?.avatarPosition?.x, selected?.avatarPosition?.y, headerTileImageSize]);
   const customTraitNavItems = (selected?.sections || []).map((section) => ({
     key: `custom:${section.id}`,
     label: section.title?.trim() || 'Custom Section',
