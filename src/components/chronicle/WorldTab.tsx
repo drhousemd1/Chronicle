@@ -614,7 +614,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                           </button>
                           <button 
                             onClick={handleDeleteCover}
-                            className="h-10 px-5 rounded-xl text-[10px] font-bold leading-none uppercase tracking-wider bg-[hsl(var(--destructive))] hover:brightness-110 text-[hsl(var(--destructive-foreground))] border-0 shadow-[0_10px_30px_hsl(0_0%_0%_/_0.35)] transition-colors"
+                            className="h-10 px-5 rounded-xl text-[10px] font-bold leading-none bg-[hsl(var(--destructive))] hover:brightness-110 text-[hsl(var(--destructive-foreground))] border-0 shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] transition-colors"
                           >
                             Remove
                           </button>
