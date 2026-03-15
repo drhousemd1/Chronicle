@@ -1617,6 +1617,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                             <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Role Description</label>
                             <button
                               type="button"
+                              tabIndex={-1}
                               onClick={() => openEnhanceModeModal(
                                 'roleDescription',
                                 'custom',
