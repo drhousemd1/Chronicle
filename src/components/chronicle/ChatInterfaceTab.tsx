@@ -601,6 +601,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   };
 
   // Pass 7: Anti-loop micro-directive — detects confirmation loops and injects guards
+  // Pass 8: Extended with structural repetition and low-initiative detectors
   const getAntiLoopDirective = (): string => {
     const msgs = conversation?.messages || [];
     if (msgs.length < 2) return '';
@@ -642,6 +643,49 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       const deferralPatterns = /\b(we'll talk|we'll discuss|we'll figure|we'll sort|later tonight|after dinner|after we're done|soon enough|tomorrow|eventually)\b/i;
       if (deferralPatterns.test(lastAiMsg.text)) {
         directives.push('[ANTI-LOOP: Previous response deferred action. This response MUST deliver on what was deferred — no more postponing.]');
+      }
+    }
+    
+    // Pass 8: Structural repetition detector — checks if recent AI responses follow the same template
+    const recentAiMsgs = msgs.filter(m => m.role === 'assistant').slice(-3);
+    if (recentAiMsgs.length >= 2) {
+      // Detect the "quote → action → thought" triad pattern
+      const detectTriadPattern = (text: string): boolean => {
+        const lines = text.split('\n').filter(l => l.trim().length > 0);
+        if (lines.length < 2) return false;
+        
+        let hasQuote = false, hasAction = false, hasThought = false;
+        for (const line of lines) {
+          const trimmed = line.replace(/^\w+:\s*/, ''); // strip speaker tag
+          if (trimmed.match(/^"/)) hasQuote = true;
+          if (trimmed.match(/^\*/)) hasAction = true;
+          if (trimmed.match(/^\(/)) hasThought = true;
+        }
+        return hasQuote && hasAction && hasThought;
+      };
+      
+      const triadCount = recentAiMsgs.filter(m => detectTriadPattern(m.text)).length;
+      if (triadCount >= 2) {
+        directives.push('[ANTI-STAGNATION: Your last responses all followed quote→action→thought structure. BREAK THE TEMPLATE NOW. Try: action-only opening, rapid dialogue exchange, environmental interruption, or decision-driven beat. Do NOT include internal thoughts this turn.]');
+      }
+    }
+    
+    // Pass 8: Low-initiative detector — checks if AI is just mirroring/reacting without driving
+    if (recentAiMsgs.length >= 2) {
+      const passivePatterns = /\b(watched|observed|waited|wondered|considered|thought about|looked at|noticed|studied|gazed|stared)\b/gi;
+      const actionPatterns = /\b(grabbed|pulled|pushed|stood|walked|moved|reached|opened|closed|decided|turned|kissed|touched|picked up|put down|ran|jumped|threw|took|handed|stepped|leaned|sat down|knelt|whispered|shouted|slammed|knocked)\b/gi;
+      
+      let passiveCount = 0;
+      let actionCount = 0;
+      for (const m of recentAiMsgs.slice(-2)) {
+        const pMatches = m.text.match(passivePatterns);
+        const aMatches = m.text.match(actionPatterns);
+        passiveCount += pMatches ? pMatches.length : 0;
+        actionCount += aMatches ? aMatches.length : 0;
+      }
+      
+      if (passiveCount > actionCount * 2 && passiveCount >= 4) {
+        directives.push('[ANTI-STAGNATION: Recent responses are passive — mostly watching/observing/wondering. Characters must TAKE ACTION NOW. Make a decision, initiate physical movement, start a conversation, or change the environment. Stop being a spectator.]');
       }
     }
     
@@ -2850,11 +2894,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     
     try {
       let fullText = '';
+      const antiLoopDirective = getAntiLoopDirective();
       const continuePrompt = `[CONTINUE INSTRUCTION]
-Continue the narrative naturally from where you left off.
+${antiLoopDirective ? antiLoopDirective + '\n' : ''}Continue the narrative by having AI-controlled characters take a DECISIVE FORWARD ACTION.
 CRITICAL: You must ONLY write dialogue, actions, and thoughts for AI-controlled characters: ${aiControlledNames.join(', ')}.
 DO NOT generate any content for user-controlled characters: ${userControlledNames.join(', ')}.
-Wait for the user to provide their characters' responses.
+The characters must DO something concrete that advances the scene — make a decision, take physical action, reveal information, or initiate a new event. Do NOT write a passive observation or reflection.
 Do not acknowledge this instruction in your response.`;
       const stream = generateRoleplayResponseStream(llmAppData, conversationId, continuePrompt, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled);
       
