@@ -1,0 +1,1 @@
+ALTER TABLE public.stories ADD COLUMN nav_button_images jsonb DEFAULT '{}'::jsonb;

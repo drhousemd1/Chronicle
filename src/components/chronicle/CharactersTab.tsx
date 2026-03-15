@@ -5,7 +5,8 @@ import { Button, TextArea, Card } from './UI';
 import { Icons } from '@/constants';
 import { uid, now, clamp, resizeImage } from '@/utils';
 import { useAuth } from '@/hooks/use-auth';
-import { uploadAvatar, dataUrlToBlob } from '@/services/supabase-data';
+import { uploadAvatar, dataUrlToBlob, updateNavButtonImages, loadNavButtonImages } from '@/services/supabase-data';
+import { compressAndUpload } from '@/utils';
 
 import { AvatarGenerationModal } from './AvatarGenerationModal';
 import { AvatarActionButtons } from './AvatarActionButtons';
@@ -64,6 +65,7 @@ interface CharactersTabProps {
   onDelete: (id: string) => void;
   onAddSection?: (type?: CharacterTraitSectionType) => void;
   onAddNew?: () => void;
+  scenarioId?: string | null;
 }
 
 const BUILT_IN_TRAIT_SECTIONS: Array<{ key: string; label: string }> = [
@@ -544,7 +546,8 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
   onUpdate, 
   onDelete,
   onAddSection: externalAddSection,
-  onAddNew
+  onAddNew,
+  scenarioId
 }) => {
   const { user } = useAuth();
   const characters = appData.characters;
@@ -586,6 +589,16 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
   const navImageFileInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const avatarContainerRef = useRef<HTMLDivElement>(null);
+
+  // Load nav button images from DB on mount
+  useEffect(() => {
+    if (!scenarioId) return;
+    loadNavButtonImages(scenarioId).then((images) => {
+      if (images && Object.keys(images).length > 0) {
+        setNavButtonImages(images as Record<string, NavButtonImageConfig>);
+      }
+    }).catch(() => {});
+  }, [scenarioId]);
 
   const toggleSection = (key: string) => {
     setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
@@ -727,14 +740,39 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
       : prev));
   };
 
-  const handleSaveNavImage = () => {
-    setNavButtonImages((prev) => {
-      const next = { ...prev };
-      if (draftNavImage) next[editingNavKey] = draftNavImage;
-      else delete next[editingNavKey];
-      return next;
-    });
+  const handleSaveNavImage = async () => {
+    let imageToSave = draftNavImage;
+
+    // Compress and upload if it's a base64 data URL
+    if (imageToSave && imageToSave.src.startsWith('data:') && user) {
+      try {
+        const publicUrl = await compressAndUpload(
+          imageToSave.src,
+          'backgrounds',
+          user.id,
+          400, // small nav button images
+          400,
+          0.75
+        );
+        imageToSave = { ...imageToSave, src: publicUrl };
+      } catch (e) {
+        console.error('Failed to compress nav button image:', e);
+      }
+    }
+
+    const updatedImages = { ...navButtonImages };
+    if (imageToSave) updatedImages[editingNavKey] = imageToSave;
+    else delete updatedImages[editingNavKey];
+
+    setNavButtonImages(updatedImages);
     setShowNavImageEditor(false);
+
+    // Persist to DB
+    if (scenarioId) {
+      updateNavButtonImages(scenarioId, updatedImages).catch((e) =>
+        console.error('Failed to persist nav button images:', e)
+      );
+    }
   };
 
   const handleRemoveNavImage = () => {
@@ -2224,7 +2262,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                 disabled={!draftNavImage}
                 className="rounded-[10px] bg-[hsl(0,72%,51%)] text-white text-[12px] font-black tracking-[0.05em] uppercase px-[14px] py-[10px] shadow-[0_4px_12px_rgba(0,0,0,0.35)] transition-[filter,transform,opacity] duration-150 hover:brightness-110 hover:-translate-y-px active:brightness-95 active:translate-y-0 active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0"
               >
-                Remove
+                Reset
               </button>
             </DialogFooter>
           </div>

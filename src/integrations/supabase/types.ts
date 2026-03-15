@@ -1115,6 +1115,7 @@ export type Database = {
           description: string | null
           id: string
           is_draft: boolean
+          nav_button_images: Json | null
           opening_dialog: Json | null
           selected_art_style: string | null
           selected_model: string | null
@@ -1133,6 +1134,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_draft?: boolean
+          nav_button_images?: Json | null
           opening_dialog?: Json | null
           selected_art_style?: string | null
           selected_model?: string | null
@@ -1151,6 +1153,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_draft?: boolean
+          nav_button_images?: Json | null
           opening_dialog?: Json | null
           selected_art_style?: string | null
           selected_model?: string | null
