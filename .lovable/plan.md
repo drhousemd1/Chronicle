@@ -1,53 +1,63 @@
 
-# Sandbox Feature Transfer — Master Tracker
 
-## Source Documents
-- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
-- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
+## Missed Items — Full Inventory
 
-## Features Being Transferred
-| ID | Feature | Status |
-|----|---------|--------|
-| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
-| B | Story Transfer Library (story-transfer.ts) | ✅ |
-| A | UI Audit System (schema, utils, findings, page) | 🔄 |
-| B | Story Export/Import Modals | ✅ |
-| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
-| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
-| - | StyleGuideTool.tsx audit button | ⬜ |
-| - | App.tsx route wiring | ⬜ |
-| - | Index.tsx full wiring | ⬜ |
+Here is every remaining inconsistency on the Story Builder page, with exact file, line, current code, and what needs to change.
 
-## Prompt Execution Status
+### 1. `ArcBranchLane.tsx` line 271 — "ADD STEP" still ALL CAPS
 
-| # | Target File(s) | Status | Notes |
-|---|---------------|--------|-------|
-| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
-| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
-| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
-| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
-| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
-| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
-| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
-| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
-| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
-| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
-| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
-| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
-| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
-| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
+**Current:** `<span>ADD STEP</span>`
+**Fix:** `<span>Add Step</span>`
 
-## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
-- `src/types.ts`: line 11507
-- `src/utils.ts`: line 12138
-- `src/lib/story-transfer.ts`: line 9812
-- `src/lib/ui-audit-schema.ts`: line 21329
-- `src/lib/ui-audit-utils.ts`: line 21565
-- `src/data/ui-audit-findings.ts`: line 18967
-- `StoryExportFormatModal.tsx`: line 9642
-- `StoryImportModeModal.tsx`: line 9731
-- `CharactersTab.tsx`: line 2893
-- `ChatInterfaceTab.tsx`: line 5004
-- `src/pages/style-guide/ui-audit.tsx`: line 17867
-- `src/App.tsx`: line 95
-- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout
+---
+
+### 2. `ArcModeToggle.tsx` lines 17 and 29 — Simple/Advanced toggle still ALL CAPS
+
+**Current (both buttons):** `text-[10px] font-black uppercase tracking-widest`
+**Fix:** Remove `uppercase tracking-widest` → `text-[10px] font-black`
+
+---
+
+### 3. `WorldTab.tsx` line 1011 — "Day" label still ALL CAPS
+
+**Current:** `<span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Day</span>`
+**Fix:** Remove `uppercase tracking-wider` → `text-[10px] font-bold text-zinc-400`
+
+---
+
+### 4. `WorldTab.tsx` lines 1089 and 1101 — Manual/Automatic toggle still ALL CAPS
+
+**Current (both buttons):** `text-[10px] font-black uppercase tracking-widest`
+**Fix:** Remove `uppercase tracking-widest` → `text-[10px] font-black`
+
+---
+
+### 5. `Index.tsx` line 2235 — Header AI Fill button has `uppercase tracking-wider` but Scene Gallery and Cover Image AI Generate buttons do NOT
+
+The three AI-type iridescent buttons are inconsistent with each other:
+- **Header AI Fill** (`Index.tsx:2235`): `text-[10px] font-bold uppercase tracking-wider` — has uppercase
+- **Scene Gallery AI Generate** (`SceneGalleryActionButtons.tsx:78`): `text-[10px] font-bold` — no uppercase
+- **Cover Image AI Generate** (`CoverImageActionButtons.tsx:78`): `text-[10px] font-bold` — no uppercase
+
+**Fix:** Remove `uppercase tracking-wider` from `Index.tsx` line 2235 so all three AI buttons match.
+
+---
+
+### 6. `StoryGoalsSection.tsx` lines 482 and 495 — "Add Next Phase" / "Add New Story Arc" bold check
+
+These currently have `text-xs font-bold` which is identical to every other "Add" button (Add Location, Add Row, Add Text Field, Add Custom Content). The weight IS `font-bold` (700). If the user sees them as visually lighter, it may be a rendering difference. No code change needed here unless the user wants them changed to `font-black` (900).
+
+---
+
+### Summary — 7 code changes across 4 files
+
+| # | File | Line | Change |
+|---|------|------|--------|
+| 1 | `ArcBranchLane.tsx` | 271 | `ADD STEP` → `Add Step` |
+| 2 | `ArcModeToggle.tsx` | 17 | Remove `uppercase tracking-widest` |
+| 3 | `ArcModeToggle.tsx` | 29 | Remove `uppercase tracking-widest` |
+| 4 | `WorldTab.tsx` | 1011 | Remove `uppercase tracking-wider` from "Day" |
+| 5 | `WorldTab.tsx` | 1089 | Remove `uppercase tracking-widest` from Manual |
+| 6 | `WorldTab.tsx` | 1101 | Remove `uppercase tracking-widest` from Automatic |
+| 7 | `Index.tsx` | 2235 | Remove `uppercase tracking-wider` from AI Fill button |
+
