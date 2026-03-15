@@ -3532,7 +3532,7 @@ const updatedChar: SideCharacter = {
           <img
             src={char.avatarDataUrl}
             alt={char.name}
-            className={`block w-full transition-all duration-300 ${isExpanded ? 'h-auto' : 'h-full object-cover object-top'}`}
+            className={`block w-full transition-[height,object-fit] duration-300 ${isExpanded ? 'h-auto object-contain object-top' : 'h-full object-cover'}`}
             style={isExpanded ? undefined : { objectPosition: `${tileAvatarPos.x}% ${tileAvatarPos.y}%` }}
           />
         ) : (
