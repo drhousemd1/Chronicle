@@ -452,13 +452,11 @@ export const WorldTab: React.FC<WorldTabProps> = ({
       type="button"
       onClick={() => setIsCharacterCreationOpen(true)}
       className={cn(
-        "group/add w-full flex items-center gap-4 p-3 rounded-2xl transition-all duration-300 bg-[#3a3a3f]/30 hover:bg-[#3a3a3f]/50 cursor-pointer",
-        hasError
-          ? "border-2 border-dashed border-red-500"
-          : "border-2 border-dashed border-[#4a5f7f] hover:border-[#5a7a9f]"
+        "group/add w-full flex items-center gap-4 p-3 rounded-2xl transition-all duration-300 bg-[#3a3a3f]/40 hover:bg-[#3a3a3f]/60 cursor-pointer shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]",
+        hasError && "border border-red-500 ring-2 ring-red-500"
       )}
     >
-      <div className="w-14 h-14 shrink-0 rounded-xl bg-gradient-to-br from-zinc-800 to-zinc-900 border-2 border-dashed border-[#4a5f7f] flex items-center justify-center text-zinc-500 transition-all duration-300 group-hover/add:border-[#5a7a9f] group-hover/add:bg-[#3a3a3f]/70 group-hover/add:text-zinc-300">
+      <div className="w-14 h-14 shrink-0 rounded-xl bg-[#1c1c1f] border-t border-black/35 flex items-center justify-center text-zinc-500 transition-all duration-300 group-hover/add:bg-[#252529] group-hover/add:text-zinc-300">
          <span className="text-2xl font-light">+</span>
       </div>
       <div className="text-left">
