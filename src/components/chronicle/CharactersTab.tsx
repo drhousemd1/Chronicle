@@ -367,7 +367,7 @@ const TraitSidebarButton: React.FC<{
 
       <span className="relative z-10 min-w-0 flex items-center gap-[10px]">
         <Icon className={cn("w-[18px] h-[18px] shrink-0", highlightIcon ? "text-[#60a5fa]" : "text-[#6b7280]")} />
-        <span className="truncate text-[12px] font-black tracking-[0.08em] leading-tight uppercase text-[#eaedf1]">
+        <span className="truncate text-[12px] font-black tracking-[0.08em] leading-tight text-[#eaedf1]">
           {label}
         </span>
       </span>
