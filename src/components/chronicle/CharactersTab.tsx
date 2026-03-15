@@ -67,6 +67,8 @@ interface CharactersTabProps {
   onAddNew?: () => void;
   scenarioId?: string | null;
   isAdmin?: boolean;
+  navButtonImages?: Record<string, NavButtonImageConfig>;
+  onNavButtonImagesChange?: (images: Record<string, NavButtonImageConfig>) => void;
 }
 
 const BUILT_IN_TRAIT_SECTIONS: Array<{ key: string; label: string }> = [
