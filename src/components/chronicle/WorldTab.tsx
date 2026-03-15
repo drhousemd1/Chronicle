@@ -30,6 +30,7 @@ import { useModelSettings } from '@/contexts/ModelSettingsContext';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 import { getClosestRatio, AspectRatioIcon } from './AspectRatioUtils';
 import { CustomContentTypeModal } from './CustomContentTypeModal';
+import { TabFieldNavigator } from './TabFieldNavigator';
 
 interface WorldTabProps {
   scenarioId: string;
@@ -661,7 +662,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
         </div>
       </aside>
 
-      <div className="flex-1 overflow-y-auto scrollbar-thin bg-ghost-white">
+      <TabFieldNavigator className="flex-1 overflow-y-auto scrollbar-thin bg-ghost-white">
         <div className="p-4 lg:p-10 max-w-4xl mx-auto space-y-12 pb-20">
           <div className="mb-2">
             <h1 className="text-2xl lg:text-4xl font-black text-[hsl(var(--ui-surface-2))] tracking-tight">Story Setup</h1>
@@ -1653,7 +1654,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
             </div>
           </section>
         </div>
-      </div>
+      </TabFieldNavigator>
       
       {/* Scene Tag Editor Modal */}
       <SceneTagEditorModal
