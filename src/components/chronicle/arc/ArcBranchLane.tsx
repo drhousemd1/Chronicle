@@ -139,6 +139,7 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
               </div>
               <button
                 type="button"
+                tabIndex={-1}
                 onClick={() => onDeleteStep(step.id)}
                 className="w-[26px] h-[26px] rounded-[8px] border border-red-500/50 bg-transparent text-red-300 flex items-center justify-center cursor-pointer"
               >
