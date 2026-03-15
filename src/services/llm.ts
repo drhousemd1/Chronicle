@@ -673,6 +673,7 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
     --- RESPONSE DETAIL LEVEL (DETAILED) ---
     * Write rich, immersive responses with layered sensory detail.
     * HARD CAP: 2-3 paragraphs per response. Maximum 4 ONLY for multi-character turning points with high emotional stakes.
+    * Paragraph caps count TOTAL paragraphs across ALL character blocks combined. A 2-block response with 2 paragraphs each = 4 paragraphs = AT THE CAP.
     * Draw out moments with physical sensations, sounds, textures, and atmosphere.
     * Describe physical sensations in detail (e.g., warmth spreading, muscles tensing, breath catching).
     * Incorporate vocal and emotional reactions (e.g., breathy moans, desperate whispers, gasps).
