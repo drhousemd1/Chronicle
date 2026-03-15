@@ -576,6 +576,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const previousDayRef = useRef<number>(currentDay);
   // Throttle character extraction to every 5th message
   const extractionCountRef = useRef<number>(0);
+  // Pass 14: Narrative Director — stores the directive for the next turn
+  const narrativeDirectiveRef = useRef<string | null>(null);
   
   // Reset session tracking when conversation changes
   useEffect(() => {
@@ -583,6 +585,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     sessionMessageCountRef.current = 0;
     previousDayRef.current = currentDay;
     extractionCountRef.current = 0;
+    narrativeDirectiveRef.current = null;
   }, [conversationId]);
   
   // Issue #7: Compute length directive based on recent response pattern
@@ -733,6 +736,69 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     
     return directives.join(' ');
   };
+
+  // Pass 14: Generate narrative directive (async, non-blocking, runs after AI response)
+  const generateNarrativeDirective = useCallback(async () => {
+    try {
+      const conv = appData.conversations.find(c => c.id === conversationId);
+      const msgs = conv?.messages || [];
+      const recentMessages = msgs.slice(-10).map(m => ({ role: m.role, text: m.text.slice(0, 400) }));
+      
+      // Build story goals summary
+      const storyGoals = (effectiveWorldCore.storyGoals || []).map((g: StoryGoal) => {
+        // Find current pending step across steps and branches
+        const allSteps: Array<{ status?: string; description: string }> = [
+          ...(g.steps || []),
+          ...(g.branches?.fail?.steps || []),
+          ...(g.branches?.success?.steps || []),
+          ...(g.linkedPhases || []).flatMap(p => [
+            ...(p.branches?.fail?.steps || []),
+            ...(p.branches?.success?.steps || [])
+          ])
+        ];
+        const pendingStep = allSteps.find((s: ArcStep) => s.status === 'pending');
+        return {
+          description: g.title || g.desiredOutcome || '',
+          flexibility: g.flexibility || 'normal',
+          currentStepDescription: pendingStep?.description || undefined
+        };
+      }).filter((g: { description: string }) => g.description);
+
+      // Build character goals summary (AI characters only)
+      const characterGoals = appData.characters
+        .filter(c => c.controlledBy === 'AI')
+        .map(c => {
+          const session = sessionStates.find(s => s.characterId === c.id);
+          const goals = session?.goals || c.goals;
+          const goalsArr = Array.isArray(goals) ? goals.map((g: any) => typeof g === 'string' ? g : g?.label || g?.value || '').filter(Boolean) : [];
+          return {
+            name: c.name,
+            goals: goalsArr.slice(0, 5),
+            desires: [] as string[] // desires are part of personality, keep lightweight
+          };
+        })
+        .filter(c => c.goals.length > 0);
+
+      if (recentMessages.length < 4) return; // Not enough context yet
+
+      const { data, error } = await supabase.functions.invoke('generate-narrative-directive', {
+        body: {
+          recentMessages,
+          storyGoals,
+          characterGoals,
+          currentDay,
+          currentTimeOfDay
+        }
+      });
+
+      if (!error && data?.directive) {
+        narrativeDirectiveRef.current = data.directive;
+        console.log('[Pass 14] Narrative directive stored:', data.directive);
+      }
+    } catch (err) {
+      console.error('[Pass 14] Narrative directive generation failed:', err);
+    }
+  }, [appData.conversations, conversationId, effectiveWorldCore.storyGoals, appData.characters, sessionStates, currentDay, currentTimeOfDay]);
 
   // Ref to always hold current sideCharacters - avoids stale closure in async callbacks
   const sideCharactersRef = useRef<SideCharacter[]>(appData.sideCharacters || []);
@@ -2665,7 +2731,13 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       const antiLoopDirective = getAntiLoopDirective();
       sessionMessageCountRef.current += 1;
       
-      const llmInput = antiLoopDirective + (antiLoopDirective ? ' ' : '') + canonNote + input;
+      // Pass 14: Consume narrative directive (one-shot)
+      const directorTag = narrativeDirectiveRef.current
+        ? `[DIRECTOR: ${narrativeDirectiveRef.current}] `
+        : '';
+      narrativeDirectiveRef.current = null;
+      
+      const llmInput = directorTag + antiLoopDirective + (antiLoopDirective ? ' ' : '') + canonNote + input;
       const stream = generateRoleplayResponseStream(llmAppData, conversationId, llmInput, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled, undefined, lengthDirective || undefined, sessionMessageCountRef.current);
 
       for await (const chunk of stream) {
@@ -2730,6 +2802,11 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           console.error('[handleSend] Memory extraction failed:', err);
         });
       }
+
+      // Pass 14: Generate narrative directive for the NEXT turn (async, non-blocking)
+      generateNarrativeDirective().catch(err => {
+        console.error('[handleSend] Narrative directive generation failed:', err);
+      });
 
       const aiMsg: Message = { 
         id: uuid(), 

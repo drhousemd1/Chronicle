@@ -212,6 +212,7 @@ Service: `src/services/side-character-generator.ts`
 | `previousDayRef` | `useRef<number>` | Tracks previous day value; reset on conversation switch; used by compression effect to detect real day increments |
 | `memoriesLoaded` | `boolean` | Guards compression effect — prevents firing before conversation memories are fetched |
 | `extractionCountRef` | `useRef<number>` | Counts AI responses; extraction fires when `count % 5 === 0`; reset on conversation switch |
+| `narrativeDirectiveRef` | `useRef<string \| null>` | Pass 14 — Stores the narrative director's tactical directive for the next turn. Generated async after each AI response by `generate-narrative-directive` edge function. Injected as `[DIRECTOR: ...]` tag in next `handleSend`, then cleared (one-shot). Reset on conversation switch. |
 | `sidebarBgIsLight` | `boolean` | Detected via canvas pixel luminosity (threshold > 128). Drives adaptive frosted glass theming on character cards, scroll indicators, and "Exit Scenario" text color |
 
 ---
@@ -311,4 +312,4 @@ Applied in both `renderCharacterCard()` (main characters) and `SideCharacterCard
 
 None documented.
 
-> Last updated: 2026-03-15 — Fixed tile image bounce on expand/collapse to match Story Builder transition pattern.
+> Last updated: 2026-03-15 — Pass 14: Added Narrative Director Layer. New `generate-narrative-directive` edge function analyzes conversation state and produces turn-by-turn tactical directives injected as `[DIRECTOR: ...]` tags. `narrativeDirectiveRef` added to state. `[DIRECTOR]` tag added to priority hierarchy in `llm.ts` INSTRUCTIONS block at priority #2.
