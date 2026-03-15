@@ -734,6 +734,19 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       }
     }
     
+    // Pass 13: Thought-tail detector — checks if recent AI responses end with parenthetical thoughts
+    const aiMsgsForThoughtCheck = msgs.filter(m => m.role === 'assistant').slice(-3);
+    if (aiMsgsForThoughtCheck.length >= 2) {
+      const endsWithThought = (text: string): boolean => {
+        const trimmed = text.trimEnd();
+        return /\([^)]{5,}\)\s*$/.test(trimmed);
+      };
+      const thoughtTailCount = aiMsgsForThoughtCheck.filter(m => endsWithThought(m.text)).length;
+      if (thoughtTailCount >= 2) {
+        directives.push('[ANTI-THOUGHT-TAIL: Your recent responses all ended with internal thoughts in parentheses. This response must NOT end with a thought. End with dialogue or physical action instead.]');
+      }
+    }
+    
     return directives.join(' ');
   };
 
