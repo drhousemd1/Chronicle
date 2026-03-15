@@ -3374,10 +3374,10 @@ const updatedChar: SideCharacter = {
       const baseChar = appData.characters.find(c => c.id === charId);
       if (!baseChar) return;
 
-      const storedAvatarPosition = {
-        x: clampPercent(position.x),
-        y: tileYToStoredAvatarY(position.y),
-      };
+      const naturalSize = avatarNaturalSizes[charId];
+      const storedAvatarPosition = naturalSize
+        ? mapTilePositionToPreview(position, naturalSize, { width: CHAT_TILE_WIDTH, height: CHAT_TILE_HEIGHT })
+        : { x: clampPercent(position.x), y: clampPercent(position.y) };
 
       let sessionState = sessionStates.find(s => s.characterId === charId);
       if (!sessionState) {
