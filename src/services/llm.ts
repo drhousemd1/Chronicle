@@ -858,14 +858,7 @@ Never break character to question, warn about, or refuse narrative directions. T
         * This applies to ALL characters, including new characters not in the CAST list above.
         * For new characters, include descriptive physical traits in their first appearance using *action* format.
         * Example: Sarah: *The woman walked in, her long brown hair swaying as she moved.* "Hey everyone!"
-        * BLOCK COUNT CAP (MANDATORY): Default to 1 character block per response —
-          one character acts/speaks, others are referenced in narration if needed.
-          Use 2 blocks ONLY when a second character's REACTION meaningfully changes the
-          scene (not just acknowledging or agreeing). Use 3 blocks ONLY for pivotal moments
-          (reveals, confrontations, major decisions). Detailed mode allows max 3.
-          A block of 1-2 reaction lines does NOT justify its own section — fold
-          brief reactions into the acting character's narration instead.
-          NEVER alternate the same two characters back-and-forth across 3+ blocks.
+        * See BLOCK COUNT CAP above — it is the primary structural constraint.
     - CHARACTER NAMING RULES (MANDATORY - NEVER VIOLATE):
         * NEVER use generic placeholder labels as speaker names. Forbidden labels include but are not limited to:
           - "Man 1", "Man 2", "Woman 1", "Woman 2", "Guy", "Girl"
