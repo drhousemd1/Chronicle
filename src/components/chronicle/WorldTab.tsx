@@ -630,7 +630,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                 <ChevronDown className={`w-3.5 h-3.5 text-white/70 transition-transform duration-200 ${mainCharsCollapsed ? 'rotate-180' : ''}`} />
               </div>
             </div>
-            <div className={`transition-all duration-300 ease-in-out overflow-hidden ${mainCharsCollapsed ? 'max-h-0 opacity-0' : 'max-h-[2000px] opacity-100'}`}>
+            <div className={`transition-all duration-300 ease-in-out ${mainCharsCollapsed ? 'max-h-0 opacity-0 overflow-hidden' : 'max-h-[2000px] opacity-100 overflow-visible'}`}>
               <div className="space-y-2">
                 {mainCharacters.map(char => <CharacterRosterTile key={char.id} char={char} onSelect={onSelectCharacter} errors={publishErrors.characters?.[char.id]} isExpanded={expandedRosterTileId === char.id} onToggleExpand={(charId) => setExpandedRosterTileId(prev => prev === charId ? null : charId)} />)}
                 <AddCharacterPlaceholder label="Main Character" hasError={!!noAICharacterError || !!noUserCharacterError} />
