@@ -212,8 +212,9 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
                     placeholder="Section Title..."
                     className="bg-transparent border-none text-white font-bold text-lg px-0 focus:ring-0 placeholder:text-zinc-500"
                   />
-                  <button
+                   <button
                     type="button"
+                    tabIndex={-1}
                     onClick={() => {
                       const updated = customSections.filter((_, i) => i !== sIdx);
                       updateField('customWorldSections', updated.length > 0 ? updated : undefined);
