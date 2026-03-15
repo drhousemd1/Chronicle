@@ -66,6 +66,7 @@ interface CharactersTabProps {
   onAddSection?: (type?: CharacterTraitSectionType) => void;
   onAddNew?: () => void;
   scenarioId?: string | null;
+  isAdmin?: boolean;
 }
 
 const BUILT_IN_TRAIT_SECTIONS: Array<{ key: string; label: string }> = [
