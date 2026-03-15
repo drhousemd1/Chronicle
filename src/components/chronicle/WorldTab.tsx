@@ -889,8 +889,9 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                             placeholder="Section Title..."
                             className="flex-1 bg-transparent border-none text-[10px] font-black text-zinc-400 uppercase tracking-widest px-0 focus:ring-0 placeholder:text-zinc-500 placeholder:uppercase placeholder:tracking-widest placeholder:font-black"
                           />
-                          <button
-                            type="button"
+                  <button
+                    type="button"
+                    tabIndex={-1}
                             onClick={() => {
                               const sections = (world.core.customWorldSections || []).filter((_, i) => i !== sIdx);
                               updateCore({ customWorldSections: sections.length > 0 ? sections : undefined });
