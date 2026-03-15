@@ -2431,6 +2431,7 @@ const IndexContent = () => {
                 onUpdate={handleUpdateCharacter}
                 onDelete={handleDeleteCharacterFromList}
                 onAddSection={handleAddSection}
+                scenarioId={activeId}
               />
             </div>
           )}
