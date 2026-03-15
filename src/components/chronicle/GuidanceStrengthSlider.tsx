@@ -31,7 +31,7 @@ export const GuidanceStrengthSlider: React.FC<GuidanceStrengthSliderProps> = ({ 
   return (
     <div>
       <div className="mt-3.5 mb-1.5">
-        <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+        <span className="text-[10px] font-black text-zinc-400">
           Guidance Strength
         </span>
       </div>
