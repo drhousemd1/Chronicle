@@ -2102,6 +2102,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                                 />
                                 <button
                                     type="button"
+                                    tabIndex={-1}
                                     onClick={() => {
                                       const customLabel = item.label
                                         ? item.label
