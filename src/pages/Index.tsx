@@ -2115,7 +2115,25 @@ const IndexContent = () => {
                           tags: ['Custom']
                         };
 
-                        await supabaseData.saveScenario(scenarioIdToSave, dataToSave, metadata, user.id, { isDraft: true });
+                        // Write local safety snapshot before remote save
+                        try {
+                          localStorage.setItem(`draft_${scenarioIdToSave}`, JSON.stringify({
+                            data: dataToSave,
+                            coverImage: activeCoverImage,
+                            coverPosition: activeCoverPosition,
+                            contentThemes: activeContentThemes,
+                            savedAt: Date.now(),
+                          }));
+                        } catch (_) { /* quota exceeded — non-fatal */ }
+
+                        const verified = await supabaseData.saveScenarioWithVerification(scenarioIdToSave, dataToSave, metadata, user.id, { isDraft: true });
+
+                        if (verified) {
+                          // Clear local snapshot on verified success
+                          try { localStorage.removeItem(`draft_${scenarioIdToSave}`); } catch (_) {}
+                        } else {
+                          console.warn('Draft saved but child-data verification failed; local snapshot kept as backup.');
+                        }
 
                         // Refresh registry so hub shows the draft
                         supabaseData.fetchMyScenarios(user.id)
