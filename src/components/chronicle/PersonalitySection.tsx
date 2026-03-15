@@ -137,6 +137,7 @@ const TraitRow: React.FC<{
       </select>
       <button
         type="button"
+        tabIndex={-1}
         onClick={onDelete}
         className="text-red-500 hover:text-red-400 p-1.5 rounded-md hover:bg-red-900/30 mt-1"
       >

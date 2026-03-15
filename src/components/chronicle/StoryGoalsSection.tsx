@@ -344,6 +344,7 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
 
                     {/* Delete button */}
                     <button
+                      tabIndex={-1}
                       onClick={() => deleteGoal(goal.id)}
                       className="w-[30px] h-[30px] rounded-[10px] border border-red-500/50 bg-transparent text-red-300 flex items-center justify-center cursor-pointer mt-7 shrink-0"
                       title="Delete arc"

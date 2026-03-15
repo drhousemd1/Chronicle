@@ -310,6 +310,7 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
                           />
                           <button
                             type="button"
+                            tabIndex={-1}
                             onClick={() => {
                               const updated = [...customSections];
                               const updatedItems = updated[sIdx].items.filter((_, i) => i !== iIdx);

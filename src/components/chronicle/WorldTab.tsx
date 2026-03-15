@@ -1032,6 +1032,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                                   />
                                   <button
                                     type="button"
+                                    tabIndex={-1}
                                     onClick={() => {
                                       const sections = [...(world.core.customWorldSections || [])];
                                       const updatedItems = sections[sIdx].items.filter((_, i) => i !== iIdx);

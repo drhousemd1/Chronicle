@@ -1750,6 +1750,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                         </button>
                         <button 
                           type="button"
+                          tabIndex={-1}
                           onClick={() => deleteSection(section.id)} 
                           className="text-red-500 hover:text-red-400 p-1 rounded-md hover:bg-red-900/30"
                         >
