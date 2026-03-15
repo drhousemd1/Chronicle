@@ -623,15 +623,20 @@ export const WorldTab: React.FC<WorldTabProps> = ({
         
         <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-none pb-20 bg-[#2a2a2f]">
           <section className="space-y-2">
-            <div className="relative overflow-hidden bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 px-5 py-3 rounded-xl mb-3 shadow-lg">
+            <div className="relative overflow-hidden bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 px-5 py-3 rounded-xl mb-3 shadow-lg cursor-pointer select-none" onClick={() => setMainCharsCollapsed(prev => !prev)}>
               <div className="absolute inset-0 z-0 bg-gradient-to-tr from-white/10 to-transparent opacity-40" style={{ height: '60%' }} />
-              <div className="text-[10px] font-bold text-white uppercase tracking-wider relative z-[1]">Main Characters</div>
+              <div className="flex items-center justify-between relative z-[1]">
+                <div className="text-[10px] font-bold text-white uppercase tracking-wider">Main Characters</div>
+                <ChevronDown className={`w-3.5 h-3.5 text-white/70 transition-transform duration-200 ${mainCharsCollapsed ? 'rotate-180' : ''}`} />
+              </div>
             </div>
-            <div className="space-y-2">
-              {mainCharacters.map(char => <CharacterRosterTile key={char.id} char={char} onSelect={onSelectCharacter} errors={publishErrors.characters?.[char.id]} isExpanded={expandedRosterTileId === char.id} onToggleExpand={(charId) => setExpandedRosterTileId(prev => prev === charId ? null : charId)} />)}
-              <AddCharacterPlaceholder label="Main Character" hasError={!!noAICharacterError || !!noUserCharacterError} />
-              {noAICharacterError && <p className="text-sm text-red-500 font-medium pl-2">{noAICharacterError}</p>}
-              {noUserCharacterError && <p className="text-sm text-red-500 font-medium pl-2">{noUserCharacterError}</p>}
+            <div className={`transition-all duration-300 ease-in-out overflow-hidden ${mainCharsCollapsed ? 'max-h-0 opacity-0' : 'max-h-[2000px] opacity-100'}`}>
+              <div className="space-y-2">
+                {mainCharacters.map(char => <CharacterRosterTile key={char.id} char={char} onSelect={onSelectCharacter} errors={publishErrors.characters?.[char.id]} isExpanded={expandedRosterTileId === char.id} onToggleExpand={(charId) => setExpandedRosterTileId(prev => prev === charId ? null : charId)} />)}
+                <AddCharacterPlaceholder label="Main Character" hasError={!!noAICharacterError || !!noUserCharacterError} />
+                {noAICharacterError && <p className="text-sm text-red-500 font-medium pl-2">{noAICharacterError}</p>}
+                {noUserCharacterError && <p className="text-sm text-red-500 font-medium pl-2">{noUserCharacterError}</p>}
+              </div>
             </div>
           </section>
 
