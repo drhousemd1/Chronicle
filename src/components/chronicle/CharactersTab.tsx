@@ -1384,7 +1384,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
         </div>
       </aside>
 
-      <div className="flex-1 overflow-y-auto scrollbar-thin bg-[#1a1b20]">
+      <TabFieldNavigator className="flex-1 overflow-y-auto scrollbar-thin bg-[#1a1b20]">
         <div className="p-4 lg:p-10 max-w-6xl mx-auto space-y-6 pb-20">
           {isTraitVisible('profile') && (
             <div className="w-full bg-[#2a2a2f] rounded-[24px] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]">
