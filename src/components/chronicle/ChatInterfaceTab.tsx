@@ -3357,11 +3357,14 @@ const updatedChar: SideCharacter = {
   const getTileAvatarPosition = useCallback((char: Character): { x: number; y: number } => {
     const override = tileAvatarPositionOverrides[char.id];
     if (override) return override;
-    return {
+    const stored = {
       x: clampPercent(char.avatarPosition?.x ?? 50),
-      y: storedAvatarYToTileY(char.avatarPosition?.y),
+      y: clampPercent(char.avatarPosition?.y ?? 50),
     };
-  }, [tileAvatarPositionOverrides]);
+    const naturalSize = avatarNaturalSizes[char.id];
+    if (!naturalSize) return stored;
+    return mapObjectPositionFromPreviewToTile(stored, naturalSize, { width: CHAT_TILE_WIDTH, height: CHAT_TILE_HEIGHT });
+  }, [tileAvatarPositionOverrides, avatarNaturalSizes]);
 
   const persistMainCharacterTilePosition = useCallback(async (charId: string, position: { x: number; y: number }) => {
     try {
