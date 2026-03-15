@@ -1851,7 +1851,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
           {selected.sections
             .filter(section => isTraitVisible(`custom:${section.id}`))
             .map(section => (
-            <div key={section.id} className="w-full bg-[#2a2a2f] rounded-[24px] border border-[#4a5f7f] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
+            <div key={section.id} className="w-full bg-[#2a2a2f] rounded-[24px] border border-white/10 overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
               {/* Dark blue header with editable title */}
               <div className="bg-[#4a5f7f] border-b border-[#4a5f7f] px-5 py-3 flex items-center justify-between shadow-lg">
                 <AutoResizeTextarea
