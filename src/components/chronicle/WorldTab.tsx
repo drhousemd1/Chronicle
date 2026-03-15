@@ -30,6 +30,7 @@ import { useModelSettings } from '@/contexts/ModelSettingsContext';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 import { getClosestRatio, AspectRatioIcon } from './AspectRatioUtils';
 import { CustomContentTypeModal } from './CustomContentTypeModal';
+import { TabFieldNavigator } from './TabFieldNavigator';
 
 interface WorldTabProps {
   scenarioId: string;

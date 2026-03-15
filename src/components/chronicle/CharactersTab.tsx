@@ -1,6 +1,7 @@
 import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import { Character, CharacterTraitSection, CharacterTraitSectionType, ScenarioData, PhysicalAppearance, CurrentlyWearing, PreferredClothing, CharacterGoal, CharacterExtraRow, CharacterBackground, CharacterTone, CharacterKeyLifeEvents, CharacterRelationships, CharacterSecrets, CharacterFears, defaultCharacterBackground } from '@/types';
 import { CustomContentTypeModal } from './CustomContentTypeModal';
+import { TabFieldNavigator } from './TabFieldNavigator';
 import { Button, TextArea, Card } from './UI';
 import { Icons } from '@/constants';
 import { uid, now, clamp, resizeImage } from '@/utils';
