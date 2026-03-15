@@ -73,7 +73,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
 
   return (
     <div className="space-y-1">
-      <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+      <h4 className="text-[10px] font-black text-zinc-400">
         {title}
       </h4>
       
@@ -149,7 +149,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
                 className="h-8 px-3 rounded-lg text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center gap-1"
               >
                 <Plus className="w-3 h-3" />
-                ADD CUSTOM
+                Add Custom
               </button>
             )
           )}
@@ -166,7 +166,7 @@ const StoryTypeSelector: React.FC<{
 }> = ({ selected, onChange }) => {
   return (
     <div className="space-y-1">
-      <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+      <h4 className="text-[10px] font-black text-zinc-400">
         Story Type
       </h4>
       
@@ -227,7 +227,7 @@ const CustomTagsSection: React.FC<{
 
   return (
     <div className="space-y-1">
-      <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+      <h4 className="text-[10px] font-black text-zinc-400">
         Custom Tags
       </h4>
       
@@ -280,7 +280,7 @@ const CustomTagsSection: React.FC<{
               className="h-8 px-3 rounded-lg text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center gap-1"
             >
               <Plus className="w-3 h-3" />
-              ADD CUSTOM
+               Add Custom
             </button>
           )}
         </div>
