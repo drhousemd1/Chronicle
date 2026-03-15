@@ -118,17 +118,18 @@ const CharacterRosterTile: React.FC<{
   isExpanded: boolean;
   onToggleExpand: (id: string) => void;
 }> = ({ char, onSelect, errors, isExpanded, onToggleExpand }) => {
+  const hasAvatar = Boolean(char.avatarDataUrl);
   const [naturalImageSize, setNaturalImageSize] = useState<Size2D | null>(
     () => (char.avatarDataUrl ? avatarNaturalSizeCache.get(char.avatarDataUrl) ?? null : null)
   );
 
   useEffect(() => {
-    if (!char.avatarDataUrl) {
+    if (!hasAvatar) {
       setNaturalImageSize(null);
       return;
     }
 
-    const cachedSize = avatarNaturalSizeCache.get(char.avatarDataUrl);
+    const cachedSize = avatarNaturalSizeCache.get(char.avatarDataUrl!);
     if (cachedSize) {
       setNaturalImageSize(cachedSize);
       return;
@@ -147,13 +148,13 @@ const CharacterRosterTile: React.FC<{
 
     image.onload = () => { commitSize(); };
     image.onerror = () => { if (!cancelled) setNaturalImageSize(null); };
-    image.src = char.avatarDataUrl;
+    image.src = char.avatarDataUrl!;
     if (image.complete && image.naturalWidth > 0) {
       commitSize();
     }
 
     return () => { cancelled = true; };
-  }, [char.avatarDataUrl]);
+  }, [char.avatarDataUrl, hasAvatar]);
 
   const tileObjectPosition = useMemo(() => {
     const stored = {
