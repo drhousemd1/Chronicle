@@ -2232,7 +2232,7 @@ const IndexContent = () => {
                             onClick={() => setAiPromptModal({ mode: 'fill' })}
                             disabled={isAiFilling}
                             className="group relative flex h-10 px-4 rounded-xl overflow-hidden
-                              text-white text-[10px] font-bold leading-none uppercase tracking-wider
+                              text-white text-[10px] font-bold leading-none
                               shadow-[0_12px_40px_rgba(0,0,0,0.45)]
                               hover:brightness-125 transition-all
                               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/45
