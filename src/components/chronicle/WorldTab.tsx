@@ -638,7 +638,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
             </div>
             <div className="space-y-2">
               {sideCharacters.map(char => <CharacterRosterTile key={char.id} char={char} onSelect={onSelectCharacter} errors={publishErrors.characters?.[char.id]} isExpanded={expandedRosterTileId === char.id} onToggleExpand={(charId) => setExpandedRosterTileId(prev => prev === charId ? null : charId)} />)}
-              <AddCharacterPlaceholder label="(+) Side Character" />
+              <AddCharacterPlaceholder label="Side Character" />
             </div>
           </section>
         </div>
