@@ -187,6 +187,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
     return (
       <button
         type="button"
+        tabIndex={-1}
         onClick={onClick}
         disabled={enhancingField !== null}
         title="Enhance with AI"
