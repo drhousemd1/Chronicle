@@ -312,4 +312,4 @@ Applied in both `renderCharacterCard()` (main characters) and `SideCharacterCard
 
 None documented.
 
-> Last updated: 2026-03-15 — Fixed tile image bounce on expand/collapse to match Story Builder transition pattern.
+> Last updated: 2026-03-15 — Pass 14: Added Narrative Director Layer. New `generate-narrative-directive` edge function analyzes conversation state and produces turn-by-turn tactical directives injected as `[DIRECTOR: ...]` tags. `narrativeDirectiveRef` added to state. `[DIRECTOR]` tag added to priority hierarchy in `llm.ts` INSTRUCTIONS block at priority #2.
