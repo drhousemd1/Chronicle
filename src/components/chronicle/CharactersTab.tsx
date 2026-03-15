@@ -546,6 +546,7 @@ const ExtraRow: React.FC<{
       />
       {onEnhance && (
         <button
+          tabIndex={-1}
           type="button"
           onClick={onEnhance}
           disabled={isEnhancing}
