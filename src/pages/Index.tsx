@@ -2083,16 +2083,40 @@ const IndexContent = () => {
                       if (!activeId || !activeData || !user) return;
                       setIsSaving(true);
                       try {
-                        const derivedTitle = activeData.world.core.scenarioName || 'Untitled';
+                        let scenarioIdToSave = activeId;
+
+                        if (!isValidUuid(activeId)) {
+                          scenarioIdToSave = uuid();
+                          setActiveId(scenarioIdToSave);
+                        }
+
+                        const migrated = migrateScenarioDataIds(activeData);
+                        const dataToSave = migrated.didMigrate ? migrated.data : activeData;
+
+                        if (migrated.didMigrate) {
+                          setActiveData(migrated.data);
+                          setSelectedCharacterId((prev) => {
+                            if (!prev) return prev;
+                            return migrated.characterIdMap.get(prev) || prev;
+                          });
+                          setPlayingConversationId((prev) => {
+                            if (!prev) return prev;
+                            return migrated.conversationIdMap.get(prev) || prev;
+                          });
+                        }
+
+                        const derivedTitle = dataToSave.world.core.scenarioName || 'Untitled';
                         const metadata = {
                           title: derivedTitle,
-                          description: activeData.world.core.briefDescription || 
-                                       truncateLine(activeData.world.core.storyPremise || 'Created via Builder', 120),
+                          description: dataToSave.world.core.briefDescription ||
+                                       truncateLine(dataToSave.world.core.storyPremise || 'Created via Builder', 120),
                           coverImage: activeCoverImage,
                           coverImagePosition: activeCoverPosition,
                           tags: ['Custom']
                         };
-                        await supabaseData.saveScenario(activeId, activeData, metadata, user.id, { isDraft: true });
+
+                        await supabaseData.saveScenario(scenarioIdToSave, dataToSave, metadata, user.id, { isDraft: true });
+
                         // Refresh registry so hub shows the draft
                         supabaseData.fetchMyScenarios(user.id)
                           .then(r => { setRegistry(r); setHubFilter("my"); })
@@ -2100,6 +2124,10 @@ const IndexContent = () => {
                         setTimeout(() => setIsSaving(false), 1200);
                       } catch (e) {
                         console.warn('Could not save draft:', e);
+                        setStoryTransferNotice({
+                          tone: "error",
+                          text: "Draft save failed. Please try again.",
+                        });
                         setIsSaving(false);
                       }
                     }}
