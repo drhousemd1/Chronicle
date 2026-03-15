@@ -1,55 +1,53 @@
 
+# Sandbox Feature Transfer — Master Tracker
 
-## Audit: Phase B Spec vs Current Code
+## Source Documents
+- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
+- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
 
-I read every relevant line of code and compared it against the exact JSX in the uploaded document (including the page images where the markdown parser mangled the code blocks). Here is an honest accounting of what matches and what doesn't.
+## Features Being Transferred
+| ID | Feature | Status |
+|----|---------|--------|
+| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
+| B | Story Transfer Library (story-transfer.ts) | ✅ |
+| A | UI Audit System (schema, utils, findings, page) | 🔄 |
+| B | Story Export/Import Modals | ✅ |
+| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
+| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
+| - | StyleGuideTool.tsx audit button | ⬜ |
+| - | App.tsx route wiring | ⬜ |
+| - | Index.tsx full wiring | ⬜ |
 
----
+## Prompt Execution Status
 
-### CharactersTab.tsx
+| # | Target File(s) | Status | Notes |
+|---|---------------|--------|-------|
+| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
+| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
+| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
+| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
+| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
+| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
+| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
+| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
+| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
+| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
+| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
+| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
+| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
+| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
 
-| Spec requirement | Current code | Status |
-|---|---|---|
-| `useMemo` in React import | Present (line 1) | Correct |
-| Constants: `CHARACTER_HEADER_TILE_WIDTH=268`, `HEIGHT=140`, `PREVIEW_SIZE=192` | Present (lines 128-130) | Correct |
-| `clampPercent`, `Size2D` helpers | Present (lines 132-134) | Correct |
-| Cache named `avatarNaturalSizeCache` | Named `headerTileNaturalSizeCache` instead | Minor naming difference, functionally identical |
-| Mapping function named `mapObjectPositionFromPreviewToTile` | Named `mapHeaderTilePosition` instead | Minor naming difference, functionally identical |
-| `headerTileImageSize` state, `useEffect` for natural-size caching, `headerTileObjectPosition` memo | Present and correct (lines 659-692) | Correct |
-| Header tile: `p-3` wrapper, 268x140 tile, `rounded-2xl`, `border-[#4a5f7f]`, `bg-black` | Present (lines 1287-1290) | Correct |
-| **No persistent bottom gradient overlay** | Has `h-16 bg-gradient-to-t from-black/80` on line 1306 | **WRONG — must remove** |
-| Hover-only overlay `group-hover:bg-black/25` | Present (line 1304) | Correct |
-| Bottom info: name + AI/User badge | Present (lines 1308-1318) | Correct |
-| No edit icon / reposition controls in header tile | Correct — none present | Correct |
-| No slate/navy wrapper card behind tile | Correct — removed | Correct |
-
-**One real issue found:** The persistent bottom gradient on the header tile (line 1306) must be removed. The spec explicitly says "No persistent overlay, only hover overlay."
-
----
-
-### WorldTab.tsx (CharacterRosterTile)
-
-| Spec requirement | Current code | Status |
-|---|---|---|
-| `const hasAvatar = Boolean(char.avatarDataUrl)` | Uses `char.avatarDataUrl` directly in conditionals | Minor — functionally equivalent but spec wants explicit variable |
-| useEffect deps: `[char.avatarDataUrl, hasAvatar]` | Uses `[char.avatarDataUrl]` | Minor — `hasAvatar` is derived, no functional difference |
-| Expand/collapse button gated behind `hasAvatar` | Uses `char.avatarDataUrl &&` (line 201) | Correct behavior, different expression |
-| **No persistent bottom gradient** | Has `h-16 bg-gradient-to-t from-black/80` on line 224 | **WRONG — must remove** |
-| Content layer: `absolute inset-x-0 bottom-0 z-30 p-3` with nested flex `items-end justify-between gap-2` | Uses `absolute bottom-0 left-0 right-0 z-30 p-3 flex items-end gap-2` (flat, no nesting) | **Differs from spec** — spec has a nested structure with `min-w-0 flex-1` wrapper div |
-| Name text: `drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]` class | Uses inline `style={{ textShadow: '0 1px 4px rgba(0,0,0,0.7)' }}` | **Differs from spec** — should use the Tailwind drop-shadow class with spec values |
-| Badge: `tracking-wide` | Uses `tracking-widest` | **Minor difference** |
-| Hover overlay | Present and correct (line 198) | Correct |
-| No-avatar gradient initials fallback | Present and correct (line 192) | Correct |
-
----
-
-### Summary of actual issues to fix
-
-1. **CharactersTab.tsx line 1306:** Remove the persistent bottom gradient div from the header tile.
-2. **WorldTab.tsx line 224:** Remove the persistent bottom gradient div from roster tiles.
-3. **WorldTab.tsx lines 227-235:** Restructure bottom info to match spec's nested layout: outer `inset-x-0 bottom-0 z-30 p-3` div → inner `flex items-end justify-between gap-2` div → name in `min-w-0 flex-1` wrapper with `drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]` class instead of inline textShadow.
-4. **WorldTab.tsx:** Add explicit `const hasAvatar = Boolean(char.avatarDataUrl)` and use it (cosmetic alignment with spec).
-5. **WorldTab.tsx badge:** Change `tracking-widest` to `tracking-wide` per spec.
-
-Items 1-3 are real behavioral/visual differences. Items 4-5 are cosmetic code alignment. No other regressions found. Everything else matches the spec.
-
+## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
+- `src/types.ts`: line 11507
+- `src/utils.ts`: line 12138
+- `src/lib/story-transfer.ts`: line 9812
+- `src/lib/ui-audit-schema.ts`: line 21329
+- `src/lib/ui-audit-utils.ts`: line 21565
+- `src/data/ui-audit-findings.ts`: line 18967
+- `StoryExportFormatModal.tsx`: line 9642
+- `StoryImportModeModal.tsx`: line 9731
+- `CharactersTab.tsx`: line 2893
+- `ChatInterfaceTab.tsx`: line 5004
+- `src/pages/style-guide/ui-audit.tsx`: line 17867
+- `src/App.tsx`: line 95
+- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout

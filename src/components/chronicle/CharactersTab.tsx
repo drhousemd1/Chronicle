@@ -1302,19 +1302,21 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
             )}
             {/* Hover overlay */}
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors duration-200 z-[5] pointer-events-none" />
-            {/* Bottom gradient */}
-            <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/80 to-transparent z-[6] pointer-events-none" />
             {/* Bottom info */}
-            <div className="absolute bottom-0 left-0 right-0 z-[7] p-3 flex items-end gap-2">
-              <span className="text-sm font-bold text-white truncate min-w-0 flex-1" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.7)' }}>
-                {selected.name || 'Unnamed Character'}
-              </span>
-              <span className={cn(
-                "text-[9px] font-black uppercase tracking-widest shrink-0 rounded-full px-2 py-0.5",
-                selected.controlledBy === 'User' ? "bg-blue-500 text-white" : "bg-slate-500 text-white"
-              )}>
-                {selected.controlledBy || 'AI'}
-              </span>
+            <div className="absolute inset-x-0 bottom-0 z-30 p-3">
+              <div className="flex items-end justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
+                    {selected.name || 'Unnamed Character'}
+                  </div>
+                </div>
+                <span className={cn(
+                  "text-[9px] font-black uppercase tracking-wide shrink-0 rounded-full px-2 py-0.5",
+                  selected.controlledBy === 'User' ? "bg-blue-500 text-white" : "bg-slate-500 text-white"
+                )}>
+                  {selected.controlledBy || 'AI'}
+                </span>
+              </div>
             </div>
           </div>
         </div>

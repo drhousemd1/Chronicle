@@ -118,17 +118,18 @@ const CharacterRosterTile: React.FC<{
   isExpanded: boolean;
   onToggleExpand: (id: string) => void;
 }> = ({ char, onSelect, errors, isExpanded, onToggleExpand }) => {
+  const hasAvatar = Boolean(char.avatarDataUrl);
   const [naturalImageSize, setNaturalImageSize] = useState<Size2D | null>(
     () => (char.avatarDataUrl ? avatarNaturalSizeCache.get(char.avatarDataUrl) ?? null : null)
   );
 
   useEffect(() => {
-    if (!char.avatarDataUrl) {
+    if (!hasAvatar) {
       setNaturalImageSize(null);
       return;
     }
 
-    const cachedSize = avatarNaturalSizeCache.get(char.avatarDataUrl);
+    const cachedSize = avatarNaturalSizeCache.get(char.avatarDataUrl!);
     if (cachedSize) {
       setNaturalImageSize(cachedSize);
       return;
@@ -147,13 +148,13 @@ const CharacterRosterTile: React.FC<{
 
     image.onload = () => { commitSize(); };
     image.onerror = () => { if (!cancelled) setNaturalImageSize(null); };
-    image.src = char.avatarDataUrl;
+    image.src = char.avatarDataUrl!;
     if (image.complete && image.naturalWidth > 0) {
       commitSize();
     }
 
     return () => { cancelled = true; };
-  }, [char.avatarDataUrl]);
+  }, [char.avatarDataUrl, hasAvatar]);
 
   const tileObjectPosition = useMemo(() => {
     const stored = {
@@ -181,7 +182,7 @@ const CharacterRosterTile: React.FC<{
             : "border border-[#4a5f7f]"
         )}
       >
-        {char.avatarDataUrl ? (
+        {hasAvatar ? (
           <img
             src={char.avatarDataUrl}
             alt={char.name}
@@ -198,7 +199,7 @@ const CharacterRosterTile: React.FC<{
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors duration-200 z-[5] pointer-events-none" />
 
         {/* Click area to toggle expand/collapse - only when avatar exists */}
-        {char.avatarDataUrl && (
+        {hasAvatar && (
           <button
             type="button"
             onClick={() => onToggleExpand(char.id)}
@@ -220,18 +221,19 @@ const CharacterRosterTile: React.FC<{
           <Pencil className="w-4 h-4" />
         </button>
 
-        {/* Bottom gradient overlay */}
-        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/80 to-transparent z-[6] pointer-events-none" />
-
         {/* Bottom info overlay */}
-        <div className="absolute bottom-0 left-0 right-0 z-30 p-3 flex items-end gap-2">
-          <span className="text-sm font-bold text-white truncate min-w-0 flex-1" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.7)' }}>{char.name}</span>
-          <span className={cn(
-            "text-[9px] font-black uppercase tracking-widest shrink-0 rounded-full px-2 py-0.5",
-            char.controlledBy === 'User' ? "bg-blue-500 text-white" : "bg-slate-500 text-white"
-          )}>
-            {char.controlledBy}
-          </span>
+        <div className="absolute inset-x-0 bottom-0 z-30 p-3">
+          <div className="flex items-end justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">{char.name}</div>
+            </div>
+            <span className={cn(
+              "text-[9px] font-black uppercase tracking-wide shrink-0 rounded-full px-2 py-0.5",
+              char.controlledBy === 'User' ? "bg-blue-500 text-white" : "bg-slate-500 text-white"
+            )}>
+              {char.controlledBy}
+            </span>
+          </div>
         </div>
       </div>
 
