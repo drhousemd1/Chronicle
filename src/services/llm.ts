@@ -489,29 +489,10 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
 
   // Anti-repetition protocol (#33, #34)
   const antiRepetitionRules = `
-    - ANTI-REPETITION PROTOCOL (MANDATORY):
-        * WORD VARIETY: Do not repeat distinctive words or phrases within the same response.
-          - If you used "smirk" once, use alternatives: grin, half-smile, knowing look
-          - If you used "felt a shiver," use alternatives: a tremor ran through, goosebumps rose
-        * SENTENCE STRUCTURE: Vary sentence openings and structures.
-          - Avoid starting consecutive sentences with the same word/pattern
-          - Mix short punchy sentences with longer descriptive ones
-        * ACTION VARIETY: Do not repeat the same action multiple times.
-          - If a character already "bit her lip," don't have them do it again in the same response
-          - Track what actions have been used and rotate through alternatives
-        * DIALOGUE PATTERNS: Avoid repetitive conversation structures.
-          - Don't have characters keep asking variations of the same question
-          - If met with silence, try a different approach rather than rephrasing
-        * EMOTIONAL BEATS: Don't repeat the same emotional observation.
-          - If you noted "nervous energy," don't note it again - show progression or new emotion
-        * PACING PROGRESSION: Each paragraph should advance the scene.
-          - Avoid circular dialogue where characters keep revisiting the same point
-          - Move forward even in small increments
-        * NSFW EXCEPTION: During intimate scenes, rhythmic repetition of sensory
-          elements (moans, building sensations, escalating descriptions) is
-          PERMITTED and ENCOURAGED when it serves tension-building. The
-          anti-repetition rules apply to narrative structure and dialogue patterns,
-          not to the natural rhythm of physical intimacy.
+    - ANTI-REPETITION (MANDATORY):
+        * Do not repeat distinctive words, phrases, actions, or emotional observations within the same response.
+        * Vary sentence openings and structures. Each paragraph should advance the scene.
+        * NSFW EXCEPTION: Rhythmic sensory repetition during intimate scenes is permitted for tension-building.
 `;
 
   // Pass 7: Forward-progress and anti-loop rules
