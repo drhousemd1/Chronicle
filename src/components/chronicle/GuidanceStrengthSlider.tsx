@@ -8,9 +8,9 @@ interface GuidanceStrengthSliderProps {
 }
 
 const LEVELS: { value: GoalFlexibility; label: string }[] = [
-  { value: 'rigid', label: 'RIGID' },
-  { value: 'normal', label: 'NORMAL' },
-  { value: 'flexible', label: 'FLEXIBLE' },
+  { value: 'rigid', label: 'Rigid' },
+  { value: 'normal', label: 'Normal' },
+  { value: 'flexible', label: 'Flexible' },
 ];
 
 const DESCRIPTIONS: Record<GoalFlexibility, string> = {
