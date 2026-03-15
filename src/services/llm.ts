@@ -909,7 +909,7 @@ const detailedStyleHints = [
   '[Style: character initiates something new that shifts the power dynamic]',
   '[Style: extend the scene -- layer senses and emotion]',
   '[Style: lead with an environmental change or interruption that forces a reaction]',
-  '[Style: weave multiple characters acting simultaneously — no waiting turns]',
+  '[Style: build a slow, deliberate moment — let tension simmer through silence and gesture]',
   '[Style: character reveals something through action, not words or thoughts]',
 ];
 
