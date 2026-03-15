@@ -888,7 +888,7 @@ const conciseStyleHints = [
   '[Style: dialogue-forward, minimal description]',
   '[Style: start with action — something physically changes in the scene]',
   '[Style: character makes a snap decision and acts on it immediately]',
-  '[Style: rapid-fire dialogue exchange, no narration between lines]',
+  '[Style: character makes a snap decision and commits — no hesitation]',
 ];
 
 const balancedStyleHints = [
