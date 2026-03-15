@@ -548,7 +548,8 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
   onDelete,
   onAddSection: externalAddSection,
   onAddNew,
-  scenarioId
+  scenarioId,
+  isAdmin
 }) => {
   const { user } = useAuth();
   const characters = appData.characters;

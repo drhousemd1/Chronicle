@@ -2432,6 +2432,7 @@ const IndexContent = () => {
                 onDelete={handleDeleteCharacterFromList}
                 onAddSection={handleAddSection}
                 scenarioId={activeId}
+                isAdmin={isAdminState}
               />
             </div>
           )}
