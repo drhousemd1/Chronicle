@@ -1290,29 +1290,40 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
         className="flex-shrink-0 bg-[#2a2a2f] flex flex-col h-full rounded-none shadow-[0_12px_32px_-2px_rgba(0,0,0,0.55),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]"
         style={{ width: CHARACTER_NAV_SIDEBAR_WIDTH }}
       >
-        <div className="relative overflow-hidden bg-[linear-gradient(180deg,#5a7292_0%,#4a5f7f_100%)] shadow-[0_6px_16px_rgba(0,0,0,0.35)]">
-          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.07)_0%,rgba(255,255,255,0)_30%)]" />
-          <div className="relative p-3">
-            <div className="w-full text-left flex items-center gap-3 p-[10px] rounded-[14px] bg-[#2e2e33] shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.30)]">
-              <div className="w-12 h-12 shrink-0 rounded-[10px] overflow-hidden bg-[#1c1c1f] border-t border-black/35 shadow-[inset_0_2px_4px_rgba(0,0,0,0.35)]">
-              {selected.avatarDataUrl ? (
-                <img src={selected.avatarDataUrl} alt={selected.name || 'Character'} className="w-full h-full object-cover" style={{ objectPosition: `${selected.avatarPosition?.x ?? 50}% ${selected.avatarPosition?.y ?? 50}%` }} />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center font-black text-[#a1a1aa] text-[18px] italic uppercase">
+        <div className="p-3">
+          <div
+            className="group relative overflow-hidden rounded-2xl border border-[#4a5f7f] bg-black cursor-default"
+            style={{ width: CHARACTER_HEADER_TILE_WIDTH, height: CHARACTER_HEADER_TILE_HEIGHT }}
+          >
+            {selected.avatarDataUrl ? (
+              <img
+                src={selected.avatarDataUrl}
+                alt={selected.name || 'Character'}
+                className="absolute inset-0 w-full h-full object-cover"
+                style={{ objectPosition: headerTileObjectPosition }}
+              />
+            ) : (
+              <div className="absolute inset-0 bg-gradient-to-br from-[#3a3a4f] to-[#2a2a3f] flex items-center justify-center">
+                <span className="font-black text-[#a1a1aa] text-[40px] italic uppercase select-none">
                   {selected.name.charAt(0) || '?'}
-                </div>
-              )}
+                </span>
               </div>
-              <div className="min-w-0 flex-1 space-y-[1px]">
-                <div className="text-[13px] font-bold text-[#eaedf1] truncate leading-tight">{selected.name || 'Unnamed Character'}</div>
-                <div className="text-[12px] text-[#a1a1aa]">
-                  <span className="text-[#71717a]">Age:</span> {selected.age || ''}
-                </div>
-                <div className="text-[12px] text-[#a1a1aa]">
-                  <span className="text-[#71717a]">Controlled by:</span>{' '}
-                  <span className="uppercase tracking-[0.08em] font-black text-[#eaedf1]">{selected.controlledBy || 'AI'}</span>
-                </div>
-              </div>
+            )}
+            {/* Hover overlay */}
+            <div className="absolute inset-0 z-5 bg-black/0 group-hover:bg-black/25 transition-colors duration-200" />
+            {/* Bottom gradient */}
+            <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-6" />
+            {/* Content layer */}
+            <div className="absolute inset-x-0 bottom-0 z-30 flex items-end justify-between p-3">
+              <span
+                className="text-[14px] font-bold text-white truncate leading-tight"
+                style={{ textShadow: '0 1px 4px rgba(0,0,0,0.7)' }}
+              >
+                {selected.name || 'Unnamed Character'}
+              </span>
+              <span className="shrink-0 ml-2 px-2 py-[2px] rounded-full text-[10px] font-bold uppercase tracking-wider bg-black/50 text-white/90 backdrop-blur-sm">
+                {selected.controlledBy || 'AI'}
+              </span>
             </div>
           </div>
         </div>
