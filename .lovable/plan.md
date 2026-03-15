@@ -1,53 +1,53 @@
 
-# Sandbox Feature Transfer — Master Tracker
+Goal: fix repetitive “quote → action → thought” output and weak initiative without introducing one-off logic or changing core architecture.
 
-## Source Documents
-- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
-- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
+Implementation scope (2 files only):
+1) `src/services/llm.ts`
+2) `src/components/chronicle/ChatInterfaceTab.tsx`
 
-## Features Being Transferred
-| ID | Feature | Status |
-|----|---------|--------|
-| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
-| B | Story Transfer Library (story-transfer.ts) | ✅ |
-| A | UI Audit System (schema, utils, findings, page) | 🔄 |
-| B | Story Export/Import Modals | ✅ |
-| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
-| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
-| - | StyleGuideTool.tsx audit button | ⬜ |
-| - | App.tsx route wiring | ⬜ |
-| - | Index.tsx full wiring | ⬜ |
+What’s causing the issue now:
+- Prompt rules currently over-bias the model into a fixed template (strict formatting + dialogue requirements + heavy internal-thought guidance + examples that mirror the same shape).
+- There is no hard “state change per turn” contract, so responses can stay emotionally descriptive but narratively static.
+- Runtime anti-loop checks catch confirmation/deferral loops, but not structural repetition or low-initiative drift.
+- Continue prompt currently says “wait for user response,” which can reinforce passive pacing.
 
-## Prompt Execution Status
+Plan of changes:
 
-| # | Target File(s) | Status | Notes |
-|---|---------------|--------|-------|
-| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
-| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
-| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
-| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
-| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
-| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
-| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
-| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
-| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
-| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
-| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
-| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
-| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
-| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
+1) Prompt-level momentum + variety contract (`llm.ts`)
+- Add a new mandatory “TURN PROGRESSION CONTRACT” block:
+  - Every response must introduce at least one concrete scene delta (decision, reveal, physical action, escalation, environment/event shift).
+  - AI-controlled characters must initiate at least one proactive move each turn (not just react).
+  - Questions are optional and capped (max 1), and cannot be the only forward movement.
+- Add a “STRUCTURE VARIETY GUARD” block:
+  - Explicitly forbid repeating the same output skeleton across consecutive turns, especially repeated `dialogue + action + thought` triads.
+- Make thought usage optional/sparse:
+  - Keep thought quality rules, but add frequency caps (e.g., concise/balanced: usually 0–1 thought blocks total; detailed: 0–2).
+  - Clarify: include thoughts only when they add net-new strategic/desire insight.
+- Update style-hint pools to diversify openings and pacing:
+  - Add action-led and dialogue-heavy variants.
+  - Remove/soften hints that repeatedly bias toward “single short dialogue line then narration.”
 
-## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
-- `src/types.ts`: line 11507
-- `src/utils.ts`: line 12138
-- `src/lib/story-transfer.ts`: line 9812
-- `src/lib/ui-audit-schema.ts`: line 21329
-- `src/lib/ui-audit-utils.ts`: line 21565
-- `src/data/ui-audit-findings.ts`: line 18967
-- `StoryExportFormatModal.tsx`: line 9642
-- `StoryImportModeModal.tsx`: line 9731
-- `CharactersTab.tsx`: line 2893
-- `ChatInterfaceTab.tsx`: line 5004
-- `src/pages/style-guide/ui-audit.tsx`: line 17867
-- `src/App.tsx`: line 95
-- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout
+2) Runtime anti-stagnation directive (`ChatInterfaceTab.tsx`)
+- Extend `getAntiLoopDirective()` with two additional detectors over recent assistant messages:
+  - Structural repetition detector (same triad pattern repeated in recent turns).
+  - Low-initiative detector (reassurance/reflective loops with little scene movement).
+- When triggered, inject a short micro-directive before send/regenerate:
+  - “Break template; execute a concrete new beat now; do not rely on quote-action-thought default.”
+- Keep existing anti-loop logic (confirmation/deferral/rephrase) intact.
+
+3) Continue behavior fix (`ChatInterfaceTab.tsx`)
+- Update `handleContinueConversation()` prompt text so it requires a decisive forward beat now (instead of “wait for user response”).
+- Preserve control boundaries: AI still cannot puppeteer user-controlled characters.
+
+4) Safety/consistency constraints (unchanged)
+- Do not alter control enforcement (AI vs User characters).
+- Do not alter scene-presence checks.
+- Do not change model provider routing or backend schema.
+
+Validation plan (end-to-end, same story/session):
+- Generate 6–8 back-to-back assistant turns and verify:
+  - No persistent triad template across consecutive turns.
+  - Clear scene progression each turn (new action/event/reveal).
+  - Higher initiative (AI drives beats instead of only mirroring user).
+  - Internal thoughts appear selectively, not by default every block.
+- Spot-check regenerate and continue flows for the same improvements.
