@@ -626,7 +626,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
             </div>
             <div className="space-y-2">
               {mainCharacters.map(char => <CharacterRosterTile key={char.id} char={char} onSelect={onSelectCharacter} errors={publishErrors.characters?.[char.id]} isExpanded={expandedRosterTileId === char.id} onToggleExpand={(charId) => setExpandedRosterTileId(prev => prev === charId ? null : charId)} />)}
-              <AddCharacterPlaceholder label="(+) Main Character" hasError={!!noAICharacterError || !!noUserCharacterError} />
+              <AddCharacterPlaceholder label="Main Character" hasError={!!noAICharacterError || !!noUserCharacterError} />
               {noAICharacterError && <p className="text-sm text-red-500 font-medium pl-2">{noAICharacterError}</p>}
               {noUserCharacterError && <p className="text-sm text-red-500 font-medium pl-2">{noUserCharacterError}</p>}
             </div>
