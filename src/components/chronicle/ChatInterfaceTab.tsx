@@ -3392,7 +3392,7 @@ const updatedChar: SideCharacter = {
     } catch (err) {
       console.error('Failed to persist tile avatar position:', err);
     }
-  }, [appData.characters, conversationId, sessionStates]);
+  }, [appData.characters, conversationId, sessionStates, avatarNaturalSizes]);
 
   const toggleTileRepositionMode = useCallback((char: Character) => {
     setTileDragState(null);
