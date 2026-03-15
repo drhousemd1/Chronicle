@@ -830,7 +830,8 @@ export async function* generateRoleplayResponseStream(
   memoriesEnabled?: boolean,
   isRegeneration?: boolean,
   lengthDirective?: string,
-  sessionMessageCount?: number
+  sessionMessageCount?: number,
+  runtimeDirectives?: string
 ): AsyncGenerator<string, void, unknown> {
   const conversation = appData.conversations.find(c => c.id === conversationId);
   if (!conversation) throw new Error("Conversation not found");
