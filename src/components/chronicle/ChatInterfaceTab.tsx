@@ -689,6 +689,48 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       }
     }
     
+    // Pass 12: Ping-pong detector — detects alternating character blocks in last AI response
+    if (lastAiMsg) {
+      const lines = lastAiMsg.text.split('\n').filter((l: string) => l.trim().length > 0);
+      const speakerPattern = /^([A-Z][a-zA-Z\s'-]+):/;
+      const speakers: string[] = [];
+      for (const line of lines) {
+        const match = line.match(speakerPattern);
+        if (match) {
+          const name = match[1].trim();
+          if (speakers.length === 0 || speakers[speakers.length - 1] !== name) {
+            speakers.push(name);
+          }
+        }
+      }
+      // If 3+ blocks alternating between same 2 characters
+      if (speakers.length >= 3) {
+        const uniqueSpeakers = new Set(speakers);
+        if (uniqueSpeakers.size <= 2) {
+          directives.push('[ANTI-PING-PONG: Your last response alternated between the same two characters across ' + speakers.length + ' blocks. This turn, write from ONE character\'s perspective only. Other characters may be mentioned in narration but do NOT get their own tagged block. Advance the scene: reveal new information, make a decision, or change the physical situation.]');
+        }
+      }
+    }
+    
+    // Pass 12: Emotional-loop detector — detects stasis reactions without scene change
+    if (recentAiMsgs.length >= 2) {
+      const emotionalStasisPatterns = /\b(sobbed|trembled|murmured|whispered|shuddered|whimpered|sniffled|choked|sighed|swallowed hard|blinked back tears|tears streamed|voice cracked|breath hitched|lip quivered|heart ached|chest tightened)\b/gi;
+      const sceneChangePatterns = /\b(stood up|walked|left|entered|opened|closed|picked up|put down|grabbed|pulled|pushed|decided|turned to leave|moved to|stepped outside|drove|ran|called|texted|knocked|rang|arrived|phone buzzed|door opened|interrupted)\b/gi;
+      
+      let emotionalCount = 0;
+      let sceneChangeCount = 0;
+      for (const m of recentAiMsgs.slice(-2)) {
+        const eMatches = m.text.match(emotionalStasisPatterns);
+        const sMatches = m.text.match(sceneChangePatterns);
+        emotionalCount += eMatches ? eMatches.length : 0;
+        sceneChangeCount += sMatches ? sMatches.length : 0;
+      }
+      
+      if (emotionalCount >= 4 && sceneChangeCount < 2) {
+        directives.push('[ANTI-STAGNATION: Recent responses are emotional reactions without scene change. Something EXTERNAL must happen now: a phone rings, someone enters, a decision is made, a character physically moves to a new location or activity. Emotional processing is NOT forward movement.]');
+      }
+    }
+    
     return directives.join(' ');
   };
 
