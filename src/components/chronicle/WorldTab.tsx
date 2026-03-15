@@ -1481,6 +1481,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                     </div>
                   </div>
                 )}
+                </div>
               </div>
             </div>
           </section>
