@@ -1625,7 +1625,7 @@ const IndexContent = () => {
          id: uid('sec'),
          title: 'New Section',
          type,
-         items: type === 'structured' ? [] : [],
+         items: [{ id: uid('item'), label: '', value: '', createdAt: now(), updatedAt: now() }],
          freeformValue: type === 'freeform' ? '' : undefined,
          createdAt: now(),
          updatedAt: now()

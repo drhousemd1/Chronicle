@@ -1048,7 +1048,9 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
     if (!selected) return;
     // If external handler is provided, use it (for scenario builder)
     if (externalAddSection) {
+      const prevCount = selected.sections.length;
       externalAddSection(type);
+      // Auto-navigate will be handled by the useEffect below
       return;
     }
     // Otherwise use internal logic (for chat interface)
