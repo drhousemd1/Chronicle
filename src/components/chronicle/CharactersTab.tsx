@@ -626,6 +626,18 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
     }
   }, [selectedId, activeTraitSection, traitNavItems]);
 
+  // Auto-navigate to newly added custom section
+  const prevSectionCountRef = useRef(selected?.sections?.length ?? 0);
+  useEffect(() => {
+    if (!selected) return;
+    const currentCount = selected.sections.length;
+    if (currentCount > prevSectionCountRef.current && currentCount > 0) {
+      const newest = selected.sections[currentCount - 1];
+      setActiveTraitSection(`custom:${newest.id}`);
+    }
+    prevSectionCountRef.current = currentCount;
+  }, [selected?.sections?.length]);
+
   const loadNavImageDraft = useCallback((navKey: string) => {
     setEditingNavKey(navKey);
     const existing = navButtonImages[navKey];
