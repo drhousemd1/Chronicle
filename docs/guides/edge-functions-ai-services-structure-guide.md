@@ -170,6 +170,7 @@ See Section 5 above for comprehensive bug list.
 - **RESOLVED — 2026-03-15**: Pass 8 — Anti-stagnation & initiative. TURN PROGRESSION CONTRACT mandates concrete scene delta + proactive AI move each turn. STRUCTURE VARIETY GUARD forbids repeating same output skeleton. Internal thoughts made optional with frequency caps. Runtime detectors added for structural triad repetition and low-initiative drift. Style hints diversified with action-led and decision-driven variants. Continue prompt rewritten to demand decisive forward action.
 - **RESOLVED — 2026-03-15**: Pass 9 — Multi-character block flooding & prompt declutter. Block count cap added to MULTI-CHARACTER RESPONSES (1-3 blocks, max 4 detailed). PROACTIVE NARRATIVE DRIVE merged into TURN PROGRESSION CONTRACT. RESPONSE SHAPE VARIATION merged into STRUCTURE VARIETY GUARD. Duplicate NO REHASH removed (kept in FORWARD MOMENTUM). "Dialogue-heavy: rapid exchanges" removed from valid shapes. Ping-pong-encouraging style hints replaced.
 - **RESOLVED — 2026-03-15**: Pass 10 — Goal-directedness added to TURN PROGRESSION CONTRACT. Every response must now advance at least one active goal, desire, story arc, or core motivation. Non-directional responses explicitly forbidden. AI characters must drive scenes toward their defined goals rather than taking generic action.
+- **RESOLVED — 2026-03-15**: Pass 11 — Block-count-as-target fix & paragraph cap clarification. Block count default changed from "1-3" to "1 (default), 2 only for meaningful reactions, 3 only for pivotal moments." Paragraph caps now explicitly state they count TOTAL paragraphs across all character blocks combined. TURN PROGRESSION CONTRACT strengthened with measurable-progress quality bar (vague circling dialogue no longer counts). Style hint encouraging "mix several short dialogue exchanges" replaced with single-character-driven beat.
 
 ---
 
@@ -177,4 +178,4 @@ See Section 5 above for comprehensive bug list.
 
 None documented.
 
-> Last updated: 2026-03-15 — Pass 10: Goal-directedness requirement added to TURN PROGRESSION CONTRACT.
+> Last updated: 2026-03-15 — Pass 11: Block count default-to-1, paragraph cap total clarification, measurable progress quality bar.

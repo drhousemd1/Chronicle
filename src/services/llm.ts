@@ -906,7 +906,7 @@ const conciseStyleHints = [
 ];
 
 const balancedStyleHints = [
-  '[Style: mix several short dialogue exchanges with brief action beats]',
+  '[Style: one character drives this beat — others react briefly in narration]',
   '[Style: try a different paragraph structure than your last response]',
   '[Style: character takes a decisive action that changes the scene dynamics]',
   '[Style: open with something happening — movement, sound, interruption]',
