@@ -1,39 +1,53 @@
 
+# Sandbox Feature Transfer — Master Tracker
 
-## What went wrong + Fix Plan
+## Source Documents
+- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
+- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
 
-The previous implementation deviated from the exact code provided. Here are the specific differences between what's currently in `WorldTab.tsx` and what the revised instructions specify:
+## Features Being Transferred
+| ID | Feature | Status |
+|----|---------|--------|
+| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
+| B | Story Transfer Library (story-transfer.ts) | ✅ |
+| A | UI Audit System (schema, utils, findings, page) | 🔄 |
+| B | Story Export/Import Modals | ✅ |
+| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
+| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
+| - | StyleGuideTool.tsx audit button | ⬜ |
+| - | App.tsx route wiring | ⬜ |
+| - | Index.tsx full wiring | ⬜ |
 
-### WorldTab.tsx — CharacterRosterTile differences
+## Prompt Execution Status
 
-| # | Issue | Current Code | Instructions Say |
-|---|-------|-------------|-----------------|
-| 1 | Missing `group` class | `"relative overflow-hidden rounded-2xl bg-black..."` | Should have `group` on wrapper div |
-| 2 | Wrong border/error styling | Error: `border-2 border-red-500 ring-2 ring-red-500`, else: complex shadow (no border) | Error: `border-red-500`, else: `border-[#4a5f7f]` |
-| 3 | Missing hover overlay | None | Separate div: `bg-black/0 group-hover:bg-black/25` at `z-[5]` |
-| 4 | Gradient overlay structure | Single `z-10` div with padding, flex layout inside | Separate `z-[6]` div, `h-24`, gradient only |
-| 5 | Bottom info overlay | Name + badge inside gradient div | Separate `z-30` div with `p-3`, `min-w-0 flex-1` layout |
-| 6 | Badge styling | `text-white/70`, no background color | Colored bg (`bg-blue-500` for User, `bg-slate-500` for AI), `rounded-full px-2 py-0.5` pill |
-| 7 | Expand button scope | Always rendered (not conditional on avatar) | Wrapped in `{char.avatarDataUrl && (...)}` |
-| 8 | No-avatar fallback | `bg-zinc-800` | `bg-gradient-to-br from-zinc-800 to-zinc-900`, different text color `text-slate-500` |
-| 9 | `tileObjectPosition` return type | Returns string (`"50% 50%"`) | Returns object `{ x, y }` with separate interpolation in style |
+| # | Target File(s) | Status | Notes |
+|---|---------------|--------|-------|
+| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
+| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
+| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
+| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
+| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
+| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
+| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
+| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
+| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
+| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
+| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
+| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
+| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
+| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
 
-### ChatInterfaceTab.tsx — Already correct
-Line 3388 already has `border-2 border-[#4a5f7f] hover:border-[#4a5f7f]`. No change needed.
-
-### Sidebar width — Already correct
-Line 614 already has `w-[300px]`. No change needed.
-
-### State + cleanup — Already correct
-`expandedRosterTileId` state and cleanup effect are present.
-
----
-
-## Plan: Single phase — Replace CharacterRosterTile with exact code from instructions
-
-**File**: `src/components/chronicle/WorldTab.tsx`
-
-**What**: Replace lines 114-238 (the entire `CharacterRosterTile` component) with the exact code block from the revised instructions (lines 160-303 of the uploaded file). Also update `tileObjectPosition` useMemo return type from string to object.
-
-This is a single focused replacement — no other files need changes.
-
+## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
+- `src/types.ts`: line 11507
+- `src/utils.ts`: line 12138
+- `src/lib/story-transfer.ts`: line 9812
+- `src/lib/ui-audit-schema.ts`: line 21329
+- `src/lib/ui-audit-utils.ts`: line 21565
+- `src/data/ui-audit-findings.ts`: line 18967
+- `StoryExportFormatModal.tsx`: line 9642
+- `StoryImportModeModal.tsx`: line 9731
+- `CharactersTab.tsx`: line 2893
+- `ChatInterfaceTab.tsx`: line 5004
+- `src/pages/style-guide/ui-audit.tsx`: line 17867
+- `src/App.tsx`: line 95
+- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout

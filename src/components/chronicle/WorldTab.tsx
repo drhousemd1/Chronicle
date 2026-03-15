@@ -161,47 +161,51 @@ const CharacterRosterTile: React.FC<{
       y: clampPercent(char.avatarPosition?.y ?? 50),
     };
 
-    if (!naturalImageSize) return `${stored.x}% ${stored.y}%`;
+    if (!naturalImageSize) return stored;
 
-    const mapped = mapObjectPositionFromPreviewToTile(
+    return mapObjectPositionFromPreviewToTile(
       stored,
       naturalImageSize,
       { width: STORY_ROSTER_TILE_WIDTH, height: STORY_ROSTER_TILE_HEIGHT }
     );
-    return `${mapped.x}% ${mapped.y}%`;
   }, [char.avatarPosition?.x, char.avatarPosition?.y, naturalImageSize]);
 
   return (
     <div className="space-y-1">
       <div
         className={cn(
-          "relative overflow-hidden rounded-2xl bg-black transition-all duration-300",
+          "group relative overflow-hidden rounded-2xl bg-black transition-all duration-300",
           isExpanded ? "" : "h-[140px]",
           errors && errors.length > 0
-            ? "border-2 border-red-500 ring-2 ring-red-500"
-            : "shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]"
+            ? "border border-red-500"
+            : "border border-[#4a5f7f]"
         )}
       >
         {char.avatarDataUrl ? (
           <img
             src={char.avatarDataUrl}
             alt={char.name}
-            className={`block w-full transition-all duration-300 ${isExpanded ? 'h-auto' : 'h-full object-cover'}`}
-            style={isExpanded ? undefined : { objectPosition: tileObjectPosition }}
+            className={`block w-full transition-all duration-300 ${isExpanded ? 'h-auto object-contain object-top' : 'h-full object-cover'}`}
+            style={isExpanded ? undefined : { objectPosition: `${tileObjectPosition.x}% ${tileObjectPosition.y}%` }}
           />
         ) : (
-          <div className="flex h-full min-h-[140px] items-center justify-center bg-zinc-800 font-black text-5xl italic uppercase text-zinc-500">
+          <div className="flex h-full min-h-[140px] items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900 font-black text-5xl italic uppercase text-slate-500">
             {char.name.charAt(0)}
           </div>
         )}
 
-        {/* Click area to toggle expand/collapse */}
-        <button
-          type="button"
-          onClick={() => onToggleExpand(char.id)}
-          className="absolute inset-0 z-20"
-          aria-label={isExpanded ? `Collapse ${char.name} avatar` : `Expand ${char.name} avatar`}
-        />
+        {/* Hover overlay */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors duration-200 z-[5] pointer-events-none" />
+
+        {/* Click area to toggle expand/collapse - only when avatar exists */}
+        {char.avatarDataUrl && (
+          <button
+            type="button"
+            onClick={() => onToggleExpand(char.id)}
+            className="absolute inset-0 z-20"
+            aria-label={isExpanded ? `Collapse ${char.name} avatar` : `Expand ${char.name} avatar`}
+          />
+        )}
 
         {/* Edit button - top right */}
         <button
@@ -217,13 +221,17 @@ const CharacterRosterTile: React.FC<{
         </button>
 
         {/* Bottom gradient overlay */}
-        <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-3 pb-2 pt-8 pointer-events-none">
-          <div className="flex items-end justify-between">
-            <span className="text-sm font-bold text-white truncate">{char.name}</span>
-            <span className="text-[9px] font-black uppercase tracking-widest text-white/70 shrink-0 ml-2">
-              {char.controlledBy}
-            </span>
-          </div>
+        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-black/90 to-transparent z-[6] pointer-events-none" />
+
+        {/* Bottom info overlay */}
+        <div className="absolute bottom-0 left-0 right-0 z-30 p-3 flex items-end gap-2 pointer-events-none">
+          <span className="text-sm font-bold text-white truncate min-w-0 flex-1">{char.name}</span>
+          <span className={cn(
+            "text-[9px] font-black uppercase tracking-widest shrink-0 rounded-full px-2 py-0.5",
+            char.controlledBy === 'User' ? "bg-blue-500 text-white" : "bg-slate-500 text-white"
+          )}>
+            {char.controlledBy}
+          </span>
         </div>
       </div>
 
