@@ -289,8 +289,81 @@ const mergeByRenderedSpeaker = (
   return merged;
 };
 const clampPercent = (value: number): number => Math.max(0, Math.min(100, value));
-const storedAvatarYToTileY = (storedY?: number): number => clampPercent((storedY ?? 50) - 50);
-const tileYToStoredAvatarY = (tileY: number): number => clampPercent(tileY + 50);
+const CHARACTER_AVATAR_PREVIEW_SIZE = 192;
+const CHAT_TILE_HEIGHT = 140;
+const CHAT_TILE_WIDTH = 268;
+
+type Size2D = { width: number; height: number };
+const avatarNaturalSizeCache = new Map<string, Size2D>();
+
+const mapObjectPositionFromPreviewToTile = (
+  stored: { x: number; y: number },
+  imageSize: Size2D,
+  tileSize: Size2D
+): { x: number; y: number } => {
+  const fromSize = {
+    width: CHARACTER_AVATAR_PREVIEW_SIZE,
+    height: CHARACTER_AVATAR_PREVIEW_SIZE,
+  };
+
+  const fromScale = Math.max(fromSize.width / imageSize.width, fromSize.height / imageSize.height);
+  const toScale = Math.max(tileSize.width / imageSize.width, tileSize.height / imageSize.height);
+
+  const mapAxis = (
+    storedPercent: number,
+    imageLength: number,
+    fromLength: number,
+    toLength: number
+  ): number => {
+    const fromRendered = imageLength * fromScale;
+    const fromOverflow = Math.max(0, fromRendered - fromLength);
+    const sourceOffset = fromOverflow === 0 ? 0 : ((fromOverflow * clampPercent(storedPercent)) / 100) / fromScale;
+
+    const toRendered = imageLength * toScale;
+    const toOverflow = Math.max(0, toRendered - toLength);
+    if (toOverflow === 0) return 50;
+    const toOffset = sourceOffset * toScale;
+    return clampPercent((toOffset / toOverflow) * 100);
+  };
+
+  return {
+    x: mapAxis(stored.x, imageSize.width, fromSize.width, tileSize.width),
+    y: mapAxis(stored.y, imageSize.height, fromSize.height, tileSize.height),
+  };
+};
+
+const mapTilePositionToPreview = (
+  tilePos: { x: number; y: number },
+  imageSize: Size2D,
+  tileSize: Size2D
+): { x: number; y: number } => {
+  const previewSize = { width: CHARACTER_AVATAR_PREVIEW_SIZE, height: CHARACTER_AVATAR_PREVIEW_SIZE };
+
+  const fromScale = Math.max(tileSize.width / imageSize.width, tileSize.height / imageSize.height);
+  const toScale = Math.max(previewSize.width / imageSize.width, previewSize.height / imageSize.height);
+
+  const mapAxis = (
+    tilePercent: number,
+    imageLength: number,
+    fromLength: number,
+    toLength: number
+  ): number => {
+    const fromRendered = imageLength * fromScale;
+    const fromOverflow = Math.max(0, fromRendered - fromLength);
+    const sourceOffset = fromOverflow === 0 ? 0 : ((fromOverflow * clampPercent(tilePercent)) / 100) / fromScale;
+
+    const toRendered = imageLength * toScale;
+    const toOverflow = Math.max(0, toRendered - toLength);
+    if (toOverflow === 0) return 50;
+    const toOffset = sourceOffset * toScale;
+    return clampPercent((toOffset / toOverflow) * 100);
+  };
+
+  return {
+    x: mapAxis(tilePos.x, imageSize.width, tileSize.width, previewSize.width),
+    y: mapAxis(tilePos.y, imageSize.height, tileSize.height, previewSize.height),
+  };
+};
 const HEX_COLOR_PATTERN = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i;
 
 const normalizeHexColor = (value: string | undefined | null, fallback: string): string => {
@@ -431,6 +504,37 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     width: number;
     height: number;
   } | null>(null);
+  const [avatarNaturalSizes, setAvatarNaturalSizes] = useState<Record<string, Size2D>>({});
+
+  useEffect(() => {
+    const characters = appData.characters;
+    if (!characters?.length) return;
+    let cancelled = false;
+
+    characters.forEach((char) => {
+      const url = char.avatarDataUrl;
+      if (!url) return;
+      const cached = avatarNaturalSizeCache.get(url);
+      if (cached) {
+        setAvatarNaturalSizes(prev => prev[char.id] ? prev : { ...prev, [char.id]: cached });
+        return;
+      }
+      const img = new Image();
+      img.onload = () => {
+        const size = { width: img.naturalWidth || 1, height: img.naturalHeight || 1 };
+        avatarNaturalSizeCache.set(url, size);
+        if (!cancelled) setAvatarNaturalSizes(prev => ({ ...prev, [char.id]: size }));
+      };
+      img.src = url;
+      if (img.complete && img.naturalWidth > 0) {
+        const size = { width: img.naturalWidth, height: img.naturalHeight };
+        avatarNaturalSizeCache.set(url, size);
+        if (!cancelled) setAvatarNaturalSizes(prev => ({ ...prev, [char.id]: size }));
+      }
+    });
+
+    return () => { cancelled = true; };
+  }, [appData.characters]);
 
   // Delete confirmation dialog state
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -3253,11 +3357,14 @@ const updatedChar: SideCharacter = {
   const getTileAvatarPosition = useCallback((char: Character): { x: number; y: number } => {
     const override = tileAvatarPositionOverrides[char.id];
     if (override) return override;
-    return {
+    const stored = {
       x: clampPercent(char.avatarPosition?.x ?? 50),
-      y: storedAvatarYToTileY(char.avatarPosition?.y),
+      y: clampPercent(char.avatarPosition?.y ?? 50),
     };
-  }, [tileAvatarPositionOverrides]);
+    const naturalSize = avatarNaturalSizes[char.id];
+    if (!naturalSize) return stored;
+    return mapObjectPositionFromPreviewToTile(stored, naturalSize, { width: CHAT_TILE_WIDTH, height: CHAT_TILE_HEIGHT });
+  }, [tileAvatarPositionOverrides, avatarNaturalSizes]);
 
   const persistMainCharacterTilePosition = useCallback(async (charId: string, position: { x: number; y: number }) => {
     try {
@@ -3267,10 +3374,10 @@ const updatedChar: SideCharacter = {
       const baseChar = appData.characters.find(c => c.id === charId);
       if (!baseChar) return;
 
-      const storedAvatarPosition = {
-        x: clampPercent(position.x),
-        y: tileYToStoredAvatarY(position.y),
-      };
+      const naturalSize = avatarNaturalSizes[charId];
+      const storedAvatarPosition = naturalSize
+        ? mapTilePositionToPreview(position, naturalSize, { width: CHAT_TILE_WIDTH, height: CHAT_TILE_HEIGHT })
+        : { x: clampPercent(position.x), y: clampPercent(position.y) };
 
       let sessionState = sessionStates.find(s => s.characterId === charId);
       if (!sessionState) {
@@ -3285,7 +3392,7 @@ const updatedChar: SideCharacter = {
     } catch (err) {
       console.error('Failed to persist tile avatar position:', err);
     }
-  }, [appData.characters, conversationId, sessionStates]);
+  }, [appData.characters, conversationId, sessionStates, avatarNaturalSizes]);
 
   const toggleTileRepositionMode = useCallback((char: Character) => {
     setTileDragState(null);
