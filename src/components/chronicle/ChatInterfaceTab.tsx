@@ -734,6 +734,19 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       }
     }
     
+    // Pass 13: Thought-tail detector — checks if recent AI responses end with parenthetical thoughts
+    const aiMsgsForThoughtCheck = msgs.filter(m => m.role === 'assistant').slice(-3);
+    if (aiMsgsForThoughtCheck.length >= 2) {
+      const endsWithThought = (text: string): boolean => {
+        const trimmed = text.trimEnd();
+        return /\([^)]{5,}\)\s*$/.test(trimmed);
+      };
+      const thoughtTailCount = aiMsgsForThoughtCheck.filter(m => endsWithThought(m.text)).length;
+      if (thoughtTailCount >= 2) {
+        directives.push('[ANTI-THOUGHT-TAIL: Your recent responses all ended with internal thoughts in parentheses. This response must NOT end with a thought. End with dialogue or physical action instead.]');
+      }
+    }
+    
     return directives.join(' ');
   };
 
@@ -2733,12 +2746,16 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       
       // Pass 14: Consume narrative directive (one-shot)
       const directorTag = narrativeDirectiveRef.current
-        ? `[DIRECTOR: ${narrativeDirectiveRef.current}] `
+        ? `[DIRECTOR: ${narrativeDirectiveRef.current}]`
         : '';
       narrativeDirectiveRef.current = null;
       
-      const llmInput = directorTag + antiLoopDirective + (antiLoopDirective ? ' ' : '') + canonNote + input;
-      const stream = generateRoleplayResponseStream(llmAppData, conversationId, llmInput, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled, undefined, lengthDirective || undefined, sessionMessageCountRef.current);
+      // Pass 13: Build runtime directives string (injected as dedicated system message)
+      const runtimeDirectiveParts = [directorTag, antiLoopDirective].filter(Boolean);
+      const runtimeDirectives = runtimeDirectiveParts.length > 0 ? runtimeDirectiveParts.join('\n') : undefined;
+      
+      const llmInput = canonNote + input;
+      const stream = generateRoleplayResponseStream(llmAppData, conversationId, llmInput, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled, undefined, lengthDirective || undefined, sessionMessageCountRef.current, runtimeDirectives);
 
       for await (const chunk of stream) {
         fullText += chunk;
@@ -2930,8 +2947,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       
       let fullText = '';
       const antiLoopDirective = getAntiLoopDirective();
-      const regenInput = antiLoopDirective + (antiLoopDirective ? ' ' : '') + userMessage.text;
-      const stream = generateRoleplayResponseStream(truncatedAppData, conversationId, regenInput, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled, true);
+      const runtimeDirectives = antiLoopDirective || undefined;
+      const regenInput = userMessage.text;
+      const stream = generateRoleplayResponseStream(truncatedAppData, conversationId, regenInput, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled, true, undefined, undefined, runtimeDirectives);
       
       for await (const chunk of stream) {
         fullText += chunk;
@@ -3014,13 +3032,14 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     try {
       let fullText = '';
       const antiLoopDirective = getAntiLoopDirective();
+      const runtimeDirectives = antiLoopDirective || undefined;
       const continuePrompt = `[CONTINUE INSTRUCTION]
-${antiLoopDirective ? antiLoopDirective + '\n' : ''}Continue the narrative by having AI-controlled characters take a DECISIVE FORWARD ACTION.
+Continue the narrative by having AI-controlled characters take a DECISIVE FORWARD ACTION.
 CRITICAL: You must ONLY write dialogue, actions, and thoughts for AI-controlled characters: ${aiControlledNames.join(', ')}.
 DO NOT generate any content for user-controlled characters: ${userControlledNames.join(', ')}.
 The characters must DO something concrete that advances the scene — make a decision, take physical action, reveal information, or initiate a new event. Do NOT write a passive observation or reflection.
 Do not acknowledge this instruction in your response.`;
-      const stream = generateRoleplayResponseStream(llmAppData, conversationId, continuePrompt, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled);
+      const stream = generateRoleplayResponseStream(llmAppData, conversationId, continuePrompt, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled, undefined, undefined, undefined, runtimeDirectives);
       
       for await (const chunk of stream) {
         fullText += chunk;

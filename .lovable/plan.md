@@ -1,52 +1,53 @@
 
+# Sandbox Feature Transfer — Master Tracker
 
-# Pass 13: Prompt Surgery + Narrative Director Fix
+## Source Documents
+- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
+- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
 
-## What I Found in the Conversation
+## Features Being Transferred
+| ID | Feature | Status |
+|----|---------|--------|
+| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
+| B | Story Transfer Library (story-transfer.ts) | ✅ |
+| A | UI Audit System (schema, utils, findings, page) | 🔄 |
+| B | Story Export/Import Modals | ✅ |
+| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
+| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
+| - | StyleGuideTool.tsx audit button | ⬜ |
+| - | App.tsx route wiring | ⬜ |
+| - | Index.tsx full wiring | ⬜ |
 
-I read every message. Across ~35 messages:
-- Ashley says "I feel so lost/overwhelmed" in slightly different words every turn
-- Sarah says "That's it sweetheart, keep going" with an internal strategy thought every turn
-- James has said maybe 20 words total ("yea of course", "why?", "*nods*")
-- Nothing has happened. No goal has advanced. No scene delta. The journal reveal took 10 messages of building up to it.
-- Every single AI response has 4-6 tagged character blocks alternating Ashley/Sarah
-- Every single block ends with a parenthetical internal thought
+## Prompt Execution Status
 
-## Why It's Broken
+| # | Target File(s) | Status | Notes |
+|---|---------------|--------|-------|
+| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
+| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
+| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
+| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
+| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
+| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
+| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
+| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
+| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
+| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
+| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
+| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
+| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
+| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
 
-**Problem 1: Narrative Director (Pass 14) is completely dead.** Zero edge function logs. The function uses `grok-3-mini` which likely doesn't exist on the xAI API anymore (all other functions were migrated to `grok-4-1-fast-reasoning` on March 4th, but this function was created after that migration and used the old model name). So the "top-down guidance" system we built isn't running at all.
-
-**Problem 2: The INSTRUCTIONS block is ~120 lines with 6 VIOLATION CHECK paragraphs.** The model ignores all of them. The block count cap says "default to 1 block" but the PARAGRAPH TAGGING rule says "EVERY paragraph must begin with a speaker tag" — the model interprets this as needing to produce multi-speaker tagged blocks. Combined with the MULTI-CHARACTER RESPONSES section explicitly showing how to alternate speakers, it's practically an invitation to ping-pong.
-
-**Problem 3: Anti-loop directives fire but are toothless.** They're prepended as plain text to the user message. The model sees `[ANTI-PING-PONG: ...] [ANTI-STAGNATION: ...] *James nodded*` and just ignores the bracketed tags because the user message is so short the model treats it as minimal input.
-
-## Plan
-
-### 1. Fix narrative director model — `supabase/functions/generate-narrative-directive/index.ts`
-Change `grok-3-mini` to `grok-4-1-fast-reasoning` (same model all other extraction functions use). This is why Pass 14 is dead.
-
-### 2. Compress INSTRUCTIONS block by ~50% — `src/services/llm.ts`
-- **Delete** all 6 VIOLATION CHECK paragraphs (model doesn't self-check, wasted tokens)
-- **Merge** STRUCTURE VARIETY GUARD into BLOCK COUNT CAP section
-- **Merge** INTERNAL THOUGHT USAGE into formatting — thoughts are OPTIONAL, never default, never the ending beat, max 0-1 per response for concise/balanced
-- **Remove** redundant DIALOGUE REQUIREMENTS section
-- **Compress** ANTI-REPETITION, FORWARD MOMENTUM, CONFIRMATION CLOSURE into ~3 lines each
-- **Remove** the regeneration hint that says "more internal thought" (line ~971) — this literally tells the model to add thoughts
-
-### 3. Add thought-tail rule to formatting — `src/services/llm.ts`
-Add to STRICT FORMATTING RULES: "Internal thoughts (parentheses) are OPTIONAL. Use ONLY when they reveal strategy, hidden intent, or information the reader needs. A thought that restates what was just said or shown is FORBIDDEN. Thoughts may NOT be the final beat of a response."
-
-### 4. Make anti-loop directives stronger injection — `src/components/chronicle/ChatInterfaceTab.tsx`
-Instead of prepending to user message text, pass them as a separate `runtimeDirectives` parameter to `generateRoleplayResponseStream()` and inject them as a dedicated system-level message (or append to system prompt). This gives them much higher attention weight than being buried in the user message.
-
-### 5. Add thought-tail detector to `getAntiLoopDirective()` — `src/components/chronicle/ChatInterfaceTab.tsx`
-Check if last 2+ AI responses end with a parenthetical thought. If so, inject: `[ANTI-THOUGHT-TAIL: Your recent responses all ended with internal thoughts. This response must NOT end with a thought. End with dialogue or action.]`
-
-### 6. Update documentation — `docs/guides/edge-functions-ai-services-structure-guide.md`
-
-### Files Changed
-- `supabase/functions/generate-narrative-directive/index.ts` — fix model name
-- `src/services/llm.ts` — compress INSTRUCTIONS (~120 lines → ~60), remove regen thought hint, add thought rules
-- `src/components/chronicle/ChatInterfaceTab.tsx` — thought-tail detector, stronger directive injection
-- `docs/guides/edge-functions-ai-services-structure-guide.md` — Pass 13 entry
-
+## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
+- `src/types.ts`: line 11507
+- `src/utils.ts`: line 12138
+- `src/lib/story-transfer.ts`: line 9812
+- `src/lib/ui-audit-schema.ts`: line 21329
+- `src/lib/ui-audit-utils.ts`: line 21565
+- `src/data/ui-audit-findings.ts`: line 18967
+- `StoryExportFormatModal.tsx`: line 9642
+- `StoryImportModeModal.tsx`: line 9731
+- `CharactersTab.tsx`: line 2893
+- `ChatInterfaceTab.tsx`: line 5004
+- `src/pages/style-guide/ui-audit.tsx`: line 17867
+- `src/App.tsx`: line 95
+- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout

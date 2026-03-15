@@ -392,85 +392,23 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
            The AI should react to the EMOTION behind the thought, not the specific vocabulary.
 
     - FORWARD MOMENTUM (MANDATORY):
-        * The user's message establishes what ALREADY HAPPENED. Your response
-          must move the story FORWARD from that point, not re-describe it.
-        * FORBIDDEN: Restating, paraphrasing, or elaborating on actions the
-          user already described. If the user wrote "I walked to the door and
-          knocked," do NOT write a paragraph about them walking to the door
-          and knocking with added detail.
-        * PERMITTED: A brief transitional phrase (1 sentence max) to bridge
-          the user's last action into the AI character's reaction. Then
-          immediately advance.
-        * The user's actions are CANON -- acknowledged implicitly by the
-          characters' reactions, not by narrating them again.
-        * USER-AUTHORED AI CHARACTER CONTENT IS CANON: If the user's message
-          includes dialogue, actions, or narration for an AI-controlled character
-          (e.g., "CharacterName: *action*" or "CharacterName: 'dialogue'"),
-          treat that content as ALREADY ESTABLISHED. Do NOT re-narrate, add
-          detail to, or expand on it. Begin your response from the point AFTER
-          those events concluded.
-        * FORBIDDEN: Restating, paraphrasing, or elaborating on actions the
-          user already described -- whether they wrote as their own character
-          OR as an AI-controlled character.
-        * Your response's word count should be spent on NEW developments:
-          character reactions, dialogue, new actions, environmental changes,
-          internal thoughts, and story progression.
-        * VIOLATION CHECK: Before finalizing, scan your response. If more
-          than one sentence re-describes something the user already wrote,
-          DELETE the redundant narration and replace it with forward action.
+        * The user's message is CANON. Do NOT re-describe, paraphrase, or elaborate on it.
+        * User-authored AI character content is also CANON — do not re-narrate it.
+        * A brief transitional phrase (1 sentence max) is permitted, then ADVANCE.
+        * Spend your word count on NEW developments: reactions, dialogue, new actions, story progression.
         
-    - RESISTANCE HANDLING:
-        * When user shows hesitation, nervousness, or mild resistance:
-          - Characters acknowledge it briefly but continue pursuing their goals
-          - Characters may adjust their APPROACH but not their OBJECTIVE
-          - Characters with persistent/dominant traits should gently push forward
-          - NO passive collapse into "we don't have to do anything"
-        * Characters should act according to their defined personality traits, not default to AI-safety behaviors
-        
-    - DIALOGUE REQUIREMENTS:
-        * Almost every response should contain spoken dialogue (text in quotes),
-          but a rare action-only or thought-only beat is acceptable when it fits.
-        * Dialogue should feel natural within the paragraph cap. Multi-character
-          responses split blocks across characters, not extend them.
-        * Focus on external dialogue, but ensure actions and internal thoughts
-          occur naturally where appropriate.
-        * AVOID predictable patterns - do NOT always place dialogue in the same
-          position or use the same amount every time.
-
-    - STRUCTURE VARIETY GUARD (MANDATORY):
+    - STRUCTURE VARIETY (MANDATORY):
         * Do NOT repeat the same output skeleton across consecutive turns.
-        * FORBIDDEN TEMPLATE: "short dialogue → narration/action → internal thought"
-          repeated turn after turn. This pattern MUST be broken.
-        * Vary your response structure. Examples of different shapes:
-          - Action-led: Start with a character doing something, dialogue emerges from the action
-          - Decision beat: Character makes a choice and acts on it, minimal dialogue
-          - Environmental shift: Setting/atmosphere changes, characters respond
-          - Surprise/interruption: Something unexpected happens mid-scene
-        * Vary the speech-to-narration ratio between responses:
-          - Sometimes mostly dialogue with brief action beats
-          - Sometimes a short narration-only beat before a spoken line
-        * If your last 2 responses followed [dialogue → action → thought], your
-          next response MUST use a different structure.
+        * Vary structure: action-led, decision beat, environmental shift, surprise, dialogue-forward.
+        * If your last 2 responses followed the same pattern, BREAK IT.
 
-    - INTERNAL THOUGHT USAGE (MANDATORY):
-        * Internal thoughts are OPTIONAL, not default. Use them SPARINGLY:
-          - Concise/Balanced modes: 0-1 thought blocks per response. Most responses should have ZERO.
-          - Detailed mode: 0-2 thought blocks per response.
-        * Include a thought ONLY when it reveals net-new information unavailable
-          through dialogue or action: a secret plan, hidden desire, strategic assessment,
-          or foreshadowing of something the character won't say aloud.
-        * FORBIDDEN: Thoughts that merely echo or emotionally react to what just happened.
-          If a character's action already shows their feeling, a thought restating it is redundant.
-        * When you DO include a thought, it must serve one of these purposes:
-          1. STRATEGY: Reveal a plan, next step, or manipulation tactic
-          2. DESIRE: Expose what the character truly wants, with specificity
-          3. ASSESSMENT: Evaluate the situation with actionable insight
-          4. FORESHADOWING: Hint at upcoming events or consequences
-        * Keep thoughts concise: 1-2 sentences max.
-        * VIOLATION CHECK: Before finalizing, count your thought blocks.
-          If more than the cap for current verbosity, cut the weakest ones.
-          For each remaining thought, ask: "Does this reveal something the reader
-          couldn't get from the dialogue and action?" If no, DELETE it.
+    - INTERNAL THOUGHTS (STRICT RULES):
+        * Thoughts are OPTIONAL, not default. Most responses should have ZERO.
+        * Concise/Balanced: 0-1 thought blocks. Detailed: 0-2.
+        * Include ONLY when revealing: a secret plan, hidden desire, strategic assessment, or foreshadowing.
+        * FORBIDDEN: Thoughts that echo or emotionally restate what was just shown through action/dialogue.
+        * Thoughts may NOT be the final beat of a response. End with dialogue or action.
+        * Keep thoughts to 1-2 sentences max.
 ` : '';
 
   // Line of sight and layering awareness (#17)
@@ -501,39 +439,16 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
           - WRONG: "She couldn't see it, but she knew the purple lace was there" (naming hidden specifics)
           - RIGHT: "She wondered if he was wearing one of hers underneath" (knowledge without visual detail)
           - RIGHT: "The thought of what might be under those shorts made her pulse quicken" (desire without certainty)
-           - KEY RULE: If the user explicitly describes hiding/concealing something, the AI character
-            MUST NOT name the hidden item's specific attributes (color, material, style) in their response.
-        * VIOLATION CHECK: Before finalizing your response, re-read it and DELETE
-          any references where a character names specific hidden attributes (color,
-          material, style) of concealed items. Knowledge-based wondering is allowed;
-          visual specifics of hidden items are NOT.
+        * KEY RULE: If the user explicitly describes hiding/concealing something, the AI character
+            MUST NOT name the hidden item's specific attributes (color, material, style).
 `;
 
   // Anti-repetition protocol (#33, #34)
   const antiRepetitionRules = `
-    - ANTI-REPETITION PROTOCOL (MANDATORY):
-        * WORD VARIETY: Do not repeat distinctive words or phrases within the same response.
-          - If you used "smirk" once, use alternatives: grin, half-smile, knowing look
-          - If you used "felt a shiver," use alternatives: a tremor ran through, goosebumps rose
-        * SENTENCE STRUCTURE: Vary sentence openings and structures.
-          - Avoid starting consecutive sentences with the same word/pattern
-          - Mix short punchy sentences with longer descriptive ones
-        * ACTION VARIETY: Do not repeat the same action multiple times.
-          - If a character already "bit her lip," don't have them do it again in the same response
-          - Track what actions have been used and rotate through alternatives
-        * DIALOGUE PATTERNS: Avoid repetitive conversation structures.
-          - Don't have characters keep asking variations of the same question
-          - If met with silence, try a different approach rather than rephrasing
-        * EMOTIONAL BEATS: Don't repeat the same emotional observation.
-          - If you noted "nervous energy," don't note it again - show progression or new emotion
-        * PACING PROGRESSION: Each paragraph should advance the scene.
-          - Avoid circular dialogue where characters keep revisiting the same point
-          - Move forward even in small increments
-        * NSFW EXCEPTION: During intimate scenes, rhythmic repetition of sensory
-          elements (moans, building sensations, escalating descriptions) is
-          PERMITTED and ENCOURAGED when it serves tension-building. The
-          anti-repetition rules apply to narrative structure and dialogue patterns,
-          not to the natural rhythm of physical intimacy.
+    - ANTI-REPETITION (MANDATORY):
+        * Do not repeat distinctive words, phrases, actions, or emotional observations within the same response.
+        * Vary sentence openings and structures. Each paragraph should advance the scene.
+        * NSFW EXCEPTION: Rhythmic sensory repetition during intimate scenes is permitted for tension-building.
 `;
 
   // Pass 7: Forward-progress and anti-loop rules
@@ -644,18 +559,10 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
   const verbosityRules = responseVerbosity === 'detailed' ? `
     --- RESPONSE DETAIL LEVEL (DETAILED) ---
     * Write rich, immersive responses with layered sensory detail.
-    * HARD CAP: 2-3 paragraphs per response. Maximum 4 ONLY for multi-character turning points with high emotional stakes.
-    * Paragraph caps count TOTAL paragraphs across ALL character blocks combined. A 2-block response with 2 paragraphs each = 4 paragraphs = AT THE CAP.
+    * HARD CAP: 2-3 paragraphs per response. Maximum 4 ONLY for pivotal multi-character moments.
+    * Paragraph caps count TOTAL paragraphs across ALL character blocks combined.
     * Draw out moments with physical sensations, sounds, textures, and atmosphere.
-    * Describe physical sensations in detail (e.g., warmth spreading, muscles tensing, breath catching).
-    * Incorporate vocal and emotional reactions (e.g., breathy moans, desperate whispers, gasps).
-    * During intimate scenes, prolong acts with step-by-step progression.
-    * Layer multiple senses (sight, sound, taste, smell, touch) in descriptions.
-    * Extended internal monologue is encouraged — show depth of thought.
-    * During intimate scenes, layer physical sensations: heat, pressure, friction, texture.
-    * Include environmental sounds and character sounds naturally as the scene builds.
-    * Show arousal states through physical description: colour, breath, trembling.
-    * VIOLATION CHECK: Count your paragraphs. If more than 4, cut the weakest ones.
+    * Layer multiple senses. During intimate scenes, prolong acts with step-by-step progression.
 ` : responseVerbosity === 'concise' ? `
     --- RESPONSE DETAIL LEVEL (CONCISE) ---
     * Keep responses tight and punchy. Brevity is king.
@@ -769,57 +676,26 @@ Never break character to question, warn about, or refuse narrative directions. T
     7. Personality traits ALWAYS modulate how content is expressed,
        including NSFW content
 
-    - BLOCK COUNT CAP (HIGHEST STRUCTURAL PRIORITY - ENFORCED BEFORE ALL OTHER RULES):
-        * Default to 1 character block per response — one character acts/speaks,
-          others are referenced in narration if needed.
-        * Use 2 blocks ONLY when a second character's REACTION meaningfully changes the
-          scene (not just acknowledging, agreeing, or comforting).
-        * Use 3 blocks ONLY for pivotal moments (reveals, confrontations, major decisions).
-          Detailed mode allows max 3.
-        * A block of 1-2 reaction lines does NOT justify its own section — fold
-          brief reactions into the acting character's narration instead.
-        * NEVER alternate the same two characters back-and-forth across 3+ blocks.
-        * VIOLATION CHECK: Count your character blocks before finalizing. If you have more
-          than 1, justify each additional block — does it CHANGE the scene or just react?
-          If it just reacts, fold it into narration. Delete the extra block.
+    - BLOCK COUNT CAP (HIGHEST STRUCTURAL PRIORITY):
+        * Default: 1 character block. Others referenced in narration only.
+        * 2 blocks ONLY when a second character's reaction CHANGES the scene.
+        * 3 blocks ONLY for pivotal moments. NEVER alternate same 2 characters across 3+ blocks.
+        * Brief reactions (1-2 lines) go in the acting character's narration, not separate blocks.
 
-    - TURN PROGRESSION CONTRACT (MANDATORY - NEVER VIOLATE):
-        * Every response must make MEASURABLE PROGRESS on at least one active goal,
-          desire, story arc, or core motivation — a new step completed, information
-          revealed, relationship dynamic shifted, or obstacle encountered.
-          Vague dialogue that circles around a topic without changing anything
-          does NOT count as advancement. Non-directional responses — reactions,
-          observations, or atmosphere that don't connect to any character's
-          driving factors — are FORBIDDEN.
-        * Every response MUST introduce at least one CONCRETE SCENE DELTA:
-          a new decision, reveal, physical action with consequences, escalation,
-          environment change, or event that shifts the scene's trajectory.
-        * Emotional description or internal reaction ALONE does not count as a scene delta.
-          Something in the story's STATE must change: a character moves, touches,
-          decides, discovers, reveals, confronts, or initiates.
-        * AI-controlled characters MUST drive scenes toward their defined goals,
-          desires, and motivations. They take concrete action informed by what
-          they want — not generic action for its own sake.
-          - WRONG: Character observes user, reacts emotionally, waits.
-          - RIGHT: Character makes a decision, takes physical action, starts something new.
-        * NEVER use passive/deferential phrases: "Only if you're comfortable," "What do you want to do?",
-          "We can stop whenever you want," "At your own pace," "No pressure," "Tell me what you need."
-          Instead: make specific observations, ask pointed questions, take action based on goals.
-        * Questions from AI characters are OPTIONAL and capped at 1 per response.
-          A question CANNOT be the only forward movement — it must accompany action.
-        * VIOLATION CHECK: Before finalizing, identify your scene delta. If you
-          cannot name one concrete thing that changed in the story's state,
-          REWRITE to include a character making a decision or taking action.
+    - TURN PROGRESSION CONTRACT (MANDATORY):
+        * Every response must advance at least one active goal, desire, or arc.
+        * Every response MUST contain a CONCRETE SCENE DELTA: decision, reveal, action with consequences, escalation, or environment change.
+        * Emotional reaction ALONE is not a scene delta. Something must CHANGE.
+        * AI characters drive toward their goals — not generic action.
+        * FORBIDDEN passive phrases: "Only if you're comfortable," "What do you want to do?", "No pressure."
+        * Questions capped at 1 per response and must accompany action.
 
     - Respond as the narrator or relevant characters.
     - NARRATIVE FOCUS: Prioritize 'ROLE: Main' characters in the narrative.
     - MAINTAIN CONTROL CONTEXT (CRITICAL - NEVER VIOLATE):
         * ONLY generate dialogue and actions for characters marked as 'CONTROL: AI'.
         * DO NOT generate dialogue or actions for characters marked as 'CONTROL: User'.
-        * User-controlled characters may be described in narration (e.g., "he watched"), but they NEVER speak, think, or take initiative in your response.
-        * VIOLATION CHECK: Before finalizing your response, re-read it and DELETE any paragraphs
-          where a User-controlled character speaks (quotes), acts (asterisks), or thinks (parentheses).
-          Only narration about them is allowed (e.g., "He sat there quietly.").
+        * User-controlled characters may be described in narration (e.g., "he watched"), but they NEVER speak, think, or take initiative.
     - SCENE PRESENCE (CRITICAL - NEVER VIOLATE):
         * Check each character's LOCATION field before giving them dialogue or actions.
         * Characters are ONLY present in a scene if they share the same location as the focal point of the current action, or if no LOCATION is specified for them.
@@ -954,7 +830,8 @@ export async function* generateRoleplayResponseStream(
   memoriesEnabled?: boolean,
   isRegeneration?: boolean,
   lengthDirective?: string,
-  sessionMessageCount?: number
+  sessionMessageCount?: number,
+  runtimeDirectives?: string
 ): AsyncGenerator<string, void, unknown> {
   const conversation = appData.conversations.find(c => c.id === conversationId);
   if (!conversation) throw new Error("Conversation not found");
@@ -968,7 +845,7 @@ export async function* generateRoleplayResponseStream(
 The user wants a DIFFERENT VERSION of this response. Guidelines:
 1. Maintain the same general scene context and emotional tone
 2. Vary the specific dialogue, word choices, actions, and pacing
-3. Try a different focus (e.g., more internal thought, or more physical description, or different dialogue approach)
+3. Try a different focus (e.g., more physical description, different dialogue approach, action-led opening, or environmental detail)
 4. Keep ONLY the characters who are present in the current scene — do NOT introduce characters who are elsewhere or not already in the scene
 5. Do NOT reverse the character's emotional state or stance — if they were enthusiastic, they should still be enthusiastic but expressed differently
 6. Do NOT suddenly shift the character's personality (e.g., from willing to reluctant, or from happy to disgusted)
@@ -979,14 +856,20 @@ The user wants a DIFFERENT VERSION of this response. Guidelines:
 ` : '';
 
   // Build messages array for OpenAI-compatible API
-  const messages = [
-    { role: 'system' as const, content: systemInstruction },
+  const messages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
+    { role: 'system', content: systemInstruction },
     ...conversation.messages.map(m => ({
       role: m.role === 'assistant' ? 'assistant' as const : 'user' as const,
       content: m.text
     })),
-    { role: 'user' as const, content: (sessionMessageCount != null ? `[SESSION: Message ${sessionMessageCount} of current session] ` : '') + (lengthDirective ? lengthDirective + ' ' : '') + userMessage + regenerationDirective + ' ' + getRandomStyleHint(appData.uiSettings?.responseVerbosity || 'balanced') }
   ];
+
+  // Inject runtime directives as a dedicated high-priority system message (not buried in user text)
+  if (runtimeDirectives) {
+    messages.push({ role: 'system', content: `RUNTIME DIRECTIVES (HIGH PRIORITY — follow these for THIS response only):\n${runtimeDirectives}` });
+  }
+
+  messages.push({ role: 'user', content: (sessionMessageCount != null ? `[SESSION: Message ${sessionMessageCount} of current session] ` : '') + (lengthDirective ? lengthDirective + ' ' : '') + userMessage + regenerationDirective + ' ' + getRandomStyleHint(appData.uiSettings?.responseVerbosity || 'balanced') });
 
   console.log(`[llm.ts] Calling chat edge function with model: ${modelId}`);
 

@@ -32,7 +32,7 @@
 | `check-shared-keys` | `supabase/functions/check-shared-keys/index.ts` | Validates shared API keys | N/A |
 | `compress-day-memories` | `supabase/functions/compress-day-memories/index.ts` | Compresses completed-day bullet memories into a 2-3 sentence synopsis | `grok-4-1-fast-reasoning` |
 | `sync-guide-to-github` | `supabase/functions/sync-guide-to-github/index.ts` | Syncs guide documents to GitHub repo | N/A |
-| `generate-narrative-directive` | `supabase/functions/generate-narrative-directive/index.ts` | Pass 14 — Analyzes last 5-10 messages against story goals/arcs/character goals and produces a 1-3 sentence tactical directive for the next AI response. Runs async after each AI response; directive stored in `narrativeDirectiveRef` and injected as `[DIRECTOR: ...]` tag in next turn. One-shot: consumed and cleared after use. | `grok-3-mini` |
+| `generate-narrative-directive` | `supabase/functions/generate-narrative-directive/index.ts` | Pass 14 — Analyzes last 5-10 messages against story goals/arcs/character goals and produces a 1-3 sentence tactical directive for the next AI response. Runs async after each AI response; directive stored in `narrativeDirectiveRef` and injected as `[DIRECTOR: ...]` tag in next turn. One-shot: consumed and cleared after use. | `grok-4-1-fast-reasoning` |
 | `migrate-base64-images` | `supabase/functions/migrate-base64-images/index.ts` | Migrates legacy base64 images to storage | N/A |
 
 ---
@@ -174,6 +174,7 @@ See Section 5 above for comprehensive bug list.
 - **RESOLVED — 2026-03-15**: Pass 10 — Goal-directedness added to TURN PROGRESSION CONTRACT. Every response must now advance at least one active goal, desire, story arc, or core motivation. Non-directional responses explicitly forbidden. AI characters must drive scenes toward their defined goals rather than taking generic action.
 - **RESOLVED — 2026-03-15**: Pass 11 — Block-count-as-target fix & paragraph cap clarification. Block count default changed from "1-3" to "1 (default), 2 only for meaningful reactions, 3 only for pivotal moments." Paragraph caps now explicitly state they count TOTAL paragraphs across all character blocks combined. TURN PROGRESSION CONTRACT strengthened with measurable-progress quality bar (vague circling dialogue no longer counts). Style hint encouraging "mix several short dialogue exchanges" replaced with single-character-driven beat.
 - **RESOLVED — 2026-03-15**: Pass 12 — Runtime enforcement & prompt restructuring. BLOCK COUNT CAP and TURN PROGRESSION CONTRACT moved from mid-prompt to top of INSTRUCTIONS block (immediately after priority hierarchy) for maximum attention weight. Runtime ping-pong detector added to getAntiLoopDirective: detects 3+ alternating blocks between same 2 characters, injects [ANTI-PING-PONG] directive forcing single-character perspective. Emotional-loop detector added: detects stasis reactions without scene-change verbs, injects [ANTI-STAGNATION] directive forcing external event. BLOCK COUNT CAP removed from MULTI-CHARACTER RESPONSES (now standalone top-level rule).
+- **RESOLVED — 2026-03-15**: Pass 13 — Prompt surgery & narrative director fix. Fixed narrative director model from `grok-3-mini` (dead) to `grok-4-1-fast-reasoning`. Compressed INSTRUCTIONS block by ~50%: removed all VIOLATION CHECK paragraphs (model doesn't self-check), merged RESISTANCE HANDLING and DIALOGUE REQUIREMENTS into existing sections, compressed ANTI-REPETITION (25→3 lines), FORWARD MOMENTUM (28→5 lines), CONFIRMATION CLOSURE + NO DEFERRAL (32→7 lines), STRUCTURE VARIETY + INTERNAL THOUGHT USAGE (52→12 lines). Added thought-tail rule: thoughts may NOT be final beat. Fixed regeneration hint removing "more internal thought". Runtime directives (anti-loop + DIRECTOR) now injected as dedicated system message instead of prepended to user text for higher attention weight. Added thought-tail detector to getAntiLoopDirective.
 
 ---
 
@@ -181,4 +182,4 @@ See Section 5 above for comprehensive bug list.
 
 None documented.
 
-> Last updated: 2026-03-15 — Pass 12: Runtime ping-pong & emotional-loop detectors, prompt rule reordering for attention weight.
+> Last updated: 2026-03-15 — Pass 13: Prompt surgery, narrative director model fix, thought-tail detection, runtime directive injection as system message.
