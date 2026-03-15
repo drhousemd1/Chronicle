@@ -129,6 +129,7 @@ The system prompt in `getSystemInstruction()` is constructed in this order:
 | #14 | Detailed mode verbosity uncapped — 7-9 paragraph responses | `src/services/llm.ts` | RESOLVED — 2026-03-07 — Hard paragraph caps: concise 1-2, balanced 1-3, detailed 2-3 (max 4 exceptional). Verbosity-based max_tokens: concise=1024, balanced=2048, detailed=3072 |
 | #15 | 403 retry directive encouraged evasive/deferral output | `supabase/functions/chat/index.ts` | RESOLVED — 2026-03-07 — Replaced "deflect/redirect/change subject" with "concrete immediate action pivot," explicitly forbids postponement language |
 | #16 | Repetitive "quote→action→thought" triad pattern and passive/reactive AI output | `src/services/llm.ts`, `src/components/chronicle/ChatInterfaceTab.tsx` | RESOLVED — 2026-03-15 — Added TURN PROGRESSION CONTRACT (mandatory scene delta + proactive move per turn), STRUCTURE VARIETY GUARD (forbids repeating same output skeleton), thought frequency caps (0-1 for concise/balanced, 0-2 for detailed), runtime structural repetition and low-initiative detectors in getAntiLoopDirective, diversified style hints with action-led/decision-driven variants, continue prompt rewritten to demand decisive forward action |
+| #17 | Multi-character ping-pong — AI generates 8+ alternating character blocks in a single response | `src/services/llm.ts` | RESOLVED — 2026-03-15 — Added block count cap (1-3 blocks, max 4 detailed) to MULTI-CHARACTER RESPONSES. Removed "rapid exchanges" from DIALOGUE REQUIREMENTS and STRUCTURE VARIETY GUARD. Merged PROACTIVE NARRATIVE DRIVE into TURN PROGRESSION CONTRACT, folded RESPONSE SHAPE VARIATION into STRUCTURE VARIETY GUARD, removed duplicate NO REHASH. Removed ping-pong-encouraging style hints. |
 
 
 ### Avatar Generation
@@ -167,6 +168,7 @@ See Section 5 above for comprehensive bug list.
 - **RESOLVED — 2026-03-04**: CORS hardening — all 12 Edge Functions now use dynamic origin checking via `getCorsHeaders(req)` against an `ALLOWED_ORIGINS` whitelist instead of wildcard `'*'`.
 - **RESOLVED — 2026-03-07**: Pass 7 — Dialogue momentum & loop elimination. Confirmation Closure Protocol, No Deferral Loop, No Rehash rules added to system prompt. Priority hierarchy hardened (forward-momentum = #2 priority, never overridden). Runtime anti-loop micro-directives in ChatInterfaceTab. Regeneration context duplication fixed. Verbosity hard-capped with paragraph limits and verbosity-based max_tokens. 403 retry directive rewritten to require concrete action instead of evasive deflection.
 - **RESOLVED — 2026-03-15**: Pass 8 — Anti-stagnation & initiative. TURN PROGRESSION CONTRACT mandates concrete scene delta + proactive AI move each turn. STRUCTURE VARIETY GUARD forbids repeating same output skeleton. Internal thoughts made optional with frequency caps. Runtime detectors added for structural triad repetition and low-initiative drift. Style hints diversified with action-led and decision-driven variants. Continue prompt rewritten to demand decisive forward action.
+- **RESOLVED — 2026-03-15**: Pass 9 — Multi-character block flooding & prompt declutter. Block count cap added to MULTI-CHARACTER RESPONSES (1-3 blocks, max 4 detailed). PROACTIVE NARRATIVE DRIVE merged into TURN PROGRESSION CONTRACT. RESPONSE SHAPE VARIATION merged into STRUCTURE VARIETY GUARD. Duplicate NO REHASH removed (kept in FORWARD MOMENTUM). "Dialogue-heavy: rapid exchanges" removed from valid shapes. Ping-pong-encouraging style hints replaced.
 
 ---
 
@@ -174,4 +176,4 @@ See Section 5 above for comprehensive bug list.
 
 None documented.
 
-> Last updated: 2026-03-07 — Pass 7: Dialogue momentum & loop elimination (bugs #12-#15).
+> Last updated: 2026-03-15 — Pass 9: Multi-character block flooding & prompt declutter (bug #17).
