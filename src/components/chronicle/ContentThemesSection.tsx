@@ -313,54 +313,58 @@ export const ContentThemesSection: React.FC<ContentThemesSectionProps> = ({
         </div>
         
         {/* Content */}
-        <div className="p-6 space-y-6">
-          {/* Tags error */}
-          {tagsError && <p className="text-sm text-red-500 font-medium">{tagsError}</p>}
-          
-          {/* Character Types */}
-          <CategorySelector
-            title="Character Types"
-            prebuiltOptions={CHARACTER_TYPES}
-            selected={themes.characterTypes}
-            onChange={v => updateField('characterTypes', v)}
-          />
-          
-          {/* Story Type */}
-          {storyTypeError && <p className="text-sm text-red-500 font-medium">{storyTypeError}</p>}
-          <StoryTypeSelector
-            selected={themes.storyType}
-            onChange={v => updateField('storyType', v)}
-          />
-          
-          {/* Genre */}
-          <CategorySelector
-            title="Genre"
-            prebuiltOptions={GENRES}
-            selected={themes.genres}
-            onChange={v => updateField('genres', v)}
-          />
-          
-          {/* Origin */}
-          <CategorySelector
-            title="Origin"
-            prebuiltOptions={ORIGINS}
-            selected={themes.origin}
-            onChange={v => updateField('origin', v)}
-          />
-          
-          {/* Trigger Warnings */}
-          <CategorySelector
-            title="Trigger Warnings"
-            prebuiltOptions={TRIGGER_WARNINGS}
-            selected={themes.triggerWarnings}
-            onChange={v => updateField('triggerWarnings', v)}
-          />
-          
-          {/* Custom Tags */}
-          <CustomTagsSection
-            tags={themes.customTags}
-            onChange={v => updateField('customTags', v)}
-          />
+        <div className="p-5">
+          <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
+            <div className="space-y-6">
+              {/* Tags error */}
+              {tagsError && <p className="text-sm text-red-500 font-medium">{tagsError}</p>}
+
+              {/* Character Types */}
+              <CategorySelector
+                title="Character Types"
+                prebuiltOptions={CHARACTER_TYPES}
+                selected={themes.characterTypes}
+                onChange={v => updateField('characterTypes', v)}
+              />
+
+              {/* Story Type */}
+              {storyTypeError && <p className="text-sm text-red-500 font-medium">{storyTypeError}</p>}
+              <StoryTypeSelector
+                selected={themes.storyType}
+                onChange={v => updateField('storyType', v)}
+              />
+
+              {/* Genre */}
+              <CategorySelector
+                title="Genre"
+                prebuiltOptions={GENRES}
+                selected={themes.genres}
+                onChange={v => updateField('genres', v)}
+              />
+
+              {/* Origin */}
+              <CategorySelector
+                title="Origin"
+                prebuiltOptions={ORIGINS}
+                selected={themes.origin}
+                onChange={v => updateField('origin', v)}
+              />
+
+              {/* Trigger Warnings */}
+              <CategorySelector
+                title="Trigger Warnings"
+                prebuiltOptions={TRIGGER_WARNINGS}
+                selected={themes.triggerWarnings}
+                onChange={v => updateField('triggerWarnings', v)}
+              />
+
+              {/* Custom Tags */}
+              <CustomTagsSection
+                tags={themes.customTags}
+                onChange={v => updateField('customTags', v)}
+              />
+            </div>
+          </div>
         </div>
       </div>
     </section>
