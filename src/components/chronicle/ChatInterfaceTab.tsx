@@ -746,7 +746,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       // Build story goals summary
       const storyGoals = (effectiveWorldCore.storyGoals || []).map((g: StoryGoal) => {
         // Find current pending step across steps and branches
-        const allSteps: ArcStep[] = [
+        const allSteps: Array<{ status?: string; description: string }> = [
           ...(g.steps || []),
           ...(g.branches?.fail?.steps || []),
           ...(g.branches?.success?.steps || []),
