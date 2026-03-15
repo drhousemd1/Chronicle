@@ -64,6 +64,7 @@ interface CharactersTabProps {
   onDelete: (id: string) => void;
   onAddSection?: (type?: CharacterTraitSectionType) => void;
   onAddNew?: () => void;
+  scenarioId?: string | null;
 }
 
 const BUILT_IN_TRAIT_SECTIONS: Array<{ key: string; label: string }> = [

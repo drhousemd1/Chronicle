@@ -1915,3 +1915,17 @@ export async function updateStoryUiSettings(
 ): Promise<void> {
   await supabase.from('stories').update({ ui_settings: uiSettings }).eq('id', scenarioId);
 }
+
+export async function updateNavButtonImages(
+  scenarioId: string,
+  navButtonImages: Record<string, any>
+): Promise<void> {
+  await supabase.from('stories').update({ nav_button_images: navButtonImages } as any).eq('id', scenarioId);
+}
+
+export async function loadNavButtonImages(
+  scenarioId: string
+): Promise<Record<string, any>> {
+  const { data } = await supabase.from('stories').select('nav_button_images').eq('id', scenarioId).single();
+  return (data as any)?.nav_button_images || {};
+}
