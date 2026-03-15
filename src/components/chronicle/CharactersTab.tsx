@@ -1163,7 +1163,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
   return (
     <div className="flex flex-1 h-full overflow-hidden">
       <aside
-        className="flex-shrink-0 bg-[#2a2a2f] border-r border-[#4a5f7f]/80 flex flex-col h-full rounded-none shadow-[0_12px_32px_-2px_rgba(0,0,0,0.55),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]"
+        className="flex-shrink-0 bg-[#2a2a2f] flex flex-col h-full rounded-none shadow-[0_12px_32px_-2px_rgba(0,0,0,0.55),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]"
         style={{ width: CHARACTER_NAV_SIDEBAR_WIDTH }}
       >
         <div className="relative overflow-hidden bg-[linear-gradient(180deg,#5a7292_0%,#4a5f7f_100%)] shadow-[0_6px_16px_rgba(0,0,0,0.35)]">
