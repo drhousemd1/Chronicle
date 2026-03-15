@@ -299,7 +299,7 @@ export const PersonalitySection: React.FC<PersonalitySectionProps> = ({
                     type="button"
                     onClick={() => onChange({ ...personality, splitMode: true })}
                     className={cn(
-                      "px-3.5 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg border-none cursor-pointer transition-all",
+                      "px-3.5 py-1.5 text-[10px] font-black rounded-lg border-none cursor-pointer transition-all",
                       personality.splitMode
                         ? "bg-[#3b82f6] text-white shadow-[0_2px_8px_rgba(59,130,246,0.35)]"
                         : "bg-[#3f3f46] text-[#a1a1aa] hover:text-zinc-300"
