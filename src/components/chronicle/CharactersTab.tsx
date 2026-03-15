@@ -499,6 +499,7 @@ const HardcodedRow: React.FC<{
       </div>
       {onEnhance && (
         <button
+          tabIndex={-1}
           type="button"
           onClick={onEnhance}
           disabled={isEnhancing}
