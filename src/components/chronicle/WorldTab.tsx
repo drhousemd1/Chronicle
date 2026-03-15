@@ -598,22 +598,20 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   const noAICharacterError = publishErrors.noAICharacter;
   const noUserCharacterError = publishErrors.noUserCharacter;
 
-  const AddCharacterPlaceholder: React.FC<{ label: string; sublabel: string; hasError?: boolean }> = ({ label, sublabel, hasError }) => (
-    <button 
+  const AddCharacterPlaceholder: React.FC<{ label: string; hasError?: boolean }> = ({ label, hasError }) => (
+    <button
       type="button"
       onClick={() => setIsCharacterCreationOpen(true)}
       className={cn(
-        "group/add w-full flex items-center gap-4 p-3 rounded-2xl transition-all duration-300 bg-[#3a3a3f]/40 hover:bg-[#3a3a3f]/60 cursor-pointer shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]",
-        hasError && "border border-red-500 ring-2 ring-red-500"
+        "w-full flex items-center justify-center gap-2 py-2.5 rounded-xl",
+        "bg-[#1c1c1f] hover:bg-[#252529] transition-all",
+        "text-blue-500 text-sm font-semibold",
+        "border border-white/5",
+        hasError && "border-red-500 ring-2 ring-red-500"
       )}
     >
-      <div className="w-14 h-14 shrink-0 rounded-xl bg-[#1c1c1f] border-t border-black/35 flex items-center justify-center text-zinc-500 transition-all duration-300 group-hover/add:bg-[#252529] group-hover/add:text-zinc-300">
-         <span className="text-2xl font-light">+</span>
-      </div>
-      <div className="text-left">
-        <div className="text-xs font-bold text-zinc-400 group-hover/add:text-zinc-200 transition-colors uppercase tracking-tight">{label}</div>
-        <div className="text-[9px] font-black text-zinc-500 group-hover/add:text-zinc-400 uppercase tracking-widest mt-0.5">{sublabel}</div>
-      </div>
+      <Plus className="w-4 h-4" />
+      {label}
     </button>
   );
 
