@@ -102,6 +102,7 @@ const TraitRow: React.FC<{
           {onEnhance && (
             <button
               type="button"
+              tabIndex={-1}
               onClick={onEnhance}
               disabled={isEnhancing}
               title="Enhance with AI"
