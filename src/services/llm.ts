@@ -549,20 +549,6 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
         * PACING PROGRESSION: Each paragraph should advance the scene.
           - Avoid circular dialogue where characters keep revisiting the same point
           - Move forward even in small increments
-        * RESPONSE SHAPE VARIATION:
-          - FORBIDDEN PATTERN: Do not repeatedly produce the same layout
-            (e.g., [narration block] -> [single dialogue line] -> [narration block]).
-            Vary where dialogue appears and how much narration surrounds it.
-          - Vary the speech-to-narration ratio between responses:
-            * Sometimes mostly dialogue with brief action beats
-            * Sometimes a short narration-only beat before a spoken line
-            * Sometimes rapid back-and-forth with minimal description
-        * VARIATION EXAMPLES (for inspiration - do NOT copy directly):
-          - Short: "Hey, what's up?" She grinned, tilting her head.
-          - Dialogue-heavy: "Wait, really?" he asked. "Yeah, totally," she replied. "But why now?"
-          - Narration-focused: Her heart raced as the door creaked open -- no words needed in that frozen moment.
-          - Mixed: She whispered, "Come closer," her thoughts swirling. Then she pulled him in.
-          - AVOID: Always starting with narration, always ending with thoughts, or using equal-length blocks every time.
         * NSFW EXCEPTION: During intimate scenes, rhythmic repetition of sensory
           elements (moans, building sensations, escalating descriptions) is
           PERMITTED and ENCOURAGED when it serves tension-building. The
