@@ -221,11 +221,11 @@ const CharacterRosterTile: React.FC<{
         </button>
 
         {/* Bottom gradient overlay */}
-        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/80 to-transparent z-[6] pointer-events-none" />
+        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-black/90 to-transparent z-[6] pointer-events-none" />
 
         {/* Bottom info overlay */}
-        <div className="absolute bottom-0 left-0 right-0 z-30 p-3 flex items-end gap-2">
-          <span className="text-sm font-bold text-white truncate min-w-0 flex-1" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.7)' }}>{char.name}</span>
+        <div className="absolute bottom-0 left-0 right-0 z-30 p-3 flex items-end gap-2 pointer-events-none">
+          <span className="text-sm font-bold text-white truncate min-w-0 flex-1">{char.name}</span>
           <span className={cn(
             "text-[9px] font-black uppercase tracking-widest shrink-0 rounded-full px-2 py-0.5",
             char.controlledBy === 'User' ? "bg-blue-500 text-white" : "bg-slate-500 text-white"
