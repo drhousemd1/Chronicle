@@ -176,6 +176,7 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
                 <div className="flex items-center gap-1.5">
                   <button
                     type="button"
+                    tabIndex={-1}
                     onClick={() => onToggleStatus(step.id, 'deviated')}
                     title="Mark as Deviated"
                     className={cn(
