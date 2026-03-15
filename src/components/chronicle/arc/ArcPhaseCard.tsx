@@ -206,7 +206,7 @@ export const ArcPhaseCard: React.FC<ArcPhaseCardProps> = ({
             value={phase.title}
             onChange={(v) => onUpdate({ title: v, updatedAt: now() })}
             placeholder="Enter goal name..."
-            className="px-3 py-2 text-sm bg-zinc-900/50 border border-zinc-700 text-white placeholder:text-zinc-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+            className="px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
           />
         </div>
 
