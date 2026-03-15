@@ -6,7 +6,7 @@ import { Icons } from '@/constants';
 import { uid, now, clamp, resizeImage } from '@/utils';
 import { useAuth } from '@/hooks/use-auth';
 import { uploadAvatar, dataUrlToBlob, updateNavButtonImages, loadNavButtonImages } from '@/services/supabase-data';
-import { compressAndUpload } from '@/utils';
+
 
 import { AvatarGenerationModal } from './AvatarGenerationModal';
 import { AvatarActionButtons } from './AvatarActionButtons';
@@ -66,6 +66,7 @@ interface CharactersTabProps {
   onAddSection?: (type?: CharacterTraitSectionType) => void;
   onAddNew?: () => void;
   scenarioId?: string | null;
+  isAdmin?: boolean;
 }
 
 const BUILT_IN_TRAIT_SECTIONS: Array<{ key: string; label: string }> = [
@@ -547,7 +548,8 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
   onDelete,
   onAddSection: externalAddSection,
   onAddNew,
-  scenarioId
+  scenarioId,
+  isAdmin
 }) => {
   const { user } = useAuth();
   const characters = appData.characters;
@@ -763,12 +765,15 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
     else delete updatedImages[editingNavKey];
 
     setNavButtonImages(updatedImages);
-    setShowNavImageEditor(false);
 
-    // Persist to global app_settings
-    updateNavButtonImages(updatedImages).catch((e) =>
-      console.error('Failed to persist nav button images:', e)
-    );
+    // Persist to global app_settings — await before closing
+    try {
+      await updateNavButtonImages(updatedImages);
+      setShowNavImageEditor(false);
+    } catch (e) {
+      console.error('Failed to persist nav button images:', e);
+      // Keep modal open on failure so user can retry
+    }
   };
 
   const handleRemoveNavImage = () => {
@@ -1267,7 +1272,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                 <span className="relative z-10 w-8 h-8 shrink-0" aria-hidden />
               </button>
 
-              {user && (
+              {user && isAdmin && (
                 <button
                   type="button"
                   onClick={openNavImageEditor}

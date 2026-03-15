@@ -1,60 +1,53 @@
 
-I reproduced the issue from your latest session data and found two concrete causes:
+# Sandbox Feature Transfer — Master Tracker
 
-1) The save call does a `PATCH` on `app_settings` by `setting_key='nav_button_images'`, but if that row does not exist, PostgREST returns `204` with **0 rows updated** (no error).  
-2) The current code only inserts on `updateError`, so no row ever gets created in that case.  
-3) The “Edit Buttons (Admin)” control is currently gated by `user` only, not admin role, so authenticated non-admin users can see it.
+## Source Documents
+- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
+- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
 
-### Implementation Plan
+## Features Being Transferred
+| ID | Feature | Status |
+|----|---------|--------|
+| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
+| B | Story Transfer Library (story-transfer.ts) | ✅ |
+| A | UI Audit System (schema, utils, findings, page) | 🔄 |
+| B | Story Export/Import Modals | ✅ |
+| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
+| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
+| - | StyleGuideTool.tsx audit button | ⬜ |
+| - | App.tsx route wiring | ⬜ |
+| - | Index.tsx full wiring | ⬜ |
 
-1. **Fix persistence logic to create-if-missing (real upsert behavior)**
-   - File: `src/services/supabase-data.ts`
-   - Update `updateNavButtonImages()` so it:
-     - runs `update(...).eq('setting_key', 'nav_button_images').select('id')`
-     - checks whether any row was actually updated
-     - inserts `{ setting_key: 'nav_button_images', setting_value: ... }` when update matched 0 rows
-     - throws on real DB errors (no silent failure)
+## Prompt Execution Status
 
-2. **Make save flow wait for persistence before closing**
-   - File: `src/components/chronicle/CharactersTab.tsx`
-   - In `handleSaveNavImage()`:
-     - `await updateNavButtonImages(updatedImages)` before closing the modal
-     - only close modal after successful DB write
-     - on failure, keep modal open and surface an explicit error state (instead of just console/no-op)
+| # | Target File(s) | Status | Notes |
+|---|---------------|--------|-------|
+| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
+| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
+| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
+| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
+| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
+| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
+| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
+| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
+| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
+| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
+| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
+| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
+| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
+| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
 
-3. **Restrict editor visibility to admins only**
-   - Files:
-     - `src/components/chronicle/CharactersTab.tsx`
-     - `src/pages/Index.tsx`
-   - Add a prop like `canEditAdminUi` (or `isAdmin`) to `CharactersTab`
-   - Pass `isAdminState` from `Index.tsx`
-   - Change render condition from `{user && (...)}` to `{user && canEditAdminUi && (...)}` for “Edit Buttons (Admin)”
-
-4. **Clean up stale wiring**
-   - File: `src/components/chronicle/CharactersTab.tsx`
-   - Remove unused `compressAndUpload` import
-   - Remove unused `scenarioId` prop if no longer needed (and stop passing it from `Index.tsx`)
-
-5. **Update architecture docs to match behavior**
-   - File: `docs/guides/character-builder-page-structure-guide.md`
-   - Document that nav button style images are global app settings and that editor visibility is admin-only.
-
-### Technical Details (exact behavior change)
-
-- Current broken path:
-  - `PATCH app_settings?setting_key=eq.nav_button_images` → `204` + 0 rows
-  - no insert happens because there is no thrown error
-  - reload gets `[]` so images disappear
-
-- Fixed path:
-  - `update + select` to detect matched rows
-  - if matched rows = 0, perform insert
-  - subsequent loads return the saved JSON object
-  - non-admin users won’t see the editor button at all
-
-### Validation Checklist
-
-1. As admin: upload nav image, save, navigate away, return → image persists.  
-2. Hard refresh page → image still persists.  
-3. Check network after first save on fresh DB: update(0 rows) then insert(1 row), then later saves update existing row.  
-4. Login as non-admin user → “Edit Buttons (Admin)” does not render.
+## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
+- `src/types.ts`: line 11507
+- `src/utils.ts`: line 12138
+- `src/lib/story-transfer.ts`: line 9812
+- `src/lib/ui-audit-schema.ts`: line 21329
+- `src/lib/ui-audit-utils.ts`: line 21565
+- `src/data/ui-audit-findings.ts`: line 18967
+- `StoryExportFormatModal.tsx`: line 9642
+- `StoryImportModeModal.tsx`: line 9731
+- `CharactersTab.tsx`: line 2893
+- `ChatInterfaceTab.tsx`: line 5004
+- `src/pages/style-guide/ui-audit.tsx`: line 17867
+- `src/App.tsx`: line 95
+- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout
