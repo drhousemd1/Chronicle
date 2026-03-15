@@ -740,14 +740,39 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
       : prev));
   };
 
-  const handleSaveNavImage = () => {
-    setNavButtonImages((prev) => {
-      const next = { ...prev };
-      if (draftNavImage) next[editingNavKey] = draftNavImage;
-      else delete next[editingNavKey];
-      return next;
-    });
+  const handleSaveNavImage = async () => {
+    let imageToSave = draftNavImage;
+
+    // Compress and upload if it's a base64 data URL
+    if (imageToSave && imageToSave.src.startsWith('data:') && user) {
+      try {
+        const publicUrl = await compressAndUpload(
+          imageToSave.src,
+          'backgrounds',
+          user.id,
+          400, // small nav button images
+          400,
+          0.75
+        );
+        imageToSave = { ...imageToSave, src: publicUrl };
+      } catch (e) {
+        console.error('Failed to compress nav button image:', e);
+      }
+    }
+
+    const updatedImages = { ...navButtonImages };
+    if (imageToSave) updatedImages[editingNavKey] = imageToSave;
+    else delete updatedImages[editingNavKey];
+
+    setNavButtonImages(updatedImages);
     setShowNavImageEditor(false);
+
+    // Persist to DB
+    if (scenarioId) {
+      updateNavButtonImages(scenarioId, updatedImages).catch((e) =>
+        console.error('Failed to persist nav button images:', e)
+      );
+    }
   };
 
   const handleRemoveNavImage = () => {
