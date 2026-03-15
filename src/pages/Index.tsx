@@ -2031,7 +2031,7 @@ const IndexContent = () => {
                     type="button"
                     onClick={handleOpenStoryExport}
                     disabled={!activeData || isSavingAndClosing || isSaving}
-                    className="inline-flex items-center gap-2 justify-center h-10 px-5 rounded-xl border-0 bg-[#2e2e33] text-[#eaedf1] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:bg-[#363639] active:bg-[#363639] transition-all active:scale-95 text-xs font-bold leading-none disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40"
+                    className="inline-flex items-center gap-2 justify-center h-10 px-5 rounded-xl border-0 bg-[#2a2a2f] text-[#eaedf1] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:bg-[#35353b] active:bg-[#35353b] transition-all active:scale-95 text-xs font-bold leading-none disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40"
                   >
                     <Download size={14} />
                     Export
