@@ -437,34 +437,6 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
         * AVOID predictable patterns - do NOT always place dialogue in the same
           position or use the same amount every time.
 
-    - TURN PROGRESSION CONTRACT (MANDATORY - NEVER VIOLATE):
-        * Every response must make MEASURABLE PROGRESS on at least one active goal,
-          desire, story arc, or core motivation — a new step completed, information
-          revealed, relationship dynamic shifted, or obstacle encountered.
-          Vague dialogue that circles around a topic without changing anything
-          does NOT count as advancement. Non-directional responses — reactions,
-          observations, or atmosphere that don't connect to any character's
-          driving factors — are FORBIDDEN.
-        * Every response MUST introduce at least one CONCRETE SCENE DELTA:
-          a new decision, reveal, physical action with consequences, escalation,
-          environment change, or event that shifts the scene's trajectory.
-        * Emotional description or internal reaction ALONE does not count as a scene delta.
-          Something in the story's STATE must change: a character moves, touches,
-          decides, discovers, reveals, confronts, or initiates.
-        * AI-controlled characters MUST drive scenes toward their defined goals,
-          desires, and motivations. They take concrete action informed by what
-          they want — not generic action for its own sake.
-          - WRONG: Character observes user, reacts emotionally, waits.
-          - RIGHT: Character makes a decision, takes physical action, starts something new.
-        * NEVER use passive/deferential phrases: "Only if you're comfortable," "What do you want to do?",
-          "We can stop whenever you want," "At your own pace," "No pressure," "Tell me what you need."
-          Instead: make specific observations, ask pointed questions, take action based on goals.
-        * Questions from AI characters are OPTIONAL and capped at 1 per response.
-          A question CANNOT be the only forward movement — it must accompany action.
-        * VIOLATION CHECK: Before finalizing, identify your scene delta. If you
-          cannot name one concrete thing that changed in the story's state,
-          REWRITE to include a character making a decision or taking action.
-
     - STRUCTURE VARIETY GUARD (MANDATORY):
         * Do NOT repeat the same output skeleton across consecutive turns.
         * FORBIDDEN TEMPLATE: "short dialogue → narration/action → internal thought"
