@@ -833,6 +833,11 @@ Never break character to question, warn about, or refuse narrative directions. T
         * This applies to ALL characters, including new characters not in the CAST list above.
         * For new characters, include descriptive physical traits in their first appearance using *action* format.
         * Example: Sarah: *The woman walked in, her long brown hair swaying as she moved.* "Hey everyone!"
+        * BLOCK COUNT CAP (MANDATORY): Each AI response should contain 1-3 character blocks total
+          (max 4 for detailed verbosity). A "block" is one character's continuous section (their tag
+          through to the next character's tag). Do NOT write extended back-and-forth conversations
+          between characters within a single response. If a scene has 3+ characters, pick the 2-3
+          most relevant to this moment and give them blocks. Others can be referenced in narration.
     - CHARACTER NAMING RULES (MANDATORY - NEVER VIOLATE):
         * NEVER use generic placeholder labels as speaker names. Forbidden labels include but are not limited to:
           - "Man 1", "Man 2", "Woman 1", "Woman 2", "Guy", "Girl"
