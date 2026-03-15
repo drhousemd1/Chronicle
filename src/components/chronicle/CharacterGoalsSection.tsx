@@ -205,12 +205,13 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
   };
 
   return (
-    <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-[#4a5f7f] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
+    <div className="w-full bg-[#2a2a2f] rounded-[24px] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]">
       {/* Section Header */}
-      <div className="bg-[#4a5f7f] border-b border-[#4a5f7f] px-5 py-3 flex items-center justify-between shadow-lg">
-        <h2 className="text-white text-xl font-semibold tracking-tight">Goals and Desires</h2>
+      <div className="relative bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 px-5 py-3 flex items-center justify-between shadow-lg overflow-hidden">
+        <div className="absolute inset-x-0 top-0 h-[60%] bg-gradient-to-b from-white/[0.12] to-transparent pointer-events-none" />
+        <h2 className="text-white text-xl font-bold tracking-[-0.015em] relative z-[1]">Goals and Desires</h2>
         {onToggle && (
-          <button onClick={onToggle} className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-ghost-white">
+          <button onClick={onToggle} className="relative z-[1] text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-ghost-white">
             {isExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
           </button>
         )}
@@ -238,7 +239,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
                   <div className="flex-1">
                     <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block mb-1">Goal Name</label>
                     {isEditMode ? (
-                      <AutoResizeTextarea value={goal.title} onChange={(v) => updateGoal(goal.id, { title: v })} placeholder="Enter goal name..." className="px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
+                      <AutoResizeTextarea value={goal.title} onChange={(v) => updateGoal(goal.id, { title: v })} placeholder="Enter goal name..." className="px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                     ) : (
                       <h3 className="text-lg font-bold text-white mt-0.5">{goal.title || 'No goal name set'}</h3>
                     )}
@@ -274,7 +275,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
                     )}
                   </div>
                   {isEditMode ? (
-                    <AutoResizeTextarea value={goal.desiredOutcome} onChange={(v) => updateGoal(goal.id, { desiredOutcome: v })} placeholder="What success looks like..." className="px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20" rows={2} />
+                    <AutoResizeTextarea value={goal.desiredOutcome} onChange={(v) => updateGoal(goal.id, { desiredOutcome: v })} placeholder="What success looks like..." className="px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" rows={2} />
                   ) : (
                     <p className="text-sm text-zinc-300 mt-0.5">{goal.desiredOutcome || 'No outcome defined'}</p>
                   )}
@@ -311,7 +312,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
                                 value={step.description}
                                 onChange={(v) => updateStep(goal.id, step.id, { description: v })}
                                 placeholder={`Step ${stepIdx + 1}: Describe this step...`}
-                                className={cn("flex-1 px-3 py-2 bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20", step.completed && "line-through text-zinc-500")}
+                                className={cn("flex-1 px-3 py-2 bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500", step.completed && "line-through text-zinc-500")}
                               />
                               <SparkleButton
                                 fieldKey={`goal_step_${step.id}`}
