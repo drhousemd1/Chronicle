@@ -551,7 +551,9 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
   onAddSection: externalAddSection,
   onAddNew,
   scenarioId,
-  isAdmin
+  isAdmin,
+  navButtonImages: navButtonImagesProp,
+  onNavButtonImagesChange
 }) => {
   const { user } = useAuth();
   const characters = appData.characters;
