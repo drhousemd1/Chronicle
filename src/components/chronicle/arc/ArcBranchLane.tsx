@@ -153,8 +153,9 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
               {!((!isFail) && isRigid) ? (
                 /* Normal failed button for non-rigid or fail branch */
                 <div className="flex items-center gap-1.5">
-                  <button
+                 <button
                     type="button"
+                    tabIndex={-1}
                     onClick={() => onToggleStatus(step.id, 'failed')}
                     title="Mark as Failed"
                     className={cn(
