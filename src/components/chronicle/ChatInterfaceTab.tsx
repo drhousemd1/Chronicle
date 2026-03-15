@@ -794,6 +794,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
       if (recentMessages.length < 4) return; // Not enough context yet
 
+      console.log('[Pass 14] Invoking generate-narrative-directive...', { messageCount: recentMessages.length, goalCount: storyGoals.length, charGoalCount: characterGoals.length });
       const { data, error } = await supabase.functions.invoke('generate-narrative-directive', {
         body: {
           recentMessages,
@@ -804,9 +805,13 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         }
       });
 
-      if (!error && data?.directive) {
+      if (error) {
+        console.error('[Pass 14] Narrative directive invocation error:', error);
+      } else if (data?.directive) {
         narrativeDirectiveRef.current = data.directive;
         console.log('[Pass 14] Narrative directive stored:', data.directive);
+      } else {
+        console.warn('[Pass 14] No directive returned:', data);
       }
     } catch (err) {
       console.error('[Pass 14] Narrative directive generation failed:', err);
