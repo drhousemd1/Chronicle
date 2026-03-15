@@ -2443,6 +2443,8 @@ const IndexContent = () => {
                 onAddSection={handleAddSection}
                 scenarioId={activeId}
                 isAdmin={isAdminState}
+                navButtonImages={navButtonImages}
+                onNavButtonImagesChange={setNavButtonImages}
               />
             </div>
           )}
