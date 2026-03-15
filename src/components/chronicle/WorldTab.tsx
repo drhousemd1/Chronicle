@@ -1367,7 +1367,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                     </div>
 
                     {world.entries.length > 0 && (
-                      <div className="space-y-6 pt-6 border-t border-zinc-700/50">
+                      <div className="space-y-6 pt-6 border-t border-white/10">
                         <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Additional Entries</h3>
                         <div className="grid grid-cols-1 gap-6">
                           {world.entries.map(entry => (
