@@ -1428,7 +1428,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                                 </button>
                                 <button
                                   onClick={() => onUpdate(selected.id, { controlledBy: 'User' })}
-                                  className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selected.controlledBy === 'User' ? 'bg-[#3b82f6] text-white shadow-[0_2px_8px_rgba(59,130,246,0.35)]' : 'bg-[#3f3f46] text-[#a1a1aa] hover:text-zinc-300'}`}
+                                  className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all ${selected.controlledBy === 'User' ? 'bg-[#3b82f6] text-white shadow-[0_2px_8px_rgba(59,130,246,0.35)]' : 'bg-[#3f3f46] text-[#a1a1aa] hover:text-zinc-300'}`}
                                 >
                                   User
                                 </button>
