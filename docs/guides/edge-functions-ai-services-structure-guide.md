@@ -182,4 +182,4 @@ See Section 5 above for comprehensive bug list.
 
 None documented.
 
-> Last updated: 2026-03-15 — Pass 12: Runtime ping-pong & emotional-loop detectors, prompt rule reordering for attention weight.
+> Last updated: 2026-03-15 — Pass 13: Prompt surgery, narrative director model fix, thought-tail detection, runtime directive injection as system message.
