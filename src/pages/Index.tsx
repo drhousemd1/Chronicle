@@ -2426,6 +2426,8 @@ const IndexContent = () => {
                 onDelete={handleDeleteCharacterFromList}
                 onAddSection={handleAddSection}
                 onAddNew={handleCreateCharacter}
+                navButtonImages={navButtonImages}
+                onNavButtonImagesChange={setNavButtonImages}
               />
             </div>
           )}
