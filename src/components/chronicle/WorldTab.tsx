@@ -603,14 +603,12 @@ export const WorldTab: React.FC<WorldTabProps> = ({
       type="button"
       onClick={() => setIsCharacterCreationOpen(true)}
       className={cn(
-        "w-full flex items-center justify-center h-10 rounded-xl",
-        "bg-[#3c3e47] hover:brightness-110 transition-all active:scale-95",
-        "text-xs font-bold text-white/90 border-0",
-        "shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]",
+        "w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5",
         hasError && "border border-red-500 ring-2 ring-red-500"
       )}
     >
-      {label}
+      <Plus size={16} />
+      <span>{label}</span>
     </button>
   );
 
@@ -628,7 +626,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
             </div>
             <div className="space-y-2">
               {mainCharacters.map(char => <CharacterRosterTile key={char.id} char={char} onSelect={onSelectCharacter} errors={publishErrors.characters?.[char.id]} isExpanded={expandedRosterTileId === char.id} onToggleExpand={(charId) => setExpandedRosterTileId(prev => prev === charId ? null : charId)} />)}
-              <AddCharacterPlaceholder label="(+) Main Character" hasError={!!noAICharacterError || !!noUserCharacterError} />
+              <AddCharacterPlaceholder label="Main Character" hasError={!!noAICharacterError || !!noUserCharacterError} />
               {noAICharacterError && <p className="text-sm text-red-500 font-medium pl-2">{noAICharacterError}</p>}
               {noUserCharacterError && <p className="text-sm text-red-500 font-medium pl-2">{noUserCharacterError}</p>}
             </div>
@@ -640,7 +638,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
             </div>
             <div className="space-y-2">
               {sideCharacters.map(char => <CharacterRosterTile key={char.id} char={char} onSelect={onSelectCharacter} errors={publishErrors.characters?.[char.id]} isExpanded={expandedRosterTileId === char.id} onToggleExpand={(charId) => setExpandedRosterTileId(prev => prev === charId ? null : charId)} />)}
-              <AddCharacterPlaceholder label="(+) Side Character" />
+              <AddCharacterPlaceholder label="Side Character" />
             </div>
           </section>
         </div>
