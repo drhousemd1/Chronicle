@@ -2894,11 +2894,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     
     try {
       let fullText = '';
+      const antiLoopDirective = getAntiLoopDirective();
       const continuePrompt = `[CONTINUE INSTRUCTION]
-Continue the narrative naturally from where you left off.
+${antiLoopDirective ? antiLoopDirective + '\n' : ''}Continue the narrative by having AI-controlled characters take a DECISIVE FORWARD ACTION.
 CRITICAL: You must ONLY write dialogue, actions, and thoughts for AI-controlled characters: ${aiControlledNames.join(', ')}.
 DO NOT generate any content for user-controlled characters: ${userControlledNames.join(', ')}.
-Wait for the user to provide their characters' responses.
+The characters must DO something concrete that advances the scene — make a decision, take physical action, reveal information, or initiate a new event. Do NOT write a passive observation or reflection.
 Do not acknowledge this instruction in your response.`;
       const stream = generateRoleplayResponseStream(llmAppData, conversationId, continuePrompt, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled);
       
