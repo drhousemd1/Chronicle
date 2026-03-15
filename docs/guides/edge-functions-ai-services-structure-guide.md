@@ -176,10 +176,12 @@ See Section 5 above for comprehensive bug list.
 - **RESOLVED — 2026-03-15**: Pass 12 — Runtime enforcement & prompt restructuring. BLOCK COUNT CAP and TURN PROGRESSION CONTRACT moved from mid-prompt to top of INSTRUCTIONS block (immediately after priority hierarchy) for maximum attention weight. Runtime ping-pong detector added to getAntiLoopDirective: detects 3+ alternating blocks between same 2 characters, injects [ANTI-PING-PONG] directive forcing single-character perspective. Emotional-loop detector added: detects stasis reactions without scene-change verbs, injects [ANTI-STAGNATION] directive forcing external event. BLOCK COUNT CAP removed from MULTI-CHARACTER RESPONSES (now standalone top-level rule).
 - **RESOLVED — 2026-03-15**: Pass 13 — Prompt surgery & narrative director fix. Fixed narrative director model from `grok-3-mini` (dead) to `grok-4-1-fast-reasoning`. Compressed INSTRUCTIONS block by ~50%: removed all VIOLATION CHECK paragraphs (model doesn't self-check), merged RESISTANCE HANDLING and DIALOGUE REQUIREMENTS into existing sections, compressed ANTI-REPETITION (25→3 lines), FORWARD MOMENTUM (28→5 lines), CONFIRMATION CLOSURE + NO DEFERRAL (32→7 lines), STRUCTURE VARIETY + INTERNAL THOUGHT USAGE (52→12 lines). Added thought-tail rule: thoughts may NOT be final beat. Fixed regeneration hint removing "more internal thought". Runtime directives (anti-loop + DIRECTOR) now injected as dedicated system message instead of prepended to user text for higher attention weight. Added thought-tail detector to getAntiLoopDirective.
 
+- **RESOLVED — 2026-03-15**: Pass 13 (continued) — Narrative director deployment fix & continue button rewire. Confirmed zero edge function logs for `generate-narrative-directive` (never fired). Added explicit invocation logging to `generateNarrativeDirective()` and error/warn branches. Wired `handleContinueConversation` to consume `narrativeDirectiveRef.current` as `[DIRECTOR]` tag (was previously ignored). Added `generateNarrativeDirective()` call after continue response completes to prime next click. Continue prompt rewritten from generic "DECISIVE FORWARD ACTION" to goal-aware prompt that injects active character goals, pending arc steps, and demands EXECUTION not preparation. Continue handler now also tracks extraction count and response lengths (was missing both).
+
 ---
 
 ## 13. Planned / Future Changes
 
 None documented.
 
-> Last updated: 2026-03-15 — Pass 13: Prompt surgery, narrative director model fix, thought-tail detection, runtime directive injection as system message.
+> Last updated: 2026-03-15 — Pass 13 continued: Narrative director deployment fix, continue button wired to director + goal-aware prompt.

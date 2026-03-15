@@ -60,8 +60,10 @@ serve(async (req) => {
 
     const XAI_API_KEY = Deno.env.get("XAI_API_KEY");
     if (!XAI_API_KEY) {
+      console.error("[generate-narrative-directive] XAI_API_KEY is not configured");
       throw new Error("XAI_API_KEY is not configured");
     }
+    console.log(`[generate-narrative-directive] Processing request: ${recentMessages.length} messages, ${storyGoals?.length || 0} goals, ${characterGoals?.length || 0} character goals`);
 
     // Build compact conversation summary
     const conversationSummary = recentMessages

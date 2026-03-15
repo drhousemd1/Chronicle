@@ -3037,13 +3037,68 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     try {
       let fullText = '';
       const antiLoopDirective = getAntiLoopDirective();
-      const runtimeDirectives = antiLoopDirective || undefined;
+      
+      // Pass 13 continued: Consume narrative directive (one-shot, same as handleSend)
+      const directorTag = narrativeDirectiveRef.current
+        ? `[DIRECTOR: ${narrativeDirectiveRef.current}]`
+        : '';
+      narrativeDirectiveRef.current = null;
+      
+      // Build runtime directives (injected as dedicated system message)
+      const runtimeDirectiveParts = [directorTag, antiLoopDirective].filter(Boolean);
+      const runtimeDirectives = runtimeDirectiveParts.length > 0 ? runtimeDirectiveParts.join('\n') : undefined;
+      
+      // Pass 13 continued: Build goal-aware continue prompt
+      // Gather active character goals with current step info
+      const goalSummaryParts: string[] = [];
+      llmAppData.characters
+        .filter(c => c.controlledBy === 'AI')
+        .forEach(c => {
+          const session = sessionStates.find(s => s.characterId === c.id);
+          const goals = session?.goals || c.goals;
+          if (Array.isArray(goals)) {
+            goals.forEach((g: any) => {
+              const label = typeof g === 'string' ? g : (g?.label || g?.value || '');
+              const currentStep = g?.steps?.find?.((s: any) => s.status === 'pending')?.description;
+              if (label) {
+                goalSummaryParts.push(`${c.name}'s goal: "${label}"${currentStep ? ` — CURRENT STEP: "${currentStep}"` : ''}`);
+              }
+            });
+          }
+        });
+      
+      // Also gather story arc pending steps
+      const storyArcs = effectiveWorldCore.storyGoals || [];
+      storyArcs.forEach((g: StoryGoal) => {
+        const allSteps: Array<{ status?: string; description: string }> = [
+          ...(g.steps || []),
+          ...(g.branches?.fail?.steps || []),
+          ...(g.branches?.success?.steps || []),
+          ...(g.linkedPhases || []).flatMap((p: any) => [
+            ...(p.branches?.fail?.steps || []),
+            ...(p.branches?.success?.steps || [])
+          ])
+        ];
+        const pendingStep = allSteps.find((s: ArcStep) => s.status === 'pending');
+        if (pendingStep) {
+          goalSummaryParts.push(`Story arc "${g.title || g.desiredOutcome}": PENDING STEP — "${pendingStep.description}"`);
+        }
+      });
+      
+      const goalContext = goalSummaryParts.length > 0
+        ? `\nACTIVE GOALS & STEPS:\n${goalSummaryParts.join('\n')}\nYou MUST advance one of these goals with a CONCRETE ACTION — not building up to it, not reflecting on it, DOING IT.`
+        : '';
+      
       const continuePrompt = `[CONTINUE INSTRUCTION]
-Continue the narrative by having AI-controlled characters take a DECISIVE FORWARD ACTION.
-CRITICAL: You must ONLY write dialogue, actions, and thoughts for AI-controlled characters: ${aiControlledNames.join(', ')}.
-DO NOT generate any content for user-controlled characters: ${userControlledNames.join(', ')}.
-The characters must DO something concrete that advances the scene — make a decision, take physical action, reveal information, or initiate a new event. Do NOT write a passive observation or reflection.
+Continue the narrative by having AI-controlled characters EXECUTE a specific goal-driven action NOW.
+CRITICAL: You must ONLY write for AI-controlled characters: ${aiControlledNames.join(', ')}.
+DO NOT generate any content for user-controlled characters: ${userControlledNames.join(', ')}.${goalContext}
+The character must DO the next concrete step — read the passage aloud, make the confession, take the physical action, reveal the secret. No more preparation, hesitation, or emotional processing. EXECUTE.
 Do not acknowledge this instruction in your response.`;
+      
+      console.log('[handleContinue] Runtime directives:', runtimeDirectives || '(none)');
+      console.log('[handleContinue] Goal context:', goalContext || '(no goals found)');
+      
       const stream = generateRoleplayResponseStream(llmAppData, conversationId, continuePrompt, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled, undefined, undefined, undefined, runtimeDirectives);
       
       for await (const chunk of stream) {
@@ -3058,14 +3113,17 @@ Do not acknowledge this instruction in your response.`;
       }
       
       // Extract character updates from continuation
-      extractCharacterUpdatesFromDialogue('', fullText).then(updates => {
-        if (updates.length > 0) {
-          console.log(`[handleContinue] Extracted ${updates.length} character updates:`, updates);
-          applyExtractedUpdates(updates);
-        }
-      }).catch(err => {
-        console.error('[handleContinue] Character extraction failed:', err);
-      });
+      extractionCountRef.current += 1;
+      if (extractionCountRef.current % 5 === 0) {
+        extractCharacterUpdatesFromDialogue('', fullText).then(updates => {
+          if (updates.length > 0) {
+            console.log(`[handleContinue] Extracted ${updates.length} character updates:`, updates);
+            applyExtractedUpdates(updates);
+          }
+        }).catch(err => {
+          console.error('[handleContinue] Character extraction failed:', err);
+        });
+      }
 
       // Strip any legacy update tags
       let cleanedText = stripUpdateTags(fullText);
@@ -3074,6 +3132,9 @@ Do not acknowledge this instruction in your response.`;
       const existingNames = getKnownCharacterNames(appData);
       const { normalizedText } = normalizePlaceholderNames(cleanedText, existingNames, placeholderMapRef.current);
       cleanedText = normalizedText;
+      
+      // Track response length for adaptive length directives
+      responseLengthsRef.current.push(cleanedText.split(/\s+/).length);
       
       const aiMsg: Message = { 
         id: uuid(), 
@@ -3093,6 +3154,11 @@ Do not acknowledge this instruction in your response.`;
       onSaveScenario(updatedConvs);
       
       processResponseForNewCharacters(cleanedText);
+      
+      // Pass 14: Generate narrative directive for the NEXT continue click (async, non-blocking)
+      generateNarrativeDirective().catch(err => {
+        console.error('[handleContinue] Narrative directive generation failed:', err);
+      });
     } catch (err) {
       console.error(err);
     } finally {
