@@ -199,7 +199,7 @@ const CharacterRosterTile: React.FC<{
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors duration-200 z-[5] pointer-events-none" />
 
         {/* Click area to toggle expand/collapse - only when avatar exists */}
-        {char.avatarDataUrl && (
+        {hasAvatar && (
           <button
             type="button"
             onClick={() => onToggleExpand(char.id)}
