@@ -976,6 +976,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                                 />
                                 <button
                                   type="button"
+                                  tabIndex={-1}
                                   onClick={() => {
                                     const sections = [...(world.core.customWorldSections || [])];
                                     sections[sIdx] = { ...sections[sIdx], items: sections[sIdx].items.filter((_, i) => i !== iIdx) };
