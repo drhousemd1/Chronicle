@@ -407,6 +407,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
         </label>
         <button
           type="button"
+          tabIndex={-1}
           onClick={() => setEnhanceModeTarget(fieldName)}
           disabled={isLoading || enhancingField !== null}
           title="Enhance with AI"
