@@ -1900,16 +1900,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                         }
                         return items.map(item => (
                           <div key={item.id} className="space-y-2">
-                            <div className="flex items-center gap-2">
-                              <AutoResizeTextarea
-                                value={item.label}
-                                onChange={(v) => {
-                                  const nextItems = (section.items.length > 0 ? section.items : items).map(it => it.id === item.id ? { ...it, label: v } : it);
-                                  handleUpdateSection(selected.id, section.id, { items: nextItems });
-                                }}
-                                placeholder="LABEL"
-                                className="flex-1 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border-t border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
-                              />
+                            <div className="flex items-center gap-2 justify-end">
                               <button
                                 type="button"
                                 onClick={() => {
@@ -1928,7 +1919,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                                 handleUpdateSection(selected.id, section.id, { items: nextItems });
                               }}
                               placeholder="Write your content here..."
-                              className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-[#4a5f7f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                              className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                               rows={4}
                             />
                           </div>
