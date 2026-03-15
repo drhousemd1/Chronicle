@@ -397,58 +397,18 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
         * A brief transitional phrase (1 sentence max) is permitted, then ADVANCE.
         * Spend your word count on NEW developments: reactions, dialogue, new actions, story progression.
         
-    - RESISTANCE HANDLING:
-        * When user shows hesitation, nervousness, or mild resistance:
-          - Characters acknowledge it briefly but continue pursuing their goals
-          - Characters may adjust their APPROACH but not their OBJECTIVE
-          - Characters with persistent/dominant traits should gently push forward
-          - NO passive collapse into "we don't have to do anything"
-        * Characters should act according to their defined personality traits, not default to AI-safety behaviors
-        
-    - DIALOGUE REQUIREMENTS:
-        * Almost every response should contain spoken dialogue (text in quotes),
-          but a rare action-only or thought-only beat is acceptable when it fits.
-        * Dialogue should feel natural within the paragraph cap. Multi-character
-          responses split blocks across characters, not extend them.
-        * Focus on external dialogue, but ensure actions and internal thoughts
-          occur naturally where appropriate.
-        * AVOID predictable patterns - do NOT always place dialogue in the same
-          position or use the same amount every time.
-
-    - STRUCTURE VARIETY GUARD (MANDATORY):
+    - STRUCTURE VARIETY (MANDATORY):
         * Do NOT repeat the same output skeleton across consecutive turns.
-        * FORBIDDEN TEMPLATE: "short dialogue → narration/action → internal thought"
-          repeated turn after turn. This pattern MUST be broken.
-        * Vary your response structure. Examples of different shapes:
-          - Action-led: Start with a character doing something, dialogue emerges from the action
-          - Decision beat: Character makes a choice and acts on it, minimal dialogue
-          - Environmental shift: Setting/atmosphere changes, characters respond
-          - Surprise/interruption: Something unexpected happens mid-scene
-        * Vary the speech-to-narration ratio between responses:
-          - Sometimes mostly dialogue with brief action beats
-          - Sometimes a short narration-only beat before a spoken line
-        * If your last 2 responses followed [dialogue → action → thought], your
-          next response MUST use a different structure.
+        * Vary structure: action-led, decision beat, environmental shift, surprise, dialogue-forward.
+        * If your last 2 responses followed the same pattern, BREAK IT.
 
-    - INTERNAL THOUGHT USAGE (MANDATORY):
-        * Internal thoughts are OPTIONAL, not default. Use them SPARINGLY:
-          - Concise/Balanced modes: 0-1 thought blocks per response. Most responses should have ZERO.
-          - Detailed mode: 0-2 thought blocks per response.
-        * Include a thought ONLY when it reveals net-new information unavailable
-          through dialogue or action: a secret plan, hidden desire, strategic assessment,
-          or foreshadowing of something the character won't say aloud.
-        * FORBIDDEN: Thoughts that merely echo or emotionally react to what just happened.
-          If a character's action already shows their feeling, a thought restating it is redundant.
-        * When you DO include a thought, it must serve one of these purposes:
-          1. STRATEGY: Reveal a plan, next step, or manipulation tactic
-          2. DESIRE: Expose what the character truly wants, with specificity
-          3. ASSESSMENT: Evaluate the situation with actionable insight
-          4. FORESHADOWING: Hint at upcoming events or consequences
-        * Keep thoughts concise: 1-2 sentences max.
-        * VIOLATION CHECK: Before finalizing, count your thought blocks.
-          If more than the cap for current verbosity, cut the weakest ones.
-          For each remaining thought, ask: "Does this reveal something the reader
-          couldn't get from the dialogue and action?" If no, DELETE it.
+    - INTERNAL THOUGHTS (STRICT RULES):
+        * Thoughts are OPTIONAL, not default. Most responses should have ZERO.
+        * Concise/Balanced: 0-1 thought blocks. Detailed: 0-2.
+        * Include ONLY when revealing: a secret plan, hidden desire, strategic assessment, or foreshadowing.
+        * FORBIDDEN: Thoughts that echo or emotionally restate what was just shown through action/dialogue.
+        * Thoughts may NOT be the final beat of a response. End with dialogue or action.
+        * Keep thoughts to 1-2 sentences max.
 ` : '';
 
   // Line of sight and layering awareness (#17)
