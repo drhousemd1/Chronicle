@@ -586,7 +586,9 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
   });
   const [expandedCustomSections, setExpandedCustomSections] = useState<Record<string, boolean>>({});
   const [activeTraitSection, setActiveTraitSection] = useState<string>('profile');
-  const [navButtonImages, setNavButtonImages] = useState<Record<string, NavButtonImageConfig>>({});
+  const [localNavButtonImages, setLocalNavButtonImages] = useState<Record<string, NavButtonImageConfig>>({});
+  const navButtonImages = navButtonImagesProp ?? localNavButtonImages;
+  const setNavButtonImages = onNavButtonImagesChange ?? setLocalNavButtonImages;
   const [showNavImageEditor, setShowNavImageEditor] = useState(false);
   const [editingNavKey, setEditingNavKey] = useState<string>('physicalAppearance');
   const [draftNavImage, setDraftNavImage] = useState<NavButtonImageConfig | null>(null);
