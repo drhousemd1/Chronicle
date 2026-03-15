@@ -77,7 +77,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
         {title}
       </h4>
       
-       <div className="bg-gradient-to-br from-zinc-800 to-zinc-900 rounded-xl p-4 shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
+       <div className="bg-[#1c1c1f] rounded-xl p-4 shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
         <div className="flex flex-wrap gap-2">
           {/* Prebuilt options */}
           {prebuiltOptions.map(option => {
@@ -88,10 +88,10 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
                 type="button"
                 onClick={() => toggleOption(option)}
                 className={cn(
-                  "px-3 py-1.5 rounded-lg text-xs font-medium border transition-all",
+                  "px-3 py-1.5 rounded-lg text-xs font-medium border-0 transition-all shadow-[0_6px_16px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.07),inset_0_-1px_0_rgba(0,0,0,0.20)]",
                   isSelected
-                    ? "bg-blue-500/20 text-blue-300 border-blue-500/30"
-                    : "bg-zinc-800 text-zinc-400 border-[#4a5f7f] hover:bg-zinc-700 hover:text-zinc-300"
+                    ? "bg-blue-500 text-white"
+                    : "bg-[#3c3e47] text-zinc-300 hover:brightness-110"
                 )}
               >
                 {option}
