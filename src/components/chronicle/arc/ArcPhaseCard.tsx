@@ -162,6 +162,7 @@ export const ArcPhaseCard: React.FC<ArcPhaseCardProps> = ({
     return (
       <button
         type="button"
+        tabIndex={-1}
         onClick={onClick}
         disabled={enhancingField !== null}
         title="Enhance with AI"
