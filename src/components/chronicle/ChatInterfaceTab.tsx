@@ -798,7 +798,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     } catch (err) {
       console.error('[Pass 14] Narrative directive generation failed:', err);
     }
-  }, [conversation?.messages, effectiveWorldCore.storyGoals, appData.characters, sessionStates, currentDay, currentTimeOfDay]);
+  }, [appData.conversations, conversationId, effectiveWorldCore.storyGoals, appData.characters, sessionStates, currentDay, currentTimeOfDay]);
 
   // Ref to always hold current sideCharacters - avoids stale closure in async callbacks
   const sideCharactersRef = useRef<SideCharacter[]>(appData.sideCharacters || []);
