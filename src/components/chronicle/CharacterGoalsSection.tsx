@@ -288,7 +288,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
                 )}
 
                 {/* Full width: Steps Section */}
-                <div className="mt-4 pt-4 border-t border-[#4a5f7f]">
+                <div className="mt-4 pt-4 border-t border-black/35">
                   <h4 className="text-[10px] font-bold text-white uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
                     <CheckSquare className="h-4 w-4 text-blue-500" />
                     Steps
