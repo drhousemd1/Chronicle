@@ -765,12 +765,10 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
     setNavButtonImages(updatedImages);
     setShowNavImageEditor(false);
 
-    // Persist to DB
-    if (scenarioId) {
-      updateNavButtonImages(scenarioId, updatedImages).catch((e) =>
-        console.error('Failed to persist nav button images:', e)
-      );
-    }
+    // Persist to global app_settings
+    updateNavButtonImages(updatedImages).catch((e) =>
+      console.error('Failed to persist nav button images:', e)
+    );
   };
 
   const handleRemoveNavImage = () => {

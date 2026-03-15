@@ -1917,15 +1917,26 @@ export async function updateStoryUiSettings(
 }
 
 export async function updateNavButtonImages(
-  scenarioId: string,
   navButtonImages: Record<string, any>
 ): Promise<void> {
-  await supabase.from('stories').update({ nav_button_images: navButtonImages } as any).eq('id', scenarioId);
+  const { error: updateError } = await supabase
+    .from('app_settings')
+    .update({ setting_value: navButtonImages as any, updated_at: new Date().toISOString() })
+    .eq('setting_key', 'nav_button_images');
+
+  if (updateError) {
+    // Row doesn't exist yet — insert it
+    await supabase
+      .from('app_settings')
+      .insert({ setting_key: 'nav_button_images', setting_value: navButtonImages as any });
+  }
 }
 
-export async function loadNavButtonImages(
-  scenarioId: string
-): Promise<Record<string, any>> {
-  const { data } = await supabase.from('stories').select('nav_button_images').eq('id', scenarioId).single();
-  return (data as any)?.nav_button_images || {};
+export async function loadNavButtonImages(): Promise<Record<string, any>> {
+  const { data } = await supabase
+    .from('app_settings')
+    .select('setting_value')
+    .eq('setting_key', 'nav_button_images')
+    .maybeSingle();
+  return (data?.setting_value as Record<string, any>) || {};
 }
