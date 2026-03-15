@@ -650,40 +650,6 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
     }
   }, [navButtonImagesProp]);
 
-  // --- Header tile image positioning ---
-  const [headerTileImageSize, setHeaderTileImageSize] = useState<Size2D | null>(
-    () => (selected?.avatarDataUrl ? avatarNaturalSizeCache.get(selected.avatarDataUrl) ?? null : null)
-  );
-
-  useEffect(() => {
-    if (!selected?.avatarDataUrl) {
-      setHeaderTileImageSize(null);
-      return;
-    }
-    const cached = avatarNaturalSizeCache.get(selected.avatarDataUrl);
-    if (cached) {
-      setHeaderTileImageSize(cached);
-      return;
-    }
-    const img = new Image();
-    img.onload = () => {
-      const size = { width: img.naturalWidth, height: img.naturalHeight };
-      avatarNaturalSizeCache.set(selected.avatarDataUrl!, size);
-      setHeaderTileImageSize(size);
-    };
-    img.src = selected.avatarDataUrl;
-  }, [selected?.avatarDataUrl]);
-
-  const headerTileObjectPosition = useMemo(() => {
-    if (!selected?.avatarPosition || !headerTileImageSize) return '50% 50%';
-    const mapped = mapObjectPositionFromPreviewToTile(
-      selected.avatarPosition as { x: number; y: number },
-      headerTileImageSize,
-      { width: CHARACTER_HEADER_TILE_WIDTH, height: CHARACTER_HEADER_TILE_HEIGHT }
-    );
-    return `${mapped.x}% ${mapped.y}%`;
-  }, [selected?.avatarPosition, headerTileImageSize]);
-
   const toggleSection = (key: string) => {
     setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
   };
