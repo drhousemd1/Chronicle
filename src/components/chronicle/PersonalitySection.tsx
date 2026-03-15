@@ -188,6 +188,9 @@ const TraitList: React.FC<{
   </div>
 );
 
+const hasRealContent = (arr: PersonalityTrait[]) =>
+  arr.some(t => t.label.trim() || t.value.trim());
+
 export const PersonalitySection: React.FC<PersonalitySectionProps> = ({
   personality,
   onChange,
@@ -285,7 +288,16 @@ export const PersonalitySection: React.FC<PersonalitySectionProps> = ({
                 <div className="flex p-1.5 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] w-fit">
                   <button
                     type="button"
-                    onClick={() => onChange({ ...personality, splitMode: false })}
+                    onClick={() => {
+                      const patch: Partial<CharacterPersonality> = { ...personality, splitMode: false };
+                      if (!hasRealContent(personality.traits) && (hasRealContent(personality.outwardTraits) || hasRealContent(personality.inwardTraits))) {
+                        patch.traits = [...personality.outwardTraits, ...personality.inwardTraits]
+                          .filter(t => t.label.trim() || t.value.trim())
+                          .map(t => ({ ...t, id: uid('ptrait') }));
+                        if (patch.traits.length === 0) patch.traits = [defaultTrait()];
+                      }
+                      onChange(patch as CharacterPersonality);
+                    }}
                     className={cn(
                       "px-3.5 py-1.5 text-[10px] font-black rounded-lg border-none cursor-pointer transition-all",
                       !personality.splitMode
@@ -297,7 +309,13 @@ export const PersonalitySection: React.FC<PersonalitySectionProps> = ({
                   </button>
                   <button
                     type="button"
-                    onClick={() => onChange({ ...personality, splitMode: true })}
+                    onClick={() => {
+                      const patch: Partial<CharacterPersonality> = { ...personality, splitMode: true };
+                      if (!hasRealContent(personality.outwardTraits) && hasRealContent(personality.traits)) {
+                        patch.outwardTraits = personality.traits.map(t => ({ ...t, id: uid('ptrait') }));
+                      }
+                      onChange(patch as CharacterPersonality);
+                    }}
                     className={cn(
                       "px-3.5 py-1.5 text-[10px] font-black rounded-lg border-none cursor-pointer transition-all",
                       personality.splitMode
