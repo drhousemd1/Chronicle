@@ -182,7 +182,7 @@ const CharacterRosterTile: React.FC<{
             : "border border-[#4a5f7f]"
         )}
       >
-        {char.avatarDataUrl ? (
+        {hasAvatar ? (
           <img
             src={char.avatarDataUrl}
             alt={char.name}
