@@ -165,6 +165,7 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
               />
               <button
                 type="button"
+                tabIndex={-1}
                 onClick={() => {
                   const locs = locations.filter((_, i) => i !== idx);
                   updateField('structuredLocations', locs.length > 0 ? locs : undefined);
