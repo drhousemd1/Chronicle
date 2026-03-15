@@ -212,6 +212,7 @@ Service: `src/services/side-character-generator.ts`
 | `previousDayRef` | `useRef<number>` | Tracks previous day value; reset on conversation switch; used by compression effect to detect real day increments |
 | `memoriesLoaded` | `boolean` | Guards compression effect — prevents firing before conversation memories are fetched |
 | `extractionCountRef` | `useRef<number>` | Counts AI responses; extraction fires when `count % 5 === 0`; reset on conversation switch |
+| `narrativeDirectiveRef` | `useRef<string \| null>` | Pass 14 — Stores the narrative director's tactical directive for the next turn. Generated async after each AI response by `generate-narrative-directive` edge function. Injected as `[DIRECTOR: ...]` tag in next `handleSend`, then cleared (one-shot). Reset on conversation switch. |
 | `sidebarBgIsLight` | `boolean` | Detected via canvas pixel luminosity (threshold > 128). Drives adaptive frosted glass theming on character cards, scroll indicators, and "Exit Scenario" text color |
 
 ---
