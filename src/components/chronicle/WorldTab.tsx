@@ -1653,7 +1653,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
             </div>
           </section>
         </div>
-      </div>
+      </TabFieldNavigator>
       
       {/* Scene Tag Editor Modal */}
       <SceneTagEditorModal

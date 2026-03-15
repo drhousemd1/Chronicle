@@ -2220,7 +2220,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
             onSelect={(type) => handleAddSection(type as CharacterTraitSectionType)}
           />
         </div>
-      </div>
+      </TabFieldNavigator>
 
       {/* Avatar Generation Modal */}
       <AvatarGenerationModal
