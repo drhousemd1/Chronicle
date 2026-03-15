@@ -588,16 +588,6 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
           "tonight," "eventually," "once we're done." If any appears without an accompanying concrete
           present-tense action in the same response, REWRITE to include immediate action.
 
-    - NO REHASH / NO REPHRASE (MANDATORY):
-        * Do NOT paraphrase, restate, or rephrase dialogue or questions from your previous response.
-        * Each response must introduce NEW dialogue, NEW actions, NEW developments.
-        * If your previous response asked a question and the user responded, do NOT ask a variation
-          of the same question. Act on the answer and advance.
-        * FORBIDDEN: Rephrasing the same instruction, request, or statement across multiple responses.
-          If you said "eat up, we've got more to discuss" — you may NOT say "finish up, there's more to talk about."
-        * The story must PROGRESS with each exchange. Circular dialogue = VIOLATION.
-        * VIOLATION CHECK: Before finalizing, compare your response to the last 2 assistant messages.
-          If any dialogue line restates a prior line's meaning, DELETE it and write something new.
 `;
 
   // NSFW intensity handling (explicitness/vulgarity only — verbosity is separate)
