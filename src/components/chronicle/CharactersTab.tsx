@@ -590,6 +590,16 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const avatarContainerRef = useRef<HTMLDivElement>(null);
 
+  // Load nav button images from DB on mount
+  useEffect(() => {
+    if (!scenarioId) return;
+    loadNavButtonImages(scenarioId).then((images) => {
+      if (images && Object.keys(images).length > 0) {
+        setNavButtonImages(images as Record<string, NavButtonImageConfig>);
+      }
+    }).catch(() => {});
+  }, [scenarioId]);
+
   const toggleSection = (key: string) => {
     setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
   };
