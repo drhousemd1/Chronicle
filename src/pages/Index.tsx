@@ -2115,7 +2115,7 @@ const IndexContent = () => {
                 <button
                   type="button"
                   onClick={() => setConvDeleteAllOpen(true)}
-                  className="inline-flex items-center justify-center rounded-xl h-10 px-6 border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-ghost-white active:bg-ghost-white transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
+                  className="inline-flex items-center justify-center rounded-xl h-10 px-6 border-0 bg-[#303035] text-[#eaedf1] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:bg-[#343439] active:bg-[#343439] transition-all active:scale-95 text-xs font-bold leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40"
                 >
                   Delete All
                 </button>
@@ -2126,7 +2126,7 @@ const IndexContent = () => {
                     <DropdownMenuTrigger asChild>
                       <button
                         type="button"
-                        className="inline-flex items-center justify-center rounded-xl px-3 py-2 border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-ghost-white active:bg-ghost-white transition-all active:scale-95"
+                        className="inline-flex items-center justify-center h-10 w-10 rounded-xl border-0 bg-[#303035] text-[#eaedf1] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:bg-[#343439] active:bg-[#343439] transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40"
                       >
                         <Settings className="w-5 h-5" />
                       </button>
@@ -2145,7 +2145,7 @@ const IndexContent = () => {
                   <button
                     type="button"
                     onClick={() => setGuideTheme(prev => prev === 'dark' ? 'light' : 'dark')}
-                    className="inline-flex items-center justify-center h-10 w-10 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95"
+                    className="inline-flex items-center justify-center h-10 w-10 rounded-xl border-0 bg-[#303035] text-[#eaedf1] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:bg-[#343439] active:bg-[#343439] transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40"
                     title={guideTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
                   >
                     {guideTheme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
@@ -2153,14 +2153,14 @@ const IndexContent = () => {
                   <button
                     type="button"
                     onClick={() => guideSaveRef.current?.()}
-                    className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
+                    className="inline-flex items-center justify-center h-10 px-6 rounded-xl border-0 bg-[#303035] text-[#eaedf1] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:bg-[#343439] active:bg-[#343439] transition-all active:scale-95 text-xs font-bold leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40"
                   >
                     Save
                   </button>
                   <button
                     type="button"
                     onClick={() => guideSyncAllRef.current?.()}
-                    className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
+                    className="inline-flex items-center justify-center h-10 px-6 rounded-xl border-0 bg-[#303035] text-[#eaedf1] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:bg-[#343439] active:bg-[#343439] transition-all active:scale-95 text-xs font-bold leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40"
                   >
                     Sync All
                   </button>
@@ -2171,7 +2171,7 @@ const IndexContent = () => {
                   <button
                     type="button"
                     onClick={() => { styleGuideEditsRef.current?.(); }}
-                    className="relative inline-flex items-center gap-2 justify-center h-10 px-5 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
+                    className="relative inline-flex items-center gap-2 justify-center h-10 px-5 rounded-xl border-0 bg-[#303035] text-[#eaedf1] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:bg-[#343439] active:bg-[#343439] transition-all active:scale-95 text-xs font-bold leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40"
                   >
                     <Pencil size={14} />
                     Edits
@@ -2184,7 +2184,7 @@ const IndexContent = () => {
                   <button
                     type="button"
                     onClick={() => styleGuideDownloadRef.current?.()}
-                    className="inline-flex items-center gap-2 justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
+                    className="inline-flex items-center gap-2 justify-center h-10 px-6 rounded-xl border-0 bg-[#303035] text-[#eaedf1] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:bg-[#343439] active:bg-[#343439] transition-all active:scale-95 text-xs font-bold leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40"
                   >
                     <Download size={14} />
                     Download
@@ -2197,7 +2197,7 @@ const IndexContent = () => {
                     <button
                       type="button"
                       onClick={() => imageLibraryUploadRef.current?.()}
-                      className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:opacity-90 transition-opacity text-[10px] font-bold leading-none uppercase tracking-wider"
+                      className="inline-flex items-center justify-center h-10 px-6 rounded-xl border-0 bg-[#303035] text-[#eaedf1] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:bg-[#343439] active:bg-[#343439] transition-all active:scale-95 text-xs font-bold leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40"
                     >
                       + Upload Images
                     </button>
@@ -2206,7 +2206,7 @@ const IndexContent = () => {
                     <DropdownMenuTrigger asChild>
                       <button
                         type="button"
-                        className="inline-flex items-center justify-center rounded-xl px-3 py-2 border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-ghost-white active:bg-ghost-white transition-all active:scale-95"
+                        className="inline-flex items-center justify-center h-10 w-10 rounded-xl border-0 bg-[#303035] text-[#eaedf1] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:bg-[#343439] active:bg-[#343439] transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40"
                       >
                         <Settings className="w-5 h-5" />
                       </button>
@@ -2283,13 +2283,7 @@ const IndexContent = () => {
                           handleSaveCharacter();
                         }}
                         disabled={isSaving || isSavingAndClosing}
-                        className="flex h-10 px-6 items-center justify-center gap-2
-                          rounded-xl border border-[hsl(var(--ui-border))] 
-                          bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
-                          text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider
-hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-events-none
-                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ghost-white
-                          transition-colors"
+                        className="flex h-10 px-6 items-center justify-center gap-2 rounded-xl border-0 bg-[#303035] text-[#eaedf1] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:bg-[#343439] active:bg-[#343439] transition-all active:scale-95 text-xs font-bold leading-none disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40"
                       >
                         {isSaving ? 'Saving...' : 'Save'}
                       </button>
@@ -2299,13 +2293,7 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
                       <button
                         type="button"
                         onClick={handleCancelCharacterEdit}
-                        className="flex h-10 px-6 items-center justify-center gap-2
-                          rounded-xl border border-[hsl(var(--ui-border))] 
-                          bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
-                          text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider
-                          hover:bg-ghost-white active:bg-ghost-white
-                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ghost-white
-                          transition-colors"
+                        className="flex h-10 px-6 items-center justify-center gap-2 rounded-xl border-0 bg-[#303035] text-[#eaedf1] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:bg-[#343439] active:bg-[#343439] transition-all active:scale-95 text-xs font-bold leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40"
                       >
                         Cancel
                       </button>
@@ -2317,13 +2305,7 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
                             type="button"
                             onClick={handleSaveToLibrary}
                             disabled={isSavingToLibrary}
-                            className="flex h-10 px-6 items-center justify-center gap-2
-                              rounded-xl border border-[hsl(var(--ui-border))] 
-                              bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
-                              text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider
-                              hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-events-none
-                              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ghost-white
-                              transition-colors"
+                            className="flex h-10 px-6 items-center justify-center gap-2 rounded-xl border-0 bg-[#303035] text-[#eaedf1] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:bg-[#343439] active:bg-[#343439] transition-all active:scale-95 text-xs font-bold leading-none disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40"
                           >
                             {isSavingToLibrary ? 'Saving...' : selectedCharacterIsInLibrary ? 'Update Character' : '+ Character Library'}
                           </button>
@@ -2339,21 +2321,21 @@ hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-
                       <button
                         type="button"
                         onClick={() => setTab("world")}
-                        className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-ghost-white active:bg-ghost-white transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
+                        className="inline-flex items-center justify-center h-10 px-6 rounded-xl border-0 bg-[#303035] text-[#eaedf1] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:bg-[#343439] active:bg-[#343439] transition-all active:scale-95 text-xs font-bold leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40"
                       >
                         Cancel
                       </button>
                       <button
                         type="button"
                         onClick={() => setIsCharacterPickerOpen(true)}
-                        className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-ghost-white active:bg-ghost-white transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
+                        className="inline-flex items-center justify-center h-10 px-6 rounded-xl border-0 bg-[#303035] text-[#eaedf1] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:bg-[#343439] active:bg-[#343439] transition-all active:scale-95 text-xs font-bold leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40"
                       >
                         Import from Library
                       </button>
                       <button
                         type="button"
                         onClick={handleCreateCharacter}
-                        className="inline-flex items-center justify-center h-10 px-6 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:bg-ghost-white active:bg-ghost-white transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider"
+                        className="inline-flex items-center justify-center h-10 px-6 rounded-xl border-0 bg-[#303035] text-[#eaedf1] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:bg-[#343439] active:bg-[#343439] transition-all active:scale-95 text-xs font-bold leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40"
                       >
                         + New Character
                       </button>
