@@ -166,6 +166,7 @@ See Section 5 above for comprehensive bug list.
 - **RESOLVED — 2026-03-04**: Extraction throttling — `extract-character-updates` now only fires every 5th AI response (controlled by `extractionCountRef` in `ChatInterfaceTab.tsx`) to reduce API costs.
 - **RESOLVED — 2026-03-04**: CORS hardening — all 12 Edge Functions now use dynamic origin checking via `getCorsHeaders(req)` against an `ALLOWED_ORIGINS` whitelist instead of wildcard `'*'`.
 - **RESOLVED — 2026-03-07**: Pass 7 — Dialogue momentum & loop elimination. Confirmation Closure Protocol, No Deferral Loop, No Rehash rules added to system prompt. Priority hierarchy hardened (forward-momentum = #2 priority, never overridden). Runtime anti-loop micro-directives in ChatInterfaceTab. Regeneration context duplication fixed. Verbosity hard-capped with paragraph limits and verbosity-based max_tokens. 403 retry directive rewritten to require concrete action instead of evasive deflection.
+- **RESOLVED — 2026-03-15**: Pass 8 — Anti-stagnation & initiative. TURN PROGRESSION CONTRACT mandates concrete scene delta + proactive AI move each turn. STRUCTURE VARIETY GUARD forbids repeating same output skeleton. Internal thoughts made optional with frequency caps. Runtime detectors added for structural triad repetition and low-initiative drift. Style hints diversified with action-led and decision-driven variants. Continue prompt rewritten to demand decisive forward action.
 
 ---
 
