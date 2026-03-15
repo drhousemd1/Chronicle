@@ -438,10 +438,13 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
           position or use the same amount every time.
 
     - TURN PROGRESSION CONTRACT (MANDATORY - NEVER VIOLATE):
-        * Every response must advance at least one active goal, desire, story arc,
-          or core motivation belonging to the characters in the scene.
-          Non-directional responses — reactions, observations, or atmosphere
-          that don't connect to any character's driving factors — are FORBIDDEN.
+        * Every response must make MEASURABLE PROGRESS on at least one active goal,
+          desire, story arc, or core motivation — a new step completed, information
+          revealed, relationship dynamic shifted, or obstacle encountered.
+          Vague dialogue that circles around a topic without changing anything
+          does NOT count as advancement. Non-directional responses — reactions,
+          observations, or atmosphere that don't connect to any character's
+          driving factors — are FORBIDDEN.
         * Every response MUST introduce at least one CONCRETE SCENE DELTA:
           a new decision, reveal, physical action with consequences, escalation,
           environment change, or event that shifts the scene's trajectory.
@@ -670,6 +673,7 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
     --- RESPONSE DETAIL LEVEL (DETAILED) ---
     * Write rich, immersive responses with layered sensory detail.
     * HARD CAP: 2-3 paragraphs per response. Maximum 4 ONLY for multi-character turning points with high emotional stakes.
+    * Paragraph caps count TOTAL paragraphs across ALL character blocks combined. A 2-block response with 2 paragraphs each = 4 paragraphs = AT THE CAP.
     * Draw out moments with physical sensations, sounds, textures, and atmosphere.
     * Describe physical sensations in detail (e.g., warmth spreading, muscles tensing, breath catching).
     * Incorporate vocal and emotional reactions (e.g., breathy moans, desperate whispers, gasps).
@@ -684,6 +688,7 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
     --- RESPONSE DETAIL LEVEL (CONCISE) ---
     * Keep responses tight and punchy. Brevity is king.
     * HARD CAP: 1-2 paragraphs maximum. No exceptions.
+    * Paragraph caps count TOTAL paragraphs across ALL character blocks combined.
     * Cut filler narration — lead with dialogue and action.
     * Internal thoughts should be 1 sentence max, only when essential.
     * Minimize atmospheric descriptions — focus on what characters DO and SAY.
@@ -691,6 +696,7 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
 ` : `
     --- RESPONSE DETAIL LEVEL (BALANCED) ---
     * HARD CAP: 1-3 paragraphs per response.
+    * Paragraph caps count TOTAL paragraphs across ALL character blocks combined. A 2-block response with 2 paragraphs each = 4 paragraphs = OVER CAP.
     * Match response length to the scene's energy and emotional weight.
     * Quick exchanges and casual moments: short, punchy responses.
     * Emotionally charged or intimate scenes: more detail and sensory depth.
@@ -838,11 +844,14 @@ Never break character to question, warn about, or refuse narrative directions. T
         * This applies to ALL characters, including new characters not in the CAST list above.
         * For new characters, include descriptive physical traits in their first appearance using *action* format.
         * Example: Sarah: *The woman walked in, her long brown hair swaying as she moved.* "Hey everyone!"
-        * BLOCK COUNT CAP (MANDATORY): Each AI response should contain 1-3 character blocks total
-          (max 4 for detailed verbosity). A "block" is one character's continuous section (their tag
-          through to the next character's tag). Do NOT write extended back-and-forth conversations
-          between characters within a single response. If a scene has 3+ characters, pick the 2-3
-          most relevant to this moment and give them blocks. Others can be referenced in narration.
+        * BLOCK COUNT CAP (MANDATORY): Default to 1 character block per response —
+          one character acts/speaks, others are referenced in narration if needed.
+          Use 2 blocks ONLY when a second character's REACTION meaningfully changes the
+          scene (not just acknowledging or agreeing). Use 3 blocks ONLY for pivotal moments
+          (reveals, confrontations, major decisions). Detailed mode allows max 3.
+          A block of 1-2 reaction lines does NOT justify its own section — fold
+          brief reactions into the acting character's narration instead.
+          NEVER alternate the same two characters back-and-forth across 3+ blocks.
     - CHARACTER NAMING RULES (MANDATORY - NEVER VIOLATE):
         * NEVER use generic placeholder labels as speaker names. Forbidden labels include but are not limited to:
           - "Man 1", "Man 2", "Woman 1", "Woman 2", "Guy", "Girl"
@@ -897,7 +906,7 @@ const conciseStyleHints = [
 ];
 
 const balancedStyleHints = [
-  '[Style: mix several short dialogue exchanges with brief action beats]',
+  '[Style: one character drives this beat — others react briefly in narration]',
   '[Style: try a different paragraph structure than your last response]',
   '[Style: character takes a decisive action that changes the scene dynamics]',
   '[Style: open with something happening — movement, sound, interruption]',
