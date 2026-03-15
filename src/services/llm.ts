@@ -856,14 +856,20 @@ The user wants a DIFFERENT VERSION of this response. Guidelines:
 ` : '';
 
   // Build messages array for OpenAI-compatible API
-  const messages = [
-    { role: 'system' as const, content: systemInstruction },
+  const messages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
+    { role: 'system', content: systemInstruction },
     ...conversation.messages.map(m => ({
       role: m.role === 'assistant' ? 'assistant' as const : 'user' as const,
       content: m.text
     })),
-    { role: 'user' as const, content: (sessionMessageCount != null ? `[SESSION: Message ${sessionMessageCount} of current session] ` : '') + (lengthDirective ? lengthDirective + ' ' : '') + userMessage + regenerationDirective + ' ' + getRandomStyleHint(appData.uiSettings?.responseVerbosity || 'balanced') }
   ];
+
+  // Inject runtime directives as a dedicated high-priority system message (not buried in user text)
+  if (runtimeDirectives) {
+    messages.push({ role: 'system', content: `RUNTIME DIRECTIVES (HIGH PRIORITY — follow these for THIS response only):\n${runtimeDirectives}` });
+  }
+
+  messages.push({ role: 'user', content: (sessionMessageCount != null ? `[SESSION: Message ${sessionMessageCount} of current session] ` : '') + (lengthDirective ? lengthDirective + ' ' : '') + userMessage + regenerationDirective + ' ' + getRandomStyleHint(appData.uiSettings?.responseVerbosity || 'balanced') });
 
   console.log(`[llm.ts] Calling chat edge function with model: ${modelId}`);
 
