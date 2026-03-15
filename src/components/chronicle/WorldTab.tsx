@@ -621,8 +621,9 @@ export const WorldTab: React.FC<WorldTabProps> = ({
         
         <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-none pb-20 bg-[#2a2a2f]">
           <section className="space-y-2">
-            <div className="bg-[#4a5f7f] px-4 py-2 rounded-xl mb-3 shadow-sm">
-               <div className="text-[10px] font-bold text-white uppercase tracking-wider">Main Characters</div>
+            <div className="relative overflow-hidden bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 px-5 py-3 rounded-xl mb-3 shadow-lg">
+              <div className="absolute inset-0 z-0 bg-gradient-to-tr from-white/10 to-transparent opacity-40" style={{ height: '60%' }} />
+              <div className="text-[10px] font-bold text-white uppercase tracking-wider relative z-[1]">Main Characters</div>
             </div>
             <div className="space-y-2">
               {mainCharacters.map(char => <CharacterRosterTile key={char.id} char={char} onSelect={onSelectCharacter} errors={publishErrors.characters?.[char.id]} isExpanded={expandedRosterTileId === char.id} onToggleExpand={(charId) => setExpandedRosterTileId(prev => prev === charId ? null : charId)} />)}
@@ -633,8 +634,9 @@ export const WorldTab: React.FC<WorldTabProps> = ({
           </section>
 
           <section className="space-y-2">
-            <div className="bg-[#4a5f7f] px-4 py-2 rounded-xl mb-3 shadow-sm">
-               <div className="text-[10px] font-bold text-white uppercase tracking-wider">Side Characters</div>
+            <div className="relative overflow-hidden bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 px-5 py-3 rounded-xl mb-3 shadow-lg">
+              <div className="absolute inset-0 z-0 bg-gradient-to-tr from-white/10 to-transparent opacity-40" style={{ height: '60%' }} />
+              <div className="text-[10px] font-bold text-white uppercase tracking-wider relative z-[1]">Side Characters</div>
             </div>
             <div className="space-y-2">
               {sideCharacters.map(char => <CharacterRosterTile key={char.id} char={char} onSelect={onSelectCharacter} errors={publishErrors.characters?.[char.id]} isExpanded={expandedRosterTileId === char.id} onToggleExpand={(charId) => setExpandedRosterTileId(prev => prev === charId ? null : charId)} />)}
