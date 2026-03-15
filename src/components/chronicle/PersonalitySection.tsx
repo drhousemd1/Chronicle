@@ -188,6 +188,9 @@ const TraitList: React.FC<{
   </div>
 );
 
+const hasRealContent = (arr: PersonalityTrait[]) =>
+  arr.some(t => t.label.trim() || t.value.trim());
+
 export const PersonalitySection: React.FC<PersonalitySectionProps> = ({
   personality,
   onChange,
