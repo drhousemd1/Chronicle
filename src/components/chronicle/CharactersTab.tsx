@@ -2060,6 +2060,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                             />
                             <button
                               type="button"
+                              tabIndex={-1}
                               onClick={() => {
                                 const nextItems = (section.items.length > 0 ? section.items : items).filter(it => it.id !== item.id);
                                 handleUpdateSection(selected.id, section.id, { items: nextItems.length > 0 ? nextItems : [{ id: uid('item'), label: '', value: '', createdAt: now(), updatedAt: now() }] });
