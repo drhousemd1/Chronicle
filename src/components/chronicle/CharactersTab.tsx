@@ -125,6 +125,49 @@ const CHARACTER_NAV_TRAY_PADDING = 10;
 const CHARACTER_NAV_PREVIEW_WIDTH =
   CHARACTER_NAV_SIDEBAR_WIDTH - CHARACTER_NAV_OUTER_PADDING * 2 - CHARACTER_NAV_TRAY_PADDING * 2;
 
+const CHARACTER_HEADER_TILE_WIDTH = 268;
+const CHARACTER_HEADER_TILE_HEIGHT = 140;
+const CHARACTER_AVATAR_PREVIEW_SIZE = 192;
+
+type Size2D = { width: number; height: number };
+const avatarNaturalSizeCache = new Map<string, Size2D>();
+
+const clampPercent = (value: number): number => Math.max(0, Math.min(100, value));
+
+const mapObjectPositionFromPreviewToTile = (
+  stored: { x: number; y: number },
+  imageSize: Size2D,
+  tileSize: Size2D
+): { x: number; y: number } => {
+  const fromSize = {
+    width: CHARACTER_AVATAR_PREVIEW_SIZE,
+    height: CHARACTER_AVATAR_PREVIEW_SIZE,
+  };
+  const fromScale = Math.max(fromSize.width / imageSize.width, fromSize.height / imageSize.height);
+  const toScale = Math.max(tileSize.width / imageSize.width, tileSize.height / imageSize.height);
+
+  const mapAxis = (
+    storedPercent: number,
+    imageLength: number,
+    fromLength: number,
+    toLength: number
+  ): number => {
+    const fromRendered = imageLength * fromScale;
+    const fromOverflow = Math.max(0, fromRendered - fromLength);
+    const sourceOffset = fromOverflow === 0 ? 0 : ((fromOverflow * clampPercent(storedPercent)) / 100) / fromScale;
+    const toRendered = imageLength * toScale;
+    const toOverflow = Math.max(0, toRendered - toLength);
+    if (toOverflow === 0) return 50;
+    const toOffset = sourceOffset * toScale;
+    return clampPercent((toOffset / toOverflow) * 100);
+  };
+
+  return {
+    x: mapAxis(stored.x, imageSize.width, fromSize.width, tileSize.width),
+    y: mapAxis(stored.y, imageSize.height, fromSize.height, tileSize.height),
+  };
+};
+
 const isFilledText = (value: string | null | undefined) => typeof value === 'string' && value.trim().length > 0;
 
 const toProgress = (completed: number, total: number): SectionProgress => ({
