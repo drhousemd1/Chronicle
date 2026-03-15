@@ -30,18 +30,16 @@ export const GuidanceStrengthSlider: React.FC<GuidanceStrengthSliderProps> = ({ 
 
   return (
     <div>
-      {/* Title */}
       <div className="mt-3.5 mb-1.5">
         <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
           Guidance Strength
         </span>
       </div>
-      {/* Subtitle */}
+
       <p className="text-sm text-zinc-400 mb-2.5">
         How strongly the AI should steer toward this goal.
       </p>
 
-      {/* Slider track */}
       <div
         className="relative w-full cursor-pointer"
         style={{ height: '12px', borderRadius: '999px', background: 'rgba(21,25,34,0.95)' }}
@@ -53,7 +51,6 @@ export const GuidanceStrengthSlider: React.FC<GuidanceStrengthSliderProps> = ({ 
           else onChange('flexible');
         }}
       >
-        {/* Fill */}
         <div
           className="absolute top-0 left-0 h-full rounded-full transition-[width] duration-200 ease-out"
           style={{
@@ -61,14 +58,12 @@ export const GuidanceStrengthSlider: React.FC<GuidanceStrengthSliderProps> = ({ 
             background: 'linear-gradient(90deg, #2b4e8d, #4b79d8 60%, #7dadf5)',
           }}
         />
-        {/* Knob */}
         <div
           className="absolute top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white border-[3px] border-blue-500 shadow-[0_2px_8px_rgba(0,0,0,0.3)] transition-[left] duration-200 ease-out"
           style={{ left: `${fillPercent}%`, transform: `translate(-50%, -50%)` }}
         />
       </div>
 
-      {/* Labels */}
       <div className="flex justify-between mt-2">
         {LEVELS.map((level) => (
           <span
@@ -84,8 +79,7 @@ export const GuidanceStrengthSlider: React.FC<GuidanceStrengthSliderProps> = ({ 
         ))}
       </div>
 
-      {/* Description body */}
-      <div className="mt-3 bg-zinc-900 rounded-xl p-4 border border-ghost-white">
+      <div className="mt-3 bg-zinc-900 rounded-xl p-4 shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
         <p className="text-sm text-zinc-400 leading-relaxed m-0">
           {DESCRIPTIONS[value]}
         </p>

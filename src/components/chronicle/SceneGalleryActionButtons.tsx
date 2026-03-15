@@ -32,17 +32,16 @@ export function SceneGalleryActionButtons({
   return (
     <>
       <div className="flex flex-row gap-2">
-        {/* Upload Button - Dark outlined dropdown trigger */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
               type="button"
               disabled={isDisabled}
               className="flex h-10 items-center justify-center gap-2 px-4
-                rounded-xl border border-[hsl(var(--ui-border))] 
-                bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
-                text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none
-                hover:bg-ghost-white active:bg-ghost-white disabled:opacity-50
+                rounded-xl border-0
+                bg-[#3c3e47] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]
+                text-[#eaedf1] text-xs font-bold leading-none
+                hover:bg-[#44464f] active:bg-[#44464f] disabled:opacity-50
                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40
                 transition-colors"
             >
@@ -50,8 +49,8 @@ export function SceneGalleryActionButtons({
               <span className="whitespace-nowrap">{isUploading ? "Uploading..." : "Upload Image"}</span>
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent 
-            align="end" 
+          <DropdownMenuContent
+            align="end"
             className="w-48 bg-[hsl(var(--ui-surface))] border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] shadow-lg z-50"
           >
             <DropdownMenuItem
@@ -71,7 +70,6 @@ export function SceneGalleryActionButtons({
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* AI Generate Button - Premium layered design */}
         <button
           type="button"
           onClick={onGenerateClick}
@@ -83,7 +81,6 @@ export function SceneGalleryActionButtons({
             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/45
             disabled:opacity-50"
         >
-          {/* Layer 1: Iridescent outer border ring */}
           <span
             aria-hidden
             className="absolute inset-0 rounded-xl"
@@ -95,14 +92,12 @@ export function SceneGalleryActionButtons({
             }}
           />
 
-          {/* Layer 2: Mask to create 2px border effect */}
           <span
             aria-hidden
             className="absolute inset-[2px] rounded-[10px]"
             style={{ background: "#2B2D33" }}
           />
 
-          {/* Layer 3: Button surface with gradient */}
           <span
             aria-hidden
             className="absolute inset-[2px] rounded-[10px]"
@@ -112,7 +107,6 @@ export function SceneGalleryActionButtons({
             }}
           />
 
-          {/* Layer 4: Soft top sheen */}
           <span
             aria-hidden
             className="absolute inset-[2px] rounded-[10px]"
@@ -122,7 +116,6 @@ export function SceneGalleryActionButtons({
             }}
           />
 
-          {/* Layer 5: Border sheen (top-left diagonal) */}
           <span
             aria-hidden
             className="absolute inset-0 rounded-xl pointer-events-none"
@@ -135,7 +128,6 @@ export function SceneGalleryActionButtons({
             }}
           />
 
-          {/* Layer 6: Teal bloom (top-left) */}
           <span
             aria-hidden
             className="absolute -left-8 -top-8 h-32 w-32 rounded-full blur-2xl pointer-events-none"
@@ -145,7 +137,6 @@ export function SceneGalleryActionButtons({
             }}
           />
 
-          {/* Layer 7: Purple bloom (bottom-right) */}
           <span
             aria-hidden
             className="absolute -right-10 -bottom-10 h-40 w-40 rounded-full blur-3xl pointer-events-none"
@@ -155,7 +146,6 @@ export function SceneGalleryActionButtons({
             }}
           />
 
-          {/* Layer 8: Crisp inner edge */}
           <span
             aria-hidden
             className="absolute inset-0 rounded-xl pointer-events-none"
@@ -165,10 +155,9 @@ export function SceneGalleryActionButtons({
             }}
           />
 
-          {/* Content layer */}
           <span className="relative z-10 flex items-center justify-center gap-2">
-            <Sparkles 
-              className="w-3.5 h-3.5 shrink-0 text-cyan-200" 
+            <Sparkles
+              className="w-3.5 h-3.5 shrink-0 text-cyan-200"
               style={{ filter: "drop-shadow(0 0 10px rgba(34,184,200,0.35))" }}
             />
             <span className="whitespace-nowrap drop-shadow-[0_1px_0_rgba(0,0,0,0.35)]">
