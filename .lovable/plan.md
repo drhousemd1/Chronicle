@@ -1,38 +1,53 @@
 
+# Sandbox Feature Transfer — Master Tracker
 
-## Plan: Apply Phase B Tile Card Changes
+## Source Documents
+- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
+- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
 
-### Summary
-Replace the compact gray info card at the top of the Character Builder sidebar with a full 268×140 image tile (matching the roster/chat tile visual family), and normalize the WorldTab roster tile to match the exact Phase B spec.
+## Features Being Transferred
+| ID | Feature | Status |
+|----|---------|--------|
+| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
+| B | Story Transfer Library (story-transfer.ts) | ✅ |
+| A | UI Audit System (schema, utils, findings, page) | 🔄 |
+| B | Story Export/Import Modals | ✅ |
+| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
+| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
+| - | StyleGuideTool.tsx audit button | ⬜ |
+| - | App.tsx route wiring | ⬜ |
+| - | Index.tsx full wiring | ⬜ |
 
-### Changes
+## Prompt Execution Status
 
-**1. `src/components/chronicle/CharactersTab.tsx`**
+| # | Target File(s) | Status | Notes |
+|---|---------------|--------|-------|
+| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
+| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
+| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
+| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
+| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
+| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
+| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
+| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
+| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
+| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
+| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
+| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
+| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
+| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
 
-- Add `useMemo` to the React import
-- Add constants and helpers after existing nav constants (line ~127):
-  - `CHARACTER_HEADER_TILE_WIDTH = 268`, `CHARACTER_HEADER_TILE_HEIGHT = 140`, `CHARACTER_AVATAR_PREVIEW_SIZE = 192`
-  - `Size2D` type, `avatarNaturalSizeCache` map
-  - `clampPercent` and `mapObjectPositionFromPreviewToTile` functions (same as WorldTab)
-- Inside the component, after `selected` is computed:
-  - Add `headerTileImageSize` state initialized from cache
-  - Add `useEffect` to load/cache natural image dimensions
-  - Add `headerTileObjectPosition` memo using the mapping function
-- Replace the top sidebar header (lines 1216–1241) — remove the slate/navy gradient wrapper and the compact `bg-[#2e2e33]` info row. Replace with:
-  - Simple `<div className="p-3">` wrapper
-  - 268×140 rounded-2xl tile with `border-[#4a5f7f]`
-  - Full-bleed avatar image with mapped `objectPosition`, or gradient initials fallback
-  - Hover-only dark overlay (`group-hover:bg-black/25`)
-  - Bottom-left name + bottom-right AI/User badge
-  - No edit icon, no reposition controls, no extra wrapper panel
-
-**2. `src/components/chronicle/WorldTab.tsx`**
-
-Minor adjustments to match Phase B spec exactly:
-- Remove the separate bottom gradient overlay div (line 224: `h-24 bg-gradient-to-t from-black/90`)
-- Update bottom info div: remove `pointer-events-none`, add `drop-shadow` on name text
-- Use `hasAvatar` variable explicitly (already using `char.avatarDataUrl` check — just add the const)
-- Ensure `bg-black` fallback on no-image tiles
-
-These are primarily cosmetic alignment changes — the WorldTab tile is already ~95% matching.
-
+## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
+- `src/types.ts`: line 11507
+- `src/utils.ts`: line 12138
+- `src/lib/story-transfer.ts`: line 9812
+- `src/lib/ui-audit-schema.ts`: line 21329
+- `src/lib/ui-audit-utils.ts`: line 21565
+- `src/data/ui-audit-findings.ts`: line 18967
+- `StoryExportFormatModal.tsx`: line 9642
+- `StoryImportModeModal.tsx`: line 9731
+- `CharactersTab.tsx`: line 2893
+- `ChatInterfaceTab.tsx`: line 5004
+- `src/pages/style-guide/ui-audit.tsx`: line 17867
+- `src/App.tsx`: line 95
+- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout
