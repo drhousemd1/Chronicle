@@ -764,12 +764,15 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
     else delete updatedImages[editingNavKey];
 
     setNavButtonImages(updatedImages);
-    setShowNavImageEditor(false);
 
-    // Persist to global app_settings
-    updateNavButtonImages(updatedImages).catch((e) =>
-      console.error('Failed to persist nav button images:', e)
-    );
+    // Persist to global app_settings — await before closing
+    try {
+      await updateNavButtonImages(updatedImages);
+      setShowNavImageEditor(false);
+    } catch (e) {
+      console.error('Failed to persist nav button images:', e);
+      // Keep modal open on failure so user can retry
+    }
   };
 
   const handleRemoveNavImage = () => {
