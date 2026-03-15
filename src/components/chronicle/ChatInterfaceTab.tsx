@@ -504,6 +504,37 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     width: number;
     height: number;
   } | null>(null);
+  const [avatarNaturalSizes, setAvatarNaturalSizes] = useState<Record<string, Size2D>>({});
+
+  useEffect(() => {
+    const characters = appData.characters;
+    if (!characters?.length) return;
+    let cancelled = false;
+
+    characters.forEach((char) => {
+      const url = char.avatarDataUrl;
+      if (!url) return;
+      const cached = avatarNaturalSizeCache.get(url);
+      if (cached) {
+        setAvatarNaturalSizes(prev => prev[char.id] ? prev : { ...prev, [char.id]: cached });
+        return;
+      }
+      const img = new Image();
+      img.onload = () => {
+        const size = { width: img.naturalWidth || 1, height: img.naturalHeight || 1 };
+        avatarNaturalSizeCache.set(url, size);
+        if (!cancelled) setAvatarNaturalSizes(prev => ({ ...prev, [char.id]: size }));
+      };
+      img.src = url;
+      if (img.complete && img.naturalWidth > 0) {
+        const size = { width: img.naturalWidth, height: img.naturalHeight };
+        avatarNaturalSizeCache.set(url, size);
+        if (!cancelled) setAvatarNaturalSizes(prev => ({ ...prev, [char.id]: size }));
+      }
+    });
+
+    return () => { cancelled = true; };
+  }, [appData.characters]);
 
   // Delete confirmation dialog state
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
