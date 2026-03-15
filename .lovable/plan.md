@@ -1,53 +1,64 @@
+Scope confirmed: fix the remaining text-case and typography inconsistencies in (1) Content Themes tags and (2) AI Generate text styling on the Story Builder action rows.
 
-# Sandbox Feature Transfer — Master Tracker
+What I audited (current code)
+1) Content Themes still has all-caps text in tag UI:
+- `src/components/chronicle/ContentThemesSection.tsx`
+  - Section label classes force uppercase: lines with `uppercase tracking-widest` on:
+    - Character Types heading
+    - Story Type heading
+    - Custom Tags heading
+  - Literal button text is still all caps:
+    - `ADD CUSTOM` (Category selector add button)
+    - `ADD CUSTOM` (Custom tags add button)
+  - Story type chips render uppercase values (`SFW`, `NSFW`) from constants.
+2) AI Generate text still does not match Upload Image text styling:
+- `src/components/chronicle/CoverImageActionButtons.tsx`
+- `src/components/chronicle/SceneGalleryActionButtons.tsx`
+- `src/components/chronicle/AvatarActionButtons.tsx`
+  - Upload text uses `text-xs font-bold`
+  - AI Generate button root uses `text-[10px] font-bold`, so it renders visibly different.
 
-## Source Documents
-- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
-- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
+Implementation plan
+1) Normalize Content Themes text casing (UI-only, no data semantics change)
+- File: `src/components/chronicle/ContentThemesSection.tsx`
+- Changes:
+  - Remove forced uppercase transform from the three section heading classNames (`uppercase tracking-widest`).
+  - Change both literal labels from `ADD CUSTOM` → `Add Custom`.
+  - Add a small display formatter for tag labels rendered in this component:
+    - Convert fully-uppercase tokens to title-style for display only (e.g. `SFW` → `Sfw`, `NSFW` → `Nsfw`, `CNC` → `Cnc`) while keeping stored values unchanged.
+  - Apply formatter to:
+    - prebuilt option chip text
+    - story type button text
+    - custom tag display text (so previously saved all-caps custom tags also render consistently).
 
-## Features Being Transferred
-| ID | Feature | Status |
-|----|---------|--------|
-| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
-| B | Story Transfer Library (story-transfer.ts) | ✅ |
-| A | UI Audit System (schema, utils, findings, page) | 🔄 |
-| B | Story Export/Import Modals | ✅ |
-| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
-| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
-| - | StyleGuideTool.tsx audit button | ⬜ |
-| - | App.tsx route wiring | ⬜ |
-| - | Index.tsx full wiring | ⬜ |
+2) Match AI Generate text typography to Upload Image text
+- Files:
+  - `src/components/chronicle/CoverImageActionButtons.tsx`
+  - `src/components/chronicle/SceneGalleryActionButtons.tsx`
+  - `src/components/chronicle/AvatarActionButtons.tsx`
+- Changes:
+  - Update AI Generate button typography from `text-[10px] font-bold leading-none` to `text-xs font-bold leading-none` so it matches Upload Image.
+  - Keep iridescent layering, icon, spacing, and interaction effects unchanged.
+  - Align label span treatment so AI and Upload read as same text system (same size/weight/case baseline).
 
-## Prompt Execution Status
+3) Prevent future drift
+- Add one shared constant (or shared helper) for AI action text class and use it in all three action-button components.
+- This avoids future “one file changed, others missed” regressions.
 
-| # | Target File(s) | Status | Notes |
-|---|---------------|--------|-------|
-| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
-| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
-| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
-| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
-| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
-| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
-| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
-| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
-| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
-| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
-| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
-| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
-| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
-| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
+4) Keep style guide source-of-truth in sync
+- File: `src/components/admin/styleguide/StyleGuideTool.tsx`
+- Update AI Generate preview card + metadata text-size description to the final class (`text-xs font-bold`) so docs match runtime UI.
 
-## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
-- `src/types.ts`: line 11507
-- `src/utils.ts`: line 12138
-- `src/lib/story-transfer.ts`: line 9812
-- `src/lib/ui-audit-schema.ts`: line 21329
-- `src/lib/ui-audit-utils.ts`: line 21565
-- `src/data/ui-audit-findings.ts`: line 18967
-- `StoryExportFormatModal.tsx`: line 9642
-- `StoryImportModeModal.tsx`: line 9731
-- `CharactersTab.tsx`: line 2893
-- `ChatInterfaceTab.tsx`: line 5004
-- `src/pages/style-guide/ui-audit.tsx`: line 17867
-- `src/App.tsx`: line 95
-- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout
+Validation checklist (post-implementation)
+1) Content Themes panel:
+- No all-caps “ADD CUSTOM” remains.
+- Section headers are no longer forced uppercase.
+- Story Type pills and any all-caps tag labels render in upper/lower case display.
+2) Story art action rows:
+- Upload Image and AI Generate text now match in case, weight, and size.
+- Confirm in both:
+  - Cover Image action row
+  - Scene Gallery action row
+3) Regression pass:
+- Avatar action row still matches same AI text system.
+- No visual regression in iridescent button shell (only text typography adjusted).
