@@ -2283,13 +2283,7 @@ const IndexContent = () => {
                           handleSaveCharacter();
                         }}
                         disabled={isSaving || isSavingAndClosing}
-                        className="flex h-10 px-6 items-center justify-center gap-2
-                          rounded-xl border border-[hsl(var(--ui-border))] 
-                          bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
-                          text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider
-hover:brightness-125 active:brightness-150 disabled:opacity-50 disabled:pointer-events-none
-                          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ghost-white
-                          transition-colors"
+                        className="flex h-10 px-6 items-center justify-center gap-2 rounded-xl border-0 bg-[#303035] text-[#eaedf1] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:bg-[#343439] active:bg-[#343439] transition-all active:scale-95 text-xs font-bold leading-none disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40"
                       >
                         {isSaving ? 'Saving...' : 'Save'}
                       </button>
