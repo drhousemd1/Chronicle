@@ -106,7 +106,7 @@ Respond with ONLY the directive text (1-3 sentences). No preamble, no explanatio
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "grok-3-mini",
+        model: "grok-4-1-fast-reasoning",
         messages: [
           { role: "system", content: "You are a concise narrative director. Respond with only the directive — no preamble or explanation." },
           { role: "user", content: directivePrompt },

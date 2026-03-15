@@ -891,7 +891,7 @@ export async function* generateRoleplayResponseStream(
 The user wants a DIFFERENT VERSION of this response. Guidelines:
 1. Maintain the same general scene context and emotional tone
 2. Vary the specific dialogue, word choices, actions, and pacing
-3. Try a different focus (e.g., more internal thought, or more physical description, or different dialogue approach)
+3. Try a different focus (e.g., more physical description, different dialogue approach, action-led opening, or environmental detail)
 4. Keep ONLY the characters who are present in the current scene — do NOT introduce characters who are elsewhere or not already in the scene
 5. Do NOT reverse the character's emotional state or stance — if they were enthusiastic, they should still be enthusiastic but expressed differently
 6. Do NOT suddenly shift the character's personality (e.g., from willing to reluctant, or from happy to disgusted)
