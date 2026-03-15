@@ -444,10 +444,13 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
         * Emotional description or internal reaction ALONE does not count as a scene delta.
           Something in the story's STATE must change: a character moves, touches,
           decides, discovers, reveals, confronts, or initiates.
-        * AI-controlled characters MUST perform at least one PROACTIVE MOVE per turn:
-          an action driven by THEIR goals/desires, not just reacting to the user.
+        * AI-controlled characters MUST advance the story through action, decision, and initiative.
+          Characters pursue their goals and take action without waiting for user permission.
           - WRONG: Character observes user, reacts emotionally, waits.
           - RIGHT: Character makes a decision, takes physical action, starts something new.
+        * NEVER use passive/deferential phrases: "Only if you're comfortable," "What do you want to do?",
+          "We can stop whenever you want," "At your own pace," "No pressure," "Tell me what you need."
+          Instead: make specific observations, ask pointed questions, take action based on goals.
         * Questions from AI characters are OPTIONAL and capped at 1 per response.
           A question CANNOT be the only forward movement — it must accompany action.
         * VIOLATION CHECK: Before finalizing, identify your scene delta. If you
