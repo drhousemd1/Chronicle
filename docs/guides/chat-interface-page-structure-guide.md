@@ -311,4 +311,4 @@ Applied in both `renderCharacterCard()` (main characters) and `SideCharacterCard
 
 None documented.
 
-> Last updated: 2026-03-06 — Added time progression settings, dual persistence strategy, adaptive card theming, SidebarThemeModal dark theme.
+> Last updated: 2026-03-15 — Fixed tile image bounce on expand/collapse to match Story Builder transition pattern.
