@@ -309,7 +309,13 @@ export const PersonalitySection: React.FC<PersonalitySectionProps> = ({
                   </button>
                   <button
                     type="button"
-                    onClick={() => onChange({ ...personality, splitMode: true })}
+                    onClick={() => {
+                      const patch: Partial<CharacterPersonality> = { ...personality, splitMode: true };
+                      if (!hasRealContent(personality.outwardTraits) && hasRealContent(personality.traits)) {
+                        patch.outwardTraits = personality.traits.map(t => ({ ...t, id: uid('ptrait') }));
+                      }
+                      onChange(patch as CharacterPersonality);
+                    }}
                     className={cn(
                       "px-3.5 py-1.5 text-[10px] font-black rounded-lg border-none cursor-pointer transition-all",
                       personality.splitMode
