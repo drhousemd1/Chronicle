@@ -201,7 +201,7 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
                     "w-[26px] h-[26px] rounded-[8px] flex items-center justify-center cursor-pointer transition-all",
                     step.status === 'succeeded'
                       ? "border border-emerald-500/60 bg-emerald-500/20 text-emerald-200"
-                      : "border border-ghost-white bg-ghost-white text-white/40"
+                      : "border border-black/20 bg-[#3f3f46] text-[#a1a1aa]"
                   )}
                 >
                   <Check size={13} />
