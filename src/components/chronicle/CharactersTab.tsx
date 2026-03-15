@@ -743,20 +743,21 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
   const handleSaveNavImage = async () => {
     let imageToSave = draftNavImage;
 
-    // Compress and upload if it's a base64 data URL
+    // Upload original quality image to storage (CDN handles fast delivery)
     if (imageToSave && imageToSave.src.startsWith('data:') && user) {
       try {
-        const publicUrl = await compressAndUpload(
-          imageToSave.src,
-          'backgrounds',
-          user.id,
-          400, // small nav button images
-          400,
-          0.75
-        );
-        imageToSave = { ...imageToSave, src: publicUrl };
+        const { supabase } = await import('@/integrations/supabase/client');
+        const response = await fetch(imageToSave.src);
+        const blob = await response.blob();
+        const filename = `${user.id}/nav-btn-${editingNavKey}-${Date.now()}.${blob.type.includes('png') ? 'png' : 'jpg'}`;
+        const { error } = await supabase.storage
+          .from('backgrounds')
+          .upload(filename, blob, { upsert: true, contentType: blob.type });
+        if (error) throw error;
+        const { data } = supabase.storage.from('backgrounds').getPublicUrl(filename);
+        imageToSave = { ...imageToSave, src: data.publicUrl };
       } catch (e) {
-        console.error('Failed to compress nav button image:', e);
+        console.error('Failed to upload nav button image:', e);
       }
     }
 
