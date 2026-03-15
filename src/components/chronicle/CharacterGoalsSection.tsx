@@ -187,6 +187,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
     return (
       <button
         type="button"
+        tabIndex={-1}
         onClick={onClick}
         disabled={enhancingField !== null}
         title="Enhance with AI"
@@ -328,7 +329,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
                             </span>
                           )}
                           {isEditMode && (
-                            <button onClick={() => deleteStep(goal.id, step.id)} className="mt-2 text-red-500 hover:text-red-400 transition-colors p-1">
+                            <button tabIndex={-1} onClick={() => deleteStep(goal.id, step.id)} className="mt-2 text-red-500 hover:text-red-400 transition-colors p-1">
                               <X className="h-4 w-4" />
                             </button>
                           )}

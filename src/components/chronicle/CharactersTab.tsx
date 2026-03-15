@@ -499,6 +499,7 @@ const HardcodedRow: React.FC<{
       </div>
       {onEnhance && (
         <button
+          tabIndex={-1}
           type="button"
           onClick={onEnhance}
           disabled={isEnhancing}
@@ -545,6 +546,7 @@ const ExtraRow: React.FC<{
       />
       {onEnhance && (
         <button
+          tabIndex={-1}
           type="button"
           onClick={onEnhance}
           disabled={isEnhancing}
@@ -569,6 +571,7 @@ const ExtraRow: React.FC<{
     />
     <button
       type="button"
+      tabIndex={-1}
       onClick={onDelete}
       className="text-red-500 hover:text-red-400 p-1.5 rounded-md hover:bg-red-900/30 mt-1 flex-shrink-0"
     >
@@ -1242,6 +1245,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
 
                 <button 
                   type="button"
+                  tabIndex={-1}
                   onClick={(e) => { e.stopPropagation(); onDelete(c.id); }}
                   className="absolute top-4 right-4 p-3 bg-black/40 text-[rgba(248,250,252,0.3)] hover:text-rose-500 hover:bg-black/60 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 hover:rotate-12 z-20"
                 >
@@ -1613,6 +1617,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                             <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Role Description</label>
                             <button
                               type="button"
+                              tabIndex={-1}
                               onClick={() => openEnhanceModeModal(
                                 'roleDescription',
                                 'custom',
@@ -2012,6 +2017,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                   </button>
                   <button 
                     type="button"
+                    tabIndex={-1}
                     onClick={() => {
                       const next = selected.sections.filter(s => s.id !== section.id);
                       onUpdate(selected.id, { sections: next });
@@ -2054,6 +2060,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                             />
                             <button
                               type="button"
+                              tabIndex={-1}
                               onClick={() => {
                                 const nextItems = (section.items.length > 0 ? section.items : items).filter(it => it.id !== item.id);
                                 handleUpdateSection(selected.id, section.id, { items: nextItems.length > 0 ? nextItems : [{ id: uid('item'), label: '', value: '', createdAt: now(), updatedAt: now() }] });
@@ -2095,6 +2102,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                                 />
                                 <button
                                     type="button"
+                                    tabIndex={-1}
                                     onClick={() => {
                                       const customLabel = item.label
                                         ? item.label
@@ -2147,6 +2155,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                             </div>
                             <button
                               type="button"
+                              tabIndex={-1}
                               onClick={() => {
                                 const nextItems = section.items.filter(it => it.id !== item.id);
                                 handleUpdateSection(selected.id, section.id, { items: nextItems });

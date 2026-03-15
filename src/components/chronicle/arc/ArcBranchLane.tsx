@@ -139,6 +139,7 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
               </div>
               <button
                 type="button"
+                tabIndex={-1}
                 onClick={() => onDeleteStep(step.id)}
                 className="w-[26px] h-[26px] rounded-[8px] border border-red-500/50 bg-transparent text-red-300 flex items-center justify-center cursor-pointer"
               >
@@ -152,8 +153,9 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
               {!((!isFail) && isRigid) ? (
                 /* Normal failed button for non-rigid or fail branch */
                 <div className="flex items-center gap-1.5">
-                  <button
+                 <button
                     type="button"
+                    tabIndex={-1}
                     onClick={() => onToggleStatus(step.id, 'failed')}
                     title="Mark as Failed"
                     className={cn(
@@ -174,6 +176,7 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
                 <div className="flex items-center gap-1.5">
                   <button
                     type="button"
+                    tabIndex={-1}
                     onClick={() => onToggleStatus(step.id, 'deviated')}
                     title="Mark as Deviated"
                     className={cn(
@@ -195,6 +198,7 @@ export const ArcBranchLane: React.FC<ArcBranchLaneProps> = ({
               <div className="flex items-center gap-1.5">
                 <button
                   type="button"
+                  tabIndex={-1}
                   onClick={() => onToggleStatus(step.id, 'succeeded')}
                   title={(!isFail && isRigid) ? "Mark as Completed" : "Mark as Succeeded"}
                   className={cn(

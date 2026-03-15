@@ -407,6 +407,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
         </label>
         <button
           type="button"
+          tabIndex={-1}
           onClick={() => setEnhanceModeTarget(fieldName)}
           disabled={isLoading || enhancingField !== null}
           title="Enhance with AI"
@@ -888,8 +889,9 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                             placeholder="Section Title..."
                             className="flex-1 bg-transparent border-none text-[10px] font-black text-zinc-400 uppercase tracking-widest px-0 focus:ring-0 placeholder:text-zinc-500 placeholder:uppercase placeholder:tracking-widest placeholder:font-black"
                           />
-                          <button
-                            type="button"
+                  <button
+                    type="button"
+                    tabIndex={-1}
                             onClick={() => {
                               const sections = (world.core.customWorldSections || []).filter((_, i) => i !== sIdx);
                               updateCore({ customWorldSections: sections.length > 0 ? sections : undefined });
@@ -917,8 +919,9 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                                     className="flex-1 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border-t border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                                   />
                                   {(
-                                    <button
-                                      type="button"
+                                  <button
+                                    type="button"
+                                    tabIndex={-1}
                                       onClick={() => {
                                         const fieldKey = `world_custom_${item.id}`;
                                         if (enhancingField) return;
@@ -973,6 +976,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                                 />
                                 <button
                                   type="button"
+                                  tabIndex={-1}
                                   onClick={() => {
                                     const sections = [...(world.core.customWorldSections || [])];
                                     sections[sIdx] = { ...sections[sIdx], items: sections[sIdx].items.filter((_, i) => i !== iIdx) };
@@ -1028,6 +1032,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                                   />
                                   <button
                                     type="button"
+                                    tabIndex={-1}
                                     onClick={() => {
                                       const sections = [...(world.core.customWorldSections || [])];
                                       const updatedItems = sections[sIdx].items.filter((_, i) => i !== iIdx);
