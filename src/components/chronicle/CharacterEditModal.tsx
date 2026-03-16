@@ -1068,25 +1068,31 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     type="button"
                     onClick={() => setViewMode('character')}
                     className={cn(
-                      "px-3 py-1.5 rounded-full text-xs font-bold transition-all",
+                      "px-3 py-1.5 rounded-full text-xs font-bold transition-colors",
                       viewMode === 'character' 
-                        ? "bg-[#4a5f7f] text-white shadow-sm" 
-                        : "text-zinc-400 hover:text-zinc-200"
+                        ? "relative overflow-hidden bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 text-white shadow-sm" 
+                        : "border-t border-transparent text-zinc-500 hover:text-zinc-700"
                     )}
                   >
-                    Character Card
+                    {viewMode === 'character' && (
+                      <div aria-hidden className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-b from-white/[0.13] via-white/[0.04] to-transparent" />
+                    )}
+                    <span className="relative z-[1]">Character Card</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setViewMode('scenario')}
                     className={cn(
-                      "px-3 py-1.5 rounded-full text-xs font-bold transition-all",
+                      "px-3 py-1.5 rounded-full text-xs font-bold transition-colors",
                       viewMode === 'scenario' 
-                        ? "bg-[#4a5f7f] text-white shadow-sm" 
-                        : "text-zinc-400 hover:text-zinc-200"
+                        ? "relative overflow-hidden bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 text-white shadow-sm" 
+                        : "border-t border-transparent text-zinc-500 hover:text-zinc-700"
                     )}
                   >
-                    Scenario Card
+                    {viewMode === 'scenario' && (
+                      <div aria-hidden className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-b from-white/[0.13] via-white/[0.04] to-transparent" />
+                    )}
+                    <span className="relative z-[1]">Scenario Card</span>
                   </button>
                 </div>
               )}
