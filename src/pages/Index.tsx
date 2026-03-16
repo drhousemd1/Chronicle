@@ -1680,7 +1680,10 @@ const IndexContent = () => {
     return (
       <div className="h-screen bg-slate-900 flex items-center justify-center">
         <div className="text-white text-center">
-          <div className="w-10 h-10 rounded-xl bg-[#4a5f7f] flex items-center justify-center text-white font-black text-2xl italic shadow-xl shadow-[#4a5f7f]/30 mx-auto mb-4">C</div>
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 flex items-center justify-center text-white font-black text-2xl italic shadow-xl shadow-[#4a5f7f]/30 mx-auto mb-4 relative overflow-hidden">
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-white/[0.07] via-transparent to-transparent pointer-events-none" />
+                    <span className="relative z-[1]">C</span>
+                  </div>
           <p>Loading...</p>
         </div>
       </div>
