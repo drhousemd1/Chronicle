@@ -228,7 +228,7 @@ export const CoverImageGenerationModal: React.FC<CoverImageGenerationModalProps>
                 type="button"
                 onClick={handleGenerate}
                 disabled={isGenerating || !prompt.trim()}
-                className="h-9 px-5 rounded-[10px] bg-[#3b5ca8] text-white text-[11px] font-black uppercase tracking-[0.05em] transition-all active:scale-95 disabled:opacity-50 min-w-[140px]"
+                className="h-9 px-5 rounded-[10px] bg-[#3b5ca8] text-white text-[11px] font-black transition-all active:scale-95 disabled:opacity-50 min-w-[140px]"
                 style={{ boxShadow: '0 8px 24px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -1px 0 rgba(0,0,0,0.20)' }}
               >
                 {isGenerating ? (

@@ -133,7 +133,7 @@ export function AIPromptModal({
                 type="button"
                 onClick={handleSubmit}
                 disabled={isProcessing}
-                className="group relative flex h-9 px-5 rounded-[10px] overflow-hidden text-white text-[11px] font-black uppercase tracking-[0.05em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/45 disabled:opacity-50"
+                className="group relative flex h-9 px-5 rounded-[10px] overflow-hidden text-white text-[11px] font-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/45 disabled:opacity-50"
                 style={{ boxShadow: '0 12px 40px rgba(0,0,0,0.45)' }}
               >
                 {/* Layer 1: Iridescent outer border ring */}
