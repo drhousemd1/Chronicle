@@ -1349,7 +1349,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
       >
         {/* Avatar header tile */}
         <div className="p-3">
-          <div className="group relative overflow-hidden rounded-2xl bg-black border border-[#4a5f7f]" style={{ height: 120 }}>
+          <div className="group relative overflow-hidden rounded-2xl bg-black border border-[#4a5f7f]" style={{ height: 140 }}>
             {(draft.avatarDataUrl || character.avatarDataUrl) ? (
               <img
                 src={draft.avatarDataUrl || character.avatarDataUrl}
