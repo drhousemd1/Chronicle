@@ -1389,7 +1389,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     />
 
                     {/* Control toggles - inside Avatar section */}
-                    <div className="space-y-3 pt-2 border-t border-ghost-white mt-4">
+                    <div className="space-y-3 pt-2 border-t border-black/35 mt-4">
                       <div className="space-y-1.5">
                         <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Controlled By</Label>
                         <div className="flex p-1 bg-[#1c1c1f] rounded-lg shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)]">
