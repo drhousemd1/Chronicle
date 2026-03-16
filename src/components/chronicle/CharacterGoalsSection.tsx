@@ -312,7 +312,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
                                 value={step.description}
                                 onChange={(v) => updateStep(goal.id, step.id, { description: v })}
                                 placeholder={`Step ${stepIdx + 1}: Describe this step...`}
-                                className={cn("flex-1 px-3 py-2 bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500", step.completed && "line-through text-zinc-500")}
+                                className={cn("flex-1 px-3 py-2 bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500", step.completed && "line-through text-zinc-500")}
                               />
                               <SparkleButton
                                 fieldKey={`goal_step_${step.id}`}

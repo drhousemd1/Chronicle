@@ -1233,7 +1233,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                         value={item.value}
                         onChange={(v) => updateSectionItem(section.id, item.id, 'value', v)}
                         placeholder="Description"
-                        className="flex-1 min-w-0 px-3 py-2 rounded-lg text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
+                        className="flex-1 min-w-0 px-3 py-2 rounded-lg text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
                       />
                       <button type="button" onClick={() => removeItemFromSection(section.id, item.id)} className="text-red-500 hover:text-red-400 p-1.5 rounded-md hover:bg-red-900/30 pt-2">
                         <X className="w-4 h-4" />

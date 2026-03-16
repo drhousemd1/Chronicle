@@ -129,7 +129,7 @@ const TraitRow: React.FC<{
       <select
         value={trait.flexibility}
         onChange={(e) => onUpdate({ flexibility: e.target.value as PersonalityTraitFlexibility })}
-        className="mt-1 text-[10px] font-bold uppercase bg-[#1c1c1f] border-t border-black/35 text-zinc-300 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+        className="mt-1 text-[10px] font-bold uppercase bg-[#1c1c1f] border border-black/35 text-zinc-300 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
       >
         {FLEX_OPTIONS.map(opt => (
           <option key={opt.value} value={opt.value}>{opt.label}</option>
