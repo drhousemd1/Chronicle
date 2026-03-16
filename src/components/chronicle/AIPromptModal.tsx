@@ -60,7 +60,7 @@ export function AIPromptModal({
             className="pointer-events-none absolute inset-0"
             style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 60%)' }}
           />
-          <DialogTitle className="relative z-[1] flex items-center gap-2 text-white text-[13px] font-black uppercase tracking-[0.08em]">
+          <DialogTitle className="relative z-[1] flex items-center gap-2 text-white text-[13px] font-black">
             <Sparkles className="w-4 h-4 text-cyan-200" />
             {title}
           </DialogTitle>
@@ -122,7 +122,7 @@ export function AIPromptModal({
                 type="button"
                 onClick={handleClose}
                 disabled={isProcessing}
-                className="h-9 px-5 rounded-[10px] bg-[#3c3e47] text-[#eaedf1] text-[11px] font-black uppercase tracking-[0.05em] transition-all active:scale-95 disabled:opacity-50"
+                className="h-9 px-5 rounded-[10px] bg-[#3c3e47] text-[#eaedf1] text-[11px] font-black transition-all active:scale-95 disabled:opacity-50"
                 style={{ boxShadow: '0 8px 24px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.09), inset 0 -1px 0 rgba(0,0,0,0.20)' }}
               >
                 Cancel
@@ -133,7 +133,7 @@ export function AIPromptModal({
                 type="button"
                 onClick={handleSubmit}
                 disabled={isProcessing}
-                className="group relative flex h-9 px-5 rounded-[10px] overflow-hidden text-white text-[11px] font-black uppercase tracking-[0.05em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/45 disabled:opacity-50"
+                className="group relative flex h-9 px-5 rounded-[10px] overflow-hidden text-white text-[11px] font-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/45 disabled:opacity-50"
                 style={{ boxShadow: '0 12px 40px rgba(0,0,0,0.45)' }}
               >
                 {/* Layer 1: Iridescent outer border ring */}
