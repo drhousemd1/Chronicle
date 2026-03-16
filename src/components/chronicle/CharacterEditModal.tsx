@@ -133,14 +133,14 @@ const HardcodedRow: React.FC<{
   placeholder?: string;
 }> = ({ label, value, onChange, placeholder }) => (
   <div className="flex items-start gap-2">
-    <div className="w-2/5 px-3 py-2 text-xs font-bold bg-zinc-900/50 border border-ghost-white text-zinc-400 rounded-lg uppercase tracking-widest min-w-0 break-words">
+    <div className="w-2/5 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border-t border-black/35 text-zinc-400 rounded-lg uppercase tracking-widest min-w-0 break-words">
       {label}
     </div>
     <AutoResizeTextarea
       value={value}
       onChange={onChange}
       placeholder={placeholder}
-      className="flex-1 px-3 py-2 text-sm bg-zinc-900/50 border border-ghost-white text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
+      className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
     />
     <div className="w-7 flex-shrink-0 flex items-center justify-center">
       <Lock className="w-3.5 h-3.5 text-zinc-400" />
@@ -165,7 +165,7 @@ const ModalExtraRow: React.FC<{
       value={extra.value}
       onChange={(v) => onUpdate({ value: v })}
       placeholder="Description"
-      className="flex-1 px-3 py-2 text-sm bg-zinc-900/50 border border-ghost-white text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
+      className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
     />
     <button
       type="button"
@@ -191,7 +191,7 @@ const FieldInput: React.FC<{
       value={value}
       onChange={onChange}
       placeholder={placeholder}
-      className="px-3 py-2 rounded-lg text-sm bg-zinc-900/50 border border-ghost-white text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
+      className="px-3 py-2 rounded-lg text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
     />
   </div>
 );
@@ -211,7 +211,7 @@ const FieldTextarea: React.FC<{
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       rows={rows}
-      className="text-sm resize-none bg-zinc-900/50 border-ghost-white text-white placeholder:text-zinc-500 focus:ring-blue-500/20 focus:border-blue-500 whitespace-pre-wrap break-words"
+      className="text-sm resize-none bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-500 focus:ring-blue-500/20 focus:border-blue-500 whitespace-pre-wrap break-words"
     />
   </div>
 );
@@ -224,21 +224,22 @@ const CollapsibleSection: React.FC<{
   children: React.ReactNode;
   collapsedContent?: React.ReactNode;  // Summary to show when collapsed
 }> = ({ title, isExpanded, onToggle, children, collapsedContent }) => (
-  <div className="w-full bg-[#2a2a2f] rounded-[24px] border border-ghost-white overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
-    {/* Slate blue header with collapse arrow */}
-    <div className="bg-[#4a5f7f] border-b border-ghost-white px-5 py-3 flex items-center justify-between shadow-lg">
-      <h2 className="text-white text-xl font-bold tracking-tight">{title}</h2>
+  <div className="w-full bg-[#2a2a2f] rounded-[24px] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]">
+    {/* Slate blue gradient header with collapse arrow */}
+    <div className="relative bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 px-5 py-3 flex items-center justify-between shadow-lg overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.12] to-transparent h-1/2 pointer-events-none" />
+      <h2 className="text-white text-xl font-bold tracking-[-0.015em] relative z-[1]">{title}</h2>
       <button 
         type="button"
         onClick={onToggle} 
-        className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-ghost-white"
+        className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-white/10 relative z-[1]"
       >
         {isExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
       </button>
     </div>
     {/* Content - always rendered, shows either expanded or collapsed view */}
     <div className="p-5">
-      <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-ghost-white">
+      <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
         {isExpanded ? (
           <div className="space-y-4">
             {children}
@@ -1388,16 +1389,16 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     />
 
                     {/* Control toggles - inside Avatar section */}
-                    <div className="space-y-3 pt-2 border-t border-ghost-white mt-4">
+                    <div className="space-y-3 pt-2 border-t border-black/35 mt-4">
                       <div className="space-y-1.5">
                         <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Controlled By</Label>
-                        <div className="flex p-1 bg-zinc-900/50 rounded-lg border border-ghost-white">
+                        <div className="flex p-1 bg-[#1c1c1f] rounded-lg shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)]">
                           <button 
                             type="button"
                             onClick={() => updateField('controlledBy', 'AI')}
                             className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded transition-all ${
                               draft.controlledBy === 'AI' 
-                                ? 'bg-zinc-700 text-blue-500 shadow-sm' 
+                                ? 'bg-blue-500 text-white shadow-sm' 
                                 : 'text-zinc-500 hover:text-zinc-300'
                             }`}
                           >
@@ -1408,7 +1409,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                             onClick={() => updateField('controlledBy', 'User')}
                             className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded transition-all ${
                               draft.controlledBy === 'User' 
-                                ? 'bg-zinc-700 text-amber-400 shadow-sm' 
+                                ? 'bg-blue-500 text-white shadow-sm' 
                                 : 'text-zinc-500 hover:text-zinc-300'
                             }`}
                           >
@@ -1418,13 +1419,13 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Character Type</Label>
-                        <div className="flex p-1 bg-zinc-900/50 rounded-lg border border-ghost-white">
+                        <div className="flex p-1 bg-[#1c1c1f] rounded-lg shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)]">
                           <button 
                             type="button"
                             onClick={() => updateField('characterRole', 'Main')}
                             className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded transition-all ${
                               draft.characterRole === 'Main' 
-                                ? 'bg-zinc-700 text-purple-400 shadow-sm' 
+                                ? 'bg-blue-500 text-white shadow-sm' 
                                 : 'text-zinc-500 hover:text-zinc-300'
                             }`}
                           >
@@ -1435,7 +1436,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                             onClick={() => updateField('characterRole', 'Side')}
                             className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded transition-all ${
                               draft.characterRole === 'Side' 
-                                ? 'bg-zinc-700 text-green-400 shadow-sm' 
+                                ? 'bg-blue-500 text-white shadow-sm' 
                                 : 'text-zinc-500 hover:text-zinc-300'
                             }`}
                           >
@@ -1485,9 +1486,9 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                   {((draft.physicalAppearance as any)?._extras || []).map((extra: CharacterExtraRow) => (
                     <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('physicalAppearance', extra.id, patch)} onDelete={() => deleteModalExtra('physicalAppearance', extra.id)} />
                   ))}
-                  <Button variant="ghost" size="sm" onClick={() => addModalExtra('physicalAppearance')} className="text-blue-500 hover:text-blue-300 w-full border-2 border-dashed border-zinc-500 hover:border-blue-500 hover:bg-blue-500/5">
-                    <Plus className="w-4 h-4 mr-1" /> Add Row
-                  </Button>
+                  <button type="button" onClick={() => addModalExtra('physicalAppearance')} className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5">
+                    <Plus className="w-4 h-4" /> Add Row
+                  </button>
                 </CollapsibleSection>
 
                 {/* Currently Wearing */}
@@ -1511,9 +1512,9 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                   {((draft.currentlyWearing as any)?._extras || []).map((extra: CharacterExtraRow) => (
                     <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('currentlyWearing', extra.id, patch)} onDelete={() => deleteModalExtra('currentlyWearing', extra.id)} />
                   ))}
-                  <Button variant="ghost" size="sm" onClick={() => addModalExtra('currentlyWearing')} className="text-blue-500 hover:text-blue-300 w-full border-2 border-dashed border-zinc-500 hover:border-blue-500 hover:bg-blue-500/5">
-                    <Plus className="w-4 h-4 mr-1" /> Add Row
-                  </Button>
+                  <button type="button" onClick={() => addModalExtra('currentlyWearing')} className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5">
+                    <Plus className="w-4 h-4" /> Add Row
+                  </button>
                 </CollapsibleSection>
 
                 {/* Preferred Clothing */}
@@ -1539,9 +1540,9 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                   {((draft.preferredClothing as any)?._extras || []).map((extra: CharacterExtraRow) => (
                     <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('preferredClothing', extra.id, patch)} onDelete={() => deleteModalExtra('preferredClothing', extra.id)} />
                   ))}
-                  <Button variant="ghost" size="sm" onClick={() => addModalExtra('preferredClothing')} className="text-blue-500 hover:text-blue-300 w-full border-2 border-dashed border-zinc-500 hover:border-blue-500 hover:bg-blue-500/5">
-                    <Plus className="w-4 h-4 mr-1" /> Add Row
-                  </Button>
+                  <button type="button" onClick={() => addModalExtra('preferredClothing')} className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5">
+                    <Plus className="w-4 h-4" /> Add Row
+                  </button>
                 </CollapsibleSection>
 
                 {/* Personality Section (Main characters only) */}
@@ -1564,9 +1565,9 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     {((draft.tone as any)?._extras || []).map((extra: CharacterExtraRow) => (
                       <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('tone', extra.id, patch)} onDelete={() => deleteModalExtra('tone', extra.id)} />
                     ))}
-                    <Button variant="ghost" size="sm" onClick={() => addModalExtra('tone')} className="text-blue-500 hover:text-blue-300 w-full border-2 border-dashed border-zinc-500 hover:border-blue-500 hover:bg-blue-500/5">
-                      <Plus className="w-4 h-4 mr-1" /> Add Row
-                    </Button>
+                    <button type="button" onClick={() => addModalExtra('tone')} className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5">
+                      <Plus className="w-4 h-4" /> Add Row
+                    </button>
                   </CollapsibleSection>
                 )}
 
@@ -1596,9 +1597,9 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     {(((draft as any).mainBackground as any)?._extras || []).map((extra: CharacterExtraRow) => (
                       <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('background', extra.id, patch)} onDelete={() => deleteModalExtra('background', extra.id)} />
                     ))}
-                    <Button variant="ghost" size="sm" onClick={() => addModalExtra('background')} className="text-blue-500 hover:text-blue-300 w-full border-2 border-dashed border-zinc-500 hover:border-blue-500 hover:bg-blue-500/5">
-                      <Plus className="w-4 h-4 mr-1" /> Add Row
-                    </Button>
+                    <button type="button" onClick={() => addModalExtra('background')} className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5">
+                      <Plus className="w-4 h-4" /> Add Row
+                    </button>
                   </CollapsibleSection>
                 )}
 
@@ -1612,9 +1613,9 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     {((draft.keyLifeEvents as any)?._extras || []).map((extra: CharacterExtraRow) => (
                       <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('keyLifeEvents', extra.id, patch)} onDelete={() => deleteModalExtra('keyLifeEvents', extra.id)} />
                     ))}
-                    <Button variant="ghost" size="sm" onClick={() => addModalExtra('keyLifeEvents')} className="text-blue-500 hover:text-blue-300 w-full border-2 border-dashed border-zinc-500 hover:border-blue-500 hover:bg-blue-500/5">
-                      <Plus className="w-4 h-4 mr-1" /> Add Row
-                    </Button>
+                    <button type="button" onClick={() => addModalExtra('keyLifeEvents')} className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5">
+                      <Plus className="w-4 h-4" /> Add Row
+                    </button>
                   </CollapsibleSection>
                 )}
 
@@ -1628,9 +1629,9 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     {((draft.relationships as any)?._extras || []).map((extra: CharacterExtraRow) => (
                       <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('relationships', extra.id, patch)} onDelete={() => deleteModalExtra('relationships', extra.id)} />
                     ))}
-                    <Button variant="ghost" size="sm" onClick={() => addModalExtra('relationships')} className="text-blue-500 hover:text-blue-300 w-full border-2 border-dashed border-zinc-500 hover:border-blue-500 hover:bg-blue-500/5">
-                      <Plus className="w-4 h-4 mr-1" /> Add Row
-                    </Button>
+                    <button type="button" onClick={() => addModalExtra('relationships')} className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5">
+                      <Plus className="w-4 h-4" /> Add Row
+                    </button>
                   </CollapsibleSection>
                 )}
 
@@ -1644,9 +1645,9 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     {((draft.secrets as any)?._extras || []).map((extra: CharacterExtraRow) => (
                       <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('secrets', extra.id, patch)} onDelete={() => deleteModalExtra('secrets', extra.id)} />
                     ))}
-                    <Button variant="ghost" size="sm" onClick={() => addModalExtra('secrets')} className="text-blue-500 hover:text-blue-300 w-full border-2 border-dashed border-zinc-500 hover:border-blue-500 hover:bg-blue-500/5">
-                      <Plus className="w-4 h-4 mr-1" /> Add Row
-                    </Button>
+                    <button type="button" onClick={() => addModalExtra('secrets')} className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5">
+                      <Plus className="w-4 h-4" /> Add Row
+                    </button>
                   </CollapsibleSection>
                 )}
 
@@ -1660,9 +1661,9 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     {((draft.fears as any)?._extras || []).map((extra: CharacterExtraRow) => (
                       <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('fears', extra.id, patch)} onDelete={() => deleteModalExtra('fears', extra.id)} />
                     ))}
-                    <Button variant="ghost" size="sm" onClick={() => addModalExtra('fears')} className="text-blue-500 hover:text-blue-300 w-full border-2 border-dashed border-zinc-500 hover:border-blue-500 hover:bg-blue-500/5">
-                      <Plus className="w-4 h-4 mr-1" /> Add Row
-                    </Button>
+                    <button type="button" onClick={() => addModalExtra('fears')} className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5">
+                      <Plus className="w-4 h-4" /> Add Row
+                    </button>
                   </CollapsibleSection>
                 )}
 
@@ -1764,20 +1765,21 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
 
                 {/* Custom Sections (Main characters only) - Each as its own container */}
                 {!isSideCharacter && draft.sections?.map((section) => (
-                  <div key={section.id} className="w-full bg-[#2a2a2f] rounded-[24px] border border-ghost-white overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
-                    {/* Dark blue header with editable title */}
-                    <div className="bg-[#4a5f7f] border-b border-ghost-white px-5 py-3 flex items-center justify-between shadow-lg">
+                  <div key={section.id} className="w-full bg-[#2a2a2f] rounded-[24px] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]">
+                    {/* Dark blue gradient header with editable title */}
+                    <div className="relative bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 px-5 py-3 flex items-center justify-between shadow-lg overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.12] to-transparent h-1/2 pointer-events-none" />
                       <AutoResizeTextarea
                         value={section.title}
                         onChange={(v) => updateSectionTitle(section.id, v)}
                         placeholder="Category name"
-                        className="bg-transparent border-none text-white text-xl font-bold tracking-tight placeholder:text-[rgba(248,250,252,0.3)] focus:outline-none flex-1 mr-2"
+                        className="bg-transparent border-none text-white text-xl font-bold tracking-[-0.015em] placeholder:text-[rgba(248,250,252,0.3)] focus:outline-none flex-1 mr-2 relative z-[1]"
                       />
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex items-center gap-2 shrink-0 relative z-[1]">
                         <button 
                           type="button"
                           onClick={() => toggleCustomSection(section.id)} 
-                          className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-ghost-white"
+                          className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-white/10"
                         >
                           {(expandedCustomSections[section.id] ?? true) ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
                         </button>
@@ -1793,7 +1795,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     </div>
                     {/* Content */}
                     <div className="p-5">
-                      <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-ghost-white">
+                      <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
                         {(expandedCustomSections[section.id] ?? true) ? (
                           <div className="space-y-4">
                             {section.type === 'freeform' ? (
@@ -1849,7 +1851,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                                         }));
                                       }}
                                       placeholder="Write your content here..."
-                                      className="w-full px-3 py-2 text-sm bg-zinc-900/50 border border-ghost-white text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                      className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                                       rows={4}
                                     />
                                   </div>
