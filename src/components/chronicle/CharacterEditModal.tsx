@@ -1047,14 +1047,14 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[90vh] p-0 gap-0 overflow-hidden bg-[#2a2a2f] border-ghost-white">
-        <DialogHeader className="px-6 py-4 border-b border-ghost-white bg-black">
+        <DialogHeader className="px-6 py-4 border-b border-ghost-white bg-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div>
-                <DialogTitle className="text-lg font-bold text-white">
+                <DialogTitle className="text-lg font-bold text-black">
                   {viewMode === 'character' ? 'Edit Character' : 'Scenario Card'}
                 </DialogTitle>
-                <p className="text-xs text-white/70 mt-1">
+                <p className="text-xs text-black/70 mt-1">
                   {viewMode === 'character' 
                     ? 'Changes apply only to this playthrough' 
                     : 'Global scenario settings for this playthrough'}
@@ -1068,25 +1068,31 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     type="button"
                     onClick={() => setViewMode('character')}
                     className={cn(
-                      "px-3 py-1.5 rounded-full text-xs font-bold transition-all",
+                      "px-3 py-1.5 rounded-full text-xs font-bold transition-colors",
                       viewMode === 'character' 
-                        ? "bg-[#4a5f7f] text-white shadow-sm" 
-                        : "text-zinc-400 hover:text-zinc-200"
+                        ? "relative overflow-hidden bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 text-white shadow-sm" 
+                        : "border-t border-transparent text-zinc-500 hover:text-zinc-700"
                     )}
                   >
-                    Character Card
+                    {viewMode === 'character' && (
+                      <div aria-hidden className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-b from-white/[0.13] via-white/[0.04] to-transparent" />
+                    )}
+                    <span className="relative z-[1]">Character Card</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setViewMode('scenario')}
                     className={cn(
-                      "px-3 py-1.5 rounded-full text-xs font-bold transition-all",
+                      "px-3 py-1.5 rounded-full text-xs font-bold transition-colors",
                       viewMode === 'scenario' 
-                        ? "bg-[#4a5f7f] text-white shadow-sm" 
-                        : "text-zinc-400 hover:text-zinc-200"
+                        ? "relative overflow-hidden bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 text-white shadow-sm" 
+                        : "border-t border-transparent text-zinc-500 hover:text-zinc-700"
                     )}
                   >
-                    Scenario Card
+                    {viewMode === 'scenario' && (
+                      <div aria-hidden className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-b from-white/[0.13] via-white/[0.04] to-transparent" />
+                    )}
+                    <span className="relative z-[1]">Scenario Card</span>
                   </button>
                 </div>
               )}
@@ -1103,8 +1109,9 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     onMouseEnter={() => setIsTooltipOpen(true)}
                     onMouseLeave={() => setIsTooltipOpen(false)}
                     className="group relative flex h-10 px-4 rounded-xl overflow-hidden
-                      text-white text-[10px] font-bold leading-none
+                      text-white text-xs font-bold leading-none
                       shadow-[0_12px_40px_rgba(0,0,0,0.45)]
+                      hover:brightness-125 transition-all
                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/45
                       disabled:opacity-50 shrink-0"
                   >
