@@ -1448,7 +1448,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
                                     <button className="p-1.5 rounded-lg transition-colors bg-black/30 hover:bg-black/50 text-white/70 hover:text-white">
-                                      <MoreVertical className="w-4 h-4" />
+                                      <Pencil className="w-4 h-4" />
                                     </button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end" className="shadow-lg z-50 bg-zinc-800 border-ghost-white text-zinc-200">

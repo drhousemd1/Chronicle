@@ -90,7 +90,7 @@ export const SideCharacterCard: React.FC<SideCharacterCardProps> = ({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className={`p-1.5 rounded-lg transition-colors ${isDarkBg ? 'hover:bg-slate-200 text-slate-700 hover:text-[hsl(var(--ui-surface-2))]' : 'hover:bg-ghost-white text-white/70 hover:text-white'}`}>
-                  <MoreVertical className="w-4 h-4" />
+                  <Pencil className="w-4 h-4" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className={`shadow-lg z-50 ${isDarkBg ? 'bg-white border-slate-200' : 'bg-zinc-800 border-ghost-white text-zinc-200'}`}>
