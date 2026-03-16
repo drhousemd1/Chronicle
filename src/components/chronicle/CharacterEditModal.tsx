@@ -1147,7 +1147,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
           <button type="button" onClick={() => toggleCustomSection(section.id)} className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-white/10">
             {(expandedCustomSections[section.id] ?? true) ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
           </button>
-          <button type="button" tabIndex={-1} onClick={() => deleteSection(section.id)} className="text-red-500 hover:text-red-400 p-1 rounded-md hover:bg-red-900/30">
+          <button type="button" tabIndex={-1} onClick={() => deleteSection(section.id)} className="text-white hover:text-red-400 p-1 rounded-md hover:bg-white/10 transition-colors">
             <Trash2 className="h-4 w-4" />
           </button>
         </div>
