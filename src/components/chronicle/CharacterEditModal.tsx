@@ -1566,7 +1566,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <DialogTitle className="text-lg font-black text-[#eaedf1] uppercase tracking-tight">
+                <DialogTitle className="text-lg font-black text-slate-900 uppercase tracking-tight">
                   {viewMode === 'character' ? 'Edit Character' : 'Scenario Card'}
                 </DialogTitle>
                 <Tooltip>
