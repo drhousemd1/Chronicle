@@ -51,7 +51,8 @@ export function ConversationsTab({
                 return (
                   <div
                     key={entry.conversationId}
-                    className="bg-[#2a2a2f] rounded-2xl border border-[#4a5f7f] overflow-hidden group"
+                    className="bg-[#2a2a2f] rounded-2xl overflow-hidden group"
+                    style={{ boxShadow: '0 12px 32px -2px rgba(0,0,0,0.50), inset 1px 1px 0 rgba(255,255,255,0.09), inset -1px -1px 0 rgba(0,0,0,0.35)' }}
                   >
                     <div className="p-4">
                       <div className="bg-[#3a3a3f]/30 rounded-2xl border border-[#4a5f7f] p-4">
