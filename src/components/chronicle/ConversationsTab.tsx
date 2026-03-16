@@ -108,7 +108,8 @@ export function ConversationsTab({
                                         e.stopPropagation();
                                         onDelete(entry.scenarioId, entry.conversationId);
                                       }}
-                                      className="p-2 rounded-lg bg-red-500 border border-red-500 text-white hover:bg-red-600 hover:border-red-600 transition-colors"
+                                      className="w-10 h-10 flex items-center justify-center rounded-xl bg-[hsl(0,72%,51%)] text-white hover:bg-red-600 transition-colors"
+                                      style={{ boxShadow: '0 8px 24px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.09), inset 0 -1px 0 rgba(0,0,0,0.20)' }}
                                     >
                                       <Trash2 className="w-4 h-4" />
                                     </button>
