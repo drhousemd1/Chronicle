@@ -66,11 +66,14 @@ const Gallery: React.FC = () => {
                     className={cn(
                       "px-4 py-1.5 rounded-full text-xs font-bold transition-all",
                       sortBy === option.key 
-                        ? "bg-[#4a5f7f] text-white shadow-sm" 
+                        ? "relative overflow-hidden bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 text-white shadow-sm" 
                         : "text-[#a1a1aa] hover:text-[#e4e4e7]"
                     )}
                   >
-                    {option.label}
+                    {sortBy === option.key && (
+                      <div className="absolute inset-0 rounded-full bg-gradient-to-b from-white/[0.07] via-transparent to-transparent pointer-events-none" />
+                    )}
+                    <span className="relative z-[1]">{option.label}</span>
                   </button>
                 ))}
               </div>
