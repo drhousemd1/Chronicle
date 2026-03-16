@@ -132,7 +132,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
                   }}
                   placeholder="Custom..."
                   autoFocus
-                                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#1c1c1f] text-white border-t border-black/35 focus:border-blue-500 focus:outline-none w-28"
+                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#1c1c1f] text-white border border-black/35 focus:border-blue-500 focus:outline-none w-28"
                 />
                 <button
                   type="button"
