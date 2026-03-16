@@ -1050,15 +1050,18 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
         <DialogHeader className="px-6 py-4 border-b border-ghost-white bg-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div>
-                <DialogTitle className="text-lg font-bold text-black">
+              <div className="flex items-center gap-2">
+                <DialogTitle className="text-lg font-black text-[hsl(var(--ui-surface-2))] uppercase tracking-tight">
                   {viewMode === 'character' ? 'Edit Character' : 'Scenario Card'}
                 </DialogTitle>
-                <p className="text-xs text-black/70 mt-1">
-                  {viewMode === 'character' 
-                    ? 'Changes apply only to this playthrough' 
-                    : 'Global scenario settings for this playthrough'}
-                </p>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="w-3.5 h-3.5 text-blue-500 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-[300px] text-xs font-semibold leading-relaxed normal-case tracking-normal">
+                    Changes only apply to this playthrough and do not affect the creator's original story.
+                  </TooltipContent>
+                </Tooltip>
               </div>
               
               {/* View Mode Toggle - Gallery Hub pill style */}
