@@ -1286,7 +1286,7 @@ className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
                         <select
                           value={openingDialog.timeProgressionInterval || 15}
                           onChange={(e) => onUpdateOpening({ timeProgressionInterval: Number(e.target.value) })}
-                          className="bg-[#1c1c1f] border-t border-black/35 rounded-xl text-xs text-white px-2.5 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          className="bg-[#1c1c1f] border border-black/35 rounded-xl text-xs text-white px-2.5 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
                         >
                           <option value={5}>5 minutes</option>
                           <option value={10}>10 minutes</option>
