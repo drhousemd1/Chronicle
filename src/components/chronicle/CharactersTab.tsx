@@ -33,7 +33,7 @@ import {
   Flag,
   CircleUserRound,
   Stars,
-  MoreVertical,
+  Pencil,
   Move,
   type LucideIcon,
 } from 'lucide-react';
