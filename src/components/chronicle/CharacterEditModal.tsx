@@ -1242,7 +1242,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
           </div>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 max-h-[calc(90vh-160px)] bg-[#2a2a2f]">
+        <ScrollArea className="flex-1 min-h-0 bg-[#2a2a2f]">
           <div className="p-6">
           {viewMode === 'character' ? (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
