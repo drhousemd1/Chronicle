@@ -1147,7 +1147,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
           <button type="button" onClick={() => toggleCustomSection(section.id)} className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-white/10">
             {(expandedCustomSections[section.id] ?? true) ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
           </button>
-          <button type="button" tabIndex={-1} onClick={() => deleteSection(section.id)} className="text-red-500 hover:text-red-400 p-1 rounded-md hover:bg-red-900/30">
+          <button type="button" tabIndex={-1} onClick={() => deleteSection(section.id)} className="text-white hover:text-red-400 p-1 rounded-md hover:bg-white/10 transition-colors">
             <Trash2 className="h-4 w-4" />
           </button>
         </div>
@@ -1349,7 +1349,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
       >
         {/* Avatar header tile */}
         <div className="p-3">
-          <div className="group relative overflow-hidden rounded-2xl bg-black border border-[#4a5f7f]" style={{ height: 120 }}>
+          <div className="group relative overflow-hidden rounded-2xl bg-black border border-[#4a5f7f]" style={{ height: 140 }}>
             {(draft.avatarDataUrl || character.avatarDataUrl) ? (
               <img
                 src={draft.avatarDataUrl || character.avatarDataUrl}
@@ -1566,7 +1566,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <DialogTitle className="text-lg font-black text-slate-900 uppercase tracking-tight">
+                <DialogTitle className="text-lg font-black text-[hsl(var(--ui-surface-2))] uppercase tracking-tight">
                   {viewMode === 'character' ? 'Edit Character' : 'Scenario Card'}
                 </DialogTitle>
                 <Tooltip>
@@ -1581,7 +1581,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
               
               {/* View Mode Toggle */}
               {scenarioWorldCore && (
-                <div className="flex items-center bg-zinc-800 rounded-full p-1 gap-0.5 border border-zinc-700">
+                <div className="flex items-center bg-[#2b2b2e] rounded-full p-1 gap-0.5 border border-[#2b2b2e]">
                   <button
                     type="button"
                     onClick={() => setViewMode('character')}
