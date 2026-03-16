@@ -33,7 +33,7 @@ export function ConversationsTab({
     <TooltipProvider>
     <div className="max-w-5xl mx-auto py-4">
         {sortedRegistry.length === 0 ? (
-          <div className="bg-[#2a2a2f] rounded-2xl border border-[#4a5f7f] py-20 text-center">
+          <div className="bg-[#2a2a2f] rounded-2xl py-20 text-center" style={{ boxShadow: '0 12px 32px -2px rgba(0,0,0,0.50), inset 1px 1px 0 rgba(255,255,255,0.09), inset -1px -1px 0 rgba(0,0,0,0.35)' }}>
             <div className="text-6xl mb-4">💬</div>
             <p className="font-bold text-zinc-400">No saved sessions found.</p>
             <p className="text-sm text-zinc-500 mt-1">Start playing a scenario to create your first save.</p>
