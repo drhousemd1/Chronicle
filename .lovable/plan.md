@@ -1,53 +1,104 @@
 
-# Sandbox Feature Transfer — Master Tracker
 
-## Source Documents
-- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
-- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
+# Restyle AI Generation Modals to Match Dark Premium Mockup
 
-## Features Being Transferred
-| ID | Feature | Status |
-|----|---------|--------|
-| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
-| B | Story Transfer Library (story-transfer.ts) | ✅ |
-| A | UI Audit System (schema, utils, findings, page) | 🔄 |
-| B | Story Export/Import Modals | ✅ |
-| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
-| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
-| - | StyleGuideTool.tsx audit button | ⬜ |
-| - | App.tsx route wiring | ⬜ |
-| - | Index.tsx full wiring | ⬜ |
+## Modals Affected
+1. **CoverImageGenerationModal** (`src/components/chronicle/CoverImageGenerationModal.tsx`)
+2. **AvatarGenerationModal** (`src/components/chronicle/AvatarGenerationModal.tsx`)
+3. **SceneImageGenerationModal** (`src/components/chronicle/SceneImageGenerationModal.tsx`)
+4. **AIPromptModal** (`src/components/chronicle/AIPromptModal.tsx`) — already partially dark-styled but needs alignment
 
-## Prompt Execution Status
+## Design from Mockup (HTML lines 1927-2019)
 
-| # | Target File(s) | Status | Notes |
-|---|---------------|--------|-------|
-| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
-| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
-| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
-| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
-| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
-| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
-| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
-| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
-| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
-| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
-| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
-| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
-| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
-| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
+### Structure
+```text
+┌──────────────────────────────────────────────┐
+│ Outer: bg-[#2a2a2f] rounded-3xl             │
+│ shadow-stack (no border)                      │
+│ ┌──────────────────────────────────────────┐ │
+│ │ Header: gradient #5a7292→#4a5f7f        │ │
+│ │ + gloss sheen overlay                    │ │
+│ │ icon + TITLE (uppercase, 13px, bold 900) │ │
+│ │ NO close X button                        │ │
+│ └──────────────────────────────────────────┘ │
+│ ┌──────────────────────────────────────────┐ │
+│ │ Body padding: 14px                       │ │
+│ │ ┌──────────────────────────────────────┐ │ │
+│ │ │ Inner: bg-[#2e2e33] rounded-2xl     │ │ │
+│ │ │ inset shadow stack (no border)       │ │ │
+│ │ │                                      │ │ │
+│ │ │ PROMPT label (zinc-400, uppercase)   │ │ │
+│ │ │ textarea: bg-[#1c1c1f] no border     │ │ │
+│ │ │   border-t border-black/35           │ │ │
+│ │ │   inset shadow                       │ │ │
+│ │ │ tip text (zinc-500)                  │ │ │
+│ │ │                                      │ │ │
+│ │ │ divider: rgba(255,255,255,0.05)      │ │ │
+│ │ │                                      │ │ │
+│ │ │ STYLE label                          │ │ │
+│ │ │ 5-col grid of style tiles            │ │ │
+│ │ │ tiles: bg-[#1c1c1f] p-[5px]         │ │ │
+│ │ │   rounded-[10px]                     │ │ │
+│ │ │   selected: border-2 blue-500        │ │ │
+│ │ │   unselected: border-2 transparent   │ │ │
+│ │ │   text: selected=#eaedf1             │ │ │
+│ │ │         unselected=#a1a1aa           │ │ │
+│ │ │                                      │ │ │
+│ │ │ Footer buttons (right-aligned):      │ │ │
+│ │ │   Cancel: bg-[#3c3e47] text-white    │ │ │
+│ │ │   Generate: bg-[#3b5ca8] text-white  │ │ │
+│ │ │   both: rounded-[10px] uppercase     │ │ │
+│ │ │   premium shadow stack               │ │ │
+│ │ └──────────────────────────────────────┘ │ │
+│ └──────────────────────────────────────────┘ │
+└──────────────────────────────────────────────┘
+```
 
-## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
-- `src/types.ts`: line 11507
-- `src/utils.ts`: line 12138
-- `src/lib/story-transfer.ts`: line 9812
-- `src/lib/ui-audit-schema.ts`: line 21329
-- `src/lib/ui-audit-utils.ts`: line 21565
-- `src/data/ui-audit-findings.ts`: line 18967
-- `StoryExportFormatModal.tsx`: line 9642
-- `StoryImportModeModal.tsx`: line 9731
-- `CharactersTab.tsx`: line 2893
-- `ChatInterfaceTab.tsx`: line 5004
-- `src/pages/style-guide/ui-audit.tsx`: line 17867
-- `src/App.tsx`: line 95
-- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout
+## Changes per Modal
+
+### All 3 generation modals (Cover, Avatar, Scene):
+
+**1. DialogContent** — Remove default padding/border, apply outer card styling:
+- `className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col bg-[#2a2a2f] rounded-3xl border-none p-0"`
+- `style={{ boxShadow: '0 20px 50px rgba(0,0,0,0.55), inset 1px 1px 0 rgba(255,255,255,0.09), inset -1px -1px 0 rgba(0,0,0,0.35)' }}`
+
+**2. Hide default X close button** — Add `[&>button:last-child]:hidden` to DialogContent className (since we have Cancel button)
+
+**3. DialogHeader** — Replace `pb-4 border-b border-border` with gradient header:
+- `bg-gradient-to-b from-[#5a7292] to-[#4a5f7f]` with gloss overlay
+- `border-top: 1px solid rgba(255,255,255,0.20)`
+- Shadow: `0 6px 16px rgba(0,0,0,0.35)`
+- Title: white, uppercase, `text-[13px] font-black tracking-[0.08em]`
+
+**4. Body wrapper** — `p-3.5` (14px)
+
+**5. Inner card** — `bg-[#2e2e33] rounded-2xl p-4` with inset shadow stack
+
+**6. Textareas** — `bg-[#1c1c1f] border-none border-t border-black/35 rounded-lg text-[#eaedf1]` with `inset 0 2px 6px rgba(0,0,0,0.40)` shadow
+
+**7. Labels** — `text-[11px] font-black text-zinc-400 uppercase tracking-[0.1em]`
+
+**8. Tip text** — `text-zinc-500` (was `text-muted-foreground`)
+
+**9. Divider** — `bg-white/5` height 1px (was `border-t border-border`)
+
+**10. Style tiles** — `bg-[#1c1c1f] rounded-[10px] p-[5px]` with:
+- Selected: `border-2 border-blue-500` + `boxShadow: 0 2px 8px rgba(59,130,246,0.35)` + text `#eaedf1`
+- Unselected: `border-2 border-transparent` + text `#a1a1aa`
+- Checkmark badge: `bg-blue-500` 14px circle (smaller, top-1 right-1)
+
+**11. Footer buttons** — Inside the inner card, right-aligned:
+- Cancel: `bg-[#3c3e47] text-[#eaedf1] rounded-[10px] uppercase text-[11px] font-black tracking-[0.05em]` + standard shadow stack
+- Generate: `bg-[#3b5ca8] text-white` same shape + blue shadow stack
+
+**12. Negative prompt chevron/label** — `text-zinc-400` to match mockup
+
+### AIPromptModal
+Already has its own dark styling with iridescent buttons. Will update to match the same outer/header/inner card pattern for consistency, keeping its iridescent submit button.
+
+## Files Changed
+- `src/components/chronicle/CoverImageGenerationModal.tsx`
+- `src/components/chronicle/AvatarGenerationModal.tsx`
+- `src/components/chronicle/SceneImageGenerationModal.tsx`
+- `src/components/chronicle/AIPromptModal.tsx`
+
