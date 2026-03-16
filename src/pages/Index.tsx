@@ -1711,7 +1711,10 @@ const IndexContent = () => {
           <div className={`py-8 ${sidebarCollapsed ? 'px-4' : 'px-8'} transition-all duration-300`}>
             <div className={`flex ${sidebarCollapsed ? 'flex-col items-center gap-3' : 'items-center justify-between'}`}>
               <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'gap-4'}`}>
-                <div className="w-10 h-10 rounded-xl bg-[#4a5f7f] flex items-center justify-center text-white font-black text-2xl italic shadow-xl shadow-[#4a5f7f]/30 flex-shrink-0">C</div>
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 flex items-center justify-center text-white font-black text-2xl italic shadow-xl shadow-[#4a5f7f]/30 flex-shrink-0 relative overflow-hidden">
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-white/[0.07] via-transparent to-transparent pointer-events-none" />
+                    <span className="relative z-[1]">C</span>
+                  </div>
                 {!sidebarCollapsed && (
                   <div className="font-black uppercase tracking-tighter text-2xl leading-none text-white whitespace-nowrap overflow-hidden">Chronicle</div>
                 )}
