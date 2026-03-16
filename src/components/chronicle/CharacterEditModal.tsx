@@ -1562,11 +1562,11 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl h-[85vh] max-h-[90vh] p-0 gap-0 overflow-hidden flex flex-col bg-[#2a2a2f] border-black/35 [&>button]:hidden">
         {/* Dark header bar matching builder */}
-        <DialogHeader className="px-6 py-4 border-b border-black/35 bg-[#2a2a2f]">
+        <DialogHeader className="px-6 py-4 border-b border-slate-200 bg-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <DialogTitle className="text-lg font-black text-[#eaedf1] uppercase tracking-tight">
+                <DialogTitle className="text-lg font-black text-slate-900 uppercase tracking-tight">
                   {viewMode === 'character' ? 'Edit Character' : 'Scenario Card'}
                 </DialogTitle>
                 <Tooltip>
@@ -1581,7 +1581,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
               
               {/* View Mode Toggle */}
               {scenarioWorldCore && (
-                <div className="flex items-center bg-[#2b2b2e] rounded-full p-1 gap-0.5 border border-[#2b2b2e]">
+                <div className="flex items-center bg-zinc-800 rounded-full p-1 gap-0.5 border border-zinc-700">
                   <button
                     type="button"
                     onClick={() => setViewMode('character')}
