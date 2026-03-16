@@ -151,7 +151,7 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
                   updateField('structuredLocations', locs);
                 }}
                 placeholder={idx === 0 ? "e.g. The Lakehouse" : "Location name..."}
-                className="w-2/5 bg-[#1c1c1f] border-t border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 text-sm"
+                className="w-2/5 bg-[#1c1c1f] border border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 text-sm"
               />
               <AutoResizeTextarea
                 value={loc.description}
