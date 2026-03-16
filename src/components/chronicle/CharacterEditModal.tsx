@@ -1984,41 +1984,6 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
           </div>
         </ScrollArea>
 
-        <DialogFooter className="px-6 py-5 border-t border-ghost-white bg-[#2a2a2f] gap-3 flex-shrink-0">
-          <button
-            type="button"
-            onClick={() => onOpenChange(false)}
-            disabled={isSaving}
-            className="flex h-10 px-6 items-center justify-center gap-2
-              rounded-xl border border-[hsl(var(--ui-border))] 
-              bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
-              text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider
-              hover:bg-ghost-white active:bg-ghost-white disabled:opacity-50
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ghost-white
-              transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              if (viewMode === 'scenario') {
-                handleSaveScenarioCard();
-              }
-              handleSave();
-            }}
-            disabled={isSaving}
-            className="flex h-10 px-6 items-center justify-center gap-2
-              rounded-xl border border-[#5a6f8f] 
-              bg-[#4a5f7f] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
-              text-white text-[10px] font-bold leading-none uppercase tracking-wider
-              hover:bg-[#5a6f8f] active:bg-[#6a7f9f] disabled:opacity-50
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5a6f8f]/40
-              transition-colors"
-          >
-            {isSaving ? 'Saving...' : 'Save Changes'}
-          </button>
-        </DialogFooter>
       </DialogContent>
 
       {/* Change Name Modal */}
