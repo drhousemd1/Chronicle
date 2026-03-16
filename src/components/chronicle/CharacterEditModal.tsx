@@ -1699,7 +1699,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
         open={isChangeNameModalOpen}
         onOpenChange={setIsChangeNameModalOpen}
         currentName={draft.name || character?.name || ''}
-        onConfirm={(newName) => {
+        onSave={(newName) => {
           setDraft(prev => ({
             ...prev,
             name: newName,
