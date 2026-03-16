@@ -1914,61 +1914,29 @@ const IndexContent = () => {
                   </h1>
                   <div className="overflow-x-auto scrollbar-none flex-shrink-0">
                     <div className="flex items-center bg-[#2b2b2e] rounded-full p-1 gap-0.5 border border-[#2b2b2e]">
-                      <button
-                        onClick={() => setHubFilter("my")}
-                        className={cn(
-                          "px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap",
-                          hubFilter === "my" 
-                            ? "bg-[#4a5f7f] text-white shadow-sm" 
-                            : "text-[#a1a1aa] hover:text-[#e4e4e7]"
-                        )}
-                      >
-                        My Stories
-                      </button>
-                      <button
-                        onClick={() => setHubFilter("bookmarked")}
-                        className={cn(
-                          "px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap",
-                          hubFilter === "bookmarked" 
-                            ? "bg-[#4a5f7f] text-white shadow-sm" 
-                            : "text-[#a1a1aa] hover:text-[#e4e4e7]"
-                        )}
-                      >
-                        Saved Stories
-                      </button>
-                      <button
-                        onClick={() => setHubFilter("published")}
-                        className={cn(
-                          "px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap",
-                          hubFilter === "published" 
-                            ? "bg-[#4a5f7f] text-white shadow-sm" 
-                            : "text-[#a1a1aa] hover:text-[#e4e4e7]"
-                        )}
-                      >
-                        Published
-                      </button>
-                      <button
-                        onClick={() => setHubFilter("drafts")}
-                        className={cn(
-                          "px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap",
-                          hubFilter === "drafts" 
-                            ? "bg-[#4a5f7f] text-white shadow-sm" 
-                            : "text-[#a1a1aa] hover:text-[#e4e4e7]"
-                        )}
-                      >
-                        Drafts
-                      </button>
-                      <button
-                        onClick={() => setHubFilter("all")}
-                        className={cn(
-                          "px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap",
-                          hubFilter === "all" 
-                            ? "bg-[#4a5f7f] text-white shadow-sm" 
-                            : "text-[#a1a1aa] hover:text-[#e4e4e7]"
-                        )}
-                      >
-                        All
-                      </button>
+                      {[
+                        { key: "my" as const, label: "My Stories" },
+                        { key: "bookmarked" as const, label: "Saved Stories" },
+                        { key: "published" as const, label: "Published" },
+                        { key: "drafts" as const, label: "Drafts" },
+                        { key: "all" as const, label: "All" },
+                      ].map((option) => (
+                        <button
+                          key={option.key}
+                          onClick={() => setHubFilter(option.key)}
+                          className={cn(
+                            "px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap",
+                            hubFilter === option.key 
+                              ? "relative overflow-hidden bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 text-white shadow-sm" 
+                              : "text-[#a1a1aa] hover:text-[#e4e4e7]"
+                          )}
+                        >
+                          {hubFilter === option.key && (
+                            <div className="absolute inset-0 rounded-full bg-gradient-to-b from-white/[0.07] via-transparent to-transparent pointer-events-none" />
+                          )}
+                          <span className="relative z-[1]">{option.label}</span>
+                        </button>
+                      ))}
                     </div>
                   </div>
                 </div>
