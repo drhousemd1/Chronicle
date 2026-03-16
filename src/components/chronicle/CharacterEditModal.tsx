@@ -1047,14 +1047,14 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[90vh] p-0 gap-0 overflow-hidden bg-[#2a2a2f] border-ghost-white">
-        <DialogHeader className="px-6 py-4 border-b border-ghost-white bg-black">
+        <DialogHeader className="px-6 py-4 border-b border-ghost-white bg-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div>
-                <DialogTitle className="text-lg font-bold text-white">
+                <DialogTitle className="text-lg font-bold text-black">
                   {viewMode === 'character' ? 'Edit Character' : 'Scenario Card'}
                 </DialogTitle>
-                <p className="text-xs text-white/70 mt-1">
+                <p className="text-xs text-black/70 mt-1">
                   {viewMode === 'character' 
                     ? 'Changes apply only to this playthrough' 
                     : 'Global scenario settings for this playthrough'}
