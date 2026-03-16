@@ -33,7 +33,7 @@ export function ConversationsTab({
     <TooltipProvider>
     <div className="max-w-5xl mx-auto py-4">
         {sortedRegistry.length === 0 ? (
-          <div className="bg-[#2a2a2f] rounded-2xl border border-[#4a5f7f] py-20 text-center">
+          <div className="bg-[#2a2a2f] rounded-2xl py-20 text-center" style={{ boxShadow: '0 12px 32px -2px rgba(0,0,0,0.50), inset 1px 1px 0 rgba(255,255,255,0.09), inset -1px -1px 0 rgba(0,0,0,0.35)' }}>
             <div className="text-6xl mb-4">💬</div>
             <p className="font-bold text-zinc-400">No saved sessions found.</p>
             <p className="text-sm text-zinc-500 mt-1">Start playing a scenario to create your first save.</p>
@@ -51,15 +51,17 @@ export function ConversationsTab({
                 return (
                   <div
                     key={entry.conversationId}
-                    className="bg-[#2a2a2f] rounded-2xl border border-[#4a5f7f] overflow-hidden group"
+                    className="bg-[#2a2a2f] rounded-2xl overflow-hidden group"
+                    style={{ boxShadow: '0 12px 32px -2px rgba(0,0,0,0.50), inset 1px 1px 0 rgba(255,255,255,0.09), inset -1px -1px 0 rgba(0,0,0,0.35)' }}
                   >
                     <div className="p-4">
-                      <div className="bg-[#3a3a3f]/30 rounded-2xl border border-[#4a5f7f] p-4">
+                      <div className="bg-[#2e2e33] rounded-xl p-4" style={{ boxShadow: 'inset 1px 1px 0 rgba(255,255,255,0.07), inset -1px -1px 0 rgba(0,0,0,0.30), 0 4px 12px rgba(0,0,0,0.25)' }}>
                         <div className="flex gap-4">
                           {/* Scenario thumbnail - clickable */}
                           <button
                             onClick={() => onResume(entry.scenarioId, entry.conversationId)}
-                            className="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0 bg-zinc-800 border border-[#4a5f7f] hover:ring-2 hover:ring-[#4a5f7f] transition-all shadow-[0_4px_12px_rgba(0,0,0,0.4)]"
+                            className="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0 bg-zinc-800 hover:ring-2 hover:ring-[#4a5f7f] transition-all"
+                            style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.07)' }}
                           >
                             {entry.scenarioImageUrl ? (
                               <img 
@@ -106,7 +108,8 @@ export function ConversationsTab({
                                         e.stopPropagation();
                                         onDelete(entry.scenarioId, entry.conversationId);
                                       }}
-                                      className="p-2 rounded-lg bg-red-500 border border-red-500 text-white hover:bg-red-600 hover:border-red-600 transition-colors"
+                                      className="w-10 h-10 flex items-center justify-center rounded-xl bg-[hsl(0,72%,51%)] text-white hover:bg-red-600 transition-colors"
+                                      style={{ boxShadow: '0 8px 24px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.09), inset 0 -1px 0 rgba(0,0,0,0.20)' }}
                                     >
                                       <Trash2 className="w-4 h-4" />
                                     </button>
@@ -121,8 +124,8 @@ export function ConversationsTab({
                               onClick={() => onResume(entry.scenarioId, entry.conversationId)}
                               className="w-full text-left mt-2"
                             >
-                              <div className="bg-zinc-900/50 border border-[#4a5f7f] rounded-lg px-3 py-1.5">
-                                <p className="text-sm text-zinc-400 line-clamp-2 leading-relaxed">
+                              <div className="bg-[#1c1c1f] border-t border-black/35 rounded-lg px-3 py-1.5">
+                                <p className="text-sm text-zinc-500 line-clamp-2 leading-relaxed">
                                   {entry.lastMessage || "No messages yet"}
                                 </p>
                               </div>
