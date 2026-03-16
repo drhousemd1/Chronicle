@@ -306,7 +306,7 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
                               updateField('customWorldSections', updated);
                             }}
                             placeholder="LABEL"
-                            className="flex-1 bg-[#1c1c1f] border-t border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 text-sm"
+                            className="flex-1 bg-[#1c1c1f] border border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 text-sm"
                           />
                           <button
                             type="button"
