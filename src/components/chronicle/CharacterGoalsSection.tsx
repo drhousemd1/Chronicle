@@ -239,7 +239,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
                   <div className="flex-1">
                     <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block mb-1">Goal Name</label>
                     {isEditMode ? (
-                      <AutoResizeTextarea value={goal.title} onChange={(v) => updateGoal(goal.id, { title: v })} placeholder="Enter goal name..." className="px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                      <AutoResizeTextarea value={goal.title} onChange={(v) => updateGoal(goal.id, { title: v })} placeholder="Enter goal name..." className="px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                     ) : (
                       <h3 className="text-lg font-bold text-white mt-0.5">{goal.title || 'No goal name set'}</h3>
                     )}
