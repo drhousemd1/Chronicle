@@ -105,7 +105,7 @@ export const CoverImageGenerationModal: React.FC<CoverImageGenerationModalProps>
             className="pointer-events-none absolute inset-0"
             style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 60%)' }}
           />
-          <DialogTitle className="relative z-[1] flex items-center gap-2 text-white text-[13px] font-black uppercase tracking-[0.08em]">
+          <DialogTitle className="relative z-[1] flex items-center gap-2 text-white text-[13px] font-black">
             <Wand2 className="w-4 h-4" />
             Generate Cover Image
           </DialogTitle>
