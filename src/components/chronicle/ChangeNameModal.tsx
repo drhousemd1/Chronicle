@@ -97,4 +97,6 @@ export const ChangeNameModal = React.forwardRef<HTMLDivElement, ChangeNameModalP
       </DialogContent>
     </Dialog>
   );
-};
+});
+
+ChangeNameModal.displayName = 'ChangeNameModal';
