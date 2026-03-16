@@ -1684,8 +1684,10 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
           <ScrollArea className="flex-1 min-h-0 bg-[#1a1b20]">
             <div className="p-6">
               <ScenarioCardView
-                worldCore={scenarioDraft}
-                onChange={setScenarioDraft}
+                scenarioDraft={scenarioDraft}
+                onUpdateScenarioDraft={setScenarioDraft}
+                expandedSections={expandedSections}
+                toggleSection={toggleSection}
               />
             </div>
           </ScrollArea>
