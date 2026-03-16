@@ -1046,7 +1046,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] p-0 gap-0 overflow-hidden bg-[#2a2a2f] border-ghost-white">
+      <DialogContent className="max-w-6xl max-h-[90vh] p-0 gap-0 overflow-hidden bg-[#2a2a2f] border-ghost-white [&>button]:hidden">
         <DialogHeader className="px-6 py-4 border-b border-ghost-white bg-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -1102,120 +1102,143 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
             </div>
             
             {/* AI Update Button - Iridescent premium style */}
-            {conversationId && (
-              <Tooltip open={isTooltipOpen}>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    onClick={handleDeepScan}
-                    disabled={isDeepScanning || isSaving}
-                    onMouseEnter={() => setIsTooltipOpen(true)}
-                    onMouseLeave={() => setIsTooltipOpen(false)}
-                    className="group relative flex h-10 px-4 rounded-xl overflow-hidden
-                      text-white text-xs font-bold leading-none
-                      shadow-[0_12px_40px_rgba(0,0,0,0.45)]
-                      hover:brightness-125 transition-all
-                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/45
-                      disabled:opacity-50 shrink-0"
-                  >
-                    {/* Layer 1: Iridescent outer border ring */}
-                    <span
-                      aria-hidden
-                      className="absolute inset-0 rounded-xl"
-                      style={{
-                        background:
-                          "linear-gradient(90deg, rgba(255,255,255,0.34) 0%, rgba(34,184,200,0.62) 18%, rgba(255,255,255,0.22) 44%, rgba(109,94,247,0.64) 78%, rgba(255,255,255,0.28) 100%)",
-                        filter:
-                          "drop-shadow(0 0 10px rgba(255,255,255,0.10)) drop-shadow(0 0 18px rgba(109,94,247,0.10)) drop-shadow(0 0 18px rgba(34,184,200,0.10))",
-                      }}
-                    />
-                    {/* Layer 2: Mask to create 2px border effect */}
-                    <span
-                      aria-hidden
-                      className="absolute inset-[2px] rounded-[10px]"
-                      style={{ background: "#2B2D33" }}
-                    />
-                    {/* Layer 3: Button surface with gradient */}
-                    <span
-                      aria-hidden
-                      className="absolute inset-[2px] rounded-[10px]"
-                      style={{
-                        background:
-                          "linear-gradient(90deg, rgba(34,184,200,0.22), rgba(109,94,247,0.22)), #2B2D33",
-                      }}
-                    />
-                    {/* Layer 4: Soft top sheen */}
-                    <span
-                      aria-hidden
-                      className="absolute inset-[2px] rounded-[10px]"
-                      style={{
-                        background:
-                          "linear-gradient(180deg, rgba(255,255,255,0.11), rgba(255,255,255,0.00) 46%, rgba(0,0,0,0.16))",
-                      }}
-                    />
-                    {/* Layer 5: Border sheen (top-left diagonal) */}
-                    <span
-                      aria-hidden
-                      className="absolute inset-0 rounded-xl pointer-events-none"
-                      style={{
-                        boxShadow:
-                          "inset 0 1px 0 rgba(255,255,255,0.26), inset 0 -1px 0 rgba(0,0,0,0.22)",
-                        background:
-                          "linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.00) 55%)",
-                        mixBlendMode: "screen",
-                      }}
-                    />
-                    {/* Layer 6: Teal bloom (top-left) */}
-                    <span
-                      aria-hidden
-                      className="absolute -left-8 -top-8 h-32 w-32 rounded-full blur-2xl pointer-events-none"
-                      style={{
-                        background:
-                          "radial-gradient(circle, rgba(34,184,200,0.28), transparent 62%)",
-                      }}
-                    />
-                    {/* Layer 7: Purple bloom (bottom-right) */}
-                    <span
-                      aria-hidden
-                      className="absolute -right-10 -bottom-10 h-40 w-40 rounded-full blur-3xl pointer-events-none"
-                      style={{
-                        background:
-                          "radial-gradient(circle, rgba(109,94,247,0.26), transparent 65%)",
-                      }}
-                    />
-                    {/* Layer 8: Crisp inner edge */}
-                    <span
-                      aria-hidden
-                      className="absolute inset-0 rounded-xl pointer-events-none"
-                      style={{
-                        boxShadow:
-                          "inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -1px 0 rgba(0,0,0,0.26), 0 0 0 1px rgba(255,255,255,0.06)",
-                      }}
-                    />
-                    {/* Content layer */}
-                    <span className="relative z-10 flex items-center justify-center gap-2 w-full">
-                      {isDeepScanning ? (
-                        <Loader2 
-                          className="w-3.5 h-3.5 shrink-0 animate-spin text-cyan-200" 
-                          style={{ filter: "drop-shadow(0 0 10px rgba(34,184,200,0.35))" }}
-                        />
-                      ) : (
-                        <Sparkles 
-                          className="w-3.5 h-3.5 shrink-0 text-cyan-200" 
-                          style={{ filter: "drop-shadow(0 0 10px rgba(34,184,200,0.35))" }}
-                        />
-                      )}
-                      <span className="min-w-0 truncate drop-shadow-[0_1px_0_rgba(0,0,0,0.35)]">
-                        {isDeepScanning ? "Analyzing..." : "AI Update"}
+            <div className="flex items-center gap-2">
+              {conversationId && (
+                <Tooltip open={isTooltipOpen}>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={handleDeepScan}
+                      disabled={isDeepScanning || isSaving}
+                      onMouseEnter={() => setIsTooltipOpen(true)}
+                      onMouseLeave={() => setIsTooltipOpen(false)}
+                      className="group relative flex h-10 px-4 rounded-xl overflow-hidden
+                        text-white text-xs font-bold leading-none
+                        shadow-[0_12px_40px_rgba(0,0,0,0.45)]
+                        hover:brightness-125 transition-all
+                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/45
+                        disabled:opacity-50 shrink-0"
+                    >
+                      {/* Layer 1: Iridescent outer border ring */}
+                      <span
+                        aria-hidden
+                        className="absolute inset-0 rounded-xl"
+                        style={{
+                          background:
+                            "linear-gradient(90deg, rgba(255,255,255,0.34) 0%, rgba(34,184,200,0.62) 18%, rgba(255,255,255,0.22) 44%, rgba(109,94,247,0.64) 78%, rgba(255,255,255,0.28) 100%)",
+                          filter:
+                            "drop-shadow(0 0 10px rgba(255,255,255,0.10)) drop-shadow(0 0 18px rgba(109,94,247,0.10)) drop-shadow(0 0 18px rgba(34,184,200,0.10))",
+                        }}
+                      />
+                      {/* Layer 2: Mask to create 2px border effect */}
+                      <span
+                        aria-hidden
+                        className="absolute inset-[2px] rounded-[10px]"
+                        style={{ background: "#2B2D33" }}
+                      />
+                      {/* Layer 3: Button surface with gradient */}
+                      <span
+                        aria-hidden
+                        className="absolute inset-[2px] rounded-[10px]"
+                        style={{
+                          background:
+                            "linear-gradient(90deg, rgba(34,184,200,0.22), rgba(109,94,247,0.22)), #2B2D33",
+                        }}
+                      />
+                      {/* Layer 4: Soft top sheen */}
+                      <span
+                        aria-hidden
+                        className="absolute inset-[2px] rounded-[10px]"
+                        style={{
+                          background:
+                            "linear-gradient(180deg, rgba(255,255,255,0.11), rgba(255,255,255,0.00) 46%, rgba(0,0,0,0.16))",
+                        }}
+                      />
+                      {/* Layer 5: Border sheen (top-left diagonal) */}
+                      <span
+                        aria-hidden
+                        className="absolute inset-0 rounded-xl pointer-events-none"
+                        style={{
+                          boxShadow:
+                            "inset 0 1px 0 rgba(255,255,255,0.26), inset 0 -1px 0 rgba(0,0,0,0.22)",
+                          background:
+                            "linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.00) 55%)",
+                          mixBlendMode: "screen",
+                        }}
+                      />
+                      {/* Layer 6: Teal bloom (top-left) */}
+                      <span
+                        aria-hidden
+                        className="absolute -left-8 -top-8 h-32 w-32 rounded-full blur-2xl pointer-events-none"
+                        style={{
+                          background:
+                            "radial-gradient(circle, rgba(34,184,200,0.28), transparent 62%)",
+                        }}
+                      />
+                      {/* Layer 7: Purple bloom (bottom-right) */}
+                      <span
+                        aria-hidden
+                        className="absolute -right-10 -bottom-10 h-40 w-40 rounded-full blur-3xl pointer-events-none"
+                        style={{
+                          background:
+                            "radial-gradient(circle, rgba(109,94,247,0.26), transparent 65%)",
+                        }}
+                      />
+                      {/* Layer 8: Crisp inner edge */}
+                      <span
+                        aria-hidden
+                        className="absolute inset-0 rounded-xl pointer-events-none"
+                        style={{
+                          boxShadow:
+                            "inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -1px 0 rgba(0,0,0,0.26), 0 0 0 1px rgba(255,255,255,0.06)",
+                        }}
+                      />
+                      {/* Content layer */}
+                      <span className="relative z-10 flex items-center justify-center gap-2 w-full">
+                        {isDeepScanning ? (
+                          <Loader2 
+                            className="w-3.5 h-3.5 shrink-0 animate-spin text-cyan-200" 
+                            style={{ filter: "drop-shadow(0 0 10px rgba(34,184,200,0.35))" }}
+                          />
+                        ) : (
+                          <Sparkles 
+                            className="w-3.5 h-3.5 shrink-0 text-cyan-200" 
+                            style={{ filter: "drop-shadow(0 0 10px rgba(34,184,200,0.35))" }}
+                          />
+                        )}
+                        <span className="min-w-0 truncate drop-shadow-[0_1px_0_rgba(0,0,0,0.35)]">
+                          {isDeepScanning ? "Analyzing..." : "AI Update"}
+                        </span>
                       </span>
-                    </span>
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-[250px] pointer-events-none">
-                  Run additional scan of dialog to update character card
-                </TooltipContent>
-              </Tooltip>
-            )}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-[250px] pointer-events-none">
+                    Run additional scan of dialog to update character card
+                  </TooltipContent>
+                </Tooltip>
+              )}
+              <button
+                type="button"
+                onClick={() => onOpenChange(false)}
+                disabled={isSaving}
+                className="inline-flex items-center justify-center h-10 px-6 rounded-xl border-0 bg-[#303035] text-[#eaedf1] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:bg-[#343439] active:bg-[#343439] transition-all active:scale-95 text-xs font-bold leading-none disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (viewMode === 'scenario') {
+                    handleSaveScenarioCard();
+                  }
+                  handleSave();
+                }}
+                disabled={isSaving}
+                className="inline-flex items-center justify-center h-10 px-6 rounded-xl border-0 bg-[#303035] text-[#eaedf1] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:bg-[#343439] active:bg-[#343439] transition-all active:scale-95 text-xs font-bold leading-none disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40"
+              >
+                {isSaving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
           </div>
         </DialogHeader>
 
@@ -1961,41 +1984,6 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
           </div>
         </ScrollArea>
 
-        <DialogFooter className="px-6 py-5 border-t border-ghost-white bg-[#2a2a2f] gap-3 flex-shrink-0">
-          <button
-            type="button"
-            onClick={() => onOpenChange(false)}
-            disabled={isSaving}
-            className="flex h-10 px-6 items-center justify-center gap-2
-              rounded-xl border border-[hsl(var(--ui-border))] 
-              bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
-              text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider
-              hover:bg-ghost-white active:bg-ghost-white disabled:opacity-50
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ghost-white
-              transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              if (viewMode === 'scenario') {
-                handleSaveScenarioCard();
-              }
-              handleSave();
-            }}
-            disabled={isSaving}
-            className="flex h-10 px-6 items-center justify-center gap-2
-              rounded-xl border border-[#5a6f8f] 
-              bg-[#4a5f7f] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
-              text-white text-[10px] font-bold leading-none uppercase tracking-wider
-              hover:bg-[#5a6f8f] active:bg-[#6a7f9f] disabled:opacity-50
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5a6f8f]/40
-              transition-colors"
-          >
-            {isSaving ? 'Saving...' : 'Save Changes'}
-          </button>
-        </DialogFooter>
       </DialogContent>
 
       {/* Change Name Modal */}
