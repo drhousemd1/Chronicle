@@ -4,7 +4,7 @@
 import React from 'react';
 import { SideCharacter } from '@/types';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import { Loader2, Pencil, Trash2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
