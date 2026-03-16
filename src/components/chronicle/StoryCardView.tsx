@@ -118,7 +118,7 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
             onChange={(e) => updateField('storyPremise', e.target.value)}
             placeholder="The central situation, conflict, or premise..."
             rows={4}
-            className="text-sm resize-none bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 focus:ring-blue-500/20 focus:border-blue-500"
+            className="text-sm resize-none bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 focus:ring-blue-500/20 focus:border-blue-500"
           />
         </div>
       </CollapsibleSection>
