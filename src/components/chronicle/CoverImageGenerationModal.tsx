@@ -4,11 +4,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import {
   Collapsible,
   CollapsibleContent,
@@ -78,7 +75,6 @@ export const CoverImageGenerationModal: React.FC<CoverImageGenerationModalProps>
 
       if (data?.imageUrl) {
         onGenerated(data.imageUrl);
-        // Reset state on success
         setPrompt("");
         setNegativePrompt("");
         setSelectedStyleId(defaultStyleId);
@@ -95,160 +91,164 @@ export const CoverImageGenerationModal: React.FC<CoverImageGenerationModalProps>
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader className="pb-4 border-b border-border">
-          <DialogTitle className="flex items-center gap-2 text-lg font-bold">
-            <Wand2 className="w-5 h-5" />
+      <DialogContent
+        className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col bg-[#2a2a2f] rounded-3xl border-none p-0 [&>button:last-child]:hidden"
+        style={{ boxShadow: '0 20px 50px rgba(0,0,0,0.55), inset 1px 1px 0 rgba(255,255,255,0.09), inset -1px -1px 0 rgba(0,0,0,0.35)' }}
+      >
+        {/* Gradient Header */}
+        <DialogHeader
+          className="relative overflow-hidden bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] px-5 py-3.5"
+          style={{ borderTop: '1px solid rgba(255,255,255,0.20)', boxShadow: '0 6px 16px rgba(0,0,0,0.35)' }}
+        >
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-0"
+            style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 60%)' }}
+          />
+          <DialogTitle className="relative z-[1] flex items-center gap-2 text-white text-[13px] font-black uppercase tracking-[0.08em]">
+            <Wand2 className="w-4 h-4" />
             Generate Cover Image
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto py-4 space-y-5">
-          {/* Prompt Section */}
-          <div className="space-y-2">
-            <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              Prompt
-            </Label>
-            <Textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Describe your cover image..."
-              className="min-h-[100px] resize-none bg-ghost-white border-slate-200 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 focus-visible:ring-0 focus-visible:ring-offset-0"
-            />
-            <p className="text-xs text-muted-foreground">
-              Tip: Cover images work best with a 2:3 portrait aspect ratio. Include setting, mood, and key visual elements.
-            </p>
-          </div>
-
-          {/* Negative Prompt (Collapsible) */}
-          <Collapsible open={showNegativePrompt} onOpenChange={setShowNegativePrompt}>
-            <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors w-full">
-              <ChevronDown
-                className={cn(
-                  "w-4 h-4 transition-transform duration-200",
-                  showNegativePrompt && "rotate-180"
-                )}
-              />
-              <span className="text-xs font-medium uppercase tracking-wider">
-                Negative Prompt (optional)
-              </span>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="pt-3">
+        {/* Body */}
+        <div className="p-3.5">
+          <div
+            className="bg-[#2e2e33] rounded-2xl p-4 space-y-4"
+            style={{ boxShadow: 'inset 1px 1px 0 rgba(255,255,255,0.07), inset -1px -1px 0 rgba(0,0,0,0.30), 0 4px 12px rgba(0,0,0,0.25)' }}
+          >
+            {/* Prompt Section */}
+            <div className="space-y-2">
+              <label className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.1em]">
+                Prompt
+              </label>
               <Textarea
-                value={negativePrompt}
-                onChange={(e) => setNegativePrompt(e.target.value)}
-                placeholder="Describe what you want to avoid..."
-                className="min-h-[80px] resize-none bg-ghost-white border-slate-200 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 focus-visible:ring-0 focus-visible:ring-offset-0"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="Describe your cover image..."
+                className="min-h-[100px] resize-none bg-[#1c1c1f] border-t border-black/35 border-b-0 border-x-0 rounded-lg text-[#eaedf1] placeholder:text-zinc-600 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                style={{ boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.40)' }}
               />
-            </CollapsibleContent>
-          </Collapsible>
+              <p className="text-xs text-zinc-500">
+                Tip: Cover images work best with a 2:3 portrait aspect ratio. Include setting, mood, and key visual elements.
+              </p>
+            </div>
 
-          {/* Separator */}
-          <div className="border-t border-border" />
-
-          {/* Styles Section */}
-          <div className="space-y-3">
-            <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              Style
-            </Label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 px-1">
-              {AVATAR_STYLES.map((style) => (
-                <button
-                  key={style.id}
-                  type="button"
-                  onClick={() => setSelectedStyleId(style.id)}
+            {/* Negative Prompt (Collapsible) */}
+            <Collapsible open={showNegativePrompt} onOpenChange={setShowNegativePrompt}>
+              <CollapsibleTrigger className="flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-300 transition-colors w-full">
+                <ChevronDown
                   className={cn(
-                    "relative rounded-xl p-2 transition-all duration-200 cursor-pointer",
-                    "bg-card hover:bg-accent/50",
-                    selectedStyleId === style.id
-                      ? "ring-2 ring-blue-500 shadow-md"
-                      : "ring-1 ring-border hover:ring-slate-300",
-                    "focus-visible:outline-none"
+                    "w-4 h-4 transition-transform duration-200",
+                    showNegativePrompt && "rotate-180"
                   )}
-                >
-                  <div className="aspect-square rounded-lg overflow-hidden bg-muted">
-                    <img
-                      src={style.thumbnailUrl}
-                      alt={style.displayName}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <p className="text-xs font-semibold text-center mt-2 text-foreground">
-                    {style.displayName}
-                  </p>
-                  {selectedStyleId === style.id && (
-                    <div className="absolute top-1 right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                      <svg
-                        className="w-3 h-3 text-primary-foreground"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={3}
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
+                />
+                <span className="text-[11px] font-black uppercase tracking-[0.1em]">
+                  Negative Prompt (optional)
+                </span>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="pt-3">
+                <Textarea
+                  value={negativePrompt}
+                  onChange={(e) => setNegativePrompt(e.target.value)}
+                  placeholder="Describe what you want to avoid..."
+                  className="min-h-[80px] resize-none bg-[#1c1c1f] border-t border-black/35 border-b-0 border-x-0 rounded-lg text-[#eaedf1] placeholder:text-zinc-600 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                  style={{ boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.40)' }}
+                />
+              </CollapsibleContent>
+            </Collapsible>
+
+            {/* Divider */}
+            <div className="h-px bg-white/5" />
+
+            {/* Styles Section */}
+            <div className="space-y-3">
+              <label className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.1em]">
+                Style
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                {AVATAR_STYLES.map((style) => (
+                  <button
+                    key={style.id}
+                    type="button"
+                    onClick={() => setSelectedStyleId(style.id)}
+                    className={cn(
+                      "relative rounded-[10px] p-[5px] transition-all duration-200 cursor-pointer bg-[#1c1c1f]",
+                      selectedStyleId === style.id
+                        ? "border-2 border-blue-500"
+                        : "border-2 border-transparent hover:border-zinc-600",
+                      "focus-visible:outline-none"
+                    )}
+                    style={selectedStyleId === style.id ? { boxShadow: '0 2px 8px rgba(59,130,246,0.35)' } : undefined}
+                  >
+                    <div className="aspect-square rounded-lg overflow-hidden bg-zinc-800">
+                      <img
+                        src={style.thumbnailUrl}
+                        alt={style.displayName}
+                        className="w-full h-full object-cover"
+                      />
                     </div>
-                  )}
-                </button>
-              ))}
+                    <p className={cn(
+                      "text-[10px] font-bold text-center mt-1.5",
+                      selectedStyleId === style.id ? "text-[#eaedf1]" : "text-[#a1a1aa]"
+                    )}>
+                      {style.displayName}
+                    </p>
+                    {selectedStyleId === style.id && (
+                      <div className="absolute top-0.5 right-0.5 w-3.5 h-3.5 bg-blue-500 rounded-full flex items-center justify-center">
+                        <svg className="w-2 h-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Error Message */}
+            {error && (
+              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                <p className="text-sm text-red-400">{error}</p>
+              </div>
+            )}
+
+            {/* Footer Buttons */}
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isGenerating}
+                className="h-9 px-5 rounded-[10px] bg-[#3c3e47] text-[#eaedf1] text-[11px] font-black uppercase tracking-[0.05em] transition-all active:scale-95 disabled:opacity-50"
+                style={{ boxShadow: '0 8px 24px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.09), inset 0 -1px 0 rgba(0,0,0,0.20)' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleGenerate}
+                disabled={isGenerating || !prompt.trim()}
+                className="h-9 px-5 rounded-[10px] bg-[#3b5ca8] text-white text-[11px] font-black uppercase tracking-[0.05em] transition-all active:scale-95 disabled:opacity-50 min-w-[140px]"
+                style={{ boxShadow: '0 8px 24px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -1px 0 rgba(0,0,0,0.20)' }}
+              >
+                {isGenerating ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Generating...
+                  </span>
+                ) : (
+                  <span className="flex items-center justify-center gap-2">
+                    <Wand2 className="w-3.5 h-3.5" />
+                    Generate Cover
+                  </span>
+                )}
+              </button>
             </div>
           </div>
-
-          {/* Error Message */}
-          {error && (
-            <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
-              <p className="text-sm text-destructive">{error}</p>
-            </div>
-          )}
         </div>
-
-        <DialogFooter className="pt-4 border-t border-border">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onClose}
-            disabled={isGenerating}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            onClick={handleGenerate}
-            disabled={isGenerating || !prompt.trim()}
-            className="min-w-[140px]"
-          >
-            {isGenerating ? (
-              <span className="flex items-center gap-2">
-                <svg
-                  className="animate-spin h-4 w-4"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
-                </svg>
-                Generating...
-              </span>
-            ) : (
-              <span className="flex items-center gap-2">
-                <Wand2 className="w-4 h-4" />
-                Generate Cover
-              </span>
-            )}
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
