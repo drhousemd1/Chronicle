@@ -85,21 +85,24 @@ function SidebarItem({
   collapsed?: boolean;
 }) {
   const activeClasses = active 
-    ? "bg-[#4a5f7f] shadow-lg shadow-black/40 text-white"
+    ? "bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 shadow-lg shadow-black/40 text-white"
     : "text-slate-400 hover:bg-ghost-white hover:text-white hover:shadow-md hover:shadow-black/20";
   
   const content = (
     <button 
       type="button" 
       onClick={onClick} 
-      className={`w-full flex flex-col rounded-xl transition-all duration-200 font-bold text-sm mb-1 cursor-pointer group border border-transparent ${activeClasses} ${className} ${collapsed ? 'px-3 py-3 items-center justify-center' : 'px-4 py-3'}`}
+      className={`relative overflow-hidden w-full flex flex-col rounded-xl transition-all duration-200 font-bold text-sm mb-1 cursor-pointer group border border-transparent ${activeClasses} ${className} ${collapsed ? 'px-3 py-3 items-center justify-center' : 'px-4 py-3'}`}
     >
-      <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3 w-full'}`}>
+      {active && (
+        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.07] via-transparent to-transparent pointer-events-none" style={{ backgroundSize: '100% 60%', backgroundRepeat: 'no-repeat' }} />
+      )}
+      <div className={`relative z-[1] flex items-center ${collapsed ? 'justify-center' : 'gap-3 w-full'}`}>
         <span className="flex-shrink-0 transition-transform duration-200 group-hover:scale-110">{icon}</span>
         {!collapsed && <span className="truncate">{label}</span>}
       </div>
       {!collapsed && subtitle && (
-        <div className={`text-[10px] font-black tracking-wide uppercase mt-1 ml-8 text-left transition-colors duration-200 truncate ${active ? "text-blue-200 opacity-100" : "text-slate-600 opacity-70 group-hover:text-slate-400"}`}>
+        <div className={`relative z-[1] text-[10px] font-black tracking-wide uppercase mt-1 ml-8 text-left transition-colors duration-200 truncate ${active ? "text-blue-200 opacity-100" : "text-slate-600 opacity-70 group-hover:text-slate-400"}`}>
           {subtitle}
         </div>
       )}
