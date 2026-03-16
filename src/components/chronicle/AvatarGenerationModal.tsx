@@ -173,7 +173,7 @@ export const AvatarGenerationModal: React.FC<AvatarGenerationModalProps> = ({
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="Describe your character's appearance..."
-                className="min-h-[100px] resize-none bg-[#1c1c1f] border-t border-black/35 border-b-0 border-x-0 rounded-lg text-[#eaedf1] placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                className="min-h-[100px] resize-none bg-[#1c1c1f] border-t border-black/35 rounded-lg text-[#eaedf1] placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                 style={{ boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.40)' }}
               />
               <p className="text-xs text-zinc-500">
@@ -199,7 +199,7 @@ export const AvatarGenerationModal: React.FC<AvatarGenerationModalProps> = ({
                   value={negativePrompt}
                   onChange={(e) => setNegativePrompt(e.target.value)}
                   placeholder="Describe what you want to avoid..."
-                  className="min-h-[80px] resize-none bg-[#1c1c1f] border-t border-black/35 border-b-0 border-x-0 rounded-lg text-[#eaedf1] placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  className="min-h-[80px] resize-none bg-[#1c1c1f] border-t border-black/35 rounded-lg text-[#eaedf1] placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                   style={{ boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.40)' }}
                 />
               </CollapsibleContent>
