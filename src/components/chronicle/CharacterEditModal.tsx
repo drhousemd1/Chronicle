@@ -1109,8 +1109,9 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     onMouseEnter={() => setIsTooltipOpen(true)}
                     onMouseLeave={() => setIsTooltipOpen(false)}
                     className="group relative flex h-10 px-4 rounded-xl overflow-hidden
-                      text-white text-[10px] font-bold leading-none
+                      text-white text-xs font-bold leading-none
                       shadow-[0_12px_40px_rgba(0,0,0,0.45)]
+                      hover:brightness-125 transition-all
                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/45
                       disabled:opacity-50 shrink-0"
                   >
