@@ -1925,10 +1925,10 @@ const IndexContent = () => {
                           key={option.key}
                           onClick={() => setHubFilter(option.key)}
                           className={cn(
-                            "px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap",
+                            "px-4 py-1.5 rounded-full text-xs font-bold transition-colors whitespace-nowrap border-t",
                             hubFilter === option.key 
-                              ? "relative overflow-hidden bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 text-white shadow-sm" 
-                              : "text-[#a1a1aa] hover:text-[#e4e4e7]"
+                              ? "relative overflow-hidden bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-white/20 text-white shadow-sm" 
+                              : "border-transparent text-[#a1a1aa] hover:text-[#e4e4e7]"
                           )}
                         >
                           {hubFilter === option.key && (
