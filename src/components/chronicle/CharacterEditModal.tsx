@@ -200,7 +200,7 @@ const HardcodedRow: React.FC<{
 }> = ({ label, value, onChange, placeholder }) => (
   <div className="flex items-start gap-2">
     <div className="w-2/5 flex items-center gap-1.5 min-w-0">
-      <div className="flex-1 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border-t border-black/35 text-zinc-400 rounded-lg uppercase tracking-widest min-w-0 break-words">
+      <div className="flex-1 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border border-black/35 text-zinc-400 rounded-lg uppercase tracking-widest min-w-0 break-words">
         {label}
       </div>
     </div>
@@ -228,14 +228,14 @@ const ModalExtraRow: React.FC<{
         value={extra.label}
         onChange={(v) => onUpdate({ label: v })}
         placeholder="LABEL"
-        className="flex-1 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border-t border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
+        className="flex-1 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
       />
     </div>
     <AutoResizeTextarea
       value={extra.value}
       onChange={(v) => onUpdate({ value: v })}
       placeholder="Description"
-      className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
+      className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
     />
     <button
       type="button"
@@ -261,7 +261,7 @@ const FieldInput: React.FC<{
       value={value}
       onChange={onChange}
       placeholder={placeholder}
-      className="px-3 py-2 rounded-lg text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
+      className="px-3 py-2 rounded-lg text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
     />
   </div>
 );
@@ -281,7 +281,7 @@ const FieldTextarea: React.FC<{
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       rows={rows}
-      className="text-sm resize-none bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-500 focus:ring-blue-500/20 focus:border-blue-500 whitespace-pre-wrap break-words"
+      className="text-sm resize-none bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-500 focus:ring-blue-500/20 focus:border-blue-500 whitespace-pre-wrap break-words"
     />
   </div>
 );
@@ -1068,7 +1068,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                 value={draft.name || ''}
                 onChange={(v) => updateField('name', v)}
                 placeholder="Character name"
-                className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               />
               <button
                 type="button"
@@ -1082,21 +1082,21 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
           </div>
           <div>
             <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Nicknames</label>
-            <AutoResizeTextarea value={draft.nicknames || ''} onChange={(v) => updateField('nicknames', v)} placeholder="Nicknames" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+            <AutoResizeTextarea value={draft.nicknames || ''} onChange={(v) => updateField('nicknames', v)} placeholder="Nicknames" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
           </div>
           <div className="grid gap-3" style={{ gridTemplateColumns: '120px 1fr' }}>
             <div>
               <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Age</label>
-              <AutoResizeTextarea value={draft.age || ''} onChange={(v) => updateField('age', v)} placeholder="25" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+              <AutoResizeTextarea value={draft.age || ''} onChange={(v) => updateField('age', v)} placeholder="25" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
             </div>
             <div>
               <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Sex / Identity</label>
-              <AutoResizeTextarea value={draft.sexType || ''} onChange={(v) => updateField('sexType', v)} placeholder="Female, Male, Non-binary" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+              <AutoResizeTextarea value={draft.sexType || ''} onChange={(v) => updateField('sexType', v)} placeholder="Female, Male, Non-binary" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
             </div>
           </div>
           <div>
             <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Sexual Orientation</label>
-            <AutoResizeTextarea value={(draft as any).sexualOrientation || ''} onChange={(v) => setDraft(prev => ({ ...prev, sexualOrientation: v }))} placeholder="Heterosexual, Bisexual, etc." className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+            <AutoResizeTextarea value={(draft as any).sexualOrientation || ''} onChange={(v) => setDraft(prev => ({ ...prev, sexualOrientation: v }))} placeholder="Heterosexual, Bisexual, etc." className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
           </div>
           {/* Builder-matched toggle trays */}
           <div className="grid grid-cols-2 gap-3 mt-1">
@@ -1121,11 +1121,11 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
       <div className="space-y-4 mt-4">
         <div>
           <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Location</label>
-          <AutoResizeTextarea value={draft.location || ''} onChange={(v) => updateField('location', v)} placeholder="Current location" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+          <AutoResizeTextarea value={draft.location || ''} onChange={(v) => updateField('location', v)} placeholder="Current location" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
         </div>
         <div>
           <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Current Mood</label>
-          <AutoResizeTextarea value={draft.currentMood || ''} onChange={(v) => updateField('currentMood', v)} placeholder="Happy, Tired" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+          <AutoResizeTextarea value={draft.currentMood || ''} onChange={(v) => updateField('currentMood', v)} placeholder="Happy, Tired" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
         </div>
         <FieldTextarea label="Role Description" value={draft.roleDescription || ''} onChange={(v) => updateField('roleDescription', v)} placeholder="Character's role in the story..." rows={3} />
       </div>
@@ -1180,7 +1180,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                               setDraft(prev => ({ ...prev, sections: prev.sections?.map(s => s.id === section.id ? { ...s, items: nextItems } : s) }));
                             }}
                             placeholder="LABEL"
-                            className="flex-1 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border-t border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
+                            className="flex-1 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
                           />
                           <button
                             type="button"
@@ -1203,7 +1203,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                             setDraft(prev => ({ ...prev, sections: prev.sections?.map(s => s.id === section.id ? { ...s, items: nextItems } : s) }));
                           }}
                           placeholder="Write your content here..."
-                          className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                          className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                           rows={4}
                         />
                       </div>
@@ -1226,14 +1226,14 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                           value={item.label}
                           onChange={(v) => updateSectionItem(section.id, item.id, 'label', v)}
                           placeholder="LABEL"
-                          className="w-full px-3 py-2 rounded-lg text-xs font-bold bg-[#1c1c1f] border-t border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
+                          className="w-full px-3 py-2 rounded-lg text-xs font-bold bg-[#1c1c1f] border border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
                         />
                       </div>
                       <AutoResizeTextarea
                         value={item.value}
                         onChange={(v) => updateSectionItem(section.id, item.id, 'value', v)}
                         placeholder="Description"
-                        className="flex-1 min-w-0 px-3 py-2 rounded-lg text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
+                        className="flex-1 min-w-0 px-3 py-2 rounded-lg text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
                       />
                       <button type="button" onClick={() => removeItemFromSection(section.id, item.id)} className="text-red-500 hover:text-red-400 p-1.5 rounded-md hover:bg-red-900/30 pt-2">
                         <X className="w-4 h-4" />
