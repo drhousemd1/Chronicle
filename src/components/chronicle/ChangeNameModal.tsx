@@ -20,12 +20,12 @@ interface ChangeNameModalProps {
   onSave: (newName: string) => void;
 }
 
-export const ChangeNameModal: React.FC<ChangeNameModalProps> = ({
+export const ChangeNameModal = React.forwardRef<HTMLDivElement, ChangeNameModalProps>(({
   open,
   onOpenChange,
   currentName,
   onSave,
-}) => {
+}, _ref) => {
   const [newName, setNewName] = useState('');
 
   // Reset when modal opens
