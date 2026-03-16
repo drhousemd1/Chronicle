@@ -281,7 +281,7 @@ const FieldTextarea: React.FC<{
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       rows={rows}
-      className="text-sm resize-none bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-500 focus:ring-blue-500/20 focus:border-blue-500 whitespace-pre-wrap break-words"
+      className="text-sm resize-none bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-500 focus:ring-blue-500/20 focus:border-blue-500 whitespace-pre-wrap break-words"
     />
   </div>
 );
