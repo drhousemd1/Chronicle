@@ -1046,7 +1046,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl h-[85vh] max-h-[90vh] p-0 gap-0 overflow-hidden bg-[#2a2a2f] border-ghost-white [&>button]:hidden">
+      <DialogContent className="max-w-6xl h-[85vh] max-h-[90vh] p-0 gap-0 overflow-hidden flex flex-col bg-[#2a2a2f] border-ghost-white [&>button]:hidden">
         <DialogHeader className="px-6 py-4 border-b border-ghost-white bg-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -1242,7 +1242,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
           </div>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 max-h-[calc(90vh-160px)] bg-[#2a2a2f]">
+        <ScrollArea className="flex-1 min-h-0 bg-[#2a2a2f]">
           <div className="p-6">
           {viewMode === 'character' ? (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
