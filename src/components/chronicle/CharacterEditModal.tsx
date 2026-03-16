@@ -19,7 +19,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Loader2, Plus, Trash2, X, Pencil, ChevronDown, ChevronUp, Sparkles, Globe, Lock } from 'lucide-react';
+import { Loader2, Plus, Trash2, X, Pencil, ChevronDown, ChevronUp, Sparkles, Globe, Lock, Info } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client'; 
 import * as supabaseData from '@/services/supabase-data'; 
 
