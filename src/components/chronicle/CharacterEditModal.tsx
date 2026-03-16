@@ -1562,7 +1562,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl h-[85vh] max-h-[90vh] p-0 gap-0 overflow-hidden flex flex-col bg-[#2a2a2f] border-black/35 [&>button]:hidden">
         {/* Dark header bar matching builder */}
-        <DialogHeader className="px-6 py-4 border-b border-black/35 bg-[#2a2a2f]">
+        <DialogHeader className="px-6 py-4 border-b border-slate-200 bg-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
