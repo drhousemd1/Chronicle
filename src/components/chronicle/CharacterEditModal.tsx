@@ -1086,7 +1086,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                       "px-3 py-1.5 rounded-full text-xs font-bold transition-colors",
                       viewMode === 'scenario' 
                         ? "relative overflow-hidden bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 text-white shadow-sm" 
-                        : "border-t border-transparent text-zinc-500 hover:text-zinc-700"
+                        : "border-t border-transparent text-[#a1a1aa] hover:text-[#e4e4e7]"
                     )}
                   >
                     {viewMode === 'scenario' && (
