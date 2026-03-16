@@ -1765,20 +1765,21 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
 
                 {/* Custom Sections (Main characters only) - Each as its own container */}
                 {!isSideCharacter && draft.sections?.map((section) => (
-                  <div key={section.id} className="w-full bg-[#2a2a2f] rounded-[24px] border border-ghost-white overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]">
-                    {/* Dark blue header with editable title */}
-                    <div className="bg-[#4a5f7f] border-b border-ghost-white px-5 py-3 flex items-center justify-between shadow-lg">
+                  <div key={section.id} className="w-full bg-[#2a2a2f] rounded-[24px] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]">
+                    {/* Dark blue gradient header with editable title */}
+                    <div className="relative bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 px-5 py-3 flex items-center justify-between shadow-lg overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.12] to-transparent h-1/2 pointer-events-none" />
                       <AutoResizeTextarea
                         value={section.title}
                         onChange={(v) => updateSectionTitle(section.id, v)}
                         placeholder="Category name"
-                        className="bg-transparent border-none text-white text-xl font-bold tracking-tight placeholder:text-[rgba(248,250,252,0.3)] focus:outline-none flex-1 mr-2"
+                        className="bg-transparent border-none text-white text-xl font-bold tracking-[-0.015em] placeholder:text-[rgba(248,250,252,0.3)] focus:outline-none flex-1 mr-2 relative z-[1]"
                       />
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex items-center gap-2 shrink-0 relative z-[1]">
                         <button 
                           type="button"
                           onClick={() => toggleCustomSection(section.id)} 
-                          className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-ghost-white"
+                          className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-white/10"
                         >
                           {(expandedCustomSections[section.id] ?? true) ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
                         </button>
@@ -1794,7 +1795,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                     </div>
                     {/* Content */}
                     <div className="p-5">
-                      <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl border border-ghost-white">
+                      <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
                         {(expandedCustomSections[section.id] ?? true) ? (
                           <div className="space-y-4">
                             {section.type === 'freeform' ? (
