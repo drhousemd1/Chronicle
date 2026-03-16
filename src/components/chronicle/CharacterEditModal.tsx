@@ -133,7 +133,7 @@ const HardcodedRow: React.FC<{
   placeholder?: string;
 }> = ({ label, value, onChange, placeholder }) => (
   <div className="flex items-start gap-2">
-    <div className="w-2/5 px-3 py-2 text-xs font-bold bg-zinc-900/50 border border-ghost-white text-zinc-400 rounded-lg uppercase tracking-widest min-w-0 break-words">
+    <div className="w-2/5 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border-t border-black/35 text-zinc-400 rounded-lg uppercase tracking-widest min-w-0 break-words">
       {label}
     </div>
     <AutoResizeTextarea
