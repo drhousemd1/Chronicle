@@ -1419,13 +1419,13 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Character Type</Label>
-                        <div className="flex p-1 bg-zinc-900/50 rounded-lg border border-ghost-white">
+                        <div className="flex p-1 bg-[#1c1c1f] rounded-lg shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)]">
                           <button 
                             type="button"
                             onClick={() => updateField('characterRole', 'Main')}
                             className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded transition-all ${
                               draft.characterRole === 'Main' 
-                                ? 'bg-zinc-700 text-purple-400 shadow-sm' 
+                                ? 'bg-blue-500 text-white shadow-sm' 
                                 : 'text-zinc-500 hover:text-zinc-300'
                             }`}
                           >
@@ -1436,7 +1436,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                             onClick={() => updateField('characterRole', 'Side')}
                             className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded transition-all ${
                               draft.characterRole === 'Side' 
-                                ? 'bg-zinc-700 text-green-400 shadow-sm' 
+                                ? 'bg-blue-500 text-white shadow-sm' 
                                 : 'text-zinc-500 hover:text-zinc-300'
                             }`}
                           >
