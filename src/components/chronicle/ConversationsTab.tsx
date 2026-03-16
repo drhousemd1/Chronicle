@@ -60,7 +60,8 @@ export function ConversationsTab({
                           {/* Scenario thumbnail - clickable */}
                           <button
                             onClick={() => onResume(entry.scenarioId, entry.conversationId)}
-                            className="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0 bg-zinc-800 border border-[#4a5f7f] hover:ring-2 hover:ring-[#4a5f7f] transition-all shadow-[0_4px_12px_rgba(0,0,0,0.4)]"
+                            className="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0 bg-zinc-800 hover:ring-2 hover:ring-[#4a5f7f] transition-all"
+                            style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.07)' }}
                           >
                             {entry.scenarioImageUrl ? (
                               <img 
