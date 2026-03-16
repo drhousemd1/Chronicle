@@ -1,71 +1,53 @@
 
-Audit first — your feedback is correct. The modal is still a forked, older mini-editor, not the builder shell.
+# Sandbox Feature Transfer — Master Tracker
 
-Color/style verification from source before any changes:
-- `src/components/chronicle/CharacterEditModal.tsx:1051` → modal header still uses `bg-white` + `border-b border-ghost-white` (old chrome)
-- `src/components/chronicle/CharacterEditModal.tsx:1274` → avatar frame still uses `bg-zinc-800 border-2 border-ghost-white`
-- `src/components/chronicle/CharacterEditModal.tsx:1328` → name field still uses `bg-zinc-900/50 border border-ghost-white`
-- `src/components/chronicle/CharacterEditModal.tsx:1334-1340` → Change button still uses old bordered surface classes (`border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] hover:bg-ghost-white`)
-- `src/components/chronicle/CharacterEditModal.tsx:1892` → custom-section value input still uses `bg-zinc-900/50 border border-ghost-white`
-- `src/components/chronicle/CharacterEditModal.tsx:1958-1964` → Add Category button still uses old bordered surface classes
-- `src/components/chronicle/CharacterEditModal.tsx:1249, 1453` → character mode is still a long-scroll `grid grid-cols-1 lg:grid-cols-3` with stacked sections
-- `src/components/chronicle/CharacterEditModal.tsx` search audit → no `activeTraitSection`, `sidebarTraitNavItems`, `TraitSidebarButton`, `SidebarProgressRing`, or `TabFieldNavigator` at all, so the real builder nav architecture is missing entirely
+## Source Documents
+- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
+- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
 
-Exact builder references to match:
-- `src/components/chronicle/CharactersTab.tsx:1287-1389` → real Character Builder shell = left nav + `TabFieldNavigator`
-- `src/components/chronicle/CharactersTab.tsx:697-713` → active-section routing (`activeTraitSection`, nav item list, `isTraitVisible`)
-- `src/components/chronicle/CharactersTab.tsx:1406-1602` → 1:1 Basics layout (avatar left, fields/toggles right)
-- `src/components/chronicle/CharactersTab.tsx:458-474` → section shell/header/inner-card styling
-- `src/components/chronicle/CharactersTab.tsx:487-529` → exact hardcoded row geometry, including lock alignment
-- `src/components/chronicle/CharactersTab.tsx:1569, 1586, 1703` → exact toggle tray / builder button styles
+## Features Being Transferred
+| ID | Feature | Status |
+|----|---------|--------|
+| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
+| B | Story Transfer Library (story-transfer.ts) | ✅ |
+| A | UI Audit System (schema, utils, findings, page) | 🔄 |
+| B | Story Export/Import Modals | ✅ |
+| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
+| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
+| - | StyleGuideTool.tsx audit button | ⬜ |
+| - | App.tsx route wiring | ⬜ |
+| - | Index.tsx full wiring | ⬜ |
 
-Style Guide registry cross-reference:
-- `src/components/admin/styleguide/StyleGuideTool.tsx:748` → `#4a5f7f` Slate Blue
-- `src/components/admin/styleguide/StyleGuideTool.tsx:749` → `#2a2a2f` Dark Charcoal
-- `src/components/admin/styleguide/StyleGuideTool.tsx:752` → `rgba(248,250,252,0.3)` Ghost White
-- `src/components/admin/styleguide/StyleGuideTool.tsx:756` → `#3b82f6` True Blue
-- `src/components/admin/styleguide/StyleGuideTool.tsx:766` → `#52525b` Ash Gray
-- Builder-only exact literals also verified in source and will be copied exactly, not approximated: `#5a7292`, `#1c1c1f`, `#2e2e33`, `#3c3e47`, `#303035`
+## Prompt Execution Status
 
-Design approach:
-Stop “restyling the fork.” Rebuild the modal’s character mode around the same builder architecture so it cannot drift again.
+| # | Target File(s) | Status | Notes |
+|---|---------------|--------|-------|
+| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
+| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
+| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
+| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
+| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
+| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
+| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
+| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
+| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
+| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
+| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
+| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
+| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
+| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
 
-Implementation plan:
-1. Replace the modal’s character-mode body with the real Character Builder shell
-- Add the same left sidebar nav used in `CharactersTab`:
-  - header tile with avatar + mapped position
-  - section buttons with `TraitSidebarButton`
-  - `SidebarProgressRing`
-  - custom-section nav entries
-- Add `activeTraitSection` routing so only one section shows at a time instead of the current long-scroll stack
-- Use `TabFieldNavigator` for the content pane exactly like the builder
-
-2. Rebuild the modal “Basics” section to match 1:1
-- Replace the current stacked avatar/info block with the real builder profile layout from `CharactersTab:1406-1602`
-- Use the exact two-column grid, `120px 1fr` age/identity sub-grid, builder toggle trays, and builder field classes
-- Replace old name field and Change button styling with builder-equivalent surfaces/buttons
-
-3. Replace modal-specific row components with shared builder row primitives
-- Use the real builder `HardcodedRow`/`ExtraRow` geometry so lock icons align exactly
-- This fixes the current mismatch where the modal rows are close visually but not structurally identical
-- If needed, wire the same sparkle-button slot/layout so row spacing matches perfectly even when enhancement is disabled
-
-4. Remove all remaining legacy modal surfaces/buttons/borders
-- Replace every remaining `border-ghost-white`, `bg-zinc-900/50`, `bg-zinc-800`, old bordered buttons, and `hover:bg-white/10` leftovers inside character mode
-- Normalize custom-section structured rows, freeform rows, avatar frame, section controls, and Add Category button to builder classes only
-
-5. Keep scenario mode aligned to Story Builder patterns
-- Scenario mode already uses the right story-builder section shell in `StoryCardView`, so only normalize any leftover modal chrome/buttons that still use old tokens
-- Do not invent new colors; only reuse exact story-builder/source literals already verified
-
-6. Prevent future drift
-- Preferred implementation: extract shared builder primitives/state helpers from `CharactersTab` into reusable chronicle builder components/hooks, then use them in both places
-- That way Character Builder and CharacterEditModal render from the same source of truth instead of two near-duplicates
-
-Validation after implementation:
-- Character mode shows builder sidebar nav instead of long-scroll sections
-- Basics section matches builder geometry exactly
-- Lock icons align identically to builder rows
-- No old `border-ghost-white` / `bg-zinc-900/50` / bordered legacy buttons remain in character mode
-- Scenario mode still matches the Story Builder styling
-- No new palette entries required; Style Guide swatches stay unchanged because all colors already exist in source
+## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
+- `src/types.ts`: line 11507
+- `src/utils.ts`: line 12138
+- `src/lib/story-transfer.ts`: line 9812
+- `src/lib/ui-audit-schema.ts`: line 21329
+- `src/lib/ui-audit-utils.ts`: line 21565
+- `src/data/ui-audit-findings.ts`: line 18967
+- `StoryExportFormatModal.tsx`: line 9642
+- `StoryImportModeModal.tsx`: line 9731
+- `CharactersTab.tsx`: line 2893
+- `ChatInterfaceTab.tsx`: line 5004
+- `src/pages/style-guide/ui-audit.tsx`: line 17867
+- `src/App.tsx`: line 95
+- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout

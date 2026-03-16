@@ -19,7 +19,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Loader2, Plus, Trash2, X, Pencil, ChevronDown, ChevronUp, Sparkles, Globe, Lock, Info } from 'lucide-react';
+import { Loader2, Plus, Trash2, X, Pencil, ChevronDown, ChevronUp, Sparkles, Globe, Lock, Info, Fingerprint, Accessibility, Shirt, Brain, Mic2, ScrollText, Users, EyeOff, TriangleAlert, Flag, CircleUserRound, Stars, type LucideIcon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client'; 
 import * as supabaseData from '@/services/supabase-data'; 
 
@@ -32,6 +32,7 @@ import { ScenarioCardView } from './StoryCardView';
 import { CustomContentTypeModal } from './CustomContentTypeModal';
 import { PersonalitySection } from './PersonalitySection';
 import { defaultPersonality } from './PersonalitySection';
+import { TabFieldNavigator } from './TabFieldNavigator';
 import { uid, now } from '@/utils';
 import { Input } from '@/components/ui/input';
 
@@ -95,7 +96,72 @@ interface CharacterEditModalProps {
   onSaveScenarioCard?: (patch: Partial<WorldCore>) => void;
 }
 
-// Auto-resizing textarea that wraps text and grows with content
+// ─── Nav constants ───────────────────────────────────────────────
+const MODAL_NAV_SIDEBAR_WIDTH = 260;
+
+const MODAL_BUILT_IN_SECTIONS: Array<{ key: string; label: string }> = [
+  { key: 'profile', label: 'Basics' },
+  { key: 'physicalAppearance', label: 'Physical Appearance' },
+  { key: 'currentlyWearing', label: 'Currently Wearing' },
+  { key: 'preferredClothing', label: 'Preferred Clothing' },
+  { key: 'personality', label: 'Personality' },
+  { key: 'tone', label: 'Tone' },
+  { key: 'background', label: 'Background' },
+  { key: 'keyLifeEvents', label: 'Key Life Events' },
+  { key: 'relationships', label: 'Relationships' },
+  { key: 'secrets', label: 'Secrets' },
+  { key: 'fears', label: 'Fears' },
+  { key: 'characterGoals', label: 'Goals & Desires' },
+];
+
+const MODAL_NAV_ICON_BY_KEY: Record<string, LucideIcon> = {
+  profile: Fingerprint,
+  physicalAppearance: Accessibility,
+  currentlyWearing: CircleUserRound,
+  preferredClothing: Shirt,
+  personality: Brain,
+  tone: Mic2,
+  background: ScrollText,
+  keyLifeEvents: Stars,
+  relationships: Users,
+  secrets: EyeOff,
+  fears: TriangleAlert,
+  characterGoals: Flag,
+};
+
+const navActionButtonClass =
+  "relative w-full min-h-[48px] px-[14px] rounded-xl border-2 border-transparent text-left select-none overflow-hidden flex items-center justify-between gap-3 bg-[#3c3e47] text-[#eaedf1] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] transition-[filter,transform,box-shadow,border-color] duration-150 ease-out hover:brightness-[1.12] hover:-translate-y-px active:brightness-95 active:translate-y-0 active:scale-[0.99]";
+
+// ─── Sidebar button ─────────────────────────────────────────────
+const ModalNavButton: React.FC<{
+  label: string;
+  active: boolean;
+  onClick: () => void;
+  icon: LucideIcon;
+}> = ({ label, active, onClick, icon: Icon }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={cn(
+      "relative w-full min-h-[48px] px-[14px] rounded-xl border-2 border-transparent text-left select-none overflow-hidden",
+      "flex items-center justify-between gap-3",
+      "bg-[#3c3e47] text-[#eaedf1]",
+      "shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]",
+      "transition-[filter,transform,box-shadow,border-color] duration-150 ease-out",
+      "hover:brightness-[1.12] hover:-translate-y-px active:brightness-95 active:translate-y-0 active:scale-[0.99]",
+      active && "border-[#3b82f6] shadow-[0_8px_24px_rgba(59,130,246,0.35),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]"
+    )}
+  >
+    <span className="relative z-10 min-w-0 flex items-center gap-[10px]">
+      <Icon className={cn("w-[18px] h-[18px] shrink-0", active ? "text-[#60a5fa]" : "text-[#6b7280]")} />
+      <span className="truncate text-[12px] font-black tracking-[0.08em] leading-tight text-[#eaedf1]">
+        {label}
+      </span>
+    </span>
+  </button>
+);
+
+// ─── Auto-resizing textarea ─────────────────────────────────────
 const AutoResizeTextarea: React.FC<{
   value: string;
   onChange: (value: string) => void;
@@ -125,7 +191,7 @@ const AutoResizeTextarea: React.FC<{
   );
 };
 
-// Horizontal row for hardcoded fields: [Read-only Label] [Value]
+// ─── Row components matching builder geometry ────────────────────
 const HardcodedRow: React.FC<{
   label: string;
   value: string;
@@ -133,8 +199,10 @@ const HardcodedRow: React.FC<{
   placeholder?: string;
 }> = ({ label, value, onChange, placeholder }) => (
   <div className="flex items-start gap-2">
-    <div className="w-2/5 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border-t border-black/35 text-zinc-400 rounded-lg uppercase tracking-widest min-w-0 break-words">
-      {label}
+    <div className="w-2/5 flex items-center gap-1.5 min-w-0">
+      <div className="flex-1 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border-t border-black/35 text-zinc-400 rounded-lg uppercase tracking-widest min-w-0 break-words">
+        {label}
+      </div>
     </div>
     <AutoResizeTextarea
       value={value}
@@ -142,25 +210,27 @@ const HardcodedRow: React.FC<{
       placeholder={placeholder}
       className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
     />
-    <div className="w-7 flex-shrink-0 flex items-center justify-center">
+    <div className="w-7 flex-shrink-0 flex items-center justify-center pt-2">
       <Lock className="w-3.5 h-3.5 text-zinc-400" />
     </div>
   </div>
 );
 
-// User-added extra row for hardcoded sections: [Editable Label] [Editable Value] [Delete]
+// User-added extra row matching builder geometry
 const ModalExtraRow: React.FC<{
   extra: CharacterExtraRow;
   onUpdate: (patch: Partial<CharacterExtraRow>) => void;
   onDelete: () => void;
 }> = ({ extra, onUpdate, onDelete }) => (
   <div className="flex items-start gap-2">
-    <AutoResizeTextarea
-      value={extra.label}
-      onChange={(v) => onUpdate({ label: v })}
-      placeholder="LABEL"
-      className="w-2/5 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border-t border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
-    />
+    <div className="w-2/5 flex items-center gap-1.5 min-w-0">
+      <AutoResizeTextarea
+        value={extra.label}
+        onChange={(v) => onUpdate({ label: v })}
+        placeholder="LABEL"
+        className="flex-1 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border-t border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
+      />
+    </div>
     <AutoResizeTextarea
       value={extra.value}
       onChange={(v) => onUpdate({ value: v })}
@@ -171,14 +241,14 @@ const ModalExtraRow: React.FC<{
       type="button"
       tabIndex={-1}
       onClick={onDelete}
-      className="text-red-500 hover:text-red-400 p-1.5 rounded-md hover:bg-red-900/30 mt-1 flex-shrink-0"
+      className="text-red-500 hover:text-red-400 p-1.5 rounded-md hover:bg-red-900/30 pt-2 flex-shrink-0"
     >
       <X className="w-4 h-4" />
     </button>
   </div>
 );
 
-// Reusable stacked input field (label above input) for basic info fields
+// Builder-standard field input
 const FieldInput: React.FC<{
   label: string;
   value: string;
@@ -196,7 +266,7 @@ const FieldInput: React.FC<{
   </div>
 );
 
-// Reusable textarea field component
+// Builder-standard textarea field
 const FieldTextarea: React.FC<{
   label: string;
   value: string;
@@ -216,18 +286,17 @@ const FieldTextarea: React.FC<{
   </div>
 );
 
-// Collapsible section component matching Scenario Builder style
+// Collapsible section component matching builder style
 const CollapsibleSection: React.FC<{
   title: string;
   isExpanded: boolean;
   onToggle: () => void;
   children: React.ReactNode;
-  collapsedContent?: React.ReactNode;  // Summary to show when collapsed
+  collapsedContent?: React.ReactNode;
 }> = ({ title, isExpanded, onToggle, children, collapsedContent }) => (
   <div className="w-full bg-[#2a2a2f] rounded-[24px] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]">
-    {/* Slate blue gradient header with collapse arrow */}
     <div className="relative bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 px-5 py-3 flex items-center justify-between shadow-lg overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.12] to-transparent h-1/2 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.07] via-transparent to-transparent pointer-events-none" style={{ backgroundSize: '100% 60%', backgroundRepeat: 'no-repeat' }} />
       <h2 className="text-white text-xl font-bold tracking-[-0.015em] relative z-[1]">{title}</h2>
       <button 
         type="button"
@@ -237,7 +306,6 @@ const CollapsibleSection: React.FC<{
         {isExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
       </button>
     </div>
-    {/* Content - always rendered, shows either expanded or collapsed view */}
     <div className="p-5">
       <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
         {isExpanded ? (
@@ -254,7 +322,6 @@ const CollapsibleSection: React.FC<{
   </div>
 );
 
-// Helper to display field summaries when sections are collapsed
 const CollapsedFieldSummary: React.FC<{ 
   fields: { label: string; value: string | undefined }[] 
 }> = ({ fields }) => {
@@ -277,6 +344,17 @@ const CollapsedFieldSummary: React.FC<{
     </div>
   );
 };
+
+// Builder-standard Add Row button
+const AddRowButton: React.FC<{ onClick: () => void; label?: string }> = ({ onClick, label = 'Add Row' }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5"
+  >
+    <Plus className="w-4 h-4" /> {label}
+  </button>
+);
 
 export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
   open,
@@ -303,13 +381,17 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
   type ViewMode = 'character' | 'scenario';
   const [viewMode, setViewMode] = useState<ViewMode>('character');
   
+  // Sidebar nav state
+  const [activeTraitSection, setActiveTraitSection] = useState<string>('profile');
+  
   // Local scenario draft for editing
   const [scenarioDraft, setScenarioDraft] = useState<Partial<WorldCore>>({});
   
-  // Reset view mode when modal opens
+  // Reset view mode and nav when modal opens
   useEffect(() => {
     if (open) {
       setViewMode('character');
+      setActiveTraitSection('profile');
     }
   }, [open]);
   
@@ -330,6 +412,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
       onSaveScenarioCard(scenarioDraft);
     }
   };
+
   // Expanded state for collapsible sections
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     avatar: true,
@@ -365,6 +448,28 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
   // Determine if this is a side character (has SideCharacterBackground-style background)
   const isSideCharacter = character && 'background' in character && 'firstMentionedIn' in character;
 
+  // Build sidebar nav items (main characters only)
+  const customTraitNavItems = (draft.sections || []).map((section) => ({
+    key: `custom:${section.id}`,
+    label: section.title?.trim() || 'Custom Section',
+  }));
+  const sidebarNavItems = [
+    ...MODAL_BUILT_IN_SECTIONS,
+    ...customTraitNavItems,
+  ];
+  const isTraitVisible = (key: string) => activeTraitSection === key;
+
+  // Auto-navigate to newly added custom section
+  const prevSectionCountRef = useRef(draft.sections?.length ?? 0);
+  useEffect(() => {
+    const currentCount = draft.sections?.length ?? 0;
+    if (currentCount > prevSectionCountRef.current && currentCount > 0) {
+      const newest = draft.sections![currentCount - 1];
+      setActiveTraitSection(`custom:${newest.id}`);
+    }
+    prevSectionCountRef.current = currentCount;
+  }, [draft.sections?.length]);
+
   // Initialize draft from character when modal opens
   useEffect(() => {
     if (character && open) {
@@ -380,27 +485,22 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
         physicalAppearance: { ...character.physicalAppearance },
         currentlyWearing: { ...character.currentlyWearing },
         preferredClothing: { ...character.preferredClothing },
-        // Initialize avatar from character
         avatarDataUrl: character.avatarDataUrl,
         avatarPosition: character.avatarPosition || { x: 50, y: 50 },
       };
 
-      // Add goals (both Character and SideCharacter may not have them)
       if ('goals' in character) {
         baseDraft.goals = (character as Character).goals?.map(g => ({ ...g })) || [];
       }
 
-      // Add personality (main characters)
       if ('personality' in character && (character as Character).personality) {
         baseDraft.mainPersonality = JSON.parse(JSON.stringify((character as Character).personality));
       }
 
-      // Add Character-specific fields
       if ('sections' in character) {
         baseDraft.sections = character.sections?.map(s => ({ ...s, items: [...s.items] })) || [];
         baseDraft.controlledBy = (character as Character).controlledBy;
         baseDraft.characterRole = (character as Character).characterRole;
-        // New hardcoded sections for main characters
         const mainChar = character as Character;
         baseDraft.mainBackground = mainChar.background ? { ...mainChar.background } : undefined;
         baseDraft.tone = mainChar.tone ? { ...mainChar.tone } : undefined;
@@ -410,7 +510,6 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
         baseDraft.fears = mainChar.fears ? { ...mainChar.fears } : undefined;
       }
 
-      // Add SideCharacter-specific fields
       if ('background' in character) {
         const sc = character as SideCharacter;
         baseDraft.background = { ...sc.background };
@@ -426,7 +525,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
     }
   }, [character, open]);
 
-  // Deep scan handler - fetch conversation history and extract updates via edge function
+  // Deep scan handler
   const handleDeepScan = async () => {
     if (!character || !conversationId) {
       console.error('No conversation context available');
@@ -435,7 +534,6 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
     
     setIsDeepScanning(true);
     try {
-      // Fetch the most recent ~50 messages for this conversation
       const { data: messages, error: msgError } = await supabase
         .from('messages')
         .select('role, content')
@@ -450,7 +548,6 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
         return;
       }
       
-      // Reverse to get chronological order and concatenate
       const chronological = [...messages].reverse();
       const userMessages: string[] = [];
       const aiMessages: string[] = [];
@@ -465,7 +562,6 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
       const concatenatedUser = userMessages.join('\n\n---\n\n');
       const concatenatedAi = aiMessages.join('\n\n---\n\n');
       
-      // Build character data for context (same structure as extractCharacterUpdatesFromDialogue)
       const buildCharData = (c: Character | SideCharacter) => {
         const isMain = 'sections' in c;
         const mainChar = isMain ? c as Character : null;
@@ -493,7 +589,6 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                 items: s.items.map(i => ({ label: i.label, value: i.value }))
               }))
             : [],
-          // New sections (main characters only)
           background: mainChar?.background,
           personality: mainChar?.personality ? {
             splitMode: mainChar.personality.splitMode,
@@ -513,13 +608,12 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
         ? allCharacters.map(buildCharData) 
         : [buildCharData(character)];
       
-      // Call the existing extract-character-updates edge function
       const { data, error } = await supabase.functions.invoke('extract-character-updates', {
         body: {
           userMessage: concatenatedUser,
           aiResponse: concatenatedAi,
           characters: charactersData,
-          modelId: modelId || 'grok-4-1-fast-reasoning' // GROK ONLY
+          modelId: modelId || 'grok-4-1-fast-reasoning'
         }
       });
       
@@ -532,7 +626,6 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
         return;
       }
       
-      // Apply updates to the draft state (same merge logic as applyExtractedUpdates)
       setDraft(prev => {
         const next = { ...prev };
         let updatedSections = [...(prev.sections || [])];
@@ -541,18 +634,15 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
         let goalsModified = false;
         
         for (const update of updates) {
-          // Only apply updates for THIS character
           const charName = (prev.name || character.name || '').toLowerCase();
           const updateCharName = (update.character || '').toLowerCase();
           
-          // Check if this update is for the current character (by name or nickname)
           const nicknames = (prev.nicknames || '').split(',').map((n: string) => n.trim().toLowerCase()).filter(Boolean);
           const isMatch = updateCharName === charName || nicknames.includes(updateCharName);
           if (!isMatch) continue;
           
           const { field, value } = update;
           
-           // Handle goals
           if (field.startsWith('goals.')) {
             const goalTitle = field.slice(6);
             if (goalTitle) {
@@ -560,87 +650,63 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
               let desiredOutcome = '';
               let progress = 0;
               
-              // Parse format: "desired_outcome: X | current_status: Y | progress: Z | complete_steps: 1,2 | new_steps: Step 7: ..."
               const desiredOutcomeMatch = value.match(/desired_outcome:\s*([^|]+)/i);
               const currentStatusMatch = value.match(/current_status:\s*([^|]+)/i);
               const progressMatch = value.match(/progress:\s*(\d+)/i);
               const completeStepsMatch = value.match(/complete_steps:\s*([^|]+)/i);
               const newStepsMatch = value.match(/new_steps:\s*(.*)/i);
               
-              if (desiredOutcomeMatch) {
-                desiredOutcome = desiredOutcomeMatch[1].trim();
-              }
+              if (desiredOutcomeMatch) desiredOutcome = desiredOutcomeMatch[1].trim();
               if (currentStatusMatch) {
                 currentStatus = currentStatusMatch[1].trim();
               } else if (progressMatch) {
                 currentStatus = value.replace(/\s*\|\s*progress:\s*\d+\s*/i, '').trim();
-                if (desiredOutcomeMatch) {
-                  currentStatus = currentStatus.replace(/desired_outcome:\s*[^|]+\|?\s*/i, '').trim();
-                }
+                if (desiredOutcomeMatch) currentStatus = currentStatus.replace(/desired_outcome:\s*[^|]+\|?\s*/i, '').trim();
               }
-              if (progressMatch) {
-                progress = Math.min(100, Math.max(0, parseInt(progressMatch[1], 10)));
-              }
+              if (progressMatch) progress = Math.min(100, Math.max(0, parseInt(progressMatch[1], 10)));
               
               const existingIdx = updatedGoals.findIndex(g => g.title.toLowerCase() === goalTitle.toLowerCase());
               if (existingIdx !== -1) {
                 const existingGoal = updatedGoals[existingIdx];
                 let updatedSteps = [...(existingGoal.steps || [])];
                 
-                // Handle new_steps: AI now sends the COMPLETE step list (5-8 steps from Step 1)
-                // Replace entire step list rather than appending to prevent duplicates
                 if (newStepsMatch) {
                   const newStepsRaw = newStepsMatch[1].trim();
                   const stepEntries = newStepsRaw.split(/Step\s+\d+:\s*/i).filter(Boolean);
                   console.log(`[deep-scan] Goal "${existingGoal.title}" - received ${stepEntries.length} steps from AI (full replacement)`);
                   
-                  // Replace entire step list with AI's complete plan
                   updatedSteps = [];
                   for (const desc of stepEntries) {
                     const trimmed = desc.trim().replace(/\|$/, '').trim();
-                    if (trimmed) {
-                      updatedSteps.push({ id: uid('step'), description: trimmed, completed: false });
-                    }
+                    if (trimmed) updatedSteps.push({ id: uid('step'), description: trimmed, completed: false });
                   }
                   
-                  // Re-apply complete_steps marking on the fresh list
                   if (completeStepsMatch) {
                     const indices = completeStepsMatch[1].trim().split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
                     for (const idx of indices) {
-                      if (idx >= 1 && idx <= updatedSteps.length) {
-                        updatedSteps[idx - 1] = { ...updatedSteps[idx - 1], completed: true, completedAt: now() };
-                      }
+                      if (idx >= 1 && idx <= updatedSteps.length) updatedSteps[idx - 1] = { ...updatedSteps[idx - 1], completed: true, completedAt: now() };
                     }
                   }
                 } else {
                   console.log(`[deep-scan] Goal "${existingGoal.title}" - no new_steps found in AI response`);
-                  // If no new_steps but complete_steps provided, still mark completions on existing steps
                   if (completeStepsMatch) {
                     const indices = completeStepsMatch[1].trim().split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
                     for (const idx of indices) {
-                      if (idx >= 1 && idx <= updatedSteps.length) {
-                        updatedSteps[idx - 1] = { ...updatedSteps[idx - 1], completed: true, completedAt: now() };
-                      }
+                      if (idx >= 1 && idx <= updatedSteps.length) updatedSteps[idx - 1] = { ...updatedSteps[idx - 1], completed: true, completedAt: now() };
                     }
                   }
                 }
                 
-                // Recalculate progress from steps if steps exist
                 if (updatedSteps.length > 0) {
                   const completedCount = updatedSteps.filter(s => s.completed).length;
                   progress = Math.round((completedCount / updatedSteps.length) * 100);
                 }
                 
                 updatedGoals[existingIdx] = { 
-                  ...existingGoal, 
-                  currentStatus, 
-                  progress, 
-                  steps: updatedSteps,
-                  updatedAt: now(),
+                  ...existingGoal, currentStatus, progress, steps: updatedSteps, updatedAt: now(),
                   ...(desiredOutcome ? { desiredOutcome } : {})
                 };
               } else {
-                // New goal - parse any new_steps
                 const newSteps: Array<{ id: string; description: string; completed: boolean }> = [];
                 if (newStepsMatch) {
                   const newStepsRaw = newStepsMatch[1].trim();
@@ -648,30 +714,20 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                   console.log(`[deep-scan] NEW goal "${goalTitle}" - parsing ${stepEntries.length} steps from AI`);
                   for (const desc of stepEntries) {
                     const trimmed = desc.trim().replace(/\|$/, '').trim();
-                    if (trimmed) {
-                      newSteps.push({ id: uid('step'), description: trimmed, completed: false });
-                    }
+                    if (trimmed) newSteps.push({ id: uid('step'), description: trimmed, completed: false });
                   }
                 } else {
                   console.log(`[deep-scan] NEW goal "${goalTitle}" - WARNING: no new_steps in AI response`);
                 }
                 
                 updatedGoals.push({
-                  id: uid('goal'),
-                  title: goalTitle,
-                  desiredOutcome,
-                  currentStatus,
-                  progress,
-                  steps: newSteps,
-                  createdAt: now(),
-                  updatedAt: now()
+                  id: uid('goal'), title: goalTitle, desiredOutcome, currentStatus, progress,
+                  steps: newSteps, createdAt: now(), updatedAt: now()
                 });
               }
               goalsModified = true;
             }
-          }
-          // Handle sections
-          else if (field.startsWith('sections.')) {
+          } else if (field.startsWith('sections.')) {
             const parts = field.split('.');
             if (parts.length >= 3) {
               const sectionTitle = parts[1];
@@ -679,39 +735,21 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
               
               let sectionIndex = updatedSections.findIndex(s => s.title.toLowerCase() === sectionTitle.toLowerCase());
               if (sectionIndex === -1) {
-                updatedSections.push({
-                  id: uid('sec'),
-                  title: sectionTitle,
-                  items: [],
-                  createdAt: now(),
-                  updatedAt: now()
-                });
+                updatedSections.push({ id: uid('sec'), title: sectionTitle, items: [], createdAt: now(), updatedAt: now() });
                 sectionIndex = updatedSections.length - 1;
               }
               
               const section = updatedSections[sectionIndex];
               const itemIndex = section.items.findIndex(i => i.label.toLowerCase() === itemLabel.toLowerCase());
               if (itemIndex === -1) {
-                // Check for placeholder labels to replace (e.g. "Trait 1", "Item 2")
                 const placeholderPattern = /^(trait|item|entry|row|example|placeholder)\s*\d*$/i;
                 const placeholderIdx = section.items.findIndex(i => placeholderPattern.test(i.label.trim()));
                 
                 if (placeholderIdx !== -1) {
                   console.log(`[deep-scan] Replacing placeholder label "${section.items[placeholderIdx].label}" with "${itemLabel}"`);
-                  section.items[placeholderIdx] = { 
-                    ...section.items[placeholderIdx], 
-                    label: itemLabel, 
-                    value, 
-                    updatedAt: now() 
-                  };
+                  section.items[placeholderIdx] = { ...section.items[placeholderIdx], label: itemLabel, value, updatedAt: now() };
                 } else {
-                  section.items.push({
-                    id: uid('item'),
-                    label: itemLabel,
-                    value: value,
-                    createdAt: now(),
-                    updatedAt: now()
-                  });
+                  section.items.push({ id: uid('item'), label: itemLabel, value, createdAt: now(), updatedAt: now() });
                 }
               } else {
                 section.items[itemIndex] = { ...section.items[itemIndex], value, updatedAt: now() };
@@ -719,9 +757,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
               section.updatedAt = now();
               sectionsModified = true;
             }
-          }
-          // Handle nested fields
-          else if (field.includes('.')) {
+          } else if (field.includes('.')) {
             const [parent, child] = field.split('.');
             if (parent === 'physicalAppearance') {
               next.physicalAppearance = { ...next.physicalAppearance, [child]: value };
@@ -730,21 +766,17 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
             } else if (parent === 'preferredClothing') {
               next.preferredClothing = { ...next.preferredClothing, [child]: value };
             } else if (parent === 'background') {
-              // Update background hardcoded fields
               const bg = next.mainBackground || { jobOccupation: '', educationLevel: '', residence: '', hobbies: '', financialStatus: '', motivation: '' };
               (bg as any)[child] = value;
               next.mainBackground = bg;
             } else if (['tone', 'keyLifeEvents', 'relationships', 'secrets', 'fears'].includes(parent) && child === '_extras') {
-              // For _extras append, the value is treated as a new entry
               const sectionKey = parent as 'tone' | 'keyLifeEvents' | 'relationships' | 'secrets' | 'fears';
               const section = next[sectionKey] || {};
               const extras = [...(section._extras || [])];
               extras.push({ id: uid('extra'), label: value.split(':')[0]?.trim() || 'New', value: value.split(':').slice(1).join(':')?.trim() || value });
               (next as any)[sectionKey] = { ...section, _extras: extras };
             }
-          }
-          // Handle flat fields
-          else {
+          } else {
             (next as any)[field] = value;
           }
         }
@@ -771,11 +803,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
         canvas.width = 512;
         canvas.height = 512;
         const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          reject(new Error('Failed to get canvas context'));
-          return;
-        }
-        // Draw image centered and cropped to square
+        if (!ctx) { reject(new Error('Failed to get canvas context')); return; }
         const size = Math.min(img.width, img.height);
         const x = (img.width - size) / 2;
         const y = (img.height - size) / 2;
@@ -794,21 +822,14 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
     setIsUploadingAvatar(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
-      
       const resizedBlob = await resizeImage(file);
       const filename = `session-avatar-${Date.now()}.jpg`;
       const publicUrl = await supabaseData.uploadAvatar(user.id, resizedBlob, filename);
-      
-      setDraft(prev => ({
-        ...prev,
-        avatarDataUrl: publicUrl,
-        avatarPosition: { x: 50, y: 50 }
-      }));
+      setDraft(prev => ({ ...prev, avatarDataUrl: publicUrl, avatarPosition: { x: 50, y: 50 } }));
     } catch (err) {
       console.error('Avatar upload failed:', err);
     } finally {
@@ -822,7 +843,6 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
     const appearance = draft.physicalAppearance || character?.physicalAppearance;
     const name = draft.name || character?.name || 'Character';
     const parts: string[] = [name];
-    
     if (appearance?.hairColor) parts.push(`${appearance.hairColor} hair`);
     if (appearance?.eyeColor) parts.push(`${appearance.eyeColor} eyes`);
     if (appearance?.build) parts.push(`${appearance.build} build`);
@@ -830,34 +850,21 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
     if (appearance?.height) parts.push(`${appearance.height} tall`);
     if (draft.sexType || character?.sexType) parts.push(draft.sexType || character?.sexType || '');
     if (draft.age || character?.age) parts.push(`${draft.age || character?.age} years old`);
-    
     return parts.filter(Boolean).join(', ');
   };
 
   // Handle avatar regeneration via AI
   const handleRegenerateAvatar = async () => {
     if (!character) return;
-    
     setIsRegeneratingAvatar(true);
     try {
       const avatarPrompt = buildAvatarPrompt();
-      
       const { data, error } = await supabase.functions.invoke('generate-side-character-avatar', {
-        body: {
-          avatarPrompt,
-          characterName: draft.name || character.name,
-          modelId: modelId || 'grok-4-1-fast-reasoning' // GROK ONLY
-        }
+        body: { avatarPrompt, characterName: draft.name || character.name, modelId: modelId || 'grok-4-1-fast-reasoning' }
       });
-      
       if (error) throw error;
-      
       if (data?.imageUrl) {
-        setDraft(prev => ({
-          ...prev,
-          avatarDataUrl: data.imageUrl,
-          avatarPosition: { x: 50, y: 50 }
-        }));
+        setDraft(prev => ({ ...prev, avatarDataUrl: data.imageUrl, avatarPosition: { x: 50, y: 50 } }));
       }
     } catch (err) {
       console.error('Avatar regeneration failed:', err);
@@ -871,32 +878,21 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
   };
 
   const updatePhysicalAppearance = (field: keyof PhysicalAppearance, value: string) => {
-    setDraft(prev => ({
-      ...prev,
-      physicalAppearance: { ...prev.physicalAppearance, [field]: value }
-    }));
+    setDraft(prev => ({ ...prev, physicalAppearance: { ...prev.physicalAppearance, [field]: value } }));
   };
 
   const updateCurrentlyWearing = (field: keyof CurrentlyWearing, value: string) => {
-    setDraft(prev => ({
-      ...prev,
-      currentlyWearing: { ...prev.currentlyWearing, [field]: value }
-    }));
+    setDraft(prev => ({ ...prev, currentlyWearing: { ...prev.currentlyWearing, [field]: value } }));
   };
 
   const updatePreferredClothing = (field: keyof PreferredClothing, value: string) => {
-    setDraft(prev => ({
-      ...prev,
-      preferredClothing: { ...prev.preferredClothing, [field]: value }
-    }));
+    setDraft(prev => ({ ...prev, preferredClothing: { ...prev.preferredClothing, [field]: value } }));
   };
 
-  // Extras handlers for hardcoded sections in modal (extended for new sections)
   type ModalExtrasSection = 'physicalAppearance' | 'currentlyWearing' | 'preferredClothing' | 'tone' | 'keyLifeEvents' | 'relationships' | 'secrets' | 'fears';
 
   const addModalExtra = (section: ModalExtrasSection | 'background') => {
     setDraft(prev => {
-      // For background, use the nested structure
       if (section === 'background') {
         const current = (prev as any).mainBackground || {};
         const extras = [...(current._extras || []), { id: `extra-${Date.now()}`, label: '', value: '' }];
@@ -934,26 +930,16 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
     });
   };
 
-  // Handlers for main character background hardcoded fields
   const updateMainBackground = (field: string, value: string) => {
-    setDraft(prev => ({
-      ...prev,
-      mainBackground: { ...(prev as any).mainBackground, [field]: value }
-    }));
+    setDraft(prev => ({ ...prev, mainBackground: { ...(prev as any).mainBackground, [field]: value } }));
   };
 
   const updateBackground = (field: string, value: string) => {
-    setDraft(prev => ({
-      ...prev,
-      background: { ...prev.background, [field]: value }
-    }));
+    setDraft(prev => ({ ...prev, background: { ...prev.background, [field]: value } }));
   };
 
   const updatePersonality = (field: string, value: string | string[]) => {
-    setDraft(prev => ({
-      ...prev,
-      personality: { ...prev.personality, [field]: value }
-    }));
+    setDraft(prev => ({ ...prev, personality: { ...prev.personality, [field]: value } }));
   };
 
   const updateSectionItem = (sectionId: string, itemId: string, field: 'label' | 'value', value: string) => {
@@ -961,37 +947,21 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
       ...prev,
       sections: prev.sections?.map(s => {
         if (s.id !== sectionId) return s;
-        return {
-          ...s,
-          items: s.items.map(item => 
-            item.id === itemId ? { ...item, [field]: value } : item
-          )
-        };
+        return { ...s, items: s.items.map(item => item.id === itemId ? { ...item, [field]: value } : item) };
       })
     }));
   };
 
-  // Add a new empty row to an existing section
   const addItemToSection = (sectionId: string) => {
     setDraft(prev => ({
       ...prev,
       sections: prev.sections?.map(s => {
         if (s.id !== sectionId) return s;
-        return {
-          ...s,
-          items: [...s.items, {
-            id: `item-${Date.now()}`,
-            label: '',
-            value: '',
-            createdAt: Date.now(),
-            updatedAt: Date.now()
-          }]
-        };
+        return { ...s, items: [...s.items, { id: `item-${Date.now()}`, label: '', value: '', createdAt: Date.now(), updatedAt: Date.now() }] };
       })
     }));
   };
 
-  // Remove an item from a section
   const removeItemFromSection = (sectionId: string, itemId: string) => {
     setDraft(prev => ({
       ...prev,
@@ -1002,7 +972,6 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
     }));
   };
 
-  // Add a new custom category/section
   const [showCategoryTypeModal, setShowCategoryTypeModal] = useState(false);
   const addNewSection = (type: 'structured' | 'freeform' = 'structured') => {
     const newSection: CharacterTraitSection = {
@@ -1015,44 +984,589 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
       updatedAt: Date.now()
     };
     setExpandedCustomSections(prev => ({ ...prev, [newSection.id]: true }));
-    setDraft(prev => ({
-      ...prev,
-      sections: [...(prev.sections || []), newSection]
-    }));
+    setDraft(prev => ({ ...prev, sections: [...(prev.sections || []), newSection] }));
   };
 
-  // Update section title
   const updateSectionTitle = (sectionId: string, newTitle: string) => {
-    setDraft(prev => ({
-      ...prev,
-      sections: prev.sections?.map(s => 
-        s.id === sectionId ? { ...s, title: newTitle } : s
-      )
-    }));
+    setDraft(prev => ({ ...prev, sections: prev.sections?.map(s => s.id === sectionId ? { ...s, title: newTitle } : s) }));
   };
 
-  // Delete a section
   const deleteSection = (sectionId: string) => {
-    setDraft(prev => ({
-      ...prev,
-      sections: prev.sections?.filter(s => s.id !== sectionId)
-    }));
+    setDraft(prev => ({ ...prev, sections: prev.sections?.filter(s => s.id !== sectionId) }));
   };
 
-  const handleSave = () => {
-    onSave(draft);
-  };
+  const handleSave = () => { onSave(draft); };
 
   if (!character) return null;
 
+  // ─── Render: Basics section (builder-matched 2-col layout) ─────
+  const renderBasicsSection = () => (
+    <CollapsibleSection
+      title="Basics"
+      isExpanded={expandedSections.avatar}
+      onToggle={() => toggleSection('avatar')}
+      collapsedContent={
+        <CollapsedFieldSummary fields={[
+          { label: 'Name', value: draft.name || character?.name },
+          { label: 'Age', value: draft.age },
+          { label: 'Sex / Identity', value: draft.sexType },
+        ]} />
+      }
+    >
+      {/* Builder-matched two-column grid */}
+      <div className="grid grid-cols-2 gap-5">
+        {/* Left column: Avatar + buttons */}
+        <div className="flex flex-col gap-3">
+          <div className={cn(
+            "relative group w-full aspect-square rounded-2xl shadow-lg select-none overflow-hidden",
+            (draft.avatarDataUrl || character.avatarDataUrl) ? "border-2 border-[#4a5f7f]" : ""
+          )}>
+            {(isUploadingAvatar || isRegeneratingAvatar) ? (
+              <div className="w-full h-full flex items-center justify-center bg-zinc-900">
+                <Loader2 className="w-8 h-8 animate-spin text-zinc-400" />
+              </div>
+            ) : (draft.avatarDataUrl || character.avatarDataUrl) ? (
+              <img 
+                src={draft.avatarDataUrl || character.avatarDataUrl} 
+                alt={draft.name || character.name} 
+                className="w-full h-full object-cover"
+                style={{ 
+                  objectPosition: `${(draft.avatarPosition?.x ?? character.avatarPosition?.x ?? 50)}% ${(draft.avatarPosition?.y ?? character.avatarPosition?.y ?? 50)}%` 
+                }}
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex flex-col items-center justify-center border-2 border-dashed border-[#4a5f7f] gap-3 rounded-2xl">
+                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-500">
+                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+                <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">No Avatar</span>
+              </div>
+            )}
+          </div>
+          
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+          
+          <AvatarActionButtons
+            onUploadFromDevice={() => fileInputRef.current?.click()}
+            onSelectFromLibrary={(imageUrl) => {
+              setDraft(prev => ({ ...prev, avatarDataUrl: imageUrl, avatarPosition: { x: 50, y: 50 } }));
+            }}
+            onGenerateClick={handleRegenerateAvatar}
+            disabled={isUploadingAvatar}
+            isGenerating={isRegeneratingAvatar}
+            isUploading={isUploadingAvatar}
+          />
+        </div>
+
+        {/* Right column: Name, Nicknames, Age/Sex grid, Orientation, Toggles */}
+        <div className="flex flex-col gap-4">
+          <div>
+            <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Name</label>
+            <div className="flex items-center gap-2">
+              <AutoResizeTextarea
+                value={draft.name || ''}
+                onChange={(v) => updateField('name', v)}
+                placeholder="Character name"
+                className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              />
+              <button
+                type="button"
+                onClick={() => setIsChangeNameModalOpen(true)}
+                className="inline-flex h-9 px-3 items-center justify-center gap-1.5 rounded-xl border-0 bg-[#3c3e47] text-blue-500 hover:text-blue-300 shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all active:scale-95 text-[10px] font-bold uppercase tracking-wider shrink-0"
+              >
+                <Pencil className="w-3 h-3" />
+                Rename
+              </button>
+            </div>
+          </div>
+          <div>
+            <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Nicknames</label>
+            <AutoResizeTextarea value={draft.nicknames || ''} onChange={(v) => updateField('nicknames', v)} placeholder="Nicknames" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+          </div>
+          <div className="grid gap-3" style={{ gridTemplateColumns: '120px 1fr' }}>
+            <div>
+              <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Age</label>
+              <AutoResizeTextarea value={draft.age || ''} onChange={(v) => updateField('age', v)} placeholder="25" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Sex / Identity</label>
+              <AutoResizeTextarea value={draft.sexType || ''} onChange={(v) => updateField('sexType', v)} placeholder="Female, Male, Non-binary" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+            </div>
+          </div>
+          <div>
+            <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Sexual Orientation</label>
+            <AutoResizeTextarea value={(draft as any).sexualOrientation || ''} onChange={(v) => setDraft(prev => ({ ...prev, sexualOrientation: v }))} placeholder="Heterosexual, Bisexual, etc." className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+          </div>
+          {/* Builder-matched toggle trays */}
+          <div className="grid grid-cols-2 gap-3 mt-1">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block">Controlled By</label>
+              <div className="flex p-1.5 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]">
+                <button type="button" onClick={() => updateField('controlledBy', 'AI')} className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all ${draft.controlledBy === 'AI' ? 'bg-[#3b82f6] text-white shadow-[0_2px_8px_rgba(59,130,246,0.35)]' : 'bg-[#3f3f46] text-[#a1a1aa] hover:text-zinc-300'}`}>AI</button>
+                <button type="button" onClick={() => updateField('controlledBy', 'User')} className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all ${draft.controlledBy === 'User' ? 'bg-[#3b82f6] text-white shadow-[0_2px_8px_rgba(59,130,246,0.35)]' : 'bg-[#3f3f46] text-[#a1a1aa] hover:text-zinc-300'}`}>User</button>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block">Character Role</label>
+              <div className="flex p-1.5 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]">
+                <button type="button" onClick={() => updateField('characterRole', 'Main')} className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all ${draft.characterRole === 'Main' ? 'bg-[#3b82f6] text-white shadow-[0_2px_8px_rgba(59,130,246,0.35)]' : 'bg-[#3f3f46] text-[#a1a1aa] hover:text-zinc-300'}`}>Main</button>
+                <button type="button" onClick={() => updateField('characterRole', 'Side')} className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all ${draft.characterRole === 'Side' ? 'bg-[#3b82f6] text-white shadow-[0_2px_8px_rgba(59,130,246,0.35)]' : 'bg-[#3f3f46] text-[#a1a1aa] hover:text-zinc-300'}`}>Side</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* Below grid: remaining fields */}
+      <div className="space-y-4 mt-4">
+        <div>
+          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Location</label>
+          <AutoResizeTextarea value={draft.location || ''} onChange={(v) => updateField('location', v)} placeholder="Current location" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+        </div>
+        <div>
+          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Current Mood</label>
+          <AutoResizeTextarea value={draft.currentMood || ''} onChange={(v) => updateField('currentMood', v)} placeholder="Happy, Tired" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+        </div>
+        <FieldTextarea label="Role Description" value={draft.roleDescription || ''} onChange={(v) => updateField('roleDescription', v)} placeholder="Character's role in the story..." rows={3} />
+      </div>
+    </CollapsibleSection>
+  );
+
+  // ─── Render: Custom section ─────────────────────────────────────
+  const renderCustomSection = (section: CharacterTraitSection) => (
+    <div key={section.id} className="w-full bg-[#2a2a2f] rounded-[24px] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]">
+      <div className="relative bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 px-5 py-3 flex items-center justify-between shadow-lg overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.07] via-transparent to-transparent pointer-events-none" style={{ backgroundSize: '100% 60%', backgroundRepeat: 'no-repeat' }} />
+        <AutoResizeTextarea
+          value={section.title}
+          onChange={(v) => updateSectionTitle(section.id, v)}
+          placeholder="Category name"
+          className="bg-transparent border-none text-white text-xl font-bold tracking-[-0.015em] placeholder:text-[rgba(248,250,252,0.3)] focus:outline-none flex-1 mr-2 relative z-[1]"
+        />
+        <div className="flex items-center gap-2 shrink-0 relative z-[1]">
+          <button type="button" onClick={() => toggleCustomSection(section.id)} className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-white/10">
+            {(expandedCustomSections[section.id] ?? true) ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
+          </button>
+          <button type="button" tabIndex={-1} onClick={() => deleteSection(section.id)} className="text-red-500 hover:text-red-400 p-1 rounded-md hover:bg-red-900/30">
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+      <div className="p-5">
+        <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
+          {(expandedCustomSections[section.id] ?? true) ? (
+            <div className="space-y-4">
+              {section.type === 'freeform' ? (
+                <>
+                  {(() => {
+                    const items = section.items.length > 0
+                      ? section.items
+                      : section.freeformValue
+                        ? [{ id: `item-${Date.now()}`, label: '', value: section.freeformValue, createdAt: Date.now(), updatedAt: Date.now() }]
+                        : [{ id: `item-${Date.now()}`, label: '', value: '', createdAt: Date.now(), updatedAt: Date.now() }];
+                    if (section.items.length === 0 && items.length > 0) {
+                      setDraft(prev => ({
+                        ...prev,
+                        sections: prev.sections?.map(s => s.id === section.id ? { ...s, items, freeformValue: undefined } : s)
+                      }));
+                    }
+                    return items.map(item => (
+                      <div key={item.id} className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <AutoResizeTextarea
+                            value={item.label}
+                            onChange={(v) => {
+                              const nextItems = (section.items.length > 0 ? section.items : items).map(it => it.id === item.id ? { ...it, label: v } : it);
+                              setDraft(prev => ({ ...prev, sections: prev.sections?.map(s => s.id === section.id ? { ...s, items: nextItems } : s) }));
+                            }}
+                            placeholder="LABEL"
+                            className="flex-1 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border-t border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const nextItems = (section.items.length > 0 ? section.items : items).filter(it => it.id !== item.id);
+                              setDraft(prev => ({
+                                ...prev,
+                                sections: prev.sections?.map(s => s.id === section.id ? { ...s, items: nextItems.length > 0 ? nextItems : [{ id: `item-${Date.now()}`, label: '', value: '', createdAt: Date.now(), updatedAt: Date.now() }] } : s)
+                              }));
+                            }}
+                            className="text-red-500 hover:text-red-400 p-1.5 rounded-md hover:bg-red-900/30"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <AutoResizeTextarea
+                          value={item.value}
+                          onChange={(v) => {
+                            const nextItems = (section.items.length > 0 ? section.items : items).map(it => it.id === item.id ? { ...it, value: v } : it);
+                            setDraft(prev => ({ ...prev, sections: prev.sections?.map(s => s.id === section.id ? { ...s, items: nextItems } : s) }));
+                          }}
+                          placeholder="Write your content here..."
+                          className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                          rows={4}
+                        />
+                      </div>
+                    ));
+                  })()}
+                  <AddRowButton onClick={() => {
+                    const currentItems = section.items.length > 0 ? section.items : [{ id: `item-${Date.now()}`, label: '', value: section.freeformValue || '', createdAt: Date.now(), updatedAt: Date.now() }];
+                    setDraft(prev => ({
+                      ...prev,
+                      sections: prev.sections?.map(s => s.id === section.id ? { ...s, items: [...currentItems, { id: `item-${Date.now() + 1}`, label: '', value: '', createdAt: Date.now(), updatedAt: Date.now() }], freeformValue: undefined } : s)
+                    }));
+                  }} label="Add Text Field" />
+                </>
+              ) : (
+                <>
+                  {section.items.map((item) => (
+                    <div key={item.id} className="flex items-start gap-2">
+                      <div className="w-2/5 min-w-0">
+                        <AutoResizeTextarea
+                          value={item.label}
+                          onChange={(v) => updateSectionItem(section.id, item.id, 'label', v)}
+                          placeholder="LABEL"
+                          className="w-full px-3 py-2 rounded-lg text-xs font-bold bg-[#1c1c1f] border-t border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
+                        />
+                      </div>
+                      <AutoResizeTextarea
+                        value={item.value}
+                        onChange={(v) => updateSectionItem(section.id, item.id, 'value', v)}
+                        placeholder="Description"
+                        className="flex-1 min-w-0 px-3 py-2 rounded-lg text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
+                      />
+                      <button type="button" onClick={() => removeItemFromSection(section.id, item.id)} className="text-red-500 hover:text-red-400 p-1.5 rounded-md hover:bg-red-900/30 pt-2">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                  <AddRowButton onClick={() => addItemToSection(section.id)} />
+                </>
+              )}
+            </div>
+          ) : (
+            (() => {
+              if (section.type === 'freeform') {
+                const items = section.items.length > 0 ? section.items : (section.freeformValue ? [{ id: 'legacy', label: '', value: section.freeformValue }] : []);
+                return items.length > 0 && items.some(it => it.value)
+                  ? <div className="space-y-2">{items.filter(it => it.value).map(it => (
+                      <div key={it.id}>
+                        {it.label && <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{it.label}</span>}
+                        <p className="text-sm text-zinc-400 whitespace-pre-wrap">{it.value}</p>
+                      </div>
+                    ))}</div>
+                  : <p className="text-zinc-500 text-sm italic">No content</p>;
+              }
+              const hasAnyValue = section.items.some(item => item.label || item.value);
+              if (!hasAnyValue) return <p className="text-zinc-500 text-sm italic">No items</p>;
+              return (
+                <div className="space-y-4 w-full min-w-0">
+                  {section.items.filter(item => item.label || item.value).map((item) => (
+                    <div key={item.id} className="space-y-1 w-full min-w-0">
+                      <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block break-words">{item.label || 'Untitled'}</span>
+                      <p className="text-sm text-zinc-400 break-words whitespace-pre-wrap">{item.value || '—'}</p>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  // ─── Render: Side character scroll layout ──────────────────────
+  const renderSideCharacterContent = () => (
+    <ScrollArea className="flex-1 min-h-0 bg-[#1a1b20]">
+      <div className="p-6 space-y-6 pb-20">
+        {/* Basics */}
+        {renderBasicsSection()}
+
+        {/* Physical Appearance */}
+        <CollapsibleSection title="Physical Appearance" isExpanded={expandedSections.physicalAppearance} onToggle={() => toggleSection('physicalAppearance')}>
+          <HardcodedRow label="Hair Color" value={draft.physicalAppearance?.hairColor || ''} onChange={(v) => updatePhysicalAppearance('hairColor', v)} placeholder="Brown" />
+          <HardcodedRow label="Eye Color" value={draft.physicalAppearance?.eyeColor || ''} onChange={(v) => updatePhysicalAppearance('eyeColor', v)} placeholder="Blue" />
+          <HardcodedRow label="Build" value={draft.physicalAppearance?.build || ''} onChange={(v) => updatePhysicalAppearance('build', v)} placeholder="Athletic" />
+          <HardcodedRow label="Skin Tone" value={draft.physicalAppearance?.skinTone || ''} onChange={(v) => updatePhysicalAppearance('skinTone', v)} placeholder="Fair" />
+          {((draft.physicalAppearance as any)?._extras || []).map((extra: CharacterExtraRow) => (
+            <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('physicalAppearance', extra.id, patch)} onDelete={() => deleteModalExtra('physicalAppearance', extra.id)} />
+          ))}
+          <AddRowButton onClick={() => addModalExtra('physicalAppearance')} />
+        </CollapsibleSection>
+
+        {/* Currently Wearing */}
+        <CollapsibleSection title="Currently Wearing" isExpanded={expandedSections.currentlyWearing} onToggle={() => toggleSection('currentlyWearing')}>
+          <HardcodedRow label="Shirt / Top" value={draft.currentlyWearing?.top || ''} onChange={(v) => updateCurrentlyWearing('top', v)} placeholder="White blouse" />
+          <HardcodedRow label="Pants / Bottoms" value={draft.currentlyWearing?.bottom || ''} onChange={(v) => updateCurrentlyWearing('bottom', v)} placeholder="Blue jeans" />
+          <HardcodedRow label="Undergarments" value={draft.currentlyWearing?.undergarments || ''} onChange={(v) => updateCurrentlyWearing('undergarments', v)} placeholder="Description" />
+          <HardcodedRow label="Miscellaneous" value={draft.currentlyWearing?.miscellaneous || ''} onChange={(v) => updateCurrentlyWearing('miscellaneous', v)} placeholder="Accessories, etc." />
+          {((draft.currentlyWearing as any)?._extras || []).map((extra: CharacterExtraRow) => (
+            <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('currentlyWearing', extra.id, patch)} onDelete={() => deleteModalExtra('currentlyWearing', extra.id)} />
+          ))}
+          <AddRowButton onClick={() => addModalExtra('currentlyWearing')} />
+        </CollapsibleSection>
+
+        {/* Preferred Clothing */}
+        <CollapsibleSection title="Preferred Clothing" isExpanded={expandedSections.preferredClothing} onToggle={() => toggleSection('preferredClothing')}>
+          <HardcodedRow label="Casual" value={draft.preferredClothing?.casual || ''} onChange={(v) => updatePreferredClothing('casual', v)} placeholder="Casual wear" />
+          <HardcodedRow label="Work" value={draft.preferredClothing?.work || ''} onChange={(v) => updatePreferredClothing('work', v)} placeholder="Work attire" />
+          <HardcodedRow label="Sleep" value={draft.preferredClothing?.sleep || ''} onChange={(v) => updatePreferredClothing('sleep', v)} placeholder="Sleepwear" />
+          <HardcodedRow label="Undergarments" value={draft.preferredClothing?.undergarments || ''} onChange={(v) => updatePreferredClothing('undergarments', v)} placeholder="Preferred underwear" />
+          <HardcodedRow label="Miscellaneous" value={draft.preferredClothing?.miscellaneous || ''} onChange={(v) => updatePreferredClothing('miscellaneous', v)} placeholder="Other preferences" />
+          {((draft.preferredClothing as any)?._extras || []).map((extra: CharacterExtraRow) => (
+            <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('preferredClothing', extra.id, patch)} onDelete={() => deleteModalExtra('preferredClothing', extra.id)} />
+          ))}
+          <AddRowButton onClick={() => addModalExtra('preferredClothing')} />
+        </CollapsibleSection>
+
+        {/* Side Character Background */}
+        <CollapsibleSection title="Background" isExpanded={expandedSections.background} onToggle={() => toggleSection('background')}>
+          <FieldInput label="Relationship Status" value={draft.background?.relationshipStatus || ''} onChange={(v) => updateBackground('relationshipStatus', v)} placeholder="Single, Married" />
+          <FieldInput label="Residence" value={draft.background?.residence || ''} onChange={(v) => updateBackground('residence', v)} placeholder="Where they live" />
+          <FieldInput label="Education Level" value={draft.background?.educationLevel || ''} onChange={(v) => updateBackground('educationLevel', v)} placeholder="College" />
+        </CollapsibleSection>
+
+        {/* Side Character Personality */}
+        <CollapsibleSection title="Personality" isExpanded={expandedSections.personality} onToggle={() => toggleSection('personality')}>
+          <FieldInput label="Traits" value={draft.personality?.traits?.join(', ') || ''} onChange={(v) => updatePersonality('traits', v.split(',').map(t => t.trim()).filter(Boolean))} placeholder="Friendly, Curious, Brave" />
+          <FieldInput label="Desires" value={draft.personality?.desires || ''} onChange={(v) => updatePersonality('desires', v)} placeholder="What they want" />
+          <FieldInput label="Fears" value={draft.personality?.fears || ''} onChange={(v) => updatePersonality('fears', v)} placeholder="What they fear" />
+          <FieldTextarea label="Secrets" value={draft.personality?.secrets || ''} onChange={(v) => updatePersonality('secrets', v)} placeholder="Hidden information..." rows={2} />
+          <FieldTextarea label="Miscellaneous" value={draft.personality?.miscellaneous || ''} onChange={(v) => updatePersonality('miscellaneous', v)} placeholder="Other personality notes..." rows={2} />
+        </CollapsibleSection>
+      </div>
+    </ScrollArea>
+  );
+
+  // ─── Render: Main character with sidebar nav ───────────────────
+  const renderMainCharacterContent = () => (
+    <div className="flex flex-1 min-h-0 overflow-hidden">
+      {/* Sidebar nav */}
+      <aside
+        className="flex-shrink-0 bg-[#2a2a2f] flex flex-col h-full shadow-[0_12px_32px_-2px_rgba(0,0,0,0.55),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]"
+        style={{ width: MODAL_NAV_SIDEBAR_WIDTH }}
+      >
+        {/* Avatar header tile */}
+        <div className="p-3">
+          <div className="group relative overflow-hidden rounded-2xl bg-black border border-[#4a5f7f]" style={{ height: 120 }}>
+            {(draft.avatarDataUrl || character.avatarDataUrl) ? (
+              <img
+                src={draft.avatarDataUrl || character.avatarDataUrl}
+                alt={draft.name || character.name || 'Character'}
+                className="block w-full h-full object-cover"
+                style={{ objectPosition: `${(draft.avatarPosition?.x ?? character.avatarPosition?.x ?? 50)}% ${(draft.avatarPosition?.y ?? character.avatarPosition?.y ?? 50)}%` }}
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900 font-black text-5xl italic uppercase text-slate-500">
+                {(draft.name || character.name || '?').charAt(0)}
+              </div>
+            )}
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors duration-200 z-[5] pointer-events-none" />
+            <div className="absolute inset-x-0 bottom-0 z-30 p-3">
+              <div className="flex items-end justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
+                    {draft.name || character.name || 'Unnamed Character'}
+                  </div>
+                </div>
+                <span className={cn(
+                  "text-[9px] font-black uppercase tracking-wide shrink-0 rounded-full px-2 py-0.5",
+                  draft.controlledBy === 'User' ? "bg-blue-500 text-white" : "bg-slate-500 text-white"
+                )}>
+                  {draft.controlledBy || 'AI'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Nav buttons */}
+        <div className="flex-1 overflow-y-auto scrollbar-none bg-[#2a2a2f]" style={{ padding: 10 }}>
+          <div className="rounded-2xl space-y-2 bg-[#2e2e33] shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]" style={{ padding: 10 }}>
+            {sidebarNavItems.map((item) => {
+              const Icon = MODAL_NAV_ICON_BY_KEY[item.key] || Sparkles;
+              return (
+                <ModalNavButton
+                  key={item.key}
+                  label={item.label}
+                  active={item.key === activeTraitSection}
+                  icon={Icon}
+                  onClick={() => setActiveTraitSection(item.key)}
+                />
+              );
+            })}
+            <button
+              type="button"
+              onClick={() => setShowCategoryTypeModal(true)}
+              className={navActionButtonClass}
+            >
+              <span className="relative z-10 min-w-0 flex items-center gap-[10px]">
+                <Plus className="w-[18px] h-[18px] shrink-0 text-[#60a5fa]" />
+                <span className="truncate text-[12px] font-black tracking-[0.08em] leading-tight text-[#eaedf1]">
+                  Custom Content
+                </span>
+              </span>
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      {/* Content pane */}
+      <TabFieldNavigator className="flex-1 overflow-y-auto scrollbar-thin bg-[#1a1b20]">
+        <div className="p-4 lg:p-10 max-w-6xl mx-auto space-y-6 pb-20">
+          {isTraitVisible('profile') && renderBasicsSection()}
+
+          {isTraitVisible('physicalAppearance') && (
+            <CollapsibleSection title="Physical Appearance" isExpanded={expandedSections.physicalAppearance} onToggle={() => toggleSection('physicalAppearance')}>
+              <HardcodedRow label="Hair Color" value={draft.physicalAppearance?.hairColor || ''} onChange={(v) => updatePhysicalAppearance('hairColor', v)} placeholder="Brown" />
+              <HardcodedRow label="Eye Color" value={draft.physicalAppearance?.eyeColor || ''} onChange={(v) => updatePhysicalAppearance('eyeColor', v)} placeholder="Blue" />
+              <HardcodedRow label="Build" value={draft.physicalAppearance?.build || ''} onChange={(v) => updatePhysicalAppearance('build', v)} placeholder="Athletic" />
+              <HardcodedRow label="Body Hair" value={draft.physicalAppearance?.bodyHair || ''} onChange={(v) => updatePhysicalAppearance('bodyHair', v)} placeholder="Light" />
+              <HardcodedRow label="Height" value={draft.physicalAppearance?.height || ''} onChange={(v) => updatePhysicalAppearance('height', v)} placeholder="5ft 8in" />
+              <HardcodedRow label="Breasts" value={draft.physicalAppearance?.breastSize || ''} onChange={(v) => updatePhysicalAppearance('breastSize', v)} placeholder="Size, description" />
+              <HardcodedRow label="Genitalia" value={draft.physicalAppearance?.genitalia || ''} onChange={(v) => updatePhysicalAppearance('genitalia', v)} placeholder="Description" />
+              <HardcodedRow label="Skin Tone" value={draft.physicalAppearance?.skinTone || ''} onChange={(v) => updatePhysicalAppearance('skinTone', v)} placeholder="Fair" />
+              <HardcodedRow label="Makeup" value={draft.physicalAppearance?.makeup || ''} onChange={(v) => updatePhysicalAppearance('makeup', v)} placeholder="Natural" />
+              <HardcodedRow label="Body Markings" value={draft.physicalAppearance?.bodyMarkings || ''} onChange={(v) => updatePhysicalAppearance('bodyMarkings', v)} placeholder="Tattoos, scars..." />
+              <HardcodedRow label="Temporary Conditions" value={draft.physicalAppearance?.temporaryConditions || ''} onChange={(v) => updatePhysicalAppearance('temporaryConditions', v)} placeholder="Injuries, etc." />
+              {((draft.physicalAppearance as any)?._extras || []).map((extra: CharacterExtraRow) => (
+                <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('physicalAppearance', extra.id, patch)} onDelete={() => deleteModalExtra('physicalAppearance', extra.id)} />
+              ))}
+              <AddRowButton onClick={() => addModalExtra('physicalAppearance')} />
+            </CollapsibleSection>
+          )}
+
+          {isTraitVisible('currentlyWearing') && (
+            <CollapsibleSection title="Currently Wearing" isExpanded={expandedSections.currentlyWearing} onToggle={() => toggleSection('currentlyWearing')}>
+              <HardcodedRow label="Shirt / Top" value={draft.currentlyWearing?.top || ''} onChange={(v) => updateCurrentlyWearing('top', v)} placeholder="White blouse" />
+              <HardcodedRow label="Pants / Bottoms" value={draft.currentlyWearing?.bottom || ''} onChange={(v) => updateCurrentlyWearing('bottom', v)} placeholder="Blue jeans" />
+              <HardcodedRow label="Undergarments" value={draft.currentlyWearing?.undergarments || ''} onChange={(v) => updateCurrentlyWearing('undergarments', v)} placeholder="Description" />
+              <HardcodedRow label="Miscellaneous" value={draft.currentlyWearing?.miscellaneous || ''} onChange={(v) => updateCurrentlyWearing('miscellaneous', v)} placeholder="Accessories, etc." />
+              {((draft.currentlyWearing as any)?._extras || []).map((extra: CharacterExtraRow) => (
+                <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('currentlyWearing', extra.id, patch)} onDelete={() => deleteModalExtra('currentlyWearing', extra.id)} />
+              ))}
+              <AddRowButton onClick={() => addModalExtra('currentlyWearing')} />
+            </CollapsibleSection>
+          )}
+
+          {isTraitVisible('preferredClothing') && (
+            <CollapsibleSection title="Preferred Clothing" isExpanded={expandedSections.preferredClothing} onToggle={() => toggleSection('preferredClothing')}>
+              <HardcodedRow label="Casual" value={draft.preferredClothing?.casual || ''} onChange={(v) => updatePreferredClothing('casual', v)} placeholder="Casual wear" />
+              <HardcodedRow label="Work" value={draft.preferredClothing?.work || ''} onChange={(v) => updatePreferredClothing('work', v)} placeholder="Work attire" />
+              <HardcodedRow label="Sleep" value={draft.preferredClothing?.sleep || ''} onChange={(v) => updatePreferredClothing('sleep', v)} placeholder="Sleepwear" />
+              <HardcodedRow label="Undergarments" value={draft.preferredClothing?.undergarments || ''} onChange={(v) => updatePreferredClothing('undergarments', v)} placeholder="Preferred underwear" />
+              <HardcodedRow label="Miscellaneous" value={draft.preferredClothing?.miscellaneous || ''} onChange={(v) => updatePreferredClothing('miscellaneous', v)} placeholder="Other preferences" />
+              {((draft.preferredClothing as any)?._extras || []).map((extra: CharacterExtraRow) => (
+                <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('preferredClothing', extra.id, patch)} onDelete={() => deleteModalExtra('preferredClothing', extra.id)} />
+              ))}
+              <AddRowButton onClick={() => addModalExtra('preferredClothing')} />
+            </CollapsibleSection>
+          )}
+
+          {isTraitVisible('personality') && (
+            <PersonalitySection
+              personality={draft.mainPersonality || defaultPersonality}
+              onChange={(personality) => setDraft(prev => ({ ...prev, mainPersonality: personality }))}
+              isExpanded={expandedSections.personality}
+              onToggle={() => toggleSection('personality')}
+            />
+          )}
+
+          {isTraitVisible('tone') && (
+            <CollapsibleSection title="Tone" isExpanded={expandedSections.tone} onToggle={() => toggleSection('tone')}>
+              {((draft.tone as any)?._extras || []).map((extra: CharacterExtraRow) => (
+                <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('tone', extra.id, patch)} onDelete={() => deleteModalExtra('tone', extra.id)} />
+              ))}
+              <AddRowButton onClick={() => addModalExtra('tone')} />
+            </CollapsibleSection>
+          )}
+
+          {isTraitVisible('background') && (
+            <CollapsibleSection title="Background" isExpanded={expandedSections.background} onToggle={() => toggleSection('background')}>
+              <HardcodedRow label="Job / Occupation" value={(draft as any).mainBackground?.jobOccupation || ''} onChange={(v) => updateMainBackground('jobOccupation', v)} placeholder="Software Engineer" />
+              <HardcodedRow label="Education Level" value={(draft as any).mainBackground?.educationLevel || ''} onChange={(v) => updateMainBackground('educationLevel', v)} placeholder="Bachelor's" />
+              <HardcodedRow label="Residence" value={(draft as any).mainBackground?.residence || ''} onChange={(v) => updateMainBackground('residence', v)} placeholder="Downtown apartment" />
+              <HardcodedRow label="Hobbies" value={(draft as any).mainBackground?.hobbies || ''} onChange={(v) => updateMainBackground('hobbies', v)} placeholder="Reading, Hiking" />
+              <HardcodedRow label="Financial Status" value={(draft as any).mainBackground?.financialStatus || ''} onChange={(v) => updateMainBackground('financialStatus', v)} placeholder="Middle class" />
+              <HardcodedRow label="Motivation" value={(draft as any).mainBackground?.motivation || ''} onChange={(v) => updateMainBackground('motivation', v)} placeholder="What drives this character" />
+              {(((draft as any).mainBackground as any)?._extras || []).map((extra: CharacterExtraRow) => (
+                <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('background', extra.id, patch)} onDelete={() => deleteModalExtra('background', extra.id)} />
+              ))}
+              <AddRowButton onClick={() => addModalExtra('background')} />
+            </CollapsibleSection>
+          )}
+
+          {isTraitVisible('keyLifeEvents') && (
+            <CollapsibleSection title="Key Life Events" isExpanded={expandedSections.keyLifeEvents} onToggle={() => toggleSection('keyLifeEvents')}>
+              {((draft.keyLifeEvents as any)?._extras || []).map((extra: CharacterExtraRow) => (
+                <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('keyLifeEvents', extra.id, patch)} onDelete={() => deleteModalExtra('keyLifeEvents', extra.id)} />
+              ))}
+              <AddRowButton onClick={() => addModalExtra('keyLifeEvents')} />
+            </CollapsibleSection>
+          )}
+
+          {isTraitVisible('relationships') && (
+            <CollapsibleSection title="Relationships" isExpanded={expandedSections.relationships} onToggle={() => toggleSection('relationships')}>
+              {((draft.relationships as any)?._extras || []).map((extra: CharacterExtraRow) => (
+                <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('relationships', extra.id, patch)} onDelete={() => deleteModalExtra('relationships', extra.id)} />
+              ))}
+              <AddRowButton onClick={() => addModalExtra('relationships')} />
+            </CollapsibleSection>
+          )}
+
+          {isTraitVisible('secrets') && (
+            <CollapsibleSection title="Secrets" isExpanded={expandedSections.secrets} onToggle={() => toggleSection('secrets')}>
+              {((draft.secrets as any)?._extras || []).map((extra: CharacterExtraRow) => (
+                <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('secrets', extra.id, patch)} onDelete={() => deleteModalExtra('secrets', extra.id)} />
+              ))}
+              <AddRowButton onClick={() => addModalExtra('secrets')} />
+            </CollapsibleSection>
+          )}
+
+          {isTraitVisible('fears') && (
+            <CollapsibleSection title="Fears" isExpanded={expandedSections.fears} onToggle={() => toggleSection('fears')}>
+              {((draft.fears as any)?._extras || []).map((extra: CharacterExtraRow) => (
+                <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('fears', extra.id, patch)} onDelete={() => deleteModalExtra('fears', extra.id)} />
+              ))}
+              <AddRowButton onClick={() => addModalExtra('fears')} />
+            </CollapsibleSection>
+          )}
+
+          {isTraitVisible('characterGoals') && (
+            <CharacterGoalsSection
+              goals={draft.goals || []}
+              onChange={(goals) => setDraft(prev => ({ ...prev, goals }))}
+              isExpanded={expandedSections.goals}
+              onToggle={() => toggleSection('goals')}
+            />
+          )}
+
+          {/* Custom sections */}
+          {draft.sections?.map((section) => {
+            if (!isTraitVisible(`custom:${section.id}`)) return null;
+            return renderCustomSection(section);
+          })}
+        </div>
+      </TabFieldNavigator>
+
+      <CustomContentTypeModal
+        open={showCategoryTypeModal}
+        onClose={() => setShowCategoryTypeModal(false)}
+        onSelect={(type) => addNewSection(type as 'structured' | 'freeform')}
+      />
+    </div>
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl h-[85vh] max-h-[90vh] p-0 gap-0 overflow-hidden flex flex-col bg-[#2a2a2f] border-ghost-white [&>button]:hidden">
-        <DialogHeader className="px-6 py-4 border-b border-ghost-white bg-white">
+      <DialogContent className="max-w-6xl h-[85vh] max-h-[90vh] p-0 gap-0 overflow-hidden flex flex-col bg-[#2a2a2f] border-black/35 [&>button]:hidden">
+        {/* Dark header bar matching builder */}
+        <DialogHeader className="px-6 py-4 border-b border-black/35 bg-[#2a2a2f]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <DialogTitle className="text-lg font-black text-[hsl(var(--ui-surface-2))] uppercase tracking-tight">
+                <DialogTitle className="text-lg font-black text-[#eaedf1] uppercase tracking-tight">
                   {viewMode === 'character' ? 'Edit Character' : 'Scenario Card'}
                 </DialogTitle>
                 <Tooltip>
@@ -1065,7 +1579,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                 </Tooltip>
               </div>
               
-              {/* View Mode Toggle - Gallery Hub pill style */}
+              {/* View Mode Toggle */}
               {scenarioWorldCore && (
                 <div className="flex items-center bg-[#2b2b2e] rounded-full p-1 gap-0.5 border border-[#2b2b2e]">
                   <button
@@ -1102,7 +1616,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
               )}
             </div>
             
-            {/* AI Update Button - Iridescent premium style */}
+            {/* Action buttons */}
             <div className="flex items-center gap-2">
               {conversationId && (
                 <Tooltip open={isTooltipOpen}>
@@ -1113,99 +1627,21 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
                       disabled={isDeepScanning || isSaving}
                       onMouseEnter={() => setIsTooltipOpen(true)}
                       onMouseLeave={() => setIsTooltipOpen(false)}
-                      className="group relative flex h-10 px-4 rounded-xl overflow-hidden
-                        text-white text-xs font-bold leading-none
-                        shadow-[0_12px_40px_rgba(0,0,0,0.45)]
-                        hover:brightness-125 transition-all
-                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/45
-                        disabled:opacity-50 shrink-0"
+                      className="group relative flex h-10 px-4 rounded-xl overflow-hidden text-white text-xs font-bold leading-none shadow-[0_12px_40px_rgba(0,0,0,0.45)] hover:brightness-125 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/45 disabled:opacity-50 shrink-0"
                     >
-                      {/* Layer 1: Iridescent outer border ring */}
-                      <span
-                        aria-hidden
-                        className="absolute inset-0 rounded-xl"
-                        style={{
-                          background:
-                            "linear-gradient(90deg, rgba(255,255,255,0.34) 0%, rgba(34,184,200,0.62) 18%, rgba(255,255,255,0.22) 44%, rgba(109,94,247,0.64) 78%, rgba(255,255,255,0.28) 100%)",
-                          filter:
-                            "drop-shadow(0 0 10px rgba(255,255,255,0.10)) drop-shadow(0 0 18px rgba(109,94,247,0.10)) drop-shadow(0 0 18px rgba(34,184,200,0.10))",
-                        }}
-                      />
-                      {/* Layer 2: Mask to create 2px border effect */}
-                      <span
-                        aria-hidden
-                        className="absolute inset-[2px] rounded-[10px]"
-                        style={{ background: "#2B2D33" }}
-                      />
-                      {/* Layer 3: Button surface with gradient */}
-                      <span
-                        aria-hidden
-                        className="absolute inset-[2px] rounded-[10px]"
-                        style={{
-                          background:
-                            "linear-gradient(90deg, rgba(34,184,200,0.22), rgba(109,94,247,0.22)), #2B2D33",
-                        }}
-                      />
-                      {/* Layer 4: Soft top sheen */}
-                      <span
-                        aria-hidden
-                        className="absolute inset-[2px] rounded-[10px]"
-                        style={{
-                          background:
-                            "linear-gradient(180deg, rgba(255,255,255,0.11), rgba(255,255,255,0.00) 46%, rgba(0,0,0,0.16))",
-                        }}
-                      />
-                      {/* Layer 5: Border sheen (top-left diagonal) */}
-                      <span
-                        aria-hidden
-                        className="absolute inset-0 rounded-xl pointer-events-none"
-                        style={{
-                          boxShadow:
-                            "inset 0 1px 0 rgba(255,255,255,0.26), inset 0 -1px 0 rgba(0,0,0,0.22)",
-                          background:
-                            "linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.00) 55%)",
-                          mixBlendMode: "screen",
-                        }}
-                      />
-                      {/* Layer 6: Teal bloom (top-left) */}
-                      <span
-                        aria-hidden
-                        className="absolute -left-8 -top-8 h-32 w-32 rounded-full blur-2xl pointer-events-none"
-                        style={{
-                          background:
-                            "radial-gradient(circle, rgba(34,184,200,0.28), transparent 62%)",
-                        }}
-                      />
-                      {/* Layer 7: Purple bloom (bottom-right) */}
-                      <span
-                        aria-hidden
-                        className="absolute -right-10 -bottom-10 h-40 w-40 rounded-full blur-3xl pointer-events-none"
-                        style={{
-                          background:
-                            "radial-gradient(circle, rgba(109,94,247,0.26), transparent 65%)",
-                        }}
-                      />
-                      {/* Layer 8: Crisp inner edge */}
-                      <span
-                        aria-hidden
-                        className="absolute inset-0 rounded-xl pointer-events-none"
-                        style={{
-                          boxShadow:
-                            "inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -1px 0 rgba(0,0,0,0.26), 0 0 0 1px rgba(255,255,255,0.06)",
-                        }}
-                      />
-                      {/* Content layer */}
+                      <span aria-hidden className="absolute inset-0 rounded-xl" style={{ background: "linear-gradient(90deg, rgba(255,255,255,0.34) 0%, rgba(34,184,200,0.62) 18%, rgba(255,255,255,0.22) 44%, rgba(109,94,247,0.64) 78%, rgba(255,255,255,0.28) 100%)", filter: "drop-shadow(0 0 10px rgba(255,255,255,0.10)) drop-shadow(0 0 18px rgba(109,94,247,0.10)) drop-shadow(0 0 18px rgba(34,184,200,0.10))" }} />
+                      <span aria-hidden className="absolute inset-[2px] rounded-[10px]" style={{ background: "#2B2D33" }} />
+                      <span aria-hidden className="absolute inset-[2px] rounded-[10px]" style={{ background: "linear-gradient(90deg, rgba(34,184,200,0.22), rgba(109,94,247,0.22)), #2B2D33" }} />
+                      <span aria-hidden className="absolute inset-[2px] rounded-[10px]" style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.11), rgba(255,255,255,0.00) 46%, rgba(0,0,0,0.16))" }} />
+                      <span aria-hidden className="absolute inset-0 rounded-xl pointer-events-none" style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.26), inset 0 -1px 0 rgba(0,0,0,0.22)", background: "linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.00) 55%)", mixBlendMode: "screen" }} />
+                      <span aria-hidden className="absolute -left-8 -top-8 h-32 w-32 rounded-full blur-2xl pointer-events-none" style={{ background: "radial-gradient(circle, rgba(34,184,200,0.28), transparent 62%)" }} />
+                      <span aria-hidden className="absolute -right-10 -bottom-10 h-40 w-40 rounded-full blur-3xl pointer-events-none" style={{ background: "radial-gradient(circle, rgba(109,94,247,0.26), transparent 65%)" }} />
+                      <span aria-hidden className="absolute inset-0 rounded-xl pointer-events-none" style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -1px 0 rgba(0,0,0,0.26), 0 0 0 1px rgba(255,255,255,0.06)" }} />
                       <span className="relative z-10 flex items-center justify-center gap-2 w-full">
                         {isDeepScanning ? (
-                          <Loader2 
-                            className="w-3.5 h-3.5 shrink-0 animate-spin text-cyan-200" 
-                            style={{ filter: "drop-shadow(0 0 10px rgba(34,184,200,0.35))" }}
-                          />
+                          <Loader2 className="w-3.5 h-3.5 shrink-0 animate-spin text-cyan-200" style={{ filter: "drop-shadow(0 0 10px rgba(34,184,200,0.35))" }} />
                         ) : (
-                          <Sparkles 
-                            className="w-3.5 h-3.5 shrink-0 text-cyan-200" 
-                            style={{ filter: "drop-shadow(0 0 10px rgba(34,184,200,0.35))" }}
-                          />
+                          <Sparkles className="w-3.5 h-3.5 shrink-0 text-cyan-200" style={{ filter: "drop-shadow(0 0 10px rgba(34,184,200,0.35))" }} />
                         )}
                         <span className="min-w-0 truncate drop-shadow-[0_1px_0_rgba(0,0,0,0.35)]">
                           {isDeepScanning ? "Analyzing..." : "AI Update"}
@@ -1229,9 +1665,7 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  if (viewMode === 'scenario') {
-                    handleSaveScenarioCard();
-                  }
+                  if (viewMode === 'scenario') handleSaveScenarioCard();
                   handleSave();
                 }}
                 disabled={isSaving}
@@ -1243,749 +1677,21 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
           </div>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 min-h-0 bg-[#2a2a2f]">
-          <div className="p-6">
-          {viewMode === 'character' ? (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Left Column - Avatar & Basic Info */}
-              <div className="space-y-6">
-                {/* Avatar Section */}
-                <CollapsibleSection
-                  title="Avatar"
-                  isExpanded={expandedSections.avatar}
-                  onToggle={() => toggleSection('avatar')}
-                  collapsedContent={
-                    <CollapsedFieldSummary fields={[
-                      { label: 'Name', value: draft.name || character?.name },
-                      { label: 'Nicknames', value: draft.nicknames },
-                      { label: 'Age', value: draft.age },
-                      { label: 'Sex / Identity', value: draft.sexType },
-                      { label: 'Sexual Orientation', value: (draft as any).sexualOrientation },
-                      { label: 'Location', value: draft.location },
-                      { label: 'Current Mood', value: draft.currentMood },
-                      { label: 'Role Description', value: draft.roleDescription },
-                      { label: 'Controlled By', value: draft.controlledBy },
-                      { label: 'Character Type', value: draft.characterRole },
-                    ]} />
-                  }
-                >
-                  {/* Avatar Display */}
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="w-48 h-48 rounded-2xl overflow-hidden bg-zinc-800 border-2 border-ghost-white shadow-sm relative">
-                      {(isUploadingAvatar || isRegeneratingAvatar) ? (
-                        <div className="w-full h-full flex items-center justify-center bg-zinc-900">
-                          <Loader2 className="w-8 h-8 animate-spin text-zinc-400" />
-                        </div>
-                      ) : (draft.avatarDataUrl || character.avatarDataUrl) ? (
-                        <img 
-                          src={draft.avatarDataUrl || character.avatarDataUrl} 
-                          alt={draft.name || character.name} 
-                          className="w-full h-full object-cover"
-                          style={{ 
-                            objectPosition: `${(draft.avatarPosition?.x ?? character.avatarPosition?.x ?? 50)}% ${(draft.avatarPosition?.y ?? character.avatarPosition?.y ?? 50)}%` 
-                          }}
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center font-black text-zinc-500 text-4xl italic uppercase">
-                          {(draft.name || character.name)?.charAt(0) || '?'}
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Hidden file input */}
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleAvatarUpload}
-                    />
-                    
-                    {/* Premium Avatar Action Buttons */}
-                    <AvatarActionButtons
-                      onUploadFromDevice={() => fileInputRef.current?.click()}
-                      onSelectFromLibrary={(imageUrl) => {
-                        setDraft(prev => ({
-                          ...prev,
-                          avatarDataUrl: imageUrl,
-                          avatarPosition: { x: 50, y: 50 }
-                        }));
-                        
-                      }}
-                      onGenerateClick={handleRegenerateAvatar}
-                      disabled={isUploadingAvatar}
-                      isGenerating={isRegeneratingAvatar}
-                      isUploading={isUploadingAvatar}
-                    />
-                  </div>
-                  
-                  {/* Basic Info Fields - Stacked */}
-                  <div className="space-y-4 mt-6">
-                    {/* Name field - read-only with Change Name button */}
-                    <div className="space-y-1.5">
-                      <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Name</Label>
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 px-3 py-2 bg-zinc-900/50 rounded-md text-sm text-white font-medium border border-ghost-white">
-                          {draft.name || character?.name || 'Unnamed'}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setIsChangeNameModalOpen(true)}
-                          className="flex h-10 px-4 items-center justify-center gap-2
-                            rounded-xl border border-[hsl(var(--ui-border))] 
-                            bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
-                            text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider
-                            hover:bg-ghost-white active:bg-ghost-white
-                            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ghost-white
-                            transition-colors"
-                        >
-                          <Pencil className="w-3 h-3" />
-                          Change
-                        </button>
-                      </div>
-                    </div>
-                    <FieldInput
-                      label="Nicknames"
-                      value={draft.nicknames || ''}
-                      onChange={(v) => updateField('nicknames', v)}
-                      placeholder="Nicknames"
-                    />
-                    <FieldInput
-                      label="Age"
-                      value={draft.age || ''}
-                      onChange={(v) => updateField('age', v)}
-                      placeholder="25"
-                    />
-                    <FieldInput
-                      label="Sex / Identity"
-                      value={draft.sexType || ''}
-                      onChange={(v) => updateField('sexType', v)}
-                      placeholder="Female"
-                    />
-                    <FieldInput
-                      label="Sexual Orientation"
-                      value={(draft as any).sexualOrientation || ''}
-                      onChange={(v) => setDraft(prev => ({ ...prev, sexualOrientation: v }))}
-                      placeholder="Heterosexual, Bisexual, etc."
-                    />
-                    <FieldInput
-                      label="Location"
-                      value={draft.location || ''}
-                      onChange={(v) => updateField('location', v)}
-                      placeholder="Current location"
-                    />
-                    <FieldInput
-                      label="Current Mood"
-                      value={draft.currentMood || ''}
-                      onChange={(v) => updateField('currentMood', v)}
-                      placeholder="Happy"
-                    />
-                    <FieldTextarea
-                      label="Role Description"
-                      value={draft.roleDescription || ''}
-                      onChange={(v) => updateField('roleDescription', v)}
-                      placeholder="Character's role in the story..."
-                      rows={3}
-                    />
-
-                    {/* Control toggles - inside Avatar section */}
-                    <div className="space-y-3 pt-2 border-t border-black/35 mt-4">
-                      <div className="space-y-1.5">
-                        <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Controlled By</Label>
-                        <div className="flex p-1 bg-[#1c1c1f] rounded-lg shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)]">
-                          <button 
-                            type="button"
-                            onClick={() => updateField('controlledBy', 'AI')}
-                            className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded transition-all ${
-                              draft.controlledBy === 'AI' 
-                                ? 'bg-blue-500 text-white shadow-sm' 
-                                : 'text-zinc-500 hover:text-zinc-300'
-                            }`}
-                          >
-                            AI
-                          </button>
-                          <button 
-                            type="button"
-                            onClick={() => updateField('controlledBy', 'User')}
-                            className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded transition-all ${
-                              draft.controlledBy === 'User' 
-                                ? 'bg-blue-500 text-white shadow-sm' 
-                                : 'text-zinc-500 hover:text-zinc-300'
-                            }`}
-                          >
-                            User
-                          </button>
-                        </div>
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Character Type</Label>
-                        <div className="flex p-1 bg-[#1c1c1f] rounded-lg shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)]">
-                          <button 
-                            type="button"
-                            onClick={() => updateField('characterRole', 'Main')}
-                            className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded transition-all ${
-                              draft.characterRole === 'Main' 
-                                ? 'bg-blue-500 text-white shadow-sm' 
-                                : 'text-zinc-500 hover:text-zinc-300'
-                            }`}
-                          >
-                            Main
-                          </button>
-                          <button 
-                            type="button"
-                            onClick={() => updateField('characterRole', 'Side')}
-                            className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded transition-all ${
-                              draft.characterRole === 'Side' 
-                                ? 'bg-blue-500 text-white shadow-sm' 
-                                : 'text-zinc-500 hover:text-zinc-300'
-                            }`}
-                          >
-                            Side
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CollapsibleSection>
-              </div>
-
-              {/* Right Column - Trait Sections */}
-              <div className="lg:col-span-2 space-y-6">
-                {/* Physical Appearance */}
-                <CollapsibleSection
-                  title="Physical Appearance"
-                  isExpanded={expandedSections.physicalAppearance}
-                  onToggle={() => toggleSection('physicalAppearance')}
-                  collapsedContent={
-                    <CollapsedFieldSummary fields={[
-                      { label: 'Hair Color', value: draft.physicalAppearance?.hairColor },
-                      { label: 'Eye Color', value: draft.physicalAppearance?.eyeColor },
-                      { label: 'Build', value: draft.physicalAppearance?.build },
-                      { label: 'Body Hair', value: draft.physicalAppearance?.bodyHair },
-                      { label: 'Height', value: draft.physicalAppearance?.height },
-                      { label: 'Breasts', value: draft.physicalAppearance?.breastSize },
-                      { label: 'Genitalia', value: draft.physicalAppearance?.genitalia },
-                      { label: 'Skin Tone', value: draft.physicalAppearance?.skinTone },
-                      { label: 'Makeup', value: draft.physicalAppearance?.makeup },
-                      { label: 'Body Markings', value: draft.physicalAppearance?.bodyMarkings },
-                      { label: 'Temporary Conditions', value: draft.physicalAppearance?.temporaryConditions },
-                    ]} />
-                  }
-                >
-                  <HardcodedRow label="Hair Color" value={draft.physicalAppearance?.hairColor || ''} onChange={(v) => updatePhysicalAppearance('hairColor', v)} placeholder="Brown" />
-                  <HardcodedRow label="Eye Color" value={draft.physicalAppearance?.eyeColor || ''} onChange={(v) => updatePhysicalAppearance('eyeColor', v)} placeholder="Blue" />
-                  <HardcodedRow label="Build" value={draft.physicalAppearance?.build || ''} onChange={(v) => updatePhysicalAppearance('build', v)} placeholder="Athletic" />
-                  <HardcodedRow label="Body Hair" value={draft.physicalAppearance?.bodyHair || ''} onChange={(v) => updatePhysicalAppearance('bodyHair', v)} placeholder="Light" />
-                  <HardcodedRow label="Height" value={draft.physicalAppearance?.height || ''} onChange={(v) => updatePhysicalAppearance('height', v)} placeholder="5ft 8in" />
-                  <HardcodedRow label="Breasts" value={draft.physicalAppearance?.breastSize || ''} onChange={(v) => updatePhysicalAppearance('breastSize', v)} placeholder="Size, description" />
-                  <HardcodedRow label="Genitalia" value={draft.physicalAppearance?.genitalia || ''} onChange={(v) => updatePhysicalAppearance('genitalia', v)} placeholder="Description" />
-                  <HardcodedRow label="Skin Tone" value={draft.physicalAppearance?.skinTone || ''} onChange={(v) => updatePhysicalAppearance('skinTone', v)} placeholder="Fair" />
-                  <HardcodedRow label="Makeup" value={draft.physicalAppearance?.makeup || ''} onChange={(v) => updatePhysicalAppearance('makeup', v)} placeholder="Natural" />
-                  <HardcodedRow label="Body Markings" value={draft.physicalAppearance?.bodyMarkings || ''} onChange={(v) => updatePhysicalAppearance('bodyMarkings', v)} placeholder="Tattoos, scars..." />
-                  <HardcodedRow label="Temporary Conditions" value={draft.physicalAppearance?.temporaryConditions || ''} onChange={(v) => updatePhysicalAppearance('temporaryConditions', v)} placeholder="Injuries, etc." />
-                  {((draft.physicalAppearance as any)?._extras || []).map((extra: CharacterExtraRow) => (
-                    <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('physicalAppearance', extra.id, patch)} onDelete={() => deleteModalExtra('physicalAppearance', extra.id)} />
-                  ))}
-                  <button type="button" onClick={() => addModalExtra('physicalAppearance')} className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5">
-                    <Plus className="w-4 h-4" /> Add Row
-                  </button>
-                </CollapsibleSection>
-
-                {/* Currently Wearing */}
-                <CollapsibleSection
-                  title="Currently Wearing"
-                  isExpanded={expandedSections.currentlyWearing}
-                  onToggle={() => toggleSection('currentlyWearing')}
-                  collapsedContent={
-                    <CollapsedFieldSummary fields={[
-                      { label: 'Shirt / Top', value: draft.currentlyWearing?.top },
-                      { label: 'Pants / Bottoms', value: draft.currentlyWearing?.bottom },
-                      { label: 'Undergarments', value: draft.currentlyWearing?.undergarments },
-                      { label: 'Miscellaneous', value: draft.currentlyWearing?.miscellaneous },
-                    ]} />
-                  }
-                >
-                  <HardcodedRow label="Shirt / Top" value={draft.currentlyWearing?.top || ''} onChange={(v) => updateCurrentlyWearing('top', v)} placeholder="White blouse" />
-                  <HardcodedRow label="Pants / Bottoms" value={draft.currentlyWearing?.bottom || ''} onChange={(v) => updateCurrentlyWearing('bottom', v)} placeholder="Blue jeans" />
-                  <HardcodedRow label="Undergarments" value={draft.currentlyWearing?.undergarments || ''} onChange={(v) => updateCurrentlyWearing('undergarments', v)} placeholder="Description" />
-                  <HardcodedRow label="Miscellaneous" value={draft.currentlyWearing?.miscellaneous || ''} onChange={(v) => updateCurrentlyWearing('miscellaneous', v)} placeholder="Accessories, etc." />
-                  {((draft.currentlyWearing as any)?._extras || []).map((extra: CharacterExtraRow) => (
-                    <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('currentlyWearing', extra.id, patch)} onDelete={() => deleteModalExtra('currentlyWearing', extra.id)} />
-                  ))}
-                  <button type="button" onClick={() => addModalExtra('currentlyWearing')} className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5">
-                    <Plus className="w-4 h-4" /> Add Row
-                  </button>
-                </CollapsibleSection>
-
-                {/* Preferred Clothing */}
-                <CollapsibleSection
-                  title="Preferred Clothing"
-                  isExpanded={expandedSections.preferredClothing}
-                  onToggle={() => toggleSection('preferredClothing')}
-                  collapsedContent={
-                    <CollapsedFieldSummary fields={[
-                      { label: 'Casual', value: draft.preferredClothing?.casual },
-                      { label: 'Work', value: draft.preferredClothing?.work },
-                      { label: 'Sleep', value: draft.preferredClothing?.sleep },
-                      { label: 'Undergarments', value: draft.preferredClothing?.undergarments },
-                      { label: 'Miscellaneous', value: draft.preferredClothing?.miscellaneous },
-                    ]} />
-                  }
-                >
-                  <HardcodedRow label="Casual" value={draft.preferredClothing?.casual || ''} onChange={(v) => updatePreferredClothing('casual', v)} placeholder="Casual wear" />
-                  <HardcodedRow label="Work" value={draft.preferredClothing?.work || ''} onChange={(v) => updatePreferredClothing('work', v)} placeholder="Work attire" />
-                  <HardcodedRow label="Sleep" value={draft.preferredClothing?.sleep || ''} onChange={(v) => updatePreferredClothing('sleep', v)} placeholder="Sleepwear" />
-                  <HardcodedRow label="Undergarments" value={draft.preferredClothing?.undergarments || ''} onChange={(v) => updatePreferredClothing('undergarments', v)} placeholder="Preferred underwear" />
-                  <HardcodedRow label="Miscellaneous" value={draft.preferredClothing?.miscellaneous || ''} onChange={(v) => updatePreferredClothing('miscellaneous', v)} placeholder="Other preferences" />
-                  {((draft.preferredClothing as any)?._extras || []).map((extra: CharacterExtraRow) => (
-                    <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('preferredClothing', extra.id, patch)} onDelete={() => deleteModalExtra('preferredClothing', extra.id)} />
-                  ))}
-                  <button type="button" onClick={() => addModalExtra('preferredClothing')} className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5">
-                    <Plus className="w-4 h-4" /> Add Row
-                  </button>
-                </CollapsibleSection>
-
-                {/* Personality Section (Main characters only) */}
-                {!isSideCharacter && (
-                  <PersonalitySection
-                    personality={draft.mainPersonality || defaultPersonality}
-                    onChange={(personality) => setDraft(prev => ({ ...prev, mainPersonality: personality }))}
-                    isExpanded={expandedSections.personality}
-                    onToggle={() => toggleSection('personality')}
-                  />
-                )}
-
-                {/* Tone (Main characters only) */}
-                {!isSideCharacter && (
-                  <CollapsibleSection
-                    title="Tone"
-                    isExpanded={expandedSections.tone}
-                    onToggle={() => toggleSection('tone')}
-                  >
-                    {((draft.tone as any)?._extras || []).map((extra: CharacterExtraRow) => (
-                      <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('tone', extra.id, patch)} onDelete={() => deleteModalExtra('tone', extra.id)} />
-                    ))}
-                    <button type="button" onClick={() => addModalExtra('tone')} className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5">
-                      <Plus className="w-4 h-4" /> Add Row
-                    </button>
-                  </CollapsibleSection>
-                )}
-
-                {/* Background (Main characters only) */}
-                {!isSideCharacter && (
-                  <CollapsibleSection
-                    title="Background"
-                    isExpanded={expandedSections.background}
-                    onToggle={() => toggleSection('background')}
-                    collapsedContent={
-                      <CollapsedFieldSummary fields={[
-                        { label: 'Job / Occupation', value: (draft as any).mainBackground?.jobOccupation },
-                        { label: 'Education Level', value: (draft as any).mainBackground?.educationLevel },
-                        { label: 'Residence', value: (draft as any).mainBackground?.residence },
-                        { label: 'Hobbies', value: (draft as any).mainBackground?.hobbies },
-                        { label: 'Financial Status', value: (draft as any).mainBackground?.financialStatus },
-                        { label: 'Motivation', value: (draft as any).mainBackground?.motivation },
-                      ]} />
-                    }
-                  >
-                    <HardcodedRow label="Job / Occupation" value={(draft as any).mainBackground?.jobOccupation || ''} onChange={(v) => updateMainBackground('jobOccupation', v)} placeholder="Software Engineer" />
-                    <HardcodedRow label="Education Level" value={(draft as any).mainBackground?.educationLevel || ''} onChange={(v) => updateMainBackground('educationLevel', v)} placeholder="Bachelor's" />
-                    <HardcodedRow label="Residence" value={(draft as any).mainBackground?.residence || ''} onChange={(v) => updateMainBackground('residence', v)} placeholder="Downtown apartment" />
-                    <HardcodedRow label="Hobbies" value={(draft as any).mainBackground?.hobbies || ''} onChange={(v) => updateMainBackground('hobbies', v)} placeholder="Reading, Hiking" />
-                    <HardcodedRow label="Financial Status" value={(draft as any).mainBackground?.financialStatus || ''} onChange={(v) => updateMainBackground('financialStatus', v)} placeholder="Middle class" />
-                    <HardcodedRow label="Motivation" value={(draft as any).mainBackground?.motivation || ''} onChange={(v) => updateMainBackground('motivation', v)} placeholder="What drives this character" />
-                    {(((draft as any).mainBackground as any)?._extras || []).map((extra: CharacterExtraRow) => (
-                      <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('background', extra.id, patch)} onDelete={() => deleteModalExtra('background', extra.id)} />
-                    ))}
-                    <button type="button" onClick={() => addModalExtra('background')} className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5">
-                      <Plus className="w-4 h-4" /> Add Row
-                    </button>
-                  </CollapsibleSection>
-                )}
-
-                {/* Key Life Events (Main characters only) */}
-                {!isSideCharacter && (
-                  <CollapsibleSection
-                    title="Key Life Events"
-                    isExpanded={expandedSections.keyLifeEvents}
-                    onToggle={() => toggleSection('keyLifeEvents')}
-                  >
-                    {((draft.keyLifeEvents as any)?._extras || []).map((extra: CharacterExtraRow) => (
-                      <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('keyLifeEvents', extra.id, patch)} onDelete={() => deleteModalExtra('keyLifeEvents', extra.id)} />
-                    ))}
-                    <button type="button" onClick={() => addModalExtra('keyLifeEvents')} className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5">
-                      <Plus className="w-4 h-4" /> Add Row
-                    </button>
-                  </CollapsibleSection>
-                )}
-
-                {/* Relationships (Main characters only) */}
-                {!isSideCharacter && (
-                  <CollapsibleSection
-                    title="Relationships"
-                    isExpanded={expandedSections.relationships}
-                    onToggle={() => toggleSection('relationships')}
-                  >
-                    {((draft.relationships as any)?._extras || []).map((extra: CharacterExtraRow) => (
-                      <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('relationships', extra.id, patch)} onDelete={() => deleteModalExtra('relationships', extra.id)} />
-                    ))}
-                    <button type="button" onClick={() => addModalExtra('relationships')} className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5">
-                      <Plus className="w-4 h-4" /> Add Row
-                    </button>
-                  </CollapsibleSection>
-                )}
-
-                {/* Secrets (Main characters only) */}
-                {!isSideCharacter && (
-                  <CollapsibleSection
-                    title="Secrets"
-                    isExpanded={expandedSections.secrets}
-                    onToggle={() => toggleSection('secrets')}
-                  >
-                    {((draft.secrets as any)?._extras || []).map((extra: CharacterExtraRow) => (
-                      <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('secrets', extra.id, patch)} onDelete={() => deleteModalExtra('secrets', extra.id)} />
-                    ))}
-                    <button type="button" onClick={() => addModalExtra('secrets')} className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5">
-                      <Plus className="w-4 h-4" /> Add Row
-                    </button>
-                  </CollapsibleSection>
-                )}
-
-                {/* Fears (Main characters only) */}
-                {!isSideCharacter && (
-                  <CollapsibleSection
-                    title="Fears"
-                    isExpanded={expandedSections.fears}
-                    onToggle={() => toggleSection('fears')}
-                  >
-                    {((draft.fears as any)?._extras || []).map((extra: CharacterExtraRow) => (
-                      <ModalExtraRow key={extra.id} extra={extra} onUpdate={(patch) => updateModalExtra('fears', extra.id, patch)} onDelete={() => deleteModalExtra('fears', extra.id)} />
-                    ))}
-                    <button type="button" onClick={() => addModalExtra('fears')} className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5">
-                      <Plus className="w-4 h-4" /> Add Row
-                    </button>
-                  </CollapsibleSection>
-                )}
-
-                {/* Character Goals Section (Main characters only) */}
-                {!isSideCharacter && (
-                  <CharacterGoalsSection
-                    goals={draft.goals || []}
-                    onChange={(goals) => setDraft(prev => ({ ...prev, goals }))}
-                    isExpanded={expandedSections.goals}
-                    onToggle={() => toggleSection('goals')}
-                  />
-                )}
-
-                {/* Side Character Specific: Background */}
-                {isSideCharacter && (
-                  <CollapsibleSection
-                    title="Background"
-                    isExpanded={expandedSections.background}
-                    onToggle={() => toggleSection('background')}
-                    collapsedContent={
-                      <CollapsedFieldSummary fields={[
-                        { label: 'Relationship Status', value: draft.background?.relationshipStatus },
-                        { label: 'Residence', value: draft.background?.residence },
-                        { label: 'Education Level', value: draft.background?.educationLevel },
-                      ]} />
-                    }
-                  >
-                    <FieldInput
-                      label="Relationship Status"
-                      value={draft.background?.relationshipStatus || ''}
-                      onChange={(v) => updateBackground('relationshipStatus', v)}
-                      placeholder="Single"
-                    />
-                    <FieldInput
-                      label="Residence"
-                      value={draft.background?.residence || ''}
-                      onChange={(v) => updateBackground('residence', v)}
-                      placeholder="Where they live"
-                    />
-                    <FieldInput
-                      label="Education Level"
-                      value={draft.background?.educationLevel || ''}
-                      onChange={(v) => updateBackground('educationLevel', v)}
-                      placeholder="College"
-                    />
-                  </CollapsibleSection>
-                )}
-
-                {/* Side Character Specific: Personality */}
-                {isSideCharacter && (
-                  <CollapsibleSection
-                    title="Personality"
-                    isExpanded={expandedSections.personality}
-                    onToggle={() => toggleSection('personality')}
-                    collapsedContent={
-                      <CollapsedFieldSummary fields={[
-                        { label: 'Traits', value: draft.personality?.traits?.join(', ') },
-                        { label: 'Desires', value: draft.personality?.desires },
-                        { label: 'Fears', value: draft.personality?.fears },
-                        { label: 'Secrets', value: draft.personality?.secrets },
-                        { label: 'Miscellaneous', value: draft.personality?.miscellaneous },
-                      ]} />
-                    }
-                  >
-                    <FieldInput
-                      label="Traits"
-                      value={draft.personality?.traits?.join(', ') || ''}
-                      onChange={(v) => updatePersonality('traits', v.split(',').map(t => t.trim()).filter(Boolean))}
-                      placeholder="Friendly, Curious, Brave"
-                    />
-                    <FieldInput
-                      label="Desires"
-                      value={draft.personality?.desires || ''}
-                      onChange={(v) => updatePersonality('desires', v)}
-                      placeholder="What they want"
-                    />
-                    <FieldInput
-                      label="Fears"
-                      value={draft.personality?.fears || ''}
-                      onChange={(v) => updatePersonality('fears', v)}
-                      placeholder="What they fear"
-                    />
-                    <FieldTextarea
-                      label="Secrets"
-                      value={draft.personality?.secrets || ''}
-                      onChange={(v) => updatePersonality('secrets', v)}
-                      placeholder="Hidden information about this character..."
-                      rows={2}
-                    />
-                    <FieldTextarea
-                      label="Miscellaneous"
-                      value={draft.personality?.miscellaneous || ''}
-                      onChange={(v) => updatePersonality('miscellaneous', v)}
-                      placeholder="Other personality notes..."
-                      rows={2}
-                    />
-                  </CollapsibleSection>
-                )}
-
-                {/* Custom Sections (Main characters only) - Each as its own container */}
-                {!isSideCharacter && draft.sections?.map((section) => (
-                  <div key={section.id} className="w-full bg-[#2a2a2f] rounded-[24px] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]">
-                    {/* Dark blue gradient header with editable title */}
-                    <div className="relative bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 px-5 py-3 flex items-center justify-between shadow-lg overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-b from-white/[0.12] to-transparent h-1/2 pointer-events-none" />
-                      <AutoResizeTextarea
-                        value={section.title}
-                        onChange={(v) => updateSectionTitle(section.id, v)}
-                        placeholder="Category name"
-                        className="bg-transparent border-none text-white text-xl font-bold tracking-[-0.015em] placeholder:text-[rgba(248,250,252,0.3)] focus:outline-none flex-1 mr-2 relative z-[1]"
-                      />
-                      <div className="flex items-center gap-2 shrink-0 relative z-[1]">
-                        <button 
-                          type="button"
-                          onClick={() => toggleCustomSection(section.id)} 
-                          className="text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-white/10"
-                        >
-                          {(expandedCustomSections[section.id] ?? true) ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
-                        </button>
-                        <button 
-                          type="button"
-                          tabIndex={-1}
-                          onClick={() => deleteSection(section.id)} 
-                          className="text-red-500 hover:text-red-400 p-1 rounded-md hover:bg-red-900/30"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                    {/* Content */}
-                    <div className="p-5">
-                      <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
-                        {(expandedCustomSections[section.id] ?? true) ? (
-                          <div className="space-y-4">
-                            {section.type === 'freeform' ? (
-                              <>
-                              {(() => {
-                                const items = section.items.length > 0
-                                  ? section.items
-                                  : section.freeformValue
-                                    ? [{ id: `item-${Date.now()}`, label: '', value: section.freeformValue, createdAt: Date.now(), updatedAt: Date.now() }]
-                                    : [{ id: `item-${Date.now()}`, label: '', value: '', createdAt: Date.now(), updatedAt: Date.now() }];
-                                if (section.items.length === 0 && items.length > 0) {
-                                  setDraft(prev => ({
-                                    ...prev,
-                                    sections: prev.sections?.map(s => s.id === section.id ? { ...s, items, freeformValue: undefined } : s)
-                                  }));
-                                }
-                                return items.map(item => (
-                                  <div key={item.id} className="space-y-2">
-                                    <div className="flex items-center gap-2">
-                                      <AutoResizeTextarea
-                                        value={item.label}
-                                        onChange={(v) => {
-                                          const nextItems = (section.items.length > 0 ? section.items : items).map(it => it.id === item.id ? { ...it, label: v } : it);
-                                          setDraft(prev => ({
-                                            ...prev,
-                                            sections: prev.sections?.map(s => s.id === section.id ? { ...s, items: nextItems } : s)
-                                          }));
-                                        }}
-                                        placeholder="LABEL"
-                                        className="flex-1 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border-t border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
-                                      />
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          const nextItems = (section.items.length > 0 ? section.items : items).filter(it => it.id !== item.id);
-                                          setDraft(prev => ({
-                                            ...prev,
-                                            sections: prev.sections?.map(s => s.id === section.id ? { ...s, items: nextItems.length > 0 ? nextItems : [{ id: `item-${Date.now()}`, label: '', value: '', createdAt: Date.now(), updatedAt: Date.now() }] } : s)
-                                          }));
-                                        }}
-                                        className="text-red-500 hover:text-red-400 p-1.5 rounded-md hover:bg-red-900/30"
-                                      >
-                                        <X className="w-4 h-4" />
-                                      </button>
-                                    </div>
-                                    <AutoResizeTextarea
-                                      value={item.value}
-                                      onChange={(v) => {
-                                        const nextItems = (section.items.length > 0 ? section.items : items).map(it => it.id === item.id ? { ...it, value: v } : it);
-                                        setDraft(prev => ({
-                                          ...prev,
-                                          sections: prev.sections?.map(s => s.id === section.id ? { ...s, items: nextItems } : s)
-                                        }));
-                                      }}
-                                      placeholder="Write your content here..."
-                                      className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border-t border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                                      rows={4}
-                                    />
-                                  </div>
-                                ));
-                              })()}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const currentItems = section.items.length > 0 ? section.items : [{ id: `item-${Date.now()}`, label: '', value: section.freeformValue || '', createdAt: Date.now(), updatedAt: Date.now() }];
-                                  setDraft(prev => ({
-                                    ...prev,
-                                    sections: prev.sections?.map(s => s.id === section.id ? { ...s, items: [...currentItems, { id: `item-${Date.now() + 1}`, label: '', value: '', createdAt: Date.now(), updatedAt: Date.now() }], freeformValue: undefined } : s)
-                                  }));
-                                }}
-                                className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5"
-                              >
-                                <Plus className="w-4 h-4" /> ADD TEXT FIELD
-                              </button>
-                              </>
-                            ) : (
-                              <>
-                            {section.items.map((item) => (
-                              <div key={item.id}>
-                                <div className="flex items-start gap-2">
-                                  <div className="flex-1 flex gap-2 min-w-0">
-                                    <div className="w-1/3 min-w-0">
-                                      <AutoResizeTextarea
-                                        value={item.label}
-                                        onChange={(v) => updateSectionItem(section.id, item.id, 'label', v)}
-                                         placeholder="LABEL"
-                                         className="w-full px-3 py-2 rounded-lg text-xs font-bold bg-[#1c1c1f] border-t border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
-                                      />
-                                    </div>
-                                    <AutoResizeTextarea
-                                      value={item.value}
-                                      onChange={(v) => updateSectionItem(section.id, item.id, 'value', v)}
-                                      placeholder="Description"
-                                      className="flex-1 min-w-0 px-3 py-2 rounded-lg text-sm bg-zinc-900/50 border border-ghost-white text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
-                                    />
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => removeItemFromSection(section.id, item.id)}
-                                    className="text-red-500 hover:text-red-400 p-1.5 rounded-md hover:bg-red-900/30 mt-1"
-                                  >
-                                    <X className="w-4 h-4" />
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
-                            <button
-                              type="button"
-                              onClick={() => addItemToSection(section.id)}
-                              className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5"
-                            >
-                              <Plus className="w-4 h-4" /> ADD ROW
-                            </button>
-                              </>
-                            )}
-                          </div>
-                        ) : (
-                          // Collapsed view - show summary
-                          (() => {
-                            if (section.type === 'freeform') {
-                              const items = section.items.length > 0 ? section.items : (section.freeformValue ? [{ id: 'legacy', label: '', value: section.freeformValue }] : []);
-                              return items.length > 0 && items.some(it => it.value)
-                                ? <div className="space-y-2">{items.filter(it => it.value).map(it => (
-                                    <div key={it.id}>
-                                      {it.label && <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{it.label}</span>}
-                                      <p className="text-sm text-zinc-400 whitespace-pre-wrap">{it.value}</p>
-                                    </div>
-                                  ))}</div>
-                                : <p className="text-zinc-500 text-sm italic">No content</p>;
-                            }
-                            const hasAnyValue = section.items.some(item => item.label || item.value);
-                            if (!hasAnyValue) {
-                              return <p className="text-zinc-500 text-sm italic">No items</p>;
-                            }
-                            return (
-                              <div className="space-y-4 w-full min-w-0">
-                                {section.items.filter(item => item.label || item.value).map((item) => (
-                                  <div key={item.id} className="space-y-1 w-full min-w-0">
-                                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block break-words">
-                                      {item.label || 'Untitled'}
-                                    </span>
-                                    <p className="text-sm text-zinc-400 break-words whitespace-pre-wrap">{item.value || '—'}</p>
-                                  </div>
-                                ))}
-                              </div>
-                            );
-                          })()
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-
-                {/* Add Category button outside containers */}
-                {!isSideCharacter && (
-                  <>
-                  <button
-                    type="button"
-                    onClick={() => setShowCategoryTypeModal(true)}
-                    className="w-full flex h-10 px-6 items-center justify-center gap-2
-                      rounded-xl border border-[hsl(var(--ui-border))] 
-                      bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)]
-                      text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider
-                      hover:bg-ghost-white active:bg-ghost-white disabled:opacity-50
-                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ghost-white
-                      transition-colors"
-                  >
-                    <Plus className="w-4 h-4" /> Add Category
-                  </button>
-                  <CustomContentTypeModal
-                    open={showCategoryTypeModal}
-                    onClose={() => setShowCategoryTypeModal(false)}
-                    onSelect={(type) => addNewSection(type as 'structured' | 'freeform')}
-                  />
-                  </>
-                )}
-              </div>
+        {/* Body */}
+        {viewMode === 'character' ? (
+          isSideCharacter ? renderSideCharacterContent() : renderMainCharacterContent()
+        ) : (
+          <ScrollArea className="flex-1 min-h-0 bg-[#1a1b20]">
+            <div className="p-6">
+              <ScenarioCardView
+                scenarioDraft={scenarioDraft}
+                onUpdateScenarioDraft={setScenarioDraft}
+                expandedSections={expandedSections}
+                toggleSection={toggleSection}
+              />
             </div>
-          ) : (
-            /* ========= SCENARIO CARD VIEW ========= */
-            <ScenarioCardView
-              scenarioDraft={scenarioDraft}
-              onUpdateScenarioDraft={setScenarioDraft}
-              expandedSections={expandedSections}
-              toggleSection={toggleSection}
-            />
-          )}
-          </div>
-        </ScrollArea>
-
+          </ScrollArea>
+        )}
       </DialogContent>
 
       {/* Change Name Modal */}
@@ -1994,20 +1700,12 @@ export const CharacterEditModal: React.FC<CharacterEditModalProps> = ({
         onOpenChange={setIsChangeNameModalOpen}
         currentName={draft.name || character?.name || ''}
         onSave={(newName) => {
-          const oldName = draft.name || character?.name || '';
-          
-          // Add old name to hidden previousNames array (if different and non-empty)
-          let updatedPreviousNames = [...(draft.previousNames || [])];
-          if (oldName && oldName !== newName && !updatedPreviousNames.includes(oldName)) {
-            updatedPreviousNames.push(oldName);
-          }
-          
           setDraft(prev => ({
             ...prev,
             name: newName,
-            previousNames: updatedPreviousNames,
+            previousNames: [...(prev.previousNames || []), prev.name || character?.name || ''].filter(Boolean)
           }));
-          
+          setIsChangeNameModalOpen(false);
         }}
       />
     </Dialog>
