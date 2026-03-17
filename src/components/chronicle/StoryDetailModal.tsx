@@ -247,7 +247,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
             {/* Left Column - Cover Image + Actions */}
             <div className="md:w-[420px] flex-shrink-0 p-6 flex flex-col">
               {/* Cover Image with Badge Overlay */}
-              <div className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl bg-[#2a2a2f]">
+              <div className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl bg-[#2e2e33]">
                 {coverImage ? (
                   <img
                     src={coverImage}
