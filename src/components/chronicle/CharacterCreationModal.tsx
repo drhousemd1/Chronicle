@@ -34,40 +34,36 @@ export const CharacterCreationModal: React.FC<CharacterCreationModalProps> = ({ 
             type="button"
             onClick={handleImport}
             className={cn(
-              "group flex flex-col items-center gap-3 p-5 rounded-2xl bg-[#2e2e33] border-2 border-transparent",
+              "group flex flex-col items-center text-center rounded-[28px] bg-[#2e2e33] border-2 border-transparent px-6 py-7",
               "shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]",
-              "hover:border-blue-500 transition-all cursor-pointer text-center"
+              "hover:border-blue-500 transition-all cursor-pointer"
             )}
           >
-            <div className="w-12 h-12 rounded-[14px] bg-[#1c1c1f] border-t border-black/35 shadow-[inset_0_2px_6px_rgba(0,0,0,0.40)] flex items-center justify-center">
-              <Users className="w-5 h-5 text-white" />
+            <div className="w-14 h-14 rounded-3xl bg-[#1c1c1f] border-t border-black/35 shadow-[inset_0_2px_6px_rgba(0,0,0,0.40)] flex items-center justify-center">
+              <Users className="w-6 h-6 text-white" />
             </div>
-            <div>
-              <div className="text-white font-bold text-sm">Import from Library</div>
-              <p className="text-zinc-400 text-xs mt-1 leading-relaxed">
-                Browse and import an existing character
-              </p>
-            </div>
+            <div className="text-white text-base font-bold mt-5">Import from Library</div>
+            <p className="text-zinc-400 text-xs mt-2 leading-relaxed">
+              Browse and import an existing character
+            </p>
           </button>
 
           <button
             type="button"
             onClick={handleCreate}
             className={cn(
-              "group flex flex-col items-center gap-3 p-5 rounded-2xl bg-[#2e2e33] border-2 border-transparent",
+              "group flex flex-col items-center text-center rounded-[28px] bg-[#2e2e33] border-2 border-transparent px-6 py-7",
               "shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]",
-              "hover:border-purple-500 transition-all cursor-pointer text-center"
+              "hover:border-purple-500 transition-all cursor-pointer"
             )}
           >
-            <div className="w-12 h-12 rounded-[14px] bg-[#1c1c1f] border-t border-black/35 shadow-[inset_0_2px_6px_rgba(0,0,0,0.40)] flex items-center justify-center">
-              <Plus className="w-5 h-5 text-white" />
+            <div className="w-14 h-14 rounded-3xl bg-[#1c1c1f] border-t border-black/35 shadow-[inset_0_2px_6px_rgba(0,0,0,0.40)] flex items-center justify-center">
+              <Plus className="w-6 h-6 text-white" />
             </div>
-            <div>
-              <div className="text-white font-bold text-sm">+ New Character</div>
-              <p className="text-zinc-400 text-xs mt-1 leading-relaxed">
-                Create a brand new character from scratch
-              </p>
-            </div>
+            <div className="text-white text-base font-bold mt-5">+ New Character</div>
+            <p className="text-zinc-400 text-xs mt-2 leading-relaxed">
+              Create a brand new character from scratch
+            </p>
           </button>
         </div>
       </DialogContent>
