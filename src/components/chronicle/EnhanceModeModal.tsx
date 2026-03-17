@@ -19,9 +19,9 @@ export const EnhanceModeModal: React.FC<EnhanceModeModalProps> = ({ open, onClos
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="sm:max-w-[520px] bg-[#2a2a2f] border-0 rounded-[24px] p-0 gap-0 shadow-[0_20px_50px_rgba(0,0,0,0.55),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)] overflow-hidden [&>button]:hidden">
-        <div className="relative bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] px-5 py-4 border-t border-white/20 shadow-[0_6px_16px_rgba(0,0,0,0.35)]">
+        <div className="relative bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] px-5 py-3 border-t border-white/20 shadow-lg">
           <div className="absolute inset-0 bg-gradient-to-b from-white/[0.08] to-transparent h-1/2 pointer-events-none" />
-          <h3 className="relative z-[1] text-white text-[16px] font-black uppercase tracking-[0.08em]">Enhancement Style</h3>
+          <h3 className="relative z-[1] text-white text-xl font-bold tracking-[-0.015em]">Enhancement Style</h3>
         </div>
         <div className="p-4 grid grid-cols-2 gap-3">
           <button
