@@ -1,5 +1,5 @@
 import React from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContentBare } from '@/components/ui/dialog';
 
 /* ═══════════════════════ TYPES ═══════════════════════ */
 
