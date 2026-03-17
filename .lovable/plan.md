@@ -1,40 +1,53 @@
 
+# Sandbox Feature Transfer — Master Tracker
 
-# Rebuild CharacterPicker: Tile Cards + Search Bar + Chooser Border Fix
+## Source Documents
+- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
+- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
 
-## Three issues to fix
+## Features Being Transferred
+| ID | Feature | Status |
+|----|---------|--------|
+| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
+| B | Story Transfer Library (story-transfer.ts) | ✅ |
+| A | UI Audit System (schema, utils, findings, page) | 🔄 |
+| B | Story Export/Import Modals | ✅ |
+| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
+| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
+| - | StyleGuideTool.tsx audit button | ⬜ |
+| - | App.tsx route wiring | ⬜ |
+| - | Index.tsx full wiring | ⬜ |
 
-### 1. Search bar — must match the page header pill style
-**Source of truth**: `src/pages/Index.tsx:1871`
-- Wrapper: `bg-[#2b2b2e] rounded-full p-1 border border-[#2b2b2e]`
-- Input: `h-7 w-full px-3 py-1 text-xs font-bold rounded-full bg-transparent text-white placeholder:text-zinc-500 focus:outline-none`
+## Prompt Execution Status
 
-Currently the CharacterPicker search uses a rectangular `bg-[#1c1c1f] border border-black/35 rounded-lg` input. Replace with the pill-shaped search bar.
+| # | Target File(s) | Status | Notes |
+|---|---------------|--------|-------|
+| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
+| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
+| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
+| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
+| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
+| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
+| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
+| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
+| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
+| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
+| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
+| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
+| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
+| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
 
-### 2. Character cards — must match the Story Builder roster tiles
-**Source of truth**: `src/components/chronicle/WorldTab.tsx:175-239`
-
-Current cards are flat horizontal rows with small avatar thumbnails and text. They need to become image-first tiles matching the WorldTab roster:
-
-- **Outer**: `group relative overflow-hidden rounded-2xl bg-black h-[140px] border border-[#4a5f7f]` with click-to-expand full image
-- **Image**: `w-full h-full object-cover` using `objectPosition` from `avatarPosition`
-- **Hover overlay**: `bg-black/0 group-hover:bg-black/25`
-- **Name**: Bottom-left overlay — `text-sm font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]` (no User/AI badge)
-- **Import button**: Top-right, styled like the "Done" reposition button from `CharactersTab.tsx:1468`:
-  `rounded-md bg-black/55 border border-white/20 px-2 py-1 text-[9px] font-bold text-white hover:bg-black/70`
-  Label: "Import"
-- **Click-to-expand**: Same pattern — click tile to toggle between `h-[140px]` cropped and `h-auto object-contain` full view
-- **No-avatar fallback**: `bg-gradient-to-br from-zinc-800 to-zinc-900 font-black text-5xl italic uppercase text-slate-500` with first letter
-
-### 3. ChooserModal hover borders — all must use blue-500
-**Files**: `CharacterCreationModal.tsx:25`, `CustomContentTypeModal.tsx:25`, `EnhanceModeModal.tsx:26`, `StyleGuideEditsModal.tsx:128`
-
-All options currently set `hoverColor: 'purple-500'` on the right-side option. Change every instance to `'blue-500'` (or remove `hoverColor` since blue-500 is the default).
-
-## Files to edit
-1. **`src/components/chronicle/CharacterPicker.tsx`** — Replace search bar markup and completely rebuild the character card grid to use image-first tiles with expand/collapse
-2. **`src/components/chronicle/CharacterCreationModal.tsx`** — Remove `hoverColor: 'purple-500'`
-3. **`src/components/chronicle/CustomContentTypeModal.tsx`** — Remove `hoverColor: 'purple-500'`
-4. **`src/components/chronicle/EnhanceModeModal.tsx`** — Remove `hoverColor: 'purple-500'`
-5. **`src/components/admin/styleguide/StyleGuideEditsModal.tsx`** — Remove `hoverColor: 'purple-500'`
-
+## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
+- `src/types.ts`: line 11507
+- `src/utils.ts`: line 12138
+- `src/lib/story-transfer.ts`: line 9812
+- `src/lib/ui-audit-schema.ts`: line 21329
+- `src/lib/ui-audit-utils.ts`: line 21565
+- `src/data/ui-audit-findings.ts`: line 18967
+- `StoryExportFormatModal.tsx`: line 9642
+- `StoryImportModeModal.tsx`: line 9731
+- `CharactersTab.tsx`: line 2893
+- `ChatInterfaceTab.tsx`: line 5004
+- `src/pages/style-guide/ui-audit.tsx`: line 17867
+- `src/App.tsx`: line 95
+- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout
