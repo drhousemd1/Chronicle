@@ -22,7 +22,7 @@ const OPTIONS: ChooserOption[] = [
     icon: <AlignLeft className="w-5 h-5 text-white" />,
     label: 'Freeform',
     description: 'A single open text field like Story Premise',
-    hoverColor: 'purple-500',
+    hoverColor: 'blue-500',
   },
 ];
 

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Character } from '@/types';
 import { CharacterSummary, fetchCharacterById } from '@/services/supabase-data';
 import { Dialog, DialogContentBare } from '@/components/ui/dialog';
-import { Loader2, X } from 'lucide-react';
+import { Loader2, X, Search } from 'lucide-react';
 
 interface CharacterPickerProps {
   summaries: CharacterSummary[];
@@ -14,23 +14,34 @@ interface CharacterPickerProps {
 export function CharacterPicker({ summaries, onSelect, onClose }: CharacterPickerProps) {
   const [search, setSearch] = useState('');
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const filtered = summaries.filter(c => 
     c.name.toLowerCase().includes(search.toLowerCase()) || 
     c.tags.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleSelect = async (summary: CharacterSummary) => {
+  const handleSelect = async (e: React.MouseEvent, summary: CharacterSummary) => {
+    e.stopPropagation();
     if (loadingId) return;
     setLoadingId(summary.id);
     try {
       const full = await fetchCharacterById(summary.id);
       if (full) onSelect(full);
-    } catch (e) {
-      console.error('Failed to load character:', e);
+    } catch (err) {
+      console.error('Failed to load character:', err);
     } finally {
       setLoadingId(null);
     }
+  };
+
+  const toggleExpand = (id: string) => {
+    setExpandedId(prev => prev === id ? null : id);
+  };
+
+  const getObjectPosition = (pos?: { x: number; y: number }) => {
+    if (!pos) return '50% 50%';
+    return `${pos.x}% ${pos.y}%`;
   };
 
   return (
@@ -54,49 +65,81 @@ export function CharacterPicker({ summaries, onSelect, onClose }: CharacterPicke
           </button>
         </div>
 
-        {/* ── Search bar ── */}
+        {/* ── Pill search bar ── */}
         <div className="p-4">
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name or tags..."
-            className="w-full bg-[#1c1c1f] border border-black/35 rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-blue-500 transition-colors"
-          />
+          <div className="bg-[#2b2b2e] rounded-full p-1 border border-[#2b2b2e] flex items-center gap-2 px-3">
+            <Search className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by name or tags..."
+              className="h-7 w-full px-1 py-1 text-xs font-bold rounded-full bg-transparent text-white placeholder:text-zinc-500 focus:outline-none"
+            />
+          </div>
         </div>
 
-        {/* ── Character grid ── */}
+        {/* ── Character tile grid ── */}
         <div className="flex-1 overflow-y-auto px-4 pb-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {filtered.map(c => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => handleSelect(c)}
-                className={`group text-left cursor-pointer rounded-2xl bg-[#2e2e33] border-2 border-transparent p-4 transition-all hover:border-blue-500/30 shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)] flex items-center gap-4 ${loadingId === c.id ? 'opacity-70 pointer-events-none' : ''}`}
-              >
-                <div className="w-14 h-14 shrink-0 rounded-xl bg-[#1c1c1f] border border-black/35 overflow-hidden">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {filtered.map(c => {
+              const isExpanded = expandedId === c.id;
+              const isLoading = loadingId === c.id;
+              return (
+                <div
+                  key={c.id}
+                  className={`group relative overflow-hidden rounded-2xl bg-black border border-[#4a5f7f] cursor-pointer transition-[height,object-fit] duration-300 ${isExpanded ? '' : 'h-[140px]'}`}
+                  onClick={() => toggleExpand(c.id)}
+                >
+                  {/* Image or fallback */}
                   {c.avatarUrl ? (
-                    <img src={c.avatarUrl} className="w-full h-full object-cover" alt={c.name} />
+                    <img
+                      src={c.avatarUrl}
+                      alt={c.name}
+                      className={`w-full transition-[height,object-fit] duration-300 ${isExpanded ? 'h-auto object-contain' : 'h-full object-cover'}`}
+                      style={{ objectPosition: isExpanded ? undefined : getObjectPosition(c.avatarPosition) }}
+                    />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center font-bold text-zinc-500 text-lg">
-                      {c.name.charAt(0)}
+                    <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center">
+                      <span className="font-black text-5xl italic uppercase text-slate-500">
+                        {c.name.charAt(0)}
+                      </span>
                     </div>
                   )}
+
+                  {/* Hover overlay */}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors pointer-events-none" />
+
+                  {/* Import button — top right */}
+                  <button
+                    type="button"
+                    onClick={(e) => handleSelect(e, c)}
+                    disabled={isLoading}
+                    className="absolute top-2 right-2 z-10 rounded-md bg-black/55 border border-white/20 px-2 py-1 text-[9px] font-bold text-white hover:bg-black/70 transition-colors opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100 transition-all duration-150 disabled:opacity-50"
+                  >
+                    {isLoading ? (
+                      <span className="flex items-center gap-1">
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        Loading
+                      </span>
+                    ) : (
+                      'Import'
+                    )}
+                  </button>
+
+                  {/* Name — bottom left */}
+                  <div className="absolute bottom-0 left-0 right-0 p-2 pointer-events-none">
+                    <p className="text-sm font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)] truncate">
+                      {c.name}
+                    </p>
+                    {c.tags && (
+                      <p className="text-[10px] text-zinc-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)] truncate mt-0.5">
+                        {c.tags}
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <h3 className="font-bold text-white truncate group-hover:text-blue-400 transition-colors text-sm">{c.name}</h3>
-                  <p className="text-xs text-zinc-400 truncate mt-0.5">{c.tags || "No tags"}</p>
-                  {loadingId === c.id ? (
-                    <div className="flex items-center gap-1 mt-1">
-                      <Loader2 className="w-3 h-3 animate-spin text-blue-500" />
-                      <span className="text-[10px] text-blue-500 font-bold uppercase tracking-wider">Loading...</span>
-                    </div>
-                  ) : (
-                    <p className="text-[10px] text-zinc-500 mt-1 uppercase tracking-wider font-bold">Import →</p>
-                  )}
-                </div>
-              </button>
-            ))}
+              );
+            })}
             {filtered.length === 0 && (
               <div className="col-span-full py-12 text-center text-zinc-500">
                 <p>No matching characters found in library.</p>

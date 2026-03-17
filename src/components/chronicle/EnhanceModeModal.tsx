@@ -23,7 +23,7 @@ const OPTIONS: ChooserOption[] = [
     icon: <AlignLeft className="w-5 h-5 text-white" />,
     label: 'Detailed',
     description: '1-2 sentence vivid description for immersive roleplay',
-    hoverColor: 'purple-500',
+    hoverColor: 'blue-500',
   },
 ];
 

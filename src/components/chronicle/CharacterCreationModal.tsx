@@ -22,7 +22,7 @@ const OPTIONS: ChooserOption[] = [
     icon: <Plus className="w-5 h-5 text-white" />,
     label: '+ New Character',
     description: 'Create a brand new character from scratch',
-    hoverColor: 'purple-500',
+    hoverColor: 'blue-500',
   },
 ];
 

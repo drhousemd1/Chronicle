@@ -125,7 +125,7 @@ export const KeepOrEditModal: React.FC<KeepOrEditModalProps> = ({
       icon: <Pencil className="w-5 h-5 text-white" />,
       label: 'Flag for Edit',
       description: 'Add notes on what needs to change',
-      hoverColor: 'purple-500',
+      hoverColor: 'blue-500',
     },
   ];
 
