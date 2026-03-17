@@ -233,7 +233,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
         <DialogOverlay className="bg-black/90 backdrop-blur-sm" />
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => onOpenChange(false)}>
           <div 
-            className="relative w-full max-w-6xl max-h-[90vh] bg-[#121214] rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-[#4a5f7f] overflow-hidden flex flex-col md:flex-row"
+            className="relative w-full max-w-6xl max-h-[90vh] bg-[#2a2a2f] rounded-[24px] shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)] overflow-hidden flex flex-col md:flex-row"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close Button */}
@@ -247,7 +247,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
             {/* Left Column - Cover Image + Actions */}
             <div className="md:w-[420px] flex-shrink-0 p-6 flex flex-col">
               {/* Cover Image with Badge Overlay */}
-              <div className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl bg-[#2a2a2f]">
+              <div className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl bg-[#2e2e33]">
                 {coverImage ? (
                   <img
                     src={coverImage}
