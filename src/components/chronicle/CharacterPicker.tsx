@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Character } from '@/types';
 import { CharacterSummary, fetchCharacterById } from '@/services/supabase-data';
-import { Button, Input } from './UI';
-import { Loader2 } from 'lucide-react';
+import { Dialog, DialogContentBare } from '@/components/ui/dialog';
+import { Loader2, X } from 'lucide-react';
 
 interface CharacterPickerProps {
   summaries: CharacterSummary[];
@@ -34,46 +34,57 @@ export function CharacterPicker({ summaries, onSelect, onClose }: CharacterPicke
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-6">
-      <div className="bg-zinc-900 w-full max-w-4xl rounded-3xl shadow-2xl flex flex-col max-h-full border border-ghost-white">
-        <div className="p-6 border-b border-ghost-white flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-black text-white">Global Character Library</h2>
-            <p className="text-sm text-zinc-400">Select a character to import into this scenario.</p>
+    <Dialog open onOpenChange={(v) => !v && onClose()}>
+      <DialogContentBare className="sm:max-w-4xl max-w-[95vw] bg-[#2a2a2f] rounded-[24px] p-0 gap-0 border-0 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)] overflow-hidden flex flex-col max-h-[85vh]">
+        {/* ── Slate-blue header ── */}
+        <div className="relative overflow-hidden bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 px-5 py-3 flex items-center justify-between shadow-lg">
+          <div
+            className="absolute inset-0 z-0 bg-gradient-to-tr from-white/10 to-transparent opacity-40 pointer-events-none"
+            style={{ height: '60%' }}
+          />
+          <div className="relative z-[1]">
+            <h3 className="text-white text-xl font-bold tracking-[-0.015em]">Global Character Library</h3>
+            <p className="text-white/60 text-xs mt-0.5">Select a character to import into this scenario.</p>
           </div>
-          <Button variant="ghost" onClick={onClose} className="!text-zinc-400 hover:!text-white">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </Button>
+          <button
+            onClick={onClose}
+            className="relative z-[1] w-8 h-8 rounded-lg flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
-        
-        <div className="p-4 bg-zinc-800/50 border-b border-ghost-white">
-          <Input 
-            value={search} 
-            onChange={setSearch} 
-            placeholder="Search by name or tags..." 
-            className="!bg-zinc-800 !text-white !border-ghost-white"
+
+        {/* ── Search bar ── */}
+        <div className="p-4">
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by name or tags..."
+            className="w-full bg-[#1c1c1f] border border-black/35 rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-blue-500 transition-colors"
           />
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* ── Character grid ── */}
+        <div className="flex-1 overflow-y-auto px-4 pb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {filtered.map(c => (
-              <div 
-                key={c.id} 
+              <button
+                key={c.id}
+                type="button"
                 onClick={() => handleSelect(c)}
-                className={`group cursor-pointer rounded-2xl bg-zinc-800/50 border border-ghost-white p-4 transition-all hover:shadow-xl hover:border-blue-500/30 flex items-center gap-4 ${loadingId === c.id ? 'opacity-70 pointer-events-none' : ''}`}
+                className={`group text-left cursor-pointer rounded-2xl bg-[#2e2e33] border-2 border-transparent p-4 transition-all hover:border-blue-500/30 shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)] flex items-center gap-4 ${loadingId === c.id ? 'opacity-70 pointer-events-none' : ''}`}
               >
-                <div className="w-16 h-16 shrink-0 rounded-xl bg-zinc-700 overflow-hidden border border-ghost-white">
-                   {c.avatarUrl ? (
-                     <img src={c.avatarUrl} className="w-full h-full object-cover" alt={c.name} />
-                   ) : (
-                     <div className="w-full h-full flex items-center justify-center font-black text-zinc-400 text-xl">
-                       {c.name.charAt(0)}
-                     </div>
-                   )}
+                <div className="w-14 h-14 shrink-0 rounded-xl bg-[#1c1c1f] border border-black/35 overflow-hidden">
+                  {c.avatarUrl ? (
+                    <img src={c.avatarUrl} className="w-full h-full object-cover" alt={c.name} />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center font-bold text-zinc-500 text-lg">
+                      {c.name.charAt(0)}
+                    </div>
+                  )}
                 </div>
                 <div className="min-w-0">
-                  <h3 className="font-bold text-white truncate group-hover:text-blue-500 transition-colors">{c.name}</h3>
+                  <h3 className="font-bold text-white truncate group-hover:text-blue-400 transition-colors text-sm">{c.name}</h3>
                   <p className="text-xs text-zinc-400 truncate mt-0.5">{c.tags || "No tags"}</p>
                   {loadingId === c.id ? (
                     <div className="flex items-center gap-1 mt-1">
@@ -84,7 +95,7 @@ export function CharacterPicker({ summaries, onSelect, onClose }: CharacterPicke
                     <p className="text-[10px] text-zinc-500 mt-1 uppercase tracking-wider font-bold">Import →</p>
                   )}
                 </div>
-              </div>
+              </button>
             ))}
             {filtered.length === 0 && (
               <div className="col-span-full py-12 text-center text-zinc-500">
@@ -93,8 +104,8 @@ export function CharacterPicker({ summaries, onSelect, onClose }: CharacterPicke
             )}
           </div>
         </div>
-      </div>
-    </div>
+      </DialogContentBare>
+    </Dialog>
   );
 }
 
@@ -107,7 +118,6 @@ interface CharacterPickerWithRefreshProps {
 }
 
 export function CharacterPickerWithRefresh({ library: initialLibrary, refreshLibrary, onSelect, onClose }: CharacterPickerWithRefreshProps) {
-  // Build summaries from parent library state (immediate fallback)
   const buildSummaries = (chars: Character[]): CharacterSummary[] =>
     chars.map(c => ({
       id: c.id,
@@ -121,7 +131,6 @@ export function CharacterPickerWithRefresh({ library: initialLibrary, refreshLib
   const [loading, setLoading] = useState(initialLibrary.length === 0);
 
   useEffect(() => {
-    // Refresh from backend and sync parent state
     refreshLibrary()
       .then(updated => {
         setSummaries(buildSummaries(updated));
@@ -132,12 +141,21 @@ export function CharacterPickerWithRefresh({ library: initialLibrary, refreshLib
 
   if (loading && summaries.length === 0) {
     return (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-6">
-        <div className="bg-zinc-900 rounded-3xl shadow-2xl p-12 text-center">
-          <Loader2 className="w-6 h-6 animate-spin text-zinc-400 mx-auto mb-2" />
-          <p className="text-zinc-400">Loading library...</p>
-        </div>
-      </div>
+      <Dialog open onOpenChange={(v) => !v && onClose()}>
+        <DialogContentBare className="sm:max-w-md max-w-[95vw] bg-[#2a2a2f] rounded-[24px] p-0 gap-0 border-0 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)] overflow-hidden">
+          <div className="relative overflow-hidden bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 px-5 py-3 shadow-lg">
+            <div
+              className="absolute inset-0 z-0 bg-gradient-to-tr from-white/10 to-transparent opacity-40 pointer-events-none"
+              style={{ height: '60%' }}
+            />
+            <h3 className="text-white text-xl font-bold tracking-[-0.015em] relative z-[1]">Global Character Library</h3>
+          </div>
+          <div className="p-12 text-center">
+            <Loader2 className="w-6 h-6 animate-spin text-zinc-400 mx-auto mb-2" />
+            <p className="text-zinc-400 text-sm">Loading library...</p>
+          </div>
+        </DialogContentBare>
+      </Dialog>
     );
   }
 
