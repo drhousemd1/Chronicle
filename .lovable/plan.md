@@ -1,53 +1,60 @@
 
-# Sandbox Feature Transfer — Master Tracker
 
-## Source Documents
-- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
-- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
+# Rebuild All Chooser Modals from Scratch with Shared Component
 
-## Features Being Transferred
-| ID | Feature | Status |
-|----|---------|--------|
-| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
-| B | Story Transfer Library (story-transfer.ts) | ✅ |
-| A | UI Audit System (schema, utils, findings, page) | 🔄 |
-| B | Story Export/Import Modals | ✅ |
-| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
-| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
-| - | StyleGuideTool.tsx audit button | ⬜ |
-| - | App.tsx route wiring | ⬜ |
-| - | Index.tsx full wiring | ⬜ |
+## The Problem
+The 6 chooser modals have been patched repeatedly but still don't match the builder container system used everywhere else in the app. Instead of continuing to patch, we delete all 6 and replace them with one shared reusable component.
 
-## Prompt Execution Status
+## Source of Truth: Builder Container Pattern
+From `StoryGoalsSection.tsx`, `CharacterGoalsSection.tsx`, and `WorldTab.tsx`:
 
-| # | Target File(s) | Status | Notes |
-|---|---------------|--------|-------|
-| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
-| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
-| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
-| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
-| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
-| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
-| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
-| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
-| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
-| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
-| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
-| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
-| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
-| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
+- **Outer shell**: `bg-[#2a2a2f] rounded-[24px] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]`
+- **Header**: `relative overflow-hidden bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 px-5 py-3 flex items-center gap-3 shadow-lg`
+- **Header gloss**: `absolute inset-0 z-0 bg-gradient-to-tr from-white/10 to-transparent opacity-40` with `style={{ height: '60%' }}`
+- **Header title**: `text-white text-xl font-bold tracking-[-0.015em] relative z-[1]`
+- **Inner card**: `p-5 pb-6 bg-[#2e2e33] rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]`
 
-## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
-- `src/types.ts`: line 11507
-- `src/utils.ts`: line 12138
-- `src/lib/story-transfer.ts`: line 9812
-- `src/lib/ui-audit-schema.ts`: line 21329
-- `src/lib/ui-audit-utils.ts`: line 21565
-- `src/data/ui-audit-findings.ts`: line 18967
-- `StoryExportFormatModal.tsx`: line 9642
-- `StoryImportModeModal.tsx`: line 9731
-- `CharactersTab.tsx`: line 2893
-- `ChatInterfaceTab.tsx`: line 5004
-- `src/pages/style-guide/ui-audit.tsx`: line 17867
-- `src/App.tsx`: line 95
-- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout
+## What's Actually Wrong Right Now
+The modals use a **different shadow** on the outer shell (`0_20px_50px` instead of `0_12px_32px_-2px`), a **different gloss** (`bg-gradient-to-b from-white/[0.08] h-1/2` instead of `bg-gradient-to-tr from-white/10 opacity-40 height:60%`), and **missing `overflow-hidden`** on the header. These are the visual discrepancies causing the "wrong corners" look.
+
+## Plan
+
+### Step 1: Create shared `ChooserModal` component
+New file: `src/components/chronicle/ChooserModal.tsx`
+
+```typescript
+interface ChooserOption {
+  key: string;
+  icon: React.ReactNode;
+  label: string;
+  description: string;
+  hoverColor?: string; // e.g. 'blue-500', 'purple-500'
+}
+
+interface ChooserModalProps {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  options: ChooserOption[];
+  onSelect: (key: string) => void;
+  columns?: 2 | 3;
+}
+```
+
+The component uses `Dialog` + `DialogContent` with the **exact** builder container classes listed above. No bespoke styling. Copy-paste from the builder sections.
+
+### Step 2: Rewrite all 6 modal files
+Each file becomes a thin wrapper that imports `ChooserModal` and passes its specific options array:
+
+1. **`CharacterCreationModal.tsx`** - 2 options (Import / New), calls `onImportFromLibrary` or `onCreateNew`
+2. **`CustomContentTypeModal.tsx`** - 2 options (Structured / Freeform), calls `onSelect(type)`
+3. **`EnhanceModeModal.tsx`** - 2 options (Precise / Detailed), calls `onSelect(mode)`
+4. **`StoryImportModeModal.tsx`** - 2 options (Merge / Rewrite), calls `onSelect(mode)`
+5. **`StoryExportFormatModal.tsx`** - 3 options (Markdown / JSON / Word), `columns={3}`
+6. **`KeepOrEditModal`** in `StyleGuideEditsModal.tsx` - 2 options (Keep / Edit), uses `onOpenChange`
+
+All exported interfaces and types stay the same so no consumer code changes are needed.
+
+### Step 3: Verify no imports break
+All existing imports (`CharacterCreationModal`, `EnhanceModeModal`, etc.) continue to work because each file still exports the same named component with the same props interface.
+
