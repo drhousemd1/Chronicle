@@ -1,39 +1,53 @@
 
+# Sandbox Feature Transfer — Master Tracker
 
-# Restyle Chooser Modals to Match Premium Dark Theme
+## Source Documents
+- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
+- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
 
-## Problem
-Four "chooser" modals use the old `bg-zinc-900 border-ghost-white` flat styling with colored icon backgrounds. They need to match the premium dark theme used across all other restyled modals.
+## Features Being Transferred
+| ID | Feature | Status |
+|----|---------|--------|
+| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
+| B | Story Transfer Library (story-transfer.ts) | ✅ |
+| A | UI Audit System (schema, utils, findings, page) | 🔄 |
+| B | Story Export/Import Modals | ✅ |
+| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
+| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
+| - | StyleGuideTool.tsx audit button | ⬜ |
+| - | App.tsx route wiring | ⬜ |
+| - | Index.tsx full wiring | ⬜ |
 
-## Reference (from HTML mockup, lines 1209-1271)
-The updated design uses:
-- **Outer shell**: `bg-[#2a2a2f]`, `rounded-3xl`, borderless, multi-layer shadow stack
-- **Header**: Slate blue gradient (`from-[#5a7292] to-[#4a5f7f]`) with gloss sheen overlay, uppercase title with `tracking-widest font-black text-[13px]`
-- **Option cards**: `bg-[#2e2e33]`, `rounded-2xl`, inner shadow stack, `border-2 border-transparent` at rest, `border-2 border-blue-500` when clicked/hovered (blue accent) or `border-2 border-purple-500` (purple accent)
-- **Icon containers**: Recessed dark treatment — `bg-[#1c1c1f]`, `rounded-[14px]`, `w-12 h-12`, inset shadow, white icons instead of colored tinted backgrounds
-- **No subtitle text** under the header (the "Select an option" line is removed; the header alone is sufficient)
-- Default Radix close button hidden (already done)
+## Prompt Execution Status
 
-## Affected Files (4 modals)
+| # | Target File(s) | Status | Notes |
+|---|---------------|--------|-------|
+| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
+| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
+| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
+| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
+| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
+| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
+| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
+| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
+| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
+| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
+| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
+| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
+| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
+| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
 
-| File | Modal Title |
-|------|-------------|
-| `CharacterCreationModal.tsx` | Character Creation |
-| `CustomContentTypeModal.tsx` | Content Type |
-| `EnhanceModeModal.tsx` | Enhancement Style |
-| `StyleGuideEditsModal.tsx` | KeepOrEditModal |
-
-All four share the exact same structure: a header with title + subtitle, then a 2-column grid of option buttons. Each gets the same treatment.
-
-## Changes Per Modal
-
-1. **DialogContent** — replace `sm:max-w-md bg-zinc-900 border-ghost-white p-0 gap-0` with premium shell: `sm:max-w-[520px] bg-[#2a2a2f] border-0 rounded-3xl p-0 gap-0 shadow-[0_20px_50px_rgba(0,0,0,0.55),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)] overflow-hidden`
-
-2. **Header** — replace plain `px-6 pt-5 pb-3` div with slate blue gradient header bar (same pattern as AI generation modals), with `text-[13px] font-black uppercase tracking-widest` title. Remove subtitle paragraph.
-
-3. **Option cards** — replace `border border-ghost-white bg-zinc-800/50 hover:border-blue-500/50 hover:bg-blue-500/10` with `bg-[#2e2e33] border-2 border-transparent hover:border-blue-500` (or purple) + inner shadow stack. Update padding from `p-5 rounded-2xl` to `p-5 rounded-2xl` (keep radius, add shadow).
-
-4. **Icon containers** — replace colored tint backgrounds (`bg-blue-500/20`) with recessed dark treatment: `w-12 h-12 rounded-[14px] bg-[#1c1c1f] border-t border-black/35 shadow-[inset_0_2px_6px_rgba(0,0,0,0.40)]`. Icons change to `text-white` instead of `text-blue-500`/`text-purple-400`.
-
-5. **Grid container** — update from `px-6 pb-6` to `p-4` with `gap-3`.
-
+## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
+- `src/types.ts`: line 11507
+- `src/utils.ts`: line 12138
+- `src/lib/story-transfer.ts`: line 9812
+- `src/lib/ui-audit-schema.ts`: line 21329
+- `src/lib/ui-audit-utils.ts`: line 21565
+- `src/data/ui-audit-findings.ts`: line 18967
+- `StoryExportFormatModal.tsx`: line 9642
+- `StoryImportModeModal.tsx`: line 9731
+- `CharactersTab.tsx`: line 2893
+- `ChatInterfaceTab.tsx`: line 5004
+- `src/pages/style-guide/ui-audit.tsx`: line 17867
+- `src/App.tsx`: line 95
+- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout
