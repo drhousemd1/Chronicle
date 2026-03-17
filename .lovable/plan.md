@@ -1,53 +1,53 @@
 
-I found the actual issue.
+# Sandbox Feature Transfer — Master Tracker
 
-What’s actually wrong
-- The chooser modals were styled like a separate mockup instead of using the same container system already used all over the Story Builder and Character Builder.
-- The mismatch is mainly the container shape language: shell/header/card corners and overall builder-style framing.
-- So yes: the real problem is the corners/container treatment, not the labels, not the copy, and not some tiny hover state.
+## Source Documents
+- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
+- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
 
-Real source of truth in the app
-- `src/components/chronicle/StoryGoalsSection.tsx:307-315`
-- `src/components/chronicle/CharacterGoalsSection.tsx:210-212`
-- `src/components/chronicle/WorldTab.tsx:674-684`
+## Features Being Transferred
+| ID | Feature | Status |
+|----|---------|--------|
+| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
+| B | Story Transfer Library (story-transfer.ts) | ✅ |
+| A | UI Audit System (schema, utils, findings, page) | 🔄 |
+| B | Story Export/Import Modals | ✅ |
+| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
+| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
+| - | StyleGuideTool.tsx audit button | ⬜ |
+| - | App.tsx route wiring | ⬜ |
+| - | Index.tsx full wiring | ⬜ |
 
-Those existing containers already define the app’s correct pattern:
-- outer shell: `bg-[#2a2a2f] rounded-[24px] overflow-hidden ...`
-- builder header: slate gradient, `border-t border-white/20`, `px-5 py-3`, gloss overlay, `shadow-lg`
-- header title: `text-xl font-bold tracking-[-0.015em]`
-- inner surface/card: `bg-[#2e2e33] rounded-2xl ...`
+## Prompt Execution Status
 
-Why the current chooser modals feel wrong
-- They currently use a bespoke modal treatment:
-  - different outer shadow language
-  - different header sizing (`py-4`)
-  - different title styling (all caps, `text-[16px] font-black`, wide tracking)
-  - option tiles styled from the standalone mockup instead of the app’s builder containers
-- Even with similar colors, that makes the corners/read feel off compared to the rest of the product.
+| # | Target File(s) | Status | Notes |
+|---|---------------|--------|-------|
+| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
+| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
+| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
+| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
+| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
+| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
+| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
+| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
+| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
+| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
+| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
+| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
+| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
+| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
 
-Implementation plan
-1. Replace the chooser modal shell/header styling with the exact builder/story container pattern already used elsewhere in the app.
-2. Keep each modal’s own label, icon, and action text, but make the framing identical to the existing builder containers.
-3. Align the option cards to the same inner-surface treatment used inside builder sections so the corner radius/depth matches the rest of the app.
-4. Apply this consistently to:
-   - `src/components/chronicle/CharacterCreationModal.tsx`
-   - `src/components/chronicle/CustomContentTypeModal.tsx`
-   - `src/components/chronicle/EnhanceModeModal.tsx`
-   - `src/components/chronicle/StoryImportModeModal.tsx`
-   - `src/components/chronicle/StoryExportFormatModal.tsx`
-   - `KeepOrEditModal` in `src/components/admin/styleguide/StyleGuideEditsModal.tsx`
-5. Do not spend time on unrelated one-off tweaks unless something is still visibly wrong after the shared container pattern is restored.
-
-Technical details
-- I will copy from the app’s existing builder/story containers, not from the standalone mockup.
-- The exact things to normalize are:
-  - shell radius/shadow language
-  - header height/padding
-  - header gloss placement
-  - title typography
-  - inner card radius/shadow treatment
-- Behavior stays the same; this is a visual consistency refactor only.
-
-Expected result
-- The chooser modals will stop looking like a separate design system.
-- Their corners/container framing will match the many existing examples on the Story Builder and Character Builder pages, which is the mismatch you were calling out.
+## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
+- `src/types.ts`: line 11507
+- `src/utils.ts`: line 12138
+- `src/lib/story-transfer.ts`: line 9812
+- `src/lib/ui-audit-schema.ts`: line 21329
+- `src/lib/ui-audit-utils.ts`: line 21565
+- `src/data/ui-audit-findings.ts`: line 18967
+- `StoryExportFormatModal.tsx`: line 9642
+- `StoryImportModeModal.tsx`: line 9731
+- `CharactersTab.tsx`: line 2893
+- `ChatInterfaceTab.tsx`: line 5004
+- `src/pages/style-guide/ui-audit.tsx`: line 17867
+- `src/App.tsx`: line 95
+- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout
