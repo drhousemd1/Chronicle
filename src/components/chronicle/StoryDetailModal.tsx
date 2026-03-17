@@ -233,53 +233,57 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
         <DialogOverlay className="bg-black/90 backdrop-blur-sm" />
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => onOpenChange(false)}>
           <div 
-            className="relative w-full max-w-6xl max-h-[90vh] bg-[#2a2a2f] rounded-[24px] shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)] overflow-hidden flex flex-col md:flex-row"
+            className="relative w-full max-w-[900px] max-h-[700px] bg-[#2a2a2f] rounded-[32px] overflow-hidden flex flex-col md:flex-row"
+            style={{ boxShadow: '0 20px 50px rgba(0,0,0,0.5), inset 1px 1px 0 rgba(255,255,255,0.09), inset -1px -1px 0 rgba(0,0,0,0.35)' }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close Button */}
             <button
               onClick={() => onOpenChange(false)}
-              className="absolute top-4 right-4 z-20 p-2 text-ghost-white hover:text-white transition-colors"
+              className="absolute top-4 right-4 z-20 p-2 text-white/60 hover:text-white transition-colors"
             >
               <X className="w-6 h-6" />
             </button>
 
             {/* Left Column - Cover Image + Actions */}
-            <div className="md:w-[420px] flex-shrink-0 p-6 flex flex-col">
-              {/* Cover Image with Badge Overlay */}
-              <div className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl bg-[#2e2e33]">
+            <div className="w-[340px] flex-shrink-0 p-6 flex flex-col" style={{ background: '#1c1c1f' }}>
+              {/* Cover Image */}
+              <div
+                className="relative w-full overflow-hidden rounded-2xl flex items-center justify-center"
+                style={{
+                  aspectRatio: '3/4',
+                  background: 'linear-gradient(135deg, #2a2a2f, #1a1a1f)',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.45)',
+                }}
+              >
                 {coverImage ? (
                   <img
                     src={coverImage}
                     alt={title}
                     style={{ objectPosition: `${coverImagePosition.x}% ${coverImagePosition.y}%` }}
-                    className="h-full w-full object-cover"
+                    className="absolute inset-0 h-full w-full object-cover"
                   />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#2a2a2f] to-[#1a1a1f]">
-                    <span className="font-black text-ghost-white text-7xl uppercase">
+                  <>
+                    <div className="absolute inset-0" style={{ background: '#5a7292' }} />
+                    <span className="relative text-[72px] font-black text-white/15">
                       {title?.charAt(0) || '?'}
                     </span>
-                  </div>
+                  </>
                 )}
-                
-                {/* Gradient overlay at bottom */}
-                <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/60 to-transparent" />
-                
-                {/* SFW/NSFW Badge Overlay */}
+
+                {/* SFW/NSFW Badge */}
                 {contentThemes?.storyType && (
                   <div className="absolute top-3 right-3">
                     <span className={cn(
-                      "px-2.5 py-1 backdrop-blur-sm rounded-lg text-xs font-bold shadow-lg bg-[#2a2a2f]",
-                      contentThemes.storyType === 'NSFW'
-                        ? "text-red-500"
-                        : "text-blue-500"
+                      "px-2 py-1 rounded-lg text-xs font-bold bg-[#2a2a2f]",
+                      contentThemes.storyType === 'NSFW' ? "text-red-500" : "text-blue-500"
                     )}>
                       {contentThemes.storyType}
                     </span>
                   </div>
                 )}
-                
+
                 {/* Edit icon badge */}
                 {allowRemix && (
                   <div className="absolute top-3 left-3">
@@ -288,28 +292,44 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                     </span>
                   </div>
                 )}
+
+                {/* Bottom gradient */}
+                <div className="absolute inset-x-0 bottom-0 h-20" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.6), transparent)' }} />
               </div>
 
-              {/* Action Buttons - Horizontal Row */}
+              {/* Action buttons — HTML spec: #2f3137 surface with inset highlights */}
               <div className="flex gap-2 mt-4">
                 {isOwned ? (
                   <>
                     {onEdit && (
                       <button
                         onClick={handleEdit}
-                        className="flex-1 h-12 bg-ghost-white hover:bg-ghost-white border border-ghost-white rounded-xl flex items-center justify-center gap-2 text-white transition-colors"
+                        className="flex-1 h-10 rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold uppercase tracking-wider cursor-pointer transition-colors"
+                        style={{
+                          background: '#2f3137',
+                          color: '#eaedf1',
+                          border: 'none',
+                          boxShadow: '0 8px 24px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.09), inset 0 -1px 0 rgba(0,0,0,0.20)',
+                          letterSpacing: '0.05em',
+                        }}
                       >
-                        <Edit className="w-5 h-5" />
-                        <span className="text-sm font-semibold">Edit</span>
+                        <Edit className="w-3.5 h-3.5" />
+                        Edit
                       </button>
                     )}
                     {!isDraft && (
                       <button
                         onClick={handlePlay}
-                        className="flex-1 h-10 bg-[#3b82f6] hover:bg-[#2d6fdb] rounded-xl flex items-center justify-center gap-2 text-white shadow-[0_10px_30px_rgba(0,0,0,0.35)] text-[10px] font-bold leading-none uppercase tracking-wider transition-colors"
+                        className="flex-1 h-10 rounded-xl flex items-center justify-center gap-1.5 text-white text-xs font-bold uppercase tracking-wider cursor-pointer transition-colors"
+                        style={{
+                          background: '#3b82f6',
+                          border: 'none',
+                          boxShadow: '0 8px 24px rgba(0,0,0,0.45)',
+                          letterSpacing: '0.05em',
+                        }}
                       >
-                        <Play className="w-4 h-4 fill-current" />
-                        <span>Play</span>
+                        <Play className="w-3.5 h-3.5 fill-current" />
+                        Play
                       </button>
                     )}
                   </>
@@ -320,14 +340,21 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                         onClick={handleLike}
                         disabled={isLiking}
                         className={cn(
-                          "flex-1 h-10 border rounded-xl flex items-center justify-center gap-2 shadow-[0_10px_30px_rgba(0,0,0,0.35)] text-[10px] font-bold leading-none uppercase tracking-wider transition-all",
-                          isLiked 
-                            ? "bg-rose-500 border-rose-500 text-white" 
-                            : "bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] hover:bg-rose-500/20 hover:text-rose-400"
+                          "flex-1 h-10 rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold uppercase cursor-pointer transition-all",
+                          isLiked && "!bg-rose-500 !text-white"
                         )}
+                        style={{
+                          background: isLiked ? undefined : '#2f3137',
+                          color: isLiked ? undefined : '#eaedf1',
+                          border: 'none',
+                          boxShadow: isLiked
+                            ? '0 8px 24px rgba(0,0,0,0.45)'
+                            : '0 8px 24px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.09), inset 0 -1px 0 rgba(0,0,0,0.20)',
+                          letterSpacing: '0.05em',
+                        }}
                       >
-                        <Heart className={cn("w-4 h-4", isLiked && "fill-current")} />
-                        <span>Like</span>
+                        <Heart className={cn("w-3.5 h-3.5", isLiked && "fill-current")} />
+                        Like
                       </button>
                     )}
                     {onSave && (
@@ -335,136 +362,174 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                         onClick={handleSave}
                         disabled={isSaving}
                         className={cn(
-                          "flex-1 h-10 border rounded-xl flex items-center justify-center gap-2 shadow-[0_10px_30px_rgba(0,0,0,0.35)] text-[10px] font-bold leading-none uppercase tracking-wider transition-all",
-                          isSaved 
-                            ? "bg-amber-500 border-amber-500 text-white" 
-                            : "bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] hover:bg-amber-500/20 hover:text-amber-400"
+                          "flex-1 h-10 rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold uppercase cursor-pointer transition-all",
+                          isSaved && "!bg-amber-500 !text-white"
                         )}
+                        style={{
+                          background: isSaved ? undefined : '#2f3137',
+                          color: isSaved ? undefined : '#eaedf1',
+                          border: 'none',
+                          boxShadow: isSaved
+                            ? '0 8px 24px rgba(0,0,0,0.45)'
+                            : '0 8px 24px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.09), inset 0 -1px 0 rgba(0,0,0,0.20)',
+                          letterSpacing: '0.05em',
+                        }}
                       >
-                        <Bookmark className={cn("w-4 h-4", isSaved && "fill-current")} />
-                        <span>{isSaved ? 'Saved' : 'Save'}</span>
+                        <Bookmark className={cn("w-3.5 h-3.5", isSaved && "fill-current")} />
+                        {isSaved ? 'Saved' : 'Save'}
                       </button>
                     )}
                     <button
                       onClick={handlePlay}
-                      className="flex-1 h-10 bg-[#3b82f6] hover:bg-[#2d6fdb] rounded-xl flex items-center justify-center gap-2 text-white shadow-[0_10px_30px_rgba(0,0,0,0.35)] text-[10px] font-bold leading-none uppercase tracking-wider transition-colors"
+                      className="flex-1 h-10 rounded-xl flex items-center justify-center gap-1.5 text-white text-xs font-bold uppercase cursor-pointer transition-colors"
+                      style={{
+                        background: '#3b82f6',
+                        border: 'none',
+                        boxShadow: '0 8px 24px rgba(0,0,0,0.45)',
+                        letterSpacing: '0.05em',
+                      }}
                     >
-                      <Play className="w-4 h-4 fill-current" />
-                      <span>Play</span>
+                      <Play className="w-3.5 h-3.5 fill-current" />
+                      Play
                     </button>
                   </>
                 )}
               </div>
 
-              {/* Remove from Gallery - Full width below action buttons */}
+              {/* Remove from Gallery */}
               {canShowUnpublish && (
                 <button
                   onClick={handleUnpublish}
                   disabled={isUnpublishing}
-                  className="w-full h-10 flex items-center justify-center gap-2 px-4 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] text-[hsl(var(--ui-text))] text-[10px] font-bold leading-none uppercase tracking-wider hover:bg-ghost-white active:bg-ghost-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40 transition-colors disabled:opacity-50 mt-2"
+                  className="w-full h-10 mt-2 rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold uppercase cursor-pointer transition-colors disabled:opacity-50"
+                  style={{
+                    background: '#2f3137',
+                    color: '#eaedf1',
+                    border: 'none',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.09), inset 0 -1px 0 rgba(0,0,0,0.20)',
+                    letterSpacing: '0.05em',
+                  }}
                 >
                   {isUnpublishing ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   ) : (
-                    <Globe className="w-4 h-4" />
+                    <Globe className="w-3.5 h-3.5" />
                   )}
                   Remove from Gallery
                 </button>
               )}
-
             </div>
 
-            {/* Right Column - Content */}
-            <ScrollArea className="flex-1 md:border-l border-[#4a5f7f]" thumbClassName="bg-black">
-              <div className="p-6 md:p-8 md:pr-12 flex flex-col min-h-full">
-                {/* Header: Title + Stats */}
-                <div className="flex flex-col gap-1 pr-8">
-                    {/* Title */}
-                    <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">
-                      {title || "Untitled Story"}
-                    </h1>
+            {/* Right Column */}
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {/* Header banner — gradient from HTML */}
+              <div
+                className="relative flex-shrink-0 overflow-hidden"
+                style={{
+                  padding: '14px 32px',
+                  background: 'linear-gradient(180deg, #5a7292 0%, #4a5f7f 100%)',
+                  borderTop: '1px solid rgba(255,255,255,0.20)',
+                  boxShadow: '0 10px 15px -3px rgba(0,0,0,0.3), 0 4px 6px -4px rgba(0,0,0,0.3)',
+                }}
+              >
+                {/* Gloss sheen overlay */}
+                <div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.00) 30%)' }}
+                />
+                <h1 className="relative m-0 text-4xl font-extrabold text-white" style={{ letterSpacing: '-0.02em' }}>
+                  {title || "Untitled Story"}
+                </h1>
+              </div>
 
-                    {/* Cumulative Story + Spice ratings (only in gallery mode with reviews) */}
+              {/* Scrollable content */}
+              <ScrollArea className="flex-1" thumbClassName="bg-black">
+                <div style={{ padding: '24px 48px 32px 32px' }}>
+                  {/* Ratings + Stats */}
+                  <div style={{ paddingRight: '32px' }}>
+                    {/* Star + Spice ratings */}
                     {!isOwned && reviewCount > 0 && (
-                      <div className="flex items-center gap-4 mt-1">
+                      <div className="flex items-center gap-4" style={{ marginTop: '6px' }}>
                         <div className="flex items-center gap-1.5">
-                          <span className="text-sm text-white/40">Story</span>
+                          <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>Story</span>
                           <StarRating rating={Math.round(avgRating * 2) / 2} size={16} />
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <span className="text-sm text-white/40">Spice</span>
+                          <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>Spice</span>
                           <SpiceRating rating={Math.round((reviews.length > 0 ? reviews.reduce((sum, r) => sum + r.spice_level, 0) / reviews.length : 0) * 2) / 2} size={16} />
                         </div>
                       </div>
                     )}
 
-                    {/* Stats row - Gallery mode only */}
+                    {/* Stats row */}
                     {!isOwned && (
-                      <div className="flex items-center gap-4 mt-1">
-                        <div className="flex items-center gap-1.5 text-[#94a3b8]">
-                          <Eye className="w-4 h-4" />
-                          <span className="text-xs font-bold">{formatCount(viewCount)}</span>
+                      <div className="flex items-center gap-4" style={{ marginTop: '6px' }}>
+                        <div className="flex items-center gap-1.5" style={{ color: '#94a3b8' }}>
+                          <Eye className="w-3.5 h-3.5" />
+                          <span style={{ fontSize: '12px', fontWeight: 700 }}>{formatCount(viewCount)}</span>
                         </div>
-                        <div className="flex items-center gap-1.5 text-[#94a3b8]">
-                          <Heart className={cn("w-4 h-4", isLiked && "fill-rose-400 text-rose-400")} />
-                          <span className="text-xs font-bold">{formatCount(likeCount)}</span>
+                        <div className="flex items-center gap-1.5" style={{ color: '#94a3b8' }}>
+                          <Heart className={cn("w-3.5 h-3.5", isLiked && "fill-rose-400 text-rose-400")} />
+                          <span style={{ fontSize: '12px', fontWeight: 700 }}>{formatCount(likeCount)}</span>
                         </div>
-                        <div className="flex items-center gap-1.5 text-[#94a3b8]">
-                          <Bookmark className={cn("w-4 h-4", isSaved && "fill-amber-400 text-amber-400")} />
-                          <span className="text-xs font-bold">{formatCount(saveCount)}</span>
+                        <div className="flex items-center gap-1.5" style={{ color: '#94a3b8' }}>
+                          <Bookmark className={cn("w-3.5 h-3.5", isSaved && "fill-amber-400 text-amber-400")} />
+                          <span style={{ fontSize: '12px', fontWeight: 700 }}>{formatCount(saveCount)}</span>
                         </div>
-                        <div className="flex items-center gap-1.5 text-[#94a3b8]">
-                          <Play className="w-4 h-4" />
-                          <span className="text-xs font-bold">{formatCount(playCount)}</span>
+                        <div className="flex items-center gap-1.5" style={{ color: '#94a3b8' }}>
+                          <Play className="w-3.5 h-3.5" />
+                          <span style={{ fontSize: '12px', fontWeight: 700 }}>{formatCount(playCount)}</span>
                         </div>
                       </div>
                     )}
 
-                    {/* Creator section */}
+                    {/* Creator — inset surface card from HTML */}
                     {publisher && !isOwned && (
-                      <div className="mt-4">
-                        <button
-                          onClick={() => {
-                            if (publisherId) {
-                              onOpenChange(false);
-                              navigate(`/creator/${publisherId}`);
-                            }
-                          }}
-                          className="flex items-center gap-2 group"
-                        >
-                          <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 overflow-hidden flex-shrink-0 group-hover:ring-2 group-hover:ring-[#4a5f7f] transition-all">
-                            {publisher.avatar_url ? (
-                              <img 
-                                src={publisher.avatar_url} 
-                                alt={publisher.display_name || publisher.username || 'Creator'} 
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-white/80 text-sm font-bold">
-                                {(publisher.display_name || publisher.username)?.charAt(0)?.toUpperCase() || '?'}
-                              </div>
-                            )}
-                          </div>
-                          <div className="text-left">
-                             <p className="text-sm text-[rgba(248,250,252,0.8)] group-hover:text-white transition-colors">
-                               Created by: <span className="text-[rgba(248,250,252,0.8)] font-medium">{publisher.display_name || publisher.username || 'Anonymous'}</span>
-                            </p>
-                          </div>
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => {
+                          if (publisherId) {
+                            onOpenChange(false);
+                            navigate(`/creator/${publisherId}`);
+                          }
+                        }}
+                        className="flex items-center gap-2.5 group"
+                        style={{
+                          marginTop: '16px',
+                          background: '#2f3137',
+                          borderRadius: '12px',
+                          padding: '10px 14px',
+                          border: 'none',
+                          boxShadow: '0 8px 24px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.09), inset 0 -1px 0 rgba(0,0,0,0.20)',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <div className="w-14 h-14 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center group-hover:ring-2 group-hover:ring-[#4a5f7f] transition-all" style={{ background: 'linear-gradient(135deg, #7c3aed, #3b82f6)' }}>
+                          {publisher.avatar_url ? (
+                            <img
+                              src={publisher.avatar_url}
+                              alt={publisher.display_name || publisher.username || 'Creator'}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: '18px', fontWeight: 700 }}>
+                              {(publisher.display_name || publisher.username)?.charAt(0)?.toUpperCase() || '?'}
+                            </span>
+                          )}
+                        </div>
+                        <p className="m-0" style={{ fontSize: '13px', color: 'rgba(248,250,252,0.8)' }}>
+                          Created by: <strong style={{ fontWeight: 600 }}>{publisher.display_name || publisher.username || 'Anonymous'}</strong>
+                        </p>
+                      </button>
                     )}
 
                     {/* Status badges row */}
                     {(isPublished || allowRemix) && (
                       <div className="flex items-center gap-2 mt-1">
-                        {/* Published badge - for owned scenarios */}
                         {isOwned && isPublished && (
                           <span className="inline-flex w-fit px-2.5 py-1 bg-emerald-500/20 rounded-lg text-xs font-bold text-emerald-400">
                             PUBLISHED
                           </span>
                         )}
-                        
-                        {/* Editable badge - shows when allowRemix is enabled */}
                         {allowRemix && (
                           <span className="inline-flex w-fit px-2.5 py-1 bg-purple-500/20 rounded-lg text-xs font-bold text-purple-400">
                             EDITABLE
@@ -474,196 +539,201 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                     )}
                   </div>
 
-                {/* Synopsis Section */}
-                <div className="mt-6">
-<div className="border-b-2 border-[#4a5f7f] pb-1 mb-3 inline-block">
-  <h3 className="text-xs font-bold text-[rgba(248,250,252,0.9)] uppercase tracking-widest">Synopsis</h3>
-</div>
-                  <p className="text-sm text-[rgba(248,250,252,0.8)] leading-relaxed max-w-2xl whitespace-pre-wrap">
-                    {description || "No description provided."}
-                  </p>
-                </div>
-
-                {/* Content Themes Grid */}
-                {hasContentThemes && (
-                  <>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mt-8">
-                      {contentThemes.genres.length > 0 && (
-                        <div>
-                          <div className="border-b-2 border-[#4a5f7f] pb-1 mb-2 inline-block">
-                            <h4 className="text-xs font-bold text-[rgba(248,250,252,0.9)] uppercase">Genre</h4>
-                          </div>
-                          <p className="text-sm text-[rgba(248,250,252,0.8)]">{contentThemes.genres.join(', ')}</p>
-                        </div>
-                      )}
-                      {contentThemes.characterTypes.length > 0 && (
-                        <div>
-                          <div className="border-b-2 border-[#4a5f7f] pb-1 mb-2 inline-block">
-                            <h4 className="text-xs font-bold text-[rgba(248,250,252,0.9)] uppercase">Character Types</h4>
-                          </div>
-                          <p className="text-sm text-[rgba(248,250,252,0.8)]">{contentThemes.characterTypes.join(', ')}</p>
-                        </div>
-                      )}
-                      {contentThemes.origin.length > 0 && (
-                        <div>
-                          <div className="border-b-2 border-[#4a5f7f] pb-1 mb-2 inline-block">
-                            <h4 className="text-xs font-bold text-[rgba(248,250,252,0.9)] uppercase">Story Origin</h4>
-                          </div>
-                          <p className="text-sm text-[rgba(248,250,252,0.8)]">{contentThemes.origin.join(', ')}</p>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Trigger Warnings - Separate Row */}
-                    {contentThemes.triggerWarnings.length > 0 && (
-                      <div className="mt-6">
-                        <div className="border-b-2 border-[#4a5f7f] pb-1 mb-2 inline-block">
-                          <h4 className="text-xs font-bold text-[rgba(248,250,252,0.9)] uppercase">Trigger Warnings</h4>
-                        </div>
-                        <p className="text-sm text-[rgba(248,250,252,0.8)] leading-relaxed font-medium">
-                          {contentThemes.triggerWarnings.join(', ')}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Custom Tags */}
-                    {contentThemes.customTags.length > 0 && (
-                      <div className="mt-6">
-                        <h4 className="text-xs font-bold text-[rgba(248,250,252,1)] uppercase mb-2">Custom Tags</h4>
-                        <p className="text-sm text-[rgba(248,250,252,0.8)]">{contentThemes.customTags.join(', ')}</p>
-                      </div>
-                    )}
-                  </>
-                )}
-
-                {/* Characters Section */}
-                <div className="pt-8">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="border-b-2 border-[#4a5f7f] pb-1 inline-block">
-                      <h3 className="text-xs font-bold text-[rgba(248,250,252,0.9)] uppercase tracking-widest">Characters</h3>
-                    </div>
-                    {characters.length > 4 && (
-                      <button className="text-[10px] font-bold text-[#3b82f6] hover:underline uppercase">
-                        View All
-                      </button>
-                    )}
+                  {/* Synopsis */}
+                  <div style={{ marginTop: '24px' }}>
+                    <p className="m-0" style={{ fontSize: '12px', fontWeight: 900, color: '#a1a1aa', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '6px' }}>Synopsis</p>
+                    <p className="m-0 whitespace-pre-wrap" style={{ fontSize: '13px', color: 'rgba(248,250,252,0.8)', lineHeight: 1.6 }}>
+                      {description || "No description provided."}
+                    </p>
                   </div>
-                  
-                  {isLoadingCharacters ? (
-                    <div className="flex gap-4">
-                      {[1, 2, 3, 4].map((i) => (
-                        <div key={i} className="flex flex-col items-center gap-2">
-                          <Skeleton className="w-14 h-14 rounded-full bg-[#2a2a2f]" />
-                          <Skeleton className="w-12 h-3 rounded bg-[#2a2a2f]" />
-                        </div>
-                      ))}
-                    </div>
-                  ) : characters.length === 0 ? (
-                    <p className="text-sm text-[rgba(248,250,252,0.3)] italic">No characters yet</p>
-                  ) : (
-                    <div className="flex flex-wrap gap-4">
-                      {characters.slice(0, 8).map((char) => (
-                        <div key={char.id} className="flex flex-col items-center gap-2 group cursor-pointer">
-                          <div className="w-14 h-14 rounded-full border-2 border-ghost-white p-0.5 group-hover:border-[#3b82f6] transition-all">
-                            {char.avatarUrl ? (
-                              <img
-                                src={char.avatarUrl}
-                                alt={char.name}
-                                style={{ objectPosition: `${char.avatarPosition.x}% ${char.avatarPosition.y}%` }}
-                                className="w-full h-full rounded-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full rounded-full bg-[#2a2a2f] flex items-center justify-center text-white/30 text-lg font-bold">
-                                {char.name.charAt(0).toUpperCase()}
-                              </div>
-                            )}
+
+                  {/* Content themes grid */}
+                  {hasContentThemes && (
+                    <>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginTop: '32px' }}>
+                        {contentThemes.genres.length > 0 && (
+                          <div>
+                            <p className="m-0" style={{ fontSize: '12px', fontWeight: 900, color: '#a1a1aa', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '6px' }}>Genre</p>
+                            <p className="m-0" style={{ fontSize: '13px', color: 'rgba(248,250,252,0.8)' }}>{contentThemes.genres.join(', ')}</p>
                           </div>
-                          <span className="text-[10px] text-[rgba(248,250,252,0.8)] group-hover:text-white text-center max-w-[4rem] truncate transition-colors">
-                            {char.name}
-                          </span>
+                        )}
+                        {contentThemes.characterTypes.length > 0 && (
+                          <div>
+                            <p className="m-0" style={{ fontSize: '12px', fontWeight: 900, color: '#a1a1aa', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '6px' }}>Character Types</p>
+                            <p className="m-0" style={{ fontSize: '13px', color: 'rgba(248,250,252,0.8)' }}>{contentThemes.characterTypes.join(', ')}</p>
+                          </div>
+                        )}
+                        {contentThemes.origin.length > 0 && (
+                          <div>
+                            <p className="m-0" style={{ fontSize: '12px', fontWeight: 900, color: '#a1a1aa', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '6px' }}>Story Origin</p>
+                            <p className="m-0" style={{ fontSize: '13px', color: 'rgba(248,250,252,0.8)' }}>{contentThemes.origin.join(', ')}</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Trigger Warnings */}
+                      {contentThemes.triggerWarnings.length > 0 && (
+                        <div style={{ marginTop: '24px' }}>
+                          <p className="m-0" style={{ fontSize: '12px', fontWeight: 900, color: '#a1a1aa', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '6px' }}>Trigger Warnings</p>
+                          <p className="m-0" style={{ fontSize: '13px', color: 'rgba(248,250,252,0.8)' }}>{contentThemes.triggerWarnings.join(', ')}</p>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Reviews Section */}
-                {!isOwned && publishedScenarioId && (
-                  <div className="pt-8">
-                    {/* Gradient divider */}
-                    <div className="h-px bg-gradient-to-r from-transparent via-[#4a5f7f] to-transparent mb-6" />
-
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-xs font-bold text-[rgba(248,250,252,1)] uppercase tracking-widest">Reviews ({reviewCount})</h3>
-                      {user && (
-                        <button
-                          onClick={() => setIsReviewModalOpen(true)}
-                          className="px-3 py-1.5 bg-[#4a5f7f] hover:bg-[#3d5170] text-white text-xs font-semibold rounded-full transition-colors"
-                        >
-                          {userReview ? 'Edit Review' : 'Leave a Review'}
-                        </button>
                       )}
-                    </div>
 
-                    {reviews.length === 0 ? (
-                      <p className="text-sm text-white/40 italic">No reviews yet. Be the first!</p>
+                      {/* Custom Tags */}
+                      {contentThemes.customTags.length > 0 && (
+                        <div style={{ marginTop: '24px' }}>
+                          <p className="m-0" style={{ fontSize: '12px', fontWeight: 900, color: '#a1a1aa', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '6px' }}>Custom Tags</p>
+                          <p className="m-0" style={{ fontSize: '13px', color: 'rgba(248,250,252,0.8)' }}>{contentThemes.customTags.join(', ')}</p>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Characters */}
+                  <div style={{ marginTop: '32px' }}>
+                    <p className="m-0" style={{ fontSize: '12px', fontWeight: 900, color: '#a1a1aa', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '6px' }}>Characters</p>
+                    {isLoadingCharacters ? (
+                      <div className="flex gap-4" style={{ padding: '4px 0' }}>
+                        {[1, 2, 3, 4].map((i) => (
+                          <div key={i} className="flex flex-col items-center gap-2">
+                            <Skeleton className="w-14 h-14 rounded-full bg-[#2a2a2f]" />
+                            <Skeleton className="w-12 h-3 rounded bg-[#2a2a2f]" />
+                          </div>
+                        ))}
+                      </div>
+                    ) : characters.length === 0 ? (
+                      <p style={{ fontSize: '13px', color: 'rgba(248,250,252,0.3)', fontStyle: 'italic' }}>No characters yet</p>
                     ) : (
-                      <div className="space-y-4">
-                        {reviews.map((review) => (
-                          <div key={review.id} className="p-3 rounded-xl bg-[#1c1f26] border border-ghost-white">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-2">
-                                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 overflow-hidden flex-shrink-0">
-                                  {review.reviewer?.avatar_url ? (
-                                    <img src={review.reviewer.avatar_url} alt="" className="w-full h-full object-cover" />
-                                  ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-white/80 text-xs font-bold">
-                                      {(review.reviewer?.display_name || review.reviewer?.username)?.charAt(0)?.toUpperCase() || '?'}
-                                    </div>
-                                  )}
+                      <div className="flex flex-wrap gap-4" style={{ padding: '4px 0' }}>
+                        {characters.slice(0, 8).map((char) => (
+                          <div key={char.id} className="flex flex-col items-center gap-2 group cursor-pointer">
+                            <div
+                              className="group-hover:border-[#3b82f6] transition-all"
+                              style={{ width: '56px', height: '56px', borderRadius: '50%', border: '2px solid rgba(248,250,252,0.3)', padding: '2px' }}
+                            >
+                              {char.avatarUrl ? (
+                                <img
+                                  src={char.avatarUrl}
+                                  alt={char.name}
+                                  style={{ objectPosition: `${char.avatarPosition.x}% ${char.avatarPosition.y}%` }}
+                                  className="w-full h-full rounded-full object-cover"
+                                />
+                              ) : (
+                                <div
+                                  className="w-full h-full rounded-full flex items-center justify-center"
+                                  style={{ background: 'linear-gradient(135deg, #374151, #1f2937)', color: 'rgba(255,255,255,0.5)', fontSize: '18px', fontWeight: 700 }}
+                                >
+                                  {char.name.charAt(0).toUpperCase()}
                                 </div>
-                                <span className="text-sm font-medium text-white">{review.reviewer?.display_name || review.reviewer?.username || 'Anonymous'}</span>
-                                <span className="text-xs text-white/30">{formatDistanceToNow(new Date(review.created_at), { addSuffix: true })}</span>
-                              </div>
-                              <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-sm text-white/40">Story</span>
-                                  <StarRating rating={Math.round(review.raw_weighted_score * 2) / 2} size={16} />
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-sm text-white/40">Spice</span>
-                                  <SpiceRating rating={review.spice_level} size={16} />
-                                </div>
-                              </div>
+                              )}
                             </div>
-                            {review.comment && (
-                              <p className="text-sm text-white/70 mt-1 leading-relaxed">{review.comment}</p>
-                            )}
+                            <span className="group-hover:text-white transition-colors text-center max-w-[4rem] truncate" style={{ fontSize: '12px', color: 'rgba(248,250,252,0.8)' }}>
+                              {char.name}
+                            </span>
                           </div>
                         ))}
                       </div>
                     )}
-
-                    {hasMoreReviews && (
-                      <div className="flex justify-center mt-4">
-                        <button
-                          onClick={loadMoreReviews}
-                          disabled={loadingMoreReviews}
-                          className="px-4 py-2 text-xs font-medium text-[rgba(248,250,252,0.3)] hover:text-white/80 transition-colors disabled:opacity-50"
-                        >
-                          {loadingMoreReviews ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            'See more reviews'
-                          )}
-                        </button>
-                      </div>
-                    )}
                   </div>
-                )}
 
-              </div>
-            </ScrollArea>
+                  {/* Reviews */}
+                  {!isOwned && publishedScenarioId && (
+                    <div style={{ marginTop: '32px' }}>
+                      {/* Gradient divider */}
+                      <div style={{ height: '1px', background: 'linear-gradient(to right, transparent, #4a5f7f, transparent)', marginBottom: '24px' }} />
+
+                      <div className="flex items-center justify-between" style={{ marginBottom: '16px' }}>
+                        <p className="m-0" style={{ fontSize: '12px', fontWeight: 900, color: '#a1a1aa', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Reviews ({reviewCount})</p>
+                        {user && (
+                          <button
+                            onClick={() => setIsReviewModalOpen(true)}
+                            style={{
+                              padding: '6px 12px',
+                              background: '#4a5f7f',
+                              border: 'none',
+                              borderRadius: '999px',
+                              color: '#fff',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            {userReview ? 'Edit Review' : 'Leave a Review'}
+                          </button>
+                        )}
+                      </div>
+
+                      {reviews.length === 0 ? (
+                        <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', fontStyle: 'italic' }}>No reviews yet. Be the first!</p>
+                      ) : (
+                        <div className="space-y-4">
+                          {reviews.map((review) => (
+                            <div
+                              key={review.id}
+                              style={{
+                                padding: '12px',
+                                borderRadius: '12px',
+                                background: '#1c1f26',
+                                border: '1px solid #4a5f7f',
+                              }}
+                            >
+                              <div className="flex items-center justify-between" style={{ marginBottom: '8px' }}>
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    className="flex items-center justify-center overflow-hidden flex-shrink-0"
+                                    style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'linear-gradient(135deg, #7c3aed, #3b82f6)' }}
+                                  >
+                                    {review.reviewer?.avatar_url ? (
+                                      <img src={review.reviewer.avatar_url} alt="" className="w-full h-full object-cover" />
+                                    ) : (
+                                      <span style={{ fontSize: '12px', fontWeight: 700, color: 'rgba(255,255,255,0.8)' }}>
+                                        {(review.reviewer?.display_name || review.reviewer?.username)?.charAt(0)?.toUpperCase() || '?'}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span style={{ fontSize: '13px', fontWeight: 500, color: '#fff' }}>{review.reviewer?.display_name || review.reviewer?.username || 'Anonymous'}</span>
+                                  <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)' }}>{formatDistanceToNow(new Date(review.created_at), { addSuffix: true })}</span>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                  <div className="flex items-center gap-1.5">
+                                    <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>Story</span>
+                                    <StarRating rating={Math.round(review.raw_weighted_score * 2) / 2} size={16} />
+                                  </div>
+                                  <div className="flex items-center gap-1.5">
+                                    <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>Spice</span>
+                                    <SpiceRating rating={review.spice_level} size={16} />
+                                  </div>
+                                </div>
+                              </div>
+                              {review.comment && (
+                                <p className="m-0" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>{review.comment}</p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {hasMoreReviews && (
+                        <div className="flex justify-center mt-4">
+                          <button
+                            onClick={loadMoreReviews}
+                            disabled={loadingMoreReviews}
+                            className="px-4 py-2 text-xs font-medium transition-colors disabled:opacity-50"
+                            style={{ color: 'rgba(248,250,252,0.3)', background: 'none', border: 'none', cursor: 'pointer' }}
+                          >
+                            {loadingMoreReviews ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              'See more reviews'
+                            )}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
+            </div>
           </div>
         </div>
       </DialogPortal>
