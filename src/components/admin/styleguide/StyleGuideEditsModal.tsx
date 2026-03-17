@@ -6,6 +6,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Trash2, Pencil, Check, X } from 'lucide-react';
+import { ChooserModal } from '@/components/chronicle/ChooserModal';
 import { supabase } from '@/integrations/supabase/client';
 
 /* ═══════════════════════ TYPES ═══════════════════════ */
