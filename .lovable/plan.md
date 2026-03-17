@@ -1,39 +1,53 @@
-I audited the uploaded HTML directly. The correct target is the Story Detail Modal block in `user-uploads://updated_ui_design-4.html` around lines 720-930. The previous change was wrong because it only changed the outer shell and did not implement the actual HTML structure you provided.
 
-Plan
+# Sandbox Feature Transfer — Master Tracker
 
-1. Rebuild `src/components/chronicle/StoryDetailModal.tsx` to match the uploaded HTML block exactly, while preserving all existing data and behavior.
-2. Limit changes strictly to this modal and its matching style-guide entry so nothing else drifts.
+## Source Documents
+- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
+- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
 
-Exact implementation scope from the HTML reference
+## Features Being Transferred
+| ID | Feature | Status |
+|----|---------|--------|
+| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
+| B | Story Transfer Library (story-transfer.ts) | ✅ |
+| A | UI Audit System (schema, utils, findings, page) | 🔄 |
+| B | Story Export/Import Modals | ✅ |
+| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
+| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
+| - | StyleGuideTool.tsx audit button | ⬜ |
+| - | App.tsx route wiring | ⬜ |
+| - | Index.tsx full wiring | ⬜ |
 
-- Modal shell
-  - Switch back to the HTML spec: `rounded-[32px]`, larger `0 20px 50px rgba(0,0,0,0.5)` shadow, and a width closer to the reference instead of the current oversized flatter shell.
-- Two-panel layout
-  - Restore the darker left panel (`#1c1c1f`) with the fixed-width cover/actions column.
-  - Keep the right side as the scrollable content panel.
-- Right-side header
-  - Add the gradient banner from the HTML (`#5a7292 -> #4a5f7f`) with the gloss overlay.
-  - Move the story title into that banner.
-  - Remove the current body-only title presentation and the current vertical divider styling.
-- Left column
-  - Match the HTML cover block, cover shadow, and badge placement.
-  - Restyle the action buttons to the HTML surface style (`#2f3137`, inset highlights, rounded-xl, bold uppercase sizing), while keeping existing logic for like/save/play/edit/remove.
-- Content body
-  - Match the HTML spacing and section rhythm.
-  - Replace the current underlined section headings with the neutral uppercase zinc labels from the HTML.
-  - Convert the creator row into the inset surface card shown in the HTML.
-- Characters / reviews
-  - Keep the existing functionality and data loading.
-  - Align typography, spacing, and review card presentation to the uploaded HTML block.
+## Prompt Execution Status
 
-Files to update
+| # | Target File(s) | Status | Notes |
+|---|---------------|--------|-------|
+| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
+| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
+| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
+| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
+| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
+| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
+| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
+| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
+| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
+| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
+| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
+| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
+| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
+| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
 
-- `src/components/chronicle/StoryDetailModal.tsx`
-- `src/components/admin/styleguide/StyleGuideTool.tsx` to sync the Story Detail Modal spec to this HTML-based source of truth so future edits do not drift again
-
-Guardrails
-
-- No changes outside the view-more story modal and its matching style-guide documentation.
-- No invented styling beyond what appears in the uploaded HTML reference.
-- Preserve all existing modal logic; only restructure/restyle what is necessary to match the provided design.
+## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
+- `src/types.ts`: line 11507
+- `src/utils.ts`: line 12138
+- `src/lib/story-transfer.ts`: line 9812
+- `src/lib/ui-audit-schema.ts`: line 21329
+- `src/lib/ui-audit-utils.ts`: line 21565
+- `src/data/ui-audit-findings.ts`: line 18967
+- `StoryExportFormatModal.tsx`: line 9642
+- `StoryImportModeModal.tsx`: line 9731
+- `CharactersTab.tsx`: line 2893
+- `ChatInterfaceTab.tsx`: line 5004
+- `src/pages/style-guide/ui-audit.tsx`: line 17867
+- `src/App.tsx`: line 95
+- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout
