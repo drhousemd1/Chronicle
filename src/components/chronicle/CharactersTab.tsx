@@ -2261,7 +2261,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
               <select
                 value={editingNavKey}
                 onChange={(event) => loadNavImageDraft(event.target.value)}
-                className="w-full bg-[#1c1c1f] text-[#eaedf1] text-[12px] font-bold px-[10px] py-2 rounded-lg border-0 border-t border-black/35 shadow-[inset_0_2px_4px_rgba(0,0,0,0.25)]"
+                className="w-full bg-[#1c1c1f] text-[#eaedf1] text-[12px] font-bold px-[10px] py-2 rounded-lg border border-black/35 shadow-[inset_0_2px_4px_rgba(0,0,0,0.25)]"
               >
                 {sidebarTraitNavItems.map((item) => (
                   <option key={item.key} value={item.key}>
