@@ -1,53 +1,39 @@
 
-# Sandbox Feature Transfer — Master Tracker
 
-## Source Documents
-- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
-- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
+# Rebuild CharacterPicker Modal to Match Builder Container Styling
 
-## Features Being Transferred
-| ID | Feature | Status |
-|----|---------|--------|
-| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
-| B | Story Transfer Library (story-transfer.ts) | ✅ |
-| A | UI Audit System (schema, utils, findings, page) | 🔄 |
-| B | Story Export/Import Modals | ✅ |
-| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
-| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
-| - | StyleGuideTool.tsx audit button | ⬜ |
-| - | App.tsx route wiring | ⬜ |
-| - | Index.tsx full wiring | ⬜ |
+## What's Wrong
 
-## Prompt Execution Status
+The `CharacterPicker` modal (Global Character Library) in `src/components/chronicle/CharacterPicker.tsx` uses completely different styling from the builder containers:
 
-| # | Target File(s) | Status | Notes |
-|---|---------------|--------|-------|
-| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
-| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
-| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
-| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
-| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
-| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
-| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
-| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
-| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
-| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
-| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
-| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
-| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
-| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
+| Element | Current (CharacterPicker) | Builder Source of Truth |
+|---|---|---|
+| **Outer shell** | `bg-zinc-900 rounded-3xl shadow-2xl border border-ghost-white` (line 38) | `bg-[#2a2a2f] rounded-[24px] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]` |
+| **Header** | `p-6 border-b border-ghost-white` with `font-black` (lines 39-46) | Slate-blue gradient `bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 px-5 py-3 shadow-lg` with 60% gloss overlay, `font-bold tracking-[-0.015em]` |
+| **Search bar area** | `bg-zinc-800/50 border-b border-ghost-white` with `!bg-zinc-800 !border-ghost-white` input (lines 49-56) | Should be `bg-[#1c1c1f] border border-black/35 rounded-lg focus:border-blue-500` |
+| **Character cards** | `bg-zinc-800/50 border border-ghost-white rounded-2xl` (line 64) | `bg-[#2e2e33] rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]` |
+| **Avatar frame** | `bg-zinc-700 border border-ghost-white rounded-xl` (line 66) | Should use `bg-[#1c1c1f] border border-black/35 rounded-xl` |
+| **Close button** | Chronicle UI `Button variant="ghost"` with inline SVG | Should be a simple styled button matching builder patterns |
+| **Loading state shell** | `bg-zinc-900 rounded-3xl shadow-2xl` (line 136) | Same builder shell as above |
 
-## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
-- `src/types.ts`: line 11507
-- `src/utils.ts`: line 12138
-- `src/lib/story-transfer.ts`: line 9812
-- `src/lib/ui-audit-schema.ts`: line 21329
-- `src/lib/ui-audit-utils.ts`: line 21565
-- `src/data/ui-audit-findings.ts`: line 18967
-- `StoryExportFormatModal.tsx`: line 9642
-- `StoryImportModeModal.tsx`: line 9731
-- `CharactersTab.tsx`: line 2893
-- `ChatInterfaceTab.tsx`: line 5004
-- `src/pages/style-guide/ui-audit.tsx`: line 17867
-- `src/App.tsx`: line 95
-- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout
+The modal also doesn't use Radix Dialog at all — it's a raw `fixed inset-0` div, missing proper accessibility and animation.
+
+## Plan
+
+### Step 1: Rewrite `CharacterPicker` component
+Replace the entire render with builder-matched markup:
+
+- **Overlay**: Use Radix `Dialog` with `DialogContentBare` (no default surface styling) so the builder shell owns the surface
+- **Outer shell**: `bg-[#2a2a2f] rounded-[24px] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]`
+- **Header**: Slate-blue gradient with gloss overlay, `font-bold tracking-[-0.015em]`, close X button positioned top-right
+- **Search input**: Native `<input>` with `bg-[#1c1c1f] border border-black/35 rounded-lg focus:outline-none focus:border-blue-500` in a `p-4` wrapper area
+- **Character cards**: `bg-[#2e2e33] rounded-2xl` with the standard inset shadow stack, `hover:border-blue-500/30` transition
+- **Avatar thumbnails**: `bg-[#1c1c1f] border border-black/35 rounded-xl`
+- **Text**: Name in `font-bold text-white`, tags in `text-xs text-zinc-400`, "Import" label in `text-[10px] text-zinc-500 uppercase tracking-wider font-bold`
+
+### Step 2: Update loading state shell
+The `CharacterPickerWithRefresh` loading fallback (line 134-141) gets the same builder shell treatment.
+
+### Step 3: No consumer changes needed
+The exported function signatures (`CharacterPicker`, `CharacterPickerWithRefresh`) and their props remain identical.
+
