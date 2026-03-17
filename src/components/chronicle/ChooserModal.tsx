@@ -82,7 +82,7 @@ export const ChooserModal: React.FC<ChooserModalProps> = ({
             );
           })}
         </div>
-      </DialogContent>
+      </DialogContentBare>
     </Dialog>
   );
 };
