@@ -67,7 +67,7 @@ export function CharacterPicker({ summaries, onSelect, onClose }: CharacterPicke
 
         {/* ── Pill search bar ── */}
         <div className="p-4">
-          <div className="bg-[#2b2b2e] rounded-full p-1 border border-[#2b2b2e] flex items-center gap-2 px-3">
+          <div className="bg-[#1c1c1f] rounded-full p-1 border border-black/35 flex items-center gap-2 px-3">
             <Search className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
             <input
               value={search}
