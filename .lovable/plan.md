@@ -1,42 +1,53 @@
 
-Yes.
+# Sandbox Feature Transfer — Master Tracker
 
-A modal can absolutely have the exact same rounded corners as the Character Builder and Story Builder containers. The reason yours still does not is not “because modals are different” — it is because the current chooser modal is still being wrapped by the shared dialog surface that hardcodes its own radius.
+## Source Documents
+- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
+- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
 
-What is actually blocking it
-- Builder source of truth:
-  - `src/components/chronicle/CharacterGoalsSection.tsx:207-223`
-  - `src/components/chronicle/StoryGoalsSection.tsx:307-315`
-  - `src/components/chronicle/WorldTab.tsx:674-684`
-- Real culprit:
-  - `src/components/ui/dialog.tsx:38-39`
-  - The base `DialogContent` includes `sm:rounded-lg`
-- Current chooser:
-  - `src/components/chronicle/ChooserModal.tsx:48-49`
-  - It asks for `rounded-[24px]`, but at your current viewport width the `sm:rounded-lg` from `DialogContent` wins, so the modal keeps the smaller dialog corners instead of the builder corners.
+## Features Being Transferred
+| ID | Feature | Status |
+|----|---------|--------|
+| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
+| B | Story Transfer Library (story-transfer.ts) | ✅ |
+| A | UI Audit System (schema, utils, findings, page) | 🔄 |
+| B | Story Export/Import Modals | ✅ |
+| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
+| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
+| - | StyleGuideTool.tsx audit button | ⬜ |
+| - | App.tsx route wiring | ⬜ |
+| - | Index.tsx full wiring | ⬜ |
 
-Why it looked “unchanged”
-- The outer modal shell is still owned by `DialogContent`, not fully by the chooser.
-- So even after rebuilding the chooser markup, the root surface still carries the default dialog radius at desktop sizes.
-- In plain English: the wrong rounded corners are coming from the dialog primitive wrapper, not from the chooser cards/header.
+## Prompt Execution Status
 
-Implementation plan
-1. Stop using the styled `DialogContent` surface for chooser modals as-is.
-2. Create a bare dialog-content path in `src/components/ui/dialog.tsx`:
-   - either a `DialogContentBare` export
-   - or a `variant` prop that removes all default surface styling
-3. Remove the default shell classes from that bare path, especially:
-   - `sm:rounded-lg`
-   - default border/background/padding/shadow that make the dialog own the surface
-4. Update `src/components/chronicle/ChooserModal.tsx` to render the builder shell as the true root surface:
-   - `bg-[#2a2a2f] rounded-[24px] overflow-hidden shadow-[...]`
-   - builder header and gloss exactly matching the source-of-truth sections
-5. Keep the five wrapper modals plus `KeepOrEditModal` pointed at the shared chooser component, so once the root shell is fixed they all fix at once.
+| # | Target File(s) | Status | Notes |
+|---|---------------|--------|-------|
+| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
+| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
+| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
+| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
+| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
+| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
+| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
+| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
+| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
+| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
+| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
+| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
+| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
+| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
 
-Technical note
-- This is specifically a Tailwind precedence/responsive issue, not a design impossibility.
-- At widths above `sm`, `sm:rounded-lg` is active, which is why the current modal cannot visually match the builder containers even though `ChooserModal` says `rounded-[24px]`.
-
-Expected result
-- Yes: the chooser modals can match the builder containers exactly.
-- Once the root `DialogContent` styling is bypassed/removed for these chooser modals, the modal corners will finally match the Character Builder and Story Builder containers on desktop.
+## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
+- `src/types.ts`: line 11507
+- `src/utils.ts`: line 12138
+- `src/lib/story-transfer.ts`: line 9812
+- `src/lib/ui-audit-schema.ts`: line 21329
+- `src/lib/ui-audit-utils.ts`: line 21565
+- `src/data/ui-audit-findings.ts`: line 18967
+- `StoryExportFormatModal.tsx`: line 9642
+- `StoryImportModeModal.tsx`: line 9731
+- `CharactersTab.tsx`: line 2893
+- `ChatInterfaceTab.tsx`: line 5004
+- `src/pages/style-guide/ui-audit.tsx`: line 17867
+- `src/App.tsx`: line 95
+- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout
