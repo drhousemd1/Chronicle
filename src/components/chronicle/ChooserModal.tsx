@@ -45,8 +45,8 @@ export const ChooserModal: React.FC<ChooserModalProps> = ({
 }) => {
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent
-        className={`${columns === 3 ? 'sm:max-w-[680px]' : 'sm:max-w-[520px]'} bg-[#2a2a2f] border-0 rounded-[24px] p-0 gap-0 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)] overflow-hidden [&>button]:hidden`}
+      <DialogContentBare
+        className={`${columns === 3 ? 'sm:max-w-[680px]' : 'sm:max-w-[520px]'} max-w-[95vw] bg-[#2a2a2f] border-0 rounded-[24px] p-0 gap-0 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)] overflow-hidden`}
       >
         {/* ── Slate-blue header (exact builder-container spec) ── */}
         <div className="relative overflow-hidden bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 px-5 py-3 flex items-center gap-3 shadow-lg">
