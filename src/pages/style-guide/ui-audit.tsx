@@ -71,6 +71,40 @@ const moduleStatusClass: Record<string, string> = {
 function cloneInitialRegistry(): QualityHubRegistry {
   return JSON.parse(JSON.stringify(qualityHubInitialRegistry)) as QualityHubRegistry;
 }
+
+/** Merge code-defined seed pages/modules into a persisted registry so new pages appear automatically */
+function upgradeRegistry(persisted: QualityHubRegistry): QualityHubRegistry {
+  const seed = qualityHubInitialRegistry;
+  const currentVersion = seed.meta.registryVersion ?? 0;
+  const persistedVersion = persisted.meta?.registryVersion ?? 0;
+
+  if (persistedVersion >= currentVersion) return persisted;
+
+  // Merge in missing review units from seed
+  const existingUnitIds = new Set(persisted.reviewUnits.map((u) => u.id));
+  const missingUnits = seed.reviewUnits.filter((u) => !existingUnitIds.has(u.id));
+
+  // Merge in missing scan modules from seed
+  const existingModuleIds = new Set(persisted.scanModules.map((m) => m.id));
+  const missingModules = seed.scanModules.filter((m) => !existingModuleIds.has(m.id));
+
+  // Merge in missing findings from seed
+  const existingFindingIds = new Set(persisted.findings.map((f) => f.id));
+  const missingFindings = seed.findings.filter((f) => !existingFindingIds.has(f.id));
+
+  // Merge in missing runs from seed
+  const existingRunIds = new Set(persisted.runs.map((r) => r.id));
+  const missingRuns = seed.runs.filter((r) => !existingRunIds.has(r.id));
+
+  return {
+    ...persisted,
+    meta: { ...persisted.meta, registryVersion: currentVersion },
+    reviewUnits: [...persisted.reviewUnits, ...missingUnits],
+    scanModules: [...persisted.scanModules, ...missingModules],
+    findings: [...persisted.findings, ...missingFindings],
+    runs: [...persisted.runs, ...missingRuns],
+  };
+}
 function formatDate(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
