@@ -545,13 +545,13 @@ export default function UiAuditPage() {
                         <div>
                           <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Metadata</div>
                           <div className="grid gap-x-6 gap-y-1 sm:grid-cols-2 text-xs text-[#a1a1aa]">
-                            <div><span className="font-bold text-[#eaedf1]">Found By:</span> {f.foundBy.agent.agentName} ({f.foundBy.agent.modelName})</div>
-                            <div><span className="font-bold text-[#eaedf1]">Source:</span> {f.sourceKind}</div>
-                            <div><span className="font-bold text-[#eaedf1]">Created:</span> {formatDate(f.createdAt)}</div>
-                            <div><span className="font-bold text-[#eaedf1]">Updated:</span> {formatDate(f.updatedAt)}</div>
-                            {f.verifiedBy && <div><span className="font-bold text-[#eaedf1]">Verified By:</span> {f.verifiedBy.agent.agentName}</div>}
-                            {f.contributors.length > 0 && <div><span className="font-bold text-[#eaedf1]">Contributors:</span> {f.contributors.map((c) => c.agentName).join(", ")}</div>}
-                            {f.relatedFindingIds.length > 0 && <div><span className="font-bold text-[#eaedf1]">Related:</span> {f.relatedFindingIds.join(", ")}</div>}
+                            <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Found By</span> {f.foundBy.agent.agentName} ({f.foundBy.agent.modelName})</div>
+                            <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Source</span> {titleCase(f.sourceKind)}</div>
+                            <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Created</span> {formatDate(f.createdAt)}</div>
+                            <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Updated</span> {formatDate(f.updatedAt)}</div>
+                            {f.verifiedBy && <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Verified By</span> {f.verifiedBy.agent.agentName}</div>}
+                            {f.contributors.length > 0 && <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Contributors</span> {f.contributors.map((c) => c.agentName).join(", ")}</div>}
+                            {f.relatedFindingIds.length > 0 && <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Related</span> {f.relatedFindingIds.join(", ")}</div>}
                           </div>
                         </div>
                         {/* ── Actions ── */}
