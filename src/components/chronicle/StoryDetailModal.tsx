@@ -354,7 +354,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                         }}
                       >
                         <Heart className={cn("w-3.5 h-3.5", isLiked && "fill-current")} />
-                        Like
+                        {isLiked ? 'Liked' : 'Like'}
                       </button>
                     )}
                     {onSave && (
