@@ -173,7 +173,7 @@ export default function UiAuditPage() {
   });
   const [activeView, setActiveView] = useState<HubViewId>("overview");
   const [search, setSearch] = useState("");
-  const [groupBy, setGroupBy] = useState<GroupBy>("severity");
+  const [groupBy, setGroupBy] = useState<GroupBy>("domain");
   const [severityFilter, setSeverityFilter] = useState<"all" | QualityFinding["severity"]>("all");
   const [domainFilter, setDomainFilter] = useState<"all" | QualityFinding["domain"]>("all");
   const [statusFilter, setStatusFilter] = useState<"all" | QualityFinding["status"]>("all");
