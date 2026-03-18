@@ -117,7 +117,16 @@ export default function UiAuditPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [registry, setRegistry] = useState<QualityHubRegistry>(() => {
     if (typeof window === "undefined") return cloneInitialRegistry();
-    try { const raw = window.localStorage.getItem(STORAGE_KEY); if (!raw) return cloneInitialRegistry(); const parsed = JSON.parse(raw); if (!isQualityHubRegistry(parsed)) return cloneInitialRegistry(); return parsed; } catch { return cloneInitialRegistry(); }
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (!raw) return cloneInitialRegistry();
+      const parsed = JSON.parse(raw);
+      if (!isQualityHubRegistry(parsed)) return cloneInitialRegistry();
+      // Auto-reset if code-defined registry has newer scan data
+      const initial = qualityHubInitialRegistry;
+      if (parsed.meta?.lastRunId !== initial.meta.lastRunId) return cloneInitialRegistry();
+      return parsed;
+    } catch { return cloneInitialRegistry(); }
   });
   const [activeView, setActiveView] = useState<HubViewId>("overview");
   const [search, setSearch] = useState("");
