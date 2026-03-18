@@ -52,11 +52,10 @@
 
   /* ── Topbar ── */
   .topbar {
-    display: none;
+    display: none !important;
     height: 52px;
     background: var(--bg-white);
     border-bottom: 1px solid var(--border);
-    display: flex;
     align-items: center;
     padding: 0 20px;
     gap: 12px;
@@ -3374,6 +3373,31 @@ function copyPage(btn) {
     setTimeout(() => btn.classList.remove('copied'), 1500);
   });
 }
+
+window.addEventListener('message', function(e) {
+  if (!e.data || !e.data.type) return;
+  switch (e.data.type) {
+    case 'addBlock': addNewBlock(); break;
+    case 'save': openSave(); break;
+    case 'editToggle': toggleEditMode(); break;
+    case 'view': openView(); break;
+  }
+});
+
+function notifyParentState() {
+  var editActive = document.body.classList.contains('edit-mode');
+  var saveEnabled = document.getElementById('saveBtn') && !document.getElementById('saveBtn').disabled;
+  window.parent.postMessage({ type: 'inspectorState', editActive: editActive, saveEnabled: saveEnabled }, '*');
+}
+
+var _origToggle = toggleEditMode;
+toggleEditMode = function() { _origToggle(); setTimeout(notifyParentState, 50); };
+var origMarkDirty = typeof markDirty === 'function' ? markDirty : null;
+if (origMarkDirty) {
+  var _origMarkDirty = markDirty;
+  markDirty = function() { _origMarkDirty(); setTimeout(notifyParentState, 50); };
+}
+setTimeout(notifyParentState, 500);
 </script>
 
 </body>
