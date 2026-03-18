@@ -92,7 +92,7 @@ interface StyleGuideToolProps {
   onSwitchToAppGuide?: () => void;
 }
 
-export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownload, onRegisterEdits, onEditsCountChange }) => {
+export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownload, onRegisterEdits, onEditsCountChange, onSwitchToAppGuide }) => {
   const navigate = useNavigate();
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
