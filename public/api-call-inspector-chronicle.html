@@ -1430,6 +1430,379 @@ This controls the maximum length of Grok's response for each message.</div>
       <textarea class="iblock-textarea" id="ta-verbosity" oninput="markModified('verbosity'); autoResize(this)"></textarea>
     </div>
 
+
+    <!-- Realism Mode -->
+    <div class="iblock conditional-amber" data-block="realism" draggable="false">
+      <div class="iblock-header">
+        <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
+        <div class="modified-dot" id="dot-realism"></div>
+        <div class="iblock-meta">
+          <div class="iblock-title">Realism Mode</div>
+          <div class="iblock-condition">Conditional — when <em>uiSettings.realismMode === true</em></div>
+        </div>
+        <div class="iblock-right">
+          <div class="toggle-wrap">
+            <div class="toggle-option on" id="real-grounded">Grounded</div>
+            <div class="toggle-option off" id="real-flex">Flexible</div>
+          </div>
+          <div class="tok-badge">~250 tok</div>
+        </div>
+        <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+      </div>
+      <div class="iblock-body" id="body-realism">--- REALISM HANDLING (GROUNDED) ---
+Physical actions have realistic consequences based on physics, biology, and human limits.
+
+INJURY RESPONSE HIERARCHY:
+MINOR (bruises, small cuts, mild discomfort):
+  - Character notices and mentions it but can continue
+  - May affect mood or willingness
+
+MODERATE (sprains, significant pain, bleeding):
+  - Character expresses clear distress, wants to pause or stop
+  - Resists continuing the painful activity
+  - May request first aid or care
+
+SEVERE (tears, trauma, potential fractures):
+  - Character INSISTS on stopping immediately
+  - Expresses urgent need for medical attention
+  - Will NOT continue regardless of user pressure
+  - May panic, cry, or show shock responses
+  - Persistent about seeking help
+
+EXPERIENCE-BASED LIMITS:
+* A character's stated experience level affects physical tolerance.
+* Extreme actions on inexperienced characters result in appropriate injury responses.
+* Pain does not transform into pleasure without realistic progression.
+
+PERSISTENT CONSEQUENCES:
+* Injuries affect subsequent scenes until addressed.
+* Emotional trauma from harmful experiences carries forward.
+
+USER OVERRIDE RESISTANCE:
+* When severely hurt, characters prioritize self-preservation over narrative compliance.
+* The more severe the harm, the more insistent the character becomes about stopping.
+
+--- REALISM HANDLING (FLEXIBLE — default when realismMode is off) ---
+* Allow fantastical or exaggerated actions without strict real-world consequences.
+* Characters can endure or recover quickly from harm if it serves the story.
+* Prioritize narrative flow and user agency over strict plausibility.</div>
+      <textarea class="iblock-textarea" id="ta-realism" oninput="markModified('realism'); autoResize(this)"></textarea>
+    </div>
+
+    <!-- Trait Adherence -->
+    <div class="iblock" data-block="trait-adherence" draggable="false">
+      <div class="iblock-header">
+        <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
+        <div class="modified-dot" id="dot-trait-adherence"></div>
+        <div class="iblock-meta">
+          <div class="iblock-title">Personality Trait Adherence & In-Session Dynamics</div>
+          <div class="iblock-condition">Mandatory — trait flexibility system, impact brackets, and session-based evolution</div>
+        </div>
+        <div class="iblock-right">
+          <div class="tok-badge">~350 tok</div>
+        </div>
+        <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+      </div>
+      <div class="iblock-body" id="body-trait-adherence">- PERSONALITY TRAIT ADHERENCE:
+    * [RIGID] traits: Core and enduring. Express consistently. Do not abandon.
+    * [NORMAL] traits: Express reliably, allow context-driven softening.
+    * [FLEXIBLE] traits: Guidelines for initial behavior. Adapt after sustained resistance.
+    * Honor BOTH outward and inward when they conflict.
+    * Weight expression by influence level (Primary → Subtle).
+
+- TRAIT IMPACT BRACKETS (code-side scoring):
+    * Primary Influence (90-100%): Drives actions, dialogue consistently.
+    * Strong Influence (70-89%): Regular integration; frequent expression.
+    * Moderate Influence (40-69%): Occasional influence; appears when fitting.
+    * Subtle Influence (20-39%): Rare undertones; hints only.
+    * Minimal/Remove (0-19%): Ignore in responses; system will remove.
+
+- IN-SESSION TRAIT DYNAMICS (Normal and Flexible traits):
+    * Character card = STABLE BASELINE, not locked state.
+    * PROGRESSION RULE (uses [SESSION: Message N] tag):
+      - Messages 1-5: Full trait expression
+      - Messages 6-15: Trait present but less dominant
+      - Messages 16+: Trait as undertone, not foreground
+    * Applies ONLY when session events directly challenge the trait.
+    * NEVER express at same intensity for 10+ consecutive exchanges during challenging events.
+    * Rigid traits persist fully regardless.</div>
+      <textarea class="iblock-textarea" id="ta-trait-adherence" oninput="markModified('trait-adherence'); autoResize(this)"></textarea>
+    </div>
+
+    <!-- ═══ USER MESSAGE ═══ -->
+    <div class="section-label" id="s-user">User Message — role: "user"</div>
+
+    <!-- Session Message Counter -->
+    <div class="iblock" data-block="session-counter" draggable="false">
+      <div class="iblock-header">
+        <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
+        <div class="modified-dot" id="dot-session-counter"></div>
+        <div class="iblock-meta">
+          <div class="iblock-title">Session Message Counter</div>
+          <div class="iblock-condition">Mandatory — prepended to every user message</div>
+        </div>
+        <div class="iblock-right">
+          <div class="tok-badge">~10 tok</div>
+        </div>
+        <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+      </div>
+      <div class="iblock-body" id="body-session-counter">Tag: [SESSION: Message N of current session]
+
+Prepended to the beginning of every user message sent to the API.
+N = the running count of messages in the current browser session.
+
+Purpose: Provides the AI with a reference for the IN-SESSION TRAIT DYNAMICS
+system. The trait progression rule uses this count to determine how quickly
+Normal and Flexible personality traits should soften during sustained
+challenging events:
+  - Messages 1-5: Full trait expression
+  - Messages 6-15: Trait present but softening
+  - Messages 16+: Trait as undertone only
+
+Source: sessionMessageCount parameter in generateRoleplayResponseStream()</div>
+      <textarea class="iblock-textarea" id="ta-session-counter" oninput="markModified('session-counter'); autoResize(this)"></textarea>
+    </div>
+
+    <!-- Length Directive -->
+    <div class="iblock conditional-amber" data-block="length-directive" draggable="false">
+      <div class="iblock-header">
+        <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
+        <div class="modified-dot" id="dot-length-directive"></div>
+        <div class="iblock-meta">
+          <div class="iblock-title">Length Directive</div>
+          <div class="iblock-condition">Conditional — when <em>lengthDirective</em> is provided</div>
+        </div>
+        <div class="iblock-right">
+          <div class="tok-badge">~10-30 tok</div>
+        </div>
+        <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+      </div>
+      <div class="iblock-body" id="body-length-directive">Optional length instruction prepended to the user message text.
+
+When provided, this directive is placed BEFORE the user's actual message text
+in the final user message payload. Used to override or supplement the
+verbosity setting for specific responses.
+
+Example: "[Write a longer response this time]"
+
+Position in user message:
+[SESSION: Message N] [lengthDirective] [userMessage] [regenerationDirective] [styleHint]
+
+Source: lengthDirective parameter in generateRoleplayResponseStream()</div>
+      <textarea class="iblock-textarea" id="ta-length-directive" oninput="markModified('length-directive'); autoResize(this)"></textarea>
+    </div>
+
+    <!-- Style Hints -->
+    <div class="iblock" data-block="style-hints" draggable="false">
+      <div class="iblock-header">
+        <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
+        <div class="modified-dot" id="dot-style-hints"></div>
+        <div class="iblock-meta">
+          <div class="iblock-title">Style Hints (Random)</div>
+          <div class="iblock-condition">Mandatory — one random hint appended to every user message</div>
+        </div>
+        <div class="iblock-right">
+          <div class="src-badge">llm.ts</div>
+          <div class="tok-badge">~15-25 tok</div>
+        </div>
+        <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+      </div>
+      <div class="iblock-body" id="body-style-hints">A random style hint is appended to every user message to encourage structural variety
+across consecutive AI responses. One hint is selected randomly per message from
+a pool matched to the active verbosity level.
+
+CONCISE HINTS (8 options):
+• [Style: lean into dialogue this time, keep narration minimal]
+• [Style: try a shorter response -- punchy and direct]
+• [Style: lead with a character DOING something, not describing]
+• [Style: keep it tight -- one or two paragraphs max]
+• [Style: dialogue-forward, minimal description]
+• [Style: start with action — something physically changes in the scene]
+• [Style: character makes a snap decision and acts on it immediately]
+• [Style: character makes a snap decision and commits — no hesitation]
+
+BALANCED HINTS (8 options):
+• [Style: one character drives this beat — others react briefly in narration]
+• [Style: try a different paragraph structure than your last response]
+• [Style: character takes a decisive action that changes the scene dynamics]
+• [Style: open with something happening — movement, sound, interruption]
+• [Style: open with dialogue, weave action through it]
+• [Style: lead with a character making a choice, then show the fallout]
+• [Style: skip internal thoughts this time — show everything through action and speech]
+• [Style: something unexpected happens — surprise the reader]
+
+DETAILED HINTS (8 options):
+• [Style: draw out this moment with sensory detail -- what does it feel like?]
+• [Style: build tension through a sequence of escalating physical actions]
+• [Style: focus on physical sensations and sounds, not just actions]
+• [Style: character initiates something new that shifts the power dynamic]
+• [Style: extend the scene -- layer senses and emotion]
+• [Style: lead with an environmental change or interruption that forces a reaction]
+• [Style: build a slow, deliberate moment — let tension simmer through silence and gesture]
+• [Style: character reveals something through action, not words or thoughts]
+
+Source: getRandomStyleHint() in llm.ts</div>
+      <textarea class="iblock-textarea" id="ta-style-hints" oninput="markModified('style-hints'); autoResize(this)"></textarea>
+    </div>
+
+    <!-- Regeneration Directive -->
+    <div class="iblock conditional-amber" data-block="regen-directive" draggable="false">
+      <div class="iblock-header">
+        <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
+        <div class="modified-dot" id="dot-regen-directive"></div>
+        <div class="iblock-meta">
+          <div class="iblock-title">Regeneration Directive</div>
+          <div class="iblock-condition">Conditional — when <em>isRegeneration === true</em> (user clicks "Regenerate")</div>
+        </div>
+        <div class="iblock-right">
+          <div class="tok-badge">~180 tok</div>
+        </div>
+        <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+      </div>
+      <div class="iblock-body" id="body-regen-directive">[REGENERATION DIRECTIVE]
+The user wants a DIFFERENT VERSION of this response. Guidelines:
+1. Maintain the same general scene context and emotional tone
+2. Vary the specific dialogue, word choices, actions, and pacing
+3. Try a different focus (e.g., more physical description, different dialogue approach, action-led opening, or environmental detail)
+4. Keep ONLY the characters who are present in the current scene — do NOT introduce characters who are elsewhere
+5. Do NOT reverse the character's emotional state or stance — if they were enthusiastic, they should still be enthusiastic but expressed differently
+6. Do NOT suddenly shift the character's personality (e.g., from willing to reluctant)
+7. Think of this as a "different take" by a different writer on the same scene, not a plot reversal
+8. The scene's momentum and direction should be preserved — only the execution changes
+9. CONTROL RULES STILL APPLY: Do NOT generate for CONTROL: User characters
+10. SCENE PRESENCE STILL APPLIES: Only same-location characters may appear
+
+Appended to the user message text when the user clicks "Regenerate" on an AI response.
+
+Source: isRegeneration parameter in generateRoleplayResponseStream()</div>
+      <textarea class="iblock-textarea" id="ta-regen-directive" oninput="markModified('regen-directive'); autoResize(this)"></textarea>
+    </div>
+
+    <!-- Runtime Directives -->
+    <div class="iblock conditional-amber" data-block="runtime-directives" draggable="false">
+      <div class="iblock-header">
+        <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
+        <div class="modified-dot" id="dot-runtime-directives"></div>
+        <div class="iblock-meta">
+          <div class="iblock-title">Runtime Directives (System Message)</div>
+          <div class="iblock-condition">Conditional — when <em>runtimeDirectives</em> are provided (e.g., [DIRECTOR] tag)</div>
+        </div>
+        <div class="iblock-right">
+          <div class="tok-badge">~30-80 tok</div>
+        </div>
+        <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+      </div>
+      <div class="iblock-body" id="body-runtime-directives">Injected as a SEPARATE system message (role: "system") AFTER the conversation
+history but BEFORE the user message. NOT embedded in user text.
+
+Format:
+{ role: "system", content: "RUNTIME DIRECTIVES (HIGH PRIORITY — follow these for THIS response only):\n{runtimeDirectives}" }
+
+Primary Use Case: Narrative Director Injection
+The Narrative Director layer (generate-narrative-directive edge function) runs
+in parallel after each AI response. It analyzes conversation + story arcs and
+produces a 1-3 sentence tactical directive. This directive is captured client-side
+in a narrativeDirectiveRef and injected here as a [DIRECTOR: ...] tag.
+
+Priority: Listed as #2 in the PRIORITY HIERARCHY — only Control Rules rank higher.
+The AI must fulfill the directive while maintaining character voice and scene consistency.
+
+Cleared after use (single-shot per response).
+
+Source: runtimeDirectives parameter in generateRoleplayResponseStream()</div>
+      <textarea class="iblock-textarea" id="ta-runtime-directives" oninput="markModified('runtime-directives'); autoResize(this)"></textarea>
+    </div>
+
+    <!-- User Message Assembly -->
+    <div class="iblock" data-block="user-message" draggable="false">
+      <div class="iblock-header">
+        <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
+        <div class="modified-dot" id="dot-user-message"></div>
+        <div class="iblock-meta">
+          <div class="iblock-title">User Message Assembly</div>
+          <div class="iblock-condition">Mandatory — final user message payload structure</div>
+        </div>
+        <div class="iblock-right">
+          <div class="tok-badge">varies</div>
+        </div>
+        <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+      </div>
+      <div class="iblock-body" id="body-user-message">The final user message (role: "user") is assembled from multiple components
+concatenated in this order:
+
+  [SESSION: Message N] [lengthDirective] [userMessage] [regenerationDirective] [styleHint]
+
+Components:
+1. Session Counter: "[SESSION: Message N of current session] " — always present
+2. Length Directive: Optional override (e.g., "[Write a longer response]") — space-separated
+3. User Message: The actual user-typed text
+4. Regeneration Directive: ~180 tok block appended when isRegeneration=true
+5. Style Hint: Random hint from verbosity-matched pool (always present)
+
+Message Array Structure (full API call):
+[
+  { role: "system", content: systemInstruction },         // Main system prompt (all blocks above)
+  ...conversationHistory,                                 // All prior messages
+  { role: "system", content: runtimeDirectives },         // Optional: Narrative Director injection
+  { role: "user", content: assembledUserMessage }         // Final assembled message
+]
+
+API Parameters:
+- model: modelId (from valid Grok models list)
+- stream: true (default)
+- temperature: 0.9
+- max_tokens: verbosity-based (concise=1024, balanced=2048, detailed=3072)
+
+Valid Grok Models:
+grok-4-1-fast-reasoning (default), grok-4-1-fast-non-reasoning,
+grok-4-fast-non-reasoning, grok-4-fast-reasoning, grok-3-mini, grok-3</div>
+      <textarea class="iblock-textarea" id="ta-user-message" oninput="markModified('user-message'); autoResize(this)"></textarea>
+    </div>
+
+    <!-- ═══ 403 RETRY ═══ -->
+    <div class="section-label" id="s-403">403 Content Filter Retry</div>
+
+    <!-- 403 Retry -->
+    <div class="iblock" data-block="retry-403" draggable="false">
+      <div class="iblock-header">
+        <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
+        <div class="modified-dot" id="dot-retry-403"></div>
+        <div class="iblock-meta">
+          <div class="iblock-title">403 Content Safety Retry</div>
+          <div class="iblock-condition">Triggered — when xAI returns HTTP 403 (content safety rejection)</div>
+        </div>
+        <div class="iblock-right">
+          <div class="src-badge">chat/index.ts</div>
+          <div class="tok-badge">~100 tok injected</div>
+        </div>
+        <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+      </div>
+      <div class="iblock-body" id="body-retry-403">When xAI returns a 403 (content safety rejection), the chat edge function
+automatically retries with a CONTENT REDIRECT DIRECTIVE injected as a system
+message before the last user message.
+
+Injected System Message:
+[CONTENT REDIRECT] The previous user message touched on content the model
+cannot engage with directly. Continue the roleplay naturally by:
+1. Having the character(s) take a CONCRETE, IMMEDIATE action that pivots the scene — NOT a deflection
+2. Maintain the current scene's tone and momentum
+3. Do NOT reference the filter or moderation — stay fully in-character
+4. Move the story forward with a specific present-tense event
+5. FORBIDDEN: Postponement language ("we'll talk later," "let's discuss this soon")
+6. FORBIDDEN: Vague redirects ("let's change the subject," "how about we...")
+
+Retry Flow:
+1. Original request → 403 rejected
+2. Inject redirect directive as system message before last user message
+3. Retry same request with modified messages array
+4. If retry succeeds → stream response normally
+5. If retry also fails → return { error: "Content filtered", error_type: "content_filtered" }
+6. Client shows: "It seems your story got a bit too spicy for the model."
+
+Source: CONTENT_REDIRECT_DIRECTIVE constant in chat/index.ts</div>
+      <textarea class="iblock-textarea" id="ta-retry-403" oninput="markModified('retry-403'); autoResize(this)"></textarea>
+    </div>
+
     </div><!-- end api-call-1 -->
 
     <!-- ═══ SECTION: API CALL 2 — Post-Response Processing ═══ -->
