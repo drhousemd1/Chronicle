@@ -1,1095 +1,364 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
-  uiAuditComponentVariantDriftMatrix,
-  tokenDriftSnapshot,
-  uiAuditColorConsolidationPlan,
-  uiAuditFindings,
-  uiAuditInteractionStateMatrix,
-  uiAuditProgress,
-  uiAuditScope,
-  uiAuditTaxonomy,
-} from "@/data/ui-audit-findings";
-import {
-  countByConfidence,
-  countBySeverity,
-  countReviewStatus,
-  getBatchableFindings,
-  getQuickWins,
-  getRequiresDesignDecision,
-  getReviewedVsUnreviewed,
-  getSystemicFindings,
-  groupFindingsBy,
-  sortFindings,
-} from "@/lib/ui-audit-utils";
-import type {
-  UiAuditComponentVariantDriftItem,
-  UiAuditColorConsolidationItem,
-  UiAuditFinding,
-  UiAuditInteractionStateMatrixRow,
-  UiAuditSeverity,
+  QUALITY_CONFIDENCE,
+  QUALITY_DOMAINS,
+  QUALITY_FINDING_STATUS,
+  QUALITY_SEVERITIES,
+  QUALITY_VERIFICATION_STATUS,
+  QualityAgent,
+  QualityFinding,
+  QualityHubRegistry,
+  isQualityHubRegistry,
+  makeAgentId,
 } from "@/lib/ui-audit-schema";
+import {
+  countByDomain,
+  countBySeverity,
+  countByStatus,
+  groupFindingsBy,
+  mergeRegistries,
+  newId,
+  sortFindings,
+  summarizeRun,
+  toCompactIso,
+} from "@/lib/ui-audit-utils";
+import {
+  qualityHubDefaultAgent,
+  qualityHubInitialRegistry,
+} from "@/data/ui-audit-findings";
+import { cn } from "@/lib/utils";
 
-const severityBadgeClass: Record<UiAuditSeverity, string> = {
-  critical: "bg-red-500/20 text-red-300 border border-red-500/30",
-  high: "bg-orange-500/20 text-orange-300 border border-orange-500/30",
-  medium: "bg-amber-500/20 text-amber-300 border border-amber-500/30",
-  low: "bg-blue-500/20 text-blue-300 border border-blue-500/30",
-  stylistic: "bg-zinc-500/20 text-zinc-300 border border-zinc-500/30",
+const STORAGE_KEY = "chronicle-quality-hub-v1";
+type GroupBy = "severity" | "domain" | "status" | "page" | "component" | "agent";
+type HubViewId = "overview" | "findings" | "runs" | "handoff";
+
+const panelOuterClass = "rounded-[24px] overflow-hidden border-none bg-[#2a2a2f] shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]";
+const panelHeaderClass = "relative overflow-hidden border-t border-[rgba(255,255,255,0.20)] bg-[linear-gradient(180deg,#5a7292_0%,#4a5f7f_100%)] px-5 py-3 shadow-[0_10px_15px_-3px_rgba(0,0,0,0.30)]";
+const panelHeaderOverlayClass = "pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.07)_0%,rgba(255,255,255,0.00)_30%)]";
+const panelBodyClass = "p-4 md:p-5";
+const panelInnerClass = "rounded-2xl border-none bg-[#2e2e33] p-4 shadow-[inset_1px_1px_0_rgba(255,255,255,0.05),inset_-1px_-1px_0_rgba(0,0,0,0.45)]";
+const recessedBlockClass = "rounded-2xl border border-[rgba(255,255,255,0.05)] bg-[#1c1c1f] shadow-[inset_0_3px_10px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.05)]";
+const recessedStripClass = "rounded-xl border border-[rgba(255,255,255,0.05)] bg-[#1c1c1f] shadow-[inset_0_2px_8px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.05)]";
+const inputClass = "w-full rounded-lg border-none border-t border-[rgba(0,0,0,0.35)] bg-[#1c1c1f] px-3 py-2 text-sm text-white placeholder:text-[#52525b] outline-none focus:shadow-[0_0_0_2px_rgba(59,130,246,0.25)]";
+const selectClass = "w-full rounded-lg border-none border-t border-[rgba(0,0,0,0.35)] bg-[#1c1c1f] px-2 py-2 text-sm text-white outline-none focus:shadow-[0_0_0_2px_rgba(59,130,246,0.25)]";
+const subtleButtonClass = "rounded-xl border-none bg-[#3c3e47] px-4 py-2 text-xs font-bold text-[#eaedf1] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] transition hover:brightness-110";
+const neutralButtonClass = "rounded-xl border-none bg-[#2f3137] px-4 py-2 text-xs font-bold text-[#eaedf1] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] transition hover:brightness-110";
+
+const HUB_VIEWS: Array<{ id: HubViewId; label: string; description: string }> = [
+  { id: "overview", label: "Overview", description: "Scan and coverage progress" },
+  { id: "findings", label: "Findings", description: "Detailed issue ledger" },
+  { id: "runs", label: "Runs", description: "Run history and agent setup" },
+  { id: "handoff", label: "Handoff", description: "Cross-agent transfer notes" },
+];
+
+const severityBadgeClass: Record<string, string> = {
+  critical: "bg-[#2f3137] text-[#eaedf1] border border-[#dc2626]",
+  high: "bg-[#2f3137] text-[#eaedf1] border border-[#f59e0b]",
+  medium: "bg-[#2f3137] text-[#eaedf1] border border-[#3b82f6]",
+  low: "bg-[#2f3137] text-[#a5f3fc] border border-[#22B8C9]",
+  stylistic: "bg-[#3f3f46] text-[#eaedf1] border border-[rgba(255,255,255,0.20)]",
+};
+const moduleStatusClass: Record<string, string> = {
+  "not-started": "bg-[#3f3f46] text-[#a1a1aa]",
+  "in-progress": "bg-[#2f3137] text-[#a5f3fc] border border-[#3b82f6]",
+  completed: "bg-[#2f3137] text-[#a5f3fc] border border-[#22B8C9]",
+  blocked: "bg-[#2f3137] text-[#eaedf1] border border-[#dc2626]",
 };
 
-const colorDecisionBadgeClass: Record<
-  UiAuditColorConsolidationItem["decision"],
-  string
-> = {
-  keep: "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30",
-  merge: "bg-blue-500/20 text-blue-300 border border-blue-500/30",
-  deprecate: "bg-rose-500/20 text-rose-300 border border-rose-500/30",
-};
+function cloneInitialRegistry(): QualityHubRegistry {
+  return JSON.parse(JSON.stringify(qualityHubInitialRegistry)) as QualityHubRegistry;
+}
+function formatDate(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString();
+}
+function downloadJson(filename: string, payload: unknown) {
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+function getAgentList(registry: QualityHubRegistry): QualityAgent[] {
+  const map = new Map<string, QualityAgent>();
+  registry.runs.forEach((run) => map.set(run.agent.id, run.agent));
+  registry.findings.forEach((f) => { map.set(f.foundBy.agent.id, f.foundBy.agent); f.contributors.forEach((a) => map.set(a.id, a)); });
+  if (!map.has(qualityHubDefaultAgent.id)) map.set(qualityHubDefaultAgent.id, qualityHubDefaultAgent);
+  return Array.from(map.values()).sort((a, b) => a.agentName.localeCompare(b.agentName));
+}
+function nextRegistryWithTimestamp(registry: QualityHubRegistry): QualityHubRegistry {
+  return { ...registry, meta: { ...registry.meta, lastUpdatedAt: new Date().toISOString() } };
+}
+function buildQualityHubTransferPackage(snapshot: QualityHubRegistry) {
+  return { packageType: "chronicle-quality-hub-transfer", packageVersion: 1, exportedAt: new Date().toISOString(), registry: snapshot };
+}
 
-const interactionStateBadgeClass: Record<
-  UiAuditInteractionStateMatrixRow["stateCoverage"]["rest"],
-  string
-> = {
-  covered: "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30",
-  partial: "bg-amber-500/20 text-amber-300 border border-amber-500/30",
-  missing: "bg-rose-500/20 text-rose-300 border border-rose-500/30",
-  "not-applicable": "bg-zinc-700/40 text-zinc-300 border border-zinc-600",
-};
-
-const interactionSemanticsBadgeClass: Record<
-  UiAuditInteractionStateMatrixRow["semantics"],
-  string
-> = {
-  semantic: "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30",
-  mixed: "bg-amber-500/20 text-amber-300 border border-amber-500/30",
-  "non-semantic": "bg-rose-500/20 text-rose-300 border border-rose-500/30",
-};
-
-const componentVariantClassificationBadgeClass: Record<
-  UiAuditComponentVariantDriftItem["classification"],
-  string
-> = {
-  shared: "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30",
-  "near-duplicate": "bg-blue-500/20 text-blue-300 border border-blue-500/30",
-  "one-off": "bg-zinc-500/20 text-zinc-300 border border-zinc-500/30",
-  conflicted: "bg-rose-500/20 text-rose-300 border border-rose-500/30",
-};
-
-const componentVariantFamilyBadgeClass: Record<
-  UiAuditComponentVariantDriftItem["family"],
-  string
-> = {
-  button: "bg-sky-500/20 text-sky-300 border border-sky-500/30",
-  card: "bg-violet-500/20 text-violet-300 border border-violet-500/30",
-  panel: "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30",
-  modal: "bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/30",
-  input: "bg-teal-500/20 text-teal-300 border border-teal-500/30",
-  "chip-badge": "bg-amber-500/20 text-amber-300 border border-amber-500/30",
-  navigation: "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30",
-  unknown: "bg-zinc-500/20 text-zinc-300 border border-zinc-500/30",
-};
-
-const sectionCardClass =
-  "rounded-2xl border border-[#4a5f7f] bg-[#1e1e22] p-5 md:p-6 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.35)]";
-
-function Section({
-  id,
-  title,
-  children,
-}: {
-  id: string;
-  title: string;
-  children: React.ReactNode;
-}) {
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section id={id} className={sectionCardClass}>
-      <h2 className="text-white text-xl font-bold tracking-tight mb-4">{title}</h2>
-      {children}
+    <section className={panelOuterClass}>
+      <div className={panelHeaderClass}><div className={panelHeaderOverlayClass} /><h2 className="relative z-10 text-[20px] font-semibold tracking-tight text-white">{title}</h2></div>
+      <div className={panelBodyClass}><div className={panelInnerClass}>{children}</div></div>
     </section>
   );
 }
-
-function FindingCard({ finding }: { finding: UiAuditFinding }) {
-  return (
-    <details className="rounded-xl border border-ghost-white bg-[#2a2a2f] p-4">
-      <summary className="cursor-pointer list-none">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] uppercase tracking-wider font-black text-zinc-500">{finding.id}</span>
-          <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${severityBadgeClass[finding.severity]}`}>
-            {finding.severity}
-          </span>
-          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-ghost-white text-white">
-            {finding.confidence}
-          </span>
-          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-zinc-800 text-zinc-300 border border-zinc-700">
-            {finding.category}
-          </span>
-          <span className="text-sm font-bold text-white">{finding.title}</span>
-        </div>
-      </summary>
-
-      <div className="mt-3 space-y-3 text-sm text-[rgba(248,250,252,0.8)]">
-        <p>
-          <span className="text-zinc-400 font-semibold">Page:</span> {finding.page}
-          {finding.route ? ` (${finding.route})` : ""}
-          {finding.component ? ` - ${finding.component}` : ""}
-        </p>
-        <p>
-          <span className="text-zinc-400 font-semibold">Problem:</span> {finding.problem}
-        </p>
-        <p>
-          <span className="text-zinc-400 font-semibold">Impact:</span> {finding.userImpact}
-        </p>
-        <p>
-          <span className="text-zinc-400 font-semibold">Recommendation:</span> {finding.recommendation}
-        </p>
-
-        <div>
-          <div className="text-zinc-400 font-semibold mb-1">Evidence</div>
-          <ul className="list-disc pl-5 space-y-1">
-            {finding.evidence.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="grid gap-2 md:grid-cols-2">
-          <div>
-            <div className="text-zinc-400 font-semibold">Files</div>
-            <ul className="list-disc pl-5">
-              {finding.files.map((file) => (
-                <li key={file} className="font-mono text-xs break-all">
-                  {file}
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <div className="text-zinc-400 font-semibold">Metadata</div>
-            <p>Source: {finding.sourceOfTruth}</p>
-            <p>Fix level: {finding.fixLevel}</p>
-            <p>Difficulty: {finding.implementationDifficulty}</p>
-            <p>Design-system level: {finding.designSystemLevel ? "yes" : "no"}</p>
-            <p>Batchable: {finding.batchable ? "yes" : "no"}</p>
-            <p>Status: {finding.status}</p>
-          </div>
-        </div>
-      </div>
-    </details>
-  );
-}
-
-function ColorPlanCard({ item }: { item: UiAuditColorConsolidationItem }) {
-  return (
-    <details className="rounded-xl border border-ghost-white bg-[#2a2a2f] p-4">
-      <summary className="cursor-pointer list-none">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] uppercase tracking-wider font-black text-zinc-500">{item.id}</span>
-          <span
-            className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${colorDecisionBadgeClass[item.decision]}`}
-          >
-            {item.decision}
-          </span>
-          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-zinc-800 text-zinc-300 border border-zinc-700">
-            {item.priority}
-          </span>
-          <span className="text-sm font-bold text-white">{item.semanticRole}</span>
-        </div>
-      </summary>
-
-      <div className="mt-3 space-y-3 text-sm text-[rgba(248,250,252,0.8)]">
-        <p>
-          <span className="text-zinc-400 font-semibold">Source:</span>{" "}
-          {item.sourceColors.map((color) => (
-            <span key={color} className="inline-flex items-center mr-2">
-              <span
-                className="inline-block w-3 h-3 rounded-sm border border-white/20 mr-1 align-middle"
-                style={{ backgroundColor: color }}
-              />
-              <span className="font-mono text-xs">{color}</span>
-            </span>
-          ))}
-        </p>
-        <p>
-          <span className="text-zinc-400 font-semibold">Target:</span>{" "}
-          <span className="inline-flex items-center">
-            <span
-              className="inline-block w-3 h-3 rounded-sm border border-white/20 mr-1 align-middle"
-              style={{ backgroundColor: item.targetColor }}
-            />
-            <span className="font-mono text-xs">{item.targetColor}</span>
-          </span>
-        </p>
-        <p>
-          <span className="text-zinc-400 font-semibold">Scope:</span> {item.scope}
-        </p>
-        <p>
-          <span className="text-zinc-400 font-semibold">Rationale:</span> {item.rationale}
-        </p>
-
-        <div>
-          <div className="text-zinc-400 font-semibold mb-1">Evidence</div>
-          <ul className="list-disc pl-5 space-y-1">
-            {item.evidence.map((point) => (
-              <li key={point}>{point}</li>
-            ))}
-          </ul>
-        </div>
-
-        <div>
-          <div className="text-zinc-400 font-semibold mb-1">Sample files</div>
-          <ul className="list-disc pl-5">
-            {item.sampleFiles.map((file) => (
-              <li key={file} className="font-mono text-xs break-all">
-                {file}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-    </details>
-  );
-}
-
-function InteractionStatePill({
-  label,
-  value,
-}: {
-  label: string;
-  value: UiAuditInteractionStateMatrixRow["stateCoverage"]["rest"];
-}) {
-  return (
-    <span
-      className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${interactionStateBadgeClass[value]}`}
-    >
-      <span>{label}</span>
-      <span>{value}</span>
-    </span>
-  );
-}
-
-function InteractionStateCard({
-  row,
-}: {
-  row: UiAuditInteractionStateMatrixRow;
-}) {
-  return (
-    <details className="rounded-xl border border-ghost-white bg-[#2a2a2f] p-4">
-      <summary className="cursor-pointer list-none">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] uppercase tracking-wider font-black text-zinc-500">{row.id}</span>
-          <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${severityBadgeClass[row.severity]}`}>
-            {row.severity}
-          </span>
-          <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${interactionSemanticsBadgeClass[row.semantics]}`}>
-            {row.semantics}
-          </span>
-          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-zinc-800 text-zinc-300 border border-zinc-700">
-            {row.confidence}
-          </span>
-          <span className="text-sm font-bold text-white">{row.pattern}</span>
-        </div>
-      </summary>
-
-      <div className="mt-3 space-y-3 text-sm text-[rgba(248,250,252,0.8)]">
-        <p>
-          <span className="text-zinc-400 font-semibold">Page:</span> {row.page}
-          {row.route ? ` (${row.route})` : ""}
-          {row.component ? ` - ${row.component}` : ""}
-        </p>
-
-        <div className="flex flex-wrap gap-1.5">
-          <InteractionStatePill label="rest" value={row.stateCoverage.rest} />
-          <InteractionStatePill label="hover" value={row.stateCoverage.hover} />
-          <InteractionStatePill label="focus" value={row.stateCoverage.focusVisible} />
-          <InteractionStatePill label="active" value={row.stateCoverage.active} />
-          <InteractionStatePill label="disabled" value={row.stateCoverage.disabled} />
-          <InteractionStatePill label="loading" value={row.stateCoverage.loading} />
-          <InteractionStatePill label="keyboard" value={row.keyboardParity} />
-        </div>
-
-        <p>
-          <span className="text-zinc-400 font-semibold">Current state:</span> {row.currentState}
-        </p>
-        <p>
-          <span className="text-zinc-400 font-semibold">Recommendation:</span> {row.recommendation}
-        </p>
-
-        <div>
-          <div className="text-zinc-400 font-semibold mb-1">Evidence</div>
-          <ul className="list-disc pl-5 space-y-1">
-            {row.evidence.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </div>
-
-        <div>
-          <div className="text-zinc-400 font-semibold mb-1">Files</div>
-          <ul className="list-disc pl-5">
-            {row.files.map((file) => (
-              <li key={file} className="font-mono text-xs break-all">
-                {file}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-    </details>
-  );
-}
-
-function ComponentVariantCard({
-  item,
-}: {
-  item: UiAuditComponentVariantDriftItem;
-}) {
-  return (
-    <details className="rounded-xl border border-ghost-white bg-[#2a2a2f] p-4">
-      <summary className="cursor-pointer list-none">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] uppercase tracking-wider font-black text-zinc-500">{item.id}</span>
-          <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${severityBadgeClass[item.severity]}`}>
-            {item.severity}
-          </span>
-          <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${componentVariantClassificationBadgeClass[item.classification]}`}>
-            {item.classification}
-          </span>
-          <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${componentVariantFamilyBadgeClass[item.family]}`}>
-            {item.family}
-          </span>
-          <span className="text-sm font-bold text-white">{item.variantName}</span>
-        </div>
-      </summary>
-
-      <div className="mt-3 space-y-3 text-sm text-[rgba(248,250,252,0.8)]">
-        <p>
-          <span className="text-zinc-400 font-semibold">Current state:</span> {item.currentState}
-        </p>
-        <p>
-          <span className="text-zinc-400 font-semibold">Problem:</span> {item.problem}
-        </p>
-        <p>
-          <span className="text-zinc-400 font-semibold">Recommendation:</span> {item.recommendation}
-        </p>
-
-        <div className="grid gap-2 md:grid-cols-2">
-          <p>
-            <span className="text-zinc-400 font-semibold">Confidence:</span> {item.confidence}
-          </p>
-          <p>
-            <span className="text-zinc-400 font-semibold">Estimated reuse:</span> {item.estimatedReuseCount}
-          </p>
-          <p>
-            <span className="text-zinc-400 font-semibold">Design-system candidate:</span>{" "}
-            {item.designSystemCandidate ? "yes" : "no"}
-          </p>
-          <p>
-            <span className="text-zinc-400 font-semibold">Fix level:</span> {item.fixLevel}
-          </p>
-        </div>
-
-        <div>
-          <div className="text-zinc-400 font-semibold mb-1">Evidence</div>
-          <ul className="list-disc pl-5 space-y-1">
-            {item.evidence.map((point) => (
-              <li key={point}>{point}</li>
-            ))}
-          </ul>
-        </div>
-
-        <div>
-          <div className="text-zinc-400 font-semibold mb-1">Files</div>
-          <ul className="list-disc pl-5">
-            {item.files.map((file) => (
-              <li key={file} className="font-mono text-xs break-all">
-                {file}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-    </details>
-  );
-}
-
-function GroupedFindings({
-  groups,
-  order,
-}: {
-  groups: Record<string, UiAuditFinding[]>;
-  order?: string[];
-}) {
-  const keys = order ?? Object.keys(groups).sort((a, b) => a.localeCompare(b));
-  return (
-    <div className="space-y-4">
-      {keys
-        .filter((key) => (groups[key] ?? []).length > 0)
-        .map((key) => (
-          <div key={key} className="space-y-2">
-            <h3 className="text-sm font-black text-white uppercase tracking-wider">
-              {key} ({groups[key].length})
-            </h3>
-            <div className="space-y-2">
-              {groups[key].map((finding) => (
-                <FindingCard key={finding.id} finding={finding} />
-              ))}
-            </div>
-          </div>
-        ))}
-    </div>
-  );
-}
-
-function sortInteractionRows(rows: UiAuditInteractionStateMatrixRow[]) {
-  const severityPriority: Record<UiAuditSeverity, number> = {
-    critical: 0,
-    high: 1,
-    medium: 2,
-    low: 3,
-    stylistic: 4,
-  };
-
-  const confidencePriority: Record<UiAuditInteractionStateMatrixRow["confidence"], number> = {
-    confirmed: 0,
-    likely: 1,
-    preference: 2,
-  };
-
-  return [...rows].sort((a, b) => {
-    const severityDelta = severityPriority[a.severity] - severityPriority[b.severity];
-    if (severityDelta !== 0) return severityDelta;
-
-    const confidenceDelta = confidencePriority[a.confidence] - confidencePriority[b.confidence];
-    if (confidenceDelta !== 0) return confidenceDelta;
-
-    return a.id.localeCompare(b.id);
-  });
-}
-
-function groupInteractionRowsBy(
-  rows: UiAuditInteractionStateMatrixRow[],
-  selector: (row: UiAuditInteractionStateMatrixRow) => string,
-) {
-  return rows.reduce(
-    (acc, row) => {
-      const key = selector(row);
-      acc[key] ??= [];
-      acc[key].push(row);
-      return acc;
-    },
-    {} as Record<string, UiAuditInteractionStateMatrixRow[]>,
-  );
-}
-
-function GroupedInteractionRows({
-  groups,
-  order,
-}: {
-  groups: Record<string, UiAuditInteractionStateMatrixRow[]>;
-  order?: string[];
-}) {
-  const keys = order ?? Object.keys(groups).sort((a, b) => a.localeCompare(b));
-  return (
-    <div className="space-y-4">
-      {keys
-        .filter((key) => (groups[key] ?? []).length > 0)
-        .map((key) => (
-          <div key={key} className="space-y-2">
-            <h3 className="text-sm font-black text-white uppercase tracking-wider">
-              {key} ({groups[key].length})
-            </h3>
-            <div className="space-y-2">
-              {sortInteractionRows(groups[key]).map((row) => (
-                <InteractionStateCard key={row.id} row={row} />
-              ))}
-            </div>
-          </div>
-        ))}
-    </div>
-  );
-}
-
-function sortComponentVariantItems(items: UiAuditComponentVariantDriftItem[]) {
-  const severityPriority: Record<UiAuditSeverity, number> = {
-    critical: 0,
-    high: 1,
-    medium: 2,
-    low: 3,
-    stylistic: 4,
-  };
-
-  const confidencePriority: Record<UiAuditComponentVariantDriftItem["confidence"], number> = {
-    confirmed: 0,
-    likely: 1,
-    preference: 2,
-  };
-
-  return [...items].sort((a, b) => {
-    const severityDelta = severityPriority[a.severity] - severityPriority[b.severity];
-    if (severityDelta !== 0) return severityDelta;
-
-    const confidenceDelta = confidencePriority[a.confidence] - confidencePriority[b.confidence];
-    if (confidenceDelta !== 0) return confidenceDelta;
-
-    return a.id.localeCompare(b.id);
-  });
-}
-
-function groupComponentVariantItemsBy(
-  items: UiAuditComponentVariantDriftItem[],
-  selector: (item: UiAuditComponentVariantDriftItem) => string,
-) {
-  return items.reduce(
-    (acc, item) => {
-      const key = selector(item);
-      acc[key] ??= [];
-      acc[key].push(item);
-      return acc;
-    },
-    {} as Record<string, UiAuditComponentVariantDriftItem[]>,
-  );
-}
-
-function GroupedComponentVariantItems({
-  groups,
-  order,
-}: {
-  groups: Record<string, UiAuditComponentVariantDriftItem[]>;
-  order?: string[];
-}) {
-  const keys = order ?? Object.keys(groups).sort((a, b) => a.localeCompare(b));
-  return (
-    <div className="space-y-4">
-      {keys
-        .filter((key) => (groups[key] ?? []).length > 0)
-        .map((key) => (
-          <div key={key} className="space-y-2">
-            <h3 className="text-sm font-black text-white uppercase tracking-wider">
-              {key} ({groups[key].length})
-            </h3>
-            <div className="space-y-2">
-              {sortComponentVariantItems(groups[key]).map((item) => (
-                <ComponentVariantCard key={item.id} item={item} />
-              ))}
-            </div>
-          </div>
-        ))}
-    </div>
-  );
+function MetricCard({ label, value, tone = "default" }: { label: string; value: React.ReactNode; tone?: "default" | "danger" | "success" }) {
+  const valueClass = tone === "danger" ? "text-[#ef4444]" : tone === "success" ? "text-[#a5f3fc]" : "text-white";
+  return (<div className={cn(recessedBlockClass, "p-3")}><div className="text-[11px] font-black uppercase tracking-[0.1em] text-[#a1a1aa]">{label}</div><div className={cn("mt-1 text-2xl font-black", valueClass)}>{value}</div></div>);
 }
 
 export default function UiAuditPage() {
-  const findings = sortFindings(uiAuditFindings);
-  const severityCounts = countBySeverity(findings);
-  const confidenceCounts = countByConfidence(findings);
-  const progressCounts = countReviewStatus(uiAuditProgress);
-  const { reviewed, unreviewed } = getReviewedVsUnreviewed(uiAuditProgress);
+  const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [registry, setRegistry] = useState<QualityHubRegistry>(() => {
+    if (typeof window === "undefined") return cloneInitialRegistry();
+    try { const raw = window.localStorage.getItem(STORAGE_KEY); if (!raw) return cloneInitialRegistry(); const parsed = JSON.parse(raw); if (!isQualityHubRegistry(parsed)) return cloneInitialRegistry(); return parsed; } catch { return cloneInitialRegistry(); }
+  });
+  const [activeView, setActiveView] = useState<HubViewId>("overview");
+  const [search, setSearch] = useState("");
+  const [groupBy, setGroupBy] = useState<GroupBy>("severity");
+  const [severityFilter, setSeverityFilter] = useState<"all" | QualityFinding["severity"]>("all");
+  const [domainFilter, setDomainFilter] = useState<"all" | QualityFinding["domain"]>("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | QualityFinding["status"]>("all");
+  const [agentFilter, setAgentFilter] = useState<string>("all");
+  const [importFeedback, setImportFeedback] = useState<string>("");
+  const [agentDraft, setAgentDraft] = useState<QualityAgent>(qualityHubDefaultAgent);
 
-  const bySeverity = groupFindingsBy(findings, (finding) => finding.severity);
-  const byConfidence = groupFindingsBy(findings, (finding) => finding.confidence);
-  const byPage = groupFindingsBy(findings, (finding) => finding.page);
-  const byComponent = groupFindingsBy(findings, (finding) => finding.component ?? "unspecified");
-  const byCategory = groupFindingsBy(findings, (finding) => finding.category);
+  useEffect(() => { if (typeof window === "undefined") return; window.localStorage.setItem(STORAGE_KEY, JSON.stringify(registry)); }, [registry]);
+  const updateRegistry = (updater: (p: QualityHubRegistry) => QualityHubRegistry) => { setRegistry((p) => nextRegistryWithTimestamp(updater(p))); };
 
-  const colorOrTokenFindings = findings.filter(
-    (finding) => finding.category === "color" || finding.category === "token-drift",
-  );
-  const typographyFindings = findings.filter((finding) => finding.category === "typography");
-  const spacingLayoutFindings = findings.filter(
-    (finding) => finding.category === "spacing" || finding.category === "layout",
-  );
-  const componentConsistencyFindings = findings.filter(
-    (finding) => finding.category === "component" || finding.category === "design-system",
-  );
-  const accessibilityFindings = findings.filter((finding) => finding.category === "accessibility");
-  const responsiveFindings = findings.filter(
-    (finding) => finding.category === "responsive" || finding.category === "interaction",
-  );
+  const allAgents = useMemo(() => getAgentList(registry), [registry]);
+  const findings = useMemo(() => sortFindings(registry.findings), [registry.findings]);
+  const severityCounts = useMemo(() => countBySeverity(findings), [findings]);
+  const statusCounts = useMemo(() => countByStatus(findings), [findings]);
+  const domainCounts = useMemo(() => countByDomain(findings), [findings]);
 
-  const systemicFindings = getSystemicFindings(findings);
-  const quickWins = getQuickWins(findings);
-  const requiresDecision = getRequiresDesignDecision(findings);
-  const batchFixes = getBatchableFindings(findings);
-  const colorPlanKeep = uiAuditColorConsolidationPlan.filter((item) => item.decision === "keep");
-  const colorPlanMerge = uiAuditColorConsolidationPlan.filter((item) => item.decision === "merge");
-  const colorPlanDeprecate = uiAuditColorConsolidationPlan.filter((item) => item.decision === "deprecate");
-  const interactionRows = sortInteractionRows(uiAuditInteractionStateMatrix);
-  const interactionRowsMissingFocus = interactionRows.filter(
-    (row) => row.stateCoverage.focusVisible === "missing",
-  );
-  const interactionRowsMissingKeyboard = interactionRows.filter(
-    (row) => row.keyboardParity === "missing",
-  );
-  const interactionRowsNonSemantic = interactionRows.filter(
-    (row) => row.semantics === "non-semantic",
-  );
-  const interactionRowsWithLoadingGaps = interactionRows.filter(
-    (row) => row.stateCoverage.loading === "missing" || row.stateCoverage.loading === "partial",
-  );
-  const interactionBySeverity = groupInteractionRowsBy(interactionRows, (row) => row.severity);
-  const interactionByPage = groupInteractionRowsBy(interactionRows, (row) => row.page);
-  const interactionByComponent = groupInteractionRowsBy(interactionRows, (row) => row.component);
-  const componentVariantRows = sortComponentVariantItems(uiAuditComponentVariantDriftMatrix);
-  const componentVariantSystemic = componentVariantRows.filter((item) => item.designSystemCandidate);
-  const componentVariantHighRisk = componentVariantRows.filter(
-    (item) => item.severity === "critical" || item.severity === "high" || item.classification === "conflicted",
-  );
-  const componentVariantByFamily = groupComponentVariantItemsBy(componentVariantRows, (item) => item.family);
-  const componentVariantByClassification = groupComponentVariantItemsBy(
-    componentVariantRows,
-    (item) => item.classification,
-  );
-  const componentVariantBySeverity = groupComponentVariantItemsBy(componentVariantRows, (item) => item.severity);
+  const filteredFindings = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return findings.filter((f) => {
+      if (severityFilter !== "all" && f.severity !== severityFilter) return false;
+      if (domainFilter !== "all" && f.domain !== domainFilter) return false;
+      if (statusFilter !== "all" && f.status !== statusFilter) return false;
+      if (agentFilter !== "all" && f.foundBy.agent.id !== agentFilter) return false;
+      if (!term) return true;
+      return [f.title, f.problem, f.currentState, f.page, f.component, f.route, ...f.files, ...f.tags].filter(Boolean).join(" ").toLowerCase().includes(term);
+    });
+  }, [findings, search, severityFilter, domainFilter, statusFilter, agentFilter]);
+
+  const groupedFindings = useMemo(() => groupFindingsBy(filteredFindings, (f) => {
+    if (groupBy === "severity") return f.severity;
+    if (groupBy === "domain") return f.domain;
+    if (groupBy === "status") return f.status;
+    if (groupBy === "page") return f.page || "unspecified";
+    if (groupBy === "component") return f.component || "unspecified";
+    return f.foundBy.agent.agentName || "unspecified";
+  }), [filteredFindings, groupBy]);
+
+  const orderedGroupEntries = useMemo(() => Object.entries(groupedFindings).sort((a, b) => {
+    if (groupBy === "severity") return QUALITY_SEVERITIES.indexOf(a[0] as QualityFinding["severity"]) - QUALITY_SEVERITIES.indexOf(b[0] as QualityFinding["severity"]);
+    return a[0].localeCompare(b[0]);
+  }), [groupedFindings, groupBy]);
+
+  const moduleCompleted = registry.scanModules.filter((m) => m.status === "completed").length;
+  const openFindings = statusCounts.open + statusCounts["in-progress"];
+  const dominantDomain = Object.entries(domainCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "n/a";
+
+  const handleReset = () => { if (!window.confirm("Reset Quality Hub and remove all current runs/findings?")) return; setRegistry(cloneInitialRegistry()); setImportFeedback("Quality Hub reset to clean baseline."); };
+  const handleExport = () => { const snapshot = nextRegistryWithTimestamp(registry); setRegistry(snapshot); downloadJson(`chronicle-quality-hub-${toCompactIso()}.json`, buildQualityHubTransferPackage(snapshot)); setImportFeedback("Exported Quality Hub JSON package."); };
+  const handleImportClick = () => { fileInputRef.current?.click(); };
+  const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]; if (!file) return;
+    try {
+      const text = await file.text(); const parsed = JSON.parse(text);
+      const candidate = isQualityHubRegistry(parsed) ? parsed : isQualityHubRegistry(parsed?.registry) ? parsed.registry : null;
+      if (!candidate) { setImportFeedback("Import failed: not a valid Quality Hub registry."); return; }
+      updateRegistry((p) => mergeRegistries(p, candidate));
+      setImportFeedback(`Imported and merged findings from ${file.name}.`);
+    } catch { setImportFeedback("Import failed: could not parse JSON."); } finally { event.target.value = ""; }
+  };
+  const handleAgentDraft = (patch: Partial<QualityAgent>) => { setAgentDraft((p) => { const next = { ...p, ...patch }; return { ...next, id: makeAgentId(next.agentName, next.modelName) }; }); };
+  const logRunSnapshot = () => {
+    const now = new Date().toISOString(); const runId = newId("run");
+    updateRegistry((p) => ({ ...p, runs: [{ id: runId, name: `Manual Snapshot ${new Date(now).toLocaleString()}`, profile: "standard" as const, status: "completed" as const, startedAt: now, finishedAt: now, agent: agentDraft, scope: ["src"], summary: summarizeRun(p.findings, 0), notes: "Manual snapshot captured from dashboard." }, ...p.runs], meta: { ...p.meta, lastRunId: runId, lastUpdatedAt: now } }));
+    setImportFeedback("Run snapshot logged.");
+  };
+  const updateFindingStatus = (id: string, status: QualityFinding["status"]) => {
+    const now = new Date().toISOString();
+    updateRegistry((p) => ({ ...p, findings: p.findings.map((f) => f.id === id ? { ...f, status, updatedAt: now, contributors: Array.from(new Map([...f.contributors, agentDraft].map((a) => [a.id, a])).values()) } : f) }));
+  };
+  const updateVerification = (id: string, vs: QualityFinding["verificationStatus"]) => {
+    const now = new Date().toISOString();
+    updateRegistry((p) => ({ ...p, findings: p.findings.map((f) => f.id !== id ? f : { ...f, verificationStatus: vs, verifiedBy: vs === "verified" ? { agent: agentDraft, runId: p.meta.lastRunId || "manual-verification", timestamp: now } : f.verifiedBy, updatedAt: now }) }));
+  };
+  const addCommentToFinding = (id: string) => {
+    const comment = window.prompt("Add note/comment for this finding:"); if (!comment?.trim()) return;
+    const now = new Date().toISOString();
+    updateRegistry((p) => ({ ...p, findings: p.findings.map((f) => f.id === id ? { ...f, comments: [...f.comments, { id: newId("comment"), author: `${agentDraft.agentName} (${agentDraft.modelName})`, timestamp: now, text: comment.trim() }], updatedAt: now } : f) }));
+  };
+
+  const activeViewMeta = HUB_VIEWS.find((v) => v.id === activeView) || HUB_VIEWS[0];
 
   return (
-    <div className="min-h-screen bg-[#121214] text-white">
-      <header className="sticky top-0 z-50 border-b border-ghost-white bg-[#1a1a1a] px-6 py-4">
-        <div className="max-w-[1400px] mx-auto flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-black tracking-tight">UI Audit System</h1>
-            <p className="text-sm text-[rgba(248,250,252,0.7)]">
-              Discovery-only audit ledger for design-system drift, UX issues, and accessibility risk.
-            </p>
-          </div>
-          <div className="text-sm">
-            <Link
-              to="/"
-              className="inline-flex items-center rounded-xl border border-[#4a5f7f] bg-[#2a2a2f] px-4 py-2 font-semibold hover:bg-[#3a3a3f] transition-colors"
-            >
-              Back to App
-            </Link>
-          </div>
+    <div className="min-h-screen bg-[#111113] text-[#eaedf1]">
+      <input ref={fileInputRef} type="file" accept="application/json" className="hidden" onChange={handleImportFile} />
+      <header className="flex-shrink-0 h-16 border-b border-slate-200 bg-white flex items-center justify-between px-4 lg:px-8 shadow-sm">
+        <div className="flex items-center gap-3">
+          <button type="button" onClick={() => navigate('/?tab=admin&adminTool=style_guide')} className="p-2 text-[hsl(var(--ui-surface-2))] hover:bg-slate-100 rounded-full transition-colors" aria-label="Go back" title="Go back">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+          <h1 className="text-lg font-black text-[hsl(var(--ui-surface-2))] uppercase tracking-tight">Quality Hub</h1>
+        </div>
+        <div className="flex items-center gap-3">
+          <button type="button" onClick={handleImportClick} className="inline-flex items-center gap-2 justify-center h-10 px-5 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider">Import</button>
+          <button type="button" onClick={handleExport} className="inline-flex items-center gap-2 justify-center h-10 px-5 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider">Export</button>
+          <button type="button" onClick={logRunSnapshot} className="inline-flex items-center gap-2 justify-center h-10 px-5 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider">Log Snapshot</button>
+          <button type="button" onClick={handleReset} className="inline-flex items-center gap-2 justify-center h-10 px-5 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider">Reset Hub</button>
         </div>
       </header>
 
-      <main className="max-w-[1400px] mx-auto px-6 py-6 space-y-5">
-        <Section id="executive-summary" title="1. Executive Summary">
-          <div className="grid gap-3 md:grid-cols-3">
-            <div className="rounded-xl border border-[#4a5f7f] bg-[#2a2a2f] p-4">
-              <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">Total Findings</div>
-              <div className="text-3xl font-black">{findings.length}</div>
-            </div>
-            <div className="rounded-xl border border-[#4a5f7f] bg-[#2a2a2f] p-4">
-              <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">Critical + High</div>
-              <div className="text-3xl font-black">{severityCounts.critical + severityCounts.high}</div>
-            </div>
-            <div className="rounded-xl border border-[#4a5f7f] bg-[#2a2a2f] p-4">
-              <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">Systemic Findings</div>
-              <div className="text-3xl font-black">{systemicFindings.length}</div>
-            </div>
+      <div className="mx-auto w-full max-w-[1480px] space-y-6 px-4 py-6 md:px-8 md:py-8">
+        {/* Metrics */}
+        <section className={panelOuterClass}><div className={panelBodyClass}>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <MetricCard label="Open Findings" value={openFindings} />
+            <MetricCard label="Critical" value={severityCounts.critical} tone="danger" />
+            <MetricCard label="Verified" value={statusCounts.verified} tone="success" />
+            <MetricCard label="Runs Logged" value={registry.runs.length} />
+            <MetricCard label="Modules Completed" value={`${moduleCompleted}/${registry.scanModules.length}`} />
           </div>
-          <p className="mt-4 text-sm text-[rgba(248,250,252,0.8)]">{uiAuditScope.notes}</p>
-        </Section>
+          {!!importFeedback && <div className={cn(recessedStripClass, "mt-4 p-3 text-xs text-[#eaedf1]")}>{importFeedback}</div>}
+        </div></section>
 
-        <Section id="scope" title="2. Audit Scope">
-          <div className="space-y-2 text-sm text-[rgba(248,250,252,0.85)]">
-            <p>
-              <span className="text-zinc-400 font-semibold">Started:</span> {uiAuditScope.startedOn}
-            </p>
-            <p>
-              <span className="text-zinc-400 font-semibold">Updated:</span> {uiAuditScope.updatedOn}
-            </p>
-            <div>
-              <div className="text-zinc-400 font-semibold mb-1">Sources of truth</div>
-              <ul className="list-disc pl-5 space-y-1">
-                {uiAuditScope.sources.map((source) => (
-                  <li key={source} className="font-mono text-xs break-all">
-                    {source}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <p>
-              <span className="text-zinc-400 font-semibold">Taxonomy:</span> severities ({uiAuditTaxonomy.severities.join(", ")}),
-              confidence ({uiAuditTaxonomy.confidence.join(", ")}), categories ({uiAuditTaxonomy.categories.length} defined).
-            </p>
-          </div>
-        </Section>
-
-        <Section id="progress-tracker" title="3. Audit Progress Tracker">
-          <div className="grid gap-3 md:grid-cols-3">
-            <div className="rounded-xl border border-ghost-white bg-[#2a2a2f] p-4">
-              <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">Reviewed</div>
-              <div className="text-2xl font-black">{progressCounts.reviewed}</div>
-            </div>
-            <div className="rounded-xl border border-ghost-white bg-[#2a2a2f] p-4">
-              <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">In Progress</div>
-              <div className="text-2xl font-black">{progressCounts["in-progress"]}</div>
-            </div>
-            <div className="rounded-xl border border-ghost-white bg-[#2a2a2f] p-4">
-              <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">Pending</div>
-              <div className="text-2xl font-black">{progressCounts.pending}</div>
-            </div>
-          </div>
-          <div className="mt-4 space-y-2">
-            {uiAuditProgress.map((unit) => (
-              <div key={unit.id} className="rounded-xl border border-ghost-white bg-[#2a2a2f] p-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-bold text-white">{unit.name}</span>
-                  <span className="px-2 py-0.5 rounded-md text-[10px] uppercase tracking-wider font-bold bg-[#4a5f7f] text-white">
-                    {unit.status}
-                  </span>
-                </div>
-                <p className="mt-1 text-xs text-[rgba(248,250,252,0.75)]">{unit.notes}</p>
-              </div>
-            ))}
-          </div>
-        </Section>
-
-        <Section id="reviewed-unreviewed" title="4. Reviewed vs Unreviewed Pages">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-xl border border-ghost-white bg-[#2a2a2f] p-4">
-              <h3 className="text-sm font-black uppercase tracking-wider mb-2">Reviewed ({reviewed.length})</h3>
-              <ul className="list-disc pl-5 space-y-1 text-sm text-[rgba(248,250,252,0.85)]">
-                {reviewed.map((unit) => (
-                  <li key={unit.id}>{unit.name}</li>
-                ))}
-              </ul>
-            </div>
-            <div className="rounded-xl border border-ghost-white bg-[#2a2a2f] p-4">
-              <h3 className="text-sm font-black uppercase tracking-wider mb-2">Unreviewed ({unreviewed.length})</h3>
-              <ul className="list-disc pl-5 space-y-1 text-sm text-[rgba(248,250,252,0.85)]">
-                {unreviewed.map((unit) => (
-                  <li key={unit.id}>
-                    {unit.name} ({unit.status})
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </Section>
-
-        <Section id="findings-by-severity" title="5. Findings by Severity">
-          <div className="mb-4 flex flex-wrap gap-2 text-xs">
-            {Object.entries(severityCounts).map(([severity, count]) => (
-              <span key={severity} className="px-2 py-1 rounded-md bg-[#2a2a2f] border border-ghost-white">
-                {severity}: {count}
-              </span>
-            ))}
-          </div>
-          <GroupedFindings
-            groups={bySeverity}
-            order={["critical", "high", "medium", "low", "stylistic"]}
-          />
-        </Section>
-
-        <Section id="findings-by-confidence" title="6. Findings by Confidence">
-          <div className="mb-4 flex flex-wrap gap-2 text-xs">
-            {Object.entries(confidenceCounts).map(([confidence, count]) => (
-              <span key={confidence} className="px-2 py-1 rounded-md bg-[#2a2a2f] border border-ghost-white">
-                {confidence}: {count}
-              </span>
-            ))}
-          </div>
-          <GroupedFindings
-            groups={byConfidence}
-            order={["confirmed", "likely", "preference"]}
-          />
-        </Section>
-
-        <Section id="findings-by-page" title="7. Findings by Page">
-          <GroupedFindings groups={byPage} />
-        </Section>
-
-        <Section id="findings-by-component" title="8. Findings by Component">
-          <GroupedFindings groups={byComponent} />
-        </Section>
-
-        <Section id="findings-by-category" title="9. Findings by Category">
-          <GroupedFindings groups={byCategory} />
-        </Section>
-
-        <Section id="token-drift" title="10. Design Token Drift">
-          <div className="space-y-4 text-sm">
-            <div className="rounded-xl border border-ghost-white bg-[#2a2a2f] p-4">
-              <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold mb-2">Hardcoded Hex Hotspots</div>
-              <ul className="list-disc pl-5 space-y-1">
-                {tokenDriftSnapshot.hardcodedHexTopValues.map((entry) => (
-                  <li key={entry.token}>
-                    <span className="font-mono">{entry.token}</span>: {entry.occurrences} occurrences
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="rounded-xl border border-ghost-white bg-[#2a2a2f] p-4">
-                <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold mb-2">Radius Variants</div>
-                <ul className="list-disc pl-5 space-y-1">
-                  {tokenDriftSnapshot.radiusVariants.map((entry) => (
-                    <li key={entry.token}>
-                      <span className="font-mono">{entry.token}</span>: {entry.occurrences}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="rounded-xl border border-ghost-white bg-[#2a2a2f] p-4">
-                <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold mb-2">Micro Typography</div>
-                <ul className="list-disc pl-5 space-y-1">
-                  {tokenDriftSnapshot.typographyMicrosizes.map((entry) => (
-                    <li key={entry.token}>
-                      <span className="font-mono">{entry.token}</span>: {entry.occurrences}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </div>
-        </Section>
-
-        <Section id="color-consolidation" title="11. Color Consolidation Opportunities">
-          <div className="space-y-4">
-            <div className="grid gap-3 md:grid-cols-4">
-              <div className="rounded-xl border border-ghost-white bg-[#2a2a2f] p-4">
-                <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">Color Decisions</div>
-                <div className="text-2xl font-black">{uiAuditColorConsolidationPlan.length}</div>
-              </div>
-              <div className="rounded-xl border border-ghost-white bg-[#2a2a2f] p-4">
-                <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">Keep</div>
-                <div className="text-2xl font-black">{colorPlanKeep.length}</div>
-              </div>
-              <div className="rounded-xl border border-ghost-white bg-[#2a2a2f] p-4">
-                <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">Merge</div>
-                <div className="text-2xl font-black">{colorPlanMerge.length}</div>
-              </div>
-              <div className="rounded-xl border border-ghost-white bg-[#2a2a2f] p-4">
-                <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">Deprecate</div>
-                <div className="text-2xl font-black">{colorPlanDeprecate.length}</div>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-ghost-white bg-[#2a2a2f] p-4">
-              <h3 className="text-sm font-black uppercase tracking-wider mb-3">Keep / Merge / Deprecate Map</h3>
-              <div className="space-y-2">
-                <h4 className="text-xs font-black uppercase tracking-wider text-emerald-300">
-                  Keep ({colorPlanKeep.length})
-                </h4>
-                {colorPlanKeep.map((item) => (
-                  <ColorPlanCard key={item.id} item={item} />
-                ))}
-
-                <h4 className="text-xs font-black uppercase tracking-wider text-blue-300 pt-2">
-                  Merge ({colorPlanMerge.length})
-                </h4>
-                {colorPlanMerge.map((item) => (
-                  <ColorPlanCard key={item.id} item={item} />
-                ))}
-
-                <h4 className="text-xs font-black uppercase tracking-wider text-rose-300 pt-2">
-                  Deprecate ({colorPlanDeprecate.length})
-                </h4>
-                {colorPlanDeprecate.map((item) => (
-                  <ColorPlanCard key={item.id} item={item} />
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              {sortFindings(colorOrTokenFindings).map((finding) => (
-                <FindingCard key={finding.id} finding={finding} />
+        {/* Nav */}
+        <section className={panelOuterClass}>
+          <div className={panelHeaderClass}><div className={panelHeaderOverlayClass} /><h2 className="relative z-10 text-[20px] font-semibold tracking-tight text-white">Quality Hub Navigation</h2></div>
+          <div className={panelBodyClass}><div className={panelInnerClass}>
+            <div className="grid gap-2 md:grid-cols-4">
+              {HUB_VIEWS.map((v) => (
+                <button key={v.id} type="button" onClick={() => setActiveView(v.id)} className={cn("rounded-xl border-none px-3 py-3 text-left transition shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]", activeView === v.id ? "bg-[linear-gradient(180deg,#5a7292_0%,#4a5f7f_100%)] text-white" : "bg-[#3c3e47] hover:brightness-110")}>
+                  <div className="text-xs font-black uppercase tracking-[0.14em] text-[#eaedf1]">{v.label}</div>
+                  <div className="mt-1 text-[11px] text-[#a1a1aa]">{v.description}</div>
+                </button>
               ))}
             </div>
-          </div>
-        </Section>
+            <div className={cn(recessedStripClass, "mt-3 p-3 text-xs text-[#eaedf1]")}><span className="font-bold text-white">{activeViewMeta.label}:</span> {activeViewMeta.description}</div>
+          </div></div>
+        </section>
 
-        <Section id="typography-issues" title="12. Typography Issues">
-          <div className="space-y-2">
-            {sortFindings(typographyFindings).map((finding) => (
-              <FindingCard key={finding.id} finding={finding} />
-            ))}
+        {/* Overview */}
+        {activeView === "overview" && (
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Section title="Scan Modules"><div className="space-y-2">
+              {registry.scanModules.map((m) => (<div key={m.id} className={cn(recessedBlockClass, "p-3")}><div className="flex items-start justify-between gap-2"><div><div className="text-sm font-bold text-[#eaedf1]">{m.name}</div><div className="mt-1 text-xs text-[#a1a1aa]">{m.description}</div></div><span className={cn("rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-wider", moduleStatusClass[m.status])}>{m.status}</span></div></div>))}
+            </div></Section>
+            <Section title="Review Coverage Units"><div className="space-y-2">
+              {registry.reviewUnits.map((u) => (<div key={u.id} className={cn(recessedBlockClass, "p-3")}><div className="flex items-center justify-between gap-2"><div><div className="text-sm font-bold text-[#eaedf1]">{u.name}</div><div className="text-xs text-[#a1a1aa]">{u.route || "No route set"}</div></div><span className="rounded-full bg-[#4a5f7f] px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">{u.status}</span></div><div className="mt-2 text-xs text-[#a1a1aa]">{u.notes}</div></div>))}
+            </div></Section>
           </div>
-        </Section>
+        )}
 
-        <Section id="spacing-layout-issues" title="13. Spacing / Layout Issues">
-          <div className="space-y-2">
-            {sortFindings(spacingLayoutFindings).map((finding) => (
-              <FindingCard key={finding.id} finding={finding} />
-            ))}
-          </div>
-        </Section>
-
-        <Section id="component-consistency" title="14. Component Consistency Findings">
-          <div className="space-y-2">
-            {sortFindings(componentConsistencyFindings).map((finding) => (
-              <FindingCard key={finding.id} finding={finding} />
-            ))}
-          </div>
-        </Section>
-
-        <Section id="accessibility-findings" title="15. Accessibility Findings">
-          <div className="space-y-2">
-            {sortFindings(accessibilityFindings).map((finding) => (
-              <FindingCard key={finding.id} finding={finding} />
-            ))}
-          </div>
-        </Section>
-
-        <Section id="responsive-tablet-findings" title="16. Responsive / Tablet Findings">
-          <div className="space-y-2">
-            {sortFindings(responsiveFindings).map((finding) => (
-              <FindingCard key={finding.id} finding={finding} />
-            ))}
-          </div>
-        </Section>
-
-        <Section id="systemic-issues" title="17. Systemic Issues">
-          <div className="space-y-2">
-            {systemicFindings.map((finding) => (
-              <FindingCard key={finding.id} finding={finding} />
-            ))}
-          </div>
-        </Section>
-
-        <Section id="quick-wins" title="18. Quick Wins">
-          <div className="space-y-2">
-            {quickWins.length === 0 ? (
-              <p className="text-sm text-[rgba(248,250,252,0.75)]">No quick wins currently classified.</p>
+        {/* Findings */}
+        {activeView === "findings" && (
+          <Section title="Findings Workspace"><div className="space-y-4">
+            <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-5">
+              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search findings..." className={cn("xl:col-span-2", inputClass)} />
+              <select value={severityFilter} onChange={(e) => setSeverityFilter(e.target.value as typeof severityFilter)} className={selectClass}><option value="all">All severities</option>{QUALITY_SEVERITIES.map((s) => <option key={s} value={s}>{s}</option>)}</select>
+              <select value={domainFilter} onChange={(e) => setDomainFilter(e.target.value as typeof domainFilter)} className={selectClass}><option value="all">All domains</option>{QUALITY_DOMAINS.map((d) => <option key={d} value={d}>{d}</option>)}</select>
+              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)} className={selectClass}><option value="all">All statuses</option>{QUALITY_FINDING_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}</select>
+            </div>
+            <div className="grid gap-2 md:grid-cols-2">
+              <select value={agentFilter} onChange={(e) => setAgentFilter(e.target.value)} className={selectClass}><option value="all">All agents</option>{allAgents.map((a) => <option key={a.id} value={a.id}>{a.agentName} ({a.modelName})</option>)}</select>
+              <select value={groupBy} onChange={(e) => setGroupBy(e.target.value as GroupBy)} className={selectClass}><option value="severity">Group by severity</option><option value="domain">Group by domain</option><option value="status">Group by status</option><option value="page">Group by page</option><option value="component">Group by component</option><option value="agent">Group by agent</option></select>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-3">
+              <div className={cn(recessedStripClass, "p-2 text-xs text-[#eaedf1]")}><span className="font-bold text-white">{filteredFindings.length}</span> filtered findings</div>
+              <div className={cn(recessedStripClass, "p-2 text-xs text-[#eaedf1]")}>Dominant domain: <span className="font-bold text-white">{dominantDomain}</span></div>
+              <div className={cn(recessedStripClass, "p-2 text-xs text-[#eaedf1]")}>Confidence levels: {QUALITY_CONFIDENCE.length}</div>
+            </div>
+            {orderedGroupEntries.length === 0 ? (
+              <div className="rounded-xl border-2 border-dashed border-[#71717a] bg-[linear-gradient(to_bottom_right,#27272a,#18181b)] px-4 py-10 text-center text-sm text-[#a1a1aa]">No findings yet. Import a JSON package to start.</div>
             ) : (
-              quickWins.map((finding) => <FindingCard key={finding.id} finding={finding} />)
-            )}
-          </div>
-        </Section>
-
-        <Section id="requires-design-decision" title="19. Requires Design Decision">
-          <div className="space-y-2">
-            {requiresDecision.length === 0 ? (
-              <p className="text-sm text-[rgba(248,250,252,0.75)]">No findings currently marked as decision-gated.</p>
-            ) : (
-              requiresDecision.map((finding) => <FindingCard key={finding.id} finding={finding} />)
-            )}
-          </div>
-        </Section>
-
-        <Section id="safe-future-batch-fixes" title="20. Safe Future Batch Fixes">
-          <div className="space-y-2">
-            {batchFixes.length === 0 ? (
-              <p className="text-sm text-[rgba(248,250,252,0.75)]">No batch-fix candidates identified.</p>
-            ) : (
-              batchFixes.map((finding) => <FindingCard key={finding.id} finding={finding} />)
-            )}
-          </div>
-        </Section>
-
-        <Section id="interaction-state-matrix" title="21. Interaction State Matrix">
-          <div className="space-y-4">
-            <div className="grid gap-3 md:grid-cols-5">
-              <div className="rounded-xl border border-ghost-white bg-[#2a2a2f] p-4">
-                <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">Patterns Audited</div>
-                <div className="text-2xl font-black">{interactionRows.length}</div>
-              </div>
-              <div className="rounded-xl border border-ghost-white bg-[#2a2a2f] p-4">
-                <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">Missing Focus</div>
-                <div className="text-2xl font-black">{interactionRowsMissingFocus.length}</div>
-              </div>
-              <div className="rounded-xl border border-ghost-white bg-[#2a2a2f] p-4">
-                <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">Missing Keyboard</div>
-                <div className="text-2xl font-black">{interactionRowsMissingKeyboard.length}</div>
-              </div>
-              <div className="rounded-xl border border-ghost-white bg-[#2a2a2f] p-4">
-                <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">Non-semantic</div>
-                <div className="text-2xl font-black">{interactionRowsNonSemantic.length}</div>
-              </div>
-              <div className="rounded-xl border border-ghost-white bg-[#2a2a2f] p-4">
-                <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">Loading Gaps</div>
-                <div className="text-2xl font-black">{interactionRowsWithLoadingGaps.length}</div>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-ghost-white bg-[#2a2a2f] p-4 space-y-3">
-              <h3 className="text-sm font-black uppercase tracking-wider">High-risk State Gaps</h3>
-              <div className="space-y-2">
-                {sortInteractionRows(
-                  interactionRows.filter(
-                    (row) =>
-                      row.severity === "critical" ||
-                      row.keyboardParity === "missing" ||
-                      row.stateCoverage.focusVisible === "missing",
-                  ),
-                ).map((row) => (
-                  <InteractionStateCard key={row.id} row={row} />
-                ))}
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-ghost-white bg-[#2a2a2f] p-4 space-y-3">
-              <h3 className="text-sm font-black uppercase tracking-wider">By Severity</h3>
-              <GroupedInteractionRows
-                groups={interactionBySeverity}
-                order={["critical", "high", "medium", "low", "stylistic"]}
-              />
-            </div>
-
-            <div className="rounded-xl border border-ghost-white bg-[#2a2a2f] p-4 space-y-3">
-              <h3 className="text-sm font-black uppercase tracking-wider">By Page</h3>
-              <GroupedInteractionRows groups={interactionByPage} />
-            </div>
-
-            <div className="rounded-xl border border-ghost-white bg-[#2a2a2f] p-4 space-y-3">
-              <h3 className="text-sm font-black uppercase tracking-wider">By Component</h3>
-              <GroupedInteractionRows groups={interactionByComponent} />
-            </div>
-          </div>
-        </Section>
-
-        <Section id="component-variant-drift-matrix" title="22. Component Variant Drift Matrix">
-          <div className="space-y-4">
-            <div className="grid gap-3 md:grid-cols-4">
-              <div className="rounded-xl border border-ghost-white bg-[#2a2a2f] p-4">
-                <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">Variants Audited</div>
-                <div className="text-2xl font-black">{componentVariantRows.length}</div>
-              </div>
-              <div className="rounded-xl border border-ghost-white bg-[#2a2a2f] p-4">
-                <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">Systemic Candidates</div>
-                <div className="text-2xl font-black">{componentVariantSystemic.length}</div>
-              </div>
-              <div className="rounded-xl border border-ghost-white bg-[#2a2a2f] p-4">
-                <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">High-risk Variants</div>
-                <div className="text-2xl font-black">{componentVariantHighRisk.length}</div>
-              </div>
-              <div className="rounded-xl border border-ghost-white bg-[#2a2a2f] p-4">
-                <div className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">Conflicted Families</div>
-                <div className="text-2xl font-black">
-                  {componentVariantRows.filter((item) => item.classification === "conflicted").length}
+              <div className="space-y-4">{orderedGroupEntries.map(([group, items]) => (
+                <div key={group} className="space-y-2">
+                  <div className="flex items-center justify-between"><h3 className="text-sm font-black uppercase tracking-[0.16em] text-[#eaedf1]/90">{group}</h3><span className="rounded-full bg-[#4a5f7f] px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#eaedf1]">{items.length}</span></div>
+                  <div className="space-y-2">{items.map((f) => (
+                    <details key={f.id} className="rounded-xl border border-[#4a5f7f]/45 bg-[#1a2030] open:border-[#5a7292]">
+                      <summary className="cursor-pointer list-none px-4 py-3">
+                        <div className="flex flex-wrap items-start gap-2">
+                          <span className={cn("rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em]", severityBadgeClass[f.severity])}>{f.severity}</span>
+                          <span className="rounded-full bg-[#4a5f7f] px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">{f.domain}</span>
+                          <span className="rounded-full bg-[#4a5f7f] px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">{f.status}</span>
+                        </div>
+                        <div className="mt-2 text-sm font-bold text-white">{f.title}</div>
+                        <div className="mt-1 text-xs text-[#a1a1aa]">{f.page}{f.component ? ` • ${f.component}` : ""}</div>
+                      </summary>
+                      <div className="border-t border-[#4a5f7f]/35 px-4 py-3">
+                        <div className="grid gap-3 lg:grid-cols-2">
+                          <div className="space-y-2 text-xs text-[#a1a1aa]">
+                            <div><span className="font-bold text-[#eaedf1]">Problem:</span> {f.problem}</div>
+                            <div><span className="font-bold text-[#eaedf1]">Current State:</span> {f.currentState}</div>
+                            <div><span className="font-bold text-[#eaedf1]">Why It Matters:</span> {f.whyItMatters}</div>
+                            <div><span className="font-bold text-[#eaedf1]">Recommendation:</span> {f.recommendation}</div>
+                          </div>
+                          <div className="space-y-2 text-xs text-[#a1a1aa]">
+                            <div><span className="font-bold text-[#eaedf1]">Files:</span>{f.files.length === 0 ? <span className="text-[#71717a] ml-1">None</span> : f.files.map((file) => <div key={file} className="font-mono text-[11px] text-[#a1a1aa]">{file}</div>)}</div>
+                            <div><span className="font-bold text-[#eaedf1]">Evidence:</span><ul className="mt-1 list-disc pl-5">{f.evidence.map((ev, i) => <li key={i}>{ev}</li>)}</ul></div>
+                            <div><span className="font-bold text-[#eaedf1]">Found By:</span> {f.foundBy.agent.agentName}</div>
+                            <div><span className="font-bold text-[#eaedf1]">Updated:</span> {formatDate(f.updatedAt)}</div>
+                          </div>
+                        </div>
+                        <div className="mt-4 grid gap-2 md:grid-cols-3">
+                          <select value={f.status} onChange={(e) => updateFindingStatus(f.id, e.target.value as QualityFinding["status"])} className={selectClass}>{QUALITY_FINDING_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}</select>
+                          <select value={f.verificationStatus} onChange={(e) => updateVerification(f.id, e.target.value as QualityFinding["verificationStatus"])} className={selectClass}>{QUALITY_VERIFICATION_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}</select>
+                          <button type="button" onClick={() => addCommentToFinding(f.id)} className={neutralButtonClass}>Add Comment</button>
+                        </div>
+                        {f.comments.length > 0 && <div className="mt-3 space-y-2 rounded-lg border border-[#4a5f7f]/35 bg-[#1a2030] p-3">{f.comments.map((c) => <div key={c.id} className="rounded-md border border-[#4a5f7f]/30 bg-[#1c1c1f] px-2 py-2 text-xs text-[#a1a1aa]"><div className="font-bold text-[#eaedf1]">{c.author}</div><div className="text-[10px] text-[#71717a]">{formatDate(c.timestamp)}</div><div className="mt-1">{c.text}</div></div>)}</div>}
+                      </div>
+                    </details>
+                  ))}</div>
                 </div>
+              ))}</div>
+            )}
+          </div></Section>
+        )}
+
+        {/* Runs */}
+        {activeView === "runs" && (
+          <div className="grid gap-6 lg:grid-cols-[430px_minmax(0,1fr)]">
+            <Section title="Agent Attribution"><div className="space-y-3">
+              <div><label className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa]">Agent Name</label><input value={agentDraft.agentName} onChange={(e) => handleAgentDraft({ agentName: e.target.value })} className={inputClass} /></div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div><label className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa]">Model</label><input value={agentDraft.modelName} onChange={(e) => handleAgentDraft({ modelName: e.target.value })} className={inputClass} /></div>
+                <div><label className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa]">Platform</label><input value={agentDraft.platform} onChange={(e) => handleAgentDraft({ platform: e.target.value })} className={inputClass} /></div>
               </div>
+              <div className={cn(recessedStripClass, "p-3 text-[11px] text-[#eaedf1]")}>Active tag: <span className="font-bold text-white">{agentDraft.agentName}</span> · {agentDraft.modelName} · {agentDraft.platform}</div>
+              <button type="button" onClick={logRunSnapshot} className={subtleButtonClass}>Log Run Snapshot</button>
             </div>
-
-            <div className="rounded-xl border border-ghost-white bg-[#2a2a2f] p-4 space-y-3">
-              <h3 className="text-sm font-black uppercase tracking-wider">High-risk Variant Drift</h3>
-              <div className="space-y-2">
-                {componentVariantHighRisk.map((item) => (
-                  <ComponentVariantCard key={item.id} item={item} />
-                ))}
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-ghost-white bg-[#2a2a2f] p-4 space-y-3">
-              <h3 className="text-sm font-black uppercase tracking-wider">By Family</h3>
-              <GroupedComponentVariantItems
-                groups={componentVariantByFamily}
-                order={["button", "card", "panel", "modal", "input", "chip-badge", "navigation", "unknown"]}
-              />
-            </div>
-
-            <div className="rounded-xl border border-ghost-white bg-[#2a2a2f] p-4 space-y-3">
-              <h3 className="text-sm font-black uppercase tracking-wider">By Classification</h3>
-              <GroupedComponentVariantItems
-                groups={componentVariantByClassification}
-                order={["conflicted", "near-duplicate", "shared", "one-off"]}
-              />
-            </div>
-
-            <div className="rounded-xl border border-ghost-white bg-[#2a2a2f] p-4 space-y-3">
-              <h3 className="text-sm font-black uppercase tracking-wider">By Severity</h3>
-              <GroupedComponentVariantItems
-                groups={componentVariantBySeverity}
-                order={["critical", "high", "medium", "low", "stylistic"]}
-              />
-            </div>
+            <div className={cn(recessedBlockClass, "mt-4 p-3")}><div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa]">Known Agents</div><div className="mt-2 space-y-1">{allAgents.map((a) => <div key={a.id} className="text-xs text-[#a1a1aa]">{a.agentName} <span className="text-[#71717a]">({a.modelName})</span></div>)}</div></div>
+            </Section>
+            <Section title="Run History"><div className="overflow-x-auto rounded-xl border border-[#4a5f7f]/45">
+              <table className="w-full min-w-[720px] border-collapse"><thead className="bg-[#1a2030]"><tr><th className="px-3 py-2 text-left text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa]">Run</th><th className="px-3 py-2 text-left text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa]">Agent</th><th className="px-3 py-2 text-left text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa]">Profile</th><th className="px-3 py-2 text-left text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa]">Summary</th><th className="px-3 py-2 text-left text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa]">Finished</th></tr></thead>
+              <tbody>{registry.runs.length === 0 ? <tr><td className="px-3 py-4 text-xs text-[#71717a]" colSpan={5}>No run history yet.</td></tr> : registry.runs.map((r) => <tr key={r.id} className="border-t border-[#4a5f7f]/25 bg-[#1a2030]"><td className="px-3 py-3 text-xs text-[#e4e4e7]"><div className="font-bold text-[#eaedf1]">{r.name}</div><div className="font-mono text-[11px] text-[#71717a]">{r.id}</div></td><td className="px-3 py-3 text-xs text-[#a1a1aa]">{r.agent.agentName}</td><td className="px-3 py-3 text-xs uppercase text-[#a1a1aa]">{r.profile}</td><td className="px-3 py-3 text-xs text-[#a1a1aa]">total {r.summary.findingsTotal} • open {r.summary.open}</td><td className="px-3 py-3 text-xs text-[#a1a1aa]">{formatDate(r.finishedAt)}</td></tr>)}</tbody></table>
+            </div></Section>
           </div>
-        </Section>
-      </main>
+        )}
+
+        {/* Handoff */}
+        {activeView === "handoff" && (
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+            <Section title="Cross-Agent Handoff Notes"><div className={cn(recessedBlockClass, "min-h-[260px] p-4")}>{registry.handoffNotes?.trim() ? <pre className="whitespace-pre-wrap text-sm leading-relaxed text-[#eaedf1]">{registry.handoffNotes}</pre> : <p className="text-sm text-[#a1a1aa]">No handoff notes yet.</p>}</div></Section>
+            <Section title="Transfer Workflow">
+              <ol className="list-decimal space-y-2 pl-5 text-sm text-[#a1a1aa]"><li>Click <span className="font-bold text-[#eaedf1]">Export</span>.</li><li>Give the file to another agent.</li><li>Import the returned JSON here.</li><li>Review merged findings.</li></ol>
+              <div className={cn(recessedBlockClass, "mt-4 p-3 text-xs text-[#a1a1aa]")}><div className="font-bold text-[#eaedf1]">Registry Metadata</div><div className="mt-2 space-y-1"><div>Project: {registry.meta.project}</div><div>Version: {registry.meta.version}</div><div>Last Updated: {formatDate(registry.meta.lastUpdatedAt)}</div><div>Last Run: {registry.meta.lastRunId || "none"}</div></div></div>
+            </Section>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
