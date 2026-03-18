@@ -509,11 +509,11 @@ export default function UiAuditPage() {
                           <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Files & Evidence</div>
                           <div className="grid gap-3 lg:grid-cols-2 text-xs text-[#a1a1aa]">
                             <div>
-                              <span className="font-bold text-[#eaedf1]">Files:</span>
+                             <span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Files</span>
                               {f.files.length === 0 ? <span className="ml-1 text-[#71717a]">—</span> : <div className="mt-1 space-y-0.5">{f.files.map((file) => <div key={file} className="font-mono text-[11px] text-[#a1a1aa]">{file}</div>)}</div>}
                             </div>
                             <div>
-                              <span className="font-bold text-[#eaedf1]">Evidence:</span>
+                             <span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Evidence</span>
                               {f.evidence.length === 0 ? <span className="ml-1 text-[#71717a]">—</span> : <ul className="mt-1 list-disc pl-5">{f.evidence.map((ev, i) => <li key={i}>{ev}</li>)}</ul>}
                             </div>
                           </div>
