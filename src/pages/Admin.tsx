@@ -7,6 +7,9 @@ import { supabase } from '@/integrations/supabase/client';
 const LazyImageGen = React.lazy(() =>
   import('@/components/admin/ImageGenerationTool').then(m => ({ default: m.ImageGenerationTool }))
 );
+const LazyAppGuide = React.lazy(() =>
+  import('@/components/admin/guide/AppGuideTool').then(m => ({ default: m.AppGuideTool }))
+);
 const LazyStyleGuide = React.lazy(() =>
   import('@/components/admin/styleguide/StyleGuideTool')
 );
