@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { ScenarioData, TabKey, Character, ScenarioMetadata, Conversation, Message, ConversationMetadata, SideCharacter, UserBackground, ContentThemes, defaultContentThemes } from "@/types";
 
 import { fetchSavedScenarios, SavedScenario, unsaveScenario, fetchUserPublishedScenarios, PublishedScenario } from "@/services/gallery-data";
@@ -203,6 +203,21 @@ const IndexContent = () => {
     tone: "success" | "error" | "info";
     text: string;
   } | null>(null);
+  // Read URL query params for deep-linking (e.g. /?tab=admin&adminTool=app_guide)
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    const qTab = searchParams.get('tab');
+    const qTool = searchParams.get('adminTool');
+    if (qTab) {
+      setTab(qTab as TabKey);
+      if (qTab === 'admin' && qTool) {
+        setAdminActiveTool(qTool);
+      }
+      // Clear params after applying so they don't persist on further nav
+      setSearchParams({}, { replace: true });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (!storyTransferNotice) return;
     const t = setTimeout(() => setStoryTransferNotice(null), 4000);

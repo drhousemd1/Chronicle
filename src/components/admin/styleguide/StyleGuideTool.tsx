@@ -89,9 +89,10 @@ interface StyleGuideToolProps {
   onRegisterDownload?: (fn: (() => void) | null) => void;
   onRegisterEdits?: (fn: (() => void) | null) => void;
   onEditsCountChange?: (count: number) => void;
+  onSwitchToAppGuide?: () => void;
 }
 
-export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownload, onRegisterEdits, onEditsCountChange }) => {
+export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownload, onRegisterEdits, onEditsCountChange, onSwitchToAppGuide }) => {
   const navigate = useNavigate();
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -169,7 +170,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
   const openUiAudit = useCallback(() => navigate('/style-guide/ui-audit'), [navigate]);
   const openApiInspector = useCallback(() => navigate('/style-guide/api-inspector'), [navigate]);
-  const openAppGuide = useCallback(() => navigate('/?tab=admin&adminTool=app_guide'), [navigate]);
+  const openAppGuide = useCallback(() => { if (onSwitchToAppGuide) onSwitchToAppGuide(); else navigate('/?tab=admin&adminTool=app_guide'); }, [onSwitchToAppGuide, navigate]);
 
   return (
     <EditsContext.Provider value={editsContextValue}>

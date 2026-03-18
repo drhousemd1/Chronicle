@@ -1,37 +1,53 @@
 
+# Sandbox Feature Transfer — Master Tracker
 
-# Fix App Guide and API Inspector Navigation
+## Source Documents
+- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
+- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
 
-## Problems Found
+## Features Being Transferred
+| ID | Feature | Status |
+|----|---------|--------|
+| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
+| B | Story Transfer Library (story-transfer.ts) | ✅ |
+| A | UI Audit System (schema, utils, findings, page) | 🔄 |
+| B | Story Export/Import Modals | ✅ |
+| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
+| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
+| - | StyleGuideTool.tsx audit button | ⬜ |
+| - | App.tsx route wiring | ⬜ |
+| - | Index.tsx full wiring | ⬜ |
 
-1. **App Guide button**: Calls `navigate('/?tab=admin&adminTool=app_guide')` but `Index.tsx` never reads `tab` or `adminTool` from URL query params. The page reloads to its default state instead of switching to the admin tab with the app guide tool active.
+## Prompt Execution Status
 
-2. **API Inspector button**: Calls `navigate('/style-guide/api-inspector')` which routes correctly, but the iframe references `public/api-call-inspector-chronicle.html` which **does not exist** -- the file was never created. The page loads but shows an empty iframe.
+| # | Target File(s) | Status | Notes |
+|---|---------------|--------|-------|
+| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
+| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
+| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
+| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
+| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
+| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
+| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
+| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
+| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
+| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
+| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
+| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
+| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
+| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
 
-## Fix Plan
-
-### 1. Fix App Guide navigation in `StyleGuideTool.tsx`
-- Change `openAppGuide` from `navigate('/?tab=admin&adminTool=app_guide')` to instead directly call the parent's `onSetActiveTool` callback
-- Thread a new prop `onSwitchToAppGuide?: () => void` from Admin.tsx down to StyleGuideTool
-- In Admin.tsx, pass `onSwitchToAppGuide={() => onSetActiveTool('app_guide')}` to the StyleGuideTool component
-
-### 2. Fix API Inspector navigation
-- Same approach: instead of navigating to a separate route, load the API Inspector inline within the dashboard
-- OR: keep the route but create `public/api-call-inspector-chronicle.html` -- however this file is ~3000 lines from the transfer pack and was never extracted
-- Simplest fix: change to use the same prop-callback pattern as App Guide, passing `onSwitchToApiInspector` which navigates to the route, BUT the HTML file still needs to exist
-
-### 3. Create `public/api-call-inspector-chronicle.html`
-- This file needs to be created for the API Inspector iframe to have content
-- The content is from the transfer pack (lines ~12600-15573) -- a large HTML document
-
-## Changes
-
-| File | Change |
-|------|--------|
-| `src/components/admin/styleguide/StyleGuideTool.tsx` | Add `onSwitchToAppGuide` prop; call it instead of `navigate()` |
-| `src/pages/Admin.tsx` | Pass `onSwitchToAppGuide={() => onSetActiveTool('app_guide')}` to StyleGuideTool |
-| `src/pages/Index.tsx` | Add `useEffect` to read `tab` and `adminTool` from URL query params on mount, setting `tab` and `adminActiveTool` accordingly |
-| `public/api-call-inspector-chronicle.html` | Create placeholder HTML file so the API Inspector iframe renders content |
-
-The most robust fix is to make `Index.tsx` read URL query params for `tab` and `adminTool`, which fixes the App Guide navigation and any future deep-linking needs. The API Inspector needs its HTML asset file created.
-
+## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
+- `src/types.ts`: line 11507
+- `src/utils.ts`: line 12138
+- `src/lib/story-transfer.ts`: line 9812
+- `src/lib/ui-audit-schema.ts`: line 21329
+- `src/lib/ui-audit-utils.ts`: line 21565
+- `src/data/ui-audit-findings.ts`: line 18967
+- `StoryExportFormatModal.tsx`: line 9642
+- `StoryImportModeModal.tsx`: line 9731
+- `CharactersTab.tsx`: line 2893
+- `ChatInterfaceTab.tsx`: line 5004
+- `src/pages/style-guide/ui-audit.tsx`: line 17867
+- `src/App.tsx`: line 95
+- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout
