@@ -11,7 +11,7 @@ const LazyAppGuide = React.lazy(() =>
   import('@/components/admin/guide/AppGuideTool').then(m => ({ default: m.AppGuideTool }))
 );
 const LazyStyleGuide = React.lazy(() =>
-  import('@/components/admin/styleguide/StyleGuideTool')
+  import('@/components/admin/styleguide/StyleGuideTool').then(m => ({ default: m.StyleGuideTool }))
 );
 
 const DEFAULT_TOOLS: ToolMeta[] = [
