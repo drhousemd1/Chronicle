@@ -193,6 +193,7 @@ export interface QualityScanRun {
 
 export interface QualityHubMeta {
   version: typeof QUALITY_HUB_VERSION;
+  registryVersion?: number;
   project: string;
   createdAt: string;
   lastUpdatedAt: string;

@@ -389,7 +389,24 @@ export default function UiAuditPage() {
               })}
             </div></Section>
             <Section title="App Pages"><div className="space-y-2">
-              {registry.reviewUnits.map((u) => (<div key={u.id} className={cn(recessedBlockClass, "p-3")}><div className="flex items-center justify-between gap-2"><div><div className="text-sm font-bold text-[#eaedf1]">{u.name}</div><div className="text-xs text-[#a1a1aa]">{u.route || "No route set"}</div></div><span className="rounded-full bg-[#4a5f7f] px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">{u.status}</span></div><div className="mt-2 text-xs text-[#a1a1aa]">{u.notes}</div></div>))}
+              {registry.reviewUnits.map((u) => {
+                const completedDate = u.status === "reviewed" && u.lastRunId ? getModuleCompletedDate(u.lastRunId) : null;
+                return (
+                  <div key={u.id} className={cn(recessedBlockClass, "p-3")}>
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="text-sm font-bold text-[#eaedf1]">{u.name}</div>
+                        <div className="text-xs text-[#a1a1aa]">{u.route || "No route set"}</div>
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        <span className={cn("rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em]", u.status === "in-progress" ? "bg-[#2f3137] text-[#a5f3fc] border border-[#3b82f6]" : u.status === "reviewed" ? "bg-[#2f3137] text-[#a5f3fc] border border-[#22B8C9]" : "bg-[#4a5f7f] text-[#eaedf1]")}>{u.status}</span>
+                        {completedDate && <span className="text-[10px] text-[#71717a]">{formatShortDate(completedDate)}</span>}
+                      </div>
+                    </div>
+                    <div className="mt-2 text-xs text-[#a1a1aa]">{u.notes}</div>
+                  </div>
+                );
+              })}
             </div></Section>
           </div>
         )}
