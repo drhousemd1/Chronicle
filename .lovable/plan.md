@@ -1,33 +1,53 @@
 
+# Sandbox Feature Transfer — Master Tracker
 
-# Fix: Findings and Scan Data Not Appearing + Rename "Review Coverage Units"
+## Source Documents
+- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
+- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
 
-## Root Cause
-The Quality Hub persists its state to localStorage (`chronicle-quality-hub-v1`). When the page loads, it checks localStorage first (line 120) and only falls back to the code-defined registry if localStorage is empty or unparseable. Your browser still has the **old empty registry** from before the 17 findings were added. That is why everything shows "NOT-STARTED" and the findings list is empty -- the code has the data, but localStorage is overriding it with stale data.
+## Features Being Transferred
+| ID | Feature | Status |
+|----|---------|--------|
+| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
+| B | Story Transfer Library (story-transfer.ts) | ✅ |
+| A | UI Audit System (schema, utils, findings, page) | 🔄 |
+| B | Story Export/Import Modals | ✅ |
+| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
+| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
+| - | StyleGuideTool.tsx audit button | ⬜ |
+| - | App.tsx route wiring | ⬜ |
+| - | Index.tsx full wiring | ⬜ |
 
-## Changes
+## Prompt Execution Status
 
-### 1. `src/pages/style-guide/ui-audit.tsx` — Auto-detect stale localStorage
-Add a staleness check in the initialization logic: if the stored registry's `lastRunId` differs from the code-defined initial registry's `lastRunId`, discard localStorage and use the fresh code-defined data. This ensures new scan results always appear without requiring a manual "Reset Hub" click.
+| # | Target File(s) | Status | Notes |
+|---|---------------|--------|-------|
+| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
+| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
+| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
+| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
+| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
+| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
+| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
+| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
+| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
+| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
+| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
+| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
+| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
+| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
 
-### 2. `src/pages/style-guide/ui-audit.tsx` — Rename section
-Change "Review Coverage Units" heading to **"App Pages"**.
-
-### 3. `src/data/ui-audit-findings.ts` — Add all missing app pages
-Replace the 4 review units with 12 entries covering every page/tab in the app:
-
-| Page | Route/Tab | Key Files |
-|------|-----------|-----------|
-| My Stories | hub tab | StoryHub.tsx, StoryCardView.tsx |
-| Story Builder | world tab | WorldTab.tsx, ContentThemesSection.tsx |
-| Character Builder | characters tab | CharactersTab.tsx, CharacterEditForm.tsx |
-| Chat History | conversations tab | ConversationsTab.tsx |
-| Chat Interface | chat_interface tab | ChatInterfaceTab.tsx |
-| Image Library | image_library tab | ImageLibraryTab.tsx |
-| Community Gallery | gallery tab | GalleryHub.tsx, GalleryStoryCard.tsx |
-| Account | account tab | AccountSettingsTab.tsx, PublicProfileTab.tsx, SubscriptionTab.tsx |
-| Admin Panel | admin tab | StyleGuideTool.tsx, AppGuideTool.tsx |
-| Creator Profile | /creator/:userId | CreatorProfile.tsx |
-| Quality Hub | /style-guide/ui-audit | ui-audit.tsx |
-| API Inspector | /style-guide/api-inspector | api-inspector.tsx |
-
+## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
+- `src/types.ts`: line 11507
+- `src/utils.ts`: line 12138
+- `src/lib/story-transfer.ts`: line 9812
+- `src/lib/ui-audit-schema.ts`: line 21329
+- `src/lib/ui-audit-utils.ts`: line 21565
+- `src/data/ui-audit-findings.ts`: line 18967
+- `StoryExportFormatModal.tsx`: line 9642
+- `StoryImportModeModal.tsx`: line 9731
+- `CharactersTab.tsx`: line 2893
+- `ChatInterfaceTab.tsx`: line 5004
+- `src/pages/style-guide/ui-audit.tsx`: line 17867
+- `src/App.tsx`: line 95
+- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout
