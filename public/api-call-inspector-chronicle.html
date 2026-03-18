@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>API Call Inspector — Chronicle</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #f3f4f6;
+      color: hsl(228, 7%, 20%);
+      line-height: 1.5;
+      padding: 32px 42px;
+    }
+    h1 { font-size: 32px; font-weight: 900; letter-spacing: -0.03em; margin-bottom: 8px; color: #4a5f7f; }
+    p.subtitle { font-size: 14px; color: #64748b; margin-bottom: 24px; max-width: 700px; }
+    .card {
+      background: #fff;
+      border: 1px solid #d9dee6;
+      border-radius: 14px;
+      padding: 20px 24px;
+      margin-bottom: 16px;
+      box-shadow: 0 8px 24px rgba(15,23,42,0.08);
+    }
+    .card h2 { font-size: 15px; font-weight: 800; margin-bottom: 6px; color: hsl(228, 7%, 20%); }
+    .card p { font-size: 13px; color: #64748b; }
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .badge-get { background: #dcfce7; color: #166534; }
+    .badge-post { background: #dbeafe; color: #1e40af; }
+    .badge-put { background: #fef3c7; color: #92400e; }
+    .badge-delete { background: #fee2e2; color: #991b1b; }
+    .endpoint { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; color: #475569; margin-left: 8px; }
+    .toolbar { display: none; }
+    body.edit-mode .toolbar { display: flex; }
+    #addBlockBtn, #saveBtn, #editToggle, #viewBtn { display: none; }
+  </style>
+</head>
+<body>
+  <!-- Hidden control buttons for parent iframe communication -->
+  <button id="addBlockBtn" disabled>Add Block</button>
+  <button id="saveBtn" disabled>Save</button>
+  <button id="editToggle">Edit</button>
+  <button id="viewBtn">View</button>
+
+  <h1>API Call Inspector</h1>
+  <p class="subtitle">
+    High-fidelity reference for every backend call in the Chronicle application.
+    Use the Edit button in the header bar to add or modify entries.
+  </p>
+
+  <div class="card">
+    <h2><span class="badge badge-get">GET</span> <span class="endpoint">/rest/v1/stories</span></h2>
+    <p>Fetch all stories for the authenticated user. Used by the Story Hub on initial load.</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="badge badge-post">POST</span> <span class="endpoint">/rest/v1/stories</span></h2>
+    <p>Create a new story/scenario. Called from the "New Story" button in the Story Hub.</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="badge badge-get">GET</span> <span class="endpoint">/rest/v1/characters</span></h2>
+    <p>Fetch characters for a given scenario. Used by the Characters tab and Chat sidebar.</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="badge badge-post">POST</span> <span class="endpoint">/rest/v1/conversations</span></h2>
+    <p>Create a new conversation/session for a scenario. Called when starting a new chat.</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="badge badge-get">GET</span> <span class="endpoint">/rest/v1/messages</span></h2>
+    <p>Fetch message history for a conversation. Loaded when opening an existing chat session.</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="badge badge-post">POST</span> <span class="endpoint">/functions/v1/chat</span></h2>
+    <p>Send a user message and receive an AI-generated response. Core chat endpoint.</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="badge badge-post">POST</span> <span class="endpoint">/functions/v1/generate-cover-image</span></h2>
+    <p>Generate a cover image for a story using AI image generation.</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="badge badge-post">POST</span> <span class="endpoint">/functions/v1/generate-scene-image</span></h2>
+    <p>Generate a scene illustration during chat based on narrative context.</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="badge badge-get">GET</span> <span class="endpoint">/rest/v1/art_styles</span></h2>
+    <p>Fetch available art styles for image generation. Used by the Art Style picker.</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="badge badge-get">GET</span> <span class="endpoint">/rest/v1/app_settings</span></h2>
+    <p>Fetch application-wide settings (shared API keys, admin tool metadata, etc.).</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="badge badge-put">PUT</span> <span class="endpoint">/rest/v1/app_settings</span></h2>
+    <p>Update an application setting. Used by Admin tools to persist configuration.</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="badge badge-get">GET</span> <span class="endpoint">/rest/v1/profiles</span></h2>
+    <p>Fetch user profile data (display name, avatar, preferences). Used by Account page.</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="badge badge-post">POST</span> <span class="endpoint">/functions/v1/extract-memory-events</span></h2>
+    <p>Extract notable events from chat messages for the memory system.</p>
+  </div>
+
+  <div class="card">
+    <h2><span class="badge badge-delete">DELETE</span> <span class="endpoint">/rest/v1/stories?id=eq.{id}</span></h2>
+    <p>Delete a story and all associated data (characters, conversations, messages).</p>
+  </div>
+
+  <div class="card" style="background: #f8fafc; border-style: dashed;">
+    <p style="text-align: center; color: #94a3b8; font-size: 13px;">
+      More endpoints will be documented as the application grows. Use the Edit mode to add new entries.
+    </p>
+  </div>
+
+  <script>
+    const editToggle = document.getElementById('editToggle');
+    editToggle.addEventListener('click', () => {
+      document.body.classList.toggle('edit-mode');
+    });
+  </script>
+</body>
+</html>

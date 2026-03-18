@@ -170,7 +170,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
   const openUiAudit = useCallback(() => navigate('/style-guide/ui-audit'), [navigate]);
   const openApiInspector = useCallback(() => navigate('/style-guide/api-inspector'), [navigate]);
-  const openAppGuide = useCallback(() => navigate('/?tab=admin&adminTool=app_guide'), [navigate]);
+  const openAppGuide = useCallback(() => { if (onSwitchToAppGuide) onSwitchToAppGuide(); else navigate('/?tab=admin&adminTool=app_guide'); }, [onSwitchToAppGuide, navigate]);
 
   return (
     <EditsContext.Provider value={editsContextValue}>
