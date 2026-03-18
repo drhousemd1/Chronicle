@@ -540,7 +540,7 @@ export default function UiAuditPage() {
                   ))}</div>
                 </Section>
               ))}</div>
-            )}
+          </div></Section>
         )}
 
         {/* Runs */}
