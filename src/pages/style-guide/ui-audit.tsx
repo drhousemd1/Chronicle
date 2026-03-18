@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   QUALITY_CONFIDENCE,
@@ -28,6 +28,8 @@ import {
   qualityHubInitialRegistry,
 } from "@/data/ui-audit-findings";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 
 const STORAGE_KEY = "chronicle-quality-hub-v1";
 type GroupBy = "severity" | "domain" | "status" | "page" | "component" | "agent";
@@ -74,6 +76,11 @@ function formatDate(value: string): string {
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleString();
 }
+function formatShortDate(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
 function downloadJson(filename: string, payload: unknown) {
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
   const url = URL.createObjectURL(blob);
@@ -114,7 +121,11 @@ function MetricCard({ label, value, tone = "default" }: { label: string; value: 
 
 export default function UiAuditPage() {
   const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initialLoadDone = useRef(false);
+
   const [registry, setRegistry] = useState<QualityHubRegistry>(() => {
     if (typeof window === "undefined") return cloneInitialRegistry();
     try {
@@ -122,7 +133,6 @@ export default function UiAuditPage() {
       if (!raw) return cloneInitialRegistry();
       const parsed = JSON.parse(raw);
       if (!isQualityHubRegistry(parsed)) return cloneInitialRegistry();
-      // Auto-reset if code-defined registry has newer scan data
       const initial = qualityHubInitialRegistry;
       if (parsed.meta?.lastRunId !== initial.meta.lastRunId) return cloneInitialRegistry();
       return parsed;
@@ -138,7 +148,58 @@ export default function UiAuditPage() {
   const [importFeedback, setImportFeedback] = useState<string>("");
   const [agentDraft, setAgentDraft] = useState<QualityAgent>(qualityHubDefaultAgent);
 
-  useEffect(() => { if (typeof window === "undefined") return; window.localStorage.setItem(STORAGE_KEY, JSON.stringify(registry)); }, [registry]);
+  // Load from database on mount (if authenticated)
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id || initialLoadDone.current) return;
+    initialLoadDone.current = true;
+
+    (async () => {
+      const { data, error } = await supabase
+        .from("quality_hub_registries")
+        .select("registry")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (error || !data) return; // use localStorage/initial fallback
+
+      const dbRegistry = data.registry as unknown;
+      if (!isQualityHubRegistry(dbRegistry)) return;
+
+      // Check if DB data is current with code-defined registry
+      const initial = qualityHubInitialRegistry;
+      if ((dbRegistry as QualityHubRegistry).meta?.lastRunId !== initial.meta.lastRunId) return;
+
+      setRegistry(dbRegistry as QualityHubRegistry);
+    })();
+  }, [isAuthenticated, user?.id]);
+
+  // Save to localStorage immediately + debounced save to DB
+  const saveToDb = useCallback(async (reg: QualityHubRegistry) => {
+    if (!isAuthenticated || !user?.id) return;
+    try {
+      await supabase
+        .from("quality_hub_registries")
+        .upsert({
+          user_id: user.id,
+          registry: reg as unknown as Record<string, unknown>,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "user_id" });
+    } catch {
+      // silent fail — localStorage is the fallback
+    }
+  }, [isAuthenticated, user?.id]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(registry));
+
+    // Debounced DB save
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => saveToDb(registry), 1500);
+
+    return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); };
+  }, [registry, saveToDb]);
+
   const updateRegistry = (updater: (p: QualityHubRegistry) => QualityHubRegistry) => { setRegistry((p) => nextRegistryWithTimestamp(updater(p))); };
 
   const allAgents = useMemo(() => getAgentList(registry), [registry]);
@@ -177,7 +238,23 @@ export default function UiAuditPage() {
   const openFindings = statusCounts.open + statusCounts["in-progress"];
   const dominantDomain = Object.entries(domainCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "n/a";
 
-  const handleReset = () => { if (!window.confirm("Reset Quality Hub and remove all current runs/findings?")) return; setRegistry(cloneInitialRegistry()); setImportFeedback("Quality Hub reset to clean baseline."); };
+  // Helper: get the finished timestamp for a completed scan module
+  const getModuleCompletedDate = (lastRunId?: string): string | null => {
+    if (!lastRunId) return null;
+    const run = registry.runs.find((r) => r.id === lastRunId);
+    return run?.finishedAt || null;
+  };
+
+  const handleReset = async () => {
+    if (!window.confirm("Reset Quality Hub and remove all current runs/findings?")) return;
+    const fresh = cloneInitialRegistry();
+    setRegistry(fresh);
+    setImportFeedback("Quality Hub reset to clean baseline.");
+    // Also reset DB
+    if (isAuthenticated && user?.id) {
+      await supabase.from("quality_hub_registries").delete().eq("user_id", user.id);
+    }
+  };
   const handleExport = () => { const snapshot = nextRegistryWithTimestamp(registry); setRegistry(snapshot); downloadJson(`chronicle-quality-hub-${toCompactIso()}.json`, buildQualityHubTransferPackage(snapshot)); setImportFeedback("Exported Quality Hub JSON package."); };
   const handleImportClick = () => { fileInputRef.current?.click(); };
   const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -263,7 +340,25 @@ export default function UiAuditPage() {
         {activeView === "overview" && (
           <div className="grid gap-6 lg:grid-cols-2">
             <Section title="Scan Modules"><div className="space-y-2">
-              {registry.scanModules.map((m) => (<div key={m.id} className={cn(recessedBlockClass, "p-3")}><div className="flex items-start justify-between gap-2"><div><div className="text-sm font-bold text-[#eaedf1]">{m.name}</div><div className="mt-1 text-xs text-[#a1a1aa]">{m.description}</div></div><span className={cn("rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-wider", moduleStatusClass[m.status])}>{m.status}</span></div></div>))}
+              {registry.scanModules.map((m) => {
+                const completedDate = m.status === "completed" ? getModuleCompletedDate(m.lastRunId) : null;
+                return (
+                  <div key={m.id} className={cn(recessedBlockClass, "p-3")}>
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="text-sm font-bold text-[#eaedf1]">{m.name}</div>
+                        <div className="mt-1 text-xs text-[#a1a1aa]">{m.description}</div>
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        <span className={cn("rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-wider", moduleStatusClass[m.status])}>{m.status}</span>
+                        {completedDate && (
+                          <span className="text-[10px] text-[#71717a]">{formatShortDate(completedDate)}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div></Section>
             <Section title="App Pages"><div className="space-y-2">
               {registry.reviewUnits.map((u) => (<div key={u.id} className={cn(recessedBlockClass, "p-3")}><div className="flex items-center justify-between gap-2"><div><div className="text-sm font-bold text-[#eaedf1]">{u.name}</div><div className="text-xs text-[#a1a1aa]">{u.route || "No route set"}</div></div><span className="rounded-full bg-[#4a5f7f] px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">{u.status}</span></div><div className="mt-2 text-xs text-[#a1a1aa]">{u.notes}</div></div>))}
