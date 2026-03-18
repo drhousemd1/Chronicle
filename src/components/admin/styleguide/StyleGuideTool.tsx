@@ -333,6 +333,8 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
       <KeepOrEditModal
         open={!!keepOrEditTarget}
         cardName={keepOrEditTarget?.cardName ?? ''}
+        cardType={keepOrEditTarget?.cardType ?? ''}
+        details={keepOrEditTarget?.details ?? {}}
         onOpenChange={(open) => { if (!open) setKeepOrEditTarget(null); }}
         onKeep={handleKeep}
         onEdit={handleEditOpen}
@@ -350,7 +352,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
       <EditsListModal
         open={showEditsListModal}
         onOpenChange={(open) => { if (!open) setShowEditsListModal(false); }}
-        onRefresh={refreshEditsState}
+        onCountChange={refreshEditsState}
       />
     </EditsContext.Provider>
   );
