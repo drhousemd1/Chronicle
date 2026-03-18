@@ -177,7 +177,7 @@ export default function UiAuditPage() {
   const saveToDb = useCallback(async (reg: QualityHubRegistry) => {
     if (!isAuthenticated || !user?.id) return;
     try {
-      await supabase
+      await (supabase as any)
         .from("quality_hub_registries")
         .upsert({
           user_id: user.id,
