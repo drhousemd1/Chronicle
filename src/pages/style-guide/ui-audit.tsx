@@ -197,11 +197,7 @@ export default function UiAuditPage() {
       const dbRegistry = data.registry as unknown;
       if (!isQualityHubRegistry(dbRegistry)) return;
 
-      // Check if DB data is current with code-defined registry
-      const initial = qualityHubInitialRegistry;
-      if ((dbRegistry as QualityHubRegistry).meta?.lastRunId !== initial.meta.lastRunId) return;
-
-      setRegistry(dbRegistry as QualityHubRegistry);
+      setRegistry(upgradeRegistry(dbRegistry as QualityHubRegistry));
     })();
   }, [isAuthenticated, user?.id]);
 
