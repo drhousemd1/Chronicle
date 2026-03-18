@@ -328,12 +328,12 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
       <StyleGuideDownloadModal
         open={showDownloadModal}
         onClose={() => setShowDownloadModal(false)}
-        allSwatches={ALL_SWATCHES}
+        contentRef={contentRef}
       />
       <KeepOrEditModal
         open={!!keepOrEditTarget}
         cardName={keepOrEditTarget?.cardName ?? ''}
-        onClose={() => setKeepOrEditTarget(null)}
+        onOpenChange={(open) => { if (!open) setKeepOrEditTarget(null); }}
         onKeep={handleKeep}
         onEdit={handleEditOpen}
       />
@@ -344,12 +344,12 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
         details={editDetailTarget?.details ?? {}}
         existingComment={editDetailTarget?.existingComment}
         existingId={editDetailTarget?.existingId}
-        onClose={() => setEditDetailTarget(null)}
+        onOpenChange={(open) => { if (!open) setEditDetailTarget(null); }}
         onSave={handleSaveEdit}
       />
       <EditsListModal
         open={showEditsListModal}
-        onClose={() => setShowEditsListModal(false)}
+        onOpenChange={(open) => { if (!open) setShowEditsListModal(false); }}
         onRefresh={refreshEditsState}
       />
     </EditsContext.Provider>
