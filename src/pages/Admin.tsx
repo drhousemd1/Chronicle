@@ -7,9 +7,6 @@ import { supabase } from '@/integrations/supabase/client';
 const LazyImageGen = React.lazy(() =>
   import('@/components/admin/ImageGenerationTool').then(m => ({ default: m.ImageGenerationTool }))
 );
-const LazyAppGuide = React.lazy(() =>
-  import('@/components/admin/guide/AppGuideTool').then(m => ({ default: m.AppGuideTool }))
-);
 const LazyStyleGuide = React.lazy(() =>
   import('@/components/admin/styleguide/StyleGuideTool')
 );
@@ -27,14 +24,9 @@ const DEFAULT_TOOLS: ToolMeta[] = [
     description: 'Select Grok model and manage API key sharing',
   },
   {
-    id: 'app_guide',
-    title: 'App Guide',
-    description: 'Complete documentation for every page and system',
-  },
-  {
     id: 'style_guide',
-    title: 'Style Guide',
-    description: 'Visual reference for every design token and component pattern',
+    title: 'App Dashboard',
+    description: 'Central hub for Style Guide, App Guide, Quality Hub, and API Inspector',
   },
 ];
 
@@ -115,14 +107,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
     );
   }
 
-  if (activeTool === 'app_guide') {
-    return (
-      <React.Suspense fallback={<div className="flex items-center justify-center h-full text-slate-400">Loading…</div>}>
-        <LazyAppGuide onRegisterSave={onRegisterGuideSave} onRegisterSyncAll={onRegisterGuideSyncAll} theme={guideTheme} />
-      </React.Suspense>
-    );
-  }
-
   if (activeTool === 'style_guide') {
     return (
       <React.Suspense fallback={<div className="flex items-center justify-center h-full text-slate-400">Loading…</div>}>
@@ -138,15 +122,15 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
         {tools.map((tool) => (
           <div
             key={tool.id}
-            className="group relative cursor-pointer transition-all duration-300 group-hover:-translate-y-3"
+            className="group relative cursor-pointer"
             onClick={() => onSetActiveTool(tool.id)}
           >
-            <div className="aspect-[2/3] w-full overflow-hidden rounded-[2rem] bg-slate-200 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)] transition-shadow duration-300 group-hover:shadow-2xl border border-[#4a5f7f] relative">
+            <div className="aspect-[2/3] w-full overflow-hidden rounded-[2rem] bg-slate-200 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)] transition-all duration-300 group-hover:-translate-y-3 group-hover:shadow-2xl border border-[#4a5f7f] relative">
               {tool.thumbnailUrl ? (
                 <img
                   src={tool.thumbnailUrl}
                   alt={tool.title}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  className="w-full h-full object-cover"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-zinc-900">
@@ -154,16 +138,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
                 </div>
               )}
 
-              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/70 pointer-events-none z-[1]" />
-
-              <div className="absolute inset-x-0 bottom-0 p-5 z-[2] pointer-events-none" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.7), 0 0 1px rgba(0,0,0,0.9)' }}>
-                <h3 className="text-white font-bold text-base truncate group-hover:text-blue-300 transition-colors">{tool.title}</h3>
-                <p className="text-white text-xs mt-1 italic line-clamp-2">
+              <div className="absolute inset-x-0 bottom-0 p-5">
+                <h3 className="text-white font-bold text-base truncate">{tool.title}</h3>
+                <p className="text-slate-300 text-xs mt-1 italic line-clamp-2">
                   {tool.description}
                 </p>
               </div>
 
-              <div className="absolute inset-0 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 scale-90 group-hover:scale-100">
+              <div className="absolute inset-0 flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-all bg-black/30">
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); setEditingTool(tool); }}
