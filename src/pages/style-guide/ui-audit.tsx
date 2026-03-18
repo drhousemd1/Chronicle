@@ -141,10 +141,10 @@ function buildQualityHubTransferPackage(snapshot: QualityHubRegistry) {
   return { packageType: "chronicle-quality-hub-transfer", packageVersion: 1, exportedAt: new Date().toISOString(), registry: snapshot };
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, children, badge }: { title: string; children: React.ReactNode; badge?: React.ReactNode }) {
   return (
     <section className={panelOuterClass}>
-      <div className={panelHeaderClass}><div className={panelHeaderOverlayClass} /><h2 className="relative z-10 text-[20px] font-semibold tracking-tight text-white">{title}</h2></div>
+      <div className={panelHeaderClass}><div className={panelHeaderOverlayClass} /><div className="relative z-10 flex items-center justify-between w-full"><h2 className="text-[20px] font-semibold tracking-tight text-white">{title}</h2>{badge && <span>{badge}</span>}</div></div>
       <div className={panelBodyClass}><div className={panelInnerClass}>{children}</div></div>
     </section>
   );
@@ -414,28 +414,31 @@ export default function UiAuditPage() {
 
         {/* Findings */}
         {activeView === "findings" && (
-          <Section title="Findings Workspace"><div className="space-y-4">
-            <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-5">
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search findings..." className={cn("xl:col-span-2", inputClass)} />
-              <select value={severityFilter} onChange={(e) => setSeverityFilter(e.target.value as typeof severityFilter)} className={selectClass}><option value="all">All severities</option>{QUALITY_SEVERITIES.map((s) => <option key={s} value={s}>{s}</option>)}</select>
-              <select value={domainFilter} onChange={(e) => setDomainFilter(e.target.value as typeof domainFilter)} className={selectClass}><option value="all">All domains</option>{QUALITY_DOMAINS.map((d) => <option key={d} value={d}>{d}</option>)}</select>
-              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)} className={selectClass}><option value="all">All statuses</option>{QUALITY_FINDING_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}</select>
-            </div>
-            <div className="grid gap-2 md:grid-cols-2">
-              <select value={agentFilter} onChange={(e) => setAgentFilter(e.target.value)} className={selectClass}><option value="all">All agents</option>{allAgents.map((a) => <option key={a.id} value={a.id}>{a.agentName} ({a.modelName})</option>)}</select>
-              <select value={groupBy} onChange={(e) => setGroupBy(e.target.value as GroupBy)} className={selectClass}><option value="severity">Group by severity</option><option value="domain">Group by domain</option><option value="status">Group by status</option><option value="page">Group by page</option><option value="component">Group by component</option><option value="agent">Group by agent</option></select>
-            </div>
-            <div className="grid gap-2 sm:grid-cols-3">
-              <div className={cn(recessedStripClass, "p-2 text-xs text-[#eaedf1]")}><span className="font-bold text-white">{filteredFindings.length}</span> filtered findings</div>
-              <div className={cn(recessedStripClass, "p-2 text-xs text-[#eaedf1]")}>Dominant domain: <span className="font-bold text-white">{dominantDomain}</span></div>
-              <div className={cn(recessedStripClass, "p-2 text-xs text-[#eaedf1]")}>Confidence levels: {QUALITY_CONFIDENCE.length}</div>
-            </div>
+          <div className="space-y-6">
+            <Section title="Findings Workspace">
+              <div className="space-y-4">
+                <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-5">
+                  <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search findings..." className={cn("xl:col-span-2", inputClass)} />
+                  <select value={severityFilter} onChange={(e) => setSeverityFilter(e.target.value as typeof severityFilter)} className={selectClass}><option value="all">All severities</option>{QUALITY_SEVERITIES.map((s) => <option key={s} value={s}>{s}</option>)}</select>
+                  <select value={domainFilter} onChange={(e) => setDomainFilter(e.target.value as typeof domainFilter)} className={selectClass}><option value="all">All domains</option>{QUALITY_DOMAINS.map((d) => <option key={d} value={d}>{d}</option>)}</select>
+                  <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)} className={selectClass}><option value="all">All statuses</option>{QUALITY_FINDING_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}</select>
+                </div>
+                <div className="grid gap-2 md:grid-cols-2">
+                  <select value={agentFilter} onChange={(e) => setAgentFilter(e.target.value)} className={selectClass}><option value="all">All agents</option>{allAgents.map((a) => <option key={a.id} value={a.id}>{a.agentName} ({a.modelName})</option>)}</select>
+                  <select value={groupBy} onChange={(e) => setGroupBy(e.target.value as GroupBy)} className={selectClass}><option value="severity">Group by severity</option><option value="domain">Group by domain</option><option value="status">Group by status</option><option value="page">Group by page</option><option value="component">Group by component</option><option value="agent">Group by agent</option></select>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-3">
+                  <div className={cn(recessedStripClass, "p-2 text-xs text-[#eaedf1]")}><span className="font-bold text-white">{filteredFindings.length}</span> filtered findings</div>
+                  <div className={cn(recessedStripClass, "p-2 text-xs text-[#eaedf1]")}>Dominant domain: <span className="font-bold text-white">{dominantDomain}</span></div>
+                  <div className={cn(recessedStripClass, "p-2 text-xs text-[#eaedf1]")}>Confidence levels: {QUALITY_CONFIDENCE.length}</div>
+                </div>
+              </div>
+            </Section>
             {orderedGroupEntries.length === 0 ? (
               <div className="rounded-xl border-2 border-dashed border-[#71717a] bg-[linear-gradient(to_bottom_right,#27272a,#18181b)] px-4 py-10 text-center text-sm text-[#a1a1aa]">No findings yet. Import a JSON package to start.</div>
             ) : (
-              <div className="space-y-4">{orderedGroupEntries.map(([group, items]) => (
-                <div key={group} className="space-y-2">
-                  <div className="flex items-center justify-between"><h3 className="text-sm font-black uppercase tracking-[0.16em] text-[#eaedf1]/90">{group}</h3><span className="rounded-full bg-[#4a5f7f] px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#eaedf1]">{items.length}</span></div>
+              orderedGroupEntries.map(([group, items]) => (
+                <Section key={group} title={group} badge={<span className="rounded-full bg-[#23262b] px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-[#eaedf1]">{items.length}</span>}>
                   <div className="space-y-2">{items.map((f) => (
                     <details key={f.id} className={cn(recessedBlockClass, "group open:ring-1 open:ring-[#4a5f7f]/60")}>
                        <summary className="cursor-pointer list-none px-4 py-3 relative">
@@ -539,10 +542,10 @@ export default function UiAuditPage() {
                       </div>
                     </details>
                   ))}</div>
-                </div>
-              ))}</div>
+                </Section>
+              ))
             )}
-          </div></Section>
+          </div>
         )}
 
         {/* Runs */}
