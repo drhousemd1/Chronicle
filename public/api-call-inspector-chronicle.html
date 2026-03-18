@@ -65,6 +65,14 @@
     position: relative;
     z-index: 10;
   }
+  .topbar-back {
+    display: flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--bg); cursor: pointer; color: var(--text-sec); flex-shrink: 0;
+    transition: background .15s, border-color .15s;
+  }
+  .topbar-back:hover { background: var(--primary-bg); border-color: var(--primary); color: var(--text); }
+  .topbar-back svg { width: 16px; height: 16px; }
   .topbar-crumb { font-size: 12px; color: var(--text-dim); }
   .topbar-crumb span { color: var(--text-sec); }
   .topbar-crumb strong { color: var(--text); font-weight: 700; }
