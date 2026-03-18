@@ -753,6 +753,27 @@ export type Database = {
           },
         ]
       }
+      quality_hub_registries: {
+        Row: {
+          id: string
+          registry: Json
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          registry: Json
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          registry?: Json
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       remixed_scenarios: {
         Row: {
           created_at: string | null
