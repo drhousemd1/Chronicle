@@ -133,9 +133,7 @@ export default function UiAuditPage() {
       if (!raw) return cloneInitialRegistry();
       const parsed = JSON.parse(raw);
       if (!isQualityHubRegistry(parsed)) return cloneInitialRegistry();
-      const initial = qualityHubInitialRegistry;
-      if (parsed.meta?.lastRunId !== initial.meta.lastRunId) return cloneInitialRegistry();
-      return parsed;
+      return upgradeRegistry(parsed);
     } catch { return cloneInitialRegistry(); }
   });
   const [activeView, setActiveView] = useState<HubViewId>("overview");
