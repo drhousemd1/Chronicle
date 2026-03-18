@@ -33,6 +33,28 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 
 const STORAGE_KEY = "chronicle-quality-hub-v1";
+
+const DOMAIN_LABELS: Record<string, string> = {
+  "ui-ux": "UI/UX Design",
+  "functionality": "Functionality",
+  "orphan-code": "Orphan / Dead Code",
+  "cleanup": "Cleanup",
+  "accessibility": "Accessibility",
+  "performance": "Performance",
+  "security": "Security",
+  "tests": "Tests",
+  "build": "Build",
+  "data-integrity": "Data Integrity",
+  "documentation": "Documentation",
+};
+
+function titleCase(s: string): string {
+  return s.replace(/(^|-)(\w)/g, (_, _sep, c) => ` ${c.toUpperCase()}`).trim();
+}
+
+function domainLabel(key: string): string {
+  return DOMAIN_LABELS[key] ?? titleCase(key);
+}
 type GroupBy = "severity" | "domain" | "status" | "page" | "component" | "agent";
 type HubViewId = "overview" | "findings" | "runs" | "handoff";
 
