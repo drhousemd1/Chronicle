@@ -433,9 +433,8 @@ export default function UiAuditPage() {
             {orderedGroupEntries.length === 0 ? (
               <div className="rounded-xl border-2 border-dashed border-[#71717a] bg-[linear-gradient(to_bottom_right,#27272a,#18181b)] px-4 py-10 text-center text-sm text-[#a1a1aa]">No findings yet. Import a JSON package to start.</div>
             ) : (
-              <div className="space-y-4">{orderedGroupEntries.map(([group, items]) => (
-                <div key={group} className="space-y-2">
-                  <div className="flex items-center justify-between"><h3 className="text-sm font-black uppercase tracking-[0.16em] text-[#eaedf1]/90">{group}</h3><span className="rounded-full bg-[#4a5f7f] px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#eaedf1]">{items.length}</span></div>
+              <div className="space-y-6">{orderedGroupEntries.map(([group, items]) => (
+                <Section key={group} title={group} badge={<span className="rounded-full bg-[#23262b] px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-[#eaedf1]">{items.length}</span>}>
                   <div className="space-y-2">{items.map((f) => (
                     <details key={f.id} className={cn(recessedBlockClass, "group open:ring-1 open:ring-[#4a5f7f]/60")}>
                        <summary className="cursor-pointer list-none px-4 py-3 relative">
@@ -539,10 +538,9 @@ export default function UiAuditPage() {
                       </div>
                     </details>
                   ))}</div>
-                </div>
+                </Section>
               ))}</div>
             )}
-          </div></Section>
         )}
 
         {/* Runs */}
