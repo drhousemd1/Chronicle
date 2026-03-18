@@ -500,8 +500,8 @@ export default function UiAuditPage() {
                         <div>
                           <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Impact</div>
                           <div className="space-y-2 text-xs text-[#a1a1aa]">
-                            <div><span className="font-bold text-[#eaedf1]">Why It Matters:</span> {f.whyItMatters || "—"}</div>
-                            <div><span className="font-bold text-[#eaedf1]">User Impact:</span> {f.userImpact || "—"}</div>
+                            <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Why It Matters</span> {f.whyItMatters || "—"}</div>
+                            <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">User Impact</span> {f.userImpact || "—"}</div>
                           </div>
                         </div>
                         {/* ── Files & Evidence ── */}
