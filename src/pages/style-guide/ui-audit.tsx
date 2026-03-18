@@ -478,14 +478,14 @@ export default function UiAuditPage() {
                         <div>
                           <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Summary</div>
                           <div className="grid gap-x-6 gap-y-1 sm:grid-cols-2 lg:grid-cols-3 text-xs text-[#a1a1aa]">
-                            <div><span className="font-bold text-[#eaedf1]">Severity:</span> {f.severity}</div>
-                            <div><span className="font-bold text-[#eaedf1]">Domain:</span> {f.domain}</div>
-                            <div><span className="font-bold text-[#eaedf1]">Status:</span> {f.status}</div>
-                            <div><span className="font-bold text-[#eaedf1]">Confidence:</span> {f.confidence}</div>
-                            <div><span className="font-bold text-[#eaedf1]">Category:</span> {f.category || "—"}</div>
-                            <div><span className="font-bold text-[#eaedf1]">Page:</span> {f.page}</div>
-                            {f.route && <div><span className="font-bold text-[#eaedf1]">Route:</span> {f.route}</div>}
-                            {f.component && <div><span className="font-bold text-[#eaedf1]">Component:</span> {f.component}</div>}
+                            <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Severity</span> {f.severity}</div>
+                            <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Domain</span> {domainLabel(f.domain)}</div>
+                            <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Status</span> {titleCase(f.status)}</div>
+                            <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Confidence</span> {titleCase(f.confidence)}</div>
+                            <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Category</span> {f.category || "—"}</div>
+                            <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Page</span> {f.page}</div>
+                            {f.route && <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Route</span> {f.route}</div>}
+                            {f.component && <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Component</span> {f.component}</div>}
                           </div>
                         </div>
                         {/* ── Problem ── */}
