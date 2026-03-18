@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Physical Appearance — Spec Sheet</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: transparent;
+      font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+      font-size: 13px;
+      color: #111;
+      line-height: 1.6;
+      padding: 0;
+    }
+
+    .card {
+      border: 2px solid #000;
+      border-radius: 4px;
+      overflow: hidden;
+      background: #fff;
+      width: 100%;
+    }
+
+    .card-header {
+      background: linear-gradient(180deg, #5a7292 0%, #4a5f7f 100%);
+      padding: 10px 18px;
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+      border-bottom: 2px solid #000;
+    }
+    .card-title {
+      font-size: 13px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #fff;
+    }
+    .card-sub {
+      font-size: 11px;
+      color: rgba(255,255,255,0.75);
+    }
+
+    .top-section {
+      display: grid;
+      grid-template-columns: 55% 45%;
+      border-bottom: 2px solid #000;
+      align-items: stretch;
+    }
+
+    .top-spec {
+      padding: 20px 22px;
+      border-right: 2px solid #000;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .top-preview {
+      background: #1a1a1e;
+      padding: 24px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .top-preview .preview-inner {
+      width: 100%;
+      max-width: 480px;
+    }
+
+    .bottom-section {
+      display: grid;
+      grid-template-columns: 1fr 1.4fr 0.9fr 0.9fr;
+    }
+
+    .bottom-col {
+      padding: 16px 18px;
+      border-right: 1px solid #ccc;
+    }
+    .bottom-col:last-child { border-right: none; }
+
+    .spec-block { margin-bottom: 20px; }
+    .spec-block:last-child { margin-bottom: 0; }
+    .spec-block + .spec-block {
+      border-top: 1px solid #e0e0e0;
+      padding-top: 16px;
+    }
+
+    .spec-h1 {
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      color: #000;
+      margin-bottom: 8px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid #ddd;
+    }
+
+    ul { padding-left: 15px; margin: 0; }
+    ul li { margin-bottom: 3px; color: #111; font-size: 12px; }
+    ul li ul { margin-top: 2px; }
+    ul li ul li { color: #444; font-size: 11px; }
+
+    code {
+      font-family: ui-monospace, 'SF Mono', monospace;
+      font-size: 10.5px;
+      background: #f0f0f0;
+      padding: 1px 4px;
+      border-radius: 3px;
+      color: #111;
+    }
+
+    .color-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+    .color-table th {
+      text-align: left;
+      font-weight: 700;
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 4px 6px;
+      border: 1px solid #ccc;
+      background: #f5f5f5;
+    }
+    .color-table td {
+      padding: 4px 6px;
+      border: 1px solid #ccc;
+      vertical-align: middle;
+      font-size: 11px;
+    }
+    .swatch {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border-radius: 2px;
+      border: 1px solid #999;
+      vertical-align: middle;
+    }
+
+    .section-outer {
+      width: 100%;
+      background: #2a2a2f;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow:
+        0 12px 32px -2px rgba(0,0,0,0.50),
+        inset 1px 1px 0 rgba(255,255,255,0.09),
+        inset -1px -1px 0 rgba(0,0,0,0.35);
+    }
+    .section-header {
+      position: relative;
+      background: linear-gradient(180deg, #5a7292 0%, #4a5f7f 100%);
+      border-top: 1px solid rgba(255,255,255,0.20);
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+    .section-header::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.00) 30%);
+      pointer-events: none;
+    }
+    .section-title {
+      color: #fff;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+      position: relative;
+    }
+    .section-toggle {
+      background: transparent;
+      border: none;
+      color: rgba(255,255,255,0.7);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      position: relative;
+    }
+    .section-body { padding: 20px; }
+    .section-inner {
+      background: #2e2e33;
+      border-radius: 16px;
+      box-shadow:
+        inset 1px 1px 0 rgba(255,255,255,0.07),
+        inset -1px -1px 0 rgba(0,0,0,0.30),
+        0 4px 12px rgba(0,0,0,0.25);
+      padding: 20px 20px 24px;
+    }
+    .section-rows { display: flex; flex-direction: column; gap: 12px; }
+    .hrow { display: flex; align-items: flex-start; gap: 8px; }
+    .hrow-label-wrap {
+      width: 40%;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
+    .hrow-label {
+      flex: 1;
+      padding: 8px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      background: #1c1c1f;
+      border: none;
+      border-top: 1px solid rgba(0,0,0,0.35);
+      color: #a1a1aa;
+      border-radius: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      min-width: 0;
+      word-break: break-word;
+      display: flex;
+      align-items: center;
+    }
+    .enhance-btn {
+      position: relative;
+      background: transparent;
+      border: none;
+      color: #a5f3fc;
+      border-radius: 8px;
+      padding: 6px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.40);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .enhance-btn::before {
+      content: "";
+      position: absolute; inset: 0; border-radius: 8px; pointer-events: none;
+      background: linear-gradient(90deg, rgba(255,255,255,0.34) 0%, rgba(34,184,200,0.62) 18%, rgba(255,255,255,0.22) 44%, rgba(109,94,247,0.64) 78%, rgba(255,255,255,0.28) 100%);
+    }
+    .enhance-btn::after {
+      content: "";
+      position: absolute; inset: 1.5px; border-radius: 6px; pointer-events: none;
+      background: linear-gradient(90deg, rgba(34,184,200,0.22), rgba(109,94,247,0.22)), #2B2D33;
+    }
+    .enhance-btn svg { position: relative; z-index: 1; filter: drop-shadow(0 0 6px rgba(34,184,200,0.5)); }
+    .hrow-input {
+      flex: 1;
+      padding: 8px 10px;
+      font-size: 13px;
+      background: #1c1c1f;
+      border: none;
+      border-top: 1px solid rgba(0,0,0,0.35);
+      color: #fff;
+      border-radius: 8px;
+      outline: none;
+      font-family: inherit;
+      resize: none;
+      overflow: hidden;
+      min-width: 0;
+      line-height: 1.4;
+    }
+    .hrow-input::placeholder { color: #52525b; }
+    .hrow-lock {
+      width: 26px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      color: #71717a; padding-top: 8px;
+    }
+    .add-row-btn {
+      width: 100%; height: 38px;
+      font-size: 12px; font-weight: 700; color: #3b82f6;
+      background: #3c3e47; border: none; border-radius: 12px; cursor: pointer;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.09), inset 0 -1px 0 rgba(0,0,0,0.20);
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+
+  <div class="card-header">
+    <span class="card-title">Physical Appearance</span>
+    <span class="card-sub">PhysicalAppearanceSection.tsx — Character attribute editor</span>
+  </div>
+
+  <div class="top-section">
+
+    <div class="top-spec">
+
+      <div class="spec-block">
+        <div class="spec-h1">Outer Shell Layers</div>
+        <ul>
+          <li><strong>Layer 1 — Base fill:</strong> <code>background: #2a2a2f</code></li>
+          <li><strong>Layer 2 — Outer drop shadow:</strong> <code>0 12px 32px -2px rgba(0,0,0,0.50)</code></li>
+          <li><strong>Layer 3 — Top-left light bevel (inset):</strong> <code>inset 1px 1px 0 rgba(255,255,255,0.09)</code></li>
+          <li><strong>Layer 4 — Bottom-right dark bevel (inset):</strong> <code>inset -1px -1px 0 rgba(0,0,0,0.35)</code>
+            <ul><li>Layers 2–4 comma-separated in one <code>box-shadow</code> property</li></ul>
+          </li>
+        </ul>
+      </div>
+
+      <div class="spec-block">
+        <div class="spec-h1">Section Header Layers</div>
+        <ul>
+          <li><strong>Layer 1 — Base gradient:</strong> <code>linear-gradient(180deg, #5a7292 0%, #4a5f7f 100%)</code></li>
+          <li><strong>Layer 2 — Top border highlight:</strong> <code>border-top: 1px solid rgba(255,255,255,0.20)</code></li>
+          <li><strong>Layer 3 — Gloss sheen (::after pseudo-element):</strong>
+            <ul>
+              <li><code>position: absolute; inset: 0; pointer-events: none;</code></li>
+              <li><code>background: linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.00) 30%)</code></li>
+              <li>Parent must have <code>overflow: hidden</code></li>
+            </ul>
+          </li>
+          <li><strong>Layer 4 — Drop shadow below:</strong> <code>box-shadow: 0 10px 15px -3px rgba(0,0,0,0.30), 0 4px 6px -4px rgba(0,0,0,0.30)</code></li>
+        </ul>
+      </div>
+
+      <div class="spec-block">
+        <div class="spec-h1">Inner Tray Layers</div>
+        <ul>
+          <li><strong>Layer 1 — Base fill:</strong> <code>background: #2e2e33</code></li>
+          <li><strong>Layer 2 — Top-left light bevel (inset):</strong> <code>inset 1px 1px 0 rgba(255,255,255,0.07)</code></li>
+          <li><strong>Layer 3 — Bottom-right dark bevel (inset):</strong> <code>inset -1px -1px 0 rgba(0,0,0,0.30)</code></li>
+          <li><strong>Layer 4 — Ambient drop shadow:</strong> <code>0 4px 12px rgba(0,0,0,0.25)</code>
+            <ul><li>Layers 2–4 comma-separated in one <code>box-shadow</code> property</li></ul>
+          </li>
+        </ul>
+      </div>
+
+    </div>
+
+    <div class="top-preview">
+      <div class="preview-inner">
+        <div class="section-outer">
+          <div class="section-header">
+            <h2 class="section-title">Physical Appearance</h2>
+            <button class="section-toggle">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+          </div>
+          <div class="section-body">
+            <div class="section-inner">
+              <div class="section-rows">
+
+                <div class="hrow"><div class="hrow-label-wrap"><div class="hrow-label">Hair Color</div><button class="enhance-btn"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg></button></div><textarea class="hrow-input" rows="1" placeholder="Brunette, Blonde, Black"></textarea><div class="hrow-lock"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div></div>
+
+                <div class="hrow"><div class="hrow-label-wrap"><div class="hrow-label">Eye Color</div><button class="enhance-btn"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg></button></div><textarea class="hrow-input" rows="1" placeholder="Blue, Brown, Green"></textarea><div class="hrow-lock"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div></div>
+
+                <div class="hrow"><div class="hrow-label-wrap"><div class="hrow-label">Build</div><button class="enhance-btn"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg></button></div><textarea class="hrow-input" rows="1" placeholder="Athletic, Slim, Curvy"></textarea><div class="hrow-lock"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div></div>
+
+                <div class="hrow"><div class="hrow-label-wrap"><div class="hrow-label">Body Hair</div><button class="enhance-btn"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg></button></div><textarea class="hrow-input" rows="1" placeholder="Smooth, Light, Natural"></textarea><div class="hrow-lock"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div></div>
+
+                <div class="hrow"><div class="hrow-label-wrap"><div class="hrow-label">Height</div><button class="enhance-btn"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg></button></div><textarea class="hrow-input" rows="1" placeholder="5 foot 8"></textarea><div class="hrow-lock"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div></div>
+
+                <div class="hrow"><div class="hrow-label-wrap"><div class="hrow-label">Skin Tone</div><button class="enhance-btn"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg></button></div><textarea class="hrow-input" rows="1" placeholder="Fair, Olive, Dark"></textarea><div class="hrow-lock"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div></div>
+
+                <div class="hrow"><div class="hrow-label-wrap"><div class="hrow-label">Body Markings</div><button class="enhance-btn"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg></button></div><textarea class="hrow-input" rows="1" placeholder="Scars, tattoos, birthmarks"></textarea><div class="hrow-lock"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div></div>
+
+                <div class="hrow"><div class="hrow-label-wrap"><div class="hrow-label">Temp. Conditions</div><button class="enhance-btn"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg></button></div><textarea class="hrow-input" rows="1" placeholder="Injuries, illness, etc."></textarea><div class="hrow-lock"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div></div>
+
+                <button class="add-row-btn">+ Add Row</button>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="bottom-section">
+
+    <div class="bottom-col">
+      <div class="spec-block">
+        <div class="spec-h1">Input Field & Row Label Layers</div>
+        <ul>
+          <li><strong>Layer 1 — Base fill:</strong> <code>background: #1c1c1f</code></li>
+          <li><strong>Layer 2 — Top shadow line:</strong> <code>border-top: 1px solid rgba(0,0,0,0.35)</code>
+            <ul><li>Dark top edge — reads as recessed, not raised</li></ul>
+          </li>
+          <li><strong>Layer 3 — Focus ring (:focus only):</strong> <code>box-shadow: 0 0 0 2px rgba(59,130,246,0.25)</code></li>
+        </ul>
+      </div>
+      <div class="spec-block">
+        <div class="spec-h1">Add Row Button Layers</div>
+        <ul>
+          <li><strong>Layer 1 — Base fill:</strong> <code>background: #3c3e47</code></li>
+          <li><strong>Layer 2 — Outer drop shadow:</strong> <code>0 8px 24px rgba(0,0,0,0.45)</code></li>
+          <li><strong>Layer 3 — Top light edge (inset):</strong> <code>inset 0 1px 0 rgba(255,255,255,0.09)</code></li>
+          <li><strong>Layer 4 — Bottom dark edge (inset):</strong> <code>inset 0 -1px 0 rgba(0,0,0,0.20)</code>
+            <ul><li>Layers 2–4 comma-separated in one <code>box-shadow</code></li></ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="bottom-col">
+      <div class="spec-block">
+        <div class="spec-h1">AI Sparkle Enhance Button Layers</div>
+        <ul>
+          <li><strong>Layer 1 — Outer drop shadow:</strong> <code>box-shadow: 0 4px 12px rgba(0,0,0,0.40)</code></li>
+          <li><strong>Layer 2 — Iridescent border (::before):</strong>
+            <ul>
+              <li><code>position: absolute; inset: 0; border-radius: 8px; pointer-events: none;</code></li>
+              <li><code>background: linear-gradient(90deg, rgba(255,255,255,0.34) 0%, rgba(34,184,200,0.62) 18%, rgba(255,255,255,0.22) 44%, rgba(109,94,247,0.64) 78%, rgba(255,255,255,0.28) 100%)</code></li>
+              <li>Fills entire button — only 1.5px edges are visible</li>
+            </ul>
+          </li>
+          <li><strong>Layer 3 — Dark interior mask (::after):</strong>
+            <ul>
+              <li><code>position: absolute; inset: 1.5px; border-radius: 6px; pointer-events: none;</code></li>
+              <li><code>background: linear-gradient(90deg, rgba(34,184,200,0.22), rgba(109,94,247,0.22)), #2B2D33</code></li>
+            </ul>
+          </li>
+          <li><strong>Layer 4 — Icon glow (on SVG):</strong>
+            <ul>
+              <li><code>filter: drop-shadow(0 0 6px rgba(34,184,200,0.50))</code></li>
+              <li>SVG needs <code>position: relative; z-index: 1</code></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="bottom-col">
+      <div class="spec-block">
+        <div class="spec-h1">Colors</div>
+        <table class="color-table">
+          <thead><tr><th>Name</th><th>Swatch</th><th>Hex</th><th>Role</th></tr></thead>
+          <tbody>
+            <tr><td>Outer Shell</td><td><span class="swatch" style="background:#2a2a2f;"></span></td><td><code>#2a2a2f</code></td><td>Card background</td></tr>
+            <tr><td>Inner Tray</td><td><span class="swatch" style="background:#2e2e33;"></span></td><td><code>#2e2e33</code></td><td>Rows container</td></tr>
+            <tr><td>Header</td><td><span class="swatch" style="background:linear-gradient(90deg,#5a7292,#4a5f7f);"></span></td><td><code>#5a7292→#4a5f7f</code></td><td>Header gradient</td></tr>
+            <tr><td>Input / Label</td><td><span class="swatch" style="background:#1c1c1f;"></span></td><td><code>#1c1c1f</code></td><td>Recessed fields</td></tr>
+            <tr><td>Add Row Btn</td><td><span class="swatch" style="background:#3c3e47;"></span></td><td><code>#3c3e47</code></td><td>Button background</td></tr>
+            <tr><td>AI Sparkle</td><td><span class="swatch" style="background:linear-gradient(90deg,#22B8C9,#6D5EF7);"></span></td><td><code>#22B8C9→#6D5EF7</code></td><td>Iridescent border</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="bottom-col">
+      <div class="spec-block">
+        <div class="spec-h1">Typography</div>
+        <ul>
+          <li><strong>Header title:</strong> <code>20px / 700 / #fff / tracking -0.015em</code></li>
+          <li><strong>Row label:</strong> <code>11px / 700 / #a1a1aa / uppercase / tracking 0.07em</code></li>
+          <li><strong>Input placeholder:</strong> <code>13px / 400 / #52525b</code></li>
+          <li><strong>Add Row button:</strong> <code>12px / 700 / #3b82f6</code></li>
+        </ul>
+      </div>
+      <div class="spec-block">
+        <div class="spec-h1">Row Structure</div>
+        <ul>
+          <li>Row: <code>flex; gap: 8px; align-items: flex-start</code></li>
+          <li><strong>Label side:</strong> fixed <code>width: 40%</code> — label pill + AI sparkle button</li>
+          <li><strong>Value side:</strong> <code>flex: 1</code> — auto-resizing textarea</li>
+          <li><strong>Lock icon:</strong> fixed <code>width: 26px</code></li>
+          <li>Auto-resize: <code>el.style.height='auto'; el.style.height=el.scrollHeight+'px'</code></li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+</body>
+</html>
