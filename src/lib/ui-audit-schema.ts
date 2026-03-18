@@ -1,4 +1,6 @@
-export const UI_AUDIT_SEVERITIES = [
+export const QUALITY_HUB_VERSION = "quality-hub-v1" as const;
+
+export const QUALITY_SEVERITIES = [
   "critical",
   "high",
   "medium",
@@ -6,226 +8,223 @@ export const UI_AUDIT_SEVERITIES = [
   "stylistic",
 ] as const;
 
-export const UI_AUDIT_CONFIDENCE = [
-  "confirmed",
-  "likely",
-  "preference",
-] as const;
+export const QUALITY_CONFIDENCE = ["confirmed", "likely", "preference"] as const;
 
-export const UI_AUDIT_CATEGORIES = [
-  "color",
-  "typography",
-  "spacing",
-  "layout",
-  "component",
+export const QUALITY_DOMAINS = [
+  "ui-ux",
+  "functionality",
+  "orphan-code",
+  "cleanup",
   "accessibility",
-  "responsive",
-  "navigation",
-  "forms",
-  "interaction",
-  "state",
-  "design-system",
-  "implementation",
-  "content-ux",
-  "token-drift",
+  "performance",
+  "security",
+  "tests",
+  "build",
+  "data-integrity",
+  "documentation",
 ] as const;
 
-export const UI_AUDIT_SOURCE_OF_TRUTH = [
-  "research-brief",
-  "style-guide",
-  "code-observation",
-  "multi-source",
+export const QUALITY_FINDING_STATUS = [
+  "open",
+  "in-progress",
+  "fixed",
+  "verified",
+  "deferred",
+  "rejected",
 ] as const;
 
-export const UI_AUDIT_FIX_LEVEL = [
+export const QUALITY_VERIFICATION_STATUS = [
+  "unverified",
+  "retest-required",
+  "verified",
+] as const;
+
+export const QUALITY_FIX_LEVEL = [
   "design-system",
   "shared-component",
+  "feature-module",
   "page-level",
-  "content-ux",
-  "accessibility",
-  "responsive",
+  "data-layer",
+  "build-tooling",
+  "infrastructure",
   "unknown",
 ] as const;
 
-export const UI_AUDIT_IMPLEMENTATION_DIFFICULTY = [
+export const QUALITY_IMPLEMENTATION_DIFFICULTY = [
   "small",
   "medium",
   "large",
   "unknown",
 ] as const;
 
-export const UI_AUDIT_STATUS = ["open", "reviewed", "deferred"] as const;
+export const QUALITY_SOURCE_KIND = [
+  "agent-scan",
+  "automated-check",
+  "manual-review",
+  "imported-external",
+] as const;
 
-export const UI_AUDIT_REVIEW_STATUS = [
-  "reviewed",
+export const QUALITY_RUN_PROFILE = ["quick", "standard", "deep"] as const;
+
+export const QUALITY_RUN_STATUS = ["completed", "failed", "partial"] as const;
+
+export const QUALITY_REVIEW_STATUS = ["pending", "in-progress", "reviewed"] as const;
+
+export const QUALITY_MODULE_STATUS = [
+  "not-started",
   "in-progress",
-  "pending",
+  "completed",
+  "blocked",
 ] as const;
 
-export const UI_AUDIT_COLOR_DECISIONS = [
-  "keep",
-  "merge",
-  "deprecate",
-] as const;
+export type QualitySeverity = (typeof QUALITY_SEVERITIES)[number];
+export type QualityConfidence = (typeof QUALITY_CONFIDENCE)[number];
+export type QualityDomain = (typeof QUALITY_DOMAINS)[number];
+export type QualityFindingStatus = (typeof QUALITY_FINDING_STATUS)[number];
+export type QualityVerificationStatus = (typeof QUALITY_VERIFICATION_STATUS)[number];
+export type QualityFixLevel = (typeof QUALITY_FIX_LEVEL)[number];
+export type QualityImplementationDifficulty =
+  (typeof QUALITY_IMPLEMENTATION_DIFFICULTY)[number];
+export type QualitySourceKind = (typeof QUALITY_SOURCE_KIND)[number];
+export type QualityRunProfile = (typeof QUALITY_RUN_PROFILE)[number];
+export type QualityRunStatus = (typeof QUALITY_RUN_STATUS)[number];
+export type QualityReviewStatus = (typeof QUALITY_REVIEW_STATUS)[number];
+export type QualityModuleStatus = (typeof QUALITY_MODULE_STATUS)[number];
 
-export const UI_AUDIT_COLOR_PRIORITY = ["now", "next", "later"] as const;
+export interface QualityAgent {
+  id: string;
+  agentName: string;
+  modelName: string;
+  platform: string;
+}
 
-export const UI_AUDIT_COLOR_SCOPE = [
-  "app-wide",
-  "page-specific",
-  "mixed",
-] as const;
+export interface QualityAgentStamp {
+  agent: QualityAgent;
+  runId: string;
+  timestamp: string;
+}
 
-export const UI_AUDIT_STATE_COVERAGE = [
-  "covered",
-  "partial",
-  "missing",
-  "not-applicable",
-] as const;
+export interface QualityFindingComment {
+  id: string;
+  author: string;
+  timestamp: string;
+  text: string;
+}
 
-export const UI_AUDIT_INTERACTION_SEMANTICS = [
-  "semantic",
-  "mixed",
-  "non-semantic",
-] as const;
-
-export const UI_AUDIT_COMPONENT_FAMILIES = [
-  "button",
-  "card",
-  "panel",
-  "modal",
-  "input",
-  "chip-badge",
-  "navigation",
-  "unknown",
-] as const;
-
-export const UI_AUDIT_VARIANT_CLASSIFICATION = [
-  "shared",
-  "near-duplicate",
-  "one-off",
-  "conflicted",
-] as const;
-
-export type UiAuditSeverity = (typeof UI_AUDIT_SEVERITIES)[number];
-export type UiAuditConfidence = (typeof UI_AUDIT_CONFIDENCE)[number];
-export type UiAuditCategory = (typeof UI_AUDIT_CATEGORIES)[number];
-export type UiAuditSourceOfTruth = (typeof UI_AUDIT_SOURCE_OF_TRUTH)[number];
-export type UiAuditFixLevel = (typeof UI_AUDIT_FIX_LEVEL)[number];
-export type UiAuditImplementationDifficulty =
-  (typeof UI_AUDIT_IMPLEMENTATION_DIFFICULTY)[number];
-export type UiAuditStatus = (typeof UI_AUDIT_STATUS)[number];
-export type UiAuditReviewStatus = (typeof UI_AUDIT_REVIEW_STATUS)[number];
-export type UiAuditColorDecision = (typeof UI_AUDIT_COLOR_DECISIONS)[number];
-export type UiAuditColorPriority = (typeof UI_AUDIT_COLOR_PRIORITY)[number];
-export type UiAuditColorScope = (typeof UI_AUDIT_COLOR_SCOPE)[number];
-export type UiAuditStateCoverage = (typeof UI_AUDIT_STATE_COVERAGE)[number];
-export type UiAuditInteractionSemantics =
-  (typeof UI_AUDIT_INTERACTION_SEMANTICS)[number];
-export type UiAuditComponentFamily = (typeof UI_AUDIT_COMPONENT_FAMILIES)[number];
-export type UiAuditVariantClassification =
-  (typeof UI_AUDIT_VARIANT_CLASSIFICATION)[number];
-
-export interface UiAuditFinding {
+export interface QualityFinding {
   id: string;
   title: string;
-  severity: UiAuditSeverity;
-  confidence: UiAuditConfidence;
-  category: UiAuditCategory;
+  severity: QualitySeverity;
+  confidence: QualityConfidence;
+  domain: QualityDomain;
+  category: string;
+  status: QualityFindingStatus;
+  verificationStatus: QualityVerificationStatus;
   page: string;
   route?: string;
   component?: string;
   files: string[];
+  tags: string[];
   evidence: string[];
   currentState: string;
   problem: string;
   whyItMatters: string;
   userImpact: string;
   recommendation: string;
-  sourceOfTruth: UiAuditSourceOfTruth;
-  fixLevel: UiAuditFixLevel;
-  designSystemLevel: boolean;
-  implementationDifficulty: UiAuditImplementationDifficulty;
+  reproSteps: string[];
+  expectedBehavior: string;
+  actualBehavior: string;
+  sourceKind: QualitySourceKind;
+  fixLevel: QualityFixLevel;
+  implementationDifficulty: QualityImplementationDifficulty;
   batchable: boolean;
-  status: UiAuditStatus;
+  designSystemLevel: boolean;
+  foundBy: QualityAgentStamp;
+  verifiedBy?: QualityAgentStamp;
+  contributors: QualityAgent[];
+  relatedFindingIds: string[];
+  comments: QualityFindingComment[];
+  createdAt: string;
+  updatedAt: string;
 }
 
-export interface UiAuditReviewUnit {
+export interface QualityReviewUnit {
   id: string;
   name: string;
   route?: string;
-  component?: string;
   files: string[];
-  status: UiAuditReviewStatus;
   notes: string;
+  status: QualityReviewStatus;
+  lastRunId?: string;
 }
 
-export interface UiAuditScope {
-  sources: string[];
-  startedOn: string;
-  updatedOn: string;
+export interface QualityScanModule {
+  id: string;
+  name: string;
+  description: string;
+  status: QualityModuleStatus;
+  priority: "high" | "medium" | "low";
+  lastRunId?: string;
+  notes?: string;
+}
+
+export interface QualityRunSummary {
+  findingsTotal: number;
+  newFindings: number;
+  critical: number;
+  high: number;
+  open: number;
+  verified: number;
+}
+
+export interface QualityScanRun {
+  id: string;
+  name: string;
+  profile: QualityRunProfile;
+  status: QualityRunStatus;
+  startedAt: string;
+  finishedAt: string;
+  agent: QualityAgent;
+  scope: string[];
+  summary: QualityRunSummary;
   notes: string;
+  importedFrom?: string;
 }
 
-export interface UiAuditTaxonomy {
-  severities: readonly UiAuditSeverity[];
-  confidence: readonly UiAuditConfidence[];
-  categories: readonly UiAuditCategory[];
+export interface QualityHubMeta {
+  version: typeof QUALITY_HUB_VERSION;
+  project: string;
+  createdAt: string;
+  lastUpdatedAt: string;
+  lastRunId?: string;
 }
 
-export interface UiAuditColorConsolidationItem {
-  id: string;
-  decision: UiAuditColorDecision;
-  sourceColors: string[];
-  targetColor: string;
-  semanticRole: string;
-  scope: UiAuditColorScope;
-  priority: UiAuditColorPriority;
-  rationale: string;
-  evidence: string[];
-  sampleFiles: string[];
+export interface QualityHubRegistry {
+  meta: QualityHubMeta;
+  scanModules: QualityScanModule[];
+  runs: QualityScanRun[];
+  findings: QualityFinding[];
+  reviewUnits: QualityReviewUnit[];
+  handoffNotes: string;
 }
 
-export interface UiAuditInteractionStateCoverage {
-  rest: UiAuditStateCoverage;
-  hover: UiAuditStateCoverage;
-  focusVisible: UiAuditStateCoverage;
-  active: UiAuditStateCoverage;
-  disabled: UiAuditStateCoverage;
-  loading: UiAuditStateCoverage;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }
 
-export interface UiAuditInteractionStateMatrixRow {
-  id: string;
-  pattern: string;
-  page: string;
-  route?: string;
-  component: string;
-  files: string[];
-  stateCoverage: UiAuditInteractionStateCoverage;
-  keyboardParity: UiAuditStateCoverage;
-  semantics: UiAuditInteractionSemantics;
-  severity: UiAuditSeverity;
-  confidence: UiAuditConfidence;
-  systemic: boolean;
-  evidence: string[];
-  currentState: string;
-  recommendation: string;
+export function isQualityHubRegistry(input: unknown): input is QualityHubRegistry {
+  if (!isRecord(input)) return false;
+  if (!isRecord(input.meta)) return false;
+  return (
+    typeof input.meta.version === "string" &&
+    typeof input.meta.project === "string" &&
+    Array.isArray(input.scanModules) &&
+    Array.isArray(input.runs) &&
+    Array.isArray(input.findings) &&
+    Array.isArray(input.reviewUnits)
+  );
 }
 
-export interface UiAuditComponentVariantDriftItem {
-  id: string;
-  family: UiAuditComponentFamily;
-  variantName: string;
-  classification: UiAuditVariantClassification;
-  severity: UiAuditSeverity;
-  confidence: UiAuditConfidence;
-  files: string[];
-  evidence: string[];
-  currentState: string;
-  problem: string;
-  recommendation: string;
-  estimatedReuseCount: number;
-  designSystemCandidate: boolean;
-  fixLevel: UiAuditFixLevel;
+export function makeAgentId(agentName: string, modelName: string): string {
+  return `${agentName}:${modelName}`.toLowerCase().replace(/\s+/g, "-");
 }
