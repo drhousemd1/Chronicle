@@ -1,53 +1,152 @@
 
-# Sandbox Feature Transfer — Master Tracker
+Goal: fix the Quality Hub so it reflects the real app structure you listed, and stop stale persisted data from hiding newer page coverage.
 
-## Source Documents
-- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
-- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
+What I found
 
-## Features Being Transferred
-| ID | Feature | Status |
-|----|---------|--------|
-| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
-| B | Story Transfer Library (story-transfer.ts) | ✅ |
-| A | UI Audit System (schema, utils, findings, page) | 🔄 |
-| B | Story Export/Import Modals | ✅ |
-| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
-| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
-| - | StyleGuideTool.tsx audit button | ⬜ |
-| - | App.tsx route wiring | ⬜ |
-| - | Index.tsx full wiring | ⬜ |
+1. Your app absolutely does include the pages you called out
+- Community Gallery: `tab === "gallery"` in `src/pages/Index.tsx`
+- My Stories / Your Stories: `tab === "hub"`
+- Character Library: `tab === "library"`
+- Image Library: `tab === "image_library"`
+- Chat History: `tab === "conversations"`
+- Story Builder: `tab === "world"` and `tab === "characters"` as a builder flow
+- Admin: `tab === "admin"`
+- Plus other real surfaces already in the app:
+  - Chat Interface: `tab === "chat_interface"`
+  - Account: `tab === "account"`
+  - Creator Profile: `/creator/:userId`
+  - Quality Hub: `/style-guide/ui-audit`
+  - API Inspector: `/style-guide/api-inspector`
 
-## Prompt Execution Status
+2. The reason only a few pages are showing is not that the seed is missing
+- `src/data/ui-audit-findings.ts` already contains 12 `reviewUnits`
+- But the persisted backend row currently has only 4 review units
+- I confirmed that with the database:
+  - latest `quality_hub_registries.registry.reviewUnits` count = 4
+- So the UI is loading stale saved data and overriding the newer seeded list
 
-| # | Target File(s) | Status | Notes |
-|---|---------------|--------|-------|
-| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
-| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
-| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
-| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
-| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
-| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
-| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
-| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
-| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
-| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
-| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
-| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
-| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
-| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
+3. The current “App Pages” inventory is still not modeled the way you want
+Right now it’s a mixed audit-unit list, not a strict “every page/surface in the app” inventory. That’s why it feels wrong.
 
-## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
-- `src/types.ts`: line 11507
-- `src/utils.ts`: line 12138
-- `src/lib/story-transfer.ts`: line 9812
-- `src/lib/ui-audit-schema.ts`: line 21329
-- `src/lib/ui-audit-utils.ts`: line 21565
-- `src/data/ui-audit-findings.ts`: line 18967
-- `StoryExportFormatModal.tsx`: line 9642
-- `StoryImportModeModal.tsx`: line 9731
-- `CharactersTab.tsx`: line 2893
-- `ChatInterfaceTab.tsx`: line 5004
-- `src/pages/style-guide/ui-audit.tsx`: line 17867
-- `src/App.tsx`: line 95
-- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout
+Implementation plan
+
+1. Replace the current review-unit seed with a true app-page inventory
+Update `src/data/ui-audit-findings.ts` so the App Pages section is explicitly built around the actual app surfaces, starting with the ones you named:
+
+Core app pages/surfaces to include
+- Community Gallery
+- Your Stories
+- Character Library
+- Image Library
+- Chat History
+- Story Builder
+- Character Builder
+- Chat Interface
+- Admin
+- Account
+- Creator Profile
+- Quality Hub
+- API Inspector
+
+For each item I’ll keep:
+- name
+- route/tab
+- primary files
+- status
+- notes
+- lastRunId when applicable
+
+Naming changes
+- Rename “My Stories” to “Your Stories” if you want the UI label to match your wording
+- Keep Story Builder and Character Builder as separate entries rather than collapsing them
+
+2. Add a schema/version invalidation so stale saved registries cannot override new structure
+Current issue:
+- staleness check only looks at `lastRunId`
+- saved data can still be structurally outdated while having the same run id
+
+Fix:
+- add a dedicated registry structure version in the Quality Hub meta
+- compare saved registry version against code seed version
+- if mismatch, discard persisted reviewUnits/findings seed and load fresh data
+
+Files to update
+- `src/lib/ui-audit-schema.ts`
+- `src/data/ui-audit-findings.ts`
+- `src/pages/style-guide/ui-audit.tsx`
+
+3. Add merge logic so saved user edits survive while seeded app pages expand
+Instead of simply replacing everything, I’ll make the load path smarter:
+- load persisted registry
+- if persisted version is older, merge in missing seeded app pages by `id`
+- preserve any user-edited statuses/notes for ids that still exist
+- preserve findings/runs where safe
+- upgrade old registries forward automatically
+
+This is better than a blunt reset because it prevents data loss while still fixing missing pages.
+
+4. Add timestamps under completed page/module badges
+You asked for timestamps under completed badges.
+I’ll add that in both places where it matters:
+- Scan Modules
+- App Pages
+
+Behavior
+- if item has `status === "completed"` and a `lastRunId`
+- resolve the matching run from `registry.runs`
+- show `finishedAt` under the badge
+- if no run exists, no timestamp is shown
+
+5. Make the App Pages panel easier to verify visually
+To avoid this happening again, I’ll also improve the App Pages card so each entry clearly shows:
+- page name
+- route/tab
+- status badge
+- completed date when present
+- key files and notes
+
+Optional but recommended:
+- sort app pages in a predictable product order matching the sidebar/navigation
+
+Concrete page inventory I will seed
+
+```text
+1. Community Gallery     -> / (gallery tab)
+2. Your Stories          -> / (hub tab)
+3. Character Library     -> / (library tab)
+4. Image Library         -> / (image_library tab)
+5. Chat History          -> / (conversations tab)
+6. Story Builder         -> / (world tab)
+7. Character Builder     -> / (characters tab)
+8. Chat Interface        -> / (chat_interface tab)
+9. Admin                 -> / (admin tab)
+10. Account              -> / (account tab)
+11. Creator Profile      -> /creator/:userId
+12. Quality Hub          -> /style-guide/ui-audit
+13. API Inspector        -> /style-guide/api-inspector
+```
+
+Technical details
+
+Files to change
+- `src/data/ui-audit-findings.ts`
+  - replace current review unit list with the full app page inventory above
+  - bump registry structure version
+- `src/lib/ui-audit-schema.ts`
+  - add a `registryVersion` or similar meta field
+- `src/pages/style-guide/ui-audit.tsx`
+  - upgrade stale saved registries
+  - merge missing seeded app pages into saved registries
+  - show timestamps under completed badges in App Pages as well as Scan Modules
+
+Data/persistence impact
+- keep backend persistence
+- continue using local cache as a convenience layer
+- make backend/cache upgrade-safe so old saved rows stop suppressing new seeded structure
+
+Why this fixes your exact complaint
+- it stops showing the old 4-page saved registry
+- it explicitly models the real app pages you listed
+- it separates Story Builder and Character Builder
+- it adds timestamps to completed badges
+- it prevents future seed updates from being hidden by stale persisted state
