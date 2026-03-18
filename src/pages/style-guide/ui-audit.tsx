@@ -536,9 +536,9 @@ export default function UiAuditPage() {
                         <div>
                           <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Expected Outcome</div>
                           <div className="space-y-2 text-xs text-[#a1a1aa]">
-                            <div><span className="font-bold text-[#eaedf1]">Expected Behavior:</span> {f.expectedBehavior || "—"}</div>
-                            <div><span className="font-bold text-[#eaedf1]">Actual Behavior:</span> {f.actualBehavior || "—"}</div>
-                            {f.reproSteps.length > 0 && <div><span className="font-bold text-[#eaedf1]">Repro Steps:</span><ol className="mt-1 list-decimal pl-5">{f.reproSteps.map((s, i) => <li key={i}>{s}</li>)}</ol></div>}
+                            <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Expected Behavior</span> {f.expectedBehavior || "—"}</div>
+                            <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Actual Behavior</span> {f.actualBehavior || "—"}</div>
+                            {f.reproSteps.length > 0 && <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Repro Steps</span><ol className="mt-1 list-decimal pl-5">{f.reproSteps.map((s, i) => <li key={i}>{s}</li>)}</ol></div>}
                           </div>
                         </div>
                         {/* ── Metadata ── */}
