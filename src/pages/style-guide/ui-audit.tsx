@@ -28,6 +28,7 @@ import {
   qualityHubInitialRegistry,
 } from "@/data/ui-audit-findings";
 import { cn } from "@/lib/utils";
+import { ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 
