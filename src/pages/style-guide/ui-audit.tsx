@@ -33,6 +33,28 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 
 const STORAGE_KEY = "chronicle-quality-hub-v1";
+
+const DOMAIN_LABELS: Record<string, string> = {
+  "ui-ux": "UI/UX Design",
+  "functionality": "Functionality",
+  "orphan-code": "Orphan / Dead Code",
+  "cleanup": "Cleanup",
+  "accessibility": "Accessibility",
+  "performance": "Performance",
+  "security": "Security",
+  "tests": "Tests",
+  "build": "Build",
+  "data-integrity": "Data Integrity",
+  "documentation": "Documentation",
+};
+
+function titleCase(s: string): string {
+  return s.replace(/(^|-)(\w)/g, (_, _sep, c) => ` ${c.toUpperCase()}`).trim();
+}
+
+function domainLabel(key: string): string {
+  return DOMAIN_LABELS[key] ?? titleCase(key);
+}
 type GroupBy = "severity" | "domain" | "status" | "page" | "component" | "agent";
 type HubViewId = "overview" | "findings" | "runs" | "handoff";
 
@@ -438,7 +460,7 @@ export default function UiAuditPage() {
               <div className="rounded-xl border-2 border-dashed border-[#71717a] bg-[linear-gradient(to_bottom_right,#27272a,#18181b)] px-4 py-10 text-center text-sm text-[#a1a1aa]">No findings yet. Import a JSON package to start.</div>
             ) : (
               orderedGroupEntries.map(([group, items]) => (
-                <Section key={group} title={group} badge={<span className="rounded-full bg-[#23262b] px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-[#eaedf1]">{items.length}</span>}>
+                <Section key={group} title={domainLabel(group)} badge={<span className="rounded-full bg-[#23262b] px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-[#eaedf1]">{items.length}</span>}>
                   <div className="space-y-2">{items.map((f) => (
                     <details key={f.id} className={cn(recessedBlockClass, "group open:ring-1 open:ring-[#4a5f7f]/60")}>
                        <summary className="cursor-pointer list-none px-4 py-3 relative">
@@ -456,30 +478,30 @@ export default function UiAuditPage() {
                         <div>
                           <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Summary</div>
                           <div className="grid gap-x-6 gap-y-1 sm:grid-cols-2 lg:grid-cols-3 text-xs text-[#a1a1aa]">
-                            <div><span className="font-bold text-[#eaedf1]">Severity:</span> {f.severity}</div>
-                            <div><span className="font-bold text-[#eaedf1]">Domain:</span> {f.domain}</div>
-                            <div><span className="font-bold text-[#eaedf1]">Status:</span> {f.status}</div>
-                            <div><span className="font-bold text-[#eaedf1]">Confidence:</span> {f.confidence}</div>
-                            <div><span className="font-bold text-[#eaedf1]">Category:</span> {f.category || "—"}</div>
-                            <div><span className="font-bold text-[#eaedf1]">Page:</span> {f.page}</div>
-                            {f.route && <div><span className="font-bold text-[#eaedf1]">Route:</span> {f.route}</div>}
-                            {f.component && <div><span className="font-bold text-[#eaedf1]">Component:</span> {f.component}</div>}
+                            <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Severity</span> {f.severity}</div>
+                            <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Domain</span> {domainLabel(f.domain)}</div>
+                            <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Status</span> {titleCase(f.status)}</div>
+                            <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Confidence</span> {titleCase(f.confidence)}</div>
+                            <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Category</span> {f.category || "—"}</div>
+                            <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Page</span> {f.page}</div>
+                            {f.route && <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Route</span> {f.route}</div>}
+                            {f.component && <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Component</span> {f.component}</div>}
                           </div>
                         </div>
                         {/* ── Problem ── */}
                         <div>
                           <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Problem</div>
                           <div className="space-y-2 text-xs text-[#a1a1aa]">
-                            <div><span className="font-bold text-[#eaedf1]">Problem:</span> {f.problem || "—"}</div>
-                            <div><span className="font-bold text-[#eaedf1]">Current State:</span> {f.currentState || "—"}</div>
+                            <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Problem</span> {f.problem || "—"}</div>
+                            <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Current State</span> {f.currentState || "—"}</div>
                           </div>
                         </div>
                         {/* ── Impact ── */}
                         <div>
                           <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Impact</div>
                           <div className="space-y-2 text-xs text-[#a1a1aa]">
-                            <div><span className="font-bold text-[#eaedf1]">Why It Matters:</span> {f.whyItMatters || "—"}</div>
-                            <div><span className="font-bold text-[#eaedf1]">User Impact:</span> {f.userImpact || "—"}</div>
+                            <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Why It Matters</span> {f.whyItMatters || "—"}</div>
+                            <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">User Impact</span> {f.userImpact || "—"}</div>
                           </div>
                         </div>
                         {/* ── Files & Evidence ── */}
@@ -487,11 +509,11 @@ export default function UiAuditPage() {
                           <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Files & Evidence</div>
                           <div className="grid gap-3 lg:grid-cols-2 text-xs text-[#a1a1aa]">
                             <div>
-                              <span className="font-bold text-[#eaedf1]">Files:</span>
+                             <span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Files</span>
                               {f.files.length === 0 ? <span className="ml-1 text-[#71717a]">—</span> : <div className="mt-1 space-y-0.5">{f.files.map((file) => <div key={file} className="font-mono text-[11px] text-[#a1a1aa]">{file}</div>)}</div>}
                             </div>
                             <div>
-                              <span className="font-bold text-[#eaedf1]">Evidence:</span>
+                             <span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Evidence</span>
                               {f.evidence.length === 0 ? <span className="ml-1 text-[#71717a]">—</span> : <ul className="mt-1 list-disc pl-5">{f.evidence.map((ev, i) => <li key={i}>{ev}</li>)}</ul>}
                             </div>
                           </div>
@@ -501,12 +523,12 @@ export default function UiAuditPage() {
                         <div>
                           <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Proposed Fix</div>
                           <div className="space-y-2 text-xs text-[#a1a1aa]">
-                            <div><span className="font-bold text-[#eaedf1]">Recommendation:</span> {f.recommendation || "—"}</div>
+                            <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Recommendation</span> {f.recommendation || "—"}</div>
                             <div className="grid gap-x-6 gap-y-1 sm:grid-cols-2 lg:grid-cols-3">
-                              <div><span className="font-bold text-[#eaedf1]">Fix Level:</span> {f.fixLevel}</div>
-                              <div><span className="font-bold text-[#eaedf1]">Difficulty:</span> {f.implementationDifficulty}</div>
-                              <div><span className="font-bold text-[#eaedf1]">Batchable:</span> {f.batchable ? "Yes" : "No"}</div>
-                              <div><span className="font-bold text-[#eaedf1]">Design System:</span> {f.designSystemLevel ? "Yes" : "No"}</div>
+                              <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Fix Level</span> {titleCase(f.fixLevel)}</div>
+                              <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Difficulty</span> {titleCase(f.implementationDifficulty)}</div>
+                              <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Batchable</span> {f.batchable ? "Yes" : "No"}</div>
+                              <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Design System</span> {f.designSystemLevel ? "Yes" : "No"}</div>
                             </div>
                           </div>
                         </div>
@@ -514,28 +536,28 @@ export default function UiAuditPage() {
                         <div>
                           <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Expected Outcome</div>
                           <div className="space-y-2 text-xs text-[#a1a1aa]">
-                            <div><span className="font-bold text-[#eaedf1]">Expected Behavior:</span> {f.expectedBehavior || "—"}</div>
-                            <div><span className="font-bold text-[#eaedf1]">Actual Behavior:</span> {f.actualBehavior || "—"}</div>
-                            {f.reproSteps.length > 0 && <div><span className="font-bold text-[#eaedf1]">Repro Steps:</span><ol className="mt-1 list-decimal pl-5">{f.reproSteps.map((s, i) => <li key={i}>{s}</li>)}</ol></div>}
+                            <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Expected Behavior</span> {f.expectedBehavior || "—"}</div>
+                            <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Actual Behavior</span> {f.actualBehavior || "—"}</div>
+                            {f.reproSteps.length > 0 && <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Repro Steps</span><ol className="mt-1 list-decimal pl-5">{f.reproSteps.map((s, i) => <li key={i}>{s}</li>)}</ol></div>}
                           </div>
                         </div>
                         {/* ── Metadata ── */}
                         <div>
                           <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Metadata</div>
                           <div className="grid gap-x-6 gap-y-1 sm:grid-cols-2 text-xs text-[#a1a1aa]">
-                            <div><span className="font-bold text-[#eaedf1]">Found By:</span> {f.foundBy.agent.agentName} ({f.foundBy.agent.modelName})</div>
-                            <div><span className="font-bold text-[#eaedf1]">Source:</span> {f.sourceKind}</div>
-                            <div><span className="font-bold text-[#eaedf1]">Created:</span> {formatDate(f.createdAt)}</div>
-                            <div><span className="font-bold text-[#eaedf1]">Updated:</span> {formatDate(f.updatedAt)}</div>
-                            {f.verifiedBy && <div><span className="font-bold text-[#eaedf1]">Verified By:</span> {f.verifiedBy.agent.agentName}</div>}
-                            {f.contributors.length > 0 && <div><span className="font-bold text-[#eaedf1]">Contributors:</span> {f.contributors.map((c) => c.agentName).join(", ")}</div>}
-                            {f.relatedFindingIds.length > 0 && <div><span className="font-bold text-[#eaedf1]">Related:</span> {f.relatedFindingIds.join(", ")}</div>}
+                            <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Found By</span> {f.foundBy.agent.agentName} ({f.foundBy.agent.modelName})</div>
+                            <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Source</span> {titleCase(f.sourceKind)}</div>
+                            <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Created</span> {formatDate(f.createdAt)}</div>
+                            <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Updated</span> {formatDate(f.updatedAt)}</div>
+                            {f.verifiedBy && <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Verified By</span> {f.verifiedBy.agent.agentName}</div>}
+                            {f.contributors.length > 0 && <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Contributors</span> {f.contributors.map((c) => c.agentName).join(", ")}</div>}
+                            {f.relatedFindingIds.length > 0 && <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Related</span> {f.relatedFindingIds.join(", ")}</div>}
                           </div>
                         </div>
                         {/* ── Actions ── */}
                         <div className="grid gap-2 md:grid-cols-3">
-                          <select value={f.status} onChange={(e) => updateFindingStatus(f.id, e.target.value as QualityFinding["status"])} className={selectClass}>{QUALITY_FINDING_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}</select>
-                          <select value={f.verificationStatus} onChange={(e) => updateVerification(f.id, e.target.value as QualityFinding["verificationStatus"])} className={selectClass}>{QUALITY_VERIFICATION_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}</select>
+                          <select value={f.status} onChange={(e) => updateFindingStatus(f.id, e.target.value as QualityFinding["status"])} className={selectClass}>{QUALITY_FINDING_STATUS.map((s) => <option key={s} value={s}>{titleCase(s)}</option>)}</select>
+                          <select value={f.verificationStatus} onChange={(e) => updateVerification(f.id, e.target.value as QualityFinding["verificationStatus"])} className={selectClass}>{QUALITY_VERIFICATION_STATUS.map((s) => <option key={s} value={s}>{titleCase(s)}</option>)}</select>
                           <button type="button" onClick={() => addCommentToFinding(f.id)} className={neutralButtonClass}>Add Comment</button>
                         </div>
                         {f.comments.length > 0 && <div className="mt-3 space-y-2 rounded-lg border border-[rgba(255,255,255,0.05)] bg-[#1c1c1f] p-3">{f.comments.map((c) => <div key={c.id} className={cn(recessedStripClass, "px-2 py-2 text-xs text-[#a1a1aa]")}><div className="font-bold text-[#eaedf1]">{c.author}</div><div className="text-[10px] text-[#71717a]">{formatDate(c.timestamp)}</div><div className="mt-1">{c.text}</div></div>)}</div>}
