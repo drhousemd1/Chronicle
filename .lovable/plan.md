@@ -1,53 +1,88 @@
 
-# Sandbox Feature Transfer — Master Tracker
 
-## Source Documents
-- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
-- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
+# Quality Hub Scan — Findings Report
 
-## Features Being Transferred
-| ID | Feature | Status |
-|----|---------|--------|
-| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
-| B | Story Transfer Library (story-transfer.ts) | ✅ |
-| A | UI Audit System (schema, utils, findings, page) | 🔄 |
-| B | Story Export/Import Modals | ✅ |
-| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
-| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
-| - | StyleGuideTool.tsx audit button | ⬜ |
-| - | App.tsx route wiring | ⬜ |
-| - | Index.tsx full wiring | ⬜ |
+## Scan Overview
 
-## Prompt Execution Status
+I reviewed the codebase across all 11 scan modules defined in the Quality Hub. Below are the concrete findings I'll populate into the `ui-audit-findings.ts` initial registry as pre-seeded findings. This is a "standard" depth scan covering security, data integrity, build health, functionality, orphan code, and documentation.
 
-| # | Target File(s) | Status | Notes |
-|---|---------------|--------|-------|
-| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
-| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
-| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
-| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
-| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
-| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
-| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
-| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
-| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
-| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
-| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
-| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
-| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
-| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
+---
 
-## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
-- `src/types.ts`: line 11507
-- `src/utils.ts`: line 12138
-- `src/lib/story-transfer.ts`: line 9812
-- `src/lib/ui-audit-schema.ts`: line 21329
-- `src/lib/ui-audit-utils.ts`: line 21565
-- `src/data/ui-audit-findings.ts`: line 18967
-- `StoryExportFormatModal.tsx`: line 9642
-- `StoryImportModeModal.tsx`: line 9731
-- `CharactersTab.tsx`: line 2893
-- `ChatInterfaceTab.tsx`: line 5004
-- `src/pages/style-guide/ui-audit.tsx`: line 17867
-- `src/App.tsx`: line 95
-- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout
+## Findings to Add (17 total)
+
+### Security (3 findings)
+
+1. **All edge functions have `verify_jwt = false`** — Every function in `config.toml` disables JWT verification at the gateway level. While some functions (like `chat`) do manual auth checks internally, this bypasses Supabase's built-in JWT layer. If any function has a code path that skips the manual check, it's exposed. Severity: **high**.
+
+2. **`sync-guide-to-github` has no auth check** — Unlike `chat`, `extract-memory-events`, etc., which all validate the Authorization header internally, `sync-guide-to-github` has no `supabase.auth.getUser()` call visible in the first 40 lines and JWT is disabled. Any caller can trigger GitHub writes. Severity: **critical**.
+
+3. **Hardcoded GitHub credentials in edge function** — `sync-guide-to-github` contains `GITHUB_OWNER = "drhousemd1"` and `GITHUB_REPO = "Chronicle"` as hardcoded constants. The GitHub token comes from `Deno.env.get()` (good), but the repo path is non-configurable. Severity: **low**.
+
+### Data Integrity (2 findings)
+
+4. **`stories` table queried with `as any` cast** — Every query to the `stories` table in `supabase-data.ts` uses `.from('stories' as any)`, indicating the table isn't in the generated types file. This silently disables type checking on all story CRUD operations — wrong column names, missing fields, or type mismatches won't be caught at build time. Severity: **high**.
+
+5. **Legacy localStorage functions still present** — `src/utils.ts` and `src/services/storage.ts` contain full localStorage-based CRUD (`loadAppData`, `saveAppData`, `getRegistry`, `saveRegistry`, `getCharacterLibrary`, etc.) that appear to be the pre-Supabase data layer. If any code path still calls these, data could silently diverge from the database. Severity: **medium**.
+
+### Build / Type / Lint Health (2 findings)
+
+6. **176 `as any` casts in service layer** — `src/services/character-ai.ts` and `src/services/supabase-data.ts` contain 176 `as any` type assertions that suppress TypeScript's type checker. Many are on database row conversions and patch objects. Severity: **medium**.
+
+7. **Edge functions missing from `config.toml`** — `evaluate-arc-progress`, `migrate-base64-images`, and `sync-guide-to-github` all exist in `supabase/functions/` but have no entry in `config.toml`. This means they may not deploy or may use default settings. Severity: **high**.
+
+### Functionality (2 findings)
+
+8. **`ChronicleApp.tsx` is a dead placeholder** — The component renders "App migration in progress..." with empty callbacks (`onPlay={() => {}}`, `onEdit={() => {}}`, etc.). It's imported but appears to be unreachable since `Index.tsx` handles the main app. Severity: **low**.
+
+9. **`brainstormCharacterDetails` returns untyped JSON** — `llm.ts` line 1021 parses arbitrary AI-generated JSON with `JSON.parse(jsonMatch[0])` and returns it as `Partial<Character>` without validating the shape. Malformed AI output could inject unexpected keys. Severity: **medium**.
+
+### Orphan / Dead Code (2 findings)
+
+10. **`storage.ts` — entire file may be dead code** — The `loadAppData()` and `saveAppData()` functions use localStorage with a key from `utils.ts`. The main app uses `supabase-data.ts` for persistence. This file may be entirely unused. Severity: **medium**.
+
+11. **`migrate-base64-images` edge function — no callers** — No file in `src/` references `migrate-base64-images`. The `ensureStorageUrl` safety net in `supabase-data.ts` handles base64 migration inline. This function appears to be dead. Severity: **low**.
+
+### Performance (2 findings)
+
+12. **ChatInterfaceTab has 18+ `useEffect` hooks** — The main chat component registers at least 18 separate effects, many with complex dependency arrays. This creates re-render pressure and makes the component difficult to reason about. Severity: **medium**.
+
+13. **Messages query may hit 1000-row Supabase limit** — `fetchScenarioById` fetches all messages for all conversations with `.in('conversation_id', conversationIds)` but has no `.limit()` or pagination. Long stories could silently truncate. Severity: **high**.
+
+### Accessibility (1 finding)
+
+14. **Quality Hub page lacks keyboard navigation** — The Quality Hub dashboard uses custom styled buttons and panels without `role`, `aria-label`, or focus management. Tab navigation through findings, filters, and view switches is not tested. Severity: **medium**.
+
+### Documentation (1 finding)
+
+15. **BYOK investigation note references stale architecture** — `.lovable/notes/byok-routing-investigation.md` references `getGateway()` routing logic and Lovable Gateway, but all edge functions have been updated to "GROK ONLY" mode. The investigation note suggests adding gateway routing that is no longer relevant. Severity: **low**.
+
+### Cleanup (2 findings)
+
+16. **CORS origin list duplicated across 10+ edge functions** — Every edge function contains an identical `ALLOWED_ORIGINS` array and `getCorsHeaders` helper. This should be a shared utility. Severity: **medium**.
+
+17. **`dbToCharacter` / `characterToDb` conversion pair has asymmetric field naming** — `preferredClothing.undergarments` maps to DB column `underwear` (line 144 vs 156 in supabase-data.ts), creating a subtle naming inconsistency that could cause bugs if the DB schema ever gets generated types. Severity: **low**.
+
+---
+
+## Changes to Make
+
+| File | Change |
+|------|--------|
+| `src/data/ui-audit-findings.ts` | Add all 17 findings to the `findings` array in `qualityHubInitialRegistry`. Update scan module statuses to `completed` for security, data-integrity, build, functionality, orphan-code, performance, cleanup, documentation, and accessibility. Add a scan run entry. Update review unit statuses. Update handoff notes. |
+
+## Scan Module Status Updates
+
+| Module | New Status |
+|--------|-----------|
+| Security and Dependencies | completed |
+| Data and API Integrity | completed |
+| Build / Type / Lint Health | completed |
+| Functionality and Behavior Bugs | completed |
+| Orphan / Dead Code | completed |
+| Performance | completed |
+| Code Cleanup Candidates | completed |
+| Accessibility | completed |
+| Documentation and Handoff | completed |
+| UI / UX and Design System | not-started (requires visual inspection) |
+| Test Health | not-started (requires test runner) |
+
