@@ -141,10 +141,10 @@ function buildQualityHubTransferPackage(snapshot: QualityHubRegistry) {
   return { packageType: "chronicle-quality-hub-transfer", packageVersion: 1, exportedAt: new Date().toISOString(), registry: snapshot };
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, children, badge }: { title: string; children: React.ReactNode; badge?: React.ReactNode }) {
   return (
     <section className={panelOuterClass}>
-      <div className={panelHeaderClass}><div className={panelHeaderOverlayClass} /><h2 className="relative z-10 text-[20px] font-semibold tracking-tight text-white">{title}</h2></div>
+      <div className={panelHeaderClass}><div className={panelHeaderOverlayClass} /><div className="relative z-10 flex items-center justify-between w-full"><h2 className="text-[20px] font-semibold tracking-tight text-white">{title}</h2>{badge && <span>{badge}</span>}</div></div>
       <div className={panelBodyClass}><div className={panelInnerClass}>{children}</div></div>
     </section>
   );
