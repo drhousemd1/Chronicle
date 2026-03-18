@@ -28,6 +28,7 @@ import {
   qualityHubInitialRegistry,
 } from "@/data/ui-audit-findings";
 import { cn } from "@/lib/utils";
+import { ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -172,7 +173,7 @@ export default function UiAuditPage() {
   });
   const [activeView, setActiveView] = useState<HubViewId>("overview");
   const [search, setSearch] = useState("");
-  const [groupBy, setGroupBy] = useState<GroupBy>("severity");
+  const [groupBy, setGroupBy] = useState<GroupBy>("domain");
   const [severityFilter, setSeverityFilter] = useState<"all" | QualityFinding["severity"]>("all");
   const [domainFilter, setDomainFilter] = useState<"all" | QualityFinding["domain"]>("all");
   const [statusFilter, setStatusFilter] = useState<"all" | QualityFinding["status"]>("all");
@@ -437,14 +438,15 @@ export default function UiAuditPage() {
                   <div className="flex items-center justify-between"><h3 className="text-sm font-black uppercase tracking-[0.16em] text-[#eaedf1]/90">{group}</h3><span className="rounded-full bg-[#4a5f7f] px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#eaedf1]">{items.length}</span></div>
                   <div className="space-y-2">{items.map((f) => (
                     <details key={f.id} className={cn(recessedBlockClass, "group open:ring-1 open:ring-[#4a5f7f]/60")}>
-                      <summary className="cursor-pointer list-none px-4 py-3">
-                        <div className="flex flex-wrap items-start gap-2">
+                       <summary className="cursor-pointer list-none px-4 py-3 relative">
+                        <div className="flex flex-wrap items-start gap-2 pr-8">
                           <span className={cn("rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em]", severityBadgeClass[f.severity])}>{f.severity}</span>
                           <span className="rounded-full bg-[#4a5f7f] px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">{f.domain}</span>
                           <span className="rounded-full bg-[#4a5f7f] px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">{f.status}</span>
                         </div>
                         <div className="mt-2 text-sm font-bold text-white">{f.title}</div>
                         <div className="mt-1 text-xs text-[#a1a1aa]">{f.page}{f.component ? ` • ${f.component}` : ""}</div>
+                        <ChevronDown size={16} className="absolute bottom-3 right-4 text-[#71717a] transition-transform group-open:rotate-180" />
                       </summary>
                       <div className="border-t border-[rgba(255,255,255,0.05)] px-4 py-4 space-y-5">
                         {/* ── Summary ── */}
