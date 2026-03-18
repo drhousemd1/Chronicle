@@ -7,6 +7,9 @@ import { supabase } from '@/integrations/supabase/client';
 const LazyImageGen = React.lazy(() =>
   import('@/components/admin/ImageGenerationTool').then(m => ({ default: m.ImageGenerationTool }))
 );
+const LazyAppGuide = React.lazy(() =>
+  import('@/components/admin/guide/AppGuideTool').then(m => ({ default: m.AppGuideTool }))
+);
 const LazyStyleGuide = React.lazy(() =>
   import('@/components/admin/styleguide/StyleGuideTool')
 );
@@ -104,6 +107,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
       <div className="p-10 overflow-y-auto h-full">
         <ModelSettingsTab selectedModelId={selectedModelId} onSelectModel={onSelectModel} />
       </div>
+    );
+  }
+
+  if (activeTool === 'app_guide') {
+    return (
+      <React.Suspense fallback={<div className="flex items-center justify-center h-full text-slate-400">Loading…</div>}>
+        <LazyAppGuide onRegisterSave={onRegisterGuideSave} onRegisterSyncAll={onRegisterGuideSyncAll} theme={guideTheme} />
+      </React.Suspense>
     );
   }
 
