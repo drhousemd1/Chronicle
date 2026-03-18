@@ -1,53 +1,87 @@
 
-# Sandbox Feature Transfer — Master Tracker
 
-## Source Documents
-- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
-- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
+# Update API Call Inspector Content to Match Current Codebase
 
-## Features Being Transferred
-| ID | Feature | Status |
-|----|---------|--------|
-| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
-| B | Story Transfer Library (story-transfer.ts) | ✅ |
-| A | UI Audit System (schema, utils, findings, page) | 🔄 |
-| B | Story Export/Import Modals | ✅ |
-| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
-| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
-| - | StyleGuideTool.tsx audit button | ⬜ |
-| - | App.tsx route wiring | ⬜ |
-| - | Index.tsx full wiring | ⬜ |
+## Analysis Summary
 
-## Prompt Execution Status
+After comparing the API Inspector HTML against the actual edge functions and service files, I found the content is largely accurate but missing several API calls and has some outdated details. Here are the specific updates needed:
 
-| # | Target File(s) | Status | Notes |
-|---|---------------|--------|-------|
-| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
-| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
-| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
-| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
-| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
-| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
-| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
-| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
-| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
-| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
-| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
-| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
-| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
-| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
+## Missing API Calls (not in the inspector at all)
 
-## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
-- `src/types.ts`: line 11507
-- `src/utils.ts`: line 12138
-- `src/lib/story-transfer.ts`: line 9812
-- `src/lib/ui-audit-schema.ts`: line 21329
-- `src/lib/ui-audit-utils.ts`: line 21565
-- `src/data/ui-audit-findings.ts`: line 18967
-- `StoryExportFormatModal.tsx`: line 9642
-- `StoryImportModeModal.tsx`: line 9731
-- `CharactersTab.tsx`: line 2893
-- `ChatInterfaceTab.tsx`: line 5004
-- `src/pages/style-guide/ui-audit.tsx`: line 17867
-- `src/App.tsx`: line 95
-- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout
+### 1. Narrative Directive Generation (`generate-narrative-directive`)
+- Edge function that analyzes recent conversation and story arcs to produce a 1-3 sentence directive for the next AI response
+- Model: `grok-4-1-fast-reasoning`, Temp: 0.4, Max tokens: 256
+- Triggered by the chat system when story stagnation is detected
+- Needs a new sidebar entry and content section
+
+### 2. Side Character Profile Generation (`generate-side-character`)
+- Edge function that generates a full character profile JSON from a name + dialog context
+- Model: configurable (default `grok-4-1-fast-reasoning`), Temp: 0.8
+- Triggered when a new character name is detected in AI responses
+- Needs a new sidebar entry and content section
+
+### 3. Check Shared Keys (`check-shared-keys`)
+- Utility edge function that checks if shared API keys are configured
+- Simple config check, no AI model call
+- Could be added as a minor utility entry, or skipped since it's not an AI call
+
+## Content Updates Needed in Existing Sections
+
+### API Call 1 — Chat (Main Roleplay)
+The system prompt has grown significantly. Key additions not reflected in the inspector:
+
+1. **Realism Mode block** — New conditional section (`realismMode`) with injury response hierarchy (Minor/Moderate/Severe), experience-based limits, persistent consequences, and user override resistance. Needs a new `iblock` in the Instructions section.
+
+2. **Regeneration Directive** — When `isRegeneration` is true, a dedicated directive block is appended to the user message. Should be documented as a conditional instruction block.
+
+3. **Runtime Directives** — A new system message injected as a high-priority directive for specific responses. Not documented.
+
+4. **Style Hints** — Random style hints appended to user messages based on verbosity level (concise/balanced/detailed). Three distinct hint pools. Not documented.
+
+5. **Session Message Count** — `[SESSION: Message N]` tag prepended to user messages for trait dynamics tracking. Referenced in the trait adherence rules but the mechanic isn't documented.
+
+6. **Length Directive** — Optional length directive prepended to user messages. Not documented.
+
+7. **Max Tokens by Verbosity** — The Verbosity block mentions max_tokens but the actual values have been confirmed: concise=1024, balanced=2048, detailed=3072. Already correct in the inspector.
+
+8. **Valid Grok Models list** — Updated to include `grok-4-1-fast-reasoning`, `grok-4-1-fast-non-reasoning`, `grok-4-fast-non-reasoning`, `grok-4-fast-reasoning`, `grok-3-mini`, `grok-3`. The inspector shows `grok-4-1-fast-reasoning` as default which is correct.
+
+### API Call 2 — Post-Response Processing
+Content is accurate. Minor updates:
+- Character Extraction: The "eligible characters" filtering and constraint is documented. The 3-phase system, analytical depth framework, and trait lifecycle are all present and accurate. No changes needed.
+- Memory Extraction: Accurate. The `modelId` parameter is optional with `grok-4-1-fast-reasoning` default.
+- Arc Progress: Accurate. Uses hardcoded `grok-4-1-fast-reasoning`.
+- Memory Compression: Accurate.
+
+### Text Field Generation
+- Star Icon Character Fields: Accurate. The `GENERATE_BOTH` mode and `SPLIT_DELIMITER` mechanic are documented.
+- Star Icon World Fields: Accurate.
+- AI Fill: Accurate. The empty field detection now includes `background`, `personality`, `tone`, `keyLifeEvents`, `relationships`, `secrets`, `fears` sections with `_extras` handling. The inspector already reflects this.
+- AI Generate: Accurate. Story type analysis and section creation logic matches.
+
+### Image Generation
+- Cover Image: Accurate.
+- Scene Image: Accurate. The analysis prompt, weighting rules, gender presentation rules, and byte-limit assembly are all documented correctly.
+- Character Avatar: Accurate. Two-step process (prompt optimization + image generation) matches.
+
+## Changes to Make
+
+| File | Change |
+|------|--------|
+| `public/api-call-inspector-chronicle.html` | Add sidebar entries + content sections for "Narrative Directive" and "Side Character Generation". Add new instruction blocks for Realism Mode, Regeneration Directive, Runtime Directives, Style Hints, and Session Message Counter within API Call 1. |
+
+### Sidebar additions:
+- Under "API Call 2 — Post-response processing", add:
+  - **Narrative Directive** (`generate-narrative-directive`)
+- New group "API Call 3 — Side Character Pipeline" with:
+  - **Side Character Generation** (`generate-side-character`)
+
+### Content sections to add:
+1. **Narrative Directive** — Full block documenting the directive generation prompt, inputs, and output
+2. **Side Character Generation** — Full block documenting the profile generation prompt and JSON schema
+3. **Realism Mode** — Conditional instruction block within API Call 1 Instructions section (after Verbosity)
+4. **Regeneration Directive** — Conditional block documenting the regeneration system message
+5. **Runtime Directives** — Block documenting the high-priority system message injection
+6. **Style Hints** — Block documenting the 3 style hint pools and random selection per verbosity
+7. **Session Message Counter** — Small note block documenting the `[SESSION: Message N]` tag
+
