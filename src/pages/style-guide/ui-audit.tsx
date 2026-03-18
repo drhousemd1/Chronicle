@@ -154,7 +154,7 @@ export default function UiAuditPage() {
     initialLoadDone.current = true;
 
     (async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("quality_hub_registries")
         .select("registry")
         .eq("user_id", user.id)
