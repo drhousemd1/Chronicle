@@ -252,7 +252,7 @@ export default function UiAuditPage() {
     setImportFeedback("Quality Hub reset to clean baseline.");
     // Also reset DB
     if (isAuthenticated && user?.id) {
-      await supabase.from("quality_hub_registries").delete().eq("user_id", user.id);
+      await (supabase as any).from("quality_hub_registries").delete().eq("user_id", user.id);
     }
   };
   const handleExport = () => { const snapshot = nextRegistryWithTimestamp(registry); setRegistry(snapshot); downloadJson(`chronicle-quality-hub-${toCompactIso()}.json`, buildQualityHubTransferPackage(snapshot)); setImportFeedback("Exported Quality Hub JSON package."); };
