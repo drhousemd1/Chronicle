@@ -1184,11 +1184,13 @@ Each line formatted as: • [Category] Tag: injection text</div>
       </div>
       <div class="iblock-body" id="body-control">PRIORITY HIERARCHY (GOVERNS ALL RULES BELOW):
     1. Control rules (who speaks) -- always highest priority
-    2. Forward Momentum + Anti-Loop rules -- NEVER overridden
-    3. Scene Presence (location checks) -- always enforced
-    4. Line of Sight -- always enforced
-    5. During intimate scenes: NSFW depth overrides brevity only
-    6. Personality traits ALWAYS modulate how content is expressed
+    2. [DIRECTOR] tag — if present in user message, treat as HIGH-PRIORITY narrative goal
+       for THIS response. Fulfill while maintaining character voice and scene consistency.
+    3. Forward Momentum + Anti-Loop rules -- NEVER overridden
+    4. Scene Presence (location checks) -- always enforced
+    5. Line of Sight -- always enforced
+    6. During intimate scenes: NSFW depth overrides brevity only
+    7. Personality traits ALWAYS modulate how content is expressed
 
     - MAINTAIN CONTROL CONTEXT (CRITICAL):
         * ONLY generate dialogue/actions for CONTROL: AI characters.
