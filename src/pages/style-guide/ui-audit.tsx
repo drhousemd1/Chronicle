@@ -265,7 +265,7 @@ export default function UiAuditPage() {
             <Section title="Scan Modules"><div className="space-y-2">
               {registry.scanModules.map((m) => (<div key={m.id} className={cn(recessedBlockClass, "p-3")}><div className="flex items-start justify-between gap-2"><div><div className="text-sm font-bold text-[#eaedf1]">{m.name}</div><div className="mt-1 text-xs text-[#a1a1aa]">{m.description}</div></div><span className={cn("rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-wider", moduleStatusClass[m.status])}>{m.status}</span></div></div>))}
             </div></Section>
-            <Section title="Review Coverage Units"><div className="space-y-2">
+            <Section title="App Pages"><div className="space-y-2">
               {registry.reviewUnits.map((u) => (<div key={u.id} className={cn(recessedBlockClass, "p-3")}><div className="flex items-center justify-between gap-2"><div><div className="text-sm font-bold text-[#eaedf1]">{u.name}</div><div className="text-xs text-[#a1a1aa]">{u.route || "No route set"}</div></div><span className="rounded-full bg-[#4a5f7f] px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">{u.status}</span></div><div className="mt-2 text-xs text-[#a1a1aa]">{u.notes}</div></div>))}
             </div></Section>
           </div>
