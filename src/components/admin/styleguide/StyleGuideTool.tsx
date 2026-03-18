@@ -89,6 +89,7 @@ interface StyleGuideToolProps {
   onRegisterDownload?: (fn: (() => void) | null) => void;
   onRegisterEdits?: (fn: (() => void) | null) => void;
   onEditsCountChange?: (count: number) => void;
+  onSwitchToAppGuide?: () => void;
 }
 
 export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownload, onRegisterEdits, onEditsCountChange }) => {
