@@ -523,12 +523,12 @@ export default function UiAuditPage() {
                         <div>
                           <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Proposed Fix</div>
                           <div className="space-y-2 text-xs text-[#a1a1aa]">
-                            <div><span className="font-bold text-[#eaedf1]">Recommendation:</span> {f.recommendation || "—"}</div>
+                            <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Recommendation</span> {f.recommendation || "—"}</div>
                             <div className="grid gap-x-6 gap-y-1 sm:grid-cols-2 lg:grid-cols-3">
-                              <div><span className="font-bold text-[#eaedf1]">Fix Level:</span> {f.fixLevel}</div>
-                              <div><span className="font-bold text-[#eaedf1]">Difficulty:</span> {f.implementationDifficulty}</div>
-                              <div><span className="font-bold text-[#eaedf1]">Batchable:</span> {f.batchable ? "Yes" : "No"}</div>
-                              <div><span className="font-bold text-[#eaedf1]">Design System:</span> {f.designSystemLevel ? "Yes" : "No"}</div>
+                              <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Fix Level</span> {titleCase(f.fixLevel)}</div>
+                              <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Difficulty</span> {titleCase(f.implementationDifficulty)}</div>
+                              <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Batchable</span> {f.batchable ? "Yes" : "No"}</div>
+                              <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Design System</span> {f.designSystemLevel ? "Yes" : "No"}</div>
                             </div>
                           </div>
                         </div>
