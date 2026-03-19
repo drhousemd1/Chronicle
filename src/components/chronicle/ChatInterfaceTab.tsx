@@ -2737,9 +2737,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         });
       }
 
-      // Evaluate arc progress (resistance scoring) - runs in parallel, non-blocking
-      evaluateArcProgress(userInput, fullText).catch(err => {
-        console.error('[handleSend] Arc progress evaluation failed:', err);
+      evaluateGoalProgress(userInput, fullText).catch(err => {
+        console.error('[handleSend] Goal progress evaluation failed:', err);
       });
 
       // Strip any legacy update tags that might still be in response (fallback)
