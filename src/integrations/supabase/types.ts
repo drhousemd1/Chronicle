@@ -1335,6 +1335,17 @@ export type Database = {
         Args: { p_published_scenario_id: string }
         Returns: undefined
       }
+      save_scenario_atomic: {
+        Args: {
+          p_characters?: Json
+          p_codex_entries?: Json
+          p_scenario_id: string
+          p_scenes?: Json
+          p_story: Json
+          p_user_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
