@@ -655,7 +655,7 @@ const findings: QualityFinding[] = [
       actualBehavior: "File deleted. Two files (ChatInterfaceTab.tsx, side-character-generator.ts) that imported uuid/now from storage.ts were updated to import from @/utils instead.",
       comments: [{
         id: "fix-orphan-003",
-        author: codexAgent,
+        author: "ChatGPT Codex",
         timestamp: "2026-03-19T04:30:00Z",
         text: "Deleted src/services/storage.ts. Redirected imports in ChatInterfaceTab.tsx and side-character-generator.ts from '../../services/storage' to '@/utils' which exports the same uuid() and now() functions.",
       }],
