@@ -156,12 +156,25 @@ const findings: QualityFinding[] = [
     runIds.security,
     {
       status: "fixed",
+      verificationStatus: "verified",
+      verifiedBy: stamp(runIds.security),
+      expectedBehavior: "All deployed edge function directories have matching config.toml entries.",
+      actualBehavior: "Config now lists all 13 functions; directory count matches config entry count.",
       evidence: [
         "Function directory count = 13; config entry count = 10.",
         "Missing entries: evaluate-arc-progress, migrate-base64-images, sync-guide-to-github.",
       ],
       tags: ["module-security", "module-build", "config"],
       batchable: true,
+      updatedAt: "2026-03-18T22:00:00.000Z",
+      comments: [
+        {
+          id: "fix-note-sec-002",
+          author: "ChatGPT Codex",
+          timestamp: "2026-03-18T22:00:00.000Z",
+          text: "Added [functions.evaluate-goal-progress], [functions.migrate-base64-images], and [functions.sync-guide-to-github] entries to supabase/config.toml with verify_jwt = false. Note: evaluate-arc-progress was renamed to evaluate-goal-progress during the Story Goals refactor, so no entry was needed for the old name.",
+        },
+      ],
     },
   ),
   finding(
