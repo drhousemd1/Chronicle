@@ -584,7 +584,7 @@ const findings: QualityFinding[] = [
       actualBehavior: "File deleted. No references remain in the project.",
       comments: [{
         id: "fix-orphan-001",
-        author: codexAgent,
+        author: "ChatGPT Codex",
         timestamp: "2026-03-19T04:30:00Z",
         text: "Deleted src/components/chronicle/ChronicleApp.tsx. It was a migration placeholder with no active imports — nothing in routing or any component ever referenced it.",
       }],
