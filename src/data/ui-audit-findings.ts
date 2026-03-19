@@ -926,7 +926,7 @@ const findings: QualityFinding[] = [
       actualBehavior: "Auth guard already present in code — checks Bearer token and calls auth.getUser() before proceeding. Returns 401 for unauthorized callers.",
       comments: [{
         id: "fix-sec-005",
-        author: codexAgent,
+        author: "ChatGPT Codex",
         timestamp: "2026-03-19T04:30:00Z",
         text: "Reviewed migrate-base64-images/index.ts — auth guard was already added in a prior session (lines 25-41). The finding was outdated. Marking as fixed with no additional code changes needed.",
       }],
