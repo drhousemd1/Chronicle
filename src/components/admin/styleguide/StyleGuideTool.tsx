@@ -304,7 +304,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
               src="/style-guide-component-example.html"
               style={{
                 width: '100%',
-                minHeight: 1900,
+                minHeight: 5200,
                 border: 'none',
                 background: 'transparent',
                 display: 'block',
