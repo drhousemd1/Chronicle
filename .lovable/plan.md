@@ -1,53 +1,41 @@
 
-# Sandbox Feature Transfer — Master Tracker
 
-## Source Documents
-- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
-- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
+# Add Fix Documentation to All 4 Fixed Findings
 
-## Features Being Transferred
-| ID | Feature | Status |
-|----|---------|--------|
-| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
-| B | Story Transfer Library (story-transfer.ts) | ✅ |
-| A | UI Audit System (schema, utils, findings, page) | 🔄 |
-| B | Story Export/Import Modals | ✅ |
-| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
-| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
-| - | StyleGuideTool.tsx audit button | ⬜ |
-| - | App.tsx route wiring | ⬜ |
-| - | Index.tsx full wiring | ⬜ |
+## Problem
+The 4 findings marked as "fixed" only have `status: "fixed"` set — they have no record of what was actually changed, when, or by whom. This makes it impossible to trace the work later.
 
-## Prompt Execution Status
+## Approach
+For each of the 4 fixed findings, add structured fix documentation using the existing schema fields:
+- **`comments`** — Add a comment entry describing exactly what was changed, in which files, and what the fix achieved
+- **`verificationStatus`** — Set to `"verified"` 
+- **`verifiedBy`** — Add an agent stamp with timestamp
+- **`actualBehavior`** / **`expectedBehavior`** — Fill in the before/after state
+- **`updatedAt`** — Set to the fix date
 
-| # | Target File(s) | Status | Notes |
-|---|---------------|--------|-------|
-| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
-| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
-| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
-| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
-| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
-| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
-| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
-| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
-| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
-| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
-| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
-| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
-| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
-| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
+## Changes per finding
 
-## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
-- `src/types.ts`: line 11507
-- `src/utils.ts`: line 12138
-- `src/lib/story-transfer.ts`: line 9812
-- `src/lib/ui-audit-schema.ts`: line 21329
-- `src/lib/ui-audit-utils.ts`: line 21565
-- `src/data/ui-audit-findings.ts`: line 18967
-- `StoryExportFormatModal.tsx`: line 9642
-- `StoryImportModeModal.tsx`: line 9731
-- `CharactersTab.tsx`: line 2893
-- `ChatInterfaceTab.tsx`: line 5004
-- `src/pages/style-guide/ui-audit.tsx`: line 17867
-- `src/App.tsx`: line 95
-- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout
+### qh-sec-20260318-001 (sync-guide-to-github auth)
+- **Comment**: "Added `supabase.auth.getUser()` validation after CORS check in `supabase/functions/sync-guide-to-github/index.ts`. Function now returns 401 if no valid Bearer token is present. Unauthenticated callers can no longer trigger GitHub write/delete operations."
+- **Expected**: "Edge function validates caller identity before performing GitHub operations"
+- **Actual**: "Auth guard added; unauthenticated requests receive 401 Unauthorized"
+
+### qh-sec-20260318-002 (missing config.toml entries)
+- **Comment**: "Added `[functions.evaluate-goal-progress]`, `[functions.migrate-base64-images]`, and `[functions.sync-guide-to-github]` entries to `supabase/config.toml` with `verify_jwt = false`. Note: `evaluate-arc-progress` was renamed to `evaluate-goal-progress` during the Story Goals refactor, so no entry was needed for the old name."
+- **Expected**: "All deployed edge function directories have matching config.toml entries"
+- **Actual**: "Config now lists all 13 functions; directory count matches config entry count"
+
+### qh-data-20260318-003 (localStorage.clear)
+- **Comment**: "Replaced `localStorage.clear()` in `src/pages/Index.tsx` with a scoped `clearChronicleStorage()` helper that iterates localStorage keys and only removes those matching Chronicle-owned prefixes: `rpg_`, `draft_`, `chronicle_`, `quality_hub_`. Other origin data is preserved."
+- **Expected**: "Fatal-screen recovery only removes Chronicle-owned localStorage keys"
+- **Actual**: "Scoped deletion implemented; unrelated browser data is no longer destroyed"
+
+### qh-func-20260318-001 (evaluate-arc-progress stale)
+- **Comment**: "This finding is stale. The `evaluate-arc-progress` function was renamed to `evaluate-goal-progress` during the Story Goals refactor (replaced branching arc system with linear checkbox goals). The frontend now invokes `evaluate-goal-progress`, and the config.toml entry was added under that name. No code references to `evaluate-arc-progress` remain."
+- **Expected**: "Frontend invocation matches a registered and deployed edge function"
+- **Actual**: "Function renamed to evaluate-goal-progress; config entry and frontend invocation aligned"
+
+## File changed
+- `src/data/ui-audit-findings.ts` — Add comments, expectedBehavior, actualBehavior, verificationStatus, verifiedBy, and updatedAt to the 4 fixed findings' `extra` objects
+- Bump `registryVersion` from `4` to `5` to force UI refresh
+
