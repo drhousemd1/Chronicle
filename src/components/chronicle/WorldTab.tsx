@@ -1521,14 +1521,14 @@ className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
                         </ul>
                       </div>
                       
-                      {/* User's additional formatting preferences - editable */}
+                       {/* User's custom AI rules - editable */}
                       <div className="mt-4">
-                        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1 block">Additional Formatting Rules (Optional)</label>
+                        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1 block">Custom Rules (Optional)</label>
                         <AutoResizeTextarea 
                           value={world.core.dialogFormatting} 
                           onChange={(v) => updateCore({ dialogFormatting: v })} 
                           rows={3} 
-                          placeholder="Add any custom formatting preferences here..."
+                          placeholder="e.g. Characters can only use items in their inventory..."
 className="px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                         />
                       </div>
