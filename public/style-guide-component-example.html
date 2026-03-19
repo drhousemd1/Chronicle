@@ -840,5 +840,267 @@
 
 </div>
 
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- CARD 3 — Story Arcs (NO LONGER IN USE)                     -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="card">
+
+  <div class="card-header">
+    <div>
+      <h1 class="card-title">Story Arcs <span style="color:#f04a5f;font-size:14px;font-weight:700;">(NO LONGER IN USE)</span></h1>
+      <p class="card-subtitle">Replaced by StoryGoalsSectionSimple.tsx — Archived reference only</p>
+    </div>
+  </div>
+
+  <div class="top-section">
+
+    <!-- LEFT: Spec blocks -->
+    <div class="spec-side">
+
+      <div class="spec-block">
+        <div class="spec-label">Overview</div>
+        <ul class="spec-list">
+          <li>Complex branching goal system with fail/success paths, resistance scoring, clone-on-recovery retry logic, and linked phases</li>
+          <li>Replaced with simple step-based Story Goals (identical to Character Goals pattern)</li>
+          <li>All arc types removed from <code>src/types.ts</code>: <code>StepStatus</code>, <code>ResistanceClassification</code>, <code>ResistanceEvent</code>, <code>ArcStep</code>, <code>ArcBranch</code>, <code>ArcMode</code>, <code>ArcPhase</code></li>
+        </ul>
+      </div>
+
+      <div class="spec-block">
+        <div class="spec-label">Outer Shell</div>
+        <ul class="spec-list">
+          <li><strong>Background:</strong> <code>#2a2a2f</code></li>
+          <li><strong>Corner radius:</strong> <code>24px</code></li>
+          <li><strong>Shadow:</strong> <code>0 12px 32px -2px rgba(0,0,0,0.50), inset 1px 1px 0 rgba(255,255,255,0.09), inset -1px -1px 0 rgba(0,0,0,0.35)</code></li>
+        </ul>
+      </div>
+
+      <div class="spec-block">
+        <div class="spec-label">Header</div>
+        <ul class="spec-list">
+          <li><strong>Gradient:</strong> <code>linear-gradient(180deg, #5a7292, #4a5f7f)</code></li>
+          <li><strong>Icon:</strong> GitBranch (lucide) <code>w-4 h-4 text-white</code></li>
+          <li><strong>Title:</strong> "Story Arcs" — <code>text-xl font-bold text-white tracking-[-0.015em]</code></li>
+          <li><strong>Gloss overlay:</strong> <code>bg-gradient-to-tr from-white/10 to-transparent, opacity-40, height 60%</code></li>
+        </ul>
+      </div>
+
+      <div class="spec-block">
+        <div class="spec-label">Arc Container (Inner Tray)</div>
+        <ul class="spec-list">
+          <li><strong>Background:</strong> <code>rgba(58,58,63,0.30)</code></li>
+          <li><strong>Corner radius:</strong> <code>16px</code></li>
+          <li><strong>Shadow:</strong> <code>inset 1px 1px 0 rgba(255,255,255,0.07), inset -1px -1px 0 rgba(0,0,0,0.30), 0 4px 12px rgba(0,0,0,0.25)</code></li>
+        </ul>
+      </div>
+
+      <div class="spec-block">
+        <div class="spec-label">Mode Toggle (Simple/Advanced)</div>
+        <ul class="spec-list">
+          <li><strong>Container:</strong> <code>p-1.5 bg-[#3c3e47] rounded-xl</code></li>
+          <li><strong>Active pill:</strong> <code>bg-[#3b82f6] text-white shadow-[0 2px 8px rgba(59,130,246,0.35)]</code></li>
+          <li><strong>Inactive pill:</strong> <code>bg-[#3f3f46] text-[#a1a1aa]</code></li>
+          <li><strong>Font:</strong> <code>text-[10px] font-black rounded-lg</code></li>
+        </ul>
+      </div>
+
+      <div class="spec-block">
+        <div class="spec-label">Branch Lanes (Fail / Success)</div>
+        <ul class="spec-list">
+          <li><strong>Fail strip:</strong> <code>rgba(240,74,95,0.28)</code></li>
+          <li><strong>Success strip:</strong> <code>rgba(34,197,127,0.28)</code></li>
+          <li><strong>Fail step card:</strong> <code>rgba(78,58,68,0.78)</code></li>
+          <li><strong>Success step card:</strong> <code>rgba(51,75,66,0.78)</code></li>
+          <li><strong>Step card radius:</strong> <code>18px</code>, <code>border border-white/15</code></li>
+          <li><strong>Step card shadow:</strong> <code>0 14px 26px -6px rgba(0,0,0,0.4)</code></li>
+        </ul>
+      </div>
+
+      <div class="spec-block">
+        <div class="spec-label">Step Status Borders</div>
+        <ul class="spec-list">
+          <li><strong>Failed:</strong> <code>border-red-500/50</code></li>
+          <li><strong>Deviated:</strong> <code>border-orange-500/50</code></li>
+          <li><strong>Succeeded:</strong> <code>border-blue-500/50</code></li>
+          <li><strong>Pending:</strong> <code>border-white/15</code></li>
+        </ul>
+      </div>
+
+      <div class="spec-block">
+        <div class="spec-label">Resistance Scoring System</div>
+        <ul class="spec-list">
+          <li><strong>ALIGNED:</strong> +10 points</li>
+          <li><strong>SOFT_RESISTANCE:</strong> -5 points</li>
+          <li><strong>HARD_RESISTANCE:</strong> -10 points</li>
+          <li><strong>Score range:</strong> -50 to +20 (clamped)</li>
+          <li><strong>Rigid threshold:</strong> -50 → deviated</li>
+          <li><strong>Normal threshold:</strong> -30 → failed</li>
+          <li><strong>Flexible threshold:</strong> -20 → failed</li>
+        </ul>
+      </div>
+
+      <div class="spec-block">
+        <div class="spec-label">Clone-on-Recovery</div>
+        <ul class="spec-list">
+          <li>When a fail-branch recovery step succeeds, the failed success step is cloned as a new pending retry step</li>
+          <li><strong>Rigid:</strong> Unlimited retries</li>
+          <li><strong>Normal:</strong> Max 4 retries</li>
+          <li><strong>Flexible:</strong> Max 2 retries</li>
+          <li>Retry badge: <code>text-[9px] font-bold text-amber-400/80 bg-amber-500/10 border-amber-500/20</code></li>
+          <li>Max retries badge: <code>text-red-500/80 bg-red-500/10 border-red-500/20</code></li>
+        </ul>
+      </div>
+
+      <div class="spec-block">
+        <div class="spec-label">SVG Connectors (Split / Merge)</div>
+        <ul class="spec-list">
+          <li><strong>Split height:</strong> 88px — vertical stem fading in, horizontal bar, two drops</li>
+          <li><strong>Merge height:</strong> 48px — two rises, horizontal bar, single stem down</li>
+          <li><strong>Line color:</strong> <code>rgba(232,238,248,0.82)</code></li>
+          <li><strong>Stroke:</strong> <code>1.5 non-scaling-stroke</code></li>
+          <li><strong>Active Flow connector:</strong> navy blue (<code>#1e3a5f</code>) with 90° aura (<code>#3b82f6</code> glow filter)</li>
+        </ul>
+      </div>
+
+      <div class="spec-block">
+        <div class="spec-label">Linked Phases</div>
+        <ul class="spec-list">
+          <li>Each phase = its own mini arc container with title, desired outcome, branches, mode toggle</li>
+          <li>Connected by merge→split connectors between phases</li>
+          <li>Delete button per phase: <code>w-[30px] h-[30px] rounded-[10px] border-red-500/50</code></li>
+        </ul>
+      </div>
+
+    </div>
+
+    <!-- RIGHT: Static Preview -->
+    <div class="preview-side" style="min-width:320px;">
+      <div style="background:#2a2a2f;border-radius:24px;overflow:hidden;box-shadow:0 12px 32px -2px rgba(0,0,0,0.50),inset 1px 1px 0 rgba(255,255,255,0.09),inset -1px -1px 0 rgba(0,0,0,0.35);">
+        <!-- Header -->
+        <div style="position:relative;overflow:hidden;background:linear-gradient(180deg,#5a7292,#4a5f7f);border-top:1px solid rgba(255,255,255,0.2);padding:12px 20px;display:flex;align-items:center;gap:12px;">
+          <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,0.1),transparent);opacity:0.4;height:60%;"></div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:relative;z-index:1;"><line x1="6" x2="6" y1="3" y2="15"></line><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><path d="M18 9a9 9 0 0 1-9 9"></path></svg>
+          <span style="color:white;font-size:20px;font-weight:700;letter-spacing:-0.015em;position:relative;z-index:1;">Story Arcs</span>
+        </div>
+
+        <!-- Content -->
+        <div style="padding:20px;">
+          <div style="padding:20px;background:rgba(58,58,63,0.30);border-radius:16px;box-shadow:inset 1px 1px 0 rgba(255,255,255,0.07),inset -1px -1px 0 rgba(0,0,0,0.30),0 4px 12px rgba(0,0,0,0.25);">
+
+            <!-- Title + Progress ring row -->
+            <div style="display:flex;align-items:flex-start;gap:16px;">
+              <div style="flex:1;">
+                <div style="font-size:10px;font-weight:900;color:#a1a1aa;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:4px;">Story Arc Title</div>
+                <div style="padding:8px 12px;font-size:14px;background:#1c1c1f;border:1px solid rgba(0,0,0,0.35);border-radius:8px;color:#71717a;font-style:italic;">Enter story arc title...</div>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;margin-top:4px;">
+                <div style="width:80px;height:80px;border-radius:50%;border:8px solid rgba(51,80,125,0.85);display:flex;align-items:center;justify-content:center;">
+                  <span style="font-size:18px;font-weight:700;color:#94a3b8;">0%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Mode toggle -->
+            <div style="margin-top:12px;display:flex;padding:6px;background:#3c3e47;border-radius:12px;">
+              <div style="flex:1;text-align:center;padding:6px 14px;font-size:10px;font-weight:900;border-radius:8px;background:#3b82f6;color:white;box-shadow:0 2px 8px rgba(59,130,246,0.35);">Simple</div>
+              <div style="flex:1;text-align:center;padding:6px 14px;font-size:10px;font-weight:900;border-radius:8px;background:#3f3f46;color:#a1a1aa;">Advanced</div>
+            </div>
+
+            <!-- Split connector -->
+            <div style="height:44px;display:flex;align-items:center;justify-content:center;">
+              <svg width="200" height="44" viewBox="0 0 200 44"><line x1="100" y1="0" x2="100" y2="32" stroke="rgba(232,238,248,0.82)" stroke-width="1.5"/><line x1="50" y1="32" x2="150" y2="32" stroke="rgba(232,238,248,0.82)" stroke-width="1.5"/><line x1="50" y1="32" x2="50" y2="44" stroke="rgba(232,238,248,0.82)" stroke-width="1.5"/><line x1="150" y1="32" x2="150" y2="44" stroke="rgba(232,238,248,0.82)" stroke-width="1.5"/></svg>
+            </div>
+
+            <!-- Dual branch preview -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <!-- Fail path -->
+              <div style="border-radius:18px;background:rgba(43,47,57,0.9);overflow:hidden;box-shadow:0 14px 26px rgba(0,0,0,0.4);">
+                <div style="background:rgba(240,74,95,0.28);padding:12px 16px;">
+                  <span style="font-size:10px;font-weight:900;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:0.12em;">FAIL PATH</span>
+                </div>
+                <div style="padding:14px;">
+                  <div style="font-size:10px;font-weight:900;color:#a1a1aa;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px;">RESISTANCE TRIGGER</div>
+                  <div style="padding:8px 12px;font-size:14px;background:#1c1c1f;border:1px solid rgba(0,0,0,0.35);border-radius:8px;color:#71717a;font-style:italic;">What causes failure...</div>
+                </div>
+              </div>
+              <!-- Success path -->
+              <div style="border-radius:18px;background:rgba(43,47,57,0.9);overflow:hidden;box-shadow:0 14px 26px rgba(0,0,0,0.4);">
+                <div style="background:rgba(34,197,127,0.28);padding:12px 16px;">
+                  <span style="font-size:10px;font-weight:900;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:0.12em;">SUCCEED PATH</span>
+                </div>
+                <div style="padding:14px;">
+                  <div style="font-size:10px;font-weight:900;color:#a1a1aa;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px;">SUCCESS TRIGGER</div>
+                  <div style="padding:8px 12px;font-size:14px;background:#1c1c1f;border:1px solid rgba(0,0,0,0.35);border-radius:8px;color:#71717a;font-style:italic;">What triggers success...</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom section -->
+  <div class="bottom-section">
+
+    <div class="detail-col">
+      <h3 class="detail-title">Deleted Types</h3>
+      <ul class="detail-list">
+        <li><strong>StepStatus:</strong> <code>'pending' | 'failed' | 'succeeded' | 'deviated'</code></li>
+        <li><strong>ResistanceClassification:</strong> <code>'aligned' | 'soft_resistance' | 'hard_resistance'</code></li>
+        <li><strong>ResistanceEvent:</strong> <code>{ day, classification, summary }</code></li>
+        <li><strong>ArcStep:</strong> <code>{ id, description, status, statusEventOrder, retryOf?, retryCount?, resistanceScore?, resistanceEvents? }</code></li>
+        <li><strong>ArcBranch:</strong> <code>{ id, type: 'fail'|'success', triggerDescription, steps: ArcStep[] }</code></li>
+        <li><strong>ArcMode:</strong> <code>'simple' | 'advanced'</code></li>
+        <li><strong>ArcPhase:</strong> <code>{ id, title, desiredOutcome, flexibility, mode, branches, statusEventCounter }</code></li>
+      </ul>
+    </div>
+
+    <div class="detail-col">
+      <h3 class="detail-title">Deleted Components</h3>
+      <ul class="detail-list">
+        <li><code>StoryGoalsSection.tsx</code> — Main arc container with branching UI</li>
+        <li><code>arc/ArcBranchLane.tsx</code> — Fail/success lane with step cards and status buttons</li>
+        <li><code>arc/ArcPhaseCard.tsx</code> — Linked phase sub-arc with its own branches</li>
+        <li><code>arc/ArcModeToggle.tsx</code> — Simple/Advanced pill toggle</li>
+        <li><code>arc/ArcConnectors.tsx</code> — SVG split/merge connector lines</li>
+        <li><code>arc/ArcFlowConnector.tsx</code> — Dynamic blue glow connector between resolved steps</li>
+      </ul>
+    </div>
+
+    <div class="detail-col">
+      <h3 class="detail-title">Colors</h3>
+      <ul class="detail-list">
+        <li><strong>#2a2a2f</strong> — Outer shell</li>
+        <li><strong>#5a7292→#4a5f7f</strong> — Header gradient</li>
+        <li><strong>rgba(58,58,63,0.30)</strong> — Arc inner tray</li>
+        <li><strong>rgba(240,74,95,0.28)</strong> — Fail strip</li>
+        <li><strong>rgba(34,197,127,0.28)</strong> — Success strip</li>
+        <li><strong>rgba(78,58,68,0.78)</strong> — Fail step card</li>
+        <li><strong>rgba(51,75,66,0.78)</strong> — Success step card</li>
+        <li><strong>#3b82f6</strong> — Active mode pill / succeeded border</li>
+        <li><strong>rgba(232,238,248,0.82)</strong> — Connector lines</li>
+      </ul>
+    </div>
+
+    <div class="detail-col">
+      <h3 class="detail-title">Replacement</h3>
+      <ul class="detail-list">
+        <li><strong>New component:</strong> <code>StoryGoalsSectionSimple.tsx</code></li>
+        <li><strong>Pattern:</strong> Cloned from <code>CharacterGoalsSection.tsx</code></li>
+        <li><strong>Icon:</strong> Target (lucide) instead of GitBranch</li>
+        <li><strong>Header:</strong> "Story Goals"</li>
+        <li><strong>Features:</strong> Simple checkbox steps, progress ring, guidance strength slider, AI enhance</li>
+        <li><strong>No branching:</strong> No fail/success paths, no resistance scoring, no phases</li>
+        <li><strong>Type:</strong> <code>StoryGoal { id, title, desiredOutcome, steps: GoalStep[], flexibility, createdAt, updatedAt }</code></li>
+      </ul>
+    </div>
+
+  </div>
+
+</div>
+
 </body>
 </html>
