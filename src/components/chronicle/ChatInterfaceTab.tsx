@@ -4739,253 +4739,250 @@ const updatedChar: SideCharacter = {
       
       {/* Chat Settings Modal */}
       <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-        <DialogContent className="max-w-2xl bg-zinc-900 border-ghost-white shadow-[0_12px_32px_-2px_rgba(0,0,0,0.5)]">
-          <DialogHeader className="border-b border-ghost-white pb-4">
-            <DialogTitle className="flex items-center gap-2 text-lg font-black text-white uppercase tracking-tight">
-              <Settings className="w-5 h-5" />
-              Chat Settings
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-6 py-4 max-h-[70vh] overflow-y-auto">
-            {/* Interface Settings Section */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-black text-white uppercase tracking-tight">
-                Interface Settings
-              </h3>
-              
-              {/* 2-column grid for toggles */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {/* Dynamic Backgrounds */}
-                <div className="flex items-center justify-between gap-4 p-3 bg-zinc-800/50 rounded-xl">
-                  <span className="text-sm font-semibold text-zinc-200 flex items-center gap-1.5">
-                    Dynamic Backgrounds
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Info className="w-3.5 h-3.5 text-blue-500 cursor-help" />
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="max-w-[220px] text-xs font-semibold leading-relaxed normal-case tracking-normal">
-                          Backgrounds will automatically change based on the story context if scene images are tagged in the gallery.
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </span>
-                  <LabeledToggle
-                    checked={appData.uiSettings?.showBackgrounds ?? false}
-                    onCheckedChange={(v) => handleUpdateUiSettings({ showBackgrounds: v })}
-                  />
-                </div>
-                
-                {/* Transparent Bubbles */}
-                <div className="flex items-center justify-between gap-4 p-3 bg-zinc-800/50 rounded-xl">
-                  <span className="text-sm font-semibold text-zinc-200">Transparent Bubbles</span>
-                  <LabeledToggle
-                    checked={bubblesTransparent}
-                    onCheckedChange={(v) => handleUpdateUiSettings({ transparentBubbles: v })}
-                  />
-                </div>
-                
-                
-                {/* Offset Bubbles */}
-                <div className="flex items-center justify-between gap-4 p-3 bg-zinc-800/50 rounded-xl">
-                  <span className="text-sm font-semibold text-zinc-200">Offset Bubbles</span>
-                  <LabeledToggle
-                    checked={offsetBubbles}
-                    onCheckedChange={(v) => handleUpdateUiSettings({ offsetBubbles: v })}
-                  />
-                </div>
-                
-                {/* Dynamic Text */}
-                <div className="flex items-center justify-between gap-4 p-3 bg-zinc-800/50 rounded-xl">
-                  <span className="text-sm font-semibold text-zinc-200">Dynamic Text</span>
-                  <LabeledToggle
-                    checked={dynamicText}
-                    onCheckedChange={(v) => handleUpdateUiSettings({ dynamicText: v })}
-                  />
-                </div>
-              </div>
+        <DialogContentBare className="max-w-2xl bg-[#2a2a2f] rounded-[24px] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.55),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]">
+          {/* Header */}
+          <div className="relative overflow-hidden bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] shadow-[0_6px_16px_rgba(0,0,0,0.35)]">
+            <div className="absolute inset-0 bg-gradient-to-b from-white/[0.07] to-transparent pointer-events-none" style={{ backgroundSize: '100% 30%', backgroundRepeat: 'no-repeat' }} />
+            <div className="relative flex items-center gap-2.5 px-5 py-4">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M4.93 4.93a10 10 0 0 0 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M8.46 8.46a5 5 0 0 0 0 7.07"/>
+              </svg>
+              <span className="text-[16px] font-black text-white uppercase tracking-[0.08em]">Chat Settings</span>
+              <button
+                onClick={() => setIsSettingsOpen(false)}
+                className="ml-auto w-7 h-7 rounded-lg bg-black/25 flex items-center justify-center hover:bg-black/40 transition-colors"
+              >
+                <X className="w-3.5 h-3.5 text-white/70" />
+              </button>
             </div>
-            
-            {/* Visual Divider */}
-            <div className="border-t border-ghost-white" />
-            
-            {/* AI Behavior Section */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-black text-white uppercase tracking-tight">
-                AI Behavior
-              </h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {/* Proactive Character Discovery */}
-                <div className="flex items-center justify-between gap-4 p-3 bg-zinc-800/50 rounded-xl">
-                  <div className="flex-1">
-                    <span className="text-sm font-semibold text-zinc-200">Character Discovery</span>
-                    <p className="text-xs text-zinc-400 mt-0.5">
-                      AI may introduce characters from established media
-                    </p>
-                  </div>
-                  <LabeledToggle
-                    checked={appData.uiSettings?.proactiveCharacterDiscovery !== false}
-                    onCheckedChange={(v) => handleUpdateUiSettings({ proactiveCharacterDiscovery: v })}
-                  />
-                </div>
-                
-                {/* Proactive AI Mode */}
-                <div className="flex items-center justify-between gap-4 p-3 bg-zinc-800/50 rounded-xl">
-                  <div className="flex-1">
-                    <span className="text-sm font-semibold text-zinc-200">Proactive AI Mode</span>
-                    <p className="text-xs text-zinc-400 mt-0.5">
-                      AI drives the story forward assertively
-                    </p>
-                  </div>
-                  <LabeledToggle
-                    checked={appData.uiSettings?.proactiveNarrative !== false}
-                    onCheckedChange={(v) => handleUpdateUiSettings({ proactiveNarrative: v })}
-                  />
-                </div>
-              </div>
-              
-              {/* POV Selection */}
-              <div className="flex items-center justify-between gap-4 p-3 bg-zinc-800/50 rounded-xl">
-                <div className="flex-1">
-                  <span className="text-sm font-semibold text-zinc-200">Narrative POV</span>
-                  <p className="text-xs text-zinc-400 mt-0.5">
-                    How AI characters narrate their actions and thoughts
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleUpdateUiSettings({ narrativePov: 'first' })}
-                    className={cn(
-                      "px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors",
-                      appData.uiSettings?.narrativePov === 'first'
-                        ? "bg-blue-500 text-white"
-                        : "bg-zinc-700 text-zinc-300 hover:bg-zinc-600"
-                    )}
-                  >
-                    1st Person
-                  </button>
-                  <button
-                    onClick={() => handleUpdateUiSettings({ narrativePov: 'third' })}
-                    className={cn(
-                      "px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors",
-                      (appData.uiSettings?.narrativePov || 'third') === 'third'
-                        ? "bg-blue-500 text-white"
-                        : "bg-zinc-700 text-zinc-300 hover:bg-zinc-600"
-                    )}
-                  >
-                    3rd Person
-                  </button>
-                </div>
-              </div>
-              
-              {/* NSFW Intensity */}
-              <div className="flex items-center justify-between gap-4 p-3 bg-zinc-800/50 rounded-xl">
-                <div className="flex-1">
-                  <span className="text-sm font-semibold text-zinc-200">NSFW Intensity</span>
-                  <p className="text-xs text-zinc-400 mt-0.5">
-                    How proactively AI engages in mature content
-                  </p>
-                </div>
-                <LabeledToggle
-                  checked={appData.uiSettings?.nsfwIntensity === 'high'}
-                  onCheckedChange={(v) => handleUpdateUiSettings({ nsfwIntensity: v ? 'high' : 'normal' })}
-                  offLabel="Normal"
-                  onLabel="High"
-                />
-              </div>
-              
-              {/* Response Verbosity */}
-              <div className="flex items-center justify-between gap-4 p-3 bg-zinc-800/50 rounded-xl">
-                <div className="flex-1">
-                  <span className="text-sm font-semibold text-zinc-200">Response Detail</span>
-                  <p className="text-xs text-zinc-400 mt-0.5">
-                    Controls description length and sensory depth
-                  </p>
-                </div>
-                <div className="flex gap-1">
-                  {(['concise', 'balanced', 'detailed'] as const).map(level => (
-                    <button
-                      key={level}
-                      onClick={() => handleUpdateUiSettings({ responseVerbosity: level })}
-                      className={cn(
-                        "px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors capitalize",
-                        (appData.uiSettings?.responseVerbosity || 'balanced') === level
-                          ? "bg-blue-500 text-white"
-                          : "bg-zinc-700 text-zinc-300 hover:bg-zinc-600"
-                      )}
-                    >
-                      {level}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Realism Mode */}
-              <div className="flex items-center justify-between gap-4 p-3 bg-zinc-800/50 rounded-xl">
-                <div className="flex-1">
-                  <span className="text-sm font-semibold text-zinc-200">Realism Mode</span>
-                  <p className="text-xs text-zinc-400 mt-0.5">
-                    Physical actions have realistic consequences
-                  </p>
-                </div>
-                <LabeledToggle
-                  checked={appData.uiSettings?.realismMode === true}
-                  onCheckedChange={(v) => handleUpdateUiSettings({ realismMode: v })}
-                />
-              </div>
-            </div>
-            
-            {/* TIME PROGRESSION Section */}
-            <div className="space-y-3 pt-4 border-t border-ghost-white">
-              <div>
-                <h3 className="text-sm font-black text-white uppercase tracking-tight">Time Progression</h3>
-                <p className="text-xs text-zinc-400 mt-0.5">Automatically advance the time of day while in a chat session</p>
-              </div>
-              
-              {/* Time Mode Toggle */}
-              <div className="flex items-center justify-between gap-4 p-3 bg-zinc-800/50 rounded-xl">
-                <div className="flex-1">
-                  <span className="text-sm font-semibold text-zinc-200">Time Mode</span>
-                  <p className="text-xs text-zinc-400 mt-0.5">
-                    Advance time phases automatically on a timer
-                  </p>
-                </div>
-                <LabeledToggle
-                  checked={timeProgressionMode === 'automatic'}
-                  onCheckedChange={(v) => handleTimeProgressionChange(v ? 'automatic' : 'manual')}
-                  offLabel="Manual"
-                  onLabel="Automatic"
-                />
-              </div>
-              
-              {/* Interval Dropdown (only when Automatic) */}
-              {timeProgressionMode === 'automatic' && (
-                <div className="flex items-center justify-between gap-4 p-3 bg-zinc-800/50 rounded-xl">
-                  <div className="flex-1">
-                    <span className="text-sm font-semibold text-zinc-200">Advance Every</span>
-                    <p className="text-xs text-zinc-400 mt-0.5">
-                      How often the time of day changes
-                    </p>
-                  </div>
-                  <select
-                    value={timeProgressionInterval}
-                    onChange={(e) => handleTimeProgressionChange('automatic', Number(e.target.value))}
-                    className="bg-zinc-900/50 border border-zinc-700 rounded-lg text-sm text-white px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  >
-                    <option value={5}>5 minutes</option>
-                    <option value={10}>10 minutes</option>
-                    <option value={15}>15 minutes</option>
-                    <option value={30}>30 minutes</option>
-                    <option value={60}>60 minutes</option>
-                  </select>
-                </div>
-              )}
-            </div>
-            
           </div>
-        </DialogContent>
+
+          {/* Body */}
+          <div className="p-4">
+            <div className="bg-[#2e2e33] rounded-2xl p-4 flex flex-col gap-4 shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)] max-h-[70vh] overflow-y-auto">
+
+              {/* INTERFACE SETTINGS */}
+              <div>
+                <p className="text-[12px] font-black text-[#a1a1aa] uppercase tracking-[0.12em] mb-2.5">Interface Settings</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {/* Dynamic Backgrounds */}
+                  <div className="flex items-center justify-between gap-2 bg-[#3c3e47] rounded-[10px] p-[12px_14px] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]">
+                    <span className="text-[13px] font-semibold text-[#eaedf1] flex items-center gap-1.5">
+                      Dynamic Backgrounds
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="w-[13px] h-[13px] text-blue-500 cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-[220px] text-xs font-semibold leading-relaxed normal-case tracking-normal">
+                            Backgrounds will automatically change based on the story context if scene images are tagged in the gallery.
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </span>
+                    <LabeledToggle
+                      checked={appData.uiSettings?.showBackgrounds ?? false}
+                      onCheckedChange={(v) => handleUpdateUiSettings({ showBackgrounds: v })}
+                    />
+                  </div>
+
+                  {/* Transparent Bubbles */}
+                  <div className="flex items-center justify-between gap-2 bg-[#3c3e47] rounded-[10px] p-[12px_14px] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]">
+                    <span className="text-[13px] font-semibold text-[#eaedf1]">Transparent Bubbles</span>
+                    <LabeledToggle
+                      checked={bubblesTransparent}
+                      onCheckedChange={(v) => handleUpdateUiSettings({ transparentBubbles: v })}
+                    />
+                  </div>
+
+                  {/* Offset Bubbles */}
+                  <div className="flex items-center justify-between gap-2 bg-[#3c3e47] rounded-[10px] p-[12px_14px] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]">
+                    <span className="text-[13px] font-semibold text-[#eaedf1]">Offset Bubbles</span>
+                    <LabeledToggle
+                      checked={offsetBubbles}
+                      onCheckedChange={(v) => handleUpdateUiSettings({ offsetBubbles: v })}
+                    />
+                  </div>
+
+                  {/* Dynamic Text */}
+                  <div className="flex items-center justify-between gap-2 bg-[#3c3e47] rounded-[10px] p-[12px_14px] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]">
+                    <span className="text-[13px] font-semibold text-[#eaedf1]">Dynamic Text</span>
+                    <LabeledToggle
+                      checked={dynamicText}
+                      onCheckedChange={(v) => handleUpdateUiSettings({ dynamicText: v })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="h-px bg-white/5" />
+
+              {/* AI BEHAVIOR */}
+              <div>
+                <p className="text-[12px] font-black text-[#a1a1aa] uppercase tracking-[0.12em] mb-2.5">AI Behavior</p>
+                <div className="flex flex-col gap-2">
+
+                  {/* Character Discovery + Proactive AI Mode (2-col) */}
+                  <div className="grid grid-cols-2 gap-2">
+                    {/* Character Discovery */}
+                    <div className="flex items-center justify-between gap-2 bg-[#3c3e47] rounded-[10px] p-[12px_14px] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]">
+                      <div>
+                        <div className="text-[13px] font-semibold text-[#eaedf1]">Character Discovery</div>
+                        <div className="text-[12px] text-[#a1a1aa] mt-0.5">AI may introduce characters from established media</div>
+                      </div>
+                      <LabeledToggle
+                        checked={appData.uiSettings?.proactiveCharacterDiscovery !== false}
+                        onCheckedChange={(v) => handleUpdateUiSettings({ proactiveCharacterDiscovery: v })}
+                      />
+                    </div>
+
+                    {/* Proactive AI Mode */}
+                    <div className="flex items-center justify-between gap-2 bg-[#3c3e47] rounded-[10px] p-[12px_14px] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]">
+                      <div>
+                        <div className="text-[13px] font-semibold text-[#eaedf1]">Proactive AI Mode</div>
+                        <div className="text-[12px] text-[#a1a1aa] mt-0.5">AI drives the story forward assertively</div>
+                      </div>
+                      <LabeledToggle
+                        checked={appData.uiSettings?.proactiveNarrative !== false}
+                        onCheckedChange={(v) => handleUpdateUiSettings({ proactiveNarrative: v })}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Narrative POV */}
+                  <div className="flex items-center justify-between gap-2 bg-[#3c3e47] rounded-[10px] p-[12px_14px] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]">
+                    <div>
+                      <div className="text-[13px] font-semibold text-[#eaedf1]">Narrative POV</div>
+                      <div className="text-[12px] text-[#a1a1aa] mt-0.5">How AI characters narrate their actions and thoughts</div>
+                    </div>
+                    <div className="flex gap-1.5 flex-shrink-0">
+                      <button
+                        onClick={() => handleUpdateUiSettings({ narrativePov: 'first' })}
+                        className={cn(
+                          "px-3 py-1.5 text-[12px] font-bold rounded-lg transition-colors border-none",
+                          appData.uiSettings?.narrativePov === 'first'
+                            ? "bg-[#3b82f6] text-white shadow-[0_2px_8px_rgba(59,130,246,0.35)]"
+                            : "bg-[#3f3f46] text-[#a1a1aa]"
+                        )}
+                      >
+                        1st Person
+                      </button>
+                      <button
+                        onClick={() => handleUpdateUiSettings({ narrativePov: 'third' })}
+                        className={cn(
+                          "px-3 py-1.5 text-[12px] font-bold rounded-lg transition-colors border-none",
+                          (appData.uiSettings?.narrativePov || 'third') === 'third'
+                            ? "bg-[#3b82f6] text-white shadow-[0_2px_8px_rgba(59,130,246,0.35)]"
+                            : "bg-[#3f3f46] text-[#a1a1aa]"
+                        )}
+                      >
+                        3rd Person
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* NSFW Intensity */}
+                  <div className="flex items-center justify-between gap-2 bg-[#3c3e47] rounded-[10px] p-[12px_14px] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]">
+                    <div>
+                      <div className="text-[13px] font-semibold text-[#eaedf1]">NSFW Intensity</div>
+                      <div className="text-[12px] text-[#a1a1aa] mt-0.5">How proactively AI engages in mature content</div>
+                    </div>
+                    <LabeledToggle
+                      checked={appData.uiSettings?.nsfwIntensity === 'high'}
+                      onCheckedChange={(v) => handleUpdateUiSettings({ nsfwIntensity: v ? 'high' : 'normal' })}
+                      offLabel="Normal"
+                      onLabel="High"
+                    />
+                  </div>
+
+                  {/* Response Detail */}
+                  <div className="flex items-center justify-between gap-2 bg-[#3c3e47] rounded-[10px] p-[12px_14px] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]">
+                    <div>
+                      <div className="text-[13px] font-semibold text-[#eaedf1]">Response Detail</div>
+                      <div className="text-[12px] text-[#a1a1aa] mt-0.5">Controls description length and sensory depth</div>
+                    </div>
+                    <div className="flex gap-1.5 flex-shrink-0">
+                      {(['concise', 'balanced', 'detailed'] as const).map(level => (
+                        <button
+                          key={level}
+                          onClick={() => handleUpdateUiSettings({ responseVerbosity: level })}
+                          className={cn(
+                            "px-3 py-1.5 text-[12px] font-bold rounded-lg transition-colors capitalize border-none",
+                            (appData.uiSettings?.responseVerbosity || 'balanced') === level
+                              ? "bg-[#3b82f6] text-white shadow-[0_2px_8px_rgba(59,130,246,0.35)]"
+                              : "bg-[#3f3f46] text-[#a1a1aa]"
+                          )}
+                        >
+                          {level}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Realism Mode */}
+                  <div className="flex items-center justify-between gap-2 bg-[#3c3e47] rounded-[10px] p-[12px_14px] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]">
+                    <div>
+                      <div className="text-[13px] font-semibold text-[#eaedf1]">Realism Mode</div>
+                      <div className="text-[12px] text-[#a1a1aa] mt-0.5">Physical actions have realistic consequences</div>
+                    </div>
+                    <LabeledToggle
+                      checked={appData.uiSettings?.realismMode === true}
+                      onCheckedChange={(v) => handleUpdateUiSettings({ realismMode: v })}
+                    />
+                  </div>
+
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="h-px bg-white/5" />
+
+              {/* TIME PROGRESSION */}
+              <div>
+                <p className="text-[12px] font-black text-[#a1a1aa] uppercase tracking-[0.12em] mb-1">Time Progression</p>
+                <p className="text-[12px] text-[#a1a1aa] mb-2.5">Automatically advance the time of day while in a chat session</p>
+                <div className="flex flex-col gap-2">
+                  {/* Time Mode Toggle */}
+                  <div className="flex items-center justify-between gap-2 bg-[#3c3e47] rounded-[10px] p-[12px_14px] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]">
+                    <div>
+                      <div className="text-[13px] font-semibold text-[#eaedf1]">Time Mode</div>
+                      <div className="text-[12px] text-[#a1a1aa] mt-0.5">Advance time phases automatically on a timer</div>
+                    </div>
+                    <LabeledToggle
+                      checked={timeProgressionMode === 'automatic'}
+                      onCheckedChange={(v) => handleTimeProgressionChange(v ? 'automatic' : 'manual')}
+                      offLabel="Manual"
+                      onLabel="Automatic"
+                    />
+                  </div>
+
+                  {/* Interval Dropdown (only when Automatic) */}
+                  {timeProgressionMode === 'automatic' && (
+                    <div className="flex items-center justify-between gap-2 bg-[#3c3e47] rounded-[10px] p-[12px_14px] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]">
+                      <div>
+                        <div className="text-[13px] font-semibold text-[#eaedf1]">Advance Every</div>
+                        <div className="text-[12px] text-[#a1a1aa] mt-0.5">How often the time of day changes</div>
+                      </div>
+                      <select
+                        value={timeProgressionInterval}
+                        onChange={(e) => handleTimeProgressionChange('automatic', Number(e.target.value))}
+                        className="bg-[#1c1c1f] border border-black/35 rounded-lg text-[12px] font-bold text-white px-3 py-1.5 focus:outline-none focus:border-blue-500"
+                      >
+                        <option value={5}>5 minutes</option>
+                        <option value={10}>10 minutes</option>
+                        <option value={15}>15 minutes</option>
+                        <option value={30}>30 minutes</option>
+                        <option value={60}>60 minutes</option>
+                      </select>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </DialogContentBare>
       </Dialog>
       
       {/* Delete Character Confirmation Dialog */}
