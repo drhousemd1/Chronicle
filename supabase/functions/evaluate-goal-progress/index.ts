@@ -18,7 +18,6 @@ function getCorsHeaders(req: Request) {
 type StepInput = {
   stepId: string;
   description: string;
-  currentScore: number;
 };
 
 type EvaluationRequest = {
@@ -30,22 +29,8 @@ type EvaluationRequest = {
 
 type StepUpdate = {
   stepId: string;
-  classification: 'aligned' | 'soft_resistance' | 'hard_resistance';
+  completed: boolean;
   summary: string;
-  newScore: number;
-  suggestedStatusChange: 'failed' | 'deviated' | null;
-};
-
-const SCORE_DELTAS: Record<string, number> = {
-  aligned: 10,
-  soft_resistance: -5,
-  hard_resistance: -10,
-};
-
-const THRESHOLDS: Record<string, { score: number; status: 'failed' | 'deviated' }> = {
-  rigid: { score: -50, status: 'deviated' },
-  normal: { score: -30, status: 'failed' },
-  flexible: { score: -20, status: 'failed' },
 };
 
 serve(async (req) => {
@@ -55,7 +40,6 @@ serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
 
   try {
-    // Auth check
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -75,7 +59,7 @@ serve(async (req) => {
     }
 
     const body: EvaluationRequest = await req.json();
-    const { userMessage, aiResponse, pendingSteps, flexibility } = body;
+    const { userMessage, aiResponse, pendingSteps } = body;
 
     if (!userMessage || !pendingSteps?.length) {
       return new Response(JSON.stringify({ stepUpdates: [] }), {
@@ -88,12 +72,11 @@ serve(async (req) => {
       throw new Error("XAI_API_KEY is not configured");
     }
 
-    // Build classification prompt
     const stepsContext = pendingSteps.map((s, i) =>
       `Step ${i + 1} (ID: ${s.stepId}): "${s.description}"`
     ).join('\n');
 
-    const classificationPrompt = `You are a story arc progress evaluator. Analyze how the user's response relates to each pending story step.
+    const classificationPrompt = `You are a story goal progress evaluator. Analyze how the latest exchange relates to each pending story step.
 
 PENDING STEPS:
 ${stepsContext}
@@ -104,19 +87,18 @@ ${userMessage}
 AI RESPONSE (for context):
 ${aiResponse}
 
-For EACH step, classify the user's behavior as exactly ONE of:
-- ALIGNED: User cooperates with or advances toward the step's objective
-- SOFT_RESISTANCE: User shows hesitation, deferral, ambiguity, or avoidance ("let's talk later", "I'm not sure", changing subject)
-- HARD_RESISTANCE: User actively refuses, blocks, contradicts, or takes action against the step's objective
-
-IMPORTANT: Evaluate the OVERALL sentiment of the exchange as a single classification per step. Even if the user says "no" multiple times in one message, it counts as ONE classification.
+For EACH step, determine if the exchange ADVANCES or COMPLETES the step's objective. Classify as:
+- ALIGNED: The exchange moves toward or completes the step's objective
+- NOT_ALIGNED: The exchange does not advance this step
 
 Respond in JSON format ONLY:
 {
   "classifications": [
-    { "stepId": "...", "classification": "aligned|soft_resistance|hard_resistance", "summary": "Brief 1-sentence explanation" }
+    { "stepId": "...", "completed": true/false, "summary": "Brief 1-sentence explanation" }
   ]
-}`;
+}
+
+Set "completed" to true ONLY when the step's objective has been clearly achieved or fulfilled.`;
 
     const response = await fetch("https://api.x.ai/v1/chat/completions", {
       method: "POST",
@@ -127,7 +109,7 @@ Respond in JSON format ONLY:
       body: JSON.stringify({
         model: "grok-4-1-fast-reasoning",
         messages: [
-          { role: "system", content: "You are a precise story arc classifier. Respond only in valid JSON." },
+          { role: "system", content: "You are a precise story goal classifier. Respond only in valid JSON." },
           { role: "user", content: classificationPrompt },
         ],
         temperature: 0.3,
@@ -137,7 +119,7 @@ Respond in JSON format ONLY:
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`[evaluate-arc-progress] xAI error: ${response.status} - ${errorText}`);
+      console.error(`[evaluate-goal-progress] xAI error: ${response.status} - ${errorText}`);
       return new Response(JSON.stringify({ stepUpdates: [], error: 'Classification failed' }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
@@ -146,51 +128,35 @@ Respond in JSON format ONLY:
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || '';
     
-    // Parse JSON from response (handle markdown code blocks)
-    let parsed: { classifications: Array<{ stepId: string; classification: string; summary: string }> };
+    let parsed: { classifications: Array<{ stepId: string; completed: boolean; summary: string }> };
     try {
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       parsed = JSON.parse(jsonMatch ? jsonMatch[0] : content);
     } catch {
-      console.error('[evaluate-arc-progress] Failed to parse classification response:', content);
+      console.error('[evaluate-goal-progress] Failed to parse classification response:', content);
       return new Response(JSON.stringify({ stepUpdates: [] }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
-    const threshold = THRESHOLDS[flexibility] || THRESHOLDS.normal;
-
-    // Calculate new scores and suggested status changes
     const stepUpdates: StepUpdate[] = (parsed.classifications || []).map(c => {
       const step = pendingSteps.find(s => s.stepId === c.stepId);
       if (!step) return null;
-
-      const delta = SCORE_DELTAS[c.classification] || 0;
-      // Clamp between -50 and +20
-      const newScore = Math.max(-50, Math.min(20, (step.currentScore || 0) + delta));
-      
-      let suggestedStatusChange: 'failed' | 'deviated' | null = null;
-      if (newScore <= threshold.score) {
-        suggestedStatusChange = threshold.status;
-      }
-
       return {
         stepId: c.stepId,
-        classification: c.classification as StepUpdate['classification'],
+        completed: !!c.completed,
         summary: c.summary || '',
-        newScore,
-        suggestedStatusChange,
       };
     }).filter(Boolean) as StepUpdate[];
 
-    console.log(`[evaluate-arc-progress] Classified ${stepUpdates.length} steps for flexibility=${flexibility}`);
+    console.log(`[evaluate-goal-progress] Classified ${stepUpdates.length} steps, ${stepUpdates.filter(u => u.completed).length} completed`);
 
     return new Response(JSON.stringify({ stepUpdates }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
 
   } catch (error) {
-    console.error("[evaluate-arc-progress] Error:", error);
+    console.error("[evaluate-goal-progress] Error:", error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

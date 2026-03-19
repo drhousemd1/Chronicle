@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { ScenarioData, Character, Conversation, Message, CharacterTraitSection, Scene, TimeOfDay, SideCharacter, CharacterSessionState, Memory, WorldCore, ArcStep, ArcBranch, StoryGoal, GoalFlexibility, ResistanceEvent } from '../../types';
+import { ScenarioData, Character, Conversation, Message, CharacterTraitSection, Scene, TimeOfDay, SideCharacter, CharacterSessionState, Memory, WorldCore, StoryGoal, GoalFlexibility } from '../../types';
 import { Button, TextArea } from './UI';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -776,19 +776,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       const msgs = conv?.messages || [];
       const recentMessages = msgs.slice(-10).map(m => ({ role: m.role, text: m.text.slice(0, 400) }));
       
-      // Build story goals summary
       const storyGoals = (effectiveWorldCore.storyGoals || []).map((g: StoryGoal) => {
-        // Find current pending step across steps and branches
-        const allSteps: Array<{ status?: string; description: string }> = [
-          ...(g.steps || []),
-          ...(g.branches?.fail?.steps || []),
-          ...(g.branches?.success?.steps || []),
-          ...(g.linkedPhases || []).flatMap(p => [
-            ...(p.branches?.fail?.steps || []),
-            ...(p.branches?.success?.steps || [])
-          ])
-        ];
-        const pendingStep = allSteps.find((s: ArcStep) => s.status === 'pending');
+        const pendingStep = (g.steps || []).find(s => !s.completed);
         return {
           description: g.title || g.desiredOutcome || '',
           flexibility: g.flexibility || 'normal',
@@ -1825,121 +1814,62 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   };
 
   // ============================================================================
-  // ARC PROGRESS EVALUATION (resistance scoring - runs in parallel)
+  // GOAL PROGRESS EVALUATION (step completion - runs in parallel)
   // ============================================================================
 
-  const evaluateArcProgress = async (userMessage: string, aiResponse: string) => {
+  const evaluateGoalProgress = async (userMessage: string, aiResponse: string) => {
     const storyGoals = effectiveWorldCore.storyGoals;
     if (!storyGoals?.length) return;
 
-    // Collect all pending steps across all goals and phases
-    const collectPendingSteps = (
-      branches: { fail?: ArcBranch; success?: ArcBranch } | undefined,
-      flexibility: GoalFlexibility
-    ): Array<{ stepId: string; description: string; currentScore: number; flexibility: GoalFlexibility; goalRef: { branches: any; flexibility: GoalFlexibility } }> => {
-      const steps: Array<{ stepId: string; description: string; currentScore: number; flexibility: GoalFlexibility; goalRef: any }> = [];
-      const successSteps = branches?.success?.steps || [];
-      for (const step of successSteps) {
-        if (step.status === 'pending' && !step.permanentlyFailed) {
-          steps.push({
+    const pendingSteps: Array<{ stepId: string; description: string; goalId: string; flexibility: GoalFlexibility }> = [];
+    for (const goal of storyGoals) {
+      for (const step of goal.steps || []) {
+        if (!step.completed) {
+          pendingSteps.push({
             stepId: step.id,
             description: step.description,
-            currentScore: step.resistanceScore || 0,
-            flexibility,
-            goalRef: { branches, flexibility },
+            goalId: goal.id,
+            flexibility: goal.flexibility,
           });
         }
       }
-      return steps;
-    };
-
-    const allPending: Array<{ stepId: string; description: string; currentScore: number; flexibility: GoalFlexibility; goalRef: any }> = [];
-    for (const goal of storyGoals) {
-      allPending.push(...collectPendingSteps(goal.branches, goal.flexibility));
-      for (const phase of goal.linkedPhases || []) {
-        allPending.push(...collectPendingSteps(phase.branches, phase.flexibility));
-      }
     }
 
-    if (allPending.length === 0) return;
+    if (pendingSteps.length === 0) return;
 
-    // Group by flexibility for separate API calls (since thresholds differ)
-    const byFlexibility = new Map<GoalFlexibility, typeof allPending>();
-    for (const item of allPending) {
-      const group = byFlexibility.get(item.flexibility) || [];
-      group.push(item);
-      byFlexibility.set(item.flexibility, group);
-    }
+    try {
+      const { data, error } = await supabase.functions.invoke('evaluate-goal-progress', {
+        body: {
+          userMessage,
+          aiResponse,
+          pendingSteps: pendingSteps.map(s => ({ stepId: s.stepId, description: s.description })),
+          flexibility: pendingSteps[0]?.flexibility || 'normal',
+        }
+      });
 
-    for (const [flexibility, steps] of byFlexibility) {
-      try {
-        const { data, error } = await supabase.functions.invoke('evaluate-arc-progress', {
-          body: {
-            userMessage,
-            aiResponse,
-            pendingSteps: steps.map(s => ({ stepId: s.stepId, description: s.description, currentScore: s.currentScore })),
-            flexibility,
+      if (error || !data?.stepUpdates?.length) return;
+
+      const completedIds = new Set(data.stepUpdates.filter((u: any) => u.completed).map((u: any) => u.stepId));
+      if (completedIds.size === 0) return;
+
+      const updatedGoals = storyGoals.map(goal => {
+        const newSteps = (goal.steps || []).map(step => {
+          if (completedIds.has(step.id)) {
+            return { ...step, completed: true, completedAt: Date.now() };
           }
+          return step;
         });
+        return { ...goal, steps: newSteps, updatedAt: Date.now() };
+      });
 
-        if (error || !data?.stepUpdates?.length) continue;
+      setWorldCoreSessionOverrides(prev => ({
+        ...(prev || {}),
+        storyGoals: updatedGoals,
+      }));
 
-        // Apply score updates to story goals
-        const updatedGoals = [...(storyGoals || [])].map(goal => {
-          let goalChanged = false;
-          const updateStepsInBranch = (branch: ArcBranch | undefined): ArcBranch | undefined => {
-            if (!branch) return branch;
-            const newSteps = branch.steps.map(step => {
-              const update = data.stepUpdates.find((u: any) => u.stepId === step.id);
-              if (!update) return step;
-              goalChanged = true;
-              const newEvents: ResistanceEvent[] = [
-                ...(step.resistanceEvents || []),
-                { day: currentDay, classification: update.classification, summary: update.summary },
-              ];
-              const updated: ArcStep = {
-                ...step,
-                resistanceScore: update.newScore,
-                resistanceEvents: newEvents,
-              };
-              if (update.suggestedStatusChange && step.status === 'pending') {
-                updated.status = update.suggestedStatusChange;
-                updated.statusEventOrder = (goal.statusEventCounter || 0) + 1;
-              }
-              return updated;
-            });
-            return { ...branch, steps: newSteps };
-          };
-
-          const newBranches = {
-            fail: updateStepsInBranch(goal.branches?.fail),
-            success: updateStepsInBranch(goal.branches?.success),
-          };
-
-          // Also update linked phases
-          const newPhases = (goal.linkedPhases || []).map(phase => {
-            let phaseChanged = false;
-            const phaseBranches = {
-              fail: (() => { const r = updateStepsInBranch(phase.branches?.fail); if (r !== phase.branches?.fail) phaseChanged = true; return r; })(),
-              success: (() => { const r = updateStepsInBranch(phase.branches?.success); if (r !== phase.branches?.success) phaseChanged = true; return r; })(),
-            };
-            return phaseChanged ? { ...phase, branches: phaseBranches } : phase;
-          });
-
-          if (!goalChanged) return goal;
-          return { ...goal, branches: newBranches, linkedPhases: newPhases };
-        });
-
-        // Persist updated goals via session overrides
-        setWorldCoreSessionOverrides(prev => ({
-          ...(prev || {}),
-          storyGoals: updatedGoals,
-        }));
-
-        console.log(`[evaluateArcProgress] Applied ${data.stepUpdates.length} score updates for flexibility=${flexibility}`);
-      } catch (err) {
-        console.error(`[evaluateArcProgress] Failed for flexibility=${flexibility}:`, err);
-      }
+      console.log(`[evaluateGoalProgress] Completed ${completedIds.size} steps`);
+    } catch (err) {
+      console.error('[evaluateGoalProgress] Failed:', err);
     }
   };
 
@@ -2807,9 +2737,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         });
       }
 
-      // Evaluate arc progress (resistance scoring) - runs in parallel, non-blocking
-      evaluateArcProgress(userInput, fullText).catch(err => {
-        console.error('[handleSend] Arc progress evaluation failed:', err);
+      evaluateGoalProgress(userInput, fullText).catch(err => {
+        console.error('[handleSend] Goal progress evaluation failed:', err);
       });
 
       // Strip any legacy update tags that might still be in response (fallback)
@@ -3086,21 +3015,11 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           }
         });
       
-      // Also gather story arc pending steps
-      const storyArcs = effectiveWorldCore.storyGoals || [];
-      storyArcs.forEach((g: StoryGoal) => {
-        const allSteps: Array<{ status?: string; description: string }> = [
-          ...(g.steps || []),
-          ...(g.branches?.fail?.steps || []),
-          ...(g.branches?.success?.steps || []),
-          ...(g.linkedPhases || []).flatMap((p: any) => [
-            ...(p.branches?.fail?.steps || []),
-            ...(p.branches?.success?.steps || [])
-          ])
-        ];
-        const pendingStep = allSteps.find((s: ArcStep) => s.status === 'pending');
+      const storyGoalsList = effectiveWorldCore.storyGoals || [];
+      storyGoalsList.forEach((g: StoryGoal) => {
+        const pendingStep = (g.steps || []).find(s => !s.completed);
         if (pendingStep) {
-          goalSummaryParts.push(`Story arc "${g.title || g.desiredOutcome}": PENDING STEP — "${pendingStep.description}"`);
+          goalSummaryParts.push(`Story goal "${g.title || g.desiredOutcome}": PENDING STEP — "${pendingStep.description}"`);
         }
       });
       

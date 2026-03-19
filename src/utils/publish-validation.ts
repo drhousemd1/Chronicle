@@ -10,7 +10,7 @@ export interface PublishValidationErrors {
   noUserCharacter?: string;
   characters?: Record<string, string[]>; // characterId -> array of error messages
   location?: string;
-  storyArc?: string;
+  storyGoal?: string;
   coverImage?: string;
   briefDescription?: string;
 }
@@ -101,13 +101,13 @@ export function validateForPublish(data: {
     errors.location = 'At least 1 location with label and description is required';
   }
 
-  // 9. Story arc
+  // 9. Story goal
   const goals: StoryGoal[] = world.core.storyGoals || [];
-  const hasValidArc = goals.some(
+  const hasValidGoal = goals.some(
     (g) => (g.title || '').trim() && (g.desiredOutcome || '').trim()
   );
-  if (!hasValidArc) {
-    errors.storyArc = 'At least 1 story arc with title and desired outcome is required';
+  if (!hasValidGoal) {
+    errors.storyGoal = 'At least 1 story goal with title and desired outcome is required';
   }
 
   // 10. Cover image

@@ -1,5 +1,9 @@
 import React from 'react';
-import { ArcBranch, ArcStep, StepStatus, GoalFlexibility } from '@/types';
+import { GoalFlexibility } from '@/types';
+
+type StepStatus = 'pending' | 'failed' | 'succeeded' | 'deviated';
+type ArcStep = { id: string; description: string; status: StepStatus; statusEventOrder: number; completedAt?: number; retryOf?: string; retryCount?: number; failedOnDay?: number; permanentlyFailed?: boolean; resistanceScore?: number; resistanceEvents?: any[] };
+type ArcBranch = { id: string; type: 'fail' | 'success'; triggerDescription: string; steps: ArcStep[] };
 import { Plus, X, Check, Trash2, Clock, ArrowUpRight, RotateCcw, Ban, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 

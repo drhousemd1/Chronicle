@@ -1,66 +1,53 @@
 
-Replace the branching Story Arc system completely in the app with a duplicated linear “Story Goals” component based on `CharacterGoalsSection`, while preserving the archived Story Arc only in the style guide HTML.
+# Sandbox Feature Transfer — Master Tracker
 
-1. Replace the app’s StoryGoalsSection implementation
-- Rebuild `src/components/chronicle/StoryGoalsSection.tsx` as a near-direct copy of `CharacterGoalsSection.tsx`.
-- Keep the same shell, collapse behavior, progress ring, slider, step list, add/remove step flow, and sparkle actions.
-- Rename labels to story-specific text:
-  - section title: `Story Goals`
-  - add button: `Add New Story Goal`
-- Remove all arc-only UI:
-  - branch lanes
-  - mode toggle
-  - connectors
-  - linked phases
-  - branch status logic
+## Source Documents
+- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
+- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
 
-2. Simplify the actual data model
-- Update `src/types.ts` so `StoryGoal` becomes a plain linear goal shape like character goals:
-  - `id`, `title`, `desiredOutcome`, `currentStatus?`, `steps`, `flexibility`, `createdAt`, `updatedAt`
-- Delete the story-arc-specific types from app code usage:
-  - `ArcStep`, `ArcBranch`, `ArcMode`, `ArcPhase`
-  - `StepStatus`, `ResistanceClassification`, `ResistanceEvent`
-- Keep `storyGoals` on `WorldCore`, but it should now mean simple story goals only.
+## Features Being Transferred
+| ID | Feature | Status |
+|----|---------|--------|
+| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
+| B | Story Transfer Library (story-transfer.ts) | ✅ |
+| A | UI Audit System (schema, utils, findings, page) | 🔄 |
+| B | Story Export/Import Modals | ✅ |
+| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
+| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
+| - | StyleGuideTool.tsx audit button | ⬜ |
+| - | App.tsx route wiring | ⬜ |
+| - | Index.tsx full wiring | ⬜ |
 
-3. Replace all app references that still think in “story arcs”
-- Update `WorldTab.tsx`, `StoryCardView.tsx`, and any other render points to use the simplified section with the same placement as today.
-- Update labels, validation text, placeholders, and error copy from “Story Arc(s)” to “Story Goal(s)”.
-- Keep the style guide archive untouched, since it is isolated in `public/style-guide-component-example.html`.
+## Prompt Execution Status
 
-4. Remove arc logic from runtime/chat behavior
-- In `ChatInterfaceTab.tsx`, replace all branch/phase scanning with simple step scanning:
-  - current step = first incomplete step
-  - goal summary uses linear steps only
-- Remove the `evaluate-arc-progress` invocation and all resistance-score/status-event update logic.
-- Replace it with simple goal-step completion behavior if the current chat flow still needs progress tracking; otherwise remove the auto-evaluator entirely so runtime behavior matches the simplified model.
+| # | Target File(s) | Status | Notes |
+|---|---------------|--------|-------|
+| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
+| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
+| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
+| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
+| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
+| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
+| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
+| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
+| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
+| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
+| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
+| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
+| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
+| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
 
-5. Clean prompt/context builders so they match the new structure
-- Update `src/services/llm.ts` to serialize only linear story goals and steps.
-- Update `src/services/character-ai.ts` to stop mentioning arc modes.
-- Update `supabase/functions/generate-narrative-directive/index.ts` text from “STORY ARCS” to “STORY GOALS” and keep only simple current-step context.
-- Remove or repurpose `supabase/functions/evaluate-arc-progress/index.ts` so nothing in the app depends on arc terminology or arc-only payloads anymore.
-
-6. App-wide cleanup pass
-- Search the repo for:
-  - `Story Arc`
-  - `Story Arcs`
-  - `ArcPhase`
-  - `ArcBranch`
-  - `ArcMode`
-  - `ArcStep`
-  - `evaluate-arc-progress`
-  - `linkedPhases`
-  - `statusEventCounter`
-  - resistance-related fields
-- Remove or rename every app-facing reference so production code is clean and only reflects “Story Goals”.
-- Leave the archived style-guide card intact, but do not leave stray production comments or dead references that imply the app still uses story arcs.
-
-7. Validation/check pass
-- Compare the rebuilt `StoryGoalsSection` directly against `CharacterGoalsSection` so styling, spacing, controls, and behavior match exactly except for the title/text.
-- Verify the simplified `StoryGoal` shape is the only shape consumed in the app.
-- Verify no app path still depends on branches/phases/resistance logic.
-- Verify the style guide still preserves the old Story Arc archive independently.
-
-Technical note
-- I checked the code paths first: the current `StoryGoalsSection` is still fully arc-based, and chat/runtime logic still reads branches, linked phases, resistance scores, and calls `evaluate-arc-progress`.
-- The correct implementation is not to “keep arc types around”; it is to replace the app’s Story Goals system with the duplicated linear component and then remove arc-specific production logic everywhere except the archived style-guide HTML.
+## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
+- `src/types.ts`: line 11507
+- `src/utils.ts`: line 12138
+- `src/lib/story-transfer.ts`: line 9812
+- `src/lib/ui-audit-schema.ts`: line 21329
+- `src/lib/ui-audit-utils.ts`: line 21565
+- `src/data/ui-audit-findings.ts`: line 18967
+- `StoryExportFormatModal.tsx`: line 9642
+- `StoryImportModeModal.tsx`: line 9731
+- `CharactersTab.tsx`: line 2893
+- `ChatInterfaceTab.tsx`: line 5004
+- `src/pages/style-guide/ui-audit.tsx`: line 17867
+- `src/App.tsx`: line 95
+- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout

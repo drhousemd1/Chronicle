@@ -1097,7 +1097,7 @@ className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
           <StoryGoalsSection
             goals={world.core.storyGoals || []}
             onChange={(goals) => updateCore({ storyGoals: goals })}
-            hasError={!!publishErrors.storyArc}
+            hasError={!!publishErrors.storyGoal}
             onEnhanceField={(fieldKey, getCurrentValue, setValue, customLabel) => {
               if (enhancingField) return;
               setEnhancingField(fieldKey as any);
@@ -1641,7 +1641,7 @@ className="px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white plac
                             return msgs.map((msg, i) => <li key={`${cid}-${i}`}>{charName}: {msg}</li>);
                           })}
                           {publishErrors.location && <li>{publishErrors.location}</li>}
-                          {publishErrors.storyArc && <li>{publishErrors.storyArc}</li>}
+                          {publishErrors.storyGoal && <li>{publishErrors.storyGoal}</li>}
                           {publishErrors.coverImage && <li>{publishErrors.coverImage}</li>}
                           {publishErrors.briefDescription && <li>{publishErrors.briefDescription}</li>}
                         </ul>
