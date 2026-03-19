@@ -1258,7 +1258,7 @@ const findings: QualityFinding[] = [
       actualBehavior: "ImageFolder and LibraryImage types extracted to image-library-types.ts. Both ImageLibraryTab.tsx and FolderEditModal.tsx now import from the shared types file, breaking the cycle.",
       comments: [{
         id: "fix-build-007",
-        author: codexAgent,
+        author: "ChatGPT Codex",
         timestamp: "2026-03-19T04:30:00Z",
         text: "Created src/components/chronicle/image-library-types.ts with ImageFolder and LibraryImage types. Updated ImageLibraryTab.tsx to re-export from the new file. Updated FolderEditModal.tsx and ImageLibraryPickerModal.tsx to import from image-library-types.ts directly.",
       }],
