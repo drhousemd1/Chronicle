@@ -61,7 +61,7 @@ serve(async (req) => {
     }
 
     const body: EvaluationRequest = await req.json();
-    const { userMessage, aiResponse, pendingSteps } = body;
+    const { userMessage, aiResponse, pendingSteps, currentDay, currentTimeOfDay } = body;
 
     if (!userMessage || !pendingSteps?.length) {
       return new Response(JSON.stringify({ stepUpdates: [] }), {
