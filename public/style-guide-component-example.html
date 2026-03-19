@@ -888,6 +888,20 @@
       </div>
 
       <div class="spec-block">
+        <div class="spec-h1">Guidance Strength Slider</div>
+        <ul>
+          <li><strong>Label:</strong> <code>text-[10px] font-black text-zinc-400</code> → "Guidance Strength"</li>
+          <li><strong>Subtitle:</strong> <code>text-sm text-zinc-400</code> → "How strongly the AI should steer toward this goal."</li>
+          <li><strong>Track:</strong> <code>height: 12px; border-radius: 999px; background: rgba(21,25,34,0.95)</code></li>
+          <li><strong>Fill gradient:</strong> <code>linear-gradient(90deg, #2b4e8d, #4b79d8 60%, #7dadf5)</code></li>
+          <li><strong>Thumb:</strong> <code>24×24 rounded-full bg-white border-[3px] border-blue-500 shadow-[0_2px_8px_rgba(0,0,0,0.3)]</code></li>
+          <li><strong>Labels below:</strong> <code>text-[10px] font-black</code>, active = <code>text-blue-500</code>, inactive = <code>text-zinc-500</code>, <code>justify-between</code></li>
+          <li><strong>Description box:</strong> <code>bg-zinc-900 rounded-xl p-4</code>, shadow: <code>inset 1px 1px 0 rgba(255,255,255,0.07), inset -1px -1px 0 rgba(0,0,0,0.30), 0 4px 12px rgba(0,0,0,0.25)</code></li>
+          <li><strong>Values:</strong> rigid (0%), normal (50%), flexible (100%)</li>
+        </ul>
+      </div>
+
+      <div class="spec-block">
         <div class="spec-h1">Mode Toggle (Simple / Advanced)</div>
         <ul>
           <li><strong>Container:</strong> <code>p-1.5 bg-[#3c3e47] rounded-xl</code></li>
@@ -1010,13 +1024,28 @@
                 <div style="padding:8px 12px;font-size:13px;background:#1c1c1f;border:1px solid rgba(0,0,0,0.35);border-radius:8px;color:#71717a;font-style:italic;min-height:40px;">What success looks like...</div>
               </div>
 
-              <!-- Guidance Strength Slider -->
-              <div style="margin-top:16px;padding:12px 16px;background:#3c3e47;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.45),inset 0 1px 0 rgba(255,255,255,0.09),inset 0 -1px 0 rgba(0,0,0,0.20);">
-                <div style="font-size:10px;font-weight:900;color:#a1a1aa;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px;">Guidance Strength</div>
-                <div style="display:flex;gap:4px;">
-                  <div style="flex:1;text-align:center;padding:4px 8px;font-size:10px;font-weight:700;border-radius:6px;background:#3f3f46;color:#a1a1aa;">Rigid</div>
-                  <div style="flex:1;text-align:center;padding:4px 8px;font-size:10px;font-weight:700;border-radius:6px;background:#3b82f6;color:white;box-shadow:0 2px 8px rgba(59,130,246,0.35);">Normal</div>
-                  <div style="flex:1;text-align:center;padding:4px 8px;font-size:10px;font-weight:700;border-radius:6px;background:#3f3f46;color:#a1a1aa;">Flexible</div>
+              <!-- Guidance Strength Slider (exact replica of GuidanceStrengthSlider.tsx) -->
+              <div style="margin-top:16px;">
+                <div style="margin-top:14px;margin-bottom:6px;">
+                  <span style="font-size:10px;font-weight:900;color:#a1a1aa;">Guidance Strength</span>
+                </div>
+                <p style="font-size:14px;color:#a1a1aa;margin-bottom:10px;margin-top:0;">How strongly the AI should steer toward this goal.</p>
+                <!-- Slider track -->
+                <div style="position:relative;width:100%;height:12px;border-radius:999px;background:rgba(21,25,34,0.95);cursor:pointer;">
+                  <!-- Fill bar at 50% (Normal selected) -->
+                  <div style="position:absolute;top:0;left:0;height:100%;width:50%;border-radius:999px;background:linear-gradient(90deg,#2b4e8d,#4b79d8 60%,#7dadf5);transition:width 0.2s ease-out;"></div>
+                  <!-- Thumb at 50% -->
+                  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:24px;height:24px;border-radius:50%;background:white;border:3px solid #3b82f6;box-shadow:0 2px 8px rgba(0,0,0,0.3);"></div>
+                </div>
+                <!-- Three labels -->
+                <div style="display:flex;justify-content:space-between;margin-top:8px;">
+                  <span style="cursor:pointer;font-size:10px;font-weight:900;color:#71717a;">Rigid</span>
+                  <span style="cursor:pointer;font-size:10px;font-weight:900;color:#3b82f6;">Normal</span>
+                  <span style="cursor:pointer;font-size:10px;font-weight:900;color:#71717a;">Flexible</span>
+                </div>
+                <!-- Description box -->
+                <div style="margin-top:12px;background:#18181b;border-radius:12px;padding:16px;box-shadow:inset 1px 1px 0 rgba(255,255,255,0.07),inset -1px -1px 0 rgba(0,0,0,0.30),0 4px 12px rgba(0,0,0,0.25);">
+                  <p style="font-size:14px;color:#a1a1aa;line-height:1.6;margin:0;">Steer towards the goal by weaving it in naturally when opportunities arise. Make persistent attempts to incorporate and advance it throughout the story, even in the face of initial user resistance, but allow gradual adaptation if the user's inputs show sustained and consistent conflict with the goal, treating it as a recurring influence until deviation becomes clearly dominant.</p>
                 </div>
               </div>
 
@@ -1061,6 +1090,7 @@
                         <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:6px;color:rgba(251,191,36,0.8);background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);">Retry #2</span>
                       </div>
                     </div>
+                    <button class="add-row-btn" style="margin-top:4px;font-size:10px;padding:4px 0;">+ Add Step</button>
                   </div>
                 </div>
 
@@ -1091,6 +1121,7 @@
                         <span style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;">Pending</span>
                       </div>
                     </div>
+                    <button class="add-row-btn" style="margin-top:4px;font-size:10px;padding:4px 0;">+ Add Step</button>
                   </div>
                 </div>
               </div>
@@ -1110,19 +1141,67 @@
                 <svg width="200" height="32" viewBox="0 0 200 32"><line x1="100" y1="0" x2="100" y2="20" stroke="rgba(232,238,248,0.82)" stroke-width="1.5"/><line x1="50" y1="20" x2="150" y2="20" stroke="rgba(232,238,248,0.82)" stroke-width="1.5"/><line x1="50" y1="20" x2="50" y2="32" stroke="rgba(232,238,248,0.82)" stroke-width="1.5"/><line x1="150" y1="20" x2="150" y2="32" stroke="rgba(232,238,248,0.82)" stroke-width="1.5"/></svg>
               </div>
 
-              <!-- Phase 2 mini branch preview -->
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                <div style="border-radius:14px;background:rgba(43,47,57,0.9);overflow:hidden;box-shadow:0 14px 26px -6px rgba(0,0,0,0.4);">
-                  <div style="background:rgba(240,74,95,0.28);padding:8px 12px;">
-                    <span style="font-size:9px;font-weight:900;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.12em;">FAIL</span>
+              <!-- Phase 2 full container -->
+              <div style="background:rgba(58,58,63,0.30);border-radius:18px;padding:16px;border:1px solid rgba(255,255,255,0.06);">
+                <!-- Phase 2 header row: title + delete + progress ring -->
+                <div style="display:flex;align-items:flex-start;gap:16px;">
+                  <div style="flex:1;">
+                    <div style="font-size:10px;font-weight:900;color:#a1a1aa;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:4px;">Phase Title</div>
+                    <div style="padding:8px 12px;font-size:13px;background:#1c1c1f;border:1px solid rgba(0,0,0,0.35);border-radius:8px;color:#71717a;font-style:italic;">Phase 2 title...</div>
                   </div>
-                  <div style="padding:10px;"><div style="padding:6px 10px;background:#1c1c1f;border:1px solid rgba(0,0,0,0.35);border-radius:6px;color:#71717a;font-size:11px;font-style:italic;">Phase 2 fail step...</div></div>
+                  <div style="width:30px;height:30px;border-radius:10px;border:1px solid rgba(239,68,68,0.5);display:flex;align-items:center;justify-content:center;margin-top:22px;flex-shrink:0;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fca5a5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                  </div>
+                  <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;margin-top:4px;">
+                    <div style="width:50px;height:50px;border-radius:50%;border:6px solid rgba(51,80,125,0.85);display:flex;align-items:center;justify-content:center;">
+                      <span style="font-size:12px;font-weight:700;color:#94a3b8;">0%</span>
+                    </div>
+                    <p style="margin-top:4px;font-size:8px;font-weight:900;color:#a1a1aa;text-transform:uppercase;letter-spacing:0.2em;">Progress</p>
+                  </div>
                 </div>
-                <div style="border-radius:14px;background:rgba(43,47,57,0.9);overflow:hidden;box-shadow:0 14px 26px -6px rgba(0,0,0,0.4);">
-                  <div style="background:rgba(34,197,127,0.28);padding:8px 12px;">
-                    <span style="font-size:9px;font-weight:900;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.12em;">SUCCEED</span>
+                <!-- Desired Outcome -->
+                <div style="margin-top:12px;">
+                  <div style="font-size:10px;font-weight:900;color:#a1a1aa;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:4px;">Desired Outcome</div>
+                  <div style="padding:8px 12px;font-size:13px;background:#1c1c1f;border:1px solid rgba(0,0,0,0.35);border-radius:8px;color:#71717a;font-style:italic;min-height:40px;">Phase 2 outcome...</div>
+                </div>
+                <!-- Phase 2 split connector -->
+                <div style="height:32px;display:flex;align-items:center;justify-content:center;">
+                  <svg width="200" height="32" viewBox="0 0 200 32"><line x1="100" y1="0" x2="100" y2="20" stroke="rgba(232,238,248,0.82)" stroke-width="1.5"/><line x1="50" y1="20" x2="150" y2="20" stroke="rgba(232,238,248,0.82)" stroke-width="1.5"/><line x1="50" y1="20" x2="50" y2="32" stroke="rgba(232,238,248,0.82)" stroke-width="1.5"/><line x1="150" y1="20" x2="150" y2="32" stroke="rgba(232,238,248,0.82)" stroke-width="1.5"/></svg>
+                </div>
+                <!-- Phase 2 branch lanes -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                  <div style="border-radius:18px;background:rgba(43,47,57,0.9);overflow:hidden;box-shadow:0 14px 26px -6px rgba(0,0,0,0.4);">
+                    <div style="background:rgba(240,74,95,0.28);padding:12px 16px;">
+                      <span style="font-size:10px;font-weight:900;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:0.12em;">FAIL PATH</span>
+                    </div>
+                    <div style="padding:14px;display:flex;flex-direction:column;gap:8px;">
+                      <div style="font-size:10px;font-weight:900;color:#a1a1aa;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:2px;">Resistance Trigger</div>
+                      <div style="padding:8px 12px;font-size:13px;background:#1c1c1f;border:1px solid rgba(0,0,0,0.35);border-radius:8px;color:#71717a;font-style:italic;">What causes failure...</div>
+                      <div style="padding:10px 12px;background:rgba(78,58,68,0.78);border:1px solid rgba(255,255,255,0.15);border-radius:12px;font-size:11px;color:#eaedf1;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                          <span>Step 1: Recovery action</span>
+                          <span style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;">Pending</span>
+                        </div>
+                      </div>
+                      <button class="add-row-btn" style="margin-top:4px;font-size:10px;padding:4px 0;">+ Add Step</button>
+                    </div>
                   </div>
-                  <div style="padding:10px;"><div style="padding:6px 10px;background:#1c1c1f;border:1px solid rgba(0,0,0,0.35);border-radius:6px;color:#71717a;font-size:11px;font-style:italic;">Phase 2 success step...</div></div>
+                  <div style="border-radius:18px;background:rgba(43,47,57,0.9);overflow:hidden;box-shadow:0 14px 26px -6px rgba(0,0,0,0.4);">
+                    <div style="background:rgba(34,197,127,0.28);padding:12px 16px;">
+                      <span style="font-size:10px;font-weight:900;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:0.12em;">SUCCEED PATH</span>
+                    </div>
+                    <div style="padding:14px;display:flex;flex-direction:column;gap:8px;">
+                      <div style="font-size:10px;font-weight:900;color:#a1a1aa;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:2px;">Success Trigger</div>
+                      <div style="padding:8px 12px;font-size:13px;background:#1c1c1f;border:1px solid rgba(0,0,0,0.35);border-radius:8px;color:#71717a;font-style:italic;">What triggers success...</div>
+                      <div style="padding:10px 12px;background:rgba(51,75,66,0.78);border:1px solid rgba(255,255,255,0.15);border-radius:12px;font-size:11px;color:#eaedf1;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                          <span>Step 1: Advance plot</span>
+                          <span style="font-size:9px;font-weight:700;color:#a1a1aa;text-transform:uppercase;">Pending</span>
+                        </div>
+                      </div>
+                      <button class="add-row-btn" style="margin-top:4px;font-size:10px;padding:4px 0;">+ Add Step</button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -1184,6 +1263,11 @@
             <tr><td>Active Pill</td><td><span class="swatch" style="background:#3b82f6;"></span></td><td><code>#3b82f6</code></td><td>Mode toggle / succeeded</td></tr>
             <tr><td>Connector Lines</td><td><span class="swatch" style="background:rgba(232,238,248,0.82);border-color:#666;"></span></td><td><code>rgba(232,238,248,0.82)</code></td><td>SVG connectors</td></tr>
             <tr><td>Retry Badge</td><td><span class="swatch" style="background:rgba(245,158,11,0.1);border-color:rgba(245,158,11,0.5);"></span></td><td><code>amber-500/10</code></td><td>Clone-on-recovery</td></tr>
+            <tr><td>Slider Track</td><td><span class="swatch" style="background:rgba(21,25,34,0.95);border-color:#666;"></span></td><td><code>rgba(21,25,34,0.95)</code></td><td>Guidance strength track</td></tr>
+            <tr><td>Slider Fill Start</td><td><span class="swatch" style="background:#2b4e8d;"></span></td><td><code>#2b4e8d</code></td><td>Gradient start</td></tr>
+            <tr><td>Slider Fill Mid</td><td><span class="swatch" style="background:#4b79d8;"></span></td><td><code>#4b79d8</code></td><td>Gradient mid (60%)</td></tr>
+            <tr><td>Slider Fill End</td><td><span class="swatch" style="background:#7dadf5;"></span></td><td><code>#7dadf5</code></td><td>Gradient end</td></tr>
+            <tr><td>Description Box</td><td><span class="swatch" style="background:#18181b;"></span></td><td><code>#18181b</code></td><td>Slider description bg</td></tr>
           </tbody>
         </table>
       </div>
