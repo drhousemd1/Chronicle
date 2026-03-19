@@ -1,270 +1,183 @@
-import React from 'react';
-import { StoryGoal, ArcBranch, ArcStep, ArcMode, ArcPhase, GoalFlexibility, GoalStep, StepStatus } from '@/types';
-import { AutoResizeTextarea } from './AutoResizeTextarea';
-import { Trash2, Plus, Sparkles, GitBranch, CheckSquare } from 'lucide-react';
+import React, { useRef, useEffect } from 'react';
+import { StoryGoal, GoalStep, GoalFlexibility, TimeOfDay } from '@/types';
+import { Trash2, Plus, X, ChevronDown, ChevronUp, CheckSquare, Sparkles } from 'lucide-react';
 import { GuidanceStrengthSlider } from './GuidanceStrengthSlider';
-import { ArcBranchLane } from './arc/ArcBranchLane';
-import { ArcModeToggle } from './arc/ArcModeToggle';
-import { ArcConnectors } from './arc/ArcConnectors';
-import { ArcPhaseCard } from './arc/ArcPhaseCard';
-import { ArcFlowConnector } from './arc/ArcFlowConnector';
+import { CircularProgress } from './CircularProgress';
+import { Checkbox } from '@/components/ui/checkbox';
 import { uid, now } from '@/utils';
 import { cn } from '@/lib/utils';
 
-// AutoResizeTextarea is now imported from ./AutoResizeTextarea
+const AutoResizeTextarea: React.FC<{
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  className?: string;
+  rows?: number;
+}> = ({ value, onChange, placeholder, className = '', rows = 1 }) => {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    if (ref.current) {
+      ref.current.style.height = 'auto';
+      ref.current.style.height = `${ref.current.scrollHeight}px`;
+    }
+  }, [value]);
+  return (
+    <textarea
+      ref={ref}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      rows={rows}
+      spellCheck={true}
+      className={cn("w-full min-w-0 resize-none overflow-hidden whitespace-pre-wrap break-words", className)}
+    />
+  );
+};
 
 interface StoryGoalsSectionProps {
   goals: StoryGoal[];
   onChange: (goals: StoryGoal[]) => void;
+  readOnly?: boolean;
+  isExpanded?: boolean;
+  onToggle?: () => void;
+  currentDay?: number;
+  currentTimeOfDay?: TimeOfDay;
   onEnhanceField?: (fieldKey: string, getCurrentValue: () => string, setValue: (value: string) => void, customLabel?: string) => void;
   enhancingField?: string | null;
   hasError?: boolean;
 }
 
-// ── Helpers ──
-
-const ensureBranch = (branch: ArcBranch | undefined, type: 'fail' | 'success'): ArcBranch =>
-  branch || { id: uid('branch'), type, triggerDescription: '', steps: [] };
-
-/** Runtime migration: convert legacy GoalStep[] → success branch ArcSteps */
-function migrateGoalToBranches(goal: StoryGoal): StoryGoal {
-  if (goal.branches) return goal;
-  if (!goal.steps || goal.steps.length === 0) return { ...goal, mode: goal.mode || 'simple', branches: {}, statusEventCounter: goal.statusEventCounter || 0 };
-  const arcSteps: ArcStep[] = goal.steps.map((s, i) => ({
-    id: s.id,
-    description: s.description,
-    status: s.completed ? 'succeeded' as const : 'pending' as const,
-    statusEventOrder: s.completed ? i + 1 : 0,
-    completedAt: s.completedAt,
-  }));
-  return {
-    ...goal,
-    mode: goal.mode || 'simple',
-    branches: {
-      success: { id: uid('branch'), type: 'success', triggerDescription: '', steps: arcSteps },
-    },
-    statusEventCounter: goal.statusEventCounter || arcSteps.length,
-  };
-}
-
-const calculateArcProgress = (branches?: { fail?: ArcBranch; success?: ArcBranch }): number => {
-  const successSteps = branches?.success?.steps || [];
-  if (successSteps.length === 0) return 0;
-  // Exclude failed steps that have a pending retry clone
-  const retryTargets = new Set(successSteps.filter(s => s.retryOf && s.status === 'pending').map(s => s.retryOf));
-  const countableSteps = successSteps.filter(s => !(retryTargets.has(s.id) && (s.status === 'failed' || s.status === 'deviated')));
-  if (countableSteps.length === 0) return 0;
-  return Math.round((countableSteps.filter(s => s.status === 'succeeded').length / countableSteps.length) * 100);
+const calculateProgress = (goal: StoryGoal): number => {
+  if (goal.steps && goal.steps.length > 0) {
+    return Math.round((goal.steps.filter(s => s.completed).length / goal.steps.length) * 100);
+  }
+  return 0;
 };
 
-/** Compute the single active flow connector between branches */
-function computeActiveFlow(
-  failBranch: ArcBranch,
-  successBranch: ArcBranch
-): { sourceId: string; sourceBranch: 'fail' | 'success'; targetId: string; targetBranch: 'fail' | 'success' } | null {
-  const resolved: Array<{ step: ArcStep; branch: 'fail' | 'success' }> = [];
-  failBranch.steps.forEach(s => {
-    if (s.statusEventOrder > 0) resolved.push({ step: s, branch: 'fail' });
-  });
-  successBranch.steps.forEach(s => {
-    if (s.statusEventOrder > 0) resolved.push({ step: s, branch: 'success' });
-  });
-  if (resolved.length === 0) return null;
-  resolved.sort((a, b) => b.step.statusEventOrder - a.step.statusEventOrder);
-  const latest = resolved[0];
+export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({
+  goals,
+  onChange,
+  readOnly = false,
+  isExpanded = true,
+  onToggle,
+  currentDay = 1,
+  currentTimeOfDay = 'day',
+  onEnhanceField,
+  enhancingField,
+  hasError,
+}) => {
+  const displayGoals = goals.length === 0 ? [{
+    id: uid('sgoal'),
+    title: '',
+    desiredOutcome: '',
+    steps: [],
+    flexibility: 'normal' as GoalFlexibility,
+    createdAt: now(),
+    updatedAt: now()
+  }] : goals;
 
-  if (latest.step.status === 'succeeded' && latest.branch === 'fail') {
-    const target = successBranch.steps.find(s => s.statusEventOrder === 0);
-    if (target) return { sourceId: latest.step.id, sourceBranch: 'fail', targetId: target.id, targetBranch: 'success' };
-  }
-  if ((latest.step.status === 'failed' || latest.step.status === 'deviated') && latest.branch === 'success') {
-    const target = failBranch.steps.find(s => s.statusEventOrder === 0);
-    if (target) return { sourceId: latest.step.id, sourceBranch: 'success', targetId: target.id, targetBranch: 'fail' };
-  }
-  return null;
-}
+  const sortedGoals = [...displayGoals].sort((a, b) => calculateProgress(b) - calculateProgress(a));
 
-// ── Component ──
-
-export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onChange, onEnhanceField, enhancingField, hasError }) => {
-  const migratedGoals = React.useMemo(() => goals.map(migrateGoalToBranches), [goals]);
-
-  // Auto-populate one blank story arc if none exist
   React.useEffect(() => {
-    if (goals.length === 0) {
-      onChange([{
-        id: uid('sgoal'),
-        title: '',
-        desiredOutcome: '',
-        steps: [],
-        flexibility: 'normal',
-        mode: 'simple',
-        branches: {},
-        linkedPhases: [],
-        statusEventCounter: 0,
-        createdAt: now(),
-        updatedAt: now(),
-      }]);
+    if (goals.length === 0 && displayGoals.length === 1) {
+      onChange(displayGoals);
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
+
+  const isViewMode = !isExpanded || readOnly;
+  const isEditMode = isExpanded && !readOnly;
 
   const addGoal = () => {
     const newGoal: StoryGoal = {
       id: uid('sgoal'),
       title: '',
       desiredOutcome: '',
-      steps: [],
       flexibility: 'normal',
-      mode: 'simple',
-      branches: {},
-      linkedPhases: [],
-      statusEventCounter: 0,
+      steps: [],
       createdAt: now(),
-      updatedAt: now(),
+      updatedAt: now()
     };
     onChange([...goals, newGoal]);
   };
 
   const updateGoal = (id: string, patch: Partial<StoryGoal>) => {
-    onChange(migratedGoals.map(g => g.id === id ? { ...g, ...patch, updatedAt: now() } : g));
+    onChange(goals.map(g => g.id === id ? { ...g, ...patch, updatedAt: now() } : g));
   };
 
   const deleteGoal = (id: string) => {
-    onChange(migratedGoals.filter(g => g.id !== id));
+    onChange(goals.filter(g => g.id !== id));
   };
 
-  const updateBranch = (goalId: string, type: 'fail' | 'success', patch: Partial<ArcBranch>) => {
-    const goal = migratedGoals.find(g => g.id === goalId);
+  const addStep = (goalId: string) => {
+    const goal = goals.find(g => g.id === goalId);
     if (!goal) return;
-    const branches = goal.branches || {};
-    const current = ensureBranch(branches[type], type);
+    const newStep: GoalStep = { id: uid('step'), description: '', completed: false };
+    updateGoal(goalId, { steps: [...(goal.steps || []), newStep] });
+  };
+
+  const updateStep = (goalId: string, stepId: string, patch: Partial<GoalStep>) => {
+    const goal = goals.find(g => g.id === goalId);
+    if (!goal) return;
     updateGoal(goalId, {
-      branches: { ...branches, [type]: { ...current, ...patch } },
+      steps: (goal.steps || []).map(s => s.id === stepId ? { ...s, ...patch } : s)
     });
   };
 
-  const addStep = (goalId: string, type: 'fail' | 'success') => {
-    const goal = migratedGoals.find(g => g.id === goalId);
+  const deleteStep = (goalId: string, stepId: string) => {
+    const goal = goals.find(g => g.id === goalId);
     if (!goal) return;
-    const branch = ensureBranch(goal.branches?.[type], type);
-    const newStep: ArcStep = { id: uid('astep'), description: '', status: 'pending', statusEventOrder: 0 };
-    updateBranch(goalId, type, { steps: [...branch.steps, newStep] });
+    updateGoal(goalId, { steps: (goal.steps || []).filter(s => s.id !== stepId) });
   };
 
-  const updateStep = (goalId: string, type: 'fail' | 'success', stepId: string, patch: Partial<ArcStep>) => {
-    const goal = migratedGoals.find(g => g.id === goalId);
+  const toggleStep = (goalId: string, stepId: string) => {
+    const goal = goals.find(g => g.id === goalId);
     if (!goal) return;
-    const branch = ensureBranch(goal.branches?.[type], type);
-    updateBranch(goalId, type, {
-      steps: branch.steps.map(s => s.id === stepId ? { ...s, ...patch } : s),
-    });
-  };
-
-  const deleteStep = (goalId: string, type: 'fail' | 'success', stepId: string) => {
-    const goal = migratedGoals.find(g => g.id === goalId);
-    if (!goal) return;
-    const branch = ensureBranch(goal.branches?.[type], type);
-    updateBranch(goalId, type, { steps: branch.steps.filter(s => s.id !== stepId) });
-  };
-
-  const toggleStatus = (goalId: string, type: 'fail' | 'success', stepId: string, targetStatus: StepStatus) => {
-    const goal = migratedGoals.find(g => g.id === goalId);
-    if (!goal) return;
-    const branches = goal.branches || {};
-    const branch = ensureBranch(branches[type], type);
-    const step = branch.steps.find(s => s.id === stepId);
+    const step = (goal.steps || []).find(s => s.id === stepId);
     if (!step) return;
-    const newStatus = step.status === targetStatus ? 'pending' : targetStatus;
-    const counter = (goal.statusEventCounter || 0) + 1;
-    const updatedSteps = branch.steps.map(s =>
-      s.id === stepId
-        ? { ...s, status: newStatus, statusEventOrder: newStatus !== 'pending' ? counter : 0, completedAt: newStatus === 'succeeded' ? now() : undefined }
-        : s
-    );
-    
-    let updatedBranches = { ...branches, [type]: { ...branch, steps: updatedSteps } };
+    updateStep(goalId, stepId, {
+      completed: !step.completed,
+      completedAt: !step.completed ? now() : undefined
+    });
+  };
 
-    // Clone-on-recovery: when a recovery (fail branch) step succeeds, clone the failed/deviated success step
-    if (type === 'fail' && newStatus === 'succeeded') {
-      const successBranch = ensureBranch(updatedBranches.success, 'success');
-      // Find the most recently failed/deviated success step
-      const failedSuccessStep = [...successBranch.steps]
-        .filter(s => s.status === 'failed' || s.status === 'deviated')
-        .sort((a, b) => b.statusEventOrder - a.statusEventOrder)[0];
-      
-      if (failedSuccessStep && !failedSuccessStep.permanentlyFailed) {
-        const currentDay = 0; // TODO: pass from conversation context
-        const existingClone = successBranch.steps.find(s => s.retryOf === failedSuccessStep.id && s.failedOnDay === currentDay);
-        
-        if (!existingClone) {
-          const currentRetryCount = failedSuccessStep.retryCount || 0;
-          const maxRetries = goal.flexibility === 'rigid' ? Infinity : goal.flexibility === 'flexible' ? 2 : 4;
-          
-          if (currentRetryCount < maxRetries) {
-            const clonedStep: ArcStep = {
-              id: uid('astep'),
-              description: failedSuccessStep.description,
-              status: 'pending',
-              statusEventOrder: 0,
-              retryOf: failedSuccessStep.id,
-              retryCount: currentRetryCount + 1,
-              failedOnDay: currentDay,
-            };
-            const insertIdx = successBranch.steps.indexOf(failedSuccessStep) + 1;
-            const newSuccessSteps = [...successBranch.steps];
-            newSuccessSteps.splice(insertIdx, 0, clonedStep);
-            updatedBranches = { ...updatedBranches, success: { ...successBranch, steps: newSuccessSteps } };
-          } else {
-            // Max retries reached - mark as permanently failed
-            updatedBranches = {
-              ...updatedBranches,
-              success: {
-                ...successBranch,
-                steps: successBranch.steps.map(s => s.id === failedSuccessStep.id ? { ...s, permanentlyFailed: true } : s),
-              },
-            };
-          }
-        }
-      }
+  const CollapsedGoalsView = () => {
+    if (goals.length === 0) {
+      return <p className="text-zinc-500 text-sm italic">No story goals defined</p>;
     }
-
-    updateGoal(goalId, {
-      statusEventCounter: counter,
-      branches: updatedBranches,
-    });
-  };
-
-  const addPhase = (goalId: string) => {
-    const goal = migratedGoals.find(g => g.id === goalId);
-    if (!goal) return;
-    const newPhase: ArcPhase = {
-      id: uid('phase'),
-      title: '',
-      desiredOutcome: '',
-      flexibility: 'normal',
-      mode: 'simple',
-      branches: {},
-      statusEventCounter: 0,
-      createdAt: now(),
-      updatedAt: now(),
-    };
-    updateGoal(goalId, { linkedPhases: [...(goal.linkedPhases || []), newPhase] });
-  };
-
-  const updatePhase = (goalId: string, phaseId: string, patch: Partial<ArcPhase>) => {
-    const goal = migratedGoals.find(g => g.id === goalId);
-    if (!goal) return;
-    updateGoal(goalId, {
-      linkedPhases: (goal.linkedPhases || []).map(p => p.id === phaseId ? { ...p, ...patch, updatedAt: now() } : p),
-    });
-  };
-
-  const deletePhase = (goalId: string, phaseId: string) => {
-    const goal = migratedGoals.find(g => g.id === goalId);
-    if (!goal) return;
-    updateGoal(goalId, {
-      linkedPhases: (goal.linkedPhases || []).filter(p => p.id !== phaseId),
-    });
+    return (
+      <div className="space-y-6">
+        {goals.map((goal) => {
+          const progress = calculateProgress(goal);
+          return (
+            <div key={goal.id} className="grid grid-cols-12 gap-4">
+              <div className="col-span-9 space-y-4">
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block">Goal Name</span>
+                  <p className="text-sm text-zinc-400">{goal.title || 'Untitled goal'}</p>
+                </div>
+                {goal.desiredOutcome && (
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block">Desired Outcome</span>
+                    <p className="text-sm text-zinc-400">{goal.desiredOutcome}</p>
+                  </div>
+                )}
+                {(goal.steps?.length || 0) > 0 && (
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block">Steps</span>
+                    <p className="text-sm text-zinc-400">
+                      {goal.steps!.filter(s => s.completed).length}/{goal.steps!.length} completed
+                    </p>
+                  </div>
+                )}
+              </div>
+              <div className="col-span-3 flex items-start justify-center pt-2">
+                <CircularProgress value={progress} size={64} strokeWidth={5} variant="dark" />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
   const SparkleButton: React.FC<{ fieldKey: string; onClick: () => void }> = ({ fieldKey, onClick }) => {
@@ -277,25 +190,13 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
         disabled={enhancingField !== null}
         title="Enhance with AI"
         className={cn(
-          "relative flex items-center justify-center flex-shrink-0 rounded-lg p-[6px] overflow-hidden transition-all text-cyan-200",
-          enhancingField === fieldKey
-            ? "animate-pulse cursor-wait"
-            : enhancingField !== null
-            ? "opacity-50 cursor-not-allowed"
-            : "hover:brightness-125"
+          "relative flex items-center justify-center flex-shrink-0 rounded-lg p-[6px] overflow-hidden text-cyan-200 transition-all",
+          enhancingField === fieldKey ? "animate-pulse cursor-wait" : "hover:brightness-125"
         )}
         style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.40)' }}
       >
-        <span
-          aria-hidden
-          className="absolute inset-0 rounded-lg pointer-events-none"
-          style={{ background: 'linear-gradient(90deg, rgba(255,255,255,0.34) 0%, rgba(34,184,200,0.62) 18%, rgba(255,255,255,0.22) 44%, rgba(109,94,247,0.64) 78%, rgba(255,255,255,0.28) 100%)' }}
-        />
-        <span
-          aria-hidden
-          className="absolute rounded-[6px] pointer-events-none"
-          style={{ inset: '1.5px', background: 'linear-gradient(90deg, rgba(34,184,200,0.22), rgba(109,94,247,0.22)), #2B2D33' }}
-        />
+        <span aria-hidden className="absolute inset-0 rounded-lg pointer-events-none" style={{ background: 'linear-gradient(90deg, rgba(255,255,255,0.34) 0%, rgba(34,184,200,0.62) 18%, rgba(255,255,255,0.22) 44%, rgba(109,94,247,0.64) 78%, rgba(255,255,255,0.28) 100%)' }} />
+        <span aria-hidden className="absolute rounded-[6px] pointer-events-none" style={{ inset: '1.5px', background: 'linear-gradient(90deg, rgba(34,184,200,0.22), rgba(109,94,247,0.22)), #2B2D33' }} />
         <Sparkles size={13} className="relative z-10" style={{ filter: 'drop-shadow(0 0 6px rgba(34,184,200,0.50))' }} />
       </button>
     );
@@ -303,203 +204,167 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({ goals, onC
 
   return (
     <section data-publish-error={hasError || undefined}>
-      {/* Outer shell */}
-      <div className={cn("bg-[#2a2a2f] rounded-[24px] overflow-hidden", hasError ? 'border border-red-500 ring-2 ring-red-500 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]' : 'shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]')}>
-        {/* Header */}
-        <div className="relative overflow-hidden bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 px-5 py-3 flex items-center gap-3 shadow-lg">
-          <div className="absolute inset-0 z-0 bg-gradient-to-tr from-white/10 to-transparent opacity-40" style={{ height: '60%' }} />
-          <GitBranch className="w-4 h-4 text-white relative z-[1]" />
-          <h2 className="text-white text-xl font-bold tracking-[-0.015em] relative z-[1] m-0">
-            Story Arcs
-          </h2>
+      <div className={cn("w-full bg-[#2a2a2f] rounded-[24px] overflow-hidden", hasError ? 'border border-red-500 ring-2 ring-red-500 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]' : 'shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]')}>
+        {/* Section Header */}
+        <div className="relative bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 px-5 py-3 flex items-center justify-between shadow-lg overflow-hidden">
+          <div className="absolute inset-x-0 top-0 h-[60%] bg-gradient-to-b from-white/[0.12] to-transparent pointer-events-none" />
+          <h2 className="text-white text-xl font-bold tracking-[-0.015em] relative z-[1]">Story Goals</h2>
+          {onToggle && (
+            <button onClick={onToggle} className="relative z-[1] text-white/70 hover:text-white transition-colors p-1 rounded-md hover:bg-ghost-white">
+              {isExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronUp className="h-5 w-5" />}
+            </button>
+          )}
         </div>
 
-        {/* Content */}
-        <div className="p-5 space-y-6">
-          {migratedGoals.map((goal) => {
-            const mode = goal.mode || 'simple';
-            const branches = goal.branches || {};
-            const failBranch = ensureBranch(branches.fail, 'fail');
-            const successBranch = ensureBranch(branches.success, 'success');
-            const progress = calculateArcProgress(branches);
+        {/* Collapsed view */}
+        {!isExpanded && (
+          <div className="p-5">
+            <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
+              <CollapsedGoalsView />
+            </div>
+          </div>
+        )}
 
-            return (
-              <div key={goal.id}>
-                {/* Single arc container */}
-                <div className="p-5 pb-6 bg-[#3a3a3f]/30 rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)] relative">
-                  {/* Row 1: Goal Name + Delete + Progress Ring */}
+        {/* Expanded Goals */}
+        {isExpanded && (
+          <div className="p-5 space-y-4">
+            {sortedGoals.map((goal) => {
+              const progress = calculateProgress(goal);
+              return (
+                <div key={goal.id} className={cn("p-5 pb-6 bg-[#2e2e33] rounded-2xl relative shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]")}>
+
+                  {/* Row 1: Goal Name + Progress Ring */}
                   <div className="flex items-start gap-4">
                     <div className="flex-1">
-                      <label className={cn("text-[10px] font-black uppercase tracking-widest block mb-1", hasError && !goal.title.trim() ? 'text-red-500' : 'text-zinc-400')}>Story Arc Title</label>
-                      <AutoResizeTextarea
-                        value={goal.title}
-                        onChange={(v) => updateGoal(goal.id, { title: v })}
-                        placeholder="Enter story arc title..."
-                        className={cn("px-3 py-2 text-sm bg-[#1c1c1f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500", hasError && !goal.title.trim() ? 'border border-red-500 ring-2 ring-red-500' : 'border border-black/35')}
-                      />
-                      {hasError && !goal.title.trim() && (
-                        <p className="text-sm text-red-500 font-medium mt-1">Story arc title is required</p>
+                      <label className={cn("text-[10px] font-bold text-zinc-400 uppercase tracking-widest block mb-1", hasError && !(goal.title || '').trim() && 'text-red-500')}>Goal Name</label>
+                      {isEditMode ? (
+                        <AutoResizeTextarea value={goal.title} onChange={(v) => updateGoal(goal.id, { title: v })} placeholder="Enter goal name..." className={cn("px-3 py-2 text-sm bg-[#1c1c1f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500", hasError && !(goal.title || '').trim() ? 'border border-red-500 ring-2 ring-red-500' : 'border border-black/35')} />
+                      ) : (
+                        <h3 className="text-lg font-bold text-white mt-0.5">{goal.title || 'No goal name set'}</h3>
+                      )}
+                      {hasError && !(goal.title || '').trim() && (
+                        <p className="text-sm text-red-500 font-medium mt-1">Goal title is required</p>
                       )}
                     </div>
 
-                    {/* Delete button */}
-                    <button
-                      tabIndex={-1}
-                      onClick={() => deleteGoal(goal.id)}
-                      className="w-[30px] h-[30px] rounded-[10px] border border-red-500/50 bg-transparent text-red-300 flex items-center justify-center cursor-pointer mt-7 shrink-0"
-                      title="Delete arc"
-                    >
-                      <Trash2 size={15} />
-                    </button>
-
-                    {/* Progress ring */}
+                    {/* Progress Ring */}
                     <div className="flex flex-col items-center shrink-0 mt-1">
                       <div className="w-20 h-20 rounded-full border-[8px] border-[rgba(51,80,125,0.85)] flex items-center justify-center">
                         <span className="text-lg font-bold text-slate-300">
                           {progress}%
                         </span>
                       </div>
+                      <p className="mt-2 text-[9px] font-black text-zinc-400 uppercase tracking-[0.2em]">
+                        {(goal.steps?.length || 0) > 0 ? `${goal.steps!.filter(s => s.completed).length}/${goal.steps!.length} Steps` : 'Progress'}
+                      </p>
                     </div>
                   </div>
 
                   {/* Full width: Desired Outcome */}
                   <div className="mt-4">
                     <div className="flex items-center gap-2 mb-1">
-                      <label className={cn("text-[10px] font-black uppercase tracking-widest", hasError && !goal.desiredOutcome.trim() ? 'text-red-500' : 'text-zinc-400')}>Desired Outcome</label>
-                      <SparkleButton
-                        fieldKey={`story_outcome_${goal.id}`}
-                        onClick={() => onEnhanceField?.(
-                          `story_outcome_${goal.id}`,
-                          () => goal.desiredOutcome,
-                          (v) => updateGoal(goal.id, { desiredOutcome: v }),
-                          `Desired Outcome for story arc: ${goal.title || 'Untitled'}`
-                        )}
-                      />
+                      <label className={cn("text-[10px] font-bold text-zinc-400 uppercase tracking-widest", hasError && !(goal.desiredOutcome || '').trim() && 'text-red-500')}>Desired Outcome</label>
+                      {isEditMode && (
+                        <SparkleButton
+                          fieldKey={`story_outcome_${goal.id}`}
+                          onClick={() => onEnhanceField?.(
+                            `story_outcome_${goal.id}`,
+                            () => goal.desiredOutcome,
+                            (v) => updateGoal(goal.id, { desiredOutcome: v }),
+                            `Desired Outcome for story goal: ${goal.title || 'Untitled'}`
+                          )}
+                        />
+                      )}
                     </div>
-                    <AutoResizeTextarea
-                      value={goal.desiredOutcome}
-                      onChange={(v) => updateGoal(goal.id, { desiredOutcome: v })}
-                      placeholder="What success looks like..."
-                      rows={2}
-                      className={cn("px-3 py-2 text-sm bg-[#1c1c1f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500", hasError && !goal.desiredOutcome.trim() ? 'border border-red-500 ring-2 ring-red-500' : 'border border-black/35')}
-                    />
-                    {hasError && !goal.desiredOutcome.trim() && (
+                    {isEditMode ? (
+                      <AutoResizeTextarea value={goal.desiredOutcome} onChange={(v) => updateGoal(goal.id, { desiredOutcome: v })} placeholder="What success looks like..." className={cn("px-3 py-2 text-sm bg-[#1c1c1f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500", hasError && !(goal.desiredOutcome || '').trim() ? 'border border-red-500 ring-2 ring-red-500' : 'border border-black/35')} rows={2} />
+                    ) : (
+                      <p className="text-sm text-zinc-300 mt-0.5">{goal.desiredOutcome || 'No outcome defined'}</p>
+                    )}
+                    {hasError && !(goal.desiredOutcome || '').trim() && (
                       <p className="text-sm text-red-500 font-medium mt-1">Desired outcome is required</p>
                     )}
                   </div>
 
-                  {/* Full width: Guidance Strength */}
-                  <GuidanceStrengthSlider
-                    value={goal.flexibility}
-                    onChange={(flexibility) => updateGoal(goal.id, { flexibility })}
-                  />
-
-                  {/* Steps Section */}
-                  <div className="mt-4 pt-5 border-t border-white/10">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <CheckSquare size={14} className="text-blue-500" />
-                        <h4 className="text-[10px] font-black text-white uppercase tracking-[0.2em] m-0">Steps</h4>
-                      </div>
-                      <ArcModeToggle mode={mode} onChange={(m) => {
-                        const patch: Partial<StoryGoal> = { mode: m };
-                        if (m === 'advanced') {
-                          const fb = ensureBranch(branches.fail, 'fail');
-                          const sb = ensureBranch(branches.success, 'success');
-                          const newFail = fb.steps.length === 0
-                            ? { ...fb, steps: [{ id: uid('astep'), description: '', status: 'pending' as const, statusEventOrder: 0 }] }
-                            : fb;
-                          const newSuccess = sb.steps.length === 0
-                            ? { ...sb, steps: [{ id: uid('astep'), description: '', status: 'pending' as const, statusEventOrder: 0 }] }
-                            : sb;
-                          patch.branches = { ...branches, fail: newFail, success: newSuccess };
-                        }
-                        updateGoal(goal.id, patch);
-                      }} />
-                    </div>
-
-                    <ArcConnectors type="split" />
-
-                    {(() => {
-                      const flow = computeActiveFlow(failBranch, successBranch);
-                      const containerRef = React.createRef<HTMLDivElement>();
-                      return (
-                        <div ref={containerRef} className="relative mt-3">
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '16px' }}>
-                            <ArcBranchLane
-                              branch={failBranch}
-                              type="fail"
-                              flexibility={goal.flexibility}
-                              isSimpleMode={mode === 'simple'}
-                              onUpdateTrigger={(d) => updateBranch(goal.id, 'fail', { triggerDescription: d })}
-                              onAddStep={() => addStep(goal.id, 'fail')}
-                              onUpdateStep={(id, patch) => updateStep(goal.id, 'fail', id, patch)}
-                              onDeleteStep={(id) => deleteStep(goal.id, 'fail', id)}
-                              onToggleStatus={(id, status) => toggleStatus(goal.id, 'fail', id, status)}
-                            />
-                            <ArcBranchLane
-                              branch={successBranch}
-                              type="success"
-                              flexibility={goal.flexibility}
-                              isSimpleMode={false}
-                              onUpdateTrigger={(d) => updateBranch(goal.id, 'success', { triggerDescription: d })}
-                              onAddStep={() => addStep(goal.id, 'success')}
-                              onUpdateStep={(id, patch) => updateStep(goal.id, 'success', id, patch)}
-                              onDeleteStep={(id) => deleteStep(goal.id, 'success', id)}
-                              onToggleStatus={(id, status) => toggleStatus(goal.id, 'success', id, status)}
-                            />
-                          </div>
-                          {flow && (
-                            <ArcFlowConnector
-                              containerRef={containerRef}
-                              sourceStepId={flow.sourceId}
-                              targetStepId={flow.targetId}
-                            />
-                          )}
-                        </div>
-                      );
-                    })()}
-
-                    {(goal.linkedPhases || []).length > 0 && <ArcConnectors type="merge" />}
-                  </div>
-
-                  {/* Linked Phases - INSIDE the same container */}
-                  {(goal.linkedPhases || []).map((phase, idx) => (
-                    <ArcPhaseCard
-                      key={phase.id}
-                      phase={phase}
-                      phaseNumber={idx + 2}
-                      onUpdate={(patch) => updatePhase(goal.id, phase.id, patch)}
-                      onDelete={() => deletePhase(goal.id, phase.id)}
-                      onEnhanceField={onEnhanceField}
-                      enhancingField={enhancingField}
-                      hasNextPhase={idx < (goal.linkedPhases || []).length - 1}
+                  {/* Full width: Guidance Strength Slider */}
+                  {isEditMode && (
+                    <GuidanceStrengthSlider
+                      value={goal.flexibility || 'normal'}
+                      onChange={(flexibility) => updateGoal(goal.id, { flexibility })}
                     />
-                  ))}
+                  )}
 
-                  {/* Add Next Phase button */}
-                  <button
-                    type="button"
-                    onClick={() => addPhase(goal.id)}
-                    className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5 mt-5"
-                  >
-                    <Plus className="w-5 h-5" />
-                    Add Next Phase
-                  </button>
+                  {/* Full width: Steps Section */}
+                  <div className="mt-4 pt-4 border-t border-black/35">
+                    <h4 className="text-[10px] font-bold text-white uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
+                      <CheckSquare className="h-4 w-4 text-blue-500" />
+                      Steps
+                    </h4>
+
+                    {(goal.steps && goal.steps.length > 0) ? (
+                      <div className="space-y-2">
+                        {goal.steps.map((step, stepIdx) => (
+                          <div key={step.id} className="flex items-start gap-3">
+                            <Checkbox
+                              checked={step.completed}
+                              onCheckedChange={() => isEditMode ? toggleStep(goal.id, step.id) : undefined}
+                              disabled={!isEditMode}
+                              className="mt-2.5 border-zinc-600 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
+                            />
+                            {isEditMode ? (
+                              <>
+                                <AutoResizeTextarea
+                                  value={step.description}
+                                  onChange={(v) => updateStep(goal.id, step.id, { description: v })}
+                                  placeholder={`Step ${stepIdx + 1}: Describe this step...`}
+                                  className={cn("flex-1 px-3 py-2 bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500", step.completed && "line-through text-zinc-500")}
+                                />
+                                <SparkleButton
+                                  fieldKey={`story_step_${step.id}`}
+                                  onClick={() => onEnhanceField?.(
+                                    `story_step_${step.id}`,
+                                    () => step.description,
+                                    (v) => updateStep(goal.id, step.id, { description: v }),
+                                    `Step for story goal "${goal.title || 'Untitled'}"`
+                                  )}
+                                />
+                              </>
+                            ) : (
+                              <span className={cn("text-sm text-zinc-200 pt-2", step.completed && "line-through text-zinc-500")}>
+                                {step.description || 'No description'}
+                              </span>
+                            )}
+                            {isEditMode && (
+                              <button tabIndex={-1} onClick={() => deleteStep(goal.id, step.id)} className="mt-2 text-red-500 hover:text-red-400 transition-colors p-1">
+                                <X className="h-4 w-4" />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-zinc-500 text-sm italic">No steps defined yet</p>
+                    )}
+
+                    {isEditMode && (
+                      <button onClick={() => addStep(goal.id)} className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5 mt-3">
+                        <Plus className="h-4 w-4" />
+                        Add Step
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
 
-          {/* Add Story Arc */}
-          <button
-            onClick={addGoal}
-            className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5"
-          >
-            <Plus className="w-5 h-5" />
-            Add New Story Arc
-          </button>
-        </div>
+            {isEditMode && (
+              <button onClick={addGoal} className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5">
+                <Plus className="w-4 h-4" />
+                Add New Story Goal
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </section>
   );
