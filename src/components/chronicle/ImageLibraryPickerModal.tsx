@@ -10,7 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { FolderOpen, Image as ImageIcon, Loader2, Check, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
-import type { ImageFolder, LibraryImage } from './ImageLibraryTab';
+import type { ImageFolder, LibraryImage } from './image-library-types';
 
 interface ImageLibraryPickerModalProps {
   isOpen: boolean;
