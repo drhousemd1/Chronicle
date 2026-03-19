@@ -86,7 +86,87 @@ const sg = {
 
 const ALL_SWATCHES: SwatchOption[] = [];
 
-/* ═══════════════════════ MAIN COMPONENT ═══════════════════════ */
+/* ═══════════════════════ ARC PHASE PREVIEW ═══════════════════════ */
+const SAMPLE_ARC_PHASE: ArcPhase = {
+  id: 'sg-phase-1',
+  title: 'Infiltrate the Obsidian Citadel',
+  desiredOutcome: 'The party gains access to the inner sanctum and retrieves the Shard of Eternity before the eclipse.',
+  flexibility: 'normal',
+  mode: 'advanced',
+  statusEventCounter: 3,
+  createdAt: Date.now(),
+  updatedAt: Date.now(),
+  branches: {
+    fail: {
+      id: 'sg-fail-branch',
+      type: 'fail',
+      triggerDescription: 'The party is detected by the citadel guards or triggers the arcane ward system.',
+      steps: [
+        { id: 'sg-fstep-1', description: 'Regroup in the sewers beneath the outer wall', status: 'failed', statusEventOrder: 1 },
+      ],
+    },
+    success: {
+      id: 'sg-success-branch',
+      type: 'success',
+      triggerDescription: 'The party bypasses the outer defenses undetected using the stolen guard rotation schedule.',
+      steps: [
+        { id: 'sg-sstep-1', description: 'Navigate the trapped corridor using the cipher key', status: 'succeeded', statusEventOrder: 2, completedAt: 3 },
+        { id: 'sg-sstep-2', description: 'Disable the ward on the inner sanctum door', status: 'pending', statusEventOrder: 0 },
+      ],
+    },
+  },
+};
+
+const ArcPhaseCardPreview: React.FC = () => {
+  const [phase, setPhase] = useState<ArcPhase>(SAMPLE_ARC_PHASE);
+
+  const handleUpdate = useCallback((patch: Partial<ArcPhase>) => {
+    setPhase(prev => ({ ...prev, ...patch }));
+  }, []);
+
+  const noop = useCallback(() => {}, []);
+
+  return (
+    <div style={{
+      background: sg.surface,
+      borderRadius: 14,
+      boxShadow: sg.shadow,
+      border: `1px solid ${sg.border}`,
+      overflow: 'hidden',
+    }}>
+      {/* Card header — matches the style of the iframe cards */}
+      <div style={{
+        padding: '18px 24px 14px',
+        borderBottom: `1px solid ${sg.border}`,
+      }}>
+        <span style={{ fontSize: 17, fontWeight: 800, color: sg.text }}>Story Arc Phase</span>
+        <span style={{ display: 'block', fontSize: 12, color: sg.muted, marginTop: 2 }}>
+          ArcPhaseCard.tsx — Arc phase goal with branching steps (live component)
+        </span>
+      </div>
+
+      {/* Live preview with dark bg matching the app */}
+      <div style={{
+        background: '#18181b',
+        padding: '32px 24px',
+      }}>
+        <div style={{ maxWidth: 560 }}>
+          <ArcPhaseCard
+            phase={phase}
+            phaseNumber={1}
+            onUpdate={handleUpdate}
+            onDelete={noop}
+            onEnhanceField={noop as any}
+            enhancingField={null}
+            hasNextPhase={true}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
 interface StyleGuideToolProps {
   onRegisterDownload?: (fn: (() => void) | null) => void;
   onRegisterEdits?: (fn: (() => void) | null) => void;
