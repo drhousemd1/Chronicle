@@ -1481,6 +1481,18 @@ const findings: QualityFinding[] = [
         "Save Draft handler calls `supabaseData.saveScenarioWithVerification(...)`.",
       ],
       tags: ["module-data-integrity", "save-flow", "consistency"],
+      status: "fixed",
+      verificationStatus: "verified",
+      verifiedBy: stamp(runIds.data),
+      updatedAt: "2026-03-19T12:00:00Z",
+      expectedBehavior: "Both finalize and draft save paths use the same integrity verification and retry logic.",
+      actualBehavior: "Changed handleSaveWithData in Index.tsx to call saveScenarioWithVerification instead of saveScenario. Both save paths now verify child data counts and auto-retry on mismatch.",
+      comments: [{
+        id: "fix-data-005",
+        author: "ChatGPT Codex",
+        timestamp: "2026-03-19T12:00:00Z",
+        text: "Replaced supabaseData.saveScenario() with supabaseData.saveScenarioWithVerification() in the finalize save handler (Index.tsx line 988). Both draft and finalize saves now share the same verified save pathway.",
+      }],
     },
   ),
   finding(
