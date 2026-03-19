@@ -297,18 +297,6 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
           </div>
 
           <div ref={contentRef} style={{ padding: isNarrow ? '16px' : '24px 42px', display: 'grid', gap: 18 }}>
-            <div
-              style={{
-                background: '#ffffff',
-                border: `1px solid ${sg.border}`,
-                borderRadius: 14,
-                padding: isNarrow ? 16 : 20,
-                color: '#475569',
-                fontSize: 14,
-              }}
-            >
-              This page is intentionally empty so a new baseline can be rebuilt from the current application state.
-            </div>
 
             <iframe
               title="Style Guide Component Example"
