@@ -1403,7 +1403,7 @@ const findings: QualityFinding[] = [
       status: "fixed" as const,
       verificationStatus: "verified" as const,
       updatedAt: scanTimestamp,
-      comments: [{
+      comments: [{ id: "comment-data-004-fix",
         author: "lovable-ai",
         timestamp: scanTimestamp,
         text: "Created save_scenario_atomic SECURITY DEFINER function that accepts JSON payloads for story, characters, codex entries, and scenes. All writes happen in a single transaction — if any part fails, everything rolls back. The frontend saveScenario function now calls this RPC instead of doing individual writes. Auth ownership check is enforced server-side.",
