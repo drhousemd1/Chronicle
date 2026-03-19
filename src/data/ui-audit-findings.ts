@@ -509,12 +509,25 @@ const findings: QualityFinding[] = [
     runIds.functionality,
     {
       status: "fixed",
+      verificationStatus: "verified",
+      verifiedBy: stamp(runIds.functionality),
+      expectedBehavior: "Frontend invocation matches a registered and deployed edge function.",
+      actualBehavior: "Function renamed to evaluate-goal-progress; config entry and frontend invocation aligned.",
       route: "/ (chat_interface tab)",
       evidence: [
         "Invocation found in ChatInterfaceTab.tsx around line 1875.",
         "Function directory exists, but compare scan shows it missing from config entries.",
       ],
       tags: ["module-functionality", "edge-functions"],
+      updatedAt: "2026-03-18T22:00:00.000Z",
+      comments: [
+        {
+          id: "fix-note-func-001",
+          author: "ChatGPT Codex",
+          timestamp: "2026-03-18T22:00:00.000Z",
+          text: "This finding is stale. The evaluate-arc-progress function was renamed to evaluate-goal-progress during the Story Goals refactor (replaced branching arc system with linear checkbox goals). The frontend now invokes evaluate-goal-progress, and the config.toml entry was added under that name. No code references to evaluate-arc-progress remain.",
+        },
+      ],
     },
   ),
   finding(
