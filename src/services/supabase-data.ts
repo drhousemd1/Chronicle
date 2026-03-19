@@ -503,7 +503,7 @@ export async function saveScenario(
 
   // Upsert scenario
   const { error: scenarioError } = await supabase
-    .from('stories' as any)
+    .from('stories')
     .upsert({
       id,
       user_id: userId,
