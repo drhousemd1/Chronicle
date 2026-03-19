@@ -985,7 +985,7 @@ const IndexContent = () => {
         tags: ["Custom"]
       };
 
-      await supabaseData.saveScenario(scenarioIdToSave, dataToSave, metadata, user.id);
+      await supabaseData.saveScenarioWithVerification(scenarioIdToSave, dataToSave, metadata, user.id);
       
       // Fire-and-forget registry refreshes — save already succeeded, no need to block UI
       supabaseData.fetchMyScenarios(user.id)
