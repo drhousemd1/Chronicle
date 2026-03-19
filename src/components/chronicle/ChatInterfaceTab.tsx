@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { ScenarioData, Character, Conversation, Message, CharacterTraitSection, Scene, TimeOfDay, SideCharacter, CharacterSessionState, Memory, WorldCore, ArcStep, ArcBranch, StoryGoal, GoalFlexibility, ResistanceEvent } from '../../types';
+import { ScenarioData, Character, Conversation, Message, CharacterTraitSection, Scene, TimeOfDay, SideCharacter, CharacterSessionState, Memory, WorldCore, StoryGoal, GoalFlexibility } from '../../types';
 import { Button, TextArea } from './UI';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
