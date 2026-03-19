@@ -778,17 +778,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       
       // Build story goals summary
       const storyGoals = (effectiveWorldCore.storyGoals || []).map((g: StoryGoal) => {
-        // Find current pending step across steps and branches
-        const allSteps: Array<{ status?: string; description: string }> = [
-          ...(g.steps || []),
-          ...(g.branches?.fail?.steps || []),
-          ...(g.branches?.success?.steps || []),
-          ...(g.linkedPhases || []).flatMap(p => [
-            ...(p.branches?.fail?.steps || []),
-            ...(p.branches?.success?.steps || [])
-          ])
-        ];
-        const pendingStep = allSteps.find((s: ArcStep) => s.status === 'pending');
+        const pendingStep = (g.steps || []).find(s => !s.completed);
         return {
           description: g.title || g.desiredOutcome || '',
           flexibility: g.flexibility || 'normal',
