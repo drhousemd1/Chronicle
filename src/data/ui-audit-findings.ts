@@ -620,7 +620,7 @@ const findings: QualityFinding[] = [
       actualBehavior: "DraftsModal.tsx deleted. Comment referencing it in Index.tsx removed.",
       comments: [{
         id: "fix-orphan-002",
-        author: codexAgent,
+        author: "ChatGPT Codex",
         timestamp: "2026-03-19T04:30:00Z",
         text: "Deleted src/components/chronicle/DraftsModal.tsx and removed the '// DraftsModal removed' comment from Index.tsx. Drafts are fully DB-backed now; the old localStorage-based DraftsModal was dead code.",
       }],
