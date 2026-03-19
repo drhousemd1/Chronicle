@@ -612,6 +612,18 @@ const findings: QualityFinding[] = [
         "No active render path imports DraftsModal.",
       ],
       tags: ["module-orphan-code", "drafts"],
+      status: "fixed",
+      verificationStatus: "verified",
+      verifiedBy: { ...codexAgent, timestamp: "2026-03-19T04:30:00Z" },
+      updatedAt: "2026-03-19T04:30:00Z",
+      expectedBehavior: "No orphaned modal files with commented-out imports should remain.",
+      actualBehavior: "DraftsModal.tsx deleted. Comment referencing it in Index.tsx removed.",
+      comments: [{
+        id: "fix-orphan-002",
+        author: codexAgent,
+        timestamp: "2026-03-19T04:30:00Z",
+        text: "Deleted src/components/chronicle/DraftsModal.tsx and removed the '// DraftsModal removed' comment from Index.tsx. Drafts are fully DB-backed now; the old localStorage-based DraftsModal was dead code.",
+      }],
     },
   ),
   finding(
