@@ -614,7 +614,7 @@ const findings: QualityFinding[] = [
       tags: ["module-orphan-code", "drafts"],
       status: "fixed",
       verificationStatus: "verified",
-      verifiedBy: { ...codexAgent, timestamp: "2026-03-19T04:30:00Z" },
+      verifiedBy: stamp(runIds.orphan),
       updatedAt: "2026-03-19T04:30:00Z",
       expectedBehavior: "No orphaned modal files with commented-out imports should remain.",
       actualBehavior: "DraftsModal.tsx deleted. Comment referencing it in Index.tsx removed.",
