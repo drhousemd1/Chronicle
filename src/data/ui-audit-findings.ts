@@ -115,6 +115,7 @@ const findings: QualityFinding[] = [
     "small",
     runIds.security,
     {
+      status: "fixed",
       route: "edge function",
       component: "sync-guide-to-github",
       evidence: [
@@ -141,6 +142,7 @@ const findings: QualityFinding[] = [
     "small",
     runIds.security,
     {
+      status: "fixed",
       evidence: [
         "Function directory count = 13; config entry count = 10.",
         "Missing entries: evaluate-arc-progress, migrate-base64-images, sync-guide-to-github.",
@@ -441,6 +443,7 @@ const findings: QualityFinding[] = [
     "small",
     runIds.data,
     {
+      status: "fixed",
       evidence: [
         "Index.tsx line with action: localStorage.clear(); location.reload();",
       ],
@@ -466,6 +469,7 @@ const findings: QualityFinding[] = [
     "small",
     runIds.functionality,
     {
+      status: "fixed",
       route: "/ (chat_interface tab)",
       evidence: [
         "Invocation found in ChatInterfaceTab.tsx around line 1875.",
