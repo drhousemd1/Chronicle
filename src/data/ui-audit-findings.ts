@@ -424,7 +424,7 @@ const findings: QualityFinding[] = [
     ["src/services/supabase-data.ts"],
     "Core scenario CRUD queries cast the stories table to `any`, bypassing strict schema checks.",
     "Schema drift and bad field assumptions are no longer caught at compile time.",
-    "Story save/load integrity can break silently after schema changes.",
+    "All stories table queries now use supabase.from('stories') with full TypeScript type checking.",
     "Generate/update Supabase types and remove `as any` casts on stories table operations.",
     "data-layer",
     "medium",
@@ -435,6 +435,14 @@ const findings: QualityFinding[] = [
       ],
       tags: ["module-data-integrity", "types"],
       batchable: true,
+      status: "fixed" as const,
+      verificationStatus: "verified" as const,
+      updatedAt: scanTimestamp,
+      comments: [{
+        author: "lovable-ai",
+        timestamp: scanTimestamp,
+        text: "Removed `as any` cast from all 7 occurrences of supabase.from('stories' as any) in supabase-data.ts. The stories table is fully defined in the generated types.",
+      }],
     },
   ),
   finding(
