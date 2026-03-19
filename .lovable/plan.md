@@ -1,53 +1,52 @@
 
-# Sandbox Feature Transfer — Master Tracker
+Replace the current Story Arc style-guide card with a source-faithful implementation instead of trying to manually recreate it.
 
-## Source Documents
-- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
-- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
+1. Remove the fake static Story Arc replica
+- Delete the hand-built Story Arc block from `public/style-guide-component-example.html`.
+- Keep the existing Physical Appearance and Chat Settings cards as-is for now.
+- Do not touch app colors, typography, or the real Story Arc component styles.
 
-## Features Being Transferred
-| ID | Feature | Status |
-|----|---------|--------|
-| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
-| B | Story Transfer Library (story-transfer.ts) | ✅ |
-| A | UI Audit System (schema, utils, findings, page) | 🔄 |
-| B | Story Export/Import Modals | ✅ |
-| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
-| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
-| - | StyleGuideTool.tsx audit button | ⬜ |
-| - | App.tsx route wiring | ⬜ |
-| - | Index.tsx full wiring | ⬜ |
+2. Stop using copy-by-eye for the arc card
+- The current mismatch is happening because the style guide card is handwritten HTML inside an iframe.
+- A 1:1 Story Arc spec cannot be reliable in that format because `ArcPhaseCard` is composed from:
+  - `ArcPhaseCard.tsx`
+  - `ArcBranchLane.tsx`
+  - `GuidanceStrengthSlider.tsx`
+  - `ArcModeToggle.tsx`
+  - `ArcConnectors.tsx`
+  - `ArcFlowConnector.tsx`
+- Those layers, paddings, internal wrappers, state styles, and branch-specific variants need to come from the real component tree.
 
-## Prompt Execution Status
+3. Rebuild the Story Arc entry inside the React style guide tool
+- Add a dedicated Story Arc card directly in `src/components/admin/styleguide/StyleGuideTool.tsx` instead of the standalone HTML file.
+- Render the actual `ArcPhaseCard` component with seeded sample data and inert handlers.
+- Wrap it in the same style-guide card shell/collapsible pattern already expected by the style guide.
 
-| # | Target File(s) | Status | Notes |
-|---|---------------|--------|-------|
-| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
-| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
-| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
-| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
-| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
-| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
-| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
-| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
-| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
-| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
-| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
-| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
-| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
-| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
+4. Seed the preview with exact representative data
+- Use a sample `ArcPhase` object that intentionally exercises the real visuals:
+  - title
+  - desiredOutcome
+  - `flexibility: "normal"`
+  - `mode: "advanced"`
+  - fail branch with trigger + failed step
+  - success branch with trigger + succeeded step
+  - event order values that produce the real connector behavior if needed
+- Include the fail sentinel card and the success add-step button by using the real branch setup the component expects.
 
-## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
-- `src/types.ts`: line 11507
-- `src/utils.ts`: line 12138
-- `src/lib/story-transfer.ts`: line 9812
-- `src/lib/ui-audit-schema.ts`: line 21329
-- `src/lib/ui-audit-utils.ts`: line 21565
-- `src/data/ui-audit-findings.ts`: line 18967
-- `StoryExportFormatModal.tsx`: line 9642
-- `StoryImportModeModal.tsx`: line 9731
-- `CharactersTab.tsx`: line 2893
-- `ChatInterfaceTab.tsx`: line 5004
-- `src/pages/style-guide/ui-audit.tsx`: line 17867
-- `src/App.tsx`: line 95
-- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout
+5. Make the preview non-destructive but visually real
+- Pass no-op handlers for update/delete/enhance actions so buttons still render exactly like production.
+- If needed, freeze the data in local component state only for preview purposes, but avoid changing source styles or logic.
+
+6. Keep the spec-sheet details below the live preview
+- Under the real preview, keep the white collapsible bar and details section.
+- The details text can remain documentation, but the preview itself must come from the real component.
+- This gives you the exact layers/padding/headers from source while preserving the style-guide format.
+
+7. Scope control
+- Only fix the Story Arc style-guide entry in this pass.
+- Do not redo unrelated cards unless you explicitly want the same “real component instead of HTML clone” treatment there too.
+
+Technical note
+- Right now `StyleGuideTool.tsx` embeds `/style-guide-component-example.html` in an iframe, which is why the Story Arc card was recreated by approximation.
+- The robust fix is to move the Story Arc preview into React so the style guide can mount the actual component code instead of an imitation.
+- If you want true copy/paste fidelity, this is the correct implementation path.
