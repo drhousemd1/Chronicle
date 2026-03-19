@@ -469,6 +469,7 @@ const findings: QualityFinding[] = [
     "small",
     runIds.functionality,
     {
+      status: "fixed",
       route: "/ (chat_interface tab)",
       evidence: [
         "Invocation found in ChatInterfaceTab.tsx around line 1875.",
