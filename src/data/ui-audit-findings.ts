@@ -1373,6 +1373,18 @@ const findings: QualityFinding[] = [
       ],
       tags: ["module-security", "cors", "configuration"],
       batchable: true,
+      status: "fixed",
+      verificationStatus: "verified",
+      verifiedBy: stamp(runIds.security),
+      updatedAt: "2026-03-19T12:00:00Z",
+      expectedBehavior: "CORS origins defined in a single shared file, imported by all functions.",
+      actualBehavior: "Created supabase/functions/_shared/cors.ts as single source of truth. All 13 edge functions now import from it. Origins still hardcoded but in one place instead of 13.",
+      comments: [{
+        id: "fix-sec-008",
+        author: "ChatGPT Codex",
+        timestamp: "2026-03-19T12:00:00Z",
+        text: "Consolidated with qh-clean-20260318-001. All 13 edge functions now import CORS from _shared/cors.ts.",
+      }],
     },
   ),
   finding(
