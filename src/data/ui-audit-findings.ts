@@ -116,6 +116,10 @@ const findings: QualityFinding[] = [
     runIds.security,
     {
       status: "fixed",
+      verificationStatus: "verified",
+      verifiedBy: stamp(runIds.security),
+      expectedBehavior: "Edge function validates caller identity before performing GitHub operations.",
+      actualBehavior: "Auth guard added; unauthenticated requests receive 401 Unauthorized.",
       route: "edge function",
       component: "sync-guide-to-github",
       evidence: [
@@ -123,6 +127,15 @@ const findings: QualityFinding[] = [
         "AppGuideTool invokes this function directly via supabase.functions.invoke('sync-guide-to-github').",
       ],
       tags: ["module-security", "auth", "critical"],
+      updatedAt: "2026-03-18T22:00:00.000Z",
+      comments: [
+        {
+          id: "fix-note-sec-001",
+          author: "ChatGPT Codex",
+          timestamp: "2026-03-18T22:00:00.000Z",
+          text: "Added supabase.auth.getUser() validation after CORS check in supabase/functions/sync-guide-to-github/index.ts. Function now returns 401 if no valid Bearer token is present. Unauthenticated callers can no longer trigger GitHub write/delete operations.",
+        },
+      ],
     },
   ),
   finding(
