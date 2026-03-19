@@ -649,7 +649,7 @@ const findings: QualityFinding[] = [
       tags: ["module-orphan-code", "legacy"],
       status: "fixed",
       verificationStatus: "verified",
-      verifiedBy: { ...codexAgent, timestamp: "2026-03-19T04:30:00Z" },
+      verifiedBy: stamp(runIds.orphan),
       updatedAt: "2026-03-19T04:30:00Z",
       expectedBehavior: "No legacy persistence helpers should exist when all data flows through the database.",
       actualBehavior: "File deleted. Two files (ChatInterfaceTab.tsx, side-character-generator.ts) that imported uuid/now from storage.ts were updated to import from @/utils instead.",
