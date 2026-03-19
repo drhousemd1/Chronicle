@@ -1844,6 +1844,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           aiResponse,
           pendingSteps: pendingSteps.map(s => ({ stepId: s.stepId, description: s.description })),
           flexibility: pendingSteps[0]?.flexibility || 'normal',
+          currentDay,
+          currentTimeOfDay,
         }
       });
 

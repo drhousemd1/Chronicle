@@ -295,7 +295,7 @@ function dbToConversation(row: any, messages: any[]): Conversation {
 
 export async function fetchMyScenarios(userId: string): Promise<ScenarioMetadata[]> {
   const { data, error } = await supabase
-    .from('stories' as any)
+    .from('stories')
     .select('id, title, description, cover_image_url, cover_image_position, tags, created_at, updated_at, is_draft')
     .eq('user_id', userId)
     .order('updated_at', { ascending: false });
@@ -311,7 +311,7 @@ export async function fetchScenarioById(id: string): Promise<{
 } | null> {
   // Parallel fetch of scenario + all related data
   const [scenarioResult, charactersResult, codexResult, scenesResult, conversationsResult] = await Promise.all([
-    supabase.from('stories' as any).select('*').eq('id', id).maybeSingle(),
+    supabase.from('stories').select('*').eq('id', id).maybeSingle(),
     supabase.from('characters').select('*').eq('scenario_id', id),
     supabase.from('codex_entries').select('*').eq('scenario_id', id),
     supabase.from('scenes').select('*').eq('scenario_id', id),
@@ -329,11 +329,17 @@ export async function fetchScenarioById(id: string): Promise<{
   let conversationsWithMessages: Conversation[] = [];
   if (conversations.length > 0) {
     const conversationIds = conversations.map(c => c.id);
+    const MESSAGE_BATCH_LIMIT = 5000;
     const { data: allMessages } = await supabase
       .from('messages')
       .select('*')
       .in('conversation_id', conversationIds)
-      .order('created_at', { ascending: true });
+      .order('created_at', { ascending: true })
+      .limit(MESSAGE_BATCH_LIMIT);
+
+    if ((allMessages || []).length === MESSAGE_BATCH_LIMIT) {
+      console.warn(`[fetchScenarioById] Message batch hit ${MESSAGE_BATCH_LIMIT} limit — some messages may be truncated. Scenario has ${conversationIds.length} conversations.`);
+    }
 
     // Group messages by conversation_id in memory
     const messagesByConv = new Map<string, any[]>();
@@ -414,7 +420,7 @@ export async function fetchScenarioForPlay(id: string): Promise<{
 } | null> {
   // Parallel fetch of scenario + related data (but NOT conversation messages)
   const [scenarioResult, charactersResult, codexResult, scenesResult, convCountResult] = await Promise.all([
-    supabase.from('stories' as any).select('*').eq('id', id).maybeSingle(),
+    supabase.from('stories').select('*').eq('id', id).maybeSingle(),
     supabase.from('characters').select('*').eq('scenario_id', id),
     supabase.from('codex_entries').select('*').eq('scenario_id', id),
     supabase.from('scenes').select('*').eq('scenario_id', id),
@@ -495,34 +501,46 @@ export async function saveScenario(
     }
   }
 
-  // Upsert scenario
-  const { error: scenarioError } = await supabase
-    .from('stories' as any)
-    .upsert({
-      id,
-      user_id: userId,
-      title: metadata.title,
-      description: metadata.description,
-      cover_image_url: safeCoverImage,
-      cover_image_position: metadata.coverImagePosition || { x: 50, y: 50 },
-      tags: metadata.tags,
-      world_core: data.world.core,
-      ui_settings: data.uiSettings,
-      opening_dialog: data.story.openingDialog,
-      selected_model: data.selectedModel,
-      selected_art_style: data.selectedArtStyle || 'cinematic-2-5d',
-      version: data.version,
-      is_draft: options?.isDraft ?? false
-    });
+  // Atomic save via single transactional RPC
+  const storyPayload = {
+    title: metadata.title,
+    description: metadata.description,
+    cover_image_url: safeCoverImage,
+    cover_image_position: metadata.coverImagePosition || { x: 50, y: 50 },
+    tags: metadata.tags,
+    world_core: data.world.core,
+    ui_settings: data.uiSettings,
+    opening_dialog: data.story.openingDialog,
+    selected_model: data.selectedModel,
+    selected_art_style: data.selectedArtStyle || 'cinematic-2-5d',
+    version: data.version,
+    is_draft: options?.isDraft ?? false,
+    nav_button_images: {},
+  };
 
-  if (scenarioError) throw scenarioError;
+  const charactersPayload = data.characters.map(c => characterToDb(c, userId, id, false));
+  const codexPayload = data.world.entries.map(e => ({
+    id: e.id,
+    title: e.title,
+    body: e.body,
+  }));
+  const scenesPayload = data.scenes.map(s => ({
+    id: s.id,
+    image_url: s.url,
+    tags: s.tags ?? [],
+    is_starting_scene: s.isStartingScene || false,
+  }));
 
-  // Run character, codex, and scene syncs IN PARALLEL (they're independent)
-  await Promise.all([
-    syncCharacters(id, data, userId),
-    syncCodexEntries(id, data),
-    syncScenes(id, data),
-  ]);
+  const { error } = await supabase.rpc('save_scenario_atomic', {
+    p_scenario_id: id,
+    p_user_id: userId,
+    p_story: storyPayload,
+    p_characters: charactersPayload,
+    p_codex_entries: codexPayload,
+    p_scenes: scenesPayload,
+  } as any);
+
+  if (error) throw error;
 
   // NOTE: Conversations are saved individually via saveConversation() 
   // when they are modified (e.g., in ChatInterfaceTab). We do NOT bulk-save 
@@ -668,7 +686,7 @@ export async function saveScenarioWithVerification(
 
 export async function deleteScenario(id: string): Promise<void> {
   const { error } = await supabase
-    .from('stories' as any)
+    .from('stories')
     .delete()
     .eq('id', id);
 
@@ -684,7 +702,7 @@ export async function deleteScenario(id: string): Promise<void> {
  */
 export async function getScenarioOwner(scenarioId: string): Promise<string | null> {
   const { data, error } = await supabase
-    .from('stories' as any)
+    .from('stories')
     .select('user_id')
     .eq('id', scenarioId)
     .maybeSingle();
@@ -1550,7 +1568,7 @@ export async function updateBackgroundOverlay(userId: string, backgroundId: stri
 
 export async function fetchMyScenariosPaginated(userId: string, limit: number, offset: number): Promise<ScenarioMetadata[]> {
   const { data, error } = await supabase
-    .from('stories' as any)
+    .from('stories')
     .select('id, title, description, cover_image_url, cover_image_position, tags, created_at, updated_at, is_draft')
     .eq('user_id', userId)
     .order('updated_at', { ascending: false })

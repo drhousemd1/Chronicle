@@ -1,82 +1,53 @@
 
+# Sandbox Feature Transfer — Master Tracker
 
-# Next Batch of Fixes — 5 Issues (Code-Verified)
+## Source Documents
+- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
+- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
 
-## Technical Section
-For each fix below, I verified the actual source code to confirm the issue exists and understand the exact change needed.
+## Features Being Transferred
+| ID | Feature | Status |
+|----|---------|--------|
+| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
+| B | Story Transfer Library (story-transfer.ts) | ✅ |
+| A | UI Audit System (schema, utils, findings, page) | 🔄 |
+| B | Story Export/Import Modals | ✅ |
+| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
+| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
+| - | StyleGuideTool.tsx audit button | ⬜ |
+| - | App.tsx route wiring | ⬜ |
+| - | Index.tsx full wiring | ⬜ |
 
----
+## Prompt Execution Status
 
-## 1. Performance: Message loading has no safety limit — users with long stories can crash the app (High)
-**Finding:** `qh-perf-20260318-002`
+| # | Target File(s) | Status | Notes |
+|---|---------------|--------|-------|
+| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
+| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
+| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
+| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
+| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
+| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
+| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
+| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
+| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
+| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
+| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
+| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
+| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
+| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
 
-**What's wrong:** When you open a story, the app loads ALL messages from ALL conversations in that story in one single database request (line 332 of `supabase-data.ts`). There's no limit on how many messages it pulls. The database has a built-in cap of 1,000 rows per query, but the app doesn't know about that cap — so if you have 1,200 messages across your conversations, the last 200 just silently disappear. On top of that, pulling thousands of messages in one request makes the app feel slow or unresponsive during loading.
-
-**Why it matters:** Long-running stories are the core use case of this app. Power users who have been playing for weeks will hit this wall and either see missing messages or slow loads — and they'll have no idea why.
-
-**Fix:** Add `.limit(5000)` guard to the message batch fetch. Also add a `console.warn` if the result count equals the limit, so we can trace truncation. This prevents silent data loss while keeping the batch optimization.
-
-**Files:** `src/services/supabase-data.ts` (line ~332)
-
----
-
-## 2. Type Safety: Every database call to the stories table bypasses type checking (High)
-**Finding:** `qh-data-20260318-001`
-
-**What's wrong:** Throughout `supabase-data.ts`, every query to the `stories` table uses `supabase.from('stories' as any)` — this "as any" trick tells TypeScript to stop checking the data shape. The `stories` table IS properly defined in the generated types file, so this bypass is completely unnecessary. It was likely added early on when the table didn't exist in types yet, and never cleaned up.
-
-**Why it matters:** Without type checking, if someone adds or renames a column in the database, the code won't catch mismatches at build time — it'll just break at runtime for users. This is one of the main reasons TypeScript exists, and it's being deliberately turned off for one of the most important tables in the app.
-
-**Fix:** Remove `as any` from all `supabase.from('stories' as any)` calls (lines 298, 314, 417, 500, 671, 687, 1553). The types file already has full `stories` table definitions.
-
-**Files:** `src/services/supabase-data.ts` (~7 occurrences)
-
----
-
-## 3. Data Integrity: Saving a story isn't atomic — partial failures leave broken data (High)
-**Finding:** `qh-data-20260318-004`
-
-**What's wrong:** When you save a story, the app first writes the main story record, then separately writes characters, codex entries, and scenes in parallel. If the story record saves but one of the child writes fails (network hiccup, timeout), you end up with a story that has mismatched data — maybe old characters with new world settings, or missing scenes. The user sees "saved" but the data is actually in a broken state.
-
-**Why it matters:** Users trust the save button. If it says it worked, the data should be consistent. Partial saves are one of the hardest bugs to diagnose because they look fine until the user notices something's wrong hours later.
-
-**Fix:** Create a database function (`save_scenario_atomic`) that performs all writes inside a single transaction. If any part fails, everything rolls back. Update the frontend `saveScenario` function to call this RPC instead of doing individual writes.
-
-**Files:** New migration (RPC function), `src/services/supabase-data.ts`
-
----
-
-## 4. Functionality: Story Goals day-context is disconnected — the goal system doesn't know what day it is (Medium)
-**Finding:** `qh-docs-20260318-003`
-
-**What's wrong:** The `StoryGoalsSection` component accepts `currentDay` and `currentTimeOfDay` as props, but neither the WorldTab nor StoryCardView actually passes them. The props default to `1` and `'day'` respectively. Meanwhile, in the chat interface where goals actually get *evaluated* by AI, the `evaluateGoalProgress` function (line 1820 of ChatInterfaceTab) sends step descriptions to the AI but **doesn't include the current day or time of day** in the evaluation payload. The AI evaluating your goals has no idea where you are in the story's timeline.
-
-This matters because story goals are inherently time-sensitive — "escape the city by Day 3" or "confess before nightfall" are meaningless evaluations if the system doesn't know what day/time it is.
-
-**Why it matters:** Goals that depend on pacing or deadlines can't be properly evaluated. The AI might mark a step complete without considering timing context, or fail to recognize urgency.
-
-**Fix:** 
-- Pass `currentDay` and `currentTimeOfDay` from `evaluateGoalProgress` into the edge function payload
-- Update the `evaluate-goal-progress` edge function to include day/time context in the AI classification prompt
-- Wire the props through WorldTab when it renders StoryGoalsSection in a conversation context
-
-**Files:** `src/components/chronicle/ChatInterfaceTab.tsx`, `supabase/functions/evaluate-goal-progress/index.ts`, `src/components/chronicle/WorldTab.tsx`
-
----
-
-## 5. Registry Housekeeping
-
-Bump `registryVersion` from `6` to `7`. Each fixed finding gets full documentation: status, comments explaining what changed, expected/actual behavior, verification stamp.
-
-**Files:** `src/data/ui-audit-findings.ts`
-
----
-
-### Summary of files changed
-- `src/services/supabase-data.ts` — Add message limit guard + remove `as any` casts
-- New migration SQL — `save_scenario_atomic` RPC for transactional saves
-- `src/components/chronicle/ChatInterfaceTab.tsx` — Pass day/time to goal evaluation
-- `supabase/functions/evaluate-goal-progress/index.ts` — Include day/time in AI prompt
-- `src/components/chronicle/WorldTab.tsx` — Wire currentDay/currentTimeOfDay props
-- `src/data/ui-audit-findings.ts` — Mark 4 findings fixed with documentation, bump version
-
+## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
+- `src/types.ts`: line 11507
+- `src/utils.ts`: line 12138
+- `src/lib/story-transfer.ts`: line 9812
+- `src/lib/ui-audit-schema.ts`: line 21329
+- `src/lib/ui-audit-utils.ts`: line 21565
+- `src/data/ui-audit-findings.ts`: line 18967
+- `StoryExportFormatModal.tsx`: line 9642
+- `StoryImportModeModal.tsx`: line 9731
+- `CharactersTab.tsx`: line 2893
+- `ChatInterfaceTab.tsx`: line 5004
+- `src/pages/style-guide/ui-audit.tsx`: line 17867
+- `src/App.tsx`: line 95
+- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout
