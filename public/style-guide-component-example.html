@@ -1024,13 +1024,28 @@
                 <div style="padding:8px 12px;font-size:13px;background:#1c1c1f;border:1px solid rgba(0,0,0,0.35);border-radius:8px;color:#71717a;font-style:italic;min-height:40px;">What success looks like...</div>
               </div>
 
-              <!-- Guidance Strength Slider -->
-              <div style="margin-top:16px;padding:12px 16px;background:#3c3e47;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.45),inset 0 1px 0 rgba(255,255,255,0.09),inset 0 -1px 0 rgba(0,0,0,0.20);">
-                <div style="font-size:10px;font-weight:900;color:#a1a1aa;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px;">Guidance Strength</div>
-                <div style="display:flex;gap:4px;">
-                  <div style="flex:1;text-align:center;padding:4px 8px;font-size:10px;font-weight:700;border-radius:6px;background:#3f3f46;color:#a1a1aa;">Rigid</div>
-                  <div style="flex:1;text-align:center;padding:4px 8px;font-size:10px;font-weight:700;border-radius:6px;background:#3b82f6;color:white;box-shadow:0 2px 8px rgba(59,130,246,0.35);">Normal</div>
-                  <div style="flex:1;text-align:center;padding:4px 8px;font-size:10px;font-weight:700;border-radius:6px;background:#3f3f46;color:#a1a1aa;">Flexible</div>
+              <!-- Guidance Strength Slider (exact replica of GuidanceStrengthSlider.tsx) -->
+              <div style="margin-top:16px;">
+                <div style="margin-top:14px;margin-bottom:6px;">
+                  <span style="font-size:10px;font-weight:900;color:#a1a1aa;">Guidance Strength</span>
+                </div>
+                <p style="font-size:14px;color:#a1a1aa;margin-bottom:10px;margin-top:0;">How strongly the AI should steer toward this goal.</p>
+                <!-- Slider track -->
+                <div style="position:relative;width:100%;height:12px;border-radius:999px;background:rgba(21,25,34,0.95);cursor:pointer;">
+                  <!-- Fill bar at 50% (Normal selected) -->
+                  <div style="position:absolute;top:0;left:0;height:100%;width:50%;border-radius:999px;background:linear-gradient(90deg,#2b4e8d,#4b79d8 60%,#7dadf5);transition:width 0.2s ease-out;"></div>
+                  <!-- Thumb at 50% -->
+                  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:24px;height:24px;border-radius:50%;background:white;border:3px solid #3b82f6;box-shadow:0 2px 8px rgba(0,0,0,0.3);"></div>
+                </div>
+                <!-- Three labels -->
+                <div style="display:flex;justify-content:space-between;margin-top:8px;">
+                  <span style="cursor:pointer;font-size:10px;font-weight:900;color:#71717a;">Rigid</span>
+                  <span style="cursor:pointer;font-size:10px;font-weight:900;color:#3b82f6;">Normal</span>
+                  <span style="cursor:pointer;font-size:10px;font-weight:900;color:#71717a;">Flexible</span>
+                </div>
+                <!-- Description box -->
+                <div style="margin-top:12px;background:#18181b;border-radius:12px;padding:16px;box-shadow:inset 1px 1px 0 rgba(255,255,255,0.07),inset -1px -1px 0 rgba(0,0,0,0.30),0 4px 12px rgba(0,0,0,0.25);">
+                  <p style="font-size:14px;color:#a1a1aa;line-height:1.6;margin:0;">Steer towards the goal by weaving it in naturally when opportunities arise. Make persistent attempts to incorporate and advance it throughout the story, even in the face of initial user resistance, but allow gradual adaptation if the user's inputs show sustained and consistent conflict with the goal, treating it as a recurring influence until deviation becomes clearly dominant.</p>
                 </div>
               </div>
 
