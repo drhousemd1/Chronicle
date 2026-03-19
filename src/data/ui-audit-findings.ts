@@ -470,10 +470,23 @@ const findings: QualityFinding[] = [
     runIds.data,
     {
       status: "fixed",
+      verificationStatus: "verified",
+      verifiedBy: stamp(runIds.data),
+      expectedBehavior: "Fatal-screen recovery only removes Chronicle-owned localStorage keys.",
+      actualBehavior: "Scoped deletion implemented; unrelated browser data is no longer destroyed.",
       evidence: [
         "Index.tsx line with action: localStorage.clear(); location.reload();",
       ],
       tags: ["module-data-integrity", "destructive"],
+      updatedAt: "2026-03-18T22:00:00.000Z",
+      comments: [
+        {
+          id: "fix-note-data-003",
+          author: "ChatGPT Codex",
+          timestamp: "2026-03-18T22:00:00.000Z",
+          text: "Replaced localStorage.clear() in src/pages/Index.tsx with a scoped clearChronicleStorage() helper that iterates localStorage keys and only removes those matching Chronicle-owned prefixes: rpg_, draft_, chronicle_, quality_hub_. Other origin data is preserved.",
+        },
+      ],
     },
   ),
 
