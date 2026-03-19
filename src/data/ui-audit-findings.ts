@@ -443,6 +443,7 @@ const findings: QualityFinding[] = [
     "small",
     runIds.data,
     {
+      status: "fixed",
       evidence: [
         "Index.tsx line with action: localStorage.clear(); location.reload();",
       ],
