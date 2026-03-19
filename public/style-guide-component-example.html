@@ -893,5 +893,889 @@
 
 </div>
 
+<div style="height:40px;"></div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     CARD 3 — Story Arcs
+     ═══════════════════════════════════════════════════════════ -->
+<style>
+  /* ── Story Arcs Preview ── */
+  .sa-outer {
+    width: 100%;
+    background: #2a2a2f;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow:
+      0 12px 32px -2px rgba(0,0,0,0.50),
+      inset 1px 1px 0 rgba(255,255,255,0.09),
+      inset -1px -1px 0 rgba(0,0,0,0.35);
+  }
+  .sa-header {
+    position: relative;
+    background: linear-gradient(180deg, #5a7292 0%, #4a5f7f 100%);
+    border-top: 1px solid rgba(255,255,255,0.20);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
+    overflow: hidden;
+  }
+  .sa-header::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.10) 0%, transparent 60%);
+    pointer-events: none;
+    height: 60%;
+  }
+  .sa-header-title {
+    color: #fff;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    position: relative;
+    z-index: 1;
+  }
+  .sa-header-icon {
+    color: #fff;
+    position: relative;
+    z-index: 1;
+    width: 16px;
+    height: 16px;
+  }
+  .sa-content { padding: 20px; }
+
+  /* Arc container */
+  .sa-arc-container {
+    padding: 20px 20px 24px;
+    background: rgba(58,58,63,0.30);
+    border-radius: 16px;
+    box-shadow:
+      inset 1px 1px 0 rgba(255,255,255,0.07),
+      inset -1px -1px 0 rgba(0,0,0,0.30),
+      0 4px 12px rgba(0,0,0,0.25);
+  }
+
+  /* Labels */
+  .sa-label {
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #a1a1aa;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  /* Inputs */
+  .sa-input {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 13px;
+    background: #1c1c1f;
+    border: 1px solid rgba(0,0,0,0.35);
+    color: #fff;
+    border-radius: 8px;
+    font-family: inherit;
+    resize: none;
+    overflow: hidden;
+    line-height: 1.4;
+    outline: none;
+  }
+  .sa-input::placeholder { color: #52525b; }
+
+  /* Delete button */
+  .sa-delete-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+    border: 1px solid rgba(239,68,68,0.5);
+    background: transparent;
+    color: #fca5a5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  /* Progress ring */
+  .sa-progress-ring {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 8px solid rgba(51,80,125,0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .sa-progress-ring span {
+    font-size: 18px;
+    font-weight: 700;
+    color: #cbd5e1;
+  }
+
+  /* Guidance strength */
+  .sa-slider-track {
+    position: relative;
+    width: 100%;
+    height: 12px;
+    border-radius: 999px;
+    background: rgba(21,25,34,0.95);
+    cursor: pointer;
+  }
+  .sa-slider-fill {
+    position: absolute;
+    top: 0; left: 0;
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #2b4e8d, #4b79d8 60%, #7dadf5);
+    width: 50%;
+  }
+  .sa-slider-thumb {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #fff;
+    border: 3px solid #3b82f6;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .sa-slider-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+  }
+  .sa-slider-labels span {
+    font-size: 10px;
+    font-weight: 900;
+    color: #71717a;
+    cursor: pointer;
+  }
+  .sa-slider-labels span.active { color: #3b82f6; }
+  .sa-guidance-desc {
+    margin-top: 12px;
+    background: #18181b;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow:
+      inset 1px 1px 0 rgba(255,255,255,0.07),
+      inset -1px -1px 0 rgba(0,0,0,0.30),
+      0 4px 12px rgba(0,0,0,0.25);
+  }
+  .sa-guidance-desc p {
+    font-size: 13px;
+    color: #a1a1aa;
+    line-height: 1.55;
+    margin: 0;
+  }
+
+  /* Steps header */
+  .sa-steps-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .sa-steps-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .sa-steps-title h4 {
+    font-size: 10px;
+    font-weight: 900;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    margin: 0;
+  }
+
+  /* Mode toggle */
+  .sa-mode-toggle {
+    display: flex;
+    padding: 6px;
+    background: #3c3e47;
+    border-radius: 12px;
+    box-shadow:
+      0 8px 24px rgba(0,0,0,0.45),
+      inset 0 1px 0 rgba(255,255,255,0.09),
+      inset 0 -1px 0 rgba(0,0,0,0.20);
+  }
+  .sa-mode-btn {
+    flex: 1;
+    padding: 6px 14px;
+    font-size: 10px;
+    font-weight: 900;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .sa-mode-btn.active {
+    background: #3b82f6;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(59,130,246,0.35);
+  }
+  .sa-mode-btn.inactive {
+    background: #3f3f46;
+    color: #a1a1aa;
+  }
+
+  /* Branch lanes */
+  .sa-branches { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px; }
+  .sa-branch-cluster {
+    border-radius: 18px;
+    background: rgba(43,47,57,0.9);
+    box-shadow: 0 14px 26px rgba(0,0,0,0.4);
+    overflow: hidden;
+  }
+  .sa-branch-strip {
+    padding: 12px 16px;
+  }
+  .sa-branch-strip span {
+    font-size: 10px;
+    font-weight: 900;
+    color: rgba(255,255,255,0.7);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .sa-branch-strip.fail { background: rgba(240,74,95,0.28); }
+  .sa-branch-strip.success { background: rgba(34,197,127,0.28); }
+  .sa-branch-body { padding: 14px; }
+
+  /* Step cards */
+  .sa-step-card {
+    padding: 10px 10px 12px;
+    border-radius: 18px;
+    border: 1px solid rgba(255,255,255,0.15);
+    box-shadow: 0 14px 26px -6px rgba(0,0,0,0.4);
+    margin-bottom: 8px;
+  }
+  .sa-step-card.fail-bg { background: rgba(78,58,68,0.78); }
+  .sa-step-card.success-bg { background: rgba(51,75,66,0.78); }
+  .sa-step-card.succeeded { border-color: rgba(59,130,246,0.5); }
+  .sa-step-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .sa-step-card-header .sa-step-label-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .sa-step-label {
+    font-size: 10px;
+    font-weight: 900;
+    color: #a1a1aa;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .sa-step-delete {
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    border: 1px solid rgba(239,68,68,0.5);
+    background: transparent;
+    color: #fca5a5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  /* Status buttons */
+  .sa-status-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .sa-status-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .sa-status-btn {
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .sa-status-btn.off {
+    border: 1px solid rgba(0,0,0,0.2);
+    background: #3f3f46;
+    color: #a1a1aa;
+  }
+  .sa-status-btn.failed-on {
+    border: 1px solid rgba(239,68,68,0.6);
+    background: rgba(239,68,68,0.2);
+    color: #fca5a5;
+  }
+  .sa-status-btn.succeeded-on {
+    border: 1px solid rgba(16,185,129,0.6);
+    background: rgba(16,185,129,0.2);
+    color: #a7f3d0;
+  }
+  .sa-status-label {
+    font-size: 10px;
+    font-weight: 900;
+    color: #d4d4d8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* Sentinel card */
+  .sa-sentinel {
+    padding: 10px 10px 12px;
+    border-radius: 18px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(78,58,68,0.78);
+    box-shadow: 0 14px 26px -6px rgba(0,0,0,0.4);
+  }
+  .sa-sentinel-lock {
+    width: 26px; height: 26px;
+    border-radius: 8px;
+    border: 1px solid #52525b;
+    background: transparent;
+    color: #71717a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Add step / phase buttons */
+  .sa-add-btn {
+    width: 100%;
+    height: 40px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #3b82f6;
+    background: #3c3e47;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow:
+      0 8px 24px rgba(0,0,0,0.45),
+      inset 0 1px 0 rgba(255,255,255,0.09),
+      inset 0 -1px 0 rgba(0,0,0,0.20);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  /* Phase separator */
+  .sa-phase-separator {
+    margin-top: 16px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+  }
+  .sa-phase-label {
+    font-size: 10px;
+    font-weight: 900;
+    color: #3b82f6;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+</style>
+
+<div class="card">
+
+  <div class="card-header">
+    <span class="card-title">Story Arcs</span>
+    <span class="card-sub">StoryGoalsSection.tsx — Arc phase goals with branching steps</span>
+  </div>
+
+  <!-- Full-width preview -->
+  <div class="preview-section" style="padding:32px 20px;">
+    <div class="preview-inner" style="max-width:560px;">
+      <div class="sa-outer">
+
+        <!-- Header -->
+        <div class="sa-header">
+          <svg class="sa-header-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+          <span class="sa-header-title">Story Arcs</span>
+        </div>
+
+        <!-- Content -->
+        <div class="sa-content" style="display:flex;flex-direction:column;gap:24px;">
+
+          <!-- ── ARC 1 ── -->
+          <div class="sa-arc-container">
+
+            <!-- Row 1: Title + Delete + Progress Ring -->
+            <div style="display:flex;align-items:flex-start;gap:16px;">
+              <div style="flex:1;">
+                <span class="sa-label">Story Arc Title</span>
+                <textarea class="sa-input" rows="1" placeholder="Enter story arc title...">Infiltrate the Obsidian Citadel</textarea>
+              </div>
+              <button class="sa-delete-btn" style="margin-top:22px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+              </button>
+              <div class="sa-progress-ring" style="margin-top:4px;">
+                <span>33%</span>
+              </div>
+            </div>
+
+            <!-- Row 2: Desired Outcome -->
+            <div style="margin-top:16px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                <span class="sa-label" style="margin-bottom:0;">Desired Outcome</span>
+                <button class="enhance-btn"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg></button>
+              </div>
+              <textarea class="sa-input" rows="2" placeholder="What success looks like...">The party gains access to the inner sanctum and retrieves the Shard of Eternity before the eclipse.</textarea>
+            </div>
+
+            <!-- Row 3: Guidance Strength -->
+            <div>
+              <div style="margin-top:14px;margin-bottom:6px;">
+                <span class="sa-label" style="margin-bottom:0;">Guidance Strength</span>
+              </div>
+              <p style="font-size:13px;color:#a1a1aa;margin:0 0 10px;">How strongly the AI should steer toward this goal.</p>
+              <div class="sa-slider-track">
+                <div class="sa-slider-fill"></div>
+                <div class="sa-slider-thumb"></div>
+              </div>
+              <div class="sa-slider-labels">
+                <span>Rigid</span>
+                <span class="active">Normal</span>
+                <span>Flexible</span>
+              </div>
+              <div class="sa-guidance-desc">
+                <p>Steer towards the goal by weaving it in naturally when opportunities arise. Make persistent attempts to incorporate and advance it throughout the story.</p>
+              </div>
+            </div>
+
+            <!-- Steps Section -->
+            <div style="margin-top:16px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.1);">
+              <div class="sa-steps-header">
+                <div class="sa-steps-title">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></svg>
+                  <h4>Steps</h4>
+                </div>
+                <div class="sa-mode-toggle">
+                  <button class="sa-mode-btn inactive">Simple</button>
+                  <button class="sa-mode-btn active">Advanced</button>
+                </div>
+              </div>
+
+              <!-- Split connector SVG -->
+              <div style="height:88px;width:100%;">
+                <svg width="100%" height="88" viewBox="0 0 100 88" preserveAspectRatio="none" style="display:block;">
+                  <defs><linearGradient id="sa-fade-down" x1="0" y1="0" x2="0" y2="64" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(232,238,248,0)"/><stop offset="100%" stop-color="rgba(232,238,248,0.82)"/></linearGradient></defs>
+                  <line x1="50" y1="0" x2="50" y2="64" stroke="url(#sa-fade-down)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+                  <line x1="25" y1="64" x2="75" y2="64" stroke="rgba(232,238,248,0.82)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+                  <line x1="25" y1="64" x2="25" y2="88" stroke="rgba(232,238,248,0.82)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+                  <line x1="75" y1="64" x2="75" y2="88" stroke="rgba(232,238,248,0.82)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+                </svg>
+              </div>
+
+              <!-- Branch lanes -->
+              <div class="sa-branches">
+
+                <!-- FAIL PATH -->
+                <div style="display:flex;flex-direction:column;gap:12px;">
+                  <div class="sa-branch-cluster">
+                    <div class="sa-branch-strip fail"><span>FAIL PATH</span></div>
+                    <div class="sa-branch-body">
+                      <span class="sa-label">Resistance Trigger</span>
+                      <textarea class="sa-input" rows="1" placeholder="What causes failure...">The party is detected by the citadel guards or triggers the arcane ward system.</textarea>
+                    </div>
+                  </div>
+
+                  <!-- Fail step 1 -->
+                  <div class="sa-step-card fail-bg">
+                    <div class="sa-step-card-header">
+                      <div class="sa-step-label-row"><span class="sa-step-label">Recovery Step 1</span></div>
+                      <button class="sa-step-delete"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button>
+                    </div>
+                    <div class="sa-status-row">
+                      <div class="sa-status-group">
+                        <div class="sa-status-btn off"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></div>
+                        <span class="sa-status-label">Failed</span>
+                      </div>
+                      <div class="sa-status-group">
+                        <div class="sa-status-btn off"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+                        <span class="sa-status-label">Succeeded</span>
+                      </div>
+                    </div>
+                    <textarea class="sa-input" rows="1" placeholder="Describe this step...">Regroup in the sewers beneath the outer wall</textarea>
+                  </div>
+
+                  <!-- Sentinel (dynamic recovery) -->
+                  <div class="sa-sentinel">
+                    <div class="sa-step-card-header">
+                      <span class="sa-step-label">Dynamic Recovery</span>
+                      <div class="sa-sentinel-lock"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+                    </div>
+                    <textarea class="sa-input" rows="1" readonly style="color:#a1a1aa;font-style:italic;cursor:default;">AI will handle ongoing recovery steps dynamically once predetermined recovery attempts have all been attempted.</textarea>
+                  </div>
+
+                  <!-- Add Step -->
+                  <button class="sa-add-btn"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg> Add Step</button>
+                </div>
+
+                <!-- SUCCESS PATH -->
+                <div style="display:flex;flex-direction:column;gap:12px;">
+                  <div class="sa-branch-cluster">
+                    <div class="sa-branch-strip success"><span>SUCCEED PATH</span></div>
+                    <div class="sa-branch-body">
+                      <span class="sa-label">Success Trigger</span>
+                      <textarea class="sa-input" rows="1" placeholder="What triggers success...">The party bypasses the outer defenses undetected using the stolen guard rotation schedule.</textarea>
+                    </div>
+                  </div>
+
+                  <!-- Success step 1 (succeeded) -->
+                  <div class="sa-step-card success-bg succeeded">
+                    <div class="sa-step-card-header">
+                      <div class="sa-step-label-row"><span class="sa-step-label">Progression Step 1</span></div>
+                      <button class="sa-step-delete"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button>
+                    </div>
+                    <div class="sa-status-row">
+                      <div class="sa-status-group">
+                        <div class="sa-status-btn off"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></div>
+                        <span class="sa-status-label">Failed</span>
+                      </div>
+                      <div class="sa-status-group">
+                        <div class="sa-status-btn succeeded-on"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+                        <span class="sa-status-label">Succeeded</span>
+                      </div>
+                    </div>
+                    <textarea class="sa-input" rows="1" style="text-decoration:line-through;opacity:0.6;" placeholder="Describe this step...">Navigate the trapped corridor using the cipher key</textarea>
+                    <div style="display:flex;align-items:center;gap:4px;margin-top:8px;font-size:12px;color:#a1a1aa;">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      <span>Completed on Day 3</span>
+                    </div>
+                  </div>
+
+                  <!-- Success step 2 (pending) -->
+                  <div class="sa-step-card success-bg">
+                    <div class="sa-step-card-header">
+                      <div class="sa-step-label-row"><span class="sa-step-label">Progression Step 2</span></div>
+                      <button class="sa-step-delete"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button>
+                    </div>
+                    <div class="sa-status-row">
+                      <div class="sa-status-group">
+                        <div class="sa-status-btn off"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></div>
+                        <span class="sa-status-label">Failed</span>
+                      </div>
+                      <div class="sa-status-group">
+                        <div class="sa-status-btn off"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+                        <span class="sa-status-label">Succeeded</span>
+                      </div>
+                    </div>
+                    <textarea class="sa-input" rows="1" placeholder="Describe this step...">Disable the ward on the inner sanctum door</textarea>
+                  </div>
+
+                  <!-- Add Step -->
+                  <button class="sa-add-btn"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg> Add Step</button>
+                </div>
+
+              </div><!-- /sa-branches -->
+
+              <!-- Merge connector SVG -->
+              <div style="height:48px;width:100%;">
+                <svg width="100%" height="48" viewBox="0 0 100 48" preserveAspectRatio="none" style="display:block;">
+                  <line x1="25" y1="0" x2="25" y2="24" stroke="rgba(232,238,248,0.82)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+                  <line x1="75" y1="0" x2="75" y2="24" stroke="rgba(232,238,248,0.82)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+                  <line x1="25" y1="24" x2="75" y2="24" stroke="rgba(232,238,248,0.82)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+                  <line x1="50" y1="24" x2="50" y2="48" stroke="rgba(232,238,248,0.82)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+                </svg>
+              </div>
+
+            </div><!-- /steps section -->
+
+            <!-- ── LINKED PHASE 2 ── -->
+            <div class="sa-phase-separator">
+              <div class="sa-phase-label">
+                <span>Phase 2</span>
+                <button class="sa-delete-btn" style="width:30px;height:30px;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                </button>
+              </div>
+
+              <!-- Phase 2 content -->
+              <div style="display:flex;align-items:flex-start;gap:16px;">
+                <div style="flex:1;">
+                  <span class="sa-label">Goal Name</span>
+                  <textarea class="sa-input" rows="1" placeholder="Enter goal name...">Escape the Citadel before the eclipse</textarea>
+                </div>
+                <div class="sa-progress-ring" style="margin-top:4px;">
+                  <span>0%</span>
+                </div>
+              </div>
+
+              <div style="margin-top:16px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                  <span class="sa-label" style="margin-bottom:0;">Desired Outcome</span>
+                  <button class="enhance-btn"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg></button>
+                </div>
+                <textarea class="sa-input" rows="2" placeholder="What success looks like...">The party escapes with the Shard before the dark ritual completes.</textarea>
+              </div>
+
+              <!-- Phase 2 guidance strength -->
+              <div>
+                <div style="margin-top:14px;margin-bottom:6px;">
+                  <span class="sa-label" style="margin-bottom:0;">Guidance Strength</span>
+                </div>
+                <p style="font-size:13px;color:#a1a1aa;margin:0 0 10px;">How strongly the AI should steer toward this goal.</p>
+                <div class="sa-slider-track">
+                  <div class="sa-slider-fill" style="width:100%;"></div>
+                  <div class="sa-slider-thumb" style="left:100%;"></div>
+                </div>
+                <div class="sa-slider-labels">
+                  <span>Rigid</span>
+                  <span>Normal</span>
+                  <span class="active">Flexible</span>
+                </div>
+                <div class="sa-guidance-desc">
+                  <p>Steer towards the goal with light guidance. Make a few subtle attempts to incorporate it, but prioritize flexibility.</p>
+                </div>
+              </div>
+
+              <!-- Phase 2 Steps -->
+              <div style="margin-top:16px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.1);">
+                <div class="sa-steps-header">
+                  <div class="sa-steps-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></svg>
+                    <h4>Steps</h4>
+                  </div>
+                  <div class="sa-mode-toggle">
+                    <button class="sa-mode-btn active">Simple</button>
+                    <button class="sa-mode-btn inactive">Advanced</button>
+                  </div>
+                </div>
+
+                <!-- Split connector -->
+                <div style="height:88px;width:100%;">
+                  <svg width="100%" height="88" viewBox="0 0 100 88" preserveAspectRatio="none" style="display:block;">
+                    <defs><linearGradient id="sa-fade-down-2" x1="0" y1="0" x2="0" y2="64" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(232,238,248,0)"/><stop offset="100%" stop-color="rgba(232,238,248,0.82)"/></linearGradient></defs>
+                    <line x1="50" y1="0" x2="50" y2="64" stroke="url(#sa-fade-down-2)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+                    <line x1="25" y1="64" x2="75" y2="64" stroke="rgba(232,238,248,0.82)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+                    <line x1="25" y1="64" x2="25" y2="88" stroke="rgba(232,238,248,0.82)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+                    <line x1="75" y1="64" x2="75" y2="88" stroke="rgba(232,238,248,0.82)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+                  </svg>
+                </div>
+
+                <!-- Phase 2 branches (simple mode — fail is sentinel only) -->
+                <div class="sa-branches">
+                  <!-- FAIL PATH (simple) -->
+                  <div style="display:flex;flex-direction:column;gap:12px;">
+                    <div class="sa-branch-cluster">
+                      <div class="sa-branch-strip fail"><span>FAIL PATH</span></div>
+                      <div class="sa-branch-body">
+                        <span class="sa-label">Resistance Trigger</span>
+                        <textarea class="sa-input" rows="1" placeholder="What causes failure..."></textarea>
+                      </div>
+                    </div>
+                    <div class="sa-sentinel">
+                      <div class="sa-step-card-header">
+                        <span class="sa-step-label">Dynamic Recovery</span>
+                        <div class="sa-sentinel-lock"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+                      </div>
+                      <textarea class="sa-input" rows="1" readonly style="color:#a1a1aa;font-style:italic;cursor:default;">AI will handle recovery steps dynamically</textarea>
+                    </div>
+                  </div>
+                  <!-- SUCCESS PATH -->
+                  <div style="display:flex;flex-direction:column;gap:12px;">
+                    <div class="sa-branch-cluster">
+                      <div class="sa-branch-strip success"><span>SUCCEED PATH</span></div>
+                      <div class="sa-branch-body">
+                        <span class="sa-label">Success Trigger</span>
+                        <textarea class="sa-input" rows="1" placeholder="What triggers success..."></textarea>
+                      </div>
+                    </div>
+                    <button class="sa-add-btn"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg> Add Step</button>
+                  </div>
+                </div>
+
+              </div><!-- /phase 2 steps -->
+
+            </div><!-- /linked phase 2 -->
+
+            <!-- Add Next Phase button -->
+            <button class="sa-add-btn" style="margin-top:20px;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+              Add Next Phase
+            </button>
+
+          </div><!-- /sa-arc-container -->
+
+          <!-- Add New Story Arc button -->
+          <button class="sa-add-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+            Add New Story Arc
+          </button>
+
+        </div><!-- /sa-content -->
+      </div><!-- /sa-outer -->
+    </div>
+  </div>
+
+  <!-- Collapsible toggle bar -->
+  <div class="details-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open');">
+    <span class="details-toggle-label">Component Details</span>
+    <svg class="details-toggle-chevron" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+  </div>
+
+  <!-- Collapsible details content -->
+  <div class="details-content">
+
+    <div class="details-spec-section">
+
+      <div class="spec-block">
+        <div class="spec-h1">Component Hierarchy</div>
+        <ul>
+          <li><strong>StoryGoalsSection.tsx</strong> — Outer section shell, header, arc list, "Add New Story Arc" button</li>
+          <li><strong>ArcPhaseCard.tsx</strong> — Linked phase blocks (Phase 2+) inside each arc container</li>
+          <li><strong>ArcBranchLane.tsx</strong> — Fail/Success path columns with trigger, step cards, sentinel</li>
+          <li><strong>ArcModeToggle.tsx</strong> — Simple/Advanced pill toggle</li>
+          <li><strong>ArcConnectors.tsx</strong> — SVG split/merge flow lines between branches</li>
+          <li><strong>ArcFlowConnector.tsx</strong> — Dynamic SVG connector between resolved steps across branches</li>
+          <li><strong>GuidanceStrengthSlider.tsx</strong> — Rigid/Normal/Flexible slider with description box</li>
+        </ul>
+      </div>
+
+      <div class="spec-block">
+        <div class="spec-h1">Outer Shell Layers</div>
+        <ul>
+          <li><strong>Layer 1 — Base fill:</strong> <code>background: #2a2a2f</code></li>
+          <li><strong>Layer 2 — Corner radius:</strong> <code>border-radius: 24px</code></li>
+          <li><strong>Layer 3 — Outer drop shadow:</strong> <code>0 12px 32px -2px rgba(0,0,0,0.50)</code></li>
+          <li><strong>Layer 4 — Top-left light bevel (inset):</strong> <code>inset 1px 1px 0 rgba(255,255,255,0.09)</code></li>
+          <li><strong>Layer 5 — Bottom-right dark bevel (inset):</strong> <code>inset -1px -1px 0 rgba(0,0,0,0.35)</code></li>
+        </ul>
+      </div>
+
+      <div class="spec-block">
+        <div class="spec-h1">Section Header</div>
+        <ul>
+          <li><strong>Gradient:</strong> <code>linear-gradient(180deg, #5a7292 0%, #4a5f7f 100%)</code></li>
+          <li><strong>Border-top:</strong> <code>1px solid rgba(255,255,255,0.20)</code></li>
+          <li><strong>Gloss sheen (::after):</strong> <code>linear-gradient(135deg, rgba(255,255,255,0.10) 0%, transparent 60%)</code></li>
+          <li><strong>Icon:</strong> GitBranch (lucide) — 16×16 white</li>
+          <li><strong>Title:</strong> <code>20px / 700 / #fff / tracking -0.015em</code></li>
+        </ul>
+      </div>
+
+      <div class="spec-block">
+        <div class="spec-h1">Arc Container (inner tray)</div>
+        <ul>
+          <li><strong>Background:</strong> <code>rgba(58,58,63,0.30)</code> — translucent dark tray</li>
+          <li><strong>Border-radius:</strong> <code>16px</code></li>
+          <li><strong>Box-shadow:</strong> <code>inset 1px 1px 0 rgba(255,255,255,0.07), inset -1px -1px 0 rgba(0,0,0,0.30), 0 4px 12px rgba(0,0,0,0.25)</code></li>
+          <li><strong>Padding:</strong> <code>20px 20px 24px</code></li>
+        </ul>
+      </div>
+
+      <div class="spec-block">
+        <div class="spec-h1">Branch Lane Structure</div>
+        <ul>
+          <li><strong>Header cluster:</strong> <code>rounded-[18px]; bg: rgba(43,47,57,0.9); shadow: 0 14px 26px rgba(0,0,0,0.4)</code></li>
+          <li><strong>Fail strip bg:</strong> <code>rgba(240,74,95,0.28)</code></li>
+          <li><strong>Success strip bg:</strong> <code>rgba(34,197,127,0.28)</code></li>
+          <li><strong>Fail step card bg:</strong> <code>rgba(78,58,68,0.78)</code></li>
+          <li><strong>Success step card bg:</strong> <code>rgba(51,75,66,0.78)</code></li>
+          <li><strong>Step card:</strong> <code>rounded-[18px]; border: 1px solid rgba(255,255,255,0.15); shadow: 0 14px 26px -6px rgba(0,0,0,0.4)</code></li>
+          <li><strong>Succeeded border:</strong> <code>border-color: rgba(59,130,246,0.5)</code></li>
+          <li><strong>Failed border:</strong> <code>border-color: rgba(239,68,68,0.5)</code></li>
+        </ul>
+      </div>
+
+      <div class="spec-block">
+        <div class="spec-h1">Mode Toggle (Simple/Advanced)</div>
+        <ul>
+          <li><strong>Container:</strong> <code>bg: #3c3e47; rounded-xl; p: 6px</code></li>
+          <li><strong>Active pill:</strong> <code>bg: #3b82f6; color: #fff; shadow: 0 2px 8px rgba(59,130,246,0.35)</code></li>
+          <li><strong>Inactive pill:</strong> <code>bg: #3f3f46; color: #a1a1aa</code></li>
+          <li><strong>Font:</strong> <code>10px / 900</code></li>
+        </ul>
+      </div>
+
+    </div>
+
+    <div class="bottom-section" style="grid-template-columns: 1fr 1fr 1fr;">
+
+      <div class="bottom-col">
+        <div class="spec-block">
+          <div class="spec-h1">Guidance Strength Slider</div>
+          <ul>
+            <li><strong>Track:</strong> <code>h: 12px; bg: rgba(21,25,34,0.95); rounded-full</code></li>
+            <li><strong>Fill gradient:</strong> <code>linear-gradient(90deg, #2b4e8d, #4b79d8 60%, #7dadf5)</code></li>
+            <li><strong>Thumb:</strong> <code>24×24px white circle; border: 3px solid #3b82f6</code></li>
+            <li><strong>Description box:</strong> <code>bg: #18181b; rounded-xl; p: 16px; same inset shadow stack</code></li>
+          </ul>
+        </div>
+        <div class="spec-block">
+          <div class="spec-h1">Progress Ring</div>
+          <ul>
+            <li><strong>Size:</strong> <code>80×80px</code></li>
+            <li><strong>Border:</strong> <code>8px solid rgba(51,80,125,0.85)</code></li>
+            <li><strong>Text:</strong> <code>18px / 700 / #cbd5e1</code></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="bottom-col">
+        <div class="spec-block">
+          <div class="spec-h1">SVG Connectors</div>
+          <ul>
+            <li><strong>Split connector:</strong> viewBox <code>0 0 100 88</code> — vertical stem (gradient fade) → horizontal bar → two drops</li>
+            <li><strong>Merge connector:</strong> viewBox <code>0 0 100 48</code> — two rises → horizontal bar → vertical stem down</li>
+            <li><strong>Stroke color:</strong> <code>rgba(232,238,248,0.82)</code></li>
+            <li><strong>Stroke width:</strong> <code>1.5</code> with <code>vector-effect: non-scaling-stroke</code></li>
+            <li><strong>Fade gradient:</strong> <code>rgba(232,238,248,0) → rgba(232,238,248,0.82)</code></li>
+          </ul>
+        </div>
+        <div class="spec-block">
+          <div class="spec-h1">Status Buttons</div>
+          <ul>
+            <li><strong>Size:</strong> <code>26×26px; rounded-[8px]</code></li>
+            <li><strong>Off:</strong> <code>bg: #3f3f46; border: rgba(0,0,0,0.2); color: #a1a1aa</code></li>
+            <li><strong>Failed on:</strong> <code>bg: rgba(239,68,68,0.2); border: rgba(239,68,68,0.6); color: #fca5a5</code></li>
+            <li><strong>Succeeded on:</strong> <code>bg: rgba(16,185,129,0.2); border: rgba(16,185,129,0.6); color: #a7f3d0</code></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="bottom-col">
+        <div class="spec-block">
+          <div class="spec-h1">Colors</div>
+          <table class="color-table">
+            <thead><tr><th>Name</th><th>Swatch</th><th>Hex</th><th>Role</th></tr></thead>
+            <tbody>
+              <tr><td>Outer Shell</td><td><span class="swatch" style="background:#2a2a2f;"></span></td><td><code>#2a2a2f</code></td><td>Section background</td></tr>
+              <tr><td>Arc Container</td><td><span class="swatch" style="background:rgba(58,58,63,0.30);"></span></td><td><code>rgba(58,58,63,0.30)</code></td><td>Inner tray</td></tr>
+              <tr><td>Fail Strip</td><td><span class="swatch" style="background:rgba(240,74,95,0.28);"></span></td><td><code>rgba(240,74,95,0.28)</code></td><td>Fail path header</td></tr>
+              <tr><td>Success Strip</td><td><span class="swatch" style="background:rgba(34,197,127,0.28);"></span></td><td><code>rgba(34,197,127,0.28)</code></td><td>Success path header</td></tr>
+              <tr><td>Fail Step Card</td><td><span class="swatch" style="background:rgba(78,58,68,0.78);"></span></td><td><code>rgba(78,58,68,0.78)</code></td><td>Fail step bg</td></tr>
+              <tr><td>Success Step Card</td><td><span class="swatch" style="background:rgba(51,75,66,0.78);"></span></td><td><code>rgba(51,75,66,0.78)</code></td><td>Success step bg</td></tr>
+              <tr><td>Branch Cluster</td><td><span class="swatch" style="background:rgba(43,47,57,0.9);"></span></td><td><code>rgba(43,47,57,0.9)</code></td><td>Trigger container</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
 
 </html>
