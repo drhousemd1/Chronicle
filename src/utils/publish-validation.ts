@@ -10,7 +10,7 @@ export interface PublishValidationErrors {
   noUserCharacter?: string;
   characters?: Record<string, string[]>; // characterId -> array of error messages
   location?: string;
-  storyArc?: string;
+  storyGoal?: string;
   coverImage?: string;
   briefDescription?: string;
 }
