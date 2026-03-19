@@ -13,7 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 import { Sunrise, Sun, Sunset, Moon, ChevronUp, ChevronDown, Pencil, Sparkles, Share2, Trash2, Plus, X, Info, Lock } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
-import { StoryGoalsSection } from './StoryGoalsSection';
+import { StoryGoalsSectionSimple } from './StoryGoalsSectionSimple';
 import { useArtStyles } from '@/contexts/ArtStylesContext';
 import { cn } from '@/lib/utils';
 import { SceneTagEditorModal } from './SceneTagEditorModal';
