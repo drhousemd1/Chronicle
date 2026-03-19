@@ -3015,21 +3015,11 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           }
         });
       
-      // Also gather story arc pending steps
-      const storyArcs = effectiveWorldCore.storyGoals || [];
-      storyArcs.forEach((g: StoryGoal) => {
-        const allSteps: Array<{ status?: string; description: string }> = [
-          ...(g.steps || []),
-          ...(g.branches?.fail?.steps || []),
-          ...(g.branches?.success?.steps || []),
-          ...(g.linkedPhases || []).flatMap((p: any) => [
-            ...(p.branches?.fail?.steps || []),
-            ...(p.branches?.success?.steps || [])
-          ])
-        ];
-        const pendingStep = allSteps.find((s: ArcStep) => s.status === 'pending');
+      const storyGoalsList = effectiveWorldCore.storyGoals || [];
+      storyGoalsList.forEach((g: StoryGoal) => {
+        const pendingStep = (g.steps || []).find(s => !s.completed);
         if (pendingStep) {
-          goalSummaryParts.push(`Story arc "${g.title || g.desiredOutcome}": PENDING STEP — "${pendingStep.description}"`);
+          goalSummaryParts.push(`Story goal "${g.title || g.desiredOutcome}": PENDING STEP — "${pendingStep.description}"`);
         }
       });
       

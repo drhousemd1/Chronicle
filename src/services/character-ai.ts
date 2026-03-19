@@ -55,14 +55,12 @@ function buildFullContext(appData: ScenarioData, targetCharacterId: string): str
     }
   }
 
-  // Story goals/arcs
   if (core.storyGoals?.length) {
     const goalLines = core.storyGoals.map(g => {
       const outcome = g.desiredOutcome ? `: ${g.desiredOutcome}` : '';
-      const mode = g.mode ? ` [${g.mode}]` : '';
-      return `  - ${g.title}${outcome}${mode}`;
+      return `  - ${g.title}${outcome}`;
     }).join('\n');
-    parts.push(`Story Arcs:\n${goalLines}`);
+    parts.push(`Story Goals:\n${goalLines}`);
   }
 
   // Other characters (comprehensive summaries)
