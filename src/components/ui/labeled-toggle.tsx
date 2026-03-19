@@ -40,13 +40,13 @@ const LabeledToggle = React.forwardRef<HTMLButtonElement, LabeledToggleProps>(
         
         {/* Toggle track */}
         <div className={cn(
-          "relative h-5 w-9 rounded-full transition-colors",
-          locked ? "bg-zinc-500" : (checked ? "bg-blue-500" : "bg-zinc-600")
+          "relative h-[22px] w-10 rounded-full transition-colors",
+          locked ? "bg-zinc-500" : (checked ? "bg-blue-500 shadow-[inset_0_1px_3px_rgba(0,0,0,0.3)]" : "bg-[#1c1c1f] shadow-[inset_0_1px_3px_rgba(0,0,0,0.4)]")
         )}>
           {/* Toggle thumb */}
           <div className={cn(
-            "absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-md transition-transform",
-            checked ? "translate-x-4" : "translate-x-0.5"
+            "absolute top-[3px] h-4 w-4 rounded-full bg-white shadow-md transition-transform",
+            checked ? "translate-x-[21px]" : "translate-x-[3px]"
           )} />
         </div>
         
