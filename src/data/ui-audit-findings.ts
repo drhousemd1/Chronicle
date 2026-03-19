@@ -1339,7 +1339,7 @@ const findings: QualityFinding[] = [
       tags: ["module-security", "auth", "rls", "critical"],
       status: "fixed",
       verificationStatus: "verified",
-      verifiedBy: { ...codexAgent, timestamp: "2026-03-19T04:30:00Z" },
+      verifiedBy: stamp(runIds.security),
       updatedAt: "2026-03-19T04:30:00Z",
       expectedBehavior: "Folder-details RPC derives the user identity from the authenticated session, not from caller input.",
       actualBehavior: "Rewrote get_folders_with_details() via migration to remove p_user_id parameter entirely. Function now uses auth.uid() internally. Frontend callers updated to call RPC with no arguments.",
