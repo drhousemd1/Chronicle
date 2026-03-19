@@ -578,7 +578,7 @@ const findings: QualityFinding[] = [
       tags: ["module-orphan-code"],
       status: "fixed",
       verificationStatus: "verified",
-      verifiedBy: { ...codexAgent, timestamp: "2026-03-19T04:30:00Z" },
+      verifiedBy: stamp(runIds.orphan),
       updatedAt: "2026-03-19T04:30:00Z",
       expectedBehavior: "No dead placeholder files should exist in the active codebase.",
       actualBehavior: "File deleted. No references remain in the project.",
