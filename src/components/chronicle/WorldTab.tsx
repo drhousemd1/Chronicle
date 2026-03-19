@@ -1097,7 +1097,7 @@ className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
           <StoryGoalsSection
             goals={world.core.storyGoals || []}
             onChange={(goals) => updateCore({ storyGoals: goals })}
-            hasError={!!publishErrors.storyArc}
+            hasError={!!publishErrors.storyGoal}
             onEnhanceField={(fieldKey, getCurrentValue, setValue, customLabel) => {
               if (enhancingField) return;
               setEnhancingField(fieldKey as any);
