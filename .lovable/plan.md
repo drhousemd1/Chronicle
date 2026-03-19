@@ -1,76 +1,53 @@
 
+# Sandbox Feature Transfer — Master Tracker
 
-# Next Batch of Fixes — 5 Issues
+## Source Documents
+- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
+- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
 
-Here are the next five issues to tackle, prioritized by impact. Each one is explained in plain language.
+## Features Being Transferred
+| ID | Feature | Status |
+|----|---------|--------|
+| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
+| B | Story Transfer Library (story-transfer.ts) | ✅ |
+| A | UI Audit System (schema, utils, findings, page) | 🔄 |
+| B | Story Export/Import Modals | ✅ |
+| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
+| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
+| - | StyleGuideTool.tsx audit button | ⬜ |
+| - | App.tsx route wiring | ⬜ |
+| - | Index.tsx full wiring | ⬜ |
 
----
+## Prompt Execution Status
 
-## 1. Security: Anyone could view another user's image folders (Critical)
-**Finding:** `qh-sec-20260318-009`
+| # | Target File(s) | Status | Notes |
+|---|---------------|--------|-------|
+| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
+| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
+| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
+| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
+| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
+| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
+| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
+| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
+| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
+| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
+| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
+| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
+| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
+| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
 
-**What's wrong:** The function that loads your image library folders accepts a user ID as input from whoever calls it. Because it runs with elevated database privileges, it doesn't check whether the person asking is actually that user. This means someone could theoretically pass in a different user's ID and see their folder names, thumbnail images, and image counts.
-
-**Why it matters:** This is a privacy issue. Users' private library data should only be visible to them.
-
-**Fix:** Create a new version of the database function that ignores the caller-provided ID entirely and instead looks up the authenticated user automatically. Update the two frontend files that call it (`ImageLibraryTab.tsx` and `ImageLibraryPickerModal.tsx`) to stop passing the user ID parameter.
-
----
-
-## 2. Security: migrate-base64-images already has auth — mark it fixed (Critical)
-**Finding:** `qh-sec-20260318-005`
-
-**What's wrong:** This was flagged as having no authentication check, but looking at the current code, an auth guard was already added. The finding is outdated and just needs its status updated with documentation of what was done.
-
-**Why it matters:** Keeps the Quality Hub accurate so we're not wasting time re-investigating resolved issues.
-
-**Fix:** Update the finding to `status: "fixed"` with a comment explaining the auth guard is already present.
-
----
-
-## 3. Orphan Code: Remove 3 dead files nobody uses (Low — but easy wins)
-**Findings:** `qh-orphan-20260318-001`, `qh-orphan-20260318-002`, `qh-orphan-20260318-003`
-
-**What's wrong:** Three files sit in the codebase doing nothing:
-- **ChronicleApp.tsx** — A placeholder component from a migration that was never completed. Nothing imports it.
-- **DraftsModal.tsx** — A draft management popup that was replaced when drafts moved to the database. The import is commented out.
-- **storage.ts** — An old helper for saving data to the browser. Nothing in the app uses it anymore.
-
-**Why it matters:** Dead code is confusing. Future developers (or AI agents) might accidentally start using these files, thinking they're active. Removing them keeps the project clean and makes it easier to navigate.
-
-**Fix:** Delete all three files. Remove the leftover comment referencing DraftsModal in `Index.tsx`. Mark all three findings as fixed with documentation.
-
----
-
-## 4. Build: Image Library has a circular dependency (Medium)
-**Finding:** `qh-build-20260318-007`
-
-**What's wrong:** Two files depend on each other in a loop: `ImageLibraryTab.tsx` exports a type called `ImageFolder`, and `FolderEditModal.tsx` imports that type — but `ImageLibraryTab.tsx` also imports `FolderEditModal`. This circular reference can cause subtle issues with hot-reload during development and makes the code harder to maintain.
-
-**Why it matters:** Circular dependencies are a code smell that can lead to hard-to-debug issues, especially as the project grows.
-
-**Fix:** Move the `ImageFolder` type into a new file (`image-library-types.ts`), then update both files to import from there instead.
-
----
-
-## 5. Registry housekeeping
-
-After all fixes, bump `registryVersion` from `5` to `6` so the Quality Hub UI refreshes and shows the updated statuses. Each fixed finding will include:
-- Status set to `"fixed"` and `verificationStatus: "verified"`
-- A comment explaining exactly what was changed
-- Updated `expectedBehavior` and `actualBehavior` fields
-
----
-
-### Files changed
-- **New migration SQL** — Rewrite `get_folders_with_details` to use `auth.uid()` instead of `p_user_id`
-- `src/components/chronicle/ImageLibraryTab.tsx` — Update RPC call (no user ID param), move `ImageFolder` type out
-- `src/components/chronicle/ImageLibraryPickerModal.tsx` — Update RPC call
-- **New file:** `src/components/chronicle/image-library-types.ts` — Shared `ImageFolder` type
-- `src/components/chronicle/FolderEditModal.tsx` — Import from new types file
-- **Delete:** `src/components/chronicle/ChronicleApp.tsx`
-- **Delete:** `src/components/chronicle/DraftsModal.tsx`
-- **Delete:** `src/services/storage.ts`
-- `src/pages/Index.tsx` — Remove DraftsModal comment lines
-- `src/data/ui-audit-findings.ts` — Mark 6 findings as fixed with full documentation, bump registry version
-
+## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
+- `src/types.ts`: line 11507
+- `src/utils.ts`: line 12138
+- `src/lib/story-transfer.ts`: line 9812
+- `src/lib/ui-audit-schema.ts`: line 21329
+- `src/lib/ui-audit-utils.ts`: line 21565
+- `src/data/ui-audit-findings.ts`: line 18967
+- `StoryExportFormatModal.tsx`: line 9642
+- `StoryImportModeModal.tsx`: line 9731
+- `CharactersTab.tsx`: line 2893
+- `ChatInterfaceTab.tsx`: line 5004
+- `src/pages/style-guide/ui-audit.tsx`: line 17867
+- `src/App.tsx`: line 95
+- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout

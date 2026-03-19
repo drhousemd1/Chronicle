@@ -9,30 +9,8 @@ import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { resizeImage, uuid } from '@/utils';
 
-// Types
-export type ImageFolder = {
-  id: string;
-  userId: string;
-  name: string;
-  description: string;
-  thumbnailImageId: string | null;
-  thumbnailUrl: string | null;
-  imageCount: number;
-  createdAt: number;
-  updatedAt: number;
-};
-
-export type LibraryImage = {
-  id: string;
-  userId: string;
-  folderId: string;
-  imageUrl: string;
-  filename: string;
-  title: string;
-  isThumbnail: boolean;
-  tags: string[];
-  createdAt: number;
-};
+import type { ImageFolder, LibraryImage } from './image-library-types';
+export type { ImageFolder, LibraryImage } from './image-library-types';
 
 interface ImageLibraryTabProps {
   userId: string | null;
@@ -116,9 +94,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
     fetchInProgressRef.current = true;
     
     try {
-      const { data, error } = await supabase.rpc('get_folders_with_details', {
-        p_user_id: userId,
-      });
+      const { data, error } = await (supabase.rpc as any)('get_folders_with_details');
 
       if (error) throw error;
 
