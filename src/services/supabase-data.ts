@@ -690,7 +690,7 @@ export async function deleteScenario(id: string): Promise<void> {
  */
 export async function getScenarioOwner(scenarioId: string): Promise<string | null> {
   const { data, error } = await supabase
-    .from('stories' as any)
+    .from('stories')
     .select('user_id')
     .eq('id', scenarioId)
     .maybeSingle();
