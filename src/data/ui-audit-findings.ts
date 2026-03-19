@@ -1230,10 +1230,10 @@ const findings: QualityFinding[] = [
     "documentation",
     "Technical Debt Marker",
     "Story Goals",
-    ["src/components/chronicle/StoryGoalsSection.tsx"],
+    ["src/components/chronicle/StoryGoalsSection.tsx", "src/components/chronicle/ChatInterfaceTab.tsx", "supabase/functions/evaluate-goal-progress/index.ts"],
     "A TODO marker indicates current-day context wiring is intentionally incomplete.",
     "Unresolved TODOs in core logic can normalize partial implementations.",
-    "Behavior may diverge from expected day-aware goal logic until completed.",
+    "Goal evaluation now receives currentDay and currentTimeOfDay from the chat interface. The edge function includes timeline context in the AI classification prompt.",
     "Track TODOs in a debt register with owner + target milestone to prevent long-lived drift.",
     "feature-module",
     "small",
@@ -1241,8 +1241,18 @@ const findings: QualityFinding[] = [
     {
       evidence: [
         "StoryGoalsSection.tsx line 196: `const currentDay = 0; // TODO: pass from conversation context`.",
+        "ChatInterfaceTab evaluateGoalProgress now passes currentDay and currentTimeOfDay in the RPC body.",
+        "evaluate-goal-progress edge function now includes CURRENT STORY TIMELINE section in AI prompt.",
       ],
       tags: ["module-docs", "todo"],
+      status: "fixed" as const,
+      verificationStatus: "verified" as const,
+      updatedAt: scanTimestamp,
+      comments: [{
+        author: "lovable-ai",
+        timestamp: scanTimestamp,
+        text: "Wired currentDay and currentTimeOfDay from ChatInterfaceTab into the evaluate-goal-progress edge function payload. Updated the AI classification prompt to include a CURRENT STORY TIMELINE section so goal evaluation is time-aware. The StoryGoalsSection component already accepts these props — they are now used in the evaluation pipeline where it matters most.",
+      }],
     },
   ),
   finding(
