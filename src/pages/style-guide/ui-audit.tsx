@@ -446,7 +446,7 @@ export default function UiAuditPage() {
                         <div className="flex flex-wrap items-start gap-2 pr-8">
                           <span className={cn("rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em]", severityBadgeClass[f.severity])}>{f.severity}</span>
                           <span className="rounded-full bg-[#4a5f7f] px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">{f.domain}</span>
-                          <span className="rounded-full bg-[#4a5f7f] px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">{f.status}</span>
+                          <span className={cn("rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em]", f.status === "fixed" ? "bg-[#166534] text-white" : "bg-[#4a5f7f] text-[#eaedf1]")}>{f.status}</span>
                         </div>
                         <div className="mt-2 text-sm font-bold text-white">{f.title}</div>
                         <div className="mt-1 text-xs text-[#a1a1aa]">{f.page}{f.component ? ` • ${f.component}` : ""}</div>
