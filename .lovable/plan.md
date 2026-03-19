@@ -1,53 +1,57 @@
 
-# Sandbox Feature Transfer — Master Tracker
 
-## Source Documents
-- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
-- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
+# Restyle Chat Settings Modal to Match HTML Design Document
 
-## Features Being Transferred
-| ID | Feature | Status |
-|----|---------|--------|
-| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
-| B | Story Transfer Library (story-transfer.ts) | ✅ |
-| A | UI Audit System (schema, utils, findings, page) | 🔄 |
-| B | Story Export/Import Modals | ✅ |
-| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
-| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
-| - | StyleGuideTool.tsx audit button | ⬜ |
-| - | App.tsx route wiring | ⬜ |
-| - | Index.tsx full wiring | ⬜ |
+## Summary
+Replace the current Chat Settings modal styling (lines 4739-4988 of `ChatInterfaceTab.tsx`) with the exact design from the HTML document (lines 1019-1207). All existing functionality and wiring remains unchanged — this is a pure visual overhaul.
 
-## Prompt Execution Status
+## Design Spec (from HTML document, line-by-line)
 
-| # | Target File(s) | Status | Notes |
-|---|---------------|--------|-------|
-| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
-| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
-| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
-| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
-| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
-| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
-| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
-| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
-| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
-| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
-| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
-| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
-| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
-| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
+### Modal Shell
+- Use `DialogContentBare` instead of `DialogContent` to avoid Radix default radius overrides
+- Outer: `bg-[#2a2a2f] rounded-[24px] overflow-hidden` with premium shadow stack (`0 20px 50px rgba(0,0,0,0.55), inset 1px 1px 0 rgba(255,255,255,0.09), inset -1px -1px 0 rgba(0,0,0,0.35)`)
+- Remove all default DialogHeader/DialogTitle — replace with custom header
 
-## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
-- `src/types.ts`: line 11507
-- `src/utils.ts`: line 12138
-- `src/lib/story-transfer.ts`: line 9812
-- `src/lib/ui-audit-schema.ts`: line 21329
-- `src/lib/ui-audit-utils.ts`: line 21565
-- `src/data/ui-audit-findings.ts`: line 18967
-- `StoryExportFormatModal.tsx`: line 9642
-- `StoryImportModeModal.tsx`: line 9731
-- `CharactersTab.tsx`: line 2893
-- `ChatInterfaceTab.tsx`: line 5004
-- `src/pages/style-guide/ui-audit.tsx`: line 17867
-- `src/App.tsx`: line 95
-- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout
+### Header
+- Slate blue gradient: `bg-gradient-to-b from-[#5a7292] to-[#4a5f7f]`
+- Gloss sheen overlay (absolute pseudo-element: `from-white/[0.07] to-transparent` at 30%)
+- Drop shadow: `shadow-[0_6px_16px_rgba(0,0,0,0.35)]`
+- Icon: broadcast/radio icon (matching HTML SVG), `stroke-white/90`
+- Title: `text-[16px] font-black text-white uppercase tracking-[0.08em]` — "CHAT SETTINGS"
+- Close button: `w-7 h-7 rounded-lg bg-black/25` with X icon, positioned `ml-auto`
+
+### Body
+- Single inner card wrapper: `bg-[#2e2e33] rounded-2xl p-4` with inner shadow stack (`inset 1px 1px 0 rgba(255,255,255,0.07), inset -1px -1px 0 rgba(0,0,0,0.30), 0 4px 12px rgba(0,0,0,0.25)`)
+- All content lives inside this card
+
+### Section Labels
+- `text-[12px] font-black text-[#a1a1aa] uppercase tracking-[0.12em]` — e.g. "INTERFACE SETTINGS", "AI BEHAVIOR"
+
+### Toggle Rows (Interface Settings — 2x2 grid)
+- Each row: `bg-[#3c3e47] rounded-[10px] p-[12px_14px]` with premium shadow (`0 8px 24px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.09), inset 0 -1px 0 rgba(0,0,0,0.20)`)
+- Label: `text-[13px] font-semibold text-[#eaedf1]`
+- Uses existing `LabeledToggle` component (already matches the Off/toggle/On pattern)
+- Grid: `grid grid-cols-2 gap-2`
+
+### AI Behavior Section
+- Divider between sections: `h-px bg-white/5`
+- Character Discovery + Proactive AI Mode: 2-col grid, same row style but with subtitle: `text-[12px] text-[#a1a1aa] mt-0.5`
+- Narrative POV: same row style, with pill buttons: active = `bg-[#3b82f6] text-white shadow-[0_2px_8px_rgba(59,130,246,0.35)]`, inactive = `bg-[#3f3f46] text-[#a1a1aa]`, `rounded-lg px-3 py-1.5 text-[12px] font-bold`
+- NSFW Intensity: same row style with LabeledToggle (offLabel="Normal", onLabel="High")
+- Response Detail: same row style with 3-pill selector (Concise/Balanced/Detailed), same pill styling as POV
+- Realism Mode: same row style with LabeledToggle
+
+### Time Progression Section
+- Keep existing Time Progression section but apply same row styling (`bg-[#3c3e47] rounded-[10px]` etc.) for consistency
+
+## Files Changed
+
+### `src/components/chronicle/ChatInterfaceTab.tsx`
+- Lines 4739-4988: Replace the entire Chat Settings Dialog block
+- Import `DialogContentBare` (add to existing dialog import)
+- All `handleUpdateUiSettings`, `handleTimeProgressionChange`, toggle state reads, and LabeledToggle bindings remain exactly the same — only the JSX structure and class names change
+
+### No other files need changes
+- `LabeledToggle` component already matches the design's toggle pattern
+- No new components needed
+
