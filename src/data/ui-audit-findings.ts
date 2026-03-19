@@ -115,6 +115,7 @@ const findings: QualityFinding[] = [
     "small",
     runIds.security,
     {
+      status: "fixed",
       route: "edge function",
       component: "sync-guide-to-github",
       evidence: [
