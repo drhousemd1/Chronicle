@@ -437,7 +437,7 @@ const findings: QualityFinding[] = [
       status: "fixed" as const,
       verificationStatus: "verified" as const,
       updatedAt: scanTimestamp,
-      comments: [{
+      comments: [{ id: "comment-data-001-fix",
         author: "lovable-ai",
         timestamp: scanTimestamp,
         text: "Removed `as any` cast from all 7 occurrences of supabase.from('stories' as any) in supabase-data.ts. The stories table is fully defined in the generated types.",
