@@ -11,7 +11,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { uploadSceneImage, uploadCoverImage, dataUrlToBlob } from '@/services/supabase-data';
 import { supabase } from '@/integrations/supabase/client';
 
-import { Sunrise, Sun, Sunset, Moon, ChevronUp, ChevronDown, Pencil, Sparkles, Share2, Trash2, Plus, X, Info, Lock } from 'lucide-react';
+import { Sunrise, Sun, Sunset, Moon, ChevronUp, ChevronDown, Pencil, Sparkles, Share2, Trash2, Plus, X, Info, Lock, BrainCog } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { StoryGoalsSection } from './StoryGoalsSection';
 import { useArtStyles } from '@/contexts/ArtStylesContext';
