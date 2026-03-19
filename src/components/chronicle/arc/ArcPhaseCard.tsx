@@ -1,5 +1,11 @@
 import React from 'react';
-import { ArcPhase, ArcBranch, ArcStep, ArcMode, GoalFlexibility, StepStatus } from '@/types';
+import { GoalFlexibility } from '@/types';
+
+type StepStatus = 'pending' | 'failed' | 'succeeded' | 'deviated';
+type ArcStep = { id: string; description: string; status: StepStatus; statusEventOrder: number; completedAt?: number; retryOf?: string; retryCount?: number; failedOnDay?: number; permanentlyFailed?: boolean; resistanceScore?: number; resistanceEvents?: any[] };
+type ArcBranch = { id: string; type: 'fail' | 'success'; triggerDescription: string; steps: ArcStep[] };
+type ArcMode = 'simple' | 'advanced';
+type ArcPhase = { id: string; title: string; desiredOutcome: string; flexibility: GoalFlexibility; mode: ArcMode; branches: { fail?: ArcBranch; success?: ArcBranch }; statusEventCounter: number; createdAt: number; updatedAt: number };
 import { Trash2, Sparkles, CheckSquare } from 'lucide-react';
 import { GuidanceStrengthSlider } from '../GuidanceStrengthSlider';
 import { ArcBranchLane } from './ArcBranchLane';
