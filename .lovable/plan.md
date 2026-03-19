@@ -1,53 +1,47 @@
 
-# Sandbox Feature Transfer — Master Tracker
 
-## Source Documents
-- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
-- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
+# Add Story Arc Spec Sheet (Card 3) to Style Guide
 
-## Features Being Transferred
-| ID | Feature | Status |
-|----|---------|--------|
-| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
-| B | Story Transfer Library (story-transfer.ts) | ✅ |
-| A | UI Audit System (schema, utils, findings, page) | 🔄 |
-| B | Story Export/Import Modals | ✅ |
-| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
-| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
-| - | StyleGuideTool.tsx audit button | ⬜ |
-| - | App.tsx route wiring | ⬜ |
-| - | Index.tsx full wiring | ⬜ |
+## Summary
+Append a third `.card` block to `public/style-guide-component-example.html` documenting the Story Arc (ArcPhaseCard) component with a 1:1 pixel-accurate static HTML preview and collapsible details.
 
-## Prompt Execution Status
+## Preview Section — What Gets Rendered
+A full ArcPhaseCard replica showing:
 
-| # | Target File(s) | Status | Notes |
-|---|---------------|--------|-------|
-| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
-| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
-| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
-| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
-| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
-| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
-| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
-| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
-| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
-| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
-| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
-| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
-| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
-| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
+1. **Phase label row** — "PHASE 1" (blue-500, 10px/900/uppercase/tracking-widest) + red delete button (30x30, rounded-[10px], border red-500/50)
+2. **Goal Name row** — label (10px/900/zinc-400/uppercase) + textarea (bg #1c1c1f, border black/35, rounded-lg) + **Progress Ring** (80x80, 8px border rgba(51,80,125,0.85), "33%" text in slate-300)
+3. **Desired Outcome** — label + sparkle enhance button + textarea
+4. **Guidance Strength Slider** — label "Guidance Strength", subtitle text, track bar (h:12px, rounded-full, bg rgba(21,25,34,0.95)), blue gradient fill (linear-gradient(90deg, #2b4e8d, #4b79d8 60%, #7dadf5)), white thumb (24x24, border-[3px] blue-500), three clickable labels (Rigid/Normal/Flexible), description box (bg zinc-900, rounded-xl, inset shadow stack)
+5. **Steps section** — "STEPS" heading with CheckSquare icon (blue-500) + Simple/Advanced mode toggle (bg #3c3e47, rounded-xl, active pill #3b82f6)
+6. **ArcConnectors split** — SVG fork (vertical stem fading down, horizontal bar at y=64, two drops at x=25% and x=75%)
+7. **Two-column branch lanes** (grid-cols-2 gap-4):
+   - **Fail Path** — Header cluster: rounded-[18px] bg rgba(43,47,57,0.9), shadow 0 14px 26px rgba(0,0,0,0.4). Strip: bg rgba(240,74,95,0.28), "FAIL PATH" text. Body: "RESISTANCE TRIGGER" label + textarea. Below: step card (rounded-[18px], border white/15, bg rgba(78,58,68,0.78)) with FAILED/SUCCEEDED buttons (26x26 rounded-[8px]), description textarea, + Dynamic Recovery sentinel card with Lock icon. 
+   - **Success Path** — Same structure but strip bg rgba(34,197,127,0.28), step card bg rgba(51,75,66,0.78), "SUCCEED PATH" / "SUCCESS TRIGGER" / "PROGRESSION STEP", + "Add Step" button (bg #3c3e47, rounded-xl, shadow stack, blue text)
 
-## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
-- `src/types.ts`: line 11507
-- `src/utils.ts`: line 12138
-- `src/lib/story-transfer.ts`: line 9812
-- `src/lib/ui-audit-schema.ts`: line 21329
-- `src/lib/ui-audit-utils.ts`: line 21565
-- `src/data/ui-audit-findings.ts`: line 18967
-- `StoryExportFormatModal.tsx`: line 9642
-- `StoryImportModeModal.tsx`: line 9731
-- `CharactersTab.tsx`: line 2893
-- `ChatInterfaceTab.tsx`: line 5004
-- `src/pages/style-guide/ui-audit.tsx`: line 17867
-- `src/App.tsx`: line 95
-- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout
+All colors, sizes, shadows, and border-radius values taken directly from the source components.
+
+## Details Section (Collapsible)
+
+### Spec Blocks
+- **Phase Label Row** — 10px/900/blue-500/uppercase/tracking-widest; delete button 30x30 rounded-[10px] border red-500/50
+- **Progress Ring** — 80x80, border-[8px] rgba(51,80,125,0.85), text 18px/700/slate-300
+- **Guidance Strength Slider** — track h:12px rounded-full bg rgba(21,25,34,0.95), fill gradient, thumb 24x24 white border-[3px] blue-500, description box bg zinc-900 with inset shadow
+- **Mode Toggle** — bg #3c3e47, rounded-xl, shadow stack, active: #3b82f6 white, inactive: #3f3f46 #a1a1aa
+- **Branch Header Cluster** — rounded-[18px], bg rgba(43,47,57,0.9), shadow 0 14px 26px rgba(0,0,0,0.4)
+- **Branch Strip** — fail: rgba(240,74,95,0.28), success: rgba(34,197,127,0.28)
+- **Step Card** — rounded-[18px], border white/15, fail bg rgba(78,58,68,0.78), success bg rgba(51,75,66,0.78), shadow 0 14px 26px -6px rgba(0,0,0,0.4)
+- **Status Buttons** — 26x26 rounded-[8px]; active-failed: border red-500/60 bg red-500/20 text red-300; active-succeeded: border emerald-500/60 bg emerald-500/20 text emerald-200; inactive: border black/20 bg #3f3f46 text #a1a1aa
+- **SVG Connector** — split: 100×88 viewBox, lines at rgba(232,238,248,0.82), fade gradient on stem
+
+### Bottom 4-Column Grid
+- **Col 1**: Branch header + step card layer specs
+- **Col 2**: Status button + mode toggle + guidance slider specs
+- **Col 3**: Colors table (all unique colors)
+- **Col 4**: Typography + layout dimensions
+
+## CSS Additions
+New preview-specific classes prefixed with `arc-` for the static replica elements (branch strips, step cards, progress ring, slider track, connector SVG wrapper). Reuses existing shared classes (`.cs-pill`, `.cs-toggle`, etc.) where applicable.
+
+## File Changed
+**`public/style-guide-component-example.html`** — Append Card 3 after the Chat Settings card (after line 894).
+
