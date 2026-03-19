@@ -1337,6 +1337,18 @@ const findings: QualityFinding[] = [
         "Generated Supabase client types expose RPC Args as `{ p_user_id: string }`, confirming caller-controlled parameterization.",
       ],
       tags: ["module-security", "auth", "rls", "critical"],
+      status: "fixed",
+      verificationStatus: "verified",
+      verifiedBy: { ...codexAgent, timestamp: "2026-03-19T04:30:00Z" },
+      updatedAt: "2026-03-19T04:30:00Z",
+      expectedBehavior: "Folder-details RPC derives the user identity from the authenticated session, not from caller input.",
+      actualBehavior: "Rewrote get_folders_with_details() via migration to remove p_user_id parameter entirely. Function now uses auth.uid() internally. Frontend callers updated to call RPC with no arguments.",
+      comments: [{
+        id: "fix-sec-009",
+        author: codexAgent,
+        timestamp: "2026-03-19T04:30:00Z",
+        text: "Created migration to replace get_folders_with_details(p_user_id uuid) with get_folders_with_details() — no parameters. The WHERE clause now uses auth.uid() instead of p_user_id. Updated ImageLibraryTab.tsx and ImageLibraryPickerModal.tsx to call the RPC without arguments. The old function signature with p_user_id is fully replaced.",
+      }],
     },
   ),
   finding(
