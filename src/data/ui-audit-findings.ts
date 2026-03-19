@@ -410,7 +410,6 @@ const findings: QualityFinding[] = [
       }],
     },
   ),
-  ),
 
   // Data integrity
   finding(
