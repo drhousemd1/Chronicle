@@ -1252,7 +1252,7 @@ const findings: QualityFinding[] = [
       tags: ["module-build", "dependencies", "circular"],
       status: "fixed",
       verificationStatus: "verified",
-      verifiedBy: { ...codexAgent, timestamp: "2026-03-19T04:30:00Z" },
+      verifiedBy: stamp(runIds.build),
       updatedAt: "2026-03-19T04:30:00Z",
       expectedBehavior: "No circular import chains between Image Library modules.",
       actualBehavior: "ImageFolder and LibraryImage types extracted to image-library-types.ts. Both ImageLibraryTab.tsx and FolderEditModal.tsx now import from the shared types file, breaking the cycle.",
