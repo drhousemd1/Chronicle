@@ -56,7 +56,7 @@ export const SceneTagEditorModal: React.FC<SceneTagEditorModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/85" onClick={onClose} />
+      <button type="button" aria-label="Close scene editor" className="absolute inset-0 bg-black/85 cursor-default" onClick={onClose} />
       
       {/* Modal */}
       <div className="relative w-[600px] max-w-[95vw] max-h-[90vh] overflow-y-auto bg-zinc-900 rounded-xl border border-[#4a5f7f] p-3">
