@@ -16,6 +16,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogContentBare,
   DialogHeader,
   DialogTitle,
   DialogFooter,
