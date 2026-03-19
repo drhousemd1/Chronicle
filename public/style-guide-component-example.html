@@ -280,6 +280,123 @@
       background: #3c3e47; border: none; border-radius: 12px; cursor: pointer;
       box-shadow: 0 8px 24px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.09), inset 0 -1px 0 rgba(0,0,0,0.20);
     }
+
+    /* ── Chat Settings Preview ── */
+    .cs-modal {
+      width: 100%;
+      max-width: 480px;
+      background: #2a2a2f;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow:
+        0 20px 50px rgba(0,0,0,0.55),
+        inset 1px 1px 0 rgba(255,255,255,0.09),
+        inset -1px -1px 0 rgba(0,0,0,0.35);
+    }
+    .cs-header {
+      position: relative;
+      background: linear-gradient(180deg, #5a7292 0%, #4a5f7f 100%);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+      overflow: hidden;
+    }
+    .cs-header::after {
+      content: "";
+      position: absolute; inset: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.00) 30%);
+      pointer-events: none;
+    }
+    .cs-header-title {
+      font-size: 16px; font-weight: 900; color: #fff;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      position: relative;
+    }
+    .cs-close-btn {
+      width: 28px; height: 28px;
+      background: rgba(0,0,0,0.25);
+      border: none; border-radius: 8px;
+      color: rgba(255,255,255,0.7);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; position: relative;
+    }
+    .cs-body { padding: 16px; }
+    .cs-inner {
+      background: #2e2e33;
+      border-radius: 16px;
+      box-shadow:
+        inset 1px 1px 0 rgba(255,255,255,0.07),
+        inset -1px -1px 0 rgba(0,0,0,0.30),
+        0 4px 12px rgba(0,0,0,0.25);
+      padding: 16px;
+    }
+    .cs-section-label {
+      font-size: 12px; font-weight: 900; color: #a1a1aa;
+      text-transform: uppercase; letter-spacing: 0.12em;
+      margin-bottom: 8px;
+    }
+    .cs-grid-2x2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .cs-setting-row {
+      background: #3c3e47;
+      border-radius: 10px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow:
+        0 8px 24px rgba(0,0,0,0.45),
+        inset 0 1px 0 rgba(255,255,255,0.09),
+        inset 0 -1px 0 rgba(0,0,0,0.20);
+    }
+    .cs-row-label {
+      font-size: 13px; font-weight: 600; color: #eaedf1;
+      display: block;
+    }
+    .cs-row-sub {
+      font-size: 11px; color: #a1a1aa; margin-top: 2px;
+    }
+    .cs-toggle {
+      width: 40px; height: 22px;
+      border-radius: 11px;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .cs-toggle.on {
+      background: #3b82f6;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+    }
+    .cs-toggle.off {
+      background: #1c1c1f;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.4);
+    }
+    .cs-toggle-thumb {
+      position: absolute;
+      top: 3px; left: 3px;
+      width: 16px; height: 16px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.15s;
+    }
+    .cs-pill-group {
+      display: flex; gap: 6px;
+    }
+    .cs-pill {
+      padding: 6px 12px;
+      font-size: 12px; font-weight: 700;
+      border: none; border-radius: 8px;
+      cursor: pointer;
+      background: #3f3f46; color: #a1a1aa;
+    }
+    .cs-pill.active {
+      background: #3b82f6; color: #fff;
+      box-shadow: 0 2px 8px rgba(59,130,246,0.35);
+    }
   </style>
 </head>
 <body>
@@ -466,6 +583,255 @@
           <li><strong>Value side:</strong> <code>flex: 1</code> — auto-resizing textarea</li>
           <li><strong>Lock icon:</strong> fixed <code>width: 26px</code></li>
           <li>Auto-resize: <code>el.style.height='auto'; el.style.height=el.scrollHeight+'px'</code></li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<div style="height:40px;"></div>
+
+<div class="card">
+
+  <div class="card-header">
+    <span class="card-title">Chat Settings</span>
+    <span class="card-sub">ChatInterfaceTab.tsx — Chat behavioral settings modal</span>
+  </div>
+
+  <div class="top-section">
+
+    <div class="top-spec">
+
+      <div class="spec-block">
+        <div class="spec-h1">Modal Shell Layers</div>
+        <ul>
+          <li><strong>Layer 1 — Base fill:</strong> <code>background: #2a2a2f</code></li>
+          <li><strong>Layer 2 — Outer drop shadow:</strong> <code>0 20px 50px rgba(0,0,0,0.55)</code></li>
+          <li><strong>Layer 3 — Top-left light bevel (inset):</strong> <code>inset 1px 1px 0 rgba(255,255,255,0.09)</code></li>
+          <li><strong>Layer 4 — Bottom-right dark bevel (inset):</strong> <code>inset -1px -1px 0 rgba(0,0,0,0.35)</code>
+            <ul><li>Layers 2–4 comma-separated in one <code>box-shadow</code></li></ul>
+          </li>
+          <li><strong>Corner radius:</strong> <code>border-radius: 24px</code></li>
+        </ul>
+      </div>
+
+      <div class="spec-block">
+        <div class="spec-h1">Header Layers</div>
+        <ul>
+          <li><strong>Layer 1 — Base gradient:</strong> <code>linear-gradient(180deg, #5a7292 0%, #4a5f7f 100%)</code></li>
+          <li><strong>Layer 2 — Gloss sheen (::after):</strong>
+            <ul>
+              <li><code>position: absolute; inset: 0; pointer-events: none;</code></li>
+              <li><code>background: linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.00) 30%)</code></li>
+            </ul>
+          </li>
+          <li><strong>Layer 3 — Drop shadow:</strong> <code>box-shadow: 0 6px 16px rgba(0,0,0,0.35)</code></li>
+          <li><strong>Close button:</strong> <code>bg: rgba(0,0,0,0.25); w: 28px; h: 28px; border-radius: 8px</code></li>
+        </ul>
+      </div>
+
+      <div class="spec-block">
+        <div class="spec-h1">Inner Tray Layers</div>
+        <ul>
+          <li><strong>Layer 1 — Base fill:</strong> <code>background: #2e2e33</code></li>
+          <li><strong>Layer 2 — Top-left light bevel (inset):</strong> <code>inset 1px 1px 0 rgba(255,255,255,0.07)</code></li>
+          <li><strong>Layer 3 — Bottom-right dark bevel (inset):</strong> <code>inset -1px -1px 0 rgba(0,0,0,0.30)</code></li>
+          <li><strong>Layer 4 — Ambient drop shadow:</strong> <code>0 4px 12px rgba(0,0,0,0.25)</code></li>
+        </ul>
+      </div>
+
+      <div class="spec-block">
+        <div class="spec-h1">Setting Row Layers</div>
+        <ul>
+          <li><strong>Layer 1 — Base fill:</strong> <code>background: #3c3e47</code></li>
+          <li><strong>Layer 2 — Outer drop shadow:</strong> <code>0 8px 24px rgba(0,0,0,0.45)</code></li>
+          <li><strong>Layer 3 — Top light edge (inset):</strong> <code>inset 0 1px 0 rgba(255,255,255,0.09)</code></li>
+          <li><strong>Layer 4 — Bottom dark edge (inset):</strong> <code>inset 0 -1px 0 rgba(0,0,0,0.20)</code></li>
+          <li><strong>Corner radius:</strong> <code>border-radius: 10px</code></li>
+        </ul>
+      </div>
+
+      <div class="spec-block">
+        <div class="spec-h1">Toggle Track (LabeledToggle)</div>
+        <ul>
+          <li><strong>Off-state:</strong> <code>background: #1c1c1f; box-shadow: inset 0 1px 3px rgba(0,0,0,0.4)</code></li>
+          <li><strong>On-state:</strong> <code>background: #3b82f6; box-shadow: inset 0 1px 3px rgba(0,0,0,0.3)</code></li>
+          <li><strong>Track size:</strong> <code>40 × 22px</code></li>
+          <li><strong>Thumb:</strong> <code>16 × 16px white circle; top: 3px</code></li>
+        </ul>
+      </div>
+
+      <div class="spec-block">
+        <div class="spec-h1">Pill Button Layers (POV / Response Detail)</div>
+        <ul>
+          <li><strong>Active:</strong> <code>background: #3b82f6; box-shadow: 0 2px 8px rgba(59,130,246,0.35); color: #fff</code></li>
+          <li><strong>Inactive:</strong> <code>background: #3f3f46; color: #a1a1aa</code></li>
+          <li><strong>Sizing:</strong> <code>px: 12px; py: 6px; font-size: 12px; font-weight: 700; border-radius: 8px</code></li>
+        </ul>
+      </div>
+
+    </div>
+
+    <div class="top-preview">
+      <div class="preview-inner">
+        <div class="cs-modal">
+          <!-- Header -->
+          <div class="cs-header">
+            <div style="display:flex;align-items:center;gap:8px;position:relative;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#fff;"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.4"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.4"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/></svg>
+              <span class="cs-header-title">Chat Settings</span>
+            </div>
+            <button class="cs-close-btn">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+          </div>
+          <!-- Body -->
+          <div class="cs-body">
+            <div class="cs-inner">
+              <!-- Interface Settings -->
+              <div class="cs-section-label">Interface Settings</div>
+              <div class="cs-grid-2x2">
+                <div class="cs-setting-row"><span class="cs-row-label">Dynamic Backgrounds</span><div class="cs-toggle on"><div class="cs-toggle-thumb" style="transform:translateX(18px);"></div></div></div>
+                <div class="cs-setting-row"><span class="cs-row-label">Transparent Bubbles</span><div class="cs-toggle off"><div class="cs-toggle-thumb"></div></div></div>
+                <div class="cs-setting-row"><span class="cs-row-label">Offset Bubbles</span><div class="cs-toggle on"><div class="cs-toggle-thumb" style="transform:translateX(18px);"></div></div></div>
+                <div class="cs-setting-row"><span class="cs-row-label">Dynamic Text</span><div class="cs-toggle off"><div class="cs-toggle-thumb"></div></div></div>
+              </div>
+
+              <!-- AI Behavior -->
+              <div class="cs-section-label" style="margin-top:16px;">AI Behavior</div>
+              <div class="cs-grid-2x2" style="grid-template-columns:1fr 1fr;">
+                <div class="cs-setting-row"><div><span class="cs-row-label">Character Discovery</span><div class="cs-row-sub">AI introduces new characters</div></div><div class="cs-toggle on"><div class="cs-toggle-thumb" style="transform:translateX(18px);"></div></div></div>
+                <div class="cs-setting-row"><div><span class="cs-row-label">Proactive AI</span><div class="cs-row-sub">AI drives the narrative</div></div><div class="cs-toggle on"><div class="cs-toggle-thumb" style="transform:translateX(18px);"></div></div></div>
+              </div>
+
+              <!-- Narrative POV -->
+              <div class="cs-setting-row" style="margin-top:8px;flex-direction:column;align-items:stretch;gap:8px;">
+                <span class="cs-row-label">Narrative POV</span>
+                <div class="cs-pill-group">
+                  <button class="cs-pill active">1st Person</button>
+                  <button class="cs-pill">2nd Person</button>
+                  <button class="cs-pill">3rd Person</button>
+                </div>
+              </div>
+
+              <!-- NSFW Intensity -->
+              <div class="cs-setting-row" style="margin-top:8px;">
+                <div><span class="cs-row-label">NSFW Intensity</span><div class="cs-row-sub">Adjust explicit content level</div></div>
+                <div class="cs-toggle off"><div class="cs-toggle-thumb"></div></div>
+              </div>
+
+              <!-- Response Detail -->
+              <div class="cs-setting-row" style="margin-top:8px;flex-direction:column;align-items:stretch;gap:8px;">
+                <span class="cs-row-label">Response Detail</span>
+                <div class="cs-pill-group">
+                  <button class="cs-pill">Concise</button>
+                  <button class="cs-pill active">Balanced</button>
+                  <button class="cs-pill">Detailed</button>
+                </div>
+              </div>
+
+              <!-- Realism Mode -->
+              <div class="cs-setting-row" style="margin-top:8px;">
+                <span class="cs-row-label">Realism Mode</span>
+                <div class="cs-toggle off"><div class="cs-toggle-thumb"></div></div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="bottom-section">
+
+    <div class="bottom-col">
+      <div class="spec-block">
+        <div class="spec-h1">Toggle Track Layers</div>
+        <ul>
+          <li><strong>Off-state fill:</strong> <code>background: #1c1c1f</code></li>
+          <li><strong>Off-state shadow:</strong> <code>inset 0 1px 3px rgba(0,0,0,0.4)</code></li>
+          <li><strong>On-state fill:</strong> <code>background: #3b82f6</code></li>
+          <li><strong>On-state shadow:</strong> <code>inset 0 1px 3px rgba(0,0,0,0.3)</code></li>
+          <li><strong>Thumb:</strong> <code>16×16px white circle</code></li>
+        </ul>
+      </div>
+      <div class="spec-block">
+        <div class="spec-h1">Pill Button Layers</div>
+        <ul>
+          <li><strong>Active fill:</strong> <code>background: #3b82f6</code></li>
+          <li><strong>Active glow:</strong> <code>0 2px 8px rgba(59,130,246,0.35)</code></li>
+          <li><strong>Inactive fill:</strong> <code>background: #3f3f46</code></li>
+          <li><strong>Inactive text:</strong> <code>color: #a1a1aa</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="bottom-col">
+      <div class="spec-block">
+        <div class="spec-h1">Setting Row & Section Labels</div>
+        <ul>
+          <li><strong>Row base fill:</strong> <code>background: #3c3e47</code></li>
+          <li><strong>Row shadow stack:</strong> <code>0 8px 24px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.09), inset 0 -1px 0 rgba(0,0,0,0.20)</code></li>
+          <li><strong>Row radius:</strong> <code>border-radius: 10px</code></li>
+        </ul>
+      </div>
+      <div class="spec-block">
+        <div class="spec-h1">Section Label</div>
+        <ul>
+          <li><strong>Font:</strong> <code>12px / 900 / #a1a1aa</code></li>
+          <li><strong>Transform:</strong> <code>uppercase; letter-spacing: 0.12em</code></li>
+          <li><strong>Margin:</strong> <code>margin-bottom: 8px</code></li>
+        </ul>
+      </div>
+      <div class="spec-block">
+        <div class="spec-h1">Row Subtitle</div>
+        <ul>
+          <li><strong>Font:</strong> <code>12px / 400 / #a1a1aa</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="bottom-col">
+      <div class="spec-block">
+        <div class="spec-h1">Colors</div>
+        <table class="color-table">
+          <thead><tr><th>Name</th><th>Swatch</th><th>Hex</th><th>Role</th></tr></thead>
+          <tbody>
+            <tr><td>Modal Shell</td><td><span class="swatch" style="background:#2a2a2f;"></span></td><td><code>#2a2a2f</code></td><td>Outer background</td></tr>
+            <tr><td>Inner Tray</td><td><span class="swatch" style="background:#2e2e33;"></span></td><td><code>#2e2e33</code></td><td>Body container</td></tr>
+            <tr><td>Header</td><td><span class="swatch" style="background:linear-gradient(90deg,#5a7292,#4a5f7f);"></span></td><td><code>#5a7292→#4a5f7f</code></td><td>Header gradient</td></tr>
+            <tr><td>Setting Row</td><td><span class="swatch" style="background:#3c3e47;"></span></td><td><code>#3c3e47</code></td><td>Row background</td></tr>
+            <tr><td>Toggle Off</td><td><span class="swatch" style="background:#1c1c1f;"></span></td><td><code>#1c1c1f</code></td><td>Track off-state</td></tr>
+            <tr><td>Toggle On / Pill</td><td><span class="swatch" style="background:#3b82f6;"></span></td><td><code>#3b82f6</code></td><td>Blue accent</td></tr>
+            <tr><td>Pill Inactive</td><td><span class="swatch" style="background:#3f3f46;"></span></td><td><code>#3f3f46</code></td><td>Inactive pill bg</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="bottom-col">
+      <div class="spec-block">
+        <div class="spec-h1">Typography</div>
+        <ul>
+          <li><strong>Header title:</strong> <code>16px / 900 / #fff / uppercase / tracking 0.08em</code></li>
+          <li><strong>Section label:</strong> <code>12px / 900 / #a1a1aa / uppercase / tracking 0.12em</code></li>
+          <li><strong>Row label:</strong> <code>13px / 600 / #eaedf1</code></li>
+          <li><strong>Row subtitle:</strong> <code>12px / 400 / #a1a1aa</code></li>
+          <li><strong>Pill text:</strong> <code>12px / 700</code></li>
+        </ul>
+      </div>
+      <div class="spec-block">
+        <div class="spec-h1">Layout</div>
+        <ul>
+          <li><strong>Interface grid:</strong> <code>grid-template-columns: 1fr 1fr; gap: 8px</code></li>
+          <li><strong>Close button:</strong> <code>28×28px; bg: rgba(0,0,0,0.25); border-radius: 8px</code></li>
+          <li><strong>Modal radius:</strong> <code>border-radius: 24px</code></li>
+          <li><strong>Body padding:</strong> <code>20px</code></li>
+          <li><strong>Inner tray radius:</strong> <code>border-radius: 16px</code></li>
         </ul>
       </div>
     </div>
