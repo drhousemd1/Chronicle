@@ -78,8 +78,12 @@ serve(async (req) => {
       `Step ${i + 1} (ID: ${s.stepId}): "${s.description}"`
     ).join('\n');
 
-    const classificationPrompt = `You are a story goal progress evaluator. Analyze how the latest exchange relates to each pending story step.
+    const timeContext = currentDay != null || currentTimeOfDay
+      ? `\nCURRENT STORY TIMELINE:\n- Day: ${currentDay ?? 'unknown'}\n- Time of Day: ${currentTimeOfDay ?? 'unknown'}\n\nUse this timeline context when evaluating time-sensitive goals (e.g. "by Day 3", "before nightfall").\n`
+      : '';
 
+    const classificationPrompt = `You are a story goal progress evaluator. Analyze how the latest exchange relates to each pending story step.
+${timeContext}
 PENDING STEPS:
 ${stepsContext}
 
@@ -89,7 +93,7 @@ ${userMessage}
 AI RESPONSE (for context):
 ${aiResponse}
 
-For EACH step, determine if the exchange ADVANCES or COMPLETES the step's objective. Classify as:
+For EACH step, determine if the exchange ADVANCES or COMPLETES the step's objective. Consider the current day and time when evaluating deadline-based or pacing-sensitive goals. Classify as:
 - ALIGNED: The exchange moves toward or completes the step's objective
 - NOT_ALIGNED: The exchange does not advance this step
 
