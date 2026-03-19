@@ -822,6 +822,18 @@ const findings: QualityFinding[] = [
         "WorldTab contains clickable div toggles for Main Characters and Side Characters sections.",
       ],
       tags: ["module-accessibility", "keyboard"],
+      status: "fixed",
+      verificationStatus: "verified",
+      verifiedBy: stamp(runIds.accessibility),
+      updatedAt: "2026-03-19T12:00:00Z",
+      expectedBehavior: "Section headers are <button> elements with aria-expanded, operable by keyboard.",
+      actualBehavior: "Converted both Main Characters and Side Characters header divs to <button type='button'> with aria-expanded attributes in WorldTab.tsx.",
+      comments: [{
+        id: "fix-a11y-001",
+        author: "ChatGPT Codex",
+        timestamp: "2026-03-19T12:00:00Z",
+        text: "Changed clickable <div> to <button type='button'> with aria-expanded for both Main Characters (line 630) and Side Characters (line 648) collapsible headers. Inner <div> labels changed to <span>.",
+      }],
     },
   ),
   finding(
