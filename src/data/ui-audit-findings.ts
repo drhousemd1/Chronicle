@@ -920,7 +920,7 @@ const findings: QualityFinding[] = [
       tags: ["module-security", "auth", "service-role", "critical"],
       status: "fixed",
       verificationStatus: "verified",
-      verifiedBy: { ...codexAgent, timestamp: "2026-03-19T04:30:00Z" },
+      verifiedBy: stamp(runIds.security),
       updatedAt: "2026-03-19T04:30:00Z",
       expectedBehavior: "Migration endpoint validates caller identity before performing privileged operations.",
       actualBehavior: "Auth guard already present in code — checks Bearer token and calls auth.getUser() before proceeding. Returns 401 for unauthorized callers.",
