@@ -674,7 +674,7 @@ export async function saveScenarioWithVerification(
 
 export async function deleteScenario(id: string): Promise<void> {
   const { error } = await supabase
-    .from('stories' as any)
+    .from('stories')
     .delete()
     .eq('id', id);
 
