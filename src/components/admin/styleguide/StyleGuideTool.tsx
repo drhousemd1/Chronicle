@@ -311,6 +311,9 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 display: 'block',
               }}
             />
+
+            {/* ─── Story Arc Phase — live component preview ─── */}
+            <ArcPhaseCardPreview />
           </div>
         </div>
       </div>
