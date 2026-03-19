@@ -94,9 +94,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
     fetchInProgressRef.current = true;
     
     try {
-      const { data, error } = await supabase.rpc('get_folders_with_details', {
-        p_user_id: userId,
-      });
+      const { data, error } = await (supabase.rpc as any)('get_folders_with_details');
 
       if (error) throw error;
 

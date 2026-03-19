@@ -44,9 +44,7 @@ export const ImageLibraryPickerModal: React.FC<ImageLibraryPickerModalProps> = (
     if (!user) return;
     setIsLoadingFolders(true);
     try {
-      const { data, error } = await supabase.rpc('get_folders_with_details', {
-        p_user_id: user.id,
-      });
+      const { data, error } = await (supabase.rpc as any)('get_folders_with_details');
 
       if (error) throw error;
 

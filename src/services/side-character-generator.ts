@@ -16,7 +16,7 @@ import {
   defaultSideCharacterBackground,
   defaultSideCharacterPersonality
 } from '../types';
-import { uuid, now } from './storage';
+import { uuid, now } from '@/utils';
 
 // =============================================
 // CHARACTER NAME REGISTRY
