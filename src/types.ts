@@ -98,14 +98,67 @@ export type GoalStep = {
   completedAt?: number;
 };
 
+// =============================================
+// STORY ARC TYPES (Branching goal system)
+// =============================================
+
+export type StepStatus = 'pending' | 'failed' | 'succeeded' | 'deviated';
+
+export type ResistanceClassification = 'aligned' | 'soft_resistance' | 'hard_resistance';
+
+export type ResistanceEvent = {
+  day: number;
+  classification: ResistanceClassification;
+  summary: string;
+};
+
+export type ArcStep = {
+  id: string;
+  description: string;
+  status: StepStatus;
+  statusEventOrder: number;
+  completedAt?: number;
+  retryOf?: string;
+  retryCount?: number;
+  failedOnDay?: number;
+  permanentlyFailed?: boolean;
+  resistanceScore?: number;
+  resistanceEvents?: ResistanceEvent[];
+};
+
+export type ArcBranch = {
+  id: string;
+  type: 'fail' | 'success';
+  triggerDescription: string;
+  steps: ArcStep[];
+};
+
+export type ArcMode = 'simple' | 'advanced';
+
+export type ArcPhase = {
+  id: string;
+  title: string;
+  desiredOutcome: string;
+  flexibility: GoalFlexibility;
+  mode: ArcMode;
+  branches: { fail?: ArcBranch; success?: ArcBranch };
+  statusEventCounter: number;
+  createdAt: number;
+  updatedAt: number;
+};
+
 // Story-level goal (global narrative direction)
 export type StoryGoal = {
   id: string;
   title: string;
   desiredOutcome: string;
-  progress?: number;
-  steps: GoalStep[];
+  currentStatus?: string;  // Deprecated - kept for backward compat
+  steps: GoalStep[];       // Legacy linear steps - kept for backward compat
   flexibility: GoalFlexibility;
+  mode?: ArcMode;
+  branches?: { fail?: ArcBranch; success?: ArcBranch };
+  linkedPhases?: ArcPhase[];
+  statusEventCounter?: number;
   createdAt: number;
   updatedAt: number;
 };

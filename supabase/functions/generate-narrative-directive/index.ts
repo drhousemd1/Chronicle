@@ -72,8 +72,8 @@ serve(async (req) => {
 
     // Build goals context
     const goalsContext = storyGoals?.length
-      ? `STORY GOALS:\n${storyGoals.map(g => `- [${g.flexibility}] ${g.description}${g.currentStepDescription ? ` (Current step: ${g.currentStepDescription})` : ''}`).join('\n')}`
-      : 'No story goals defined.';
+      ? `STORY ARCS:\n${storyGoals.map(g => `- [${g.flexibility}] ${g.description}${g.currentStepDescription ? ` (Current step: ${g.currentStepDescription})` : ''}`).join('\n')}`
+      : 'No story arcs defined.';
 
     const charGoalsContext = characterGoals?.length
       ? `CHARACTER GOALS:\n${characterGoals.map(c => `- ${c.name}: Goals=[${c.goals.join('; ')}] Desires=[${c.desires.join('; ')}]`).join('\n')}`
