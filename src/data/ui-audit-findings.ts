@@ -1389,7 +1389,7 @@ const findings: QualityFinding[] = [
     ["src/services/supabase-data.ts"],
     "saveScenario upserts the story row, then syncs characters/codex/scenes in separate operations and parallel branches without a shared transaction boundary.",
     "Any partial failure after parent upsert can leave the scenario in a mixed state across related tables.",
-    "Users can encounter missing or out-of-sync characters, codex entries, or scenes after a save appears successful.",
+    "All saves now go through the save_scenario_atomic database function which performs story + characters + codex + scenes in a single transaction with automatic rollback on failure.",
     "Move save orchestration into a single transactional server-side RPC (or implement explicit rollback/compensation and hard failure surfacing).",
     "data-layer",
     "large",
@@ -1398,8 +1398,17 @@ const findings: QualityFinding[] = [
       evidence: [
         "saveScenario performs story upsert first, then `await Promise.all([syncCharacters, syncCodexEntries, syncScenes])`.",
         "Each sync function performs delete-then-upsert style writes as independent requests.",
+        "Now replaced with supabase.rpc('save_scenario_atomic', ...) which runs everything in a single PL/pgSQL transaction.",
       ],
       tags: ["module-data-integrity", "persistence", "atomicity"],
+      status: "fixed" as const,
+      verificationStatus: "verified" as const,
+      updatedAt: scanTimestamp,
+      comments: [{
+        author: "lovable-ai",
+        timestamp: scanTimestamp,
+        text: "Created save_scenario_atomic SECURITY DEFINER function that accepts JSON payloads for story, characters, codex entries, and scenes. All writes happen in a single transaction — if any part fails, everything rolls back. The frontend saveScenario function now calls this RPC instead of doing individual writes. Auth ownership check is enforced server-side.",
+      }],
     },
   ),
   finding(
