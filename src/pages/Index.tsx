@@ -1710,7 +1710,16 @@ const IndexContent = () => {
       <div>
         <h1 className="text-3xl font-black mb-4 text-rose-500">CRITICAL ERROR</h1>
         <p className="max-w-md mb-8">{fatal}</p>
-        <button onClick={() => { localStorage.clear(); location.reload(); }} className={`px-6 py-3 bg-white text-[hsl(var(--ui-surface-2))] rounded-2xl font-bold`}>Clear All Data &amp; Restart</button>
+        <button onClick={() => {
+          const prefixes = ['rpg_', 'draft_', 'chronicle_', 'quality_hub_'];
+          const keysToRemove: string[] = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && prefixes.some(p => key.startsWith(p))) keysToRemove.push(key);
+          }
+          keysToRemove.forEach(k => localStorage.removeItem(k));
+          location.reload();
+        }} className={`px-6 py-3 bg-white text-[hsl(var(--ui-surface-2))] rounded-2xl font-bold`}>Clear App Data &amp; Restart</button>
       </div>
     </div>
   );

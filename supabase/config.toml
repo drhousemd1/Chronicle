@@ -29,3 +29,12 @@ verify_jwt = false
 
 [functions.generate-narrative-directive]
 verify_jwt = false
+
+[functions.evaluate-goal-progress]
+verify_jwt = false
+
+[functions.migrate-base64-images]
+verify_jwt = false
+
+[functions.sync-guide-to-github]
+verify_jwt = false
