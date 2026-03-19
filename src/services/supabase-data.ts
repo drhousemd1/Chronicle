@@ -501,34 +501,46 @@ export async function saveScenario(
     }
   }
 
-  // Upsert scenario
-  const { error: scenarioError } = await supabase
-    .from('stories')
-    .upsert({
-      id,
-      user_id: userId,
-      title: metadata.title,
-      description: metadata.description,
-      cover_image_url: safeCoverImage,
-      cover_image_position: metadata.coverImagePosition || { x: 50, y: 50 },
-      tags: metadata.tags,
-      world_core: data.world.core,
-      ui_settings: data.uiSettings,
-      opening_dialog: data.story.openingDialog,
-      selected_model: data.selectedModel,
-      selected_art_style: data.selectedArtStyle || 'cinematic-2-5d',
-      version: data.version,
-      is_draft: options?.isDraft ?? false
-    });
+  // Atomic save via single transactional RPC
+  const storyPayload = {
+    title: metadata.title,
+    description: metadata.description,
+    cover_image_url: safeCoverImage,
+    cover_image_position: metadata.coverImagePosition || { x: 50, y: 50 },
+    tags: metadata.tags,
+    world_core: data.world.core,
+    ui_settings: data.uiSettings,
+    opening_dialog: data.story.openingDialog,
+    selected_model: data.selectedModel,
+    selected_art_style: data.selectedArtStyle || 'cinematic-2-5d',
+    version: data.version,
+    is_draft: options?.isDraft ?? false,
+    nav_button_images: {},
+  };
 
-  if (scenarioError) throw scenarioError;
+  const charactersPayload = data.characters.map(c => characterToDb(c, userId, id, false));
+  const codexPayload = data.world.entries.map(e => ({
+    id: e.id,
+    title: e.title,
+    body: e.body,
+  }));
+  const scenesPayload = data.scenes.map(s => ({
+    id: s.id,
+    image_url: s.url,
+    tags: s.tags ?? [],
+    is_starting_scene: s.isStartingScene || false,
+  }));
 
-  // Run character, codex, and scene syncs IN PARALLEL (they're independent)
-  await Promise.all([
-    syncCharacters(id, data, userId),
-    syncCodexEntries(id, data),
-    syncScenes(id, data),
-  ]);
+  const { error } = await supabase.rpc('save_scenario_atomic', {
+    p_scenario_id: id,
+    p_user_id: userId,
+    p_story: storyPayload,
+    p_characters: charactersPayload,
+    p_codex_entries: codexPayload,
+    p_scenes: scenesPayload,
+  } as any);
+
+  if (error) throw error;
 
   // NOTE: Conversations are saved individually via saveConversation() 
   // when they are modified (e.g., in ChatInterfaceTab). We do NOT bulk-save 
