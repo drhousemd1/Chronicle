@@ -142,6 +142,7 @@ const findings: QualityFinding[] = [
     "small",
     runIds.security,
     {
+      status: "fixed",
       evidence: [
         "Function directory count = 13; config entry count = 10.",
         "Missing entries: evaluate-arc-progress, migrate-base64-images, sync-guide-to-github.",
