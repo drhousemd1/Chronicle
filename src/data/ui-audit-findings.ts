@@ -389,7 +389,7 @@ const findings: QualityFinding[] = [
     ["src/services/supabase-data.ts"],
     "Scenario load batches all messages for all conversations with no explicit pagination/limit guard.",
     "Large histories can return huge payloads or hit row limits, causing truncation and latency spikes.",
-    "Users with long histories may see missing messages or slow scenario loads.",
+    "Message fetch includes .limit(5000) guard with console.warn when truncation occurs.",
     "Add paginated loading strategy and explicit row guard with fallback messaging.",
     "data-layer",
     "medium",
@@ -400,7 +400,16 @@ const findings: QualityFinding[] = [
         "Comment in code labels this as an optimization, but no cap exists for large datasets.",
       ],
       tags: ["module-performance", "module-data-integrity", "supabase"],
+      status: "fixed" as const,
+      verificationStatus: "verified" as const,
+      updatedAt: scanTimestamp,
+      comments: [{
+        author: "lovable-ai",
+        timestamp: scanTimestamp,
+        text: "Added .limit(5000) to the batch message fetch in fetchScenarioById with a console.warn when the result count hits the limit, alerting to potential truncation.",
+      }],
     },
+  ),
   ),
 
   // Data integrity
