@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState, useCallback, createContext, useCont
 import { useNavigate } from 'react-router-dom';
 import { Pencil } from 'lucide-react';
 import { StyleGuideDownloadModal } from './StyleGuideDownloadModal';
+import { ArcPhaseCard } from '@/components/chronicle/arc/ArcPhaseCard';
+import type { ArcPhase } from '@/types';
 import {
   KeepOrEditModal, EditDetailModal, EditsListModal,
   getEditsRegistry, upsertEdit, removeKeep, addKeep, getKeeps, getEditsCount,
