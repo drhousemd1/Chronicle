@@ -329,11 +329,17 @@ export async function fetchScenarioById(id: string): Promise<{
   let conversationsWithMessages: Conversation[] = [];
   if (conversations.length > 0) {
     const conversationIds = conversations.map(c => c.id);
+    const MESSAGE_BATCH_LIMIT = 5000;
     const { data: allMessages } = await supabase
       .from('messages')
       .select('*')
       .in('conversation_id', conversationIds)
-      .order('created_at', { ascending: true });
+      .order('created_at', { ascending: true })
+      .limit(MESSAGE_BATCH_LIMIT);
+
+    if ((allMessages || []).length === MESSAGE_BATCH_LIMIT) {
+      console.warn(`[fetchScenarioById] Message batch hit ${MESSAGE_BATCH_LIMIT} limit — some messages may be truncated. Scenario has ${conversationIds.length} conversations.`);
+    }
 
     // Group messages by conversation_id in memory
     const messagesByConv = new Map<string, any[]>();
