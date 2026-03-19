@@ -707,6 +707,18 @@ const findings: QualityFinding[] = [
       ],
       tags: ["module-cleanup", "edge-functions"],
       batchable: true,
+      status: "fixed",
+      verificationStatus: "verified",
+      verifiedBy: stamp(runIds.cleanup),
+      updatedAt: "2026-03-19T12:00:00Z",
+      expectedBehavior: "All edge functions import CORS logic from a single shared module.",
+      actualBehavior: "Created supabase/functions/_shared/cors.ts with shared ALLOWED_ORIGINS and getCorsHeaders. Updated all 13 edge functions to import from _shared/cors.ts instead of defining their own copies.",
+      comments: [{
+        id: "fix-clean-001",
+        author: "ChatGPT Codex",
+        timestamp: "2026-03-19T12:00:00Z",
+        text: "Created supabase/functions/_shared/cors.ts exporting ALLOWED_ORIGINS and getCorsHeaders. Replaced duplicated blocks in all 13 edge function files with a single import. Origins now maintained in one place.",
+      }],
     },
   ),
   finding(
