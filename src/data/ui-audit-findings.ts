@@ -1247,7 +1247,7 @@ const findings: QualityFinding[] = [
       status: "fixed" as const,
       verificationStatus: "verified" as const,
       updatedAt: scanTimestamp,
-      comments: [{
+      comments: [{ id: "comment-docs-003-fix",
         author: "lovable-ai",
         timestamp: scanTimestamp,
         text: "Wired currentDay and currentTimeOfDay from ChatInterfaceTab into the evaluate-goal-progress edge function payload. Updated the AI classification prompt to include a CURRENT STORY TIMELINE section so goal evaluation is time-aware. The StoryGoalsSection component already accepts these props — they are now used in the evaluation pipeline where it matters most.",
