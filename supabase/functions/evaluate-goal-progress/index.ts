@@ -25,6 +25,8 @@ type EvaluationRequest = {
   aiResponse: string;
   pendingSteps: StepInput[];
   flexibility: 'rigid' | 'normal' | 'flexible';
+  currentDay?: number;
+  currentTimeOfDay?: string;
 };
 
 type StepUpdate = {
