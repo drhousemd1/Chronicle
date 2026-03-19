@@ -403,7 +403,7 @@ const findings: QualityFinding[] = [
       status: "fixed" as const,
       verificationStatus: "verified" as const,
       updatedAt: scanTimestamp,
-      comments: [{
+      comments: [{ id: "comment-perf-002-fix",
         author: "lovable-ai",
         timestamp: scanTimestamp,
         text: "Added .limit(5000) to the batch message fetch in fetchScenarioById with a console.warn when the result count hits the limit, alerting to potential truncation.",
