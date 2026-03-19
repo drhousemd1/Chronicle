@@ -647,6 +647,18 @@ const findings: QualityFinding[] = [
         "Import scan found no `from '@/services/storage'` matches in src.",
       ],
       tags: ["module-orphan-code", "legacy"],
+      status: "fixed",
+      verificationStatus: "verified",
+      verifiedBy: { ...codexAgent, timestamp: "2026-03-19T04:30:00Z" },
+      updatedAt: "2026-03-19T04:30:00Z",
+      expectedBehavior: "No legacy persistence helpers should exist when all data flows through the database.",
+      actualBehavior: "File deleted. Two files (ChatInterfaceTab.tsx, side-character-generator.ts) that imported uuid/now from storage.ts were updated to import from @/utils instead.",
+      comments: [{
+        id: "fix-orphan-003",
+        author: codexAgent,
+        timestamp: "2026-03-19T04:30:00Z",
+        text: "Deleted src/services/storage.ts. Redirected imports in ChatInterfaceTab.tsx and side-character-generator.ts from '../../services/storage' to '@/utils' which exports the same uuid() and now() functions.",
+      }],
     },
   ),
 
