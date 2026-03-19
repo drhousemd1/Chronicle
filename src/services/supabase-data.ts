@@ -311,7 +311,7 @@ export async function fetchScenarioById(id: string): Promise<{
 } | null> {
   // Parallel fetch of scenario + all related data
   const [scenarioResult, charactersResult, codexResult, scenesResult, conversationsResult] = await Promise.all([
-    supabase.from('stories' as any).select('*').eq('id', id).maybeSingle(),
+    supabase.from('stories').select('*').eq('id', id).maybeSingle(),
     supabase.from('characters').select('*').eq('scenario_id', id),
     supabase.from('codex_entries').select('*').eq('scenario_id', id),
     supabase.from('scenes').select('*').eq('scenario_id', id),
