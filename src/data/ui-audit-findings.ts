@@ -1146,6 +1146,18 @@ const findings: QualityFinding[] = [
       ],
       tags: ["module-accessibility", "keyboard", "semantics"],
       batchable: true,
+      status: "fixed",
+      verificationStatus: "verified",
+      verifiedBy: stamp(runIds.accessibility),
+      updatedAt: "2026-03-19T12:00:00Z",
+      expectedBehavior: "Interactive card/section controls use semantic elements (button, role=button) with keyboard support.",
+      actualBehavior: "WorldTab section headers converted to <button> with aria-expanded. StoryHub card wrapper given role=button, tabIndex=0, and onKeyDown handler. SceneTagEditorModal overlay changed to <button> with aria-label.",
+      comments: [{
+        id: "fix-a11y-004",
+        author: "ChatGPT Codex",
+        timestamp: "2026-03-19T12:00:00Z",
+        text: "Fixed WorldTab (buttons with aria-expanded), StoryHub (role=button + keyboard handler), SceneTagEditorModal (button overlay with aria-label). CharactersTab not yet addressed — separate finding.",
+      }],
     },
   ),
   finding(
