@@ -1345,7 +1345,7 @@ const findings: QualityFinding[] = [
       actualBehavior: "Rewrote get_folders_with_details() via migration to remove p_user_id parameter entirely. Function now uses auth.uid() internally. Frontend callers updated to call RPC with no arguments.",
       comments: [{
         id: "fix-sec-009",
-        author: codexAgent,
+        author: "ChatGPT Codex",
         timestamp: "2026-03-19T04:30:00Z",
         text: "Created migration to replace get_folders_with_details(p_user_id uuid) with get_folders_with_details() — no parameters. The WHERE clause now uses auth.uid() instead of p_user_id. Updated ImageLibraryTab.tsx and ImageLibraryPickerModal.tsx to call the RPC without arguments. The old function signature with p_user_id is fully replaced.",
       }],
