@@ -576,6 +576,18 @@ const findings: QualityFinding[] = [
         "Search for 'ChronicleApp' only returns its declaration and audit seed references.",
       ],
       tags: ["module-orphan-code"],
+      status: "fixed",
+      verificationStatus: "verified",
+      verifiedBy: { ...codexAgent, timestamp: "2026-03-19T04:30:00Z" },
+      updatedAt: "2026-03-19T04:30:00Z",
+      expectedBehavior: "No dead placeholder files should exist in the active codebase.",
+      actualBehavior: "File deleted. No references remain in the project.",
+      comments: [{
+        id: "fix-orphan-001",
+        author: codexAgent,
+        timestamp: "2026-03-19T04:30:00Z",
+        text: "Deleted src/components/chronicle/ChronicleApp.tsx. It was a migration placeholder with no active imports — nothing in routing or any component ever referenced it.",
+      }],
     },
   ),
   finding(
