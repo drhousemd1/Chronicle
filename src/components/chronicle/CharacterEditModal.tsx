@@ -27,7 +27,7 @@ import { cn } from '@/lib/utils';
 import { AvatarActionButtons } from './AvatarActionButtons';
 import { ChangeNameModal } from './ChangeNameModal';
 import { CharacterGoalsSection } from './CharacterGoalsSection';
-import { StoryGoalsSection } from './StoryGoalsSection';
+
 import { ScenarioCardView } from './StoryCardView';
 import { CustomContentTypeModal } from './CustomContentTypeModal';
 import { PersonalitySection } from './PersonalitySection';

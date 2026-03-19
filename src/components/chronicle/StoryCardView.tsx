@@ -359,7 +359,7 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
       )}
 
       {/* Story Goals */}
-      <StoryGoalsSection
+      <StoryGoalsSectionSimple
         goals={storyGoals}
         onChange={(goals) => updateField('storyGoals', goals)}
       />
