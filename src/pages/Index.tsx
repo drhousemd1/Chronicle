@@ -1175,6 +1175,70 @@ const IndexContent = () => {
     }
   }, [activeId, activeData, activeCoverImage, activeCoverPosition, activeContentThemes, refreshCharacterLibrary]);
 
+  // Silently persist the current draft to the database (fire-and-forget safe)
+  async function saveDraftInBackground() {
+    try {
+      if (!activeId || !activeData || !user) return;
+
+      let scenarioIdToSave = activeId;
+      if (!isValidUuid(activeId)) {
+        scenarioIdToSave = uuid();
+        setActiveId(scenarioIdToSave);
+      }
+
+      const migrated = migrateScenarioDataIds(activeData);
+      const dataToSave = migrated.didMigrate ? migrated.data : activeData;
+
+      if (migrated.didMigrate) {
+        setActiveData(migrated.data);
+        setSelectedCharacterId((prev) => {
+          if (!prev) return prev;
+          return migrated.characterIdMap.get(prev) || prev;
+        });
+        setPlayingConversationId((prev) => {
+          if (!prev) return prev;
+          return migrated.conversationIdMap.get(prev) || prev;
+        });
+      }
+
+      const derivedTitle = dataToSave.world.core.scenarioName || 'Untitled';
+      const metadata = {
+        title: derivedTitle,
+        description: dataToSave.world.core.briefDescription ||
+                     truncateLine(dataToSave.world.core.storyPremise || 'Created via Builder', 120),
+        coverImage: activeCoverImage,
+        coverImagePosition: activeCoverPosition,
+        tags: ['Custom']
+      };
+
+      // Write local safety snapshot before remote save
+      try {
+        localStorage.setItem(`draft_${scenarioIdToSave}`, JSON.stringify({
+          data: dataToSave,
+          coverImage: activeCoverImage,
+          coverPosition: activeCoverPosition,
+          contentThemes: activeContentThemes,
+          savedAt: Date.now(),
+        }));
+      } catch (_) { /* quota exceeded — non-fatal */ }
+
+      const verified = await supabaseData.saveScenarioWithVerification(scenarioIdToSave, dataToSave, metadata, user.id, { isDraft: true });
+
+      if (verified) {
+        try { localStorage.removeItem(`draft_${scenarioIdToSave}`); } catch (_) {}
+      } else {
+        console.warn('Draft saved but child-data verification failed; local snapshot kept as backup.');
+      }
+
+      // Refresh registry so hub shows the draft
+      supabaseData.fetchMyScenarios(user.id)
+        .then(r => { setRegistry(r); setHubFilter("my"); })
+        .catch(e => console.warn('Registry refresh failed:', e));
+    } catch (e) {
+      console.warn('Background draft save failed:', e);
+    }
+  }
+
   async function handleSaveCharacter() {
     if (!user) return;
     
@@ -1192,6 +1256,8 @@ const IndexContent = () => {
     } else {
       setSelectedCharacterId(null);
       setTab("world");
+      // Silently persist the draft so character changes are never lost
+      saveDraftInBackground();
     }
   }
 
