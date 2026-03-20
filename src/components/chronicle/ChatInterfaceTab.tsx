@@ -775,62 +775,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     return directives.join(' ');
   };
 
-  // Pass 14: Generate narrative directive (async, non-blocking, runs after AI response)
-  const generateNarrativeDirective = useCallback(async () => {
-    try {
-      const conv = appData.conversations.find(c => c.id === conversationId);
-      const msgs = conv?.messages || [];
-      const recentMessages = msgs.slice(-10).map(m => ({ role: m.role, text: m.text.slice(0, 400) }));
-      
-      const storyGoals = (effectiveWorldCore.storyGoals || []).map((g: StoryGoal) => {
-        const pendingStep = (g.steps || []).find(s => !s.completed);
-        return {
-          description: g.title || g.desiredOutcome || '',
-          flexibility: g.flexibility || 'normal',
-          currentStepDescription: pendingStep?.description || undefined
-        };
-      }).filter((g: { description: string }) => g.description);
-
-      // Build character goals summary (AI characters only)
-      const characterGoals = appData.characters
-        .filter(c => c.controlledBy === 'AI')
-        .map(c => {
-          const session = sessionStates.find(s => s.characterId === c.id);
-          const goals = session?.goals || c.goals;
-          const goalsArr = Array.isArray(goals) ? goals.map((g: any) => typeof g === 'string' ? g : g?.label || g?.value || '').filter(Boolean) : [];
-          return {
-            name: c.name,
-            goals: goalsArr.slice(0, 5),
-            desires: [] as string[] // desires are part of personality, keep lightweight
-          };
-        })
-        .filter(c => c.goals.length > 0);
-
-      if (recentMessages.length < 4) return; // Not enough context yet
-
-      console.log('[Pass 14] Invoking generate-narrative-directive...', { messageCount: recentMessages.length, goalCount: storyGoals.length, charGoalCount: characterGoals.length });
-      const { data, error } = await supabase.functions.invoke('generate-narrative-directive', {
-        body: {
-          recentMessages,
-          storyGoals,
-          characterGoals,
-          currentDay,
-          currentTimeOfDay
-        }
-      });
-
-      if (error) {
-        console.error('[Pass 14] Narrative directive invocation error:', error);
-      } else if (data?.directive) {
-        narrativeDirectiveRef.current = data.directive;
-        console.log('[Pass 14] Narrative directive stored:', data.directive);
-      } else {
-        console.warn('[Pass 14] No directive returned:', data);
-      }
-    } catch (err) {
-      console.error('[Pass 14] Narrative directive generation failed:', err);
-    }
-  }, [appData.conversations, conversationId, effectiveWorldCore.storyGoals, appData.characters, sessionStates, currentDay, currentTimeOfDay]);
+  
 
   // Ref to always hold current sideCharacters - avoids stale closure in async callbacks
   const sideCharactersRef = useRef<SideCharacter[]>(appData.sideCharacters || []);
