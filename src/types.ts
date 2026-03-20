@@ -150,6 +150,8 @@ export type CharacterTraitItem = {
   id: string;
   label: string;
   value: string;
+  type?: CharacterTraitSectionType; // per-item type override (falls back to section.type)
+  subheading?: string; // optional subheading label above the item
   createdAt: number;
   updatedAt: number;
 };
