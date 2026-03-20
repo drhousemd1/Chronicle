@@ -8,6 +8,7 @@ type ArcMode = 'simple' | 'advanced';
 type ArcPhase = { id: string; title: string; desiredOutcome: string; flexibility: GoalFlexibility; mode: ArcMode; branches: { fail?: ArcBranch; success?: ArcBranch }; statusEventCounter: number; createdAt: number; updatedAt: number };
 import { Trash2, Sparkles, CheckSquare } from 'lucide-react';
 import { GuidanceStrengthSlider } from '../GuidanceStrengthSlider';
+import { AutoResizeTextarea } from '../AutoResizeTextarea';
 import { ArcBranchLane } from './ArcBranchLane';
 import { ArcModeToggle } from './ArcModeToggle';
 import { ArcConnectors } from './ArcConnectors';
