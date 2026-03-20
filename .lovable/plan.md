@@ -1,48 +1,50 @@
 
 
-# Fix Tone Section AI Enhancement
+# Diagnose: Tone AI Enhance Produces Nothing
 
-## Problem
-When the AI Enhance button is clicked on a tone field, it falls through to the generic `custom` prompt: *"Provide relevant details for this character trait."* This produces irrelevant text because the AI doesn't know the field is about **how the character speaks**. There are three user scenarios that need distinct handling:
+## Finding
 
-1. **Label filled, description empty** (e.g. "Nurturing: ___") — generate a description of that specific tone trait, informed by all character/world context
-2. **Both empty** — generate both a fitting label AND description from scratch based on character context
-3. **Description filled** — enhance the existing description while keeping it about tone
+After thorough code review, **the tone enhancement uses the exact same code path as every other AI enhance button** in the app. There is no custom or different approach:
 
-## Current Flow
-- All character/world context is already sent (personality, background, story premise, etc.) — that part works fine
-- The problem is purely in the **instruction text** — the AI doesn't know to focus on speech/voice
-- Tone fields use fieldName `custom` and customLabel `"character tone/voice detail"`, so they hit the generic fallback
+1. `openEnhanceModeModal` → user picks mode → `handleEnhanceField` → `aiEnhanceCharacterField` → `callAIWithFallback` → `supabase.functions.invoke('chat')` → Grok API
 
-## Changes — Single file: `src/services/character-ai.ts`
+The only difference is the **prompt text** sent to Grok, which tells it to focus on speech/voice instead of hair color or build — same pattern as every other field having its own instruction.
 
-### 1. Add `tone` entry to `CHARACTER_FIELD_PROMPTS`
+## Why It's Not Working
 
-After the background fields (line ~246), before `custom`:
+The edge function has **zero logs** for any enhance-related calls, meaning the request never reaches the server. Two possible causes:
+
+### 1. CORS Origin Mismatch (Most Likely)
+Your CORS whitelist in `supabase/functions/_shared/cors.ts` has a static list of 3 domains. If the browser preview is running on a domain not in that list (e.g. `*.lovableproject.com` vs `*.lovable.app`), the browser silently blocks ALL non-streaming requests. Streaming chat may work differently due to browser handling of SSE streams.
+
+**Fix**: Update `getCorsHeaders` to pattern-match against your domains instead of a static list:
 
 ```typescript
-// Tone / Voice
-tone: {
-  label: "Tone",
-  instruction: "Describe how this character speaks and expresses themselves. Focus on vocal qualities, speech rhythm, vocabulary level, verbal tics or habits, formality, and emotional register. This must naturally reflect the character's personality, background, and world context — not a random or generic speech style. If a specific tone label is provided (e.g. 'Nurturing', 'Sarcastic'), describe how THAT tone manifests in this character's speech specifically, drawing on who they are.",
-  maxSentences: 3
-},
+export function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('Origin') || '';
+  const isAllowed =
+    origin === 'http://localhost:5173' ||
+    origin.endsWith('.lovable.app') ||
+    origin.endsWith('.lovableproject.com');
+  return {
+    'Access-Control-Allow-Origin': isAllowed ? origin : 'https://hello-git-hug.lovable.app',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+  };
+}
 ```
 
-### 2. Add section-aware hints in the generate-both branch
+### 2. Auth / Session Issue
+If you weren't logged in, the `handleEnhanceField` function silently returns without making any API call (`if (!selected || enhancingField) return`). The catch block also swallows errors silently with just a `console.error`.
 
-In `buildCharacterFieldPrompt`, update the generate-both prompt (lines 272-294) to inject a section-specific hint when the `sectionHint` is `"character tone/voice detail"`. This replaces the generic guidance with tone-specific instructions:
+## Verification Step
 
-- The LABEL should be a tone/voice category (e.g. "Warm Drawl", "Clipped Authority", "Nervous Rambling")
-- The DESCRIPTION should explain how this character specifically exhibits that tone, based on their personality, background, and context
-- It must NOT duplicate tone traits the character already has
+Before applying any fix, we should confirm: **do other enhance buttons (e.g. Hair Color, Build, Eye Color) work right now?** If they also fail silently, it's the CORS issue. If they work but only tone fails, there's a different problem to investigate.
 
-### 3. Wire tone fields to use the `tone` config instead of `custom`
+## Plan
 
-In `CharactersTab.tsx`, update the `buildExtraEnhanceArgs` call for tone extras (line ~1774) to pass `'tone'` as the fieldName instead of `'custom'`, so it hits the new dedicated prompt config. When label exists, it goes through the standard enhance path with tone-specific instructions. When label is empty, it goes through generate-both with the section hint.
+1. **Update `supabase/functions/_shared/cors.ts`** — switch from static whitelist to pattern-based origin matching (single file, 13 lines → 13 lines)
+2. **Test** — verify tone enhance works after the CORS fix
 
-## Result
-- **"Nurturing" + empty description** → AI describes how THIS character's nurturing tone sounds in speech, based on their background/personality
-- **Both empty** → AI generates a fitting tone label + description that matches the character
-- **Existing description** → AI enhances while keeping it about vocal/speech style
+### Files Modified
+- `supabase/functions/_shared/cors.ts` — pattern-based CORS origin matching
 
