@@ -228,7 +228,7 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({
         {/* Expanded Goals */}
         {isExpanded && (
           <div className="p-5 space-y-4">
-            {sortedGoals.map((goal) => {
+            {sortedGoals.map((goal, goalIdx) => {
               const progress = calculateProgress(goal);
               return (
                 <div key={goal.id} className={cn("p-5 pb-6 bg-[#2e2e33] rounded-2xl relative shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]")}>
@@ -236,7 +236,19 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({
                   {/* Row 1: Goal Name + Progress Ring */}
                   <div className="flex items-start gap-4">
                     <div className="flex-1">
-                      <label className={cn("text-[10px] font-bold text-zinc-400 uppercase tracking-widest block mb-1", hasError && !(goal.title || '').trim() && 'text-red-500')}>Goal Name</label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className={cn("text-[10px] font-bold text-zinc-400 uppercase tracking-widest", hasError && !(goal.title || '').trim() && 'text-red-500')}>Goal Name</label>
+                        {isEditMode && (
+                          goalIdx === 0 ? (
+                            <div className="w-7 flex-shrink-0 flex items-center justify-center">
+                              <Lock className="w-3.5 h-3.5 text-zinc-400" />
+                            </div>
+                          ) : (
+                            <button type="button" tabIndex={-1} onClick={() => deleteGoal(goal.id)} className="text-zinc-500 hover:text-rose-400 transition-colors p-1">
+                              <Trash2 size={16} />
+                            </button>
+                          )
+                        )}
                       {isEditMode ? (
                         <AutoResizeTextarea value={goal.title} onChange={(v) => updateGoal(goal.id, { title: v })} placeholder="Enter goal name..." className={cn("px-3 py-2 text-sm bg-[#1c1c1f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500", hasError && !(goal.title || '').trim() ? 'border border-red-500 ring-2 ring-red-500' : 'border border-black/35')} />
                       ) : (
