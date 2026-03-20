@@ -844,7 +844,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
   // Open modal to choose enhance mode before calling AI
   const openEnhanceModeModal = (
     fieldKey: string,
-    section: 'physicalAppearance' | 'currentlyWearing' | 'preferredClothing' | 'custom',
+    section: 'physicalAppearance' | 'currentlyWearing' | 'preferredClothing' | 'custom' | 'tone',
     getCurrentValue: () => string,
     setValue: (value: string) => void,
     customLabel?: string
