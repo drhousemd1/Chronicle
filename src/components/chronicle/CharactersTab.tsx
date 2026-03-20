@@ -926,14 +926,16 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
     onUpdate(charId, { sections: nextSections });
   };
 
-  const handleAddItem = (charId: string, sectionId: string) => {
+  const handleAddItem = (charId: string, sectionId: string, itemType?: CharacterTraitSectionType) => {
     const char = characters.find(c => c.id === charId);
     if (!char) return;
+    const section = char.sections.find(s => s.id === sectionId);
+    const resolvedType = itemType ?? section?.type ?? 'structured';
     const nextSections = char.sections.map(s => {
       if (s.id !== sectionId) return s;
       return {
         ...s,
-        items: [...s.items, { id: uid('item'), label: '', value: '', createdAt: now(), updatedAt: now() }],
+        items: [...s.items, { id: uid('item'), label: '', value: '', type: resolvedType, subheading: '', createdAt: now(), updatedAt: now() }],
         updatedAt: now()
       };
     });
@@ -1178,6 +1180,9 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
 
   // State for content type picker modal
   const [showCategoryTypeModal, setShowCategoryTypeModal] = useState(false);
+
+  // State for "Add Row" content type picker within an existing section
+  const [pendingAddRowSectionId, setPendingAddRowSectionId] = useState<string | null>(null);
 
   // Handle adding a new custom section
   const handleAddSection = (type: CharacterTraitSectionType = 'structured') => {
@@ -2036,182 +2041,177 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                 <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
                   {(expandedCustomSections[section.id] ?? true) ? (
                     <div className="space-y-4">
-                    {section.type === 'freeform' ? (
-                      /* Freeform: labeled text areas */
-                      <>
-                      {(() => {
-                        const items = section.items.length > 0
-                          ? section.items
-                          : section.freeformValue
-                            ? [{ id: uid('item'), label: '', value: section.freeformValue, createdAt: now(), updatedAt: now() }]
-                            : [{ id: uid('item'), label: '', value: '', createdAt: now(), updatedAt: now() }];
-                        // Auto-migrate freeformValue to items if needed
-                        if (section.items.length === 0 && items.length > 0) {
-                          handleUpdateSection(selected.id, section.id, { items, freeformValue: undefined });
-                        }
-                        return items.map(item => (
-                          <div key={item.id} className="flex items-center gap-2">
-                            <AutoResizeTextarea
-                              value={item.value}
-                              onChange={(v) => {
-                                const nextItems = (section.items.length > 0 ? section.items : items).map(it => it.id === item.id ? { ...it, value: v } : it);
+                    {/* Per-item rendering: each item rendered by its own type */}
+                    {(() => {
+                      // Auto-migrate freeformValue to items if needed
+                      let items = section.items;
+                      if (section.type === 'freeform' && items.length === 0) {
+                        items = section.freeformValue
+                          ? [{ id: uid('item'), label: '', value: section.freeformValue, createdAt: now(), updatedAt: now() }]
+                          : [{ id: uid('item'), label: '', value: '', createdAt: now(), updatedAt: now() }];
+                        handleUpdateSection(selected.id, section.id, { items, freeformValue: undefined });
+                      }
+                      return items.map(item => {
+                        const itemType = item.type ?? section.type ?? 'structured';
+                        return (
+                          <div key={item.id} className="space-y-2">
+                            {/* Subheading input */}
+                            <input
+                              type="text"
+                              value={item.subheading ?? ''}
+                              onChange={(e) => {
+                                const nextItems = items.map(it => it.id === item.id ? { ...it, subheading: e.target.value } : it);
                                 handleUpdateSection(selected.id, section.id, { items: nextItems });
                               }}
-                              placeholder="Write your content here..."
-                              className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                              rows={4}
+                              placeholder="SUBHEADING (OPTIONAL)"
+                              className="w-full px-3 py-2 text-xs font-bold bg-[#1c1c1f] border border-black/35 text-zinc-500 uppercase tracking-widest placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                             />
-                            <div className="w-7 flex-shrink-0 flex items-center justify-center">
-                              <button
-                                type="button"
-                                tabIndex={-1}
-                                onClick={() => {
-                                  const nextItems = (section.items.length > 0 ? section.items : items).filter(it => it.id !== item.id);
-                                  handleUpdateSection(selected.id, section.id, { items: nextItems.length > 0 ? nextItems : [{ id: uid('item'), label: '', value: '', createdAt: now(), updatedAt: now() }] });
-                                }}
-                                className="text-zinc-500 hover:text-rose-400 transition-colors p-1"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
-                          </div>
-                        ));
-                      })()}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const currentItems = section.items.length > 0 ? section.items : [{ id: uid('item'), label: '', value: section.freeformValue || '', createdAt: now(), updatedAt: now() }];
-                          handleUpdateSection(selected.id, section.id, { items: [...currentItems, { id: uid('item'), label: '', value: '', createdAt: now(), updatedAt: now() }], freeformValue: undefined });
-                        }}
-                        className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5"
-                      >
-                        <Plus className="w-4 h-4" /> Add Text Field
-                      </button>
-                      </>
-                    ) : (
-                      /* Structured: label + description rows */
-                      <>
-                      {section.items.map(item => (
-                        <div key={item.id}>
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 flex gap-2">
-                              <div className="w-1/3 flex items-center gap-1.5">
+                            {itemType === 'freeform' ? (
+                              /* Freeform item */
+                              <div className="flex items-center gap-2">
                                 <AutoResizeTextarea
-                                  value={item.label}
+                                  value={item.value}
                                   onChange={(v) => {
-                                    const nextItems = section.items.map(it => it.id === item.id ? { ...it, label: v } : it);
+                                    const nextItems = items.map(it => it.id === item.id ? { ...it, value: v } : it);
                                     handleUpdateSection(selected.id, section.id, { items: nextItems });
                                   }}
-                                   placeholder="LABEL"
-                                   className="flex-1 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
+                                  placeholder="Write your content here..."
+                                  className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                  rows={4}
                                 />
-                                <button
+                                <div className="w-7 flex-shrink-0 flex items-center justify-center">
+                                  <button
                                     type="button"
                                     tabIndex={-1}
                                     onClick={() => {
-                                      const customLabel = item.label
-                                        ? item.label
-                                        : `${GENERATE_BOTH_PREFIX}custom field for ${section.title}`;
-                                      const setValue = item.label
-                                        ? (v: string) => {
-                                            const nextItems = section.items.map(it => it.id === item.id ? { ...it, value: v } : it);
-                                            handleUpdateSection(selected.id, section.id, { items: nextItems });
-                                          }
-                                        : (v: string) => {
-                                            const parsed = parseGenerateBothResponse(v);
-                                            if (parsed) {
-                                              const nextItems = section.items.map(it => it.id === item.id ? { ...it, label: parsed.label, value: parsed.value } : it);
-                                              handleUpdateSection(selected.id, section.id, { items: nextItems });
-                                            } else {
-                                              const nextItems = section.items.map(it => it.id === item.id ? { ...it, value: v } : it);
+                                      const nextItems = items.filter(it => it.id !== item.id);
+                                      handleUpdateSection(selected.id, section.id, { items: nextItems.length > 0 ? nextItems : [{ id: uid('item'), label: '', value: '', type: 'freeform', createdAt: now(), updatedAt: now() }] });
+                                    }}
+                                    className="text-zinc-500 hover:text-rose-400 transition-colors p-1"
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              /* Structured item */
+                              <div className="flex items-center gap-2">
+                                <div className="flex-1 flex gap-2">
+                                  <div className="w-1/3 flex items-center gap-1.5">
+                                    <AutoResizeTextarea
+                                      value={item.label}
+                                      onChange={(v) => {
+                                        const nextItems = items.map(it => it.id === item.id ? { ...it, label: v } : it);
+                                        handleUpdateSection(selected.id, section.id, { items: nextItems });
+                                      }}
+                                      placeholder="LABEL"
+                                      className="flex-1 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
+                                    />
+                                    <button
+                                      type="button"
+                                      tabIndex={-1}
+                                      onClick={() => {
+                                        const customLabel = item.label
+                                          ? item.label
+                                          : `${GENERATE_BOTH_PREFIX}custom field for ${section.title}`;
+                                        const setValue = item.label
+                                          ? (v: string) => {
+                                              const nextItems = items.map(it => it.id === item.id ? { ...it, value: v } : it);
                                               handleUpdateSection(selected.id, section.id, { items: nextItems });
                                             }
-                                          };
-                                      openEnhanceModeModal(
-                                        `custom-${section.id}-${item.id}`,
-                                        'custom',
-                                        () => item.value,
-                                        setValue,
-                                        customLabel
-                                      );
+                                          : (v: string) => {
+                                              const parsed = parseGenerateBothResponse(v);
+                                              if (parsed) {
+                                                const nextItems = items.map(it => it.id === item.id ? { ...it, label: parsed.label, value: parsed.value } : it);
+                                                handleUpdateSection(selected.id, section.id, { items: nextItems });
+                                              } else {
+                                                const nextItems = items.map(it => it.id === item.id ? { ...it, value: v } : it);
+                                                handleUpdateSection(selected.id, section.id, { items: nextItems });
+                                              }
+                                            };
+                                        openEnhanceModeModal(
+                                          `custom-${section.id}-${item.id}`,
+                                          'custom',
+                                          () => item.value,
+                                          setValue,
+                                          customLabel
+                                        );
+                                      }}
+                                      disabled={enhancingField === `custom-${section.id}-${item.id}`}
+                                      title="Enhance with AI"
+                                      className={cn(
+                                        "relative flex items-center justify-center flex-shrink-0 rounded-lg p-[6px] overflow-hidden text-cyan-200 transition-all",
+                                        enhancingField === `custom-${section.id}-${item.id}` ? "animate-pulse cursor-wait" : "hover:brightness-125"
+                                      )}
+                                      style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.40)' }}
+                                    >
+                                      <span aria-hidden className="absolute inset-0 rounded-lg pointer-events-none" style={{ background: 'linear-gradient(90deg, rgba(255,255,255,0.34) 0%, rgba(34,184,200,0.62) 18%, rgba(255,255,255,0.22) 44%, rgba(109,94,247,0.64) 78%, rgba(255,255,255,0.28) 100%)' }} />
+                                      <span aria-hidden className="absolute rounded-[6px] pointer-events-none" style={{ inset: '1.5px', background: 'linear-gradient(90deg, rgba(34,184,200,0.22), rgba(109,94,247,0.22)), #2B2D33' }} />
+                                      <Sparkles size={13} className="relative z-10" style={{ filter: 'drop-shadow(0 0 6px rgba(34,184,200,0.50))' }} />
+                                    </button>
+                                  </div>
+                                  <AutoResizeTextarea
+                                    value={item.value}
+                                    onChange={(v) => {
+                                      const nextItems = items.map(it => it.id === item.id ? { ...it, value: v } : it);
+                                      handleUpdateSection(selected.id, section.id, { items: nextItems });
                                     }}
-                                    disabled={enhancingField === `custom-${section.id}-${item.id}`}
-                                    title="Enhance with AI"
-                                    className={cn(
-                                      "relative flex items-center justify-center flex-shrink-0 rounded-lg p-[6px] overflow-hidden text-cyan-200 transition-all",
-                                      enhancingField === `custom-${section.id}-${item.id}` ? "animate-pulse cursor-wait" : "hover:brightness-125"
-                                    )}
-                                    style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.40)' }}
+                                    placeholder="Description"
+                                    className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                  />
+                                </div>
+                                <div className="w-7 flex-shrink-0 flex items-center justify-center">
+                                  <button
+                                    type="button"
+                                    tabIndex={-1}
+                                    onClick={() => {
+                                      const nextItems = items.filter(it => it.id !== item.id);
+                                      handleUpdateSection(selected.id, section.id, { items: nextItems });
+                                    }}
+                                    className="text-zinc-500 hover:text-rose-400 transition-colors p-1"
                                   >
-                                    <span aria-hidden className="absolute inset-0 rounded-lg pointer-events-none" style={{ background: 'linear-gradient(90deg, rgba(255,255,255,0.34) 0%, rgba(34,184,200,0.62) 18%, rgba(255,255,255,0.22) 44%, rgba(109,94,247,0.64) 78%, rgba(255,255,255,0.28) 100%)' }} />
-                                    <span aria-hidden className="absolute rounded-[6px] pointer-events-none" style={{ inset: '1.5px', background: 'linear-gradient(90deg, rgba(34,184,200,0.22), rgba(109,94,247,0.22)), #2B2D33' }} />
-                                    <Sparkles size={13} className="relative z-10" style={{ filter: 'drop-shadow(0 0 6px rgba(34,184,200,0.50))' }} />
+                                    <Trash2 size={16} />
                                   </button>
+                                </div>
                               </div>
-                              <AutoResizeTextarea
-                                value={item.value}
-                                onChange={(v) => {
-                                  const nextItems = section.items.map(it => it.id === item.id ? { ...it, value: v } : it);
-                                  handleUpdateSection(selected.id, section.id, { items: nextItems });
-                                }}
-                                placeholder="Description"
-                                className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                              />
-                            </div>
-                            <div className="w-7 flex-shrink-0 flex items-center justify-center">
-                              <button
-                                type="button"
-                                tabIndex={-1}
-                                onClick={() => {
-                                  const nextItems = section.items.filter(it => it.id !== item.id);
-                                  handleUpdateSection(selected.id, section.id, { items: nextItems });
-                                }}
-                                className="text-zinc-500 hover:text-rose-400 transition-colors p-1"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
+                            )}
                           </div>
-                        </div>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => handleAddItem(selected.id, section.id)}
-                        className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5"
-                      >
-                        <Plus className="w-4 h-4" /> Add Row
-                      </button>
-                      </>
-                    )}
+                        );
+                      });
+                    })()}
+                    {/* Unified "Add Row" button that opens Content Type modal */}
+                    <button
+                      type="button"
+                      onClick={() => setPendingAddRowSectionId(section.id)}
+                      className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5"
+                    >
+                      <Plus className="w-4 h-4" /> Add Row
+                    </button>
                     </div>
                   ) : (
                     // Collapsed view - show summary
                     (() => {
-                      if (section.type === 'freeform') {
-                        const items = section.items.length > 0 ? section.items : (section.freeformValue ? [{ id: 'legacy', label: '', value: section.freeformValue }] : []);
-                        return items.length > 0 && items.some(it => it.value)
-                          ? <div className="space-y-2">{items.filter(it => it.value).map(it => (
-                              <div key={it.id}>
-                                {it.label && <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{it.label}</span>}
-                                <p className="text-sm text-zinc-400 whitespace-pre-wrap">{it.value}</p>
-                              </div>
-                            ))}</div>
-                          : <p className="text-zinc-500 text-sm italic">No content</p>;
-                      }
-                      const hasAnyValue = section.items.some(item => item.label || item.value);
+                      const items = section.items.length > 0 ? section.items : (section.freeformValue ? [{ id: 'legacy', label: '', value: section.freeformValue }] : []);
+                      const hasAnyValue = items.some(it => it.label || it.value);
                       if (!hasAnyValue) {
-                        return <p className="text-zinc-500 text-sm italic">No items</p>;
+                        return <p className="text-zinc-500 text-sm italic">No content</p>;
                       }
                       return (
-                        <div className="space-y-4">
-                          {section.items.filter(item => item.label || item.value).map((item) => (
-                            <div key={item.id} className="space-y-1">
-                              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block">
-                                {item.label || 'Untitled'}
-                              </span>
-                              <p className="text-sm text-zinc-400">{item.value || '—'}</p>
-                            </div>
-                          ))}
+                        <div className="space-y-3">
+                          {items.filter(it => it.label || it.value || it.subheading).map((item) => {
+                            const itemType = (item as any).type ?? section.type ?? 'structured';
+                            return (
+                              <div key={item.id} className="space-y-1">
+                                {(item as any).subheading && <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block">{(item as any).subheading}</span>}
+                                {itemType === 'structured' && item.label && (
+                                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block">
+                                    {item.label}
+                                  </span>
+                                )}
+                                <p className="text-sm text-zinc-400 whitespace-pre-wrap">{item.value || '—'}</p>
+                              </div>
+                            );
+                          })}
                         </div>
                       );
                     })()
@@ -2225,6 +2225,18 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
             open={showCategoryTypeModal}
             onClose={() => setShowCategoryTypeModal(false)}
             onSelect={(type) => handleAddSection(type as CharacterTraitSectionType)}
+          />
+
+          {/* Content Type modal for "Add Row" within existing sections */}
+          <CustomContentTypeModal
+            open={!!pendingAddRowSectionId}
+            onClose={() => setPendingAddRowSectionId(null)}
+            onSelect={(type) => {
+              if (selected && pendingAddRowSectionId) {
+                handleAddItem(selected.id, pendingAddRowSectionId, type as CharacterTraitSectionType);
+              }
+              setPendingAddRowSectionId(null);
+            }}
           />
         </div>
       </TabFieldNavigator>
