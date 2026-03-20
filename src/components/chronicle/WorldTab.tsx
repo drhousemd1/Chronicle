@@ -1530,7 +1530,7 @@ className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
                       
                        {/* User's custom AI rules - editable */}
                       <div className="mt-4">
-                        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1.5 block">Custom Rules (Optional)</label>
+                        <FieldHeaderRow><label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Custom Rules (Optional)</label></FieldHeaderRow>
                         <AutoResizeTextarea 
                           value={world.core.dialogFormatting} 
                           onChange={(v) => updateCore({ dialogFormatting: v })} 
