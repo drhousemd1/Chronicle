@@ -122,7 +122,7 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
                   updateField('structuredLocations', locs);
                 }}
                 placeholder="LOCATION"
-                className="w-2/5 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                className="w-2/5 px-3 py-2 text-xs leading-5 font-bold bg-[#1c1c1f] border border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               />
               <AutoResizeTextarea
                 value={loc.description}
@@ -217,7 +217,7 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
                             updateField('customWorldSections', updated);
                           }}
                           placeholder="LABEL"
-                          className="w-2/5 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                          className="w-2/5 px-3 py-2 text-xs leading-5 font-bold bg-[#1c1c1f] border border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                         />
                         <AutoResizeTextarea
                           value={item.value}
@@ -256,7 +256,7 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
                       }}
                       className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5"
                     >
-                      <Plus size={16} /> ADD ROW
+                      <Plus size={16} /> Custom Content
                     </button>
                   </>
                 ) : (
@@ -327,7 +327,7 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
                     }}
                     className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5"
                   >
-                    <Plus size={16} /> ADD TEXT FIELD
+                    <Plus size={16} /> Custom Content
                   </button>
                   </>
                 )}
