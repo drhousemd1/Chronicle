@@ -1,57 +1,48 @@
 
-Root cause:
-- Yes — the inconsistency is no longer just margin classes. Some subheadings are plain block labels, some are wrapped in `flex` rows with AI buttons, some have tooltip icons, and custom sections use editable title rows with delete buttons.
-- Even when all of them say `mb-1.5`, the actual visual gap differs because the header row itself has a different height depending on whether it contains an AI/tooltip/delete control.
 
-Implementation approach:
-1. Create one shared header pattern for all “subheading + field below” cases
-- Standardize every builder header to:
-  - a fixed-height header row
-  - consistent bottom spacing
-  - a dedicated right-side action rail
-- The action rail will hold AI / tooltip / delete controls when present, and an invisible spacer when absent so plain headings sit on the same vertical rhythm.
+# Fix Tone Section AI Enhancement
 
-2. Replace ad-hoc header markup across both builders
-- Convert these mixed patterns:
-  - plain `label.mb-1.5 block`
-  - `flex items-center gap-* mb-1.5`
-  - custom title row + `mt-1.5`
-- Into one consistent structure where the field always starts after the same header height.
+## Problem
+When the AI Enhance button is clicked on a tone field, it falls through to the generic `custom` prompt: *"Provide relevant details for this character trait."* This produces irrelevant text because the AI doesn't know the field is about **how the character speaks**. There are three user scenarios that need distinct handling:
 
-3. Audit every heading-to-field pair on Story Builder
-- Normalize:
-  - Story Name
-  - Brief Description
-  - Story Premise
-  - Primary Locations
-  - custom structured section titles
-  - custom freeform section titles
-  - Opening Dialog
-  - Starting Day & Time
-  - Mode / Time Interval / similar control groups
-  - Art Style / Custom Rules / Additional Entries
-- For custom sections, remove “title row height + extra top margin” drift and make the content start on the same spacing rhythm as normal labeled fields.
+1. **Label filled, description empty** (e.g. "Nurturing: ___") — generate a description of that specific tone trait, informed by all character/world context
+2. **Both empty** — generate both a fitting label AND description from scratch based on character context
+3. **Description filled** — enhance the existing description while keeping it about tone
 
-4. Audit every heading-to-field pair on Character Builder
-- Normalize:
-  - Profile labels
-  - Role Description
-  - any label rows with AI buttons
-  - custom section subheadings
-  - freeform custom subsection titles
-  - structured custom subsection titles
-- Ensure section-title rows with trash buttons use the same header height as plain labels, so the field below does not drop lower.
+## Current Flow
+- All character/world context is already sent (personality, background, story premise, etc.) — that part works fine
+- The problem is purely in the **instruction text** — the AI doesn't know to focus on speech/voice
+- Tone fields use fieldName `custom` and customLabel `"character tone/voice detail"`, so they hit the generic fallback
 
-5. Keep Scenario Card as the spacing reference
-- Use the Story Card / Scenario Card spacing as the baseline target.
-- Only make small parity adjustments there if any header/action combination still deviates.
+## Changes — Single file: `src/services/character-ai.ts`
 
-Files to update:
-- `src/components/chronicle/WorldTab.tsx`
-- `src/components/chronicle/CharactersTab.tsx`
-- `src/components/chronicle/StoryCardView.tsx`
-- likely one small shared helper/component for builder subheadings so this stops drifting again
+### 1. Add `tone` entry to `CHARACTER_FIELD_PROMPTS`
 
-Expected result:
-- A heading with AI, tooltip, delete, or no button at all will all produce the same visible spacing to the field beneath it.
-- The inconsistency will be fixed at the header-row architecture level, not by chasing individual margins one by one.
+After the background fields (line ~246), before `custom`:
+
+```typescript
+// Tone / Voice
+tone: {
+  label: "Tone",
+  instruction: "Describe how this character speaks and expresses themselves. Focus on vocal qualities, speech rhythm, vocabulary level, verbal tics or habits, formality, and emotional register. This must naturally reflect the character's personality, background, and world context — not a random or generic speech style. If a specific tone label is provided (e.g. 'Nurturing', 'Sarcastic'), describe how THAT tone manifests in this character's speech specifically, drawing on who they are.",
+  maxSentences: 3
+},
+```
+
+### 2. Add section-aware hints in the generate-both branch
+
+In `buildCharacterFieldPrompt`, update the generate-both prompt (lines 272-294) to inject a section-specific hint when the `sectionHint` is `"character tone/voice detail"`. This replaces the generic guidance with tone-specific instructions:
+
+- The LABEL should be a tone/voice category (e.g. "Warm Drawl", "Clipped Authority", "Nervous Rambling")
+- The DESCRIPTION should explain how this character specifically exhibits that tone, based on their personality, background, and context
+- It must NOT duplicate tone traits the character already has
+
+### 3. Wire tone fields to use the `tone` config instead of `custom`
+
+In `CharactersTab.tsx`, update the `buildExtraEnhanceArgs` call for tone extras (line ~1774) to pass `'tone'` as the fieldName instead of `'custom'`, so it hits the new dedicated prompt config. When label exists, it goes through the standard enhance path with tone-specific instructions. When label is empty, it goes through generate-both with the section hint.
+
+## Result
+- **"Nurturing" + empty description** → AI describes how THIS character's nurturing tone sounds in speech, based on their background/personality
+- **Both empty** → AI generates a fitting tone label + description that matches the character
+- **Existing description** → AI enhances while keeping it about vocal/speech style
+
