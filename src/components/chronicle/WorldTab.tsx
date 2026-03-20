@@ -888,7 +888,7 @@ className="w-2/5 px-3 py-2 text-xs leading-5 font-bold bg-[#1c1c1f] border borde
                     {/* Custom World Content Sections */}
                     {(world.core.customWorldSections || []).map((section, sIdx) => (
                       <div key={section.id}>
-                        <div className="flex items-center gap-3">
+                        <FieldHeaderRow className="gap-3">
                           <AutoResizeTextarea
                             value={section.title}
                             onChange={(v) => {
@@ -910,7 +910,7 @@ className="w-2/5 px-3 py-2 text-xs leading-5 font-bold bg-[#1c1c1f] border borde
                           >
                             <Trash2 size={16} />
                           </button>
-                        </div>
+                        </FieldHeaderRow>
                         <div className="space-y-3 mt-1.5">
                         {(!section.type || section.type === 'structured') ? (
                           <>
