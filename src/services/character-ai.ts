@@ -244,6 +244,13 @@ const CHARACTER_FIELD_PROMPTS: Record<string, { label: string; instruction: stri
   financialStatus: { label: "Financial Status", instruction: "Describe financial standing — wealthy, comfortable, struggling, etc. Include context.", maxSentences: 2 },
   motivation: { label: "Motivation", instruction: "Describe the character's core driving motivation. What keeps them going?", maxSentences: 2 },
   
+  // Tone / Voice
+  tone: {
+    label: "Tone",
+    instruction: "Describe how this character speaks and expresses themselves. Focus on vocal qualities, speech rhythm, vocabulary level, verbal tics or habits, formality, and emotional register. This must naturally reflect the character's personality, background, and world context — not a random or generic speech style. If a specific tone label is provided (e.g. 'Nurturing', 'Sarcastic'), describe how THAT specific tone manifests in this character's speech, drawing on who they are and their established traits.",
+    maxSentences: 3
+  },
+
   // Custom fields (fallback)
   custom: { label: "Custom", instruction: "Provide relevant details for this character trait. Be concise and story-relevant.", maxSentences: 3 }
 };
