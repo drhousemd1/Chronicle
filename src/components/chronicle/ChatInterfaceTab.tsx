@@ -2712,10 +2712,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         });
       }
 
-      // Pass 14: Generate narrative directive for the NEXT turn (async, non-blocking)
-      generateNarrativeDirective().catch(err => {
-        console.error('[handleSend] Narrative directive generation failed:', err);
-      });
 
       const aiMsg: Message = { 
         id: uuid(), 
