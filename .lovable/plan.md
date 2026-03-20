@@ -1,55 +1,57 @@
 
+Root cause:
+- Yes — the inconsistency is no longer just margin classes. Some subheadings are plain block labels, some are wrapped in `flex` rows with AI buttons, some have tooltip icons, and custom sections use editable title rows with delete buttons.
+- Even when all of them say `mb-1.5`, the actual visual gap differs because the header row itself has a different height depending on whether it contains an AI/tooltip/delete control.
 
-# Standardize Subheading-to-Input Spacing Across All Builders
+Implementation approach:
+1. Create one shared header pattern for all “subheading + field below” cases
+- Standardize every builder header to:
+  - a fixed-height header row
+  - consistent bottom spacing
+  - a dedicated right-side action rail
+- The action rail will hold AI / tooltip / delete controls when present, and an invisible spacer when absent so plain headings sit on the same vertical rhythm.
 
-## Problem
-Every subheading label uses a different gap to the input field below it:
-- `mb-1` (4px): Story Name, Brief Description, Story Premise, Primary Locations, Opening Dialog, all CharactersTab basics labels, Custom AI Rules labels
-- `space-y-1.5` (6px): StoryCardView Scenario/Premise, Controlled By / Character Role toggles
-- `space-y-3` (12px): WorldTab custom section titles, CharactersTab custom SECTION TITLE headings
-- `space-y-6` (24px): Additional Entries heading
+2. Replace ad-hoc header markup across both builders
+- Convert these mixed patterns:
+  - plain `label.mb-1.5 block`
+  - `flex items-center gap-* mb-1.5`
+  - custom title row + `mt-1.5`
+- Into one consistent structure where the field always starts after the same header height.
 
-The user confirmed the StoryCardView `space-y-1.5` (6px) spacing is correct. All subheading-to-input gaps must be standardized to **6px** (`mb-1.5` or equivalent).
+3. Audit every heading-to-field pair on Story Builder
+- Normalize:
+  - Story Name
+  - Brief Description
+  - Story Premise
+  - Primary Locations
+  - custom structured section titles
+  - custom freeform section titles
+  - Opening Dialog
+  - Starting Day & Time
+  - Mode / Time Interval / similar control groups
+  - Art Style / Custom Rules / Additional Entries
+- For custom sections, remove “title row height + extra top margin” drift and make the content start on the same spacing rhythm as normal labeled fields.
 
-## Changes
+4. Audit every heading-to-field pair on Character Builder
+- Normalize:
+  - Profile labels
+  - Role Description
+  - any label rows with AI buttons
+  - custom section subheadings
+  - freeform custom subsection titles
+  - structured custom subsection titles
+- Ensure section-title rows with trash buttons use the same header height as plain labels, so the field below does not drop lower.
 
-### 1. WorldTab.tsx
+5. Keep Scenario Card as the spacing reference
+- Use the Story Card / Scenario Card spacing as the baseline target.
+- Only make small parity adjustments there if any header/action combination still deviates.
 
-**FieldLabel component (line 405)**: Change `mb-1` to `mb-1.5` on the wrapper div. This fixes Story Name, Brief Description, and Story Premise.
+Files to update:
+- `src/components/chronicle/WorldTab.tsx`
+- `src/components/chronicle/CharactersTab.tsx`
+- `src/components/chronicle/StoryCardView.tsx`
+- likely one small shared helper/component for builder subheadings so this stops drifting again
 
-**Primary Locations label (line 821)**: Change `mb-1` to `mb-1.5`.
-
-**Custom section title (lines 889-912)**: The title row is a sibling inside `space-y-3`, producing 12px gap. Restructure: remove `space-y-3` from the outer div, give the title row `mb-1.5`, and wrap the items + button in a new `div className="space-y-3"`.
-
-**Opening Dialog label (line 1132)**: Change `mb-1` to `mb-1.5`.
-
-**Starting Day & Time label (line 1165)**: Change `mb-1` to `mb-1.5`.
-
-**Dialog Formatting label (line 1510)**: Change `mb-1` to `mb-1.5`.
-
-**Custom Rules label (line 1526)**: Change `mb-1` to `mb-1.5`.
-
-**Art Style Selection label (line 1445)**: Change `mb-1` to `mb-1.5`.
-
-**Additional Entries heading (line 1539)**: Currently uses `<h3>` as a sibling in `space-y-6`. Change to have `mb-1.5` and remove from the spacing flow, or wrap the grid below separately.
-
-### 2. CharactersTab.tsx
-
-**All basics labels** — Name (line 1525), Nicknames (line 1529), Age (line 1534), Sex/Identity (line 1538), Sexual Orientation (line 1543), Location (line 1588), Current Mood (line 1592): Change `mb-1` to `mb-1.5`.
-
-**Role Description label (line 1597)**: Change `mb-1` to `mb-1.5`.
-
-**Custom SECTION TITLE rows (line 2030)**: Currently inside `space-y-3` producing 12px gap between title and content. Change the item wrapper from `space-y-3` to `space-y-1.5` so the gap between subheading and content is 6px. Then wrap the outer items list (line 2016) to maintain `space-y-3` between separate items.
-
-### 3. StoryCardView.tsx
-
-Already uses `space-y-1.5` for Scenario/Premise — no change needed there.
-
-**Verify** all other label-to-input gaps in this file also use 6px.
-
-## Summary
-
-- **Standard**: 6px (`mb-1.5`) between every subheading label and the input field directly below it
-- **Files**: `WorldTab.tsx`, `CharactersTab.tsx`, `StoryCardView.tsx`
-- **Total label gaps to fix**: ~15 instances of `mb-1` → `mb-1.5`, plus 2 structural fixes where titles are siblings inside `space-y-3` containers
-
+Expected result:
+- A heading with AI, tooltip, delete, or no button at all will all produce the same visible spacing to the field beneath it.
+- The inconsistency will be fixed at the header-row architecture level, not by chasing individual margins one by one.
