@@ -1545,7 +1545,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                             <AutoResizeTextarea value={selected.sexualOrientation || ''} onChange={(v) => onUpdate(selected.id, { sexualOrientation: v })} placeholder="Heterosexual, Bisexual, etc." className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                           </div>
                           <div className="grid grid-cols-2 gap-3 mt-1">
-                            <div className="space-y-1.5">
+                            <div>
                               <FieldHeaderRow><label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Controlled By</label></FieldHeaderRow>
                               <div className="flex p-1.5 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]">
                                 <button
