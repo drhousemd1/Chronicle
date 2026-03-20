@@ -926,14 +926,16 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
     onUpdate(charId, { sections: nextSections });
   };
 
-  const handleAddItem = (charId: string, sectionId: string) => {
+  const handleAddItem = (charId: string, sectionId: string, itemType?: CharacterTraitSectionType) => {
     const char = characters.find(c => c.id === charId);
     if (!char) return;
+    const section = char.sections.find(s => s.id === sectionId);
+    const resolvedType = itemType ?? section?.type ?? 'structured';
     const nextSections = char.sections.map(s => {
       if (s.id !== sectionId) return s;
       return {
         ...s,
-        items: [...s.items, { id: uid('item'), label: '', value: '', createdAt: now(), updatedAt: now() }],
+        items: [...s.items, { id: uid('item'), label: '', value: '', type: resolvedType, subheading: '', createdAt: now(), updatedAt: now() }],
         updatedAt: now()
       };
     });
