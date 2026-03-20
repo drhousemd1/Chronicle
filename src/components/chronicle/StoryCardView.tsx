@@ -6,7 +6,7 @@ import { WorldCore, LocationEntry, WorldCustomSection, WorldCustomItem, StoryGoa
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Trash2, Plus, ChevronDown, ChevronUp } from 'lucide-react';
+import { Trash2, Plus, ChevronDown, ChevronUp, Lock } from 'lucide-react';
 import { StoryGoalsSection } from './StoryGoalsSection';
 import { uid } from '@/utils';
 import { cn } from '@/lib/utils';
@@ -163,17 +163,23 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
                 placeholder="Description of location..."
                 className="flex-1 px-3 py-2 rounded-lg text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
               />
-              <button
-                type="button"
-                tabIndex={-1}
-                onClick={() => {
-                  const locs = locations.filter((_, i) => i !== idx);
-                  updateField('structuredLocations', locs.length > 0 ? locs : undefined);
-                }}
-                className="mt-2 text-zinc-500 hover:text-rose-400 transition-colors p-1"
-              >
-                <Trash2 size={16} />
-              </button>
+              {idx < 2 ? (
+                <div className="w-7 flex-shrink-0 flex items-center justify-center pt-2">
+                  <Lock className="w-3.5 h-3.5 text-zinc-400" />
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  onClick={() => {
+                    const locs = locations.filter((_, i) => i !== idx);
+                    updateField('structuredLocations', locs.length > 0 ? locs : undefined);
+                  }}
+                  className="mt-2 text-zinc-500 hover:text-rose-400 transition-colors p-1"
+                >
+                  <Trash2 size={16} />
+                </button>
+              )}
             </div>
           ))}
           <button
