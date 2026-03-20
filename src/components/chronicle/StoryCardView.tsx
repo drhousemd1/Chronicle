@@ -6,7 +6,7 @@ import { WorldCore, LocationEntry, WorldCustomSection, WorldCustomItem, StoryGoa
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Trash2, Plus, ChevronDown, ChevronUp } from 'lucide-react';
+import { Trash2, Plus, ChevronDown, ChevronUp, Lock } from 'lucide-react';
 import { StoryGoalsSection } from './StoryGoalsSection';
 import { uid } from '@/utils';
 import { cn } from '@/lib/utils';
