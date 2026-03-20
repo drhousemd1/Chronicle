@@ -2976,6 +2976,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
   const handleContinueConversation = async () => {
     if (!conversation || isStreaming) return;
+    const lastMsg = conversation.messages[conversation.messages.length - 1];
+    if (lastMsg) continueEventsRef.current.push({ messageId: lastMsg.id, timestamp: Date.now() });
     
     setIsStreaming(true);
     setStreamingContent('');
