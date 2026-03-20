@@ -84,12 +84,12 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
       >
         <div className="space-y-1.5">
           <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Scenario / Premise</Label>
-          <Textarea
+          <AutoResizeTextarea
             value={scenarioDraft.storyPremise || ''}
-            onChange={(e) => updateField('storyPremise', e.target.value)}
+            onChange={(v) => updateField('storyPremise', v)}
             placeholder="The central situation, conflict, or premise..."
             rows={4}
-            className="text-sm resize-none bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 focus:ring-blue-500/20 focus:border-blue-500"
+            className="px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
           />
         </div>
       </CollapsibleSection>
