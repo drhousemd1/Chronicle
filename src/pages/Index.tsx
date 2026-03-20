@@ -2615,6 +2615,7 @@ const IndexContent = () => {
               appData={activeData || defaultScenarioData}
               conversationId={playingConversationId}
               modelId={globalModelId}
+              isAdmin={isAdminState}
               onUpdate={(convs) => handleUpdateActive({ conversations: convs })}
               onBack={() => { setPlayingConversationId(null); setTab("hub"); }}
               onSaveScenario={(conversations?: Conversation[]) => {
