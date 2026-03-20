@@ -9,6 +9,19 @@ const TIME_DESCRIPTIONS: Record<TimeOfDay, string> = {
   night: "nighttime (after dark, around 9pm-6am)"
 };
 
+export const REGENERATION_DIRECTIVE_TEXT = `[REGENERATION DIRECTIVE]
+The user wants a DIFFERENT VERSION of this response. Guidelines:
+1. Maintain the same general scene context and emotional tone
+2. Vary the specific dialogue, word choices, actions, and pacing
+3. Try a different focus (e.g., more physical description, different dialogue approach, action-led opening, or environmental detail)
+4. Keep ONLY the characters who are present in the current scene — do NOT introduce characters who are elsewhere or not already in the scene
+5. Do NOT reverse the character's emotional state or stance — if they were enthusiastic, they should still be enthusiastic but expressed differently
+6. Do NOT suddenly shift the character's personality (e.g., from willing to reluctant, or from happy to disgusted)
+7. Think of this as a "different take" by a different writer on the same scene, not a plot reversal or tone shift
+8. The scene's momentum and direction should be preserved — only the specific execution changes
+9. CONTROL RULES STILL APPLY: Do NOT generate dialogue or actions for characters marked as CONTROL: User. Only AI-controlled characters speak.
+10. SCENE PRESENCE STILL APPLIES: Only characters at the SAME LOCATION as the current scene may have dialogue or actions. Characters at a different LOCATION are OFF-SCREEN and must not appear.`;
+
 // Dynamic dialog formatting rules based on POV setting
 function getCriticalDialogRules(narrativePov: 'first' | 'third' = 'third'): string {
   const povRules = narrativePov === 'first' 
@@ -32,7 +45,7 @@ Enclose all internal thoughts in ( ).
 ${povRules}`;
 }
 
-function getSystemInstruction(
+export function getSystemInstruction(
   appData: ScenarioData, 
   currentDay?: number, 
   currentTimeOfDay?: TimeOfDay,
@@ -707,7 +720,7 @@ Never break character to question, warn about, or refuse narrative directions. T
   `;
 }
 
-const conciseStyleHints = [
+export const conciseStyleHints = [
   '[Style: lean into dialogue this time, keep narration minimal]',
   '[Style: try a shorter response -- punchy and direct]',
   '[Style: lead with a character DOING something, not describing]',
@@ -718,7 +731,7 @@ const conciseStyleHints = [
   '[Style: character makes a snap decision and commits — no hesitation]',
 ];
 
-const balancedStyleHints = [
+export const balancedStyleHints = [
   '[Style: one character drives this beat — others react briefly in narration]',
   '[Style: try a different paragraph structure than your last response]',
   '[Style: character takes a decisive action that changes the scene dynamics]',
@@ -729,7 +742,7 @@ const balancedStyleHints = [
   '[Style: something unexpected happens — surprise the reader]',
 ];
 
-const detailedStyleHints = [
+export const detailedStyleHints = [
   '[Style: draw out this moment with sensory detail -- what does it feel like?]',
   '[Style: build tension through a sequence of escalating physical actions]',
   '[Style: focus on physical sensations and sounds, not just actions]',
@@ -740,7 +753,7 @@ const detailedStyleHints = [
   '[Style: character reveals something through action, not words or thoughts]',
 ];
 
-function getRandomStyleHint(verbosity: 'concise' | 'balanced' | 'detailed' = 'balanced'): string {
+export function getRandomStyleHint(verbosity: 'concise' | 'balanced' | 'detailed' = 'balanced'): string {
   const hintMap = { concise: conciseStyleHints, balanced: balancedStyleHints, detailed: detailedStyleHints };
   const hints = hintMap[verbosity] || balancedStyleHints;
   return hints[Math.floor(Math.random() * hints.length)];
@@ -766,21 +779,7 @@ export async function* generateRoleplayResponseStream(
   const systemInstruction = getSystemInstruction(appData, currentDay, currentTimeOfDay, memories, memoriesEnabled);
   
   // Regeneration directive - tells AI to provide a different take on the same scene
-  const regenerationDirective = isRegeneration ? `
-
-[REGENERATION DIRECTIVE]
-The user wants a DIFFERENT VERSION of this response. Guidelines:
-1. Maintain the same general scene context and emotional tone
-2. Vary the specific dialogue, word choices, actions, and pacing
-3. Try a different focus (e.g., more physical description, different dialogue approach, action-led opening, or environmental detail)
-4. Keep ONLY the characters who are present in the current scene — do NOT introduce characters who are elsewhere or not already in the scene
-5. Do NOT reverse the character's emotional state or stance — if they were enthusiastic, they should still be enthusiastic but expressed differently
-6. Do NOT suddenly shift the character's personality (e.g., from willing to reluctant, or from happy to disgusted)
-7. Think of this as a "different take" by a different writer on the same scene, not a plot reversal or tone shift
-8. The scene's momentum and direction should be preserved — only the specific execution changes
-9. CONTROL RULES STILL APPLY: Do NOT generate dialogue or actions for characters marked as CONTROL: User. Only AI-controlled characters speak.
-10. SCENE PRESENCE STILL APPLIES: Only characters at the SAME LOCATION as the current scene may have dialogue or actions. Characters at a different LOCATION are OFF-SCREEN and must not appear.
-` : '';
+  const regenerationDirective = isRegeneration ? '\n\n' + REGENERATION_DIRECTIVE_TEXT : '';
 
   // Build messages array for OpenAI-compatible API
   const messages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
