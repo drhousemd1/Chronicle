@@ -1731,7 +1731,7 @@ Message Array Structure (full API call):
 [
   { role: "system", content: systemInstruction },         // Main system prompt (all blocks above)
   ...conversationHistory,                                 // All prior messages
-  { role: "system", content: runtimeDirectives },         // Optional: Narrative Director injection
+  { role: "system", content: runtimeDirectives },         // Optional: Anti-loop directives
   { role: "user", content: assembledUserMessage }         // Final assembled message
 ]
 
