@@ -2028,17 +2028,30 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                         const itemType = item.type ?? section.type ?? 'structured';
                         return (
                           <div key={item.id} className="space-y-3">
-                            {/* Subheading input */}
-                            <input
-                              type="text"
-                              value={item.subheading ?? ''}
-                              onChange={(e) => {
-                                const nextItems = items.map(it => it.id === item.id ? { ...it, subheading: e.target.value } : it);
-                                handleUpdateSection(selected.id, section.id, { items: nextItems });
-                              }}
-                              placeholder="SECTION TITLE..."
-                              className="w-full text-[10px] font-bold text-zinc-500 uppercase tracking-widest bg-transparent border-none focus:outline-none placeholder:text-zinc-500 px-0 py-0"
-                            />
+                            {/* Subheading input with per-item delete */}
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="text"
+                                value={item.subheading ?? ''}
+                                onChange={(e) => {
+                                  const nextItems = items.map(it => it.id === item.id ? { ...it, subheading: e.target.value } : it);
+                                  handleUpdateSection(selected.id, section.id, { items: nextItems });
+                                }}
+                                placeholder="SECTION TITLE..."
+                                className="flex-1 text-[10px] font-bold text-zinc-500 uppercase tracking-widest bg-transparent border-none focus:outline-none placeholder:text-zinc-500 px-0 py-0"
+                              />
+                              <button
+                                type="button"
+                                tabIndex={-1}
+                                onClick={() => {
+                                  const nextItems = items.filter(it => it.id !== item.id);
+                                  handleUpdateSection(selected.id, section.id, { items: nextItems.length > 0 ? nextItems : [{ id: uid('item'), label: '', value: '', type: item.type ?? section.type ?? 'structured', createdAt: now(), updatedAt: now() }] });
+                                }}
+                                className="text-zinc-500 hover:text-rose-400 transition-colors p-1"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
                             {itemType === 'freeform' ? (
                               /* Freeform item */
                               <div className="flex items-start gap-3">
