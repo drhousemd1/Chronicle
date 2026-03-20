@@ -49,6 +49,7 @@ interface ChatInterfaceTabProps {
   appData: ScenarioData;
   conversationId: string;
   modelId: string;
+  isAdmin?: boolean;
   onUpdate: (convs: Conversation[]) => void;
   onBack: () => void;
   onSaveScenario: (conversations?: Conversation[]) => void;
@@ -72,6 +73,8 @@ interface ChatInterfaceTabProps {
   onLoadOlderMessages?: (conversationId: string, beforeCreatedAt: string) => Promise<Message[]>;
   hasMoreMessages?: boolean;
 }
+
+type ActionEvent = { messageId: string; timestamp: number };
 
 function parseMessageTokens(text: string, preserveWhitespace = false): { type: string; content: string }[] {
   let cleanRaw = text.replace(/\[SCENE:\s*.*?\]/g, '');
