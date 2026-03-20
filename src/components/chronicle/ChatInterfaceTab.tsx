@@ -4,7 +4,7 @@ import { Button, TextArea } from './UI';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { uid, now, uuid } from '@/utils';
-import { generateRoleplayResponseStream, getSystemInstruction, conciseStyleHints, balancedStyleHints, detailedStyleHints, REGENERATION_DIRECTIVE_TEXT } from '../../services/llm';
+import { generateRoleplayResponseStream, getSystemInstruction, conciseStyleHints, balancedStyleHints, detailedStyleHints, REGENERATION_DIRECTIVE_TEXT, buildCanonNote } from '../../services/llm';
 import { RefreshCw, MoreVertical, Copy, Pencil, Trash2, ChevronUp, ChevronDown, Sunrise, Sun, Sunset, Moon, Loader2, StepForward, Settings, Image as ImageIcon, Brain, Check, X, Info, Play, Pause, Move, Palette } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import {
