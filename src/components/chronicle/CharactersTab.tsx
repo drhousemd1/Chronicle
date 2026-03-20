@@ -2191,31 +2191,27 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                   ) : (
                     // Collapsed view - show summary
                     (() => {
-                      if (section.type === 'freeform') {
-                        const items = section.items.length > 0 ? section.items : (section.freeformValue ? [{ id: 'legacy', label: '', value: section.freeformValue }] : []);
-                        return items.length > 0 && items.some(it => it.value)
-                          ? <div className="space-y-2">{items.filter(it => it.value).map(it => (
-                              <div key={it.id}>
-                                {it.label && <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{it.label}</span>}
-                                <p className="text-sm text-zinc-400 whitespace-pre-wrap">{it.value}</p>
-                              </div>
-                            ))}</div>
-                          : <p className="text-zinc-500 text-sm italic">No content</p>;
-                      }
-                      const hasAnyValue = section.items.some(item => item.label || item.value);
+                      const items = section.items.length > 0 ? section.items : (section.freeformValue ? [{ id: 'legacy', label: '', value: section.freeformValue }] : []);
+                      const hasAnyValue = items.some(it => it.label || it.value);
                       if (!hasAnyValue) {
-                        return <p className="text-zinc-500 text-sm italic">No items</p>;
+                        return <p className="text-zinc-500 text-sm italic">No content</p>;
                       }
                       return (
-                        <div className="space-y-4">
-                          {section.items.filter(item => item.label || item.value).map((item) => (
-                            <div key={item.id} className="space-y-1">
-                              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block">
-                                {item.label || 'Untitled'}
-                              </span>
-                              <p className="text-sm text-zinc-400">{item.value || '—'}</p>
-                            </div>
-                          ))}
+                        <div className="space-y-3">
+                          {items.filter(it => it.label || it.value || it.subheading).map((item) => {
+                            const itemType = (item as any).type ?? section.type ?? 'structured';
+                            return (
+                              <div key={item.id} className="space-y-1">
+                                {(item as any).subheading && <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block">{(item as any).subheading}</span>}
+                                {itemType === 'structured' && item.label && (
+                                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block">
+                                    {item.label}
+                                  </span>
+                                )}
+                                <p className="text-sm text-zinc-400 whitespace-pre-wrap">{item.value || '—'}</p>
+                              </div>
+                            );
+                          })}
                         </div>
                       );
                     })()
