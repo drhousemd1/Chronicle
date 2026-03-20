@@ -4,6 +4,7 @@ import { CustomContentTypeModal } from './CustomContentTypeModal';
 import { TabFieldNavigator } from './TabFieldNavigator';
 import { Button, TextArea, Card } from './UI';
 import { Icons } from '@/constants';
+import { AutoResizeTextarea } from './AutoResizeTextarea';
 import { uid, now, clamp, resizeImage } from '@/utils';
 import { useAuth } from '@/hooks/use-auth';
 import { uploadAvatar, dataUrlToBlob, updateNavButtonImages, loadNavButtonImages } from '@/services/supabase-data';
