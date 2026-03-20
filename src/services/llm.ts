@@ -32,7 +32,7 @@ Enclose all internal thoughts in ( ).
 ${povRules}`;
 }
 
-function getSystemInstruction(
+export function getSystemInstruction(
   appData: ScenarioData, 
   currentDay?: number, 
   currentTimeOfDay?: TimeOfDay,
