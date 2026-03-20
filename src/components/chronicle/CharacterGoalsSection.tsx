@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { CharacterGoal, GoalStep, GoalFlexibility, TimeOfDay } from '@/types';
-import { Trash2, Plus, X, ChevronDown, ChevronUp, CheckSquare, Sparkles } from 'lucide-react';
+import { Trash2, Plus, Lock, ChevronDown, ChevronUp, CheckSquare, Sparkles } from 'lucide-react';
 import { GuidanceStrengthSlider } from './GuidanceStrengthSlider';
 import { CircularProgress } from './CircularProgress';
 import { Checkbox } from '@/components/ui/checkbox';
