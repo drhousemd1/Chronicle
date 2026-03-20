@@ -1013,7 +1013,7 @@ className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
                               updateCore({ customWorldSections: sections });
                             }
                             return items.map((item, iIdx) => (
-                              <div key={item.id} className="space-y-1">
+                              <div key={item.id} className="space-y-3">
                                 <AutoResizeTextarea
                                   value={item.value}
                                   onChange={(v) => {
