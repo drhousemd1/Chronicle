@@ -1585,7 +1585,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                       {/* Below grid: remaining fields */}
                       <div className="space-y-3 mt-4">
                         <div>
-                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Location</label>
+                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5 block">Location</label>
                           <AutoResizeTextarea value={selected.location || ''} onChange={(v) => onUpdate(selected.id, { location: v })} placeholder="Current location" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                         </div>
                         <div>
