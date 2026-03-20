@@ -251,6 +251,23 @@ const CHARACTER_FIELD_PROMPTS: Record<string, { label: string; instruction: stri
     maxSentences: 3
   },
 
+  // Personality
+  personality: {
+    label: "Personality Trait",
+    instruction: "Describe this personality trait and how it manifests in the character's behavior, decisions, and interactions. Focus on behavioral patterns, emotional tendencies, and how this trait shapes who they are. Stay grounded in the character's background and world context. Do NOT describe speech patterns or vocal qualities — focus on personality and behavior.",
+    maxSentences: 2
+  },
+  personality_outward: {
+    label: "Outward Personality Trait",
+    instruction: "Describe this OUTWARD personality trait — how the character presents themselves to others. Focus on projected behavior, social demeanor, dialogue style, body language, and the persona they show the world. This is what other characters would observe and experience. Do NOT describe internal feelings or hidden thoughts — focus on external presentation.",
+    maxSentences: 2
+  },
+  personality_inward: {
+    label: "Inward Personality Trait",
+    instruction: "Describe this INWARD personality trait — the character's internal emotional landscape. Focus on private thoughts, hidden impulses, inner contradictions, suppressed feelings, and emotional patterns they don't show others. This is what the character experiences internally but may hide or struggle with. Do NOT describe outward behavior — focus on inner state.",
+    maxSentences: 2
+  },
+
   // Custom fields (fallback)
   custom: { label: "Custom", instruction: "Provide relevant details for this character trait. Be concise and story-relevant.", maxSentences: 3 }
 };
