@@ -2068,7 +2068,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                               </div>
                             ) : (
                               /* Structured item */
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-start gap-3">
                                 <div className="flex-1 flex gap-2">
                                   <div className="w-2/5 flex items-center gap-1.5">
                                     <AutoResizeTextarea
