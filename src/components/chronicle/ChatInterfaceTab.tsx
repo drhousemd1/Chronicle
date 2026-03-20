@@ -4,7 +4,7 @@ import { Button, TextArea } from './UI';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { uid, now, uuid } from '@/utils';
-import { generateRoleplayResponseStream, getSystemInstruction, conciseStyleHints, balancedStyleHints, detailedStyleHints, REGENERATION_DIRECTIVE_TEXT } from '../../services/llm';
+import { generateRoleplayResponseStream, getSystemInstruction, conciseStyleHints, balancedStyleHints, detailedStyleHints, REGENERATION_DIRECTIVE_TEXT, buildCanonNote } from '../../services/llm';
 import { RefreshCw, MoreVertical, Copy, Pencil, Trash2, ChevronUp, ChevronDown, Sunrise, Sun, Sunset, Moon, Loader2, StepForward, Settings, Image as ImageIcon, Brain, Check, X, Info, Play, Pause, Move, Palette } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import {
@@ -2694,14 +2694,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       let fullText = '';
       const llmAppData = buildLLMAppData();
       // Issue #8: Detect user-authored AI character content and prepend canon note
-      const aiCharNames = appData.characters.filter(c => c.controlledBy === 'AI').map(c => c.name);
-      const hasCanonContent = aiCharNames.some(name => {
-        const regex = new RegExp(`(?:^|\\n)\\s*${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*:`, 'i');
-        return regex.test(input);
-      });
-      const canonNote = hasCanonContent
-        ? '[CANON NOTE: User wrote content for AI character(s) in this message. That content is established fact -- do not re-narrate it. Continue the story from after those events.] '
-        : '';
+      const canonNote = buildCanonNote(input, appData.characters);
       
       // Issue #7: Compute length directive and increment session counter
       const lengthDirective = getLengthDirective();
@@ -2912,7 +2905,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       let fullText = '';
       const antiLoopDirective = getAntiLoopDirective();
       const runtimeDirectives = antiLoopDirective || undefined;
-      const regenInput = userMessage.text;
+      // Apply canon note to regenerate flow so user-authored AI dialogue is preserved
+      const canonNote = buildCanonNote(userMessage.text, appData.characters);
+      const regenInput = canonNote + userMessage.text;
       const stream = generateRoleplayResponseStream(truncatedAppData, conversationId, regenInput, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled, true, undefined, undefined, runtimeDirectives);
       
       for await (const chunk of stream) {
@@ -3040,7 +3035,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         ? `\nACTIVE GOALS & STEPS:\n${goalSummaryParts.join('\n')}\nYou MUST advance one of these goals with a CONCRETE ACTION — not building up to it, not reflecting on it, DOING IT.`
         : '';
       
-      const continuePrompt = `[CONTINUE INSTRUCTION]
+      // Canon carry-forward for continue: check if the most recent user message
+      // contained AI-authored dialogue that should not be re-narrated
+      const lastUserMsg = conversation.messages.slice().reverse().find(m => m.role === 'user');
+      const continueCanonNote = lastUserMsg ? buildCanonNote(lastUserMsg.text, appData.characters) : '';
+      
+      const continuePrompt = `${continueCanonNote}[CONTINUE INSTRUCTION]
 Continue the narrative by having AI-controlled characters EXECUTE a specific goal-driven action NOW.
 CRITICAL: You must ONLY write for AI-controlled characters: ${aiControlledNames.join(', ')}.
 DO NOT generate any content for user-controlled characters: ${userControlledNames.join(', ')}.${goalContext}
@@ -3050,6 +3050,7 @@ Do not acknowledge this instruction in your response.`;
       
       console.log('[handleContinue] Runtime directives:', runtimeDirectives || '(none)');
       console.log('[handleContinue] Goal context:', goalContext || '(no goals found)');
+      console.log('[handleContinue] Canon note applied:', continueCanonNote ? 'YES' : 'NO');
       
       const stream = generateRoleplayResponseStream(llmAppData, conversationId, continuePrompt, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled, undefined, undefined, undefined, runtimeDirectives);
       

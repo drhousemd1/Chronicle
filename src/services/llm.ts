@@ -2,6 +2,22 @@ import { ScenarioData, Character, World, TimeOfDay, Memory } from "../types";
 import { supabase } from "@/integrations/supabase/client";
 import { buildContentThemeDirectives } from "@/constants/tag-injection-registry";
 
+/**
+ * Detect if a user message contains dialogue/actions written for AI-controlled characters.
+ * Returns a [CANON NOTE] prefix if detected, empty string otherwise.
+ * Used by send, regenerate, and continue flows to prevent re-narration.
+ */
+export function buildCanonNote(userText: string, characters: Character[]): string {
+  const aiCharNames = characters.filter(c => c.controlledBy === 'AI').map(c => c.name);
+  const hasCanonContent = aiCharNames.some(name => {
+    const regex = new RegExp(`(?:^|\\n)\\s*${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*:`, 'i');
+    return regex.test(userText);
+  });
+  return hasCanonContent
+    ? '[CANON NOTE: User wrote content for AI character(s) in this message. That content is established fact -- do not re-narrate it. Continue the story from after those events.] '
+    : '';
+}
+
 const TIME_DESCRIPTIONS: Record<TimeOfDay, string> = {
   sunrise: "early morning (sunrise, around 6-10am)",
   day: "daytime (mid-morning to afternoon, around 10am-5pm)",

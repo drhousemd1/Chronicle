@@ -133,7 +133,7 @@ Primary function: `generateRoleplayResponseStream()` in `src/services/llm.ts` (~
 
 **Adaptive Length Control**: `responseLengthsRef` tracks word counts of recent responses. `getLengthDirective()` detects locked length patterns (last 3 responses within 20% of each other) and injects a targeted length directive.
 
-**AI-Character Canon Detection**: Before each request, `handleSend` checks if user input contains `CharacterName:` prefixes matching AI-controlled characters. If detected, prepends a `[CANON NOTE]` to prevent re-narration.
+**AI-Character Canon Detection**: `buildCanonNote()` (exported from `llm.ts`) checks if user input contains `CharacterName:` prefixes matching AI-controlled characters. If detected, returns a `[CANON NOTE]` prefix to prevent re-narration. Applied in all three generation paths: `handleSend`, `handleRegenerateMessage`, and `handleContinueConversation` (continue checks the most recent user message in history).
 
 **Session Depth**: `sessionMessageCountRef` increments per exchange and is injected as `[SESSION: Message N]` for precise trait evolution guidance.
 
