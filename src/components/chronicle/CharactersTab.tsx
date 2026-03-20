@@ -510,7 +510,7 @@ const ExtraRow: React.FC<{
   onEnhance?: () => void;
   isEnhancing?: boolean;
 }> = ({ extra, onUpdate, onDelete, onEnhance, isEnhancing }) => (
-  <div className="flex items-center gap-2">
+  <div className="flex items-start gap-3">
     <div className="w-2/5 flex items-center gap-1.5 min-w-0">
       <AutoResizeTextarea
         value={extra.label}
