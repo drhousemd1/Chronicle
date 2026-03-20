@@ -4,6 +4,7 @@ import { World, OpeningDialog, CodexEntry, Character, Scene, TimeOfDay, WorldCor
 import { validateForPublish, hasPublishErrors, PublishValidationErrors } from '@/utils/publish-validation';
 import { EnhanceableWorldFields } from '@/services/world-ai';
 import { AutoResizeTextarea } from './AutoResizeTextarea';
+import { FieldHeaderRow } from './FieldHeaderRow';
 import { Button, Card } from './UI';
 import { Icons } from '@/constants';
 import { uid, now, resizeImage, uuid, clamp } from '@/utils';
