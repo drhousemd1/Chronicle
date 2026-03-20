@@ -1314,7 +1314,7 @@ className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
               <div className="p-5">
                 <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
                 {/* Header row: label + tooltip on left, buttons on right */}
-                <div className="flex items-end justify-between gap-4 mb-1">
+                <div className="flex items-end justify-between gap-4 mb-1.5">
                   <div className="flex items-center gap-2">
                     <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Scene Gallery Photos</label>
                     <Tooltip>
