@@ -181,15 +181,15 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
             {customSections.map((section, sIdx) => (
               <div key={section.id} className="p-4 bg-blue-900/40 rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)] space-y-3">
                 <div className="flex items-center justify-between">
-                  <Input
+                  <AutoResizeTextarea
                     value={section.title}
-                    onChange={(e) => {
+                    onChange={(v) => {
                       const updated = [...customSections];
-                      updated[sIdx] = { ...updated[sIdx], title: e.target.value };
+                      updated[sIdx] = { ...updated[sIdx], title: v };
                       updateField('customWorldSections', updated);
                     }}
                     placeholder="Section Title..."
-                    className="bg-transparent border-none text-white font-bold text-lg px-0 focus:ring-0 placeholder:text-zinc-500"
+                    className="flex-1 bg-transparent border-none text-white font-bold text-lg px-0 focus:ring-0 placeholder:text-zinc-500"
                   />
                    <button
                     type="button"
