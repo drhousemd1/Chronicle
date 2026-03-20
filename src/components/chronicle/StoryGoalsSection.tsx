@@ -322,7 +322,7 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({
                               checked={step.completed}
                               onCheckedChange={() => isEditMode ? toggleStep(goal.id, step.id) : undefined}
                               disabled={!isEditMode}
-                              className="mt-2.5 border-zinc-600 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
+                              className="border-zinc-600 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
                             />
                             {isEditMode ? (
                               <>
