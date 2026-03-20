@@ -1,36 +1,24 @@
 
 
-# Fix: Icon Consistency on Story Builder Page
+# Fix: Vertical Alignment of Icons in Locations & Story Goal Steps
 
-## Summary
-Standardize delete icons across the Story Builder — replace Red X with trash cans, remove redundant delete buttons on custom content rows, and add delete/lock icons to Story Goal cards.
+## Problem
+1. **Primary Locations**: Lock icons (idx < 2) use `pt-2` but trash icons (idx >= 2) use `mt-2` — inconsistent vertical centering relative to the input fields.
+2. **Story Goal Steps**: The row uses `items-start` with the checkbox at `mt-2.5`, SparkleButton has no vertical offset, and trash has `mt-2` — all misaligned relative to the text input.
 
-## Changes
+## Fix
 
-### 1. World Core — Custom Content: Remove Red X from rows
-Since each custom section already has a trash can on its title row (to delete the whole section), the per-row Red X is redundant.
+### 1. `src/components/chronicle/WorldTab.tsx` — Trash icon alignment (line 862)
+Change the trash button from `mt-2 ... p-1` to match the lock icon's wrapper pattern:
+- Wrap in a `div` with `w-7 flex-shrink-0 flex items-center justify-center pt-2` (same as the lock icon wrapper)
+- Remove `mt-2` and `p-1` from the button itself
 
-**`src/components/chronicle/WorldTab.tsx`**:
-- **Structured rows** (lines 984–995): Remove the `<X>` delete button entirely from each structured item row
-- **Freeform rows** (lines 1040–1052): Remove the `<X>` delete button entirely from each freeform item row
-
-### 2. Story Goals — Steps: Replace Red X with Trash2
-**`src/components/chronicle/StoryGoalsSection.tsx`** (lines 337–341):
-- Replace `<X className="h-4 w-4" />` with `<Trash2 size={16} />` 
-- Update styling from `text-red-500 hover:text-red-400` to `text-zinc-500 hover:text-rose-400` to match the location trash icon pattern
-- Add `Lock` and `Trash2` to imports, can remove `X` if no longer used
-
-### 3. Story Goals — Goal Cards: Add trash/lock icon
-**`src/components/chronicle/StoryGoalsSection.tsx`** (around line 238–239):
-- Add a trash can or lock icon to the right of the "Goal Name" label row (not next to the progress ring — above the input, inline with the label)
-- For the first goal card (`idx === 0` from `sortedGoals`): show a `Lock` icon (`w-3.5 h-3.5 text-zinc-400`)
-- For subsequent goal cards (`idx >= 1`): show a `Trash2` button (`text-zinc-500 hover:text-rose-400`) that calls `deleteGoal(goal.id)`
-- Layout: Add the icon to the existing `<label>` line using a flex wrapper with `justify-between`, so it sits right-aligned on the same line as "Goal Name" without affecting the progress ring or other elements
-
-### 4. Story Goals — Delete protection
-- Update `deleteGoal` to prevent deleting when only one goal remains (or guard at the UI level by only showing trash for `idx >= 1`)
+### 2. `src/components/chronicle/StoryGoalsSection.tsx` — Steps row alignment (lines 320, 335, 351)
+- Change the step row container from `items-start` to `items-center` so all elements (checkbox, input, sparkle button, trash) naturally center-align vertically
+- Remove the manual offsets: checkbox `mt-2.5` → remove, trash `mt-2` → remove
+- This ensures the checkbox, sparkle button, and trash icon all sit centered relative to the input field height
 
 ## Files Modified
-- `src/components/chronicle/WorldTab.tsx` — Remove per-row X buttons from custom content (both structured and freeform)
-- `src/components/chronicle/StoryGoalsSection.tsx` — Replace step X with trash, add goal-level trash/lock icons
+- `src/components/chronicle/WorldTab.tsx` — 1 block (~lines 854-865)
+- `src/components/chronicle/StoryGoalsSection.tsx` — 3 lines (~320, 325, 351)
 
