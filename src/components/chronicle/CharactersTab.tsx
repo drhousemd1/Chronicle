@@ -856,7 +856,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
   // Handler for per-field AI enhancement (called after mode selection)
   const handleEnhanceField = async (
     fieldKey: string,
-    section: 'physicalAppearance' | 'currentlyWearing' | 'preferredClothing' | 'custom',
+    section: 'physicalAppearance' | 'currentlyWearing' | 'preferredClothing' | 'custom' | 'tone',
     getCurrentValue: () => string,
     setValue: (value: string) => void,
     customLabel?: string,
