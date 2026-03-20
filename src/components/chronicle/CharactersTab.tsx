@@ -1595,7 +1595,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                         </div>
 
                         <div>
-                          <div className="flex items-center gap-2 mb-1.5">
+                          <FieldHeaderRow>
                             <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Role Description</label>
                             <button
                               type="button"
@@ -1619,7 +1619,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                               <span aria-hidden className="absolute rounded-[6px] pointer-events-none" style={{ inset: '1.5px', background: 'linear-gradient(90deg, rgba(34,184,200,0.22), rgba(109,94,247,0.22)), #2B2D33' }} />
                               <Sparkles size={13} className="relative z-10" style={{ filter: 'drop-shadow(0 0 6px rgba(34,184,200,0.50))' }} />
                             </button>
-                          </div>
+                          </FieldHeaderRow>
                           <AutoResizeTextarea value={selected.roleDescription || ''} onChange={(v) => onUpdate(selected.id, { roleDescription: v })} placeholder="Brief description of the character's role" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                         </div>
                       </div>
