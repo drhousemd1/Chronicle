@@ -2184,62 +2184,7 @@ const IndexContent = () => {
                       if (!activeId || !activeData || !user) return;
                       setIsSaving(true);
                       try {
-                        let scenarioIdToSave = activeId;
-
-                        if (!isValidUuid(activeId)) {
-                          scenarioIdToSave = uuid();
-                          setActiveId(scenarioIdToSave);
-                        }
-
-                        const migrated = migrateScenarioDataIds(activeData);
-                        const dataToSave = migrated.didMigrate ? migrated.data : activeData;
-
-                        if (migrated.didMigrate) {
-                          setActiveData(migrated.data);
-                          setSelectedCharacterId((prev) => {
-                            if (!prev) return prev;
-                            return migrated.characterIdMap.get(prev) || prev;
-                          });
-                          setPlayingConversationId((prev) => {
-                            if (!prev) return prev;
-                            return migrated.conversationIdMap.get(prev) || prev;
-                          });
-                        }
-
-                        const derivedTitle = dataToSave.world.core.scenarioName || 'Untitled';
-                        const metadata = {
-                          title: derivedTitle,
-                          description: dataToSave.world.core.briefDescription ||
-                                       truncateLine(dataToSave.world.core.storyPremise || 'Created via Builder', 120),
-                          coverImage: activeCoverImage,
-                          coverImagePosition: activeCoverPosition,
-                          tags: ['Custom']
-                        };
-
-                        // Write local safety snapshot before remote save
-                        try {
-                          localStorage.setItem(`draft_${scenarioIdToSave}`, JSON.stringify({
-                            data: dataToSave,
-                            coverImage: activeCoverImage,
-                            coverPosition: activeCoverPosition,
-                            contentThemes: activeContentThemes,
-                            savedAt: Date.now(),
-                          }));
-                        } catch (_) { /* quota exceeded — non-fatal */ }
-
-                        const verified = await supabaseData.saveScenarioWithVerification(scenarioIdToSave, dataToSave, metadata, user.id, { isDraft: true });
-
-                        if (verified) {
-                          // Clear local snapshot on verified success
-                          try { localStorage.removeItem(`draft_${scenarioIdToSave}`); } catch (_) {}
-                        } else {
-                          console.warn('Draft saved but child-data verification failed; local snapshot kept as backup.');
-                        }
-
-                        // Refresh registry so hub shows the draft
-                        supabaseData.fetchMyScenarios(user.id)
-                          .then(r => { setRegistry(r); setHubFilter("my"); })
-                          .catch(e => console.warn('Registry refresh failed:', e));
+                        await saveDraftInBackground();
                         setTimeout(() => setIsSaving(false), 1200);
                       } catch (e) {
                         console.warn('Could not save draft:', e);
