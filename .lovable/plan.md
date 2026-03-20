@@ -1,87 +1,74 @@
 
+What went wrong:
+- The issue is not a context-window problem. The problem is scope and component drift.
+- The last pass mostly changed container spacing classes, but the actual inconsistency is deeper: the builders are using different field primitives, different row wrappers, and different alignment rules.
+- So even after spacing was standardized, many text inputs still looked mismatched.
 
-# Full Spacing & Sizing Consistency Audit — All Sections
+What I found in the code:
+- There are 3 separate auto-resizing textarea implementations:
+  - shared `src/components/chronicle/AutoResizeTextarea.tsx`
+  - local one inside `CharactersTab.tsx`
+  - local one inside `StoryCardView.tsx`
+- `StoryCardView.tsx` also mixes `Input`, `Textarea`, and a local auto-resize textarea, so it cannot stay visually consistent with the builder pages.
+- Row wrappers are inconsistent:
+  - `WorldTab.tsx` still uses `flex items-start gap-3`
+  - `CharactersTab.tsx` mostly uses `flex items-center gap-2`
+  - some delete/lock actions still rely on manual `pt-2` / `mt-2`
+- That means the fields can have matching padding but still look like different heights because the rows and action slots are aligned differently.
 
-## Reference Standard
-**Primary Locations** (WorldTab line 823) uses:
-- `space-y-3` between rows
-- Button sits naturally after the last row (inside the same `space-y-3` container, so it gets a 12px gap)
-- Label inputs: `w-2/5`, `px-3 py-2`, `text-xs font-bold`
-- Description inputs: `flex-1`, `px-3 py-2`, `text-sm`
+Plan to fix it thoroughly:
+1. Normalize the field primitive first
+- Use the shared `src/components/chronicle/AutoResizeTextarea.tsx` as the single source of truth.
+- Remove the duplicated local textarea implementations in `CharactersTab.tsx` and `StoryCardView.tsx`.
+- Add a consistent builder baseline for single-line, label, description, and freeform text fields so height, padding, line-height, and radius all match.
 
-All sections should match this pattern.
+2. Standardize all side-by-side builder rows
+- Apply one row pattern everywhere relevant:
+  - row wrapper: consistent flex alignment and gap
+  - label column: `w-2/5 min-w-0`
+  - description/value column: `flex-1 min-w-0`
+  - action slot: fixed-width centered container
+- Remove leftover manual offsets like `pt-2` / `mt-2` where the centered action slot should handle alignment.
 
----
+3. Audit and update every editable text field on both builder pages
+- Story Builder / `WorldTab.tsx`
+  - Story Name
+  - Brief Description
+  - Story Premise
+  - Primary Locations
+  - Custom structured rows
+  - Custom freeform blocks
+  - Opening Dialog
+  - Custom AI Rules
+  - Additional Entries text areas
+- Character Builder / `CharactersTab.tsx`
+  - Basics fields
+  - all `HardcodedRow` value fields
+  - all `ExtraRow` label/value rows
+  - below-grid fields
+  - custom structured rows
+  - custom freeform rows
+  - custom section subheading/title fields
 
-## Findings by File
+4. Fix `StoryCardView.tsx` so it stops drifting from the main builders
+- Replace the mismatched `Input`/`Textarea` styling with the same builder field rules used in the main pages.
+- Align locations, custom structured rows, and freeform blocks to the same row-height and spacing standard.
 
-### WorldTab.tsx (Story Builder)
+5. QA against the actual complaints
+- Verify that:
+  - description fields in custom rows visually match Primary Locations
+  - label/description side-by-side rows look uniform across both pages
+  - freeform blocks use the same visual sizing rules
+  - action icons are vertically aligned
+  - “Add Row” buttons have consistent breathing room below the last field
 
-| Section | Current Spacing | Issue |
-|---|---|---|
-| **Primary Locations** (L823) | `space-y-3` | Correct — this is the reference |
-| **Custom Structured** (L889) | `space-y-1` on outer container; no spacing wrapper around items | Rows are cramped; "Add Row" button collides with last row |
-| **Custom Freeform** (L1016) | `space-y-1` per item div | Same cramped spacing |
-| **Opening Dialog** (L1099) | `space-y-6` | Fine (single textarea, different layout) |
-| **Custom AI Rules** (L1476) | `space-y-8` | Fine (single textarea sections) |
-| **Additional Entries** (L1509) | `gap-6` grid | Fine |
+Files I would update:
+- `src/components/chronicle/AutoResizeTextarea.tsx`
+- `src/components/chronicle/WorldTab.tsx`
+- `src/components/chronicle/CharactersTab.tsx`
+- `src/components/chronicle/StoryCardView.tsx`
 
-### CharactersTab.tsx (Character Builder)
-
-| Section | Current Spacing | Issue |
-|---|---|---|
-| **HardcodedSection** expanded (L476) | `space-y-4` | Slightly wider than reference `space-y-3`; rows are HardcodedRow/ExtraRow which look fine but inconsistent with WorldTab |
-| **Basics profile** fields (L1550) | `gap-4` in flex-col | Fine for single-field stacks |
-| **Below-grid fields** (L1613) | `space-y-4` | Consistent with HardcodedSection |
-| **Custom sections** outer (L2043) | `space-y-4` | Slightly wider than reference |
-| **Custom sections** per-item (L2057) | `space-y-2` | Tighter than HardcodedSection rows |
-| **Label width** in custom structured (L2100) | `w-1/3` | Inconsistent with `w-2/5` everywhere else |
-
-### StoryCardView.tsx (Scenario Card in CharacterEditModal)
-
-| Section | Current Spacing | Issue |
-|---|---|---|
-| **Locations** (L143) | `space-y-3` | Correct |
-| **Custom sections** inner (L209) | `space-y-3` on container | Correct |
-| **Freeform items** (L303) | `space-y-2` | Tighter than reference |
-| **Scenario** (L114) | `space-y-1.5` | Fine (single field) |
-
----
-
-## Changes to Apply
-
-### 1. WorldTab.tsx — Custom sections spacing
-
-**Line 889**: Change `space-y-1` to `space-y-3` on custom section outer container.
-
-**Lines 915-987** (structured items): These items render directly inside the `space-y-1` container with no spacing wrapper. After changing the outer to `space-y-3`, row spacing will be correct.
-
-**Line 1016**: Change `space-y-1` to `space-y-3` on freeform item divs.
-
-**Lines 988, 1033** (Add Row buttons): Add `mt-1` class so the button has a small visual break from the last row (the `space-y-3` parent already provides 12px, but `mt-1` gives a slight extra nudge matching the Primary Locations feel).
-
-### 2. CharactersTab.tsx — Standardize all spacing
-
-**Line 476** (HardcodedSection expanded): Change `space-y-4` to `space-y-3` to match WorldTab reference.
-
-**Line 1613** (below-grid fields): Change `space-y-4` to `space-y-3`.
-
-**Line 2043** (custom sections expanded): Change `space-y-4` to `space-y-3`.
-
-**Line 2057** (custom per-item wrapper): Change `space-y-2` to `space-y-3`.
-
-**Line 2100** (custom structured label width): Change `w-1/3` to `w-2/5` to match all other label/description rows.
-
-### 3. StoryCardView.tsx — Freeform items spacing
-
-**Line 303**: Change `space-y-2` to `space-y-3` on freeform item divs.
-
----
-
-## Summary
-
-**3 files modified:**
-- `src/components/chronicle/WorldTab.tsx` — Fix custom section spacing from `space-y-1` to `space-y-3`
-- `src/components/chronicle/CharactersTab.tsx` — Standardize all expanded containers and per-item wrappers to `space-y-3`; fix custom label width from `w-1/3` to `w-2/5`
-- `src/components/chronicle/StoryCardView.tsx` — Fix freeform item spacing to `space-y-3`
-
+Expected result:
+- No more “spacing fixed but fields still off” problem.
+- The builders will share one consistent text-field system instead of several near-matching versions that drift apart.
+- Future audits will be much easier because the styling will be centralized instead of scattered.
