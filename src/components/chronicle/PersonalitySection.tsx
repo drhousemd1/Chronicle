@@ -204,11 +204,21 @@ export const PersonalitySection: React.FC<PersonalitySectionProps> = ({
 
   const handleEnhanceTrait = (key: 'traits' | 'outwardTraits' | 'inwardTraits', trait: PersonalityTrait) => {
     if (!onEnhanceField) return;
+
+    // Map the trait list key to the correct personality bucket prefix
+    const bucketPrefix = key === 'outwardTraits' ? 'personality_outward'
+      : key === 'inwardTraits' ? 'personality_inward'
+      : 'personality';
+
+    // Map to the correct generate-both hint
+    const generateBothHint = key === 'outwardTraits' ? 'outward personality trait'
+      : key === 'inwardTraits' ? 'inward personality trait'
+      : 'personality trait';
     
     if (trait.label) {
-      // Has label: enhance value only (existing behavior)
+      // Has label: enhance value only
       onEnhanceField(
-        `personality_${trait.id}`,
+        `${bucketPrefix}_${trait.id}`,
         () => trait.value,
         (v) => updateTraits(key, trait.id, { value: v }),
         `Personality trait: ${trait.label}`
@@ -216,7 +226,7 @@ export const PersonalitySection: React.FC<PersonalitySectionProps> = ({
     } else {
       // No label: generate both label and description
       onEnhanceField(
-        `personality_${trait.id}`,
+        `${bucketPrefix}_${trait.id}`,
         () => trait.value,
         (v) => {
           const parsed = parseGenerateBothResponse(v);
@@ -226,7 +236,7 @@ export const PersonalitySection: React.FC<PersonalitySectionProps> = ({
             updateTraits(key, trait.id, { value: v });
           }
         },
-        `${GENERATE_BOTH_PREFIX}personality trait`
+        `${GENERATE_BOTH_PREFIX}${generateBothHint}`
       );
     }
   };
