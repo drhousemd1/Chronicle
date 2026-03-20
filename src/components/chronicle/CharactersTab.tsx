@@ -2230,6 +2230,18 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
             onClose={() => setShowCategoryTypeModal(false)}
             onSelect={(type) => handleAddSection(type as CharacterTraitSectionType)}
           />
+
+          {/* Content Type modal for "Add Row" within existing sections */}
+          <CustomContentTypeModal
+            open={!!pendingAddRowSectionId}
+            onClose={() => setPendingAddRowSectionId(null)}
+            onSelect={(type) => {
+              if (selected && pendingAddRowSectionId) {
+                handleAddItem(selected.id, pendingAddRowSectionId, type as CharacterTraitSectionType);
+              }
+              setPendingAddRowSectionId(null);
+            }}
+          />
         </div>
       </TabFieldNavigator>
 
