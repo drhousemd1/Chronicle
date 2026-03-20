@@ -2873,6 +2873,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   };
 
   const handleRegenerateMessage = async (messageId: string) => {
+    regenerateEventsRef.current.push({ messageId, timestamp: Date.now() });
     const msgIndex = conversation?.messages.findIndex(m => m.id === messageId);
     if (msgIndex === undefined || msgIndex < 1) return;
     
