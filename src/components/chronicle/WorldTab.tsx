@@ -1025,19 +1025,6 @@ className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
                                     placeholder="LABEL"
                                     className="flex-1 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
                                   />
-                                  <button
-                                    type="button"
-                                    tabIndex={-1}
-                                    onClick={() => {
-                                      const sections = [...(world.core.customWorldSections || [])];
-                                      const updatedItems = sections[sIdx].items.filter((_, i) => i !== iIdx);
-                                      sections[sIdx] = { ...sections[sIdx], items: updatedItems.length > 0 ? updatedItems : [{ id: uid('wci'), label: '', value: '' }] };
-                                      updateCore({ customWorldSections: sections });
-                                    }}
-                                    className="text-red-500 hover:text-red-400 p-1.5 rounded-md hover:bg-red-900/30"
-                                  >
-                                    <X size={16} />
-                                  </button>
                                 </div>
                                 <AutoResizeTextarea
                                   value={item.value}
