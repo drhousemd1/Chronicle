@@ -2926,15 +2926,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       let fullText = '';
       const antiLoopDirective = getAntiLoopDirective();
       
-      // Pass 13 continued: Consume narrative directive (one-shot, same as handleSend)
-      const directorTag = narrativeDirectiveRef.current
-        ? `[DIRECTOR: ${narrativeDirectiveRef.current}]`
-        : '';
-      narrativeDirectiveRef.current = null;
-      
       // Build runtime directives (injected as dedicated system message)
-      const runtimeDirectiveParts = [directorTag, antiLoopDirective].filter(Boolean);
-      const runtimeDirectives = runtimeDirectiveParts.length > 0 ? runtimeDirectiveParts.join('\n') : undefined;
+      const runtimeDirectives = antiLoopDirective || undefined;
       
       // Pass 13 continued: Build goal-aware continue prompt
       // Gather active character goals with current step info
