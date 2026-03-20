@@ -1,6 +1,6 @@
 import React from 'react';
 import { CharacterPersonality, PersonalityTrait, PersonalityTraitFlexibility } from '@/types';
-import { Plus, X, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 
 import { uid } from '@/utils';
 import { cn } from '@/lib/utils';
@@ -90,7 +90,7 @@ const TraitRow: React.FC<{
   }
 
   return (
-    <div className="flex items-start gap-2">
+    <div className="flex items-center gap-2">
       <div className="flex-1 flex gap-2 min-w-0">
         <div className="w-1/3 flex items-center gap-1.5 min-w-0">
           <AutoResizeTextarea
@@ -129,20 +129,22 @@ const TraitRow: React.FC<{
       <select
         value={trait.flexibility}
         onChange={(e) => onUpdate({ flexibility: e.target.value as PersonalityTraitFlexibility })}
-        className="mt-1 text-[10px] font-bold uppercase bg-[#1c1c1f] border border-black/35 text-zinc-300 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+        className="text-[10px] font-bold uppercase bg-[#1c1c1f] border border-black/35 text-zinc-300 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer self-stretch"
       >
         {FLEX_OPTIONS.map(opt => (
           <option key={opt.value} value={opt.value}>{opt.label}</option>
         ))}
       </select>
-      <button
-        type="button"
-        tabIndex={-1}
-        onClick={onDelete}
-        className="text-red-500 hover:text-red-400 p-1.5 rounded-md hover:bg-red-900/30 mt-1"
-      >
-        <X className="w-4 h-4" />
-      </button>
+      <div className="w-7 flex-shrink-0 flex items-center justify-center">
+        <button
+          type="button"
+          tabIndex={-1}
+          onClick={onDelete}
+          className="text-zinc-500 hover:text-rose-400 transition-colors p-1"
+        >
+          <Trash2 size={16} />
+        </button>
+      </div>
     </div>
   );
 };
