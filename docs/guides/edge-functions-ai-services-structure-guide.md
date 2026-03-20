@@ -24,7 +24,7 @@
 | `chat` | `supabase/functions/chat/index.ts` | Main LLM chat endpoint — streams roleplay responses | User-selected model |
 | `extract-character-updates` | `supabase/functions/extract-character-updates/index.ts` | Extracts character state changes from conversation (throttled: fires every 5th message) | `grok-4-1-fast-reasoning` (default), `grok-3-mini` (403 safe-mode retry) |
 | `extract-memory-events` | `supabase/functions/extract-memory-events/index.ts` | Extracts memory-worthy events from messages | `grok-4-1-fast-reasoning` |
-| `evaluate-arc-progress` | `supabase/functions/evaluate-arc-progress/index.ts` | Evaluates story arc progress against goals | `grok-4-1-fast-reasoning` |
+| `evaluate-goal-progress` | `supabase/functions/evaluate-goal-progress/index.ts` | Evaluates story goal progress | `grok-4-1-fast-reasoning` |
 | `generate-cover-image` | `supabase/functions/generate-cover-image/index.ts` | Generates scenario cover images | Image generation model |
 | `generate-scene-image` | `supabase/functions/generate-scene-image/index.ts` | Generates in-chat scene images | Image generation model |
 | `generate-side-character` | `supabase/functions/generate-side-character/index.ts` | AI-generates side character profiles | AI model |
@@ -32,7 +32,6 @@
 | `check-shared-keys` | `supabase/functions/check-shared-keys/index.ts` | Validates shared API keys | N/A |
 | `compress-day-memories` | `supabase/functions/compress-day-memories/index.ts` | Compresses completed-day bullet memories into a 2-3 sentence synopsis | `grok-4-1-fast-reasoning` |
 | `sync-guide-to-github` | `supabase/functions/sync-guide-to-github/index.ts` | Syncs guide documents to GitHub repo | N/A |
-| `generate-narrative-directive` | `supabase/functions/generate-narrative-directive/index.ts` | Pass 14 — Analyzes last 5-10 messages against story goals/arcs/character goals and produces a 1-3 sentence tactical directive for the next AI response. Runs async after each AI response; directive stored in `narrativeDirectiveRef` and injected as `[DIRECTOR: ...]` tag in next turn. One-shot: consumed and cleared after use. | `grok-4-1-fast-reasoning` |
 | `migrate-base64-images` | `supabase/functions/migrate-base64-images/index.ts` | Migrates legacy base64 images to storage | N/A |
 
 ---
@@ -178,10 +177,12 @@ See Section 5 above for comprehensive bug list.
 
 - **RESOLVED — 2026-03-15**: Pass 13 (continued) — Narrative director deployment fix & continue button rewire. Confirmed zero edge function logs for `generate-narrative-directive` (never fired). Added explicit invocation logging to `generateNarrativeDirective()` and error/warn branches. Wired `handleContinueConversation` to consume `narrativeDirectiveRef.current` as `[DIRECTOR]` tag (was previously ignored). Added `generateNarrativeDirective()` call after continue response completes to prime next click. Continue prompt rewritten from generic "DECISIVE FORWARD ACTION" to goal-aware prompt that injects active character goals, pending arc steps, and demands EXECUTION not preparation. Continue handler now also tracks extraction count and response lengths (was missing both).
 
+- **RESOLVED — 2026-03-20**: Pass 15 — Narrative Director removal. The `generate-narrative-directive` edge function and all client-side `[DIRECTOR]` tag logic have been completely removed. The background "second API call" produced tactical directives based on the previous conversation state, which frequently conflicted with the user's latest input — causing the AI to follow outdated suggestions instead of naturally continuing. Removed: edge function, `narrativeDirectiveRef`, `generateNarrativeDirective()` callback, director tag consumption in handleSend/handleContinue/handleRegenerate, `[DIRECTOR]` from priority hierarchy (#2 → removed, remaining priorities renumbered). Anti-loop runtime directives and goal-aware continue prompts remain fully functional.
+
 ---
 
 ## 13. Planned / Future Changes
 
 None documented.
 
-> Last updated: 2026-03-15 — Pass 13 continued: Narrative director deployment fix, continue button wired to director + goal-aware prompt.
+> Last updated: 2026-03-20 — Pass 15: Narrative Director system removed to fix outdated/disconnected AI responses.

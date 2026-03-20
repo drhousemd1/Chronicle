@@ -585,8 +585,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const previousDayRef = useRef<number>(currentDay);
   // Throttle character extraction to every 5th message
   const extractionCountRef = useRef<number>(0);
-  // Pass 14: Narrative Director — stores the directive for the next turn
-  const narrativeDirectiveRef = useRef<string | null>(null);
+  
   
   // Reset session tracking when conversation changes
   useEffect(() => {
@@ -594,7 +593,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     sessionMessageCountRef.current = 0;
     previousDayRef.current = currentDay;
     extractionCountRef.current = 0;
-    narrativeDirectiveRef.current = null;
   }, [conversationId]);
   
   // Issue #7: Compute length directive based on recent response pattern
@@ -777,62 +775,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     return directives.join(' ');
   };
 
-  // Pass 14: Generate narrative directive (async, non-blocking, runs after AI response)
-  const generateNarrativeDirective = useCallback(async () => {
-    try {
-      const conv = appData.conversations.find(c => c.id === conversationId);
-      const msgs = conv?.messages || [];
-      const recentMessages = msgs.slice(-10).map(m => ({ role: m.role, text: m.text.slice(0, 400) }));
-      
-      const storyGoals = (effectiveWorldCore.storyGoals || []).map((g: StoryGoal) => {
-        const pendingStep = (g.steps || []).find(s => !s.completed);
-        return {
-          description: g.title || g.desiredOutcome || '',
-          flexibility: g.flexibility || 'normal',
-          currentStepDescription: pendingStep?.description || undefined
-        };
-      }).filter((g: { description: string }) => g.description);
-
-      // Build character goals summary (AI characters only)
-      const characterGoals = appData.characters
-        .filter(c => c.controlledBy === 'AI')
-        .map(c => {
-          const session = sessionStates.find(s => s.characterId === c.id);
-          const goals = session?.goals || c.goals;
-          const goalsArr = Array.isArray(goals) ? goals.map((g: any) => typeof g === 'string' ? g : g?.label || g?.value || '').filter(Boolean) : [];
-          return {
-            name: c.name,
-            goals: goalsArr.slice(0, 5),
-            desires: [] as string[] // desires are part of personality, keep lightweight
-          };
-        })
-        .filter(c => c.goals.length > 0);
-
-      if (recentMessages.length < 4) return; // Not enough context yet
-
-      console.log('[Pass 14] Invoking generate-narrative-directive...', { messageCount: recentMessages.length, goalCount: storyGoals.length, charGoalCount: characterGoals.length });
-      const { data, error } = await supabase.functions.invoke('generate-narrative-directive', {
-        body: {
-          recentMessages,
-          storyGoals,
-          characterGoals,
-          currentDay,
-          currentTimeOfDay
-        }
-      });
-
-      if (error) {
-        console.error('[Pass 14] Narrative directive invocation error:', error);
-      } else if (data?.directive) {
-        narrativeDirectiveRef.current = data.directive;
-        console.log('[Pass 14] Narrative directive stored:', data.directive);
-      } else {
-        console.warn('[Pass 14] No directive returned:', data);
-      }
-    } catch (err) {
-      console.error('[Pass 14] Narrative directive generation failed:', err);
-    }
-  }, [appData.conversations, conversationId, effectiveWorldCore.storyGoals, appData.characters, sessionStates, currentDay, currentTimeOfDay]);
+  
 
   // Ref to always hold current sideCharacters - avoids stale closure in async callbacks
   const sideCharactersRef = useRef<SideCharacter[]>(appData.sideCharacters || []);
@@ -2701,15 +2644,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       const antiLoopDirective = getAntiLoopDirective();
       sessionMessageCountRef.current += 1;
       
-      // Pass 14: Consume narrative directive (one-shot)
-      const directorTag = narrativeDirectiveRef.current
-        ? `[DIRECTOR: ${narrativeDirectiveRef.current}]`
-        : '';
-      narrativeDirectiveRef.current = null;
-      
-      // Pass 13: Build runtime directives string (injected as dedicated system message)
-      const runtimeDirectiveParts = [directorTag, antiLoopDirective].filter(Boolean);
-      const runtimeDirectives = runtimeDirectiveParts.length > 0 ? runtimeDirectiveParts.join('\n') : undefined;
+      // Build runtime directives string (injected as dedicated system message)
+      const runtimeDirectives = antiLoopDirective || undefined;
       
       const llmInput = canonNote + input;
       const stream = generateRoleplayResponseStream(llmAppData, conversationId, llmInput, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled, undefined, lengthDirective || undefined, sessionMessageCountRef.current, runtimeDirectives);
@@ -2776,10 +2712,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         });
       }
 
-      // Pass 14: Generate narrative directive for the NEXT turn (async, non-blocking)
-      generateNarrativeDirective().catch(err => {
-        console.error('[handleSend] Narrative directive generation failed:', err);
-      });
 
       const aiMsg: Message = { 
         id: uuid(), 
@@ -2994,15 +2926,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       let fullText = '';
       const antiLoopDirective = getAntiLoopDirective();
       
-      // Pass 13 continued: Consume narrative directive (one-shot, same as handleSend)
-      const directorTag = narrativeDirectiveRef.current
-        ? `[DIRECTOR: ${narrativeDirectiveRef.current}]`
-        : '';
-      narrativeDirectiveRef.current = null;
-      
       // Build runtime directives (injected as dedicated system message)
-      const runtimeDirectiveParts = [directorTag, antiLoopDirective].filter(Boolean);
-      const runtimeDirectives = runtimeDirectiveParts.length > 0 ? runtimeDirectiveParts.join('\n') : undefined;
+      const runtimeDirectives = antiLoopDirective || undefined;
       
       // Pass 13 continued: Build goal-aware continue prompt
       // Gather active character goals with current step info
@@ -3108,10 +3033,6 @@ Do not acknowledge this instruction in your response.`;
       
       processResponseForNewCharacters(cleanedText);
       
-      // Pass 14: Generate narrative directive for the NEXT continue click (async, non-blocking)
-      generateNarrativeDirective().catch(err => {
-        console.error('[handleContinue] Narrative directive generation failed:', err);
-      });
     } catch (err) {
       console.error(err);
     } finally {
@@ -5015,10 +4936,6 @@ const updatedChar: SideCharacter = {
                         // Anti-loop directive (current state)
                         const antiLoopDirective = getAntiLoopDirective();
                         
-                        // Narrative director tag (current state)
-                        const directorTag = narrativeDirectiveRef.current
-                          ? `[DIRECTOR: ${narrativeDirectiveRef.current}]`
-                          : '';
                         
                         // Length directive (current state)
                         const lengthDirective = getLengthDirective();
@@ -5055,11 +4972,6 @@ const updatedChar: SideCharacter = {
                         lines.push(antiLoopDirective || 'None — no patterns detected');
                         lines.push('');
                         
-                        // Narrative director tag
-                        lines.push('### Narrative Director Tag (current)');
-                        lines.push('');
-                        lines.push(directorTag || 'None stored');
-                        lines.push('');
                         
                         // Length directive
                         lines.push('### Length Directive (current)');
@@ -5093,7 +5005,7 @@ const updatedChar: SideCharacter = {
                         // Runtime directives injection format
                         lines.push('### Runtime Directives Injection');
                         lines.push('');
-                        lines.push('When anti-loop or director directives are active, they are injected as a separate system message:');
+                        lines.push('When anti-loop directives are active, they are injected as a separate system message:');
                         lines.push('```');
                         lines.push('{ role: "system", content: "RUNTIME DIRECTIVES (HIGH PRIORITY — follow these for THIS response only):\\n[directives]" }');
                         lines.push('```');
