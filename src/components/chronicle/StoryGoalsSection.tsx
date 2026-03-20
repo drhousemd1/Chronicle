@@ -317,7 +317,7 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({
                     {(goal.steps && goal.steps.length > 0) ? (
                       <div className="space-y-2">
                         {goal.steps.map((step, stepIdx) => (
-                          <div key={step.id} className="flex items-start gap-3">
+                          <div key={step.id} className="flex items-center gap-3">
                             <Checkbox
                               checked={step.completed}
                               onCheckedChange={() => isEditMode ? toggleStep(goal.id, step.id) : undefined}
