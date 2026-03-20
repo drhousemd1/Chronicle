@@ -1,52 +1,47 @@
 
-Assuming “refresh” means the Regenerate button (the refresh icon): no, this was not fully updated across all generation paths.
 
-What I found
-- The new anti-rehash system prompt in `src/services/llm.ts` is global, so it applies to send, regenerate, and continue at the base prompt level.
-- But the extra per-turn safeguard `[CANON NOTE: ...]` currently exists only in normal send flow inside `src/components/chronicle/ChatInterfaceTab.tsx` (`handleSend`).
-- `handleRegenerateMessage` sends the original user message back through `generateRoleplayResponseStream(...)` without adding that canon note.
-- `handleContinueConversation` also does not add any canon carry-forward note, so it relies only on the base system prompt plus the continue instruction.
+# Remove Narrative Directive ("Second API Call") to Fix Outdated Responses
 
-Why it behaves the way you saw
-- Delete last AI message + send again works better because `handleSend` adds the explicit canon note.
-- Regenerate can slip back into rephrasing because that explicit note is missing there.
-- Continue may also be less reliable if the model focuses on the continue instruction and underweights the earlier user-authored AI dialogue.
+## Problem
+After each AI response, a second API call (`generate-narrative-directive`) runs in the background, generating a 1-3 sentence "tactical directive" for the next turn. This directive is stored and injected as a `[DIRECTOR: ...]` tag into the next request. Because it's based on the *previous* conversation state, it often conflicts with what the user actually typed next — causing the AI to follow the outdated suggestion instead of naturally continuing from the user's latest input.
 
-Plan
-1. Centralize canon-note handling
-- Move the “user authored dialogue for AI characters” detection into a shared helper so it is not duplicated only in `handleSend`.
-- Put this in `src/services/llm.ts` (or a small shared helper beside it) so every generation path uses the same rule.
+## Solution
+Remove the narrative directive system entirely. The existing system prompt rules (FORWARD MOMENTUM, TURN PROGRESSION CONTRACT, goal-aware continue prompts) already provide sufficient continuity guidance without a competing outdated suggestion.
 
-2. Support all three generation modes explicitly
-- Update generation calls to identify request type:
-  - send
-  - regenerate
-  - continue
-- For send/regenerate: inspect the active user message being sent.
-- For continue: inspect the most recent relevant user message in conversation history and carry that canon forward when applicable.
+## Changes
 
-3. Apply canon note to regenerate
-- Update `handleRegenerateMessage` / shared generation path so regenerated outputs get the same `[CANON NOTE]` protection as a fresh send.
-- This is the main fix for the behavior you reported.
+### 1. `src/components/chronicle/ChatInterfaceTab.tsx`
+- Remove `narrativeDirectiveRef` declaration and its reset in the conversation-switch effect
+- Remove the `generateNarrativeDirective` callback function entirely
+- Remove directive consumption (the `directorTag` / `narrativeDirectiveRef.current` blocks) from `handleSend`, `handleContinueConversation`
+- Remove the `generateNarrativeDirective()` fire-and-forget calls after response completion in `handleSend` and `handleContinue`
+- Simplify `runtimeDirectives` to only include `antiLoopDirective` (no more director tag assembly)
 
-4. Apply canon carry-forward to continue
-- Update continue flow so if the most recent user turn included AI-authored dialogue/actions, the continue request includes a high-priority canon reminder instead of relying only on the base prompt.
-- Keep the current goal-driven continue instruction, but append/inject canon context so “continue” starts after the user-established dialogue rather than rephrasing it.
+### 2. `src/services/llm.ts`
+- Remove `[DIRECTOR]` from the priority hierarchy in the INSTRUCTIONS block (currently listed as #2)
+- Renumber remaining priorities
+- Remove any references to `[DIRECTOR]` tag handling in the system prompt text
 
-5. Preserve current prompt features
-- Keep the existing:
-  - global “USER-AUTHORED AI DIALOGUE ACCEPTANCE” rule
-  - regeneration directive
-  - narrative director tags
-  - anti-loop directives
-- Only make canon enforcement consistent across request types.
+### 3. `supabase/functions/generate-narrative-directive/index.ts`
+- Delete the edge function file entirely (no longer called)
 
-Files to update
-- `src/components/chronicle/ChatInterfaceTab.tsx`
-- `src/services/llm.ts`
+### 4. `supabase/config.toml`
+- Remove the `[functions.generate-narrative-directive]` entry
 
-Verification
-- Fresh send with user-authored AI dialogue should continue cleanly.
-- Regenerate on that same turn should produce a different continuation, not restate the user-written AI dialogue.
-- Continue after that turn should also move forward without rephrasing.
-- Test with the exact Sarah/Monopoly-style case that previously failed on regenerate.
+### 5. `public/api-call-inspector-chronicle.html`
+- Remove the "Narrative Directive" sidebar nav item
+- Remove the "Narrative Directive Generation" documentation block
+- Update the "Runtime Directives" block to reflect that only anti-loop directives are injected (no more `[DIRECTOR]` tags)
+- Update the priority hierarchy display to remove `[DIRECTOR]` as #2
+- Update the message assembly diagram to remove the narrative director injection comment
+
+### 6. `docs/guides/edge-functions-ai-services-structure-guide.md`
+- Remove `generate-narrative-directive` from the Edge Functions inventory table
+- Update known issues/resolved items that reference Pass 13/14 narrative director
+
+## What This Preserves
+- Anti-loop directives (structural repetition detection, ping-pong detection, stagnation detection) — these remain fully functional
+- Goal-aware continue prompts — already built into `handleContinueConversation`
+- All canon note / forward momentum enforcement — unchanged
+- Character extraction, memory extraction, goal evaluation — all unaffected
+
