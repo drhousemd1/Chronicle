@@ -1,74 +1,68 @@
 
 
-# Admin Chat Debug Export
+# Admin Tool: Download Master Prompt (Current Snapshot)
 
-## What we're building
+## What this does
 
-A new "Admin" section at the bottom of the Chat Settings modal, visible only to admin users. It contains a single button — "Download Session Log" — that exports the current conversation as a clean Markdown file designed for pasting into external AI tools (like Grok) for prompt diagnosis.
+Adds a second button to the Admin section: **"Download Master Prompt"**. One click generates a Markdown file containing the **exact** system instruction text that would be sent to Grok right now — assembled from the current scenario's characters, world, goals, arcs, memories, content themes, and all behavioral rules.
 
-The export captures:
-- **Speaker attribution** on every message (who said what)
-- **Timeline markers** (Day X, Time of Day) whenever they change
-- **Action flags** — when you clicked Continue or Regenerate, those actions are annotated inline in the log so you can see exactly where the AI was prompted to keep going vs. respond to input
-- **Scenario context header** — story title, character names, model ID — so an external AI has baseline context
+This is a single snapshot, not repeated per message. The Session Log export already captures the conversation flow. Together they give you everything needed for external debugging:
+- **Session Log** = "Here's what happened in the conversation"
+- **Master Prompt** = "Here's what the AI was told to do"
 
-## How it works
+## What's in the export
 
-1. **Admin gating**: `ChatInterfaceTab` receives a new `isAdmin` prop from `Index.tsx` (which already has `isAdminState`). The Admin section only renders when `isAdmin === true`.
+1. **Header** — model ID, verbosity setting, max_tokens, temperature
+2. **Full System Instruction** — the exact output of `getSystemInstruction()` called with current scenario data, day, time, memories, and memory-enabled flag. Verbatim, unedited.
+3. **Runtime Parameters** — the small per-turn pieces:
+   - Current anti-loop directive (if any would fire based on last AI message)
+   - Current narrative directive (if one is stored)
+   - Sample style hint (marked as "one of N random options")
+   - Regeneration directive template (the fixed text block)
+   - Verbosity-to-max_tokens mapping
+   - Session message count format
 
-2. **Action tracking**: Two lightweight arrays (`continueEventsRef` and `regenerateEventsRef`) track timestamps of Continue and Regenerate button clicks by recording the message ID they acted on. These are `useRef` arrays so they don't trigger re-renders.
-
-3. **Markdown generation**: When you click "Download Session Log," a function builds a Markdown string:
-   - Header block with scenario name, characters, model, current day/time
-   - Each message rendered as `### User` or `### [CharacterName] (AI)` with the full text
-   - Day/time change markers inserted between messages when they differ
-   - `> ⚡ CONTINUE triggered here` or `> 🔄 REGENERATE triggered here` annotations injected at the relevant message positions
-   - Triggers a browser file download (`.md` file)
-
-4. **No database changes needed** — this is purely a client-side export of in-memory conversation data.
+This uses the **same** `getSystemInstruction` function and `buildLLMAppData` data — not a recreation or paraphrase.
 
 ## Files changed
 
-- **`src/pages/Index.tsx`** — Pass `isAdmin={isAdminState}` prop to `ChatInterfaceTab`
-- **`src/components/chronicle/ChatInterfaceTab.tsx`**:
-  - Add `isAdmin` to props interface
-  - Add `continueEventsRef` and `regenerateEventsRef` (useRef arrays)
-  - Record events in `handleContinueConversation` and `handleRegenerateMessage`
-  - Add `generateSessionLog()` function that builds the Markdown
-  - Add Admin section at bottom of Chat Settings modal (after Time Progression divider)
+- **`src/services/llm.ts`** — Add `export` to `getSystemInstruction` and `getRandomStyleHint` (2-word change each, makes them importable)
+- **`src/components/chronicle/ChatInterfaceTab.tsx`** — Add "Download Master Prompt" button in Admin section, with `generateMasterPromptSnapshot()` function
 
-## Markdown output format
+## Output format
 
 ```text
-# Session Log — [Story Title]
-**Conversation:** [Conversation Title]
-**Characters:** Aria (User), Marcus (AI), Elena (AI)
-**Model:** xai/grok-4
+# Master Prompt Snapshot
+**Model:** grok-4-1-fast-reasoning
+**Verbosity:** balanced → max_tokens: 2048
+**Temperature:** 0.9 (hardcoded in edge function)
 **Exported:** 2026-03-20 14:30
 
 ---
 
-#### Day 1 — Day
+## System Instruction (verbatim)
 
-### User
-I walk toward the old cathedral, keeping my hand on the hilt of my sword.
+[exact multi-hundred-line system instruction text]
 
-### Marcus (AI)
-*Marcus steps out from behind a crumbling pillar, his expression wary.* "You shouldn't be here," *he says quietly.*
+---
 
-> 🔄 REGENERATE triggered on this message
+## Runtime Parameters
 
-### User
-"I go where I please. What are you hiding?"
+### Anti-Loop Directive (current)
+[output of getAntiLoopDirective based on last AI message, or "None — no patterns detected"]
 
-> ⚡ CONTINUE triggered after this message
+### Narrative Director Tag (current)
+[contents of narrativeDirectiveRef, or "None stored"]
 
-### Marcus (AI)
-*He glances over his shoulder...* 
+### Style Hint Pool (balanced mode)
+- [Style: one character drives this beat — others react briefly in narration]
+- [Style: try a different paragraph structure than your last response]
+- ... (all 8 options listed)
 
-#### Day 1 — Sunset
+### Regeneration Directive (fixed template)
+[the exact regeneration directive text]
 
-### Elena (AI)
-...
+### Session Message Format
+[SESSION: Message {N} of current session]
 ```
 
