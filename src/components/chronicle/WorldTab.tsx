@@ -886,7 +886,7 @@ className="w-2/5 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border border-black/35
                     
                     {/* Custom World Content Sections */}
                     {(world.core.customWorldSections || []).map((section, sIdx) => (
-                      <div key={section.id} className="space-y-1">
+                      <div key={section.id} className="space-y-3">
                         <div className="flex items-center gap-3">
                           <AutoResizeTextarea
                             value={section.title}
