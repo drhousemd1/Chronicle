@@ -580,7 +580,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
   const [enhancingField, setEnhancingField] = useState<string | null>(null);
   const [enhanceModeTarget, setEnhanceModeTarget] = useState<{
     fieldKey: string;
-    section: 'physicalAppearance' | 'currentlyWearing' | 'preferredClothing' | 'custom';
+    section: 'physicalAppearance' | 'currentlyWearing' | 'preferredClothing' | 'custom' | 'tone';
     getCurrentValue: () => string;
     setValue: (value: string) => void;
     customLabel?: string;
