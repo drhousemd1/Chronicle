@@ -170,24 +170,32 @@ export function getSystemInstruction(
   const personalityContext = (c: any): string => {
     const p = c.personality;
     if (!p) return '';
-    const formatTrait = (t: any) => {
+    const formatTrait = (t: any, category: 'standard' | 'outward' | 'inward' = 'standard') => {
       const level = (t.flexibility || 'normal').charAt(0).toUpperCase() + (t.flexibility || 'normal').slice(1);
-      const score = t.adherenceScore ?? getDefaultScore(level);
+      const rawScore = t.adherenceScore ?? getDefaultScore(level);
+      // Apply precedence offset: outward traits get visibility bonus (+15),
+      // inward traits get suppression (-10) until they earn higher scores through story progression.
+      // This ensures outward presentation dominates visible expression by default.
+      const effectiveScore = category === 'outward'
+        ? Math.min(rawScore + 15, 100)
+        : category === 'inward'
+          ? Math.max(rawScore - 10, 0)
+          : rawScore;
       const trend = t.scoreTrend;
       const trendNote = trend === 'falling' ? ' [easing -- show as softening]'
         : trend === 'rising' ? ' [reinforcing -- show as strengthening]'
         : '';
-      return getTraitGuidance(t.label, level, score) + trendNote;
+      return getTraitGuidance(t.label, level, effectiveScore) + trendNote;
     };
     if (p.splitMode) {
-      const outward = (p.outwardTraits || []).filter((t: any) => t.label || t.value).map(formatTrait).join('\n');
-      const inward = (p.inwardTraits || []).filter((t: any) => t.label || t.value).map(formatTrait).join('\n');
+      const outward = (p.outwardTraits || []).filter((t: any) => t.label || t.value).map((t: any) => formatTrait(t, 'outward')).join('\n');
+      const inward = (p.inwardTraits || []).filter((t: any) => t.label || t.value).map((t: any) => formatTrait(t, 'inward')).join('\n');
       const lines: string[] = [];
-      if (outward) lines.push(`\nOUTWARD PERSONALITY:\n${outward}`);
-      if (inward) lines.push(`\nINWARD PERSONALITY:\n${inward}`);
+      if (outward) lines.push(`\nOUTWARD PERSONALITY (governs visible behavior, dialogue, and actions):\n${outward}`);
+      if (inward) lines.push(`\nINWARD PERSONALITY (governs internal thoughts and hidden motivation only):\n${inward}`);
       return lines.join('');
     } else {
-      const traits = (p.traits || []).filter((t: any) => t.label || t.value).map(formatTrait).join('\n');
+      const traits = (p.traits || []).filter((t: any) => t.label || t.value).map((t: any) => formatTrait(t)).join('\n');
       return traits ? `\nPERSONALITY:\n${traits}` : '';
     }
   };
