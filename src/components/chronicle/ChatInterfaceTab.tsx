@@ -3879,8 +3879,11 @@ const updatedChar: SideCharacter = {
             />
           </div>
         )}
-        
-        
+  // Admin debug: action tracking refs
+  const continueEventsRef = useRef<ActionEvent[]>([]);
+  const regenerateEventsRef = useRef<ActionEvent[]>([]);
+
+
         {/* All sidebar content in relative z-10 container */}
         <div className="relative z-10 flex flex-col h-full">
           <div className="p-4 border-b border-slate-100 flex items-center justify-between">
