@@ -1029,7 +1029,7 @@ className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
                               updateCore({ customWorldSections: sections });
                             }
                             return items.map((item, iIdx) => (
-                              <div key={item.id} className="space-y-3">
+                              <div key={item.id} className="flex items-start gap-3">
                                 <AutoResizeTextarea
                                   value={item.value}
                                   onChange={(v) => {
@@ -1041,8 +1041,23 @@ className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
                                   }}
                                   rows={4}
                                   placeholder="Write your content here..."
-className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                  className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                                 />
+                                <div className="w-7 flex-shrink-0 flex items-center justify-center pt-2">
+                                  <button
+                                    type="button"
+                                    tabIndex={-1}
+                                    onClick={() => {
+                                      const sections = [...(world.core.customWorldSections || [])];
+                                      const updatedItems = sections[sIdx].items.filter((_, i) => i !== iIdx);
+                                      sections[sIdx] = { ...sections[sIdx], items: updatedItems.length > 0 ? updatedItems : [{ id: uid('wci'), label: '', value: '' }] };
+                                      updateCore({ customWorldSections: sections });
+                                    }}
+                                    className="text-zinc-500 hover:text-rose-400 transition-colors p-1"
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                </div>
                               </div>
                             ));
                           })()}
@@ -1056,7 +1071,7 @@ className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
                             }}
                             className="w-full h-10 text-xs font-bold text-blue-500 hover:text-blue-300 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:brightness-110 transition-all flex items-center justify-center gap-1.5"
                           >
-                            <Plus size={16} /> Add Row
+                            <Plus size={16} /> Custom Content
                           </button>
                           </>
                         )}
