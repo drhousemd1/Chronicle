@@ -139,17 +139,19 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
                   <Lock className="w-3.5 h-3.5 text-zinc-400" />
                 </div>
               ) : (
-                <button
-                  type="button"
-                  tabIndex={-1}
-                  onClick={() => {
-                    const locs = locations.filter((_, i) => i !== idx);
-                    updateField('structuredLocations', locs.length > 0 ? locs : undefined);
-                  }}
-                  className="mt-2 text-zinc-500 hover:text-rose-400 transition-colors p-1"
-                >
-                  <Trash2 size={16} />
-                </button>
+                <div className="w-7 flex-shrink-0 flex items-center justify-center pt-2">
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    onClick={() => {
+                      const locs = locations.filter((_, i) => i !== idx);
+                      updateField('structuredLocations', locs.length > 0 ? locs : undefined);
+                    }}
+                    className="text-zinc-500 hover:text-rose-400 transition-colors p-1"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               )}
             </div>
           ))}
